@@ -16,7 +16,13 @@
 
 package azkaban.trigger;
 
-import azkaban.ServiceProvider;
+import azkaban.event.Event;
+import azkaban.event.Event.Type;
+import azkaban.event.EventHandler;
+import azkaban.event.EventListener;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorManager;
+import azkaban.utils.Props;
 import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,39 +34,24 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-
 import org.apache.log4j.Logger;
-
-import azkaban.event.Event;
-import azkaban.event.EventHandler;
-import azkaban.event.EventListener;
-import azkaban.event.Event.Type;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
-import azkaban.utils.Props;
 
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
-  private static Logger logger = Logger.getLogger(TriggerManager.class);
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
-
-  private static Map<Integer, Trigger> triggerIdMap =
-      new ConcurrentHashMap<Integer, Trigger>();
-
-  private CheckerTypeLoader checkerTypeLoader;
-  private ActionTypeLoader actionTypeLoader;
-  private TriggerLoader triggerLoader;
-
+  private static final Logger logger = Logger.getLogger(TriggerManager.class);
+  private static final Map<Integer, Trigger> triggerIdMap =
+      new ConcurrentHashMap<>();
   private final TriggerScannerThread runnerThread;
+  private final Object syncObj = new Object();
+  private final CheckerTypeLoader checkerTypeLoader;
+  private final ActionTypeLoader actionTypeLoader;
+  private final TriggerLoader triggerLoader;
+  private final LocalTriggerJMX jmxStats = new LocalTriggerJMX();
+  private final ExecutorManagerEventListener listener =
+      new ExecutorManagerEventListener();
   private long lastRunnerThreadCheckTime = -1;
   private long runnerThreadIdleTime = -1;
-  private LocalTriggerJMX jmxStats = new LocalTriggerJMX();
-
-  private ExecutorManagerEventListener listener =
-      new ExecutorManagerEventListener();
-
-  private final Object syncObj = new Object();
-
   private String scannerStage = "";
 
   @Inject
@@ -164,22 +155,108 @@ public class TriggerManager extends EventHandler implements
   }
 
   public List<Trigger> getTriggers() {
-    return new ArrayList<Trigger>(triggerIdMap.values());
+    return new ArrayList<>(triggerIdMap.values());
   }
 
   public Map<String, Class<? extends ConditionChecker>> getSupportedCheckers() {
     return checkerTypeLoader.getSupportedCheckers();
   }
 
+  public Trigger getTrigger(int triggerId) {
+    synchronized (syncObj) {
+      return triggerIdMap.get(triggerId);
+    }
+  }
+
+  public void expireTrigger(int triggerId) {
+    Trigger t = getTrigger(triggerId);
+    t.setStatus(TriggerStatus.EXPIRED);
+  }
+
+  @Override
+  public List<Trigger> getTriggers(String triggerSource) {
+    List<Trigger> triggers = new ArrayList<>();
+    for (Trigger t : triggerIdMap.values()) {
+      if (t.getSource().equals(triggerSource)) {
+        triggers.add(t);
+      }
+    }
+    return triggers;
+  }
+
+  @Override
+  public List<Trigger> getTriggerUpdates(String triggerSource,
+      long lastUpdateTime) throws TriggerManagerException {
+    List<Trigger> triggers = new ArrayList<>();
+    for (Trigger t : triggerIdMap.values()) {
+      if (t.getSource().equals(triggerSource)
+          && t.getLastModifyTime() > lastUpdateTime) {
+        triggers.add(t);
+      }
+    }
+    return triggers;
+  }
+
+  @Override
+  public List<Trigger> getAllTriggerUpdates(long lastUpdateTime)
+      throws TriggerManagerException {
+    List<Trigger> triggers = new ArrayList<>();
+    for (Trigger t : triggerIdMap.values()) {
+      if (t.getLastModifyTime() > lastUpdateTime) {
+        triggers.add(t);
+      }
+    }
+    return triggers;
+  }
+
+  @Override
+  public void insertTrigger(Trigger t, String user)
+      throws TriggerManagerException {
+    insertTrigger(t);
+  }
+
+  @Override
+  public void removeTrigger(int id, String user) throws TriggerManagerException {
+    removeTrigger(id);
+  }
+
+  @Override
+  public void updateTrigger(Trigger t, String user)
+      throws TriggerManagerException {
+    updateTrigger(t);
+  }
+
+  @Override
+  public void shutdown() {
+    runnerThread.shutdown();
+  }
+
+  @Override
+  public TriggerJMX getJMX() {
+    return this.jmxStats;
+  }
+
+  @Override
+  public void registerCheckerType(String name,
+      Class<? extends ConditionChecker> checker) {
+    checkerTypeLoader.registerCheckerType(name, checker);
+  }
+
+  @Override
+  public void registerActionType(String name,
+      Class<? extends TriggerAction> action) {
+    actionTypeLoader.registerActionType(name, action);
+  }
+
   private class TriggerScannerThread extends Thread {
-    private BlockingQueue<Trigger> triggers;
-    private Map<Integer, ExecutableFlow> justFinishedFlows;
-    private boolean shutdown = false;
     private final long scannerInterval;
+    private final BlockingQueue<Trigger> triggers;
+    private final Map<Integer, ExecutableFlow> justFinishedFlows;
+    private boolean shutdown = false;
 
     public TriggerScannerThread(long scannerInterval) {
-      triggers = new PriorityBlockingQueue<Trigger>(1, new TriggerComparator());
-      justFinishedFlows = new ConcurrentHashMap<Integer, ExecutableFlow>();
+      triggers = new PriorityBlockingQueue<>(1, new TriggerComparator());
+      justFinishedFlows = new ConcurrentHashMap<>();
       this.setName("TriggerRunnerManager-Trigger-Scanner-Thread");
       this.scannerInterval = scannerInterval;
     }
@@ -342,80 +419,6 @@ public class TriggerManager extends EventHandler implements
     }
   }
 
-  public Trigger getTrigger(int triggerId) {
-    synchronized (syncObj) {
-      return triggerIdMap.get(triggerId);
-    }
-  }
-
-  public void expireTrigger(int triggerId) {
-    Trigger t = getTrigger(triggerId);
-    t.setStatus(TriggerStatus.EXPIRED);
-  }
-
-  @Override
-  public List<Trigger> getTriggers(String triggerSource) {
-    List<Trigger> triggers = new ArrayList<Trigger>();
-    for (Trigger t : triggerIdMap.values()) {
-      if (t.getSource().equals(triggerSource)) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
-  }
-
-  @Override
-  public List<Trigger> getTriggerUpdates(String triggerSource,
-      long lastUpdateTime) throws TriggerManagerException {
-    List<Trigger> triggers = new ArrayList<Trigger>();
-    for (Trigger t : triggerIdMap.values()) {
-      if (t.getSource().equals(triggerSource)
-          && t.getLastModifyTime() > lastUpdateTime) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
-  }
-
-  @Override
-  public List<Trigger> getAllTriggerUpdates(long lastUpdateTime)
-      throws TriggerManagerException {
-    List<Trigger> triggers = new ArrayList<Trigger>();
-    for (Trigger t : triggerIdMap.values()) {
-      if (t.getLastModifyTime() > lastUpdateTime) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
-  }
-
-  @Override
-  public void insertTrigger(Trigger t, String user)
-      throws TriggerManagerException {
-    insertTrigger(t);
-  }
-
-  @Override
-  public void removeTrigger(int id, String user) throws TriggerManagerException {
-    removeTrigger(id);
-  }
-
-  @Override
-  public void updateTrigger(Trigger t, String user)
-      throws TriggerManagerException {
-    updateTrigger(t);
-  }
-
-  @Override
-  public void shutdown() {
-    runnerThread.shutdown();
-  }
-
-  @Override
-  public TriggerJMX getJMX() {
-    return this.jmxStats;
-  }
-
   private class LocalTriggerJMX implements TriggerJMX {
 
     @Override
@@ -440,7 +443,7 @@ public class TriggerManager extends EventHandler implements
 
     @Override
     public String getTriggerSources() {
-      Set<String> sources = new HashSet<String>();
+      Set<String> sources = new HashSet<>();
       for (Trigger t : triggerIdMap.values()) {
         sources.add(t.getSource());
       }
@@ -459,7 +462,7 @@ public class TriggerManager extends EventHandler implements
 
     @Override
     public Map<String, Object> getAllJMXMbeans() {
-      return new HashMap<String, Object>();
+      return new HashMap<>();
     }
 
     @Override
@@ -467,18 +470,6 @@ public class TriggerManager extends EventHandler implements
       return scannerStage;
     }
 
-  }
-
-  @Override
-  public void registerCheckerType(String name,
-      Class<? extends ConditionChecker> checker) {
-    checkerTypeLoader.registerCheckerType(name, checker);
-  }
-
-  @Override
-  public void registerActionType(String name,
-      Class<? extends TriggerAction> action) {
-    actionTypeLoader.registerActionType(name, action);
   }
 
   private class ExecutorManagerEventListener implements EventListener {

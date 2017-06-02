@@ -16,26 +16,24 @@
 
 package azkaban.trigger;
 
-import azkaban.executor.ExecutorManager;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 
+import azkaban.executor.ExecutorManager;
 import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
-
-import azkaban.utils.Props;
-
-import static org.mockito.Mockito.*;
 
 public class TriggerManagerTest {
 
@@ -52,32 +50,32 @@ public class TriggerManagerTest {
 
   @Before
   public void setup() throws TriggerException, TriggerManagerException {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("trigger.scan.interval", 300);
-    triggerManager = new TriggerManager(props, triggerLoader, executorManager);
-    triggerManager.registerCheckerType(ThresholdChecker.type,
+    this.triggerManager = new TriggerManager(props, triggerLoader, executorManager);
+    this.triggerManager.registerCheckerType(ThresholdChecker.type,
         ThresholdChecker.class);
-    triggerManager.registerActionType(DummyTriggerAction.type,
+    this.triggerManager.registerActionType(DummyTriggerAction.type,
         DummyTriggerAction.class);
-    triggerManager.start();
+    this.triggerManager.start();
   }
 
   @After
   public void tearDown() {
-    triggerManager.shutdown();
+    this.triggerManager.shutdown();
   }
 
   @Test
   public void neverExpireTriggerTest() throws TriggerManagerException {
 
-    Trigger t1 = createNeverExpireTrigger("triggerLoader", 10);
-    triggerManager.insertTrigger(t1);
+    final Trigger t1 = createNeverExpireTrigger("triggerLoader", 10);
+    this.triggerManager.insertTrigger(t1);
     t1.setResetOnTrigger(false);
-    ThresholdChecker triggerChecker =
+    final ThresholdChecker triggerChecker =
         (ThresholdChecker) t1.getTriggerCondition().getCheckers().values()
             .toArray()[0];
 
-    BasicTimeChecker expireChecker =
+    final BasicTimeChecker expireChecker =
         (BasicTimeChecker) t1.getExpireCondition().getCheckers().values()
             .toArray()[0];
 
@@ -97,11 +95,11 @@ public class TriggerManagerTest {
   @Test
   public void timeCheckerAndExpireTriggerTest() throws TriggerManagerException {
 
-    long curr = System.currentTimeMillis();
-    Trigger t1 = createPeriodAndEndCheckerTrigger(curr);
-    triggerManager.insertTrigger(t1);
+    final long curr = System.currentTimeMillis();
+    final Trigger t1 = createPeriodAndEndCheckerTrigger(curr);
+    this.triggerManager.insertTrigger(t1);
     t1.setResetOnTrigger(true);
-    BasicTimeChecker expireChecker =
+    final BasicTimeChecker expireChecker =
         (BasicTimeChecker) t1.getExpireCondition().getCheckers().values()
             .toArray()[0];
 
@@ -121,72 +119,31 @@ public class TriggerManagerTest {
     assertTrue(t1.getStatus() == TriggerStatus.PAUSED);
   }
 
-
-  public static class MockTriggerLoader implements TriggerLoader {
-    private Map<Integer, Trigger> triggers = new HashMap<>();
-    private int idIndex = 0;
-
-    @Override
-    public void addTrigger(Trigger t) throws TriggerLoaderException {
-      t.setTriggerId(idIndex++);
-      triggers.put(t.getTriggerId(), t);
-    }
-
-    @Override
-    public void removeTrigger(Trigger s) throws TriggerLoaderException {
-      triggers.remove(s.getTriggerId());
-
-    }
-
-    @Override
-    public void updateTrigger(Trigger t) throws TriggerLoaderException {
-      triggers.put(t.getTriggerId(), t);
-    }
-
-    @Override
-    public List<Trigger> loadTriggers() {
-      return new ArrayList<>(triggers.values());
-    }
-
-    @Override
-    public Trigger loadTrigger(int triggerId) throws TriggerLoaderException {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-    @Override
-    public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
-        throws TriggerLoaderException {
-      // TODO Auto-generated method stub
-      return null;
-    }
-  }
-
-  private void sleep (long millis) {
+  private void sleep (final long millis) {
     try {
       Thread.sleep(millis);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       e.printStackTrace();
     }
   }
 
-  private Trigger createNeverExpireTrigger(String source, int threshold) {
-    Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
-    Map<String, ConditionChecker> expireCheckers = new HashMap<>();
-    ConditionChecker triggerChecker = new ThresholdChecker(ThresholdChecker.type, threshold);
-    ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeCheck_1", 111L,
+  private Trigger createNeverExpireTrigger(final String source, final int threshold) {
+    final Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
+    final Map<String, ConditionChecker> expireCheckers = new HashMap<>();
+    final ConditionChecker triggerChecker = new ThresholdChecker(ThresholdChecker.type, threshold);
+    final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeCheck_1", 111L,
         DateTimeZone.UTC, 2536871155000L,false, false,
         null, null);
     triggerCheckers.put(triggerChecker.getId(), triggerChecker);
     expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
 
-    String triggerExpr = triggerChecker.getId() + ".eval()";
-    String expireExpr = endTimeChecker.getId() + ".eval()";
+    final String triggerExpr = triggerChecker.getId() + ".eval()";
+    final String expireExpr = endTimeChecker.getId() + ".eval()";
 
-    Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
-    Condition expireCond = new Condition(expireCheckers, expireExpr);
+    final Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+    final Condition expireCond = new Condition(expireCheckers, expireExpr);
 
-    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
+    final Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
         source,
         triggerCond,
         expireCond,
@@ -197,30 +154,30 @@ public class TriggerManagerTest {
     return fakeTrigger;
   }
 
-  private Trigger createPeriodAndEndCheckerTrigger(long currMillis) {
-    Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
-    Map<String, ConditionChecker> expireCheckers = new HashMap<>();
+  private Trigger createPeriodAndEndCheckerTrigger(final long currMillis) {
+    final Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
+    final Map<String, ConditionChecker> expireCheckers = new HashMap<>();
 
     // TODO kunkun-tang: 1 second is the minimum unit for {@link org.joda.time.ReadablePeriod}.
     // In future, we should use some smaller alternative.
-    ConditionChecker triggerChecker = new BasicTimeChecker("BasicTimeChecker_1",
+    final ConditionChecker triggerChecker = new BasicTimeChecker("BasicTimeChecker_1",
         currMillis, DateTimeZone.UTC, true, true,
         Utils.parsePeriodString("1s"), null);
 
     // End time is 3 seconds past now.
-    ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,
+    final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,
         DateTimeZone.UTC, currMillis + 3000L,false, false,
         null, null);
     triggerCheckers.put(triggerChecker.getId(), triggerChecker);
     expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
 
-    String triggerExpr = triggerChecker.getId() + ".eval()";
-    String expireExpr = endTimeChecker.getId() + ".eval()";
+    final String triggerExpr = triggerChecker.getId() + ".eval()";
+    final String expireExpr = endTimeChecker.getId() + ".eval()";
 
-    Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
-    Condition expireCond = new Condition(expireCheckers, expireExpr);
+    final Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+    final Condition expireCond = new Condition(expireCheckers, expireExpr);
 
-    Trigger timeTrigger = new Trigger.TriggerBuilder("azkaban",
+    final Trigger timeTrigger = new Trigger.TriggerBuilder("azkaban",
         "",
         triggerCond,
         expireCond,
@@ -232,9 +189,49 @@ public class TriggerManagerTest {
   }
 
   private List<TriggerAction> getTriggerActions() {
-    List<TriggerAction> actions = new ArrayList<>();
-    TriggerAction act = new DummyTriggerAction("");
+    final List<TriggerAction> actions = new ArrayList<>();
+    final TriggerAction act = new DummyTriggerAction("");
     actions.add(act);
     return actions;
+  }
+
+  public static class MockTriggerLoader implements TriggerLoader {
+    private final Map<Integer, Trigger> triggers = new HashMap<>();
+    private int idIndex = 0;
+
+    @Override
+    public void addTrigger(final Trigger t) throws TriggerLoaderException {
+      t.setTriggerId(this.idIndex++);
+      this.triggers.put(t.getTriggerId(), t);
+    }
+
+    @Override
+    public void removeTrigger(final Trigger s) throws TriggerLoaderException {
+      this.triggers.remove(s.getTriggerId());
+
+    }
+
+    @Override
+    public void updateTrigger(final Trigger t) throws TriggerLoaderException {
+      this.triggers.put(t.getTriggerId(), t);
+    }
+
+    @Override
+    public List<Trigger> loadTriggers() {
+      return new ArrayList<>(this.triggers.values());
+    }
+
+    @Override
+    public Trigger loadTrigger(final int triggerId) throws TriggerLoaderException {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public List<Trigger> getUpdatedTriggers(final long lastUpdateTime)
+        throws TriggerLoaderException {
+      // TODO Auto-generated method stub
+      return null;
+    }
   }
 }
