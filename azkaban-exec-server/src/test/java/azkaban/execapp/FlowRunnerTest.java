@@ -66,8 +66,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     when(this.loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
     System.out.println("Create temp dir");
     synchronized (this) {
-      // clear interrupted status
-      Thread.interrupted();
       this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
       if (this.workingDir.exists()) {
         FileUtils.deleteDirectory(this.workingDir);
