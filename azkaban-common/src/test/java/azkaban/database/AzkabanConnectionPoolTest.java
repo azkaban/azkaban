@@ -17,20 +17,68 @@
 package azkaban.database;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import org.apache.commons.dbutils.DbUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 
-public class AzkabanConnectionPoolTest{
+public class AzkabanConnectionPoolTest {
+
+  AzkabanDataSource h2DataSource;
+  Connection connection;
+
+  @Before
+  public void setup() throws Exception {
+    this.h2DataSource = new EmbeddedH2BasicDataSource();
+    this.connection = this.h2DataSource.getConnection();
+  }
+
+  @Test
+  public void testConnectionDefaultAutoCommit() throws Exception {
+    Assert.assertEquals(this.connection.getAutoCommit(), true);
+    DbUtils.closeQuietly(this.connection);
+  }
+
+  @Test
+  public void testConnectionDisableAutoCommit() throws Exception {
+    this.connection.setAutoCommit(false);
+    Assert.assertEquals(this.connection.getAutoCommit(), false);
+    DbUtils.closeQuietly(this.connection);
+  }
+
+  @Test
+  public void testGetNewConnectionBeforeClose() throws Exception {
+    this.connection.setAutoCommit(false);
+
+    /**
+     * {@link AzkabanDataSource#getConnection} fetches a new connection object other than one in the above, if we don't close.
+     */
+    Assert.assertEquals(this.h2DataSource.getConnection().getAutoCommit(), true);
+    DbUtils.closeQuietly(this.connection);
+  }
+
+  @Test
+  public void testGetNewConnectionAfterClose() throws Exception {
+    this.connection.setAutoCommit(false);
+
+    /**
+     * See {@link org.apache.commons.dbcp2.PoolableConnectionFactory#passivateObject}.
+     * If the connection disables auto commit, when we close it, connection will be reset enabling auto commit,
+     * and returned to connection pool.
+     */
+    DbUtils.closeQuietly(this.connection);
+    final Connection newConnection = this.h2DataSource.getConnection();
+    Assert.assertEquals(newConnection.getAutoCommit(), true);
+
+    DbUtils.closeQuietly(newConnection);
+  }
 
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 
     public EmbeddedH2BasicDataSource() {
       super();
-      String url = "jdbc:h2:mem:test";
+      final String url = "jdbc:h2:mem:test";
       setDriverClassName("org.h2.Driver");
       setUrl(url);
     }
@@ -44,55 +92,5 @@ public class AzkabanConnectionPoolTest{
     public String getDBType() {
       return "h2-in-memory";
     }
-  }
-
-  AzkabanDataSource h2DataSource;
-  Connection connection;
-
-  @Before
-  public void setup() throws Exception{
-    h2DataSource = new EmbeddedH2BasicDataSource();
-    connection = h2DataSource.getConnection();
-  }
-
-
-  @Test
-  public void testConnectionDefaultAutoCommit() throws Exception {
-    Assert.assertEquals(connection.getAutoCommit(), true);
-    DbUtils.closeQuietly(connection);
-  }
-
-  @Test
-  public void testConnectionDisableAutoCommit() throws Exception {
-    connection.setAutoCommit(false);
-    Assert.assertEquals(connection.getAutoCommit(), false);
-    DbUtils.closeQuietly(connection);
-  }
-
-  @Test
-  public void testGetNewConnectionBeforeClose() throws Exception {
-    connection.setAutoCommit(false);
-
-    /**
-     * {@link AzkabanDataSource#getConnection} fetches a new connection object other than one in the above, if we don't close.
-     */
-    Assert.assertEquals(h2DataSource.getConnection().getAutoCommit(), true);
-    DbUtils.closeQuietly(connection);
-  }
-
-  @Test
-  public void testGetNewConnectionAfterClose() throws Exception {
-    connection.setAutoCommit(false);
-
-    /**
-     * See {@link org.apache.commons.dbcp2.PoolableConnectionFactory#passivateObject}.
-     * If the connection disables auto commit, when we close it, connection will be reset enabling auto commit,
-     * and returned to connection pool.
-     */
-    DbUtils.closeQuietly(connection);
-    Connection newConnection = h2DataSource.getConnection();
-    Assert.assertEquals(newConnection.getAutoCommit(), true);
-
-    DbUtils.closeQuietly(newConnection);
   }
 }

@@ -19,9 +19,9 @@ public class VelocityTemplateTestUtil {
    * @param context the context
    * @return string
    */
-  public static String renderTemplate(String templateName, VelocityContext context) {
-    StringWriter stringWriter = new StringWriter();
-    VelocityEngine engine = new VelocityEngine();
+  public static String renderTemplate(final String templateName, final VelocityContext context) {
+    final StringWriter stringWriter = new StringWriter();
+    final VelocityEngine engine = new VelocityEngine();
     engine.init("src/test/resources/velocity.properties");
 
     engine.mergeTemplate(TEMPLATE_BASE_DIR + templateName + ".vm", "UTF-8", context, stringWriter);

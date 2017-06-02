@@ -18,7 +18,6 @@ package azkaban.execapp;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -26,7 +25,7 @@ public class ProjectVersionsTest {
 
   @Test
   public void testVersionOrdering() {
-    ArrayList<ProjectVersion> pversion = new ArrayList<ProjectVersion>();
+    final ArrayList<ProjectVersion> pversion = new ArrayList<>();
     pversion.add(new ProjectVersion(1, 2));
     pversion.add(new ProjectVersion(1, 3));
     pversion.add(new ProjectVersion(1, 1));
@@ -34,7 +33,7 @@ public class ProjectVersionsTest {
     Collections.sort(pversion);
 
     int i = 0;
-    for (ProjectVersion version : pversion) {
+    for (final ProjectVersion version : pversion) {
       Assert.assertTrue(i < version.getVersion());
       i = version.getVersion();
     }

@@ -4,30 +4,30 @@ import org.apache.http.impl.client.FutureRequestExecutionMetrics;
 
 public class JmxJobCallback implements JmxJobCallbackMBean {
 
-  private FutureRequestExecutionMetrics jobCallbackMetrics;
+  private final FutureRequestExecutionMetrics jobCallbackMetrics;
 
-  public JmxJobCallback(FutureRequestExecutionMetrics jobCallbackMetrics) {
+  public JmxJobCallback(final FutureRequestExecutionMetrics jobCallbackMetrics) {
     this.jobCallbackMetrics = jobCallbackMetrics;
   }
 
   @Override
   public long getNumJobCallbacks() {
-    return jobCallbackMetrics.getRequestCount();
+    return this.jobCallbackMetrics.getRequestCount();
   }
 
   @Override
   public long getNumSuccessfulJobCallbacks() {
-    return jobCallbackMetrics.getSuccessfulConnectionCount();
+    return this.jobCallbackMetrics.getSuccessfulConnectionCount();
   }
 
   @Override
   public long getNumFailedJobCallbacks() {
-    return jobCallbackMetrics.getFailedConnectionCount();
+    return this.jobCallbackMetrics.getFailedConnectionCount();
   }
 
   @Override
   public long getNumActiveJobCallbacks() {
-    return jobCallbackMetrics.getActiveConnectionCount();
+    return this.jobCallbackMetrics.getActiveConnectionCount();
   }
 
 }

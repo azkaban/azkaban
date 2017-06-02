@@ -17,8 +17,14 @@
 package azkaban.utils;
 
 import com.sun.mail.smtp.SMTPTransport;
-import org.apache.log4j.Logger;
-
+import java.io.File;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
@@ -30,18 +36,20 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import java.io.File;
-import java.io.InputStream;
-import java.net.SocketTimeoutException;
-import java.util.*;
+import org.apache.log4j.Logger;
 
 public class EmailMessage {
-  private final Logger logger = Logger.getLogger(EmailMessage.class);
 
-  private static String protocol = "smtp";
-  private List<String> _toAddress = new ArrayList<String>();
+  private static final String protocol = "smtp";
+  private static int _mailTimeout = 10000;
+  private static int _connectionTimeout = 10000;
+  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
+  private final Logger logger = Logger.getLogger(EmailMessage.class);
+  private final List<String> _toAddress = new ArrayList<>();
+  private final int _mailPort;
+  // GB
+  private final ArrayList<BodyPart> _attachments = new ArrayList<>();
   private String _mailHost;
-  private int _mailPort;
   private String _mailUser;
   private String _mailPassword;
   private String _subject;
@@ -52,33 +60,27 @@ public class EmailMessage {
   private boolean _usesAuth = true;
   private boolean _enableAttachementEmbedment = true;
   private StringBuffer _body = new StringBuffer();
-  private static int _mailTimeout = 10000;
-  private static int _connectionTimeout = 10000;
-  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
-                                                                          // GB
-
-  private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
   public EmailMessage() {
     this("localhost", AbstractMailer.DEFAULT_SMTP_PORT, "", "");
   }
 
-  public EmailMessage(String host, int port, String user, String password) {
-    _mailUser = user;
-    _mailHost = host;
-    _mailPort = port;
-    _mailPassword = password;
+  public EmailMessage(final String host, final int port, final String user, final String password) {
+    this._mailUser = user;
+    this._mailHost = host;
+    this._mailPort = port;
+    this._mailPassword = password;
   }
 
-  public static void setTimeout(int timeoutMillis) {
+  public static void setTimeout(final int timeoutMillis) {
     _mailTimeout = timeoutMillis;
   }
 
-  public static void setConnectionTimeout(int timeoutMillis) {
+  public static void setConnectionTimeout(final int timeoutMillis) {
     _connectionTimeout = timeoutMillis;
   }
 
-  public static void setTotalAttachmentMaxSize(long sizeInBytes) {
+  public static void setTotalAttachmentMaxSize(final long sizeInBytes) {
     if (sizeInBytes < 1) {
       throw new IllegalArgumentException(
           "attachment max size can't be 0 or negative");
@@ -86,170 +88,166 @@ public class EmailMessage {
     _totalAttachmentMaxSizeInByte = sizeInBytes;
   }
 
-  public EmailMessage setMailHost(String host) {
-    _mailHost = host;
+  public EmailMessage setMailHost(final String host) {
+    this._mailHost = host;
     return this;
   }
 
-  public EmailMessage setMailUser(String user) {
-    _mailUser = user;
+  public EmailMessage setMailUser(final String user) {
+    this._mailUser = user;
     return this;
   }
 
-  public EmailMessage enableAttachementEmbedment(boolean toEnable) {
-    _enableAttachementEmbedment = toEnable;
+  public EmailMessage enableAttachementEmbedment(final boolean toEnable) {
+    this._enableAttachementEmbedment = toEnable;
     return this;
   }
 
-  public EmailMessage setMailPassword(String password) {
-    _mailPassword = password;
+  public EmailMessage setMailPassword(final String password) {
+    this._mailPassword = password;
     return this;
   }
 
-  public EmailMessage addAllToAddress(Collection<? extends String> addresses) {
-    _toAddress.addAll(addresses);
+  public EmailMessage addAllToAddress(final Collection<? extends String> addresses) {
+    this._toAddress.addAll(addresses);
     return this;
   }
 
-  public EmailMessage addToAddress(String address) {
-    _toAddress.add(address);
+  public EmailMessage addToAddress(final String address) {
+    this._toAddress.add(address);
     return this;
   }
 
-  public EmailMessage setSubject(String subject) {
-    _subject = subject;
+  public EmailMessage setFromAddress(final String fromAddress) {
+    this._fromAddress = fromAddress;
     return this;
   }
 
-  public EmailMessage setFromAddress(String fromAddress) {
-    _fromAddress = fromAddress;
+  public EmailMessage setTLS(final String tls) {
+    this._tls = tls;
     return this;
   }
 
-  public EmailMessage setTLS(String tls) {
-    _tls = tls;
+  public EmailMessage setAuth(final boolean auth) {
+    this._usesAuth = auth;
     return this;
   }
 
-  public EmailMessage setAuth(boolean auth) {
-    _usesAuth = auth;
-    return this;
-  }
-
-  public EmailMessage addAttachment(File file) throws MessagingException {
+  public EmailMessage addAttachment(final File file) throws MessagingException {
     return addAttachment(file.getName(), file);
   }
 
-  public EmailMessage addAttachment(String attachmentName, File file)
+  public EmailMessage addAttachment(final String attachmentName, final File file)
       throws MessagingException {
 
-    _totalAttachmentSizeSoFar += file.length();
+    this._totalAttachmentSizeSoFar += file.length();
 
-    if (_totalAttachmentSizeSoFar > _totalAttachmentMaxSizeInByte) {
+    if (this._totalAttachmentSizeSoFar > _totalAttachmentMaxSizeInByte) {
       throw new MessageAttachmentExceededMaximumSizeException(
           "Adding attachment '" + attachmentName
               + "' will exceed the allowed maximum size of "
               + _totalAttachmentMaxSizeInByte);
     }
 
-    BodyPart attachmentPart = new MimeBodyPart();
-    DataSource fileDataSource = new FileDataSource(file);
+    final BodyPart attachmentPart = new MimeBodyPart();
+    final DataSource fileDataSource = new FileDataSource(file);
     attachmentPart.setDataHandler(new DataHandler(fileDataSource));
     attachmentPart.setFileName(attachmentName);
-    _attachments.add(attachmentPart);
+    this._attachments.add(attachmentPart);
     return this;
   }
 
-  public EmailMessage addAttachment(String attachmentName, InputStream stream)
+  public EmailMessage addAttachment(final String attachmentName, final InputStream stream)
       throws MessagingException {
-    BodyPart attachmentPart = new MimeBodyPart(stream);
+    final BodyPart attachmentPart = new MimeBodyPart(stream);
     attachmentPart.setFileName(attachmentName);
-    _attachments.add(attachmentPart);
+    this._attachments.add(attachmentPart);
     return this;
   }
 
   private void checkSettings() {
-    if (_mailHost == null) {
+    if (this._mailHost == null) {
       throw new RuntimeException("Mail host not set.");
     }
 
-    if (_fromAddress == null || _fromAddress.length() == 0) {
+    if (this._fromAddress == null || this._fromAddress.length() == 0) {
       throw new RuntimeException("From address not set.");
     }
 
-    if (_subject == null) {
+    if (this._subject == null) {
       throw new RuntimeException("Subject cannot be null");
     }
 
-    if (_toAddress.size() == 0) {
+    if (this._toAddress.size() == 0) {
       throw new RuntimeException("T");
     }
   }
 
   public void sendEmail() throws MessagingException {
     checkSettings();
-    Properties props = new Properties();
-    if (_usesAuth) {
+    final Properties props = new Properties();
+    if (this._usesAuth) {
       props.put("mail." + protocol + ".auth", "true");
-      props.put("mail.user", _mailUser);
-      props.put("mail.password", _mailPassword);
+      props.put("mail.user", this._mailUser);
+      props.put("mail.password", this._mailPassword);
     } else {
       props.put("mail." + protocol + ".auth", "false");
     }
-    props.put("mail." + protocol + ".host", _mailHost);
-    props.put("mail." + protocol + ".port", _mailPort);
+    props.put("mail." + protocol + ".host", this._mailHost);
+    props.put("mail." + protocol + ".port", this._mailPort);
     props.put("mail." + protocol + ".timeout", _mailTimeout);
     props.put("mail." + protocol + ".connectiontimeout", _connectionTimeout);
-    props.put("mail.smtp.starttls.enable", _tls);
-    props.put("mail.smtp.ssl.trust", _mailHost);
+    props.put("mail.smtp.starttls.enable", this._tls);
+    props.put("mail.smtp.ssl.trust", this._mailHost);
 
-    Session session = Session.getInstance(props, null);
-    Message message = new MimeMessage(session);
-    InternetAddress from = new InternetAddress(_fromAddress, false);
+    final Session session = Session.getInstance(props, null);
+    final Message message = new MimeMessage(session);
+    final InternetAddress from = new InternetAddress(this._fromAddress, false);
     message.setFrom(from);
-    for (String toAddr : _toAddress)
+    for (final String toAddr : this._toAddress) {
       message.addRecipient(Message.RecipientType.TO, new InternetAddress(
           toAddr, false));
-    message.setSubject(_subject);
+    }
+    message.setSubject(this._subject);
     message.setSentDate(new Date());
 
-    if (_attachments.size() > 0) {
-      MimeMultipart multipart =
+    if (this._attachments.size() > 0) {
+      final MimeMultipart multipart =
           this._enableAttachementEmbedment ? new MimeMultipart("related")
               : new MimeMultipart();
 
-      BodyPart messageBodyPart = new MimeBodyPart();
-      messageBodyPart.setContent(_body.toString(), _mimeType);
+      final BodyPart messageBodyPart = new MimeBodyPart();
+      messageBodyPart.setContent(this._body.toString(), this._mimeType);
       multipart.addBodyPart(messageBodyPart);
 
       // Add attachments
-      for (BodyPart part : _attachments) {
+      for (final BodyPart part : this._attachments) {
         multipart.addBodyPart(part);
       }
 
       message.setContent(multipart);
     } else {
-      message.setContent(_body.toString(), _mimeType);
+      message.setContent(this._body.toString(), this._mimeType);
     }
 
     // Transport transport = session.getTransport();
 
-    SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
+    final SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
 
     try {
       connectToSMTPServer(t);
-    } catch (MessagingException ste) {
+    } catch (final MessagingException ste) {
       if (ste.getCause() instanceof SocketTimeoutException) {
         try {
           // retry on SocketTimeoutException
           connectToSMTPServer(t);
-          logger.info("Email retry on SocketTimeoutException succeeded");
-        } catch (MessagingException me) {
-          logger.error("Email retry on SocketTimeoutException failed", me);
+          this.logger.info("Email retry on SocketTimeoutException succeeded");
+        } catch (final MessagingException me) {
+          this.logger.error("Email retry on SocketTimeoutException failed", me);
           throw me;
         }
       } else {
-        logger.error("Encountered issue while connecting to email server", ste);
+        this.logger.error("Encountered issue while connecting to email server", ste);
         throw ste;
       }
     }
@@ -257,44 +255,49 @@ public class EmailMessage {
     t.close();
   }
 
-  private void connectToSMTPServer(SMTPTransport t) throws MessagingException {
-    if (_usesAuth) {
-      t.connect(_mailHost, _mailPort, _mailUser, _mailPassword);
+  private void connectToSMTPServer(final SMTPTransport t) throws MessagingException {
+    if (this._usesAuth) {
+      t.connect(this._mailHost, this._mailPort, this._mailUser, this._mailPassword);
     } else {
       t.connect();
     }
   }
 
-  public void setBody(String body) {
-    setBody(body, _mimeType);
+  public void setBody(final String body, final String mimeType) {
+    this._body = new StringBuffer(body);
+    this._mimeType = mimeType;
   }
 
-  public void setBody(String body, String mimeType) {
-    _body = new StringBuffer(body);
-    _mimeType = mimeType;
-  }
-
-  public EmailMessage setMimeType(String mimeType) {
-    _mimeType = mimeType;
+  public EmailMessage setMimeType(final String mimeType) {
+    this._mimeType = mimeType;
     return this;
   }
 
-  public EmailMessage println(Object str) {
-    _body.append(str);
+  public EmailMessage println(final Object str) {
+    this._body.append(str);
 
     return this;
   }
 
   public String getBody() {
-    return _body.toString();
+    return this._body.toString();
+  }
+
+  public void setBody(final String body) {
+    setBody(body, this._mimeType);
   }
 
   public String getSubject() {
-    return _subject;
+    return this._subject;
   }
 
-  public int getMailPort(){
-    return _mailPort;
+  public EmailMessage setSubject(final String subject) {
+    this._subject = subject;
+    return this;
+  }
+
+  public int getMailPort() {
+    return this._mailPort;
   }
 
 }

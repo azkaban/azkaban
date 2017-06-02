@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -40,6 +39,7 @@ import org.apache.log4j.Logger;
  * future.
  */
 public class FileIOUtils {
+
   private final static Logger logger = Logger.getLogger(FileIOUtils.class);
 
   /**
@@ -48,7 +48,7 @@ public class FileIOUtils {
    * @param dir directory file object
    * @return true if it is writable. false, otherwise
    */
-  public static boolean isDirWritable(File dir) {
+  public static boolean isDirWritable(final File dir) {
     File testFile = null;
     try {
       testFile = new File(dir, "_tmp");
@@ -57,7 +57,7 @@ public class FileIOUtils {
        * there is a safer way for this check.
        */
       testFile.createNewFile();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return false;
     } finally {
       if (testFile != null) {
@@ -67,39 +67,14 @@ public class FileIOUtils {
     return true;
   }
 
-  public static class PrefixSuffixFileFilter implements FileFilter {
-    private String prefix;
-    private String suffix;
-
-    public PrefixSuffixFileFilter(String prefix, String suffix) {
-      this.prefix = prefix;
-      this.suffix = suffix;
-    }
-
-    @Override
-    public boolean accept(File pathname) {
-      if (!pathname.isFile() || pathname.isHidden()) {
-        return false;
-      }
-
-      String name = pathname.getName();
-      int length = name.length();
-      if (suffix.length() > length || prefix.length() > length) {
-        return false;
-      }
-
-      return name.startsWith(prefix) && name.endsWith(suffix);
-    }
-  }
-
-  public static String getSourcePathFromClass(Class<?> containedClass) {
+  public static String getSourcePathFromClass(final Class<?> containedClass) {
     File file =
         new File(containedClass.getProtectionDomain().getCodeSource()
             .getLocation().getPath());
 
     if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      String name = containedClass.getName();
-      StringTokenizer tokenizer = new StringTokenizer(name, ".");
+      final String name = containedClass.getName();
+      final StringTokenizer tokenizer = new StringTokenizer(name, ".");
       while (tokenizer.hasMoreTokens()) {
         tokenizer.nextElement();
         file = file.getParentFile();
@@ -115,7 +90,7 @@ public class FileIOUtils {
    * Run a unix command that will hard link files and recurse into directories.
    */
 
-  public static void createDeepHardlink(File sourceDir, File destDir)
+  public static void createDeepHardlink(final File sourceDir, final File destDir)
       throws IOException {
     if (!sourceDir.exists()) {
       throw new IOException("Source directory " + sourceDir.getPath()
@@ -127,12 +102,12 @@ public class FileIOUtils {
       throw new IOException("Source or Destination is not a directory.");
     }
 
-    Set<String> paths = new HashSet<String>();
+    final Set<String> paths = new HashSet<>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
-    StringBuffer buffer = new StringBuffer();
+    final StringBuffer buffer = new StringBuffer();
     for (String path : paths) {
-      File sourceLink = new File(sourceDir, path);
+      final File sourceLink = new File(sourceDir, path);
       path = "." + path;
 
       buffer.append("ln ").append(sourceLink.getAbsolutePath()).append("/*")
@@ -142,16 +117,16 @@ public class FileIOUtils {
     runShellCommand(buffer.toString(), destDir);
   }
 
-  private static void runShellCommand(String command, File workingDir)
+  private static void runShellCommand(final String command, final File workingDir)
       throws IOException {
-    ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
+    final ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
     builder.directory(workingDir);
 
     // XXX what about stopping threads ??
-    Process process = builder.start();
+    final Process process = builder.start();
     try {
-      NullLogger errorLogger = new NullLogger(process.getErrorStream());
-      NullLogger inputLogger = new NullLogger(process.getInputStream());
+      final NullLogger errorLogger = new NullLogger(process.getErrorStream());
+      final NullLogger inputLogger = new NullLogger(process.getInputStream());
       errorLogger.start();
       inputLogger.start();
 
@@ -166,7 +141,7 @@ public class FileIOUtils {
 
           throw new IOException(errorMessage);
         }
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         logger.error(e);
       }
     } finally {
@@ -177,69 +152,35 @@ public class FileIOUtils {
 
   }
 
-  private static void createDirsFindFiles(File baseDir, File sourceDir,
-      File destDir, Set<String> paths) {
-    File[] srcList = sourceDir.listFiles();
-    String path = getRelativePath(baseDir, sourceDir);
+  private static void createDirsFindFiles(final File baseDir, final File sourceDir,
+      final File destDir, final Set<String> paths) {
+    final File[] srcList = sourceDir.listFiles();
+    final String path = getRelativePath(baseDir, sourceDir);
     paths.add(path);
 
-    for (File file : srcList) {
+    for (final File file : srcList) {
       if (file.isDirectory()) {
-        File newDestDir = new File(destDir, file.getName());
+        final File newDestDir = new File(destDir, file.getName());
         newDestDir.mkdirs();
         createDirsFindFiles(baseDir, file, newDestDir, paths);
       }
     }
   }
 
-  private static String getRelativePath(File basePath, File sourceDir) {
+  private static String getRelativePath(final File basePath, final File sourceDir) {
     return sourceDir.getPath().substring(basePath.getPath().length());
   }
 
-  private static class NullLogger extends Thread {
-    private final BufferedReader inputReader;
-    private CircularBuffer<String> buffer = new CircularBuffer<String>(5);
+  public static Pair<Integer, Integer> readUtf8File(final File file, final int offset,
+      final int length, final OutputStream stream) throws IOException {
+    final byte[] buffer = new byte[length];
 
-    public NullLogger(InputStream stream) {
-      inputReader = new BufferedReader(new InputStreamReader(stream));
-    }
+    final FileInputStream fileStream = new FileInputStream(file);
 
-    @Override
-    public void run() {
-      try {
-        while (!Thread.currentThread().isInterrupted()) {
-          String line = inputReader.readLine();
-          if (line == null) {
-            return;
-          }
-          buffer.append(line);
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    public String getLastMessages() {
-      StringBuffer messageBuffer = new StringBuffer();
-      for (String message : buffer) {
-        messageBuffer.append(message);
-        messageBuffer.append("\n");
-      }
-
-      return messageBuffer.toString();
-    }
-  }
-
-  public static Pair<Integer, Integer> readUtf8File(File file, int offset,
-      int length, OutputStream stream) throws IOException {
-    byte[] buffer = new byte[length];
-
-    FileInputStream fileStream = new FileInputStream(file);
-
-    long skipped = fileStream.skip(offset);
+    final long skipped = fileStream.skip(offset);
     if (skipped < offset) {
       fileStream.close();
-      return new Pair<Integer, Integer>(0, 0);
+      return new Pair<>(0, 0);
     }
 
     BufferedInputStream inputStream = null;
@@ -250,19 +191,19 @@ public class FileIOUtils {
       IOUtils.closeQuietly(inputStream);
     }
 
-    Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, length);
+    final Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, length);
     stream.write(buffer, utf8Range.getFirst(), utf8Range.getSecond());
 
-    return new Pair<Integer, Integer>(offset + utf8Range.getFirst(),
+    return new Pair<>(offset + utf8Range.getFirst(),
         utf8Range.getSecond());
   }
 
-  public static LogData readUtf8File(File file, int fileOffset, int length)
+  public static LogData readUtf8File(final File file, final int fileOffset, final int length)
       throws IOException {
-    byte[] buffer = new byte[length];
-    FileInputStream fileStream = new FileInputStream(file);
+    final byte[] buffer = new byte[length];
+    final FileInputStream fileStream = new FileInputStream(file);
 
-    long skipped = fileStream.skip(fileOffset);
+    final long skipped = fileStream.skip(fileOffset);
     if (skipped < fileOffset) {
       fileStream.close();
       return new LogData(fileOffset, 0, "");
@@ -280,20 +221,20 @@ public class FileIOUtils {
     if (read <= 0) {
       return new LogData(fileOffset, 0, "");
     }
-    Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
-    String outputString =
+    final Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
+    final String outputString =
         new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
 
     return new LogData(fileOffset + utf8Range.getFirst(),
         utf8Range.getSecond(), outputString);
   }
 
-  public static JobMetaData readUtf8MetaDataFile(File file, int fileOffset,
-      int length) throws IOException {
-    byte[] buffer = new byte[length];
-    FileInputStream fileStream = new FileInputStream(file);
+  public static JobMetaData readUtf8MetaDataFile(final File file, final int fileOffset,
+      final int length) throws IOException {
+    final byte[] buffer = new byte[length];
+    final FileInputStream fileStream = new FileInputStream(file);
 
-    long skipped = fileStream.skip(fileOffset);
+    final long skipped = fileStream.skip(fileOffset);
     if (skipped < fileOffset) {
       fileStream.close();
       return new JobMetaData(fileOffset, 0, "");
@@ -311,8 +252,8 @@ public class FileIOUtils {
     if (read <= 0) {
       return new JobMetaData(fileOffset, 0, "");
     }
-    Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
-    String outputString =
+    final Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
+    final String outputString =
         new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
 
     return new JobMetaData(fileOffset + utf8Range.getFirst(),
@@ -322,18 +263,18 @@ public class FileIOUtils {
   /**
    * Returns first and length.
    */
-  public static Pair<Integer, Integer> getUtf8Range(byte[] buffer, int offset,
-      int length) {
-    int start = getUtf8ByteStart(buffer, offset);
-    int end = getUtf8ByteEnd(buffer, offset + length - 1);
+  public static Pair<Integer, Integer> getUtf8Range(final byte[] buffer, final int offset,
+      final int length) {
+    final int start = getUtf8ByteStart(buffer, offset);
+    final int end = getUtf8ByteEnd(buffer, offset + length - 1);
 
-    return new Pair<Integer, Integer>(start, end - start + 1);
+    return new Pair<>(start, end - start + 1);
   }
 
-  private static int getUtf8ByteStart(byte[] buffer, int offset) {
+  private static int getUtf8ByteStart(final byte[] buffer, final int offset) {
     // If it's a proper utf-8, we should find it within the next 6 bytes.
     for (int i = offset; i < offset + 6 && i < buffer.length; i++) {
-      byte b = buffer[i];
+      final byte b = buffer[i];
       // check the mask 0x80 is 0, which is a proper ascii
       if ((0x80 & b) == 0) {
         return i;
@@ -346,10 +287,10 @@ public class FileIOUtils {
     return offset;
   }
 
-  private static int getUtf8ByteEnd(byte[] buffer, int offset) {
+  private static int getUtf8ByteEnd(final byte[] buffer, final int offset) {
     // If it's a proper utf-8, we should find it within the previous 12 bytes.
     for (int i = offset; i > offset - 11 && i >= 0; i--) {
-      byte b = buffer[i];
+      final byte b = buffer[i];
       // check the mask 0x80 is 0, which is a proper ascii. Just return
       if ((0x80 & b) == 0) {
         return i;
@@ -387,96 +328,159 @@ public class FileIOUtils {
     return offset;
   }
 
-  public static class LogData {
-    private int offset;
-    private int length;
-    private String data;
+  public static class PrefixSuffixFileFilter implements FileFilter {
 
-    public LogData(int offset, int length, String data) {
+    private final String prefix;
+    private final String suffix;
+
+    public PrefixSuffixFileFilter(final String prefix, final String suffix) {
+      this.prefix = prefix;
+      this.suffix = suffix;
+    }
+
+    @Override
+    public boolean accept(final File pathname) {
+      if (!pathname.isFile() || pathname.isHidden()) {
+        return false;
+      }
+
+      final String name = pathname.getName();
+      final int length = name.length();
+      if (this.suffix.length() > length || this.prefix.length() > length) {
+        return false;
+      }
+
+      return name.startsWith(this.prefix) && name.endsWith(this.suffix);
+    }
+  }
+
+  private static class NullLogger extends Thread {
+
+    private final BufferedReader inputReader;
+    private final CircularBuffer<String> buffer = new CircularBuffer<>(5);
+
+    public NullLogger(final InputStream stream) {
+      this.inputReader = new BufferedReader(new InputStreamReader(stream));
+    }
+
+    @Override
+    public void run() {
+      try {
+        while (!Thread.currentThread().isInterrupted()) {
+          final String line = this.inputReader.readLine();
+          if (line == null) {
+            return;
+          }
+          this.buffer.append(line);
+        }
+      } catch (final IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    public String getLastMessages() {
+      final StringBuffer messageBuffer = new StringBuffer();
+      for (final String message : this.buffer) {
+        messageBuffer.append(message);
+        messageBuffer.append("\n");
+      }
+
+      return messageBuffer.toString();
+    }
+  }
+
+  public static class LogData {
+
+    private final int offset;
+    private final int length;
+    private final String data;
+
+    public LogData(final int offset, final int length, final String data) {
       this.offset = offset;
       this.length = length;
       this.data = data;
     }
 
-    public int getOffset() {
-      return offset;
-    }
-
-    public int getLength() {
-      return length;
-    }
-
-    public String getData() {
-      return data;
-    }
-
-    public Map<String, Object> toObject() {
-      HashMap<String, Object> map = new HashMap<String, Object>();
-      map.put("offset", offset);
-      map.put("length", length);
-      map.put("data", data);
-
-      return map;
-    }
-
-    public static LogData createLogDataFromObject(Map<String, Object> map) {
-      int offset = (Integer) map.get("offset");
-      int length = (Integer) map.get("length");
-      String data = (String) map.get("data");
+    public static LogData createLogDataFromObject(final Map<String, Object> map) {
+      final int offset = (Integer) map.get("offset");
+      final int length = (Integer) map.get("length");
+      final String data = (String) map.get("data");
 
       return new LogData(offset, length, data);
     }
 
+    public int getOffset() {
+      return this.offset;
+    }
+
+    public int getLength() {
+      return this.length;
+    }
+
+    public String getData() {
+      return this.data;
+    }
+
+    public Map<String, Object> toObject() {
+      final HashMap<String, Object> map = new HashMap<>();
+      map.put("offset", this.offset);
+      map.put("length", this.length);
+      map.put("data", this.data);
+
+      return map;
+    }
+
     @Override
     public String toString() {
-      return "[offset=" + offset + ",length=" + length + ",data=" + data + "]";
+      return "[offset=" + this.offset + ",length=" + this.length + ",data=" + this.data + "]";
     }
   }
 
   public static class JobMetaData {
-    private int offset;
-    private int length;
-    private String data;
 
-    public JobMetaData(int offset, int length, String data) {
+    private final int offset;
+    private final int length;
+    private final String data;
+
+    public JobMetaData(final int offset, final int length, final String data) {
       this.offset = offset;
       this.length = length;
       this.data = data;
     }
 
-    public int getOffset() {
-      return offset;
-    }
-
-    public int getLength() {
-      return length;
-    }
-
-    public String getData() {
-      return data;
-    }
-
-    public Map<String, Object> toObject() {
-      HashMap<String, Object> map = new HashMap<String, Object>();
-      map.put("offset", offset);
-      map.put("length", length);
-      map.put("data", data);
-
-      return map;
-    }
-
     public static JobMetaData createJobMetaDataFromObject(
-        Map<String, Object> map) {
-      int offset = (Integer) map.get("offset");
-      int length = (Integer) map.get("length");
-      String data = (String) map.get("data");
+        final Map<String, Object> map) {
+      final int offset = (Integer) map.get("offset");
+      final int length = (Integer) map.get("length");
+      final String data = (String) map.get("data");
 
       return new JobMetaData(offset, length, data);
     }
 
+    public int getOffset() {
+      return this.offset;
+    }
+
+    public int getLength() {
+      return this.length;
+    }
+
+    public String getData() {
+      return this.data;
+    }
+
+    public Map<String, Object> toObject() {
+      final HashMap<String, Object> map = new HashMap<>();
+      map.put("offset", this.offset);
+      map.put("length", this.length);
+      map.put("data", this.data);
+
+      return map;
+    }
+
     @Override
     public String toString() {
-      return "[offset=" + offset + ",length=" + length + ",data=" + data + "]";
+      return "[offset=" + this.offset + ",length=" + this.length + ",data=" + this.data + "]";
     }
   }
 }

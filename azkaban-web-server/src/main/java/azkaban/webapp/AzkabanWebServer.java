@@ -286,13 +286,10 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    SlaChecker.setExecutorManager(executorManager);
     ExecuteFlowAction.setExecutorManager(executorManager);
     ExecuteFlowAction.setProjectManager(projectManager);
     ExecuteFlowAction.setTriggerManager(triggerManager);
     KillExecutionAction.setExecutorManager(executorManager);
-    SlaAlertAction.setExecutorManager(executorManager);
-    SlaAlertAction.setExecutorManager(executorManager);
     CreateTriggerAction.setTriggerManager(triggerManager);
     ExecutionChecker.setExecutorManager(executorManager);
 

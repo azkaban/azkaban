@@ -17,18 +17,20 @@
 
 package azkaban.spi;
 
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
 
-import static java.util.Objects.*;
+import java.util.Objects;
 
 
 public class StorageMetadata {
+
   private final int projectId;
   private final int version;
   private final String uploader;
-  private byte[] hash;
+  private final byte[] hash;
 
-  public StorageMetadata(int projectId, int version, String uploader, byte[] hash) {
+  public StorageMetadata(final int projectId, final int version, final String uploader,
+      final byte[] hash) {
     this.projectId = projectId;
     this.version = version;
     this.uploader = requireNonNull(uploader);
@@ -37,41 +39,43 @@ public class StorageMetadata {
 
   @Override
   public String toString() {
-    return "StorageMetadata{" + "projectId='" + projectId + '\'' + ", version='" + version + '\'' + '}';
+    return "StorageMetadata{" + "projectId='" + this.projectId + '\'' + ", version='" + this.version
+        + '\''
+        + '}';
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
   public int getVersion() {
-    return version;
+    return this.version;
   }
 
   public String getUploader() {
-    return uploader;
+    return this.uploader;
   }
 
   public byte[] getHash() {
-    return hash;
+    return this.hash;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StorageMetadata that = (StorageMetadata) o;
-    return Objects.equals(projectId, that.projectId) &&
-        Objects.equals(version, that.version) &&
-        Objects.equals(uploader, that.uploader);
+    final StorageMetadata that = (StorageMetadata) o;
+    return Objects.equals(this.projectId, that.projectId) &&
+        Objects.equals(this.version, that.version) &&
+        Objects.equals(this.uploader, that.uploader);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(projectId, version, uploader);
+    return Objects.hash(this.projectId, this.version, this.uploader);
   }
 }

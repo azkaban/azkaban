@@ -17,6 +17,10 @@
 
 package azkaban.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
@@ -35,15 +39,13 @@ import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
-
 
 /**
- * StorageManager manages and coordinates all interactions with the Storage layer. This also includes bookkeeping
- * like updating DB with the new versionm, etc
+ * StorageManager manages and coordinates all interactions with the Storage layer. This also
+ * includes bookkeeping like updating DB with the new versionm, etc
  */
 public class StorageManager {
+
   private static final Logger log = Logger.getLogger(StorageManager.class);
 
   private final Storage storage;
@@ -51,7 +53,8 @@ public class StorageManager {
   private final File tempDir;
 
   @Inject
-  public StorageManager(Props props, Storage storage, ProjectLoader projectLoader) {
+  public StorageManager(final Props props, final Storage storage,
+      final ProjectLoader projectLoader) {
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
     this.storage = requireNonNull(storage);
     this.projectLoader = requireNonNull(projectLoader);
@@ -60,10 +63,10 @@ public class StorageManager {
   }
 
   private void prepareTempDir() {
-    if (!tempDir.exists()) {
-      tempDir.mkdirs();
+    if (!this.tempDir.exists()) {
+      this.tempDir.mkdirs();
     }
-    checkArgument(tempDir.isDirectory());
+    checkArgument(this.tempDir.isDirectory());
   }
 
   /**
@@ -71,18 +74,18 @@ public class StorageManager {
    *
    * TODO clean up interface
    *
-   * @param project           project
-   * @param version           The new version to be uploaded
-   * @param localFile         local file
-   * @param uploader          the user who uploaded
+   * @param project project
+   * @param version The new version to be uploaded
+   * @param localFile local file
+   * @param uploader the user who uploaded
    */
   public void uploadProject(
-      Project project,
-      int version,
-      File localFile,
-      User uploader) {
+      final Project project,
+      final int version,
+      final File localFile,
+      final User uploader) {
     byte[] md5 = null;
-    if (!(storage instanceof DatabaseStorage)) {
+    if (!(this.storage instanceof DatabaseStorage)) {
       md5 = computeHash(localFile);
     }
     final StorageMetadata metadata = new StorageMetadata(
@@ -94,12 +97,12 @@ public class StorageManager {
         metadata, localFile.getName(), localFile.length()));
 
     /* upload to storage */
-    final String resourceId = storage.put(metadata, localFile);
+    final String resourceId = this.storage.put(metadata, localFile);
 
     /* Add metadata to db */
     // TODO spyne: remove hack. Database storage should go through the same flow
-    if (!(storage instanceof DatabaseStorage)) {
-      projectLoader.addProjectVersion(
+    if (!(this.storage instanceof DatabaseStorage)) {
+      this.projectLoader.addProjectVersion(
           project.getId(),
           version,
           localFile,
@@ -112,11 +115,11 @@ public class StorageManager {
     }
   }
 
-  private byte[] computeHash(File localFile) {
+  private byte[] computeHash(final File localFile) {
     final byte[] md5;
     try {
       md5 = Md5Hasher.md5Hash(localFile);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new StorageException(e);
     }
     return md5;
@@ -130,19 +133,21 @@ public class StorageManager {
    * @return Handler object containing hooks to fetched project file
    */
   public ProjectFileHandler getProjectFile(final int projectId, final int version) {
-    log.info(String.format("Fetching project file. project ID: %d version: %d", projectId, version));
+    log.info(
+        String.format("Fetching project file. project ID: %d version: %d", projectId, version));
     // TODO spyne: remove huge hack ! There should not be any special handling for Database Storage.
-    if (storage instanceof DatabaseStorage) {
-      return ((DatabaseStorage) storage).get(projectId, version);
+    if (this.storage instanceof DatabaseStorage) {
+      return ((DatabaseStorage) this.storage).get(projectId, version);
     }
 
     /* Fetch meta data from db */
-    final ProjectFileHandler pfh = projectLoader.fetchProjectMetaData(projectId, version);
+    final ProjectFileHandler pfh = this.projectLoader.fetchProjectMetaData(projectId, version);
 
     /* Fetch project file from storage and copy to local file */
-    final String resourceId = requireNonNull(pfh.getResourceId(), String.format("URI is null. project ID: %d version: %d",
-        pfh.getProjectId(), pfh.getVersion()));
-    try (InputStream is = storage.get(resourceId)){
+    final String resourceId = requireNonNull(pfh.getResourceId(),
+        String.format("URI is null. project ID: %d version: %d",
+            pfh.getProjectId(), pfh.getVersion()));
+    try (InputStream is = this.storage.get(resourceId)) {
       final File file = createTempOutputFile(pfh);
 
       /* Copy from storage to output stream */
@@ -157,12 +162,12 @@ public class StorageManager {
       pfh.setLocalFile(file);
 
       return pfh;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new StorageException(e);
     }
   }
 
-  private void validateChecksum(File file, ProjectFileHandler pfh) throws IOException {
+  private void validateChecksum(final File file, final ProjectFileHandler pfh) throws IOException {
     final byte[] hash = Md5Hasher.md5Hash(file);
     checkState(Arrays.equals(pfh.getMd5Hash(), hash),
         String.format("MD5 HASH Failed. project ID: %d version: %d Expected: %s Actual: %s",
@@ -170,9 +175,10 @@ public class StorageManager {
     );
   }
 
-  private File createTempOutputFile(ProjectFileHandler projectFileHandler) throws IOException {
+  private File createTempOutputFile(final ProjectFileHandler projectFileHandler)
+      throws IOException {
     return File.createTempFile(
         projectFileHandler.getFileName(),
-        String.valueOf(projectFileHandler.getVersion()), tempDir);
+        String.valueOf(projectFileHandler.getVersion()), this.tempDir);
   }
 }

@@ -16,19 +16,6 @@
 
 package azkaban.execapp;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.executor.ExecutableFlow;
@@ -44,11 +31,22 @@ import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
-import azkaban.project.MockProjectLoader;
 import azkaban.utils.Props;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Flows in this test:
@@ -68,17 +66,19 @@ import azkaban.utils.Props;
  *
  * jobd=innerFlow2
  * innerFlow2->innerJobA
+ *
  * @author rpark
  */
 public class FlowRunnerPipelineTest {
+
+  private static int id = 101;
+  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
-  private Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private Project project;
   private Map<String, Flow> flowMap;
-  private static int id = 101;
 
   public FlowRunnerPipelineTest() {
   }
@@ -86,23 +86,23 @@ public class FlowRunnerPipelineTest {
   @Before
   public void setUp() throws Exception {
     System.out.println("Create temp dir");
-    workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
-    if (workingDir.exists()) {
-      FileUtils.deleteDirectory(workingDir);
+    this.workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
+    if (this.workingDir.exists()) {
+      FileUtils.deleteDirectory(this.workingDir);
     }
-    workingDir.mkdirs();
-    jobtypeManager =
+    this.workingDir.mkdirs();
+    this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
-    JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
+    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
 
     pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    fakeProjectLoader = new MockProjectLoader(workingDir);
-    fakeExecutorLoader = new MockExecutorLoader();
-    project = new Project(1, "testProject");
+    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
+    this.fakeExecutorLoader = new MockExecutorLoader();
+    this.project = new Project(1, "testProject");
 
-    File dir = new File("unit/executions/embedded2");
-    prepareProject(project, dir);
+    final File dir = new File("unit/executions/embedded2");
+    prepareProject(this.project, dir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -110,47 +110,48 @@ public class FlowRunnerPipelineTest {
   @After
   public void tearDown() throws IOException {
     System.out.println("Teardown temp dir");
-    if (workingDir != null) {
-      FileUtils.deleteDirectory(workingDir);
-      workingDir = null;
+    if (this.workingDir != null) {
+      FileUtils.deleteDirectory(this.workingDir);
+      this.workingDir = null;
     }
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicPipelineLevel1Run() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner previousRunner =
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner previousRunner =
         createFlowRunner(eventCollector, "jobf", "prev");
 
-    ExecutionOptions options = new ExecutionOptions();
+    final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(1);
-    FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    FlowRunner pipelineRunner =
+    final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
+    final FlowRunner pipelineRunner =
         createFlowRunner(eventCollector, "jobf", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
-    Map<String, Status> previousExpectedStateMap =
-        new HashMap<String, Status>();
-    Map<String, Status> pipelineExpectedStateMap =
-        new HashMap<String, Status>();
-    Map<String, ExecutableNode> previousNodeMap =
-        new HashMap<String, ExecutableNode>();
-    Map<String, ExecutableNode> pipelineNodeMap =
-        new HashMap<String, ExecutableNode>();
+    final Map<String, Status> previousExpectedStateMap =
+        new HashMap<>();
+    final Map<String, Status> pipelineExpectedStateMap =
+        new HashMap<>();
+    final Map<String, ExecutableNode> previousNodeMap =
+        new HashMap<>();
+    final Map<String, ExecutableNode> pipelineNodeMap =
+        new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
-    ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+    final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
+    final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
     createExpectedStateMap(previousFlow, previousExpectedStateMap,
         previousNodeMap);
     createExpectedStateMap(pipelineFlow, pipelineExpectedStateMap,
         pipelineNodeMap);
 
-    Thread thread1 = runFlowRunnerInThread(previousRunner);
+    final Thread thread1 = runFlowRunnerInThread(previousRunner);
     pause(250);
-    Thread thread2 = runFlowRunnerInThread(pipelineRunner);
+    final Thread thread2 = runFlowRunnerInThread(pipelineRunner);
     pause(500);
 
     previousExpectedStateMap.put("joba", Status.RUNNING);
@@ -289,41 +290,42 @@ public class FlowRunnerPipelineTest {
     Assert.assertFalse(thread2.isAlive());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicPipelineLevel2Run() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner previousRunner =
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner previousRunner =
         createFlowRunner(eventCollector, "pipelineFlow", "prev");
 
-    ExecutionOptions options = new ExecutionOptions();
+    final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(2);
-    FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    FlowRunner pipelineRunner =
+    final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
+    final FlowRunner pipelineRunner =
         createFlowRunner(eventCollector, "pipelineFlow", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
-    Map<String, Status> previousExpectedStateMap =
-        new HashMap<String, Status>();
-    Map<String, Status> pipelineExpectedStateMap =
-        new HashMap<String, Status>();
-    Map<String, ExecutableNode> previousNodeMap =
-        new HashMap<String, ExecutableNode>();
-    Map<String, ExecutableNode> pipelineNodeMap =
-        new HashMap<String, ExecutableNode>();
+    final Map<String, Status> previousExpectedStateMap =
+        new HashMap<>();
+    final Map<String, Status> pipelineExpectedStateMap =
+        new HashMap<>();
+    final Map<String, ExecutableNode> previousNodeMap =
+        new HashMap<>();
+    final Map<String, ExecutableNode> pipelineNodeMap =
+        new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
-    ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+    final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
+    final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
     createExpectedStateMap(previousFlow, previousExpectedStateMap,
         previousNodeMap);
     createExpectedStateMap(pipelineFlow, pipelineExpectedStateMap,
         pipelineNodeMap);
 
-    Thread thread1 = runFlowRunnerInThread(previousRunner);
+    final Thread thread1 = runFlowRunnerInThread(previousRunner);
     pause(250);
-    Thread thread2 = runFlowRunnerInThread(pipelineRunner);
+    final Thread thread2 = runFlowRunnerInThread(pipelineRunner);
     pause(250);
 
     previousExpectedStateMap.put("pipeline1", Status.RUNNING);
@@ -482,41 +484,42 @@ public class FlowRunnerPipelineTest {
     Assert.assertFalse(thread2.isAlive());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicPipelineLevel2Run2() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner previousRunner =
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner previousRunner =
         createFlowRunner(eventCollector, "pipeline1_2", "prev");
 
-    ExecutionOptions options = new ExecutionOptions();
+    final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(2);
-    FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    FlowRunner pipelineRunner =
+    final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
+    final FlowRunner pipelineRunner =
         createFlowRunner(eventCollector, "pipeline1_2", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
-    Map<String, Status> previousExpectedStateMap =
-        new HashMap<String, Status>();
-    Map<String, Status> pipelineExpectedStateMap =
-        new HashMap<String, Status>();
-    Map<String, ExecutableNode> previousNodeMap =
-        new HashMap<String, ExecutableNode>();
-    Map<String, ExecutableNode> pipelineNodeMap =
-        new HashMap<String, ExecutableNode>();
+    final Map<String, Status> previousExpectedStateMap =
+        new HashMap<>();
+    final Map<String, Status> pipelineExpectedStateMap =
+        new HashMap<>();
+    final Map<String, ExecutableNode> previousNodeMap =
+        new HashMap<>();
+    final Map<String, ExecutableNode> pipelineNodeMap =
+        new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
-    ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+    final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
+    final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
     createExpectedStateMap(previousFlow, previousExpectedStateMap,
         previousNodeMap);
     createExpectedStateMap(pipelineFlow, pipelineExpectedStateMap,
         pipelineNodeMap);
 
-    Thread thread1 = runFlowRunnerInThread(previousRunner);
+    final Thread thread1 = runFlowRunnerInThread(previousRunner);
     pause(250);
-    Thread thread2 = runFlowRunnerInThread(pipelineRunner);
+    final Thread thread2 = runFlowRunnerInThread(pipelineRunner);
     pause(250);
 
     previousExpectedStateMap.put("pipeline1_1", Status.RUNNING);
@@ -603,22 +606,22 @@ public class FlowRunnerPipelineTest {
     Assert.assertFalse(thread2.isAlive());
   }
 
-  private Thread runFlowRunnerInThread(FlowRunner runner) {
-    Thread thread = new Thread(runner);
+  private Thread runFlowRunnerInThread(final FlowRunner runner) {
+    final Thread thread = new Thread(runner);
     thread.start();
     return thread;
   }
 
-  private void pause(long millisec) {
+  private void pause(final long millisec) {
     try {
       Thread.sleep(millisec);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
     }
   }
 
-  private void createExpectedStateMap(ExecutableFlowBase flow,
-      Map<String, Status> expectedStateMap, Map<String, ExecutableNode> nodeMap) {
-    for (ExecutableNode node : flow.getExecutableNodes()) {
+  private void createExpectedStateMap(final ExecutableFlowBase flow,
+      final Map<String, Status> expectedStateMap, final Map<String, ExecutableNode> nodeMap) {
+    for (final ExecutableNode node : flow.getExecutableNodes()) {
       expectedStateMap.put(node.getNestedId(), node.getStatus());
       nodeMap.put(node.getNestedId(), node);
 
@@ -629,11 +632,11 @@ public class FlowRunnerPipelineTest {
     }
   }
 
-  private void compareStates(Map<String, Status> expectedStateMap,
-      Map<String, ExecutableNode> nodeMap) {
-    for (String printedId : expectedStateMap.keySet()) {
-      Status expectedStatus = expectedStateMap.get(printedId);
-      ExecutableNode node = nodeMap.get(printedId);
+  private void compareStates(final Map<String, Status> expectedStateMap,
+      final Map<String, ExecutableNode> nodeMap) {
+    for (final String printedId : expectedStateMap.keySet()) {
+      final Status expectedStatus = expectedStateMap.get(printedId);
+      final ExecutableNode node = nodeMap.get(printedId);
       if (node == null) {
         System.out.println("id node: " + printedId + " doesn't exist.");
       }
@@ -645,21 +648,22 @@ public class FlowRunnerPipelineTest {
     }
   }
 
-  private void prepareProject(Project project, File directory) throws ProjectManagerException,
+  private void prepareProject(final Project project, final File directory)
+      throws ProjectManagerException,
       IOException {
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), this.logger);
     loader.loadProjectFlow(project, directory);
     if (!loader.getErrors().isEmpty()) {
-      for (String error : loader.getErrors()) {
+      for (final String error : loader.getErrors()) {
         System.out.println(error);
       }
 
       throw new RuntimeException("Errors found in setup");
     }
 
-    flowMap = loader.getFlowMap();
-    project.setFlows(flowMap);
-    FileUtils.copyDirectory(directory, workingDir);
+    this.flowMap = loader.getFlowMap();
+    project.setFlows(this.flowMap);
+    FileUtils.copyDirectory(directory, this.workingDir);
   }
 
   // private void printCurrentState(String prefix, ExecutableFlowBase flow) {
@@ -672,37 +676,39 @@ public class FlowRunnerPipelineTest {
   //   }
   // }
   //
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, String groupName) throws Exception {
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final String groupName) throws Exception {
     return createFlowRunner(eventCollector, flowName, groupName,
         new ExecutionOptions(), new Props());
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, String groupName, ExecutionOptions options) throws Exception {
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final String groupName, final ExecutionOptions options)
+      throws Exception {
     return createFlowRunner(eventCollector, flowName, groupName,
         options, new Props());
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, String groupName, ExecutionOptions options, Props azkabanProps)
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final String groupName, final ExecutionOptions options,
+      final Props azkabanProps)
       throws Exception {
-    Flow flow = flowMap.get(flowName);
+    final Flow flow = this.flowMap.get(flowName);
 
-    int exId = id++;
-    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
-    exFlow.setExecutionPath(workingDir.getPath());
+    final int exId = id++;
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    exFlow.setExecutionPath(this.workingDir.getPath());
     exFlow.setExecutionId(exId);
 
-    Map<String, String> flowParam = new HashMap<String, String>();
+    final Map<String, String> flowParam = new HashMap<>();
     flowParam.put("group", groupName);
     options.addAllFlowParameters(flowParam);
     exFlow.setExecutionOptions(options);
-    fakeExecutorLoader.uploadExecutableFlow(exFlow);
+    this.fakeExecutorLoader.uploadExecutableFlow(exFlow);
 
-    FlowRunner runner =
-        new FlowRunner(fakeExecutorLoader.fetchExecutableFlow(exId),
-            fakeExecutorLoader, fakeProjectLoader, jobtypeManager, azkabanProps);
+    final FlowRunner runner =
+        new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
+            this.fakeExecutorLoader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

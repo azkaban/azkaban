@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import azkaban.executor.ExecutorInfo;
+import azkaban.utils.JSONUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,14 +27,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.log4j.Logger;
-
-import azkaban.executor.ExecutorInfo;
-import azkaban.utils.JSONUtils;
 
 
 public class ServerStatisticsServlet extends HttpServlet {
+
   private static final long serialVersionUID = 1L;
   private static final int cacheTimeInMilliseconds = 1000;
   private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
@@ -50,12 +49,13 @@ public class ServerStatisticsServlet extends HttpServlet {
    * Handle all get request to Statistics Servlet {@inheritDoc}
    *
    * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
-   *      javax.servlet.http.HttpServletResponse)
+   * javax.servlet.http.HttpServletResponse)
    */
   @Override
-  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+  protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
 
-    boolean noCache = null != req && Boolean.valueOf(req.getParameter(noCacheParamName));
+    final boolean noCache = null != req && Boolean.valueOf(req.getParameter(noCacheParamName));
 
     if (noCache || System.currentTimeMillis() - lastRefreshedTime > cacheTimeInMilliseconds) {
       this.populateStatistics(noCache);
@@ -66,25 +66,26 @@ public class ServerStatisticsServlet extends HttpServlet {
 
   /**
    * fill the result set with the percent of the remaining system memory on the server.
-   * @param stats reference to the result container which contains all the results, this specific method
-   *              will only work work on the property "remainingMemory" and "remainingMemoryPercent".
    *
-   * NOTE:
-   * a double value will be used to present the remaining memory,
-   *         a returning value of '55.6' means 55.6%
+   * @param stats reference to the result container which contains all the results, this specific
+   * method will only work work on the property "remainingMemory" and "remainingMemoryPercent".
+   *
+   * NOTE: a double value will be used to present the remaining memory, a returning value of '55.6'
+   * means 55.6%
    */
-  protected void fillRemainingMemoryPercent(ExecutorInfo stats) {
+  protected void fillRemainingMemoryPercent(final ExecutorInfo stats) {
     if (exists_Bash && exists_Cat && exists_Grep && exists_Meminfo) {
-      java.lang.ProcessBuilder processBuilder =
+      final java.lang.ProcessBuilder processBuilder =
           new java.lang.ProcessBuilder("/bin/bash", "-c",
               "/bin/cat /proc/meminfo | grep -E \"^MemTotal:|^MemFree:|^Buffers:|^Cached:|^SwapCached:\"");
       try {
-        ArrayList<String> output = new ArrayList<String>();
-        Process process = processBuilder.start();
+        final ArrayList<String> output = new ArrayList<>();
+        final Process process = processBuilder.start();
         process.waitFor();
-        InputStream inputStream = process.getInputStream();
+        final InputStream inputStream = process.getInputStream();
         try {
-          java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(inputStream));
+          final java.io.BufferedReader reader = new java.io.BufferedReader(
+              new InputStreamReader(inputStream));
           String line = null;
           while ((line = reader.readLine()) != null) {
             output.add(line);
@@ -107,7 +108,7 @@ public class ServerStatisticsServlet extends HttpServlet {
         // Note : total free memory = freeMemory + cached + buffers + swapCached
         // TODO : think about merging the logic in systemMemoryInfo as the logic is similar
         if (output.size() == 5) {
-          for (String result : output) {
+          for (final String result : output) {
             // find the total memory and value the variable.
             parsedResult = extractMemoryInfo("MemTotal", result);
             if (null != parsedResult) {
@@ -144,31 +145,35 @@ public class ServerStatisticsServlet extends HttpServlet {
             }
           }
         } else {
-          logger.error("failed to get total/free memory info as the bash call returned invalid result."
-              + String.format(" Output from the bash call - %s ", output.toString()));
+          logger.error(
+              "failed to get total/free memory info as the bash call returned invalid result."
+                  + String.format(" Output from the bash call - %s ", output.toString()));
         }
 
         // the number got from the proc file is in KBs we want to see the number in MBs so we are dividing it by 1024.
         stats.setRemainingMemoryInMB(totalFreeMemory / 1024);
-        stats.setRemainingMemoryPercent(totalMemory == 0 ? 0 : ((double) totalFreeMemory / (double) totalMemory) * 100);
-      } catch (Exception ex) {
+        stats.setRemainingMemoryPercent(
+            totalMemory == 0 ? 0 : ((double) totalFreeMemory / (double) totalMemory) * 100);
+      } catch (final Exception ex) {
         logger.error("failed fetch system memory info "
-            + "as exception is captured when fetching result from bash call. Ex -" + ex.getMessage());
+            + "as exception is captured when fetching result from bash call. Ex -" + ex
+            .getMessage());
       }
     } else {
-      logger.error("failed fetch system memory info, one or more files from the following list are missing -  "
-          + "'/bin/bash'," + "'/bin/cat'," + "'/proc/loadavg'");
+      logger.error(
+          "failed fetch system memory info, one or more files from the following list are missing -  "
+              + "'/bin/bash'," + "'/bin/cat'," + "'/proc/loadavg'");
     }
   }
 
-  private Long extractMemoryInfo(String field, String result) {
+  private Long extractMemoryInfo(final String field, final String result) {
     Long returnResult = null;
     if (null != result && null != field && result.matches(String.format("^%s:.*", field))
         && result.split("\\s+").length > 2) {
       try {
         returnResult = Long.parseLong(result.split("\\s+")[1]);
         logger.debug(field + ":" + returnResult);
-      } catch (NumberFormatException e) {
+      } catch (final NumberFormatException e) {
         returnResult = 0L;
         logger.error(String.format("yielding 0 for %s as output is invalid - %s", field, result));
       }
@@ -179,8 +184,8 @@ public class ServerStatisticsServlet extends HttpServlet {
   /**
    * call the data providers to fill the returning data container for statistics data.
    * This function refreshes the static cached copy of data in case if necessary.
-   * */
-  protected synchronized void populateStatistics(boolean noCache) {
+   */
+  protected synchronized void populateStatistics(final boolean noCache) {
     //check again before starting the work.
     if (noCache || System.currentTimeMillis() - lastRefreshedTime > cacheTimeInMilliseconds) {
       final ExecutorInfo stats = new ExecutorInfo();
@@ -196,15 +201,16 @@ public class ServerStatisticsServlet extends HttpServlet {
 
   /**
    * fill the result set with the remaining flow capacity .
-   * @param stats reference to the result container which contains all the results, this specific method
-   *              will only work on the property "remainingFlowCapacity".
+   *
+   * @param stats reference to the result container which contains all the results, this specific
+   * method will only work on the property "remainingFlowCapacity".
    */
-  protected void fillRemainingFlowCapacityAndLastDispatchedTime(ExecutorInfo stats) {
+  protected void fillRemainingFlowCapacityAndLastDispatchedTime(final ExecutorInfo stats) {
 
-    AzkabanExecutorServer server = AzkabanExecutorServer.getApp();
+    final AzkabanExecutorServer server = AzkabanExecutorServer.getApp();
     if (server != null) {
-      FlowRunnerManager runnerMgr = AzkabanExecutorServer.getApp().getFlowRunnerManager();
-      int assignedFlows = runnerMgr.getNumRunningFlows() + runnerMgr.getNumQueuedFlows();
+      final FlowRunnerManager runnerMgr = AzkabanExecutorServer.getApp().getFlowRunnerManager();
+      final int assignedFlows = runnerMgr.getNumRunningFlows() + runnerMgr.getNumQueuedFlows();
       stats.setRemainingFlowCapacity(runnerMgr.getMaxNumRunningFlows() - assignedFlows);
       stats.setNumberOfAssignedFlows(assignedFlows);
       stats.setLastDispatchedTime(runnerMgr.getLastFlowSubmittedTime());
@@ -214,26 +220,29 @@ public class ServerStatisticsServlet extends HttpServlet {
     }
   }
 
-  /**<pre>
+  /**
+   * <pre>
    * fill the result set with the CPU usage .
    * Note : As the 'Top' bash call doesn't yield accurate result for the system load,
    *        the implementation has been changed to load from the "proc/loadavg" which keeps
    *        the moving average of the system load, we are pulling the average for the recent 1 min.
-   *</pre>
-   * @param stats reference to the result container which contains all the results, this specific method
-   *              will only work on the property "cpuUsage".
+   * </pre>
+   *
+   * @param stats reference to the result container which contains all the results, this specific
+   * method will only work on the property "cpuUsage".
    */
-  protected void fillCpuUsage(ExecutorInfo stats) {
+  protected void fillCpuUsage(final ExecutorInfo stats) {
     if (exists_Bash && exists_Cat && exists_LoadAvg) {
-      java.lang.ProcessBuilder processBuilder =
+      final java.lang.ProcessBuilder processBuilder =
           new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/loadavg");
       try {
-        ArrayList<String> output = new ArrayList<String>();
-        Process process = processBuilder.start();
+        final ArrayList<String> output = new ArrayList<>();
+        final Process process = processBuilder.start();
         process.waitFor();
-        InputStream inputStream = process.getInputStream();
+        final InputStream inputStream = process.getInputStream();
         try {
-          java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(inputStream));
+          final java.io.BufferedReader reader = new java.io.BufferedReader(
+              new InputStreamReader(inputStream));
           String line = null;
           while ((line = reader.readLine()) != null) {
             output.add(line);
@@ -244,24 +253,26 @@ public class ServerStatisticsServlet extends HttpServlet {
 
         // process the output from bash call.
         if (output.size() > 0) {
-          String[] splitedresult = output.get(0).split("\\s+");
+          final String[] splitedresult = output.get(0).split("\\s+");
           double cpuUsage = 0.0;
 
           try {
             cpuUsage = Double.parseDouble(splitedresult[0]);
-          } catch (NumberFormatException e) {
+          } catch (final NumberFormatException e) {
             logger.error("yielding 0.0 for CPU usage as output is invalid -" + output.get(0));
           }
           logger.info("System load : " + cpuUsage);
           stats.setCpuUpsage(cpuUsage);
         }
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         logger.error("failed fetch system load info "
-            + "as exception is captured when fetching result from bash call. Ex -" + ex.getMessage());
+            + "as exception is captured when fetching result from bash call. Ex -" + ex
+            .getMessage());
       }
     } else {
-      logger.error("failed fetch system load info, one or more files from the following list are missing -  "
-          + "'/bin/bash'," + "'/bin/cat'," + "'/proc/loadavg'");
+      logger.error(
+          "failed fetch system load info, one or more files from the following list are missing -  "
+              + "'/bin/bash'," + "'/bin/cat'," + "'/proc/loadavg'");
     }
   }
 }

@@ -26,14 +26,14 @@ public class MetricsTestUtility {
 
   // todo HappyRay: move singletons to Juice.
   // This can cause problems when we run tests in parallel in the future.
-  private MetricRegistry registry;
+  private final MetricRegistry registry;
 
-  public MetricsTestUtility(MetricRegistry registry) {
+  public MetricsTestUtility(final MetricRegistry registry) {
     this.registry = registry;
   }
 
-  public long getGaugeValue(String name) {
+  public long getGaugeValue(final String name) {
     // Assume that the gauge value can be converted to type long.
-    return (long) registry.getGauges().get(name).getValue();
+    return (long) this.registry.getGauges().get(name).getValue();
   }
 }

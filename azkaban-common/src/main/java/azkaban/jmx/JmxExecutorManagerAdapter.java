@@ -16,17 +16,17 @@
 
 package azkaban.jmx;
 
+import azkaban.executor.ExecutorManagerAdapter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import azkaban.executor.ExecutorManagerAdapter;
-
 public class JmxExecutorManagerAdapter implements
     JmxExecutorManagerAdapterMBean {
-  private ExecutorManagerAdapter manager;
 
-  public JmxExecutorManagerAdapter(ExecutorManagerAdapter manager) {
+  private final ExecutorManagerAdapter manager;
+
+  public JmxExecutorManagerAdapter(final ExecutorManagerAdapter manager) {
     this.manager = manager;
   }
 
@@ -34,7 +34,7 @@ public class JmxExecutorManagerAdapter implements
   public int getNumRunningFlows() {
     try {
       return this.manager.getRunningFlows().size();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
       return 0;
@@ -43,22 +43,22 @@ public class JmxExecutorManagerAdapter implements
 
   @Override
   public String getExecutorManagerThreadState() {
-    return manager.getExecutorManagerThreadState().toString();
+    return this.manager.getExecutorManagerThreadState().toString();
   }
 
   @Override
   public boolean isExecutorManagerThreadActive() {
-    return manager.isExecutorManagerThreadActive();
+    return this.manager.isExecutorManagerThreadActive();
   }
 
   @Override
   public Long getLastExecutorManagerThreadCheckTime() {
-    return manager.getLastExecutorManagerThreadCheckTime();
+    return this.manager.getLastExecutorManagerThreadCheckTime();
   }
 
   @Override
   public List<String> getPrimaryExecutorHostPorts() {
-    return new ArrayList<String>(manager.getPrimaryServerHosts());
+    return new ArrayList<>(this.manager.getPrimaryServerHosts());
   }
 
 }

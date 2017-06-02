@@ -18,7 +18,6 @@ package azkaban.execapp;
 
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
-
 import com.codahale.metrics.MetricRegistry;
 
 /**
@@ -30,7 +29,7 @@ public enum ExecMetrics {
   private final MetricRegistry registry;
 
   ExecMetrics() {
-    registry = MetricsManager.INSTANCE.getRegistry();
+    this.registry = MetricsManager.INSTANCE.getRegistry();
     setupStaticMetrics();
   }
 
@@ -38,8 +37,10 @@ public enum ExecMetrics {
 
   }
 
-  public void addFlowRunnerManagerMetrics(FlowRunnerManager flowRunnerManager) {
-    MetricsUtility.addGauge("EXEC-NumRunningFlows", registry, flowRunnerManager::getNumRunningFlows);
-    MetricsUtility.addGauge("EXEC-NumQueuedFlows", registry, flowRunnerManager::getNumQueuedFlows);
+  public void addFlowRunnerManagerMetrics(final FlowRunnerManager flowRunnerManager) {
+    MetricsUtility
+        .addGauge("EXEC-NumRunningFlows", this.registry, flowRunnerManager::getNumRunningFlows);
+    MetricsUtility
+        .addGauge("EXEC-NumQueuedFlows", this.registry, flowRunnerManager::getNumQueuedFlows);
   }
 }

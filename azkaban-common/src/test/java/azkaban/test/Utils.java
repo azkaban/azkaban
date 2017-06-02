@@ -1,15 +1,16 @@
 package azkaban.test;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-import static azkaban.ServiceProvider.*;
-
 
 public class Utils {
+
   public static void initServiceProvider() {
-    Injector injector = Guice.createInjector(new AbstractModule() {
+    final Injector injector = Guice.createInjector(new AbstractModule() {
       @Override
       protected void configure() {
       }

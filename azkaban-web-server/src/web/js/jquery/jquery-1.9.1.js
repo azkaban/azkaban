@@ -8175,89 +8175,94 @@ function ajaxHandleResponses( s, jqXHR, responses ) {
 }
 
 // Chain conversions given the request and the original response
-function ajaxConvert( s, response ) {
-	var conv2, current, conv, tmp,
-		converters = {},
-		i = 0,
-		// Work with a copy of dataTypes in case we need to modify it for conversion
-		dataTypes = s.dataTypes.slice(),
-		prev = dataTypes[ 0 ];
+  function ajaxConvert(s, response) {
+    var conv2, current, conv, tmp,
+        converters = {},
+        i = 0,
+        // Work with a copy of dataTypes in case we need to modify it for conversion
+        dataTypes = s.dataTypes.slice(),
+        prev = dataTypes[0];
 
-	// Apply the dataFilter if provided
-	if ( s.dataFilter ) {
-		response = s.dataFilter( response, s.dataType );
-	}
+    // Apply the dataFilter if provided
+    if (s.dataFilter) {
+      response = s.dataFilter(response, s.dataType);
+    }
 
-	// Create converters map with lowercased keys
-	if ( dataTypes[ 1 ] ) {
-		for ( conv in s.converters ) {
-			converters[ conv.toLowerCase() ] = s.converters[ conv ];
-		}
-	}
+    // Create converters map with lowercased keys
+    if (dataTypes[1]) {
+      for (conv in s.converters) {
+        converters[conv.toLowerCase()] = s.converters[conv];
+      }
+    }
 
-	// Convert to each sequential dataType, tolerating list modification
-	for ( ; (current = dataTypes[++i]); ) {
+    // Convert to each sequential dataType, tolerating list modification
+    for (; (current = dataTypes[++i]);) {
 
-		// There's only work to do if current dataType is non-auto
-		if ( current !== "*" ) {
+      // There's only work to do if current dataType is non-auto
+      if (current !== "*") {
 
-			// Convert response if prev dataType is non-auto and differs from current
-			if ( prev !== "*" && prev !== current ) {
+        // Convert response if prev dataType is non-auto and differs from current
+        if (prev !== "*" && prev !== current) {
 
-				// Seek a direct converter
-				conv = converters[ prev + " " + current ] || converters[ "* " + current ];
+          // Seek a direct converter
+          conv = converters[prev + " " + current] || converters["* " + current];
 
-				// If none found, seek a pair
-				if ( !conv ) {
-					for ( conv2 in converters ) {
+          // If none found, seek a pair
+          if (!conv) {
+            for (conv2 in converters) {
 
-						// If conv2 outputs current
-						tmp = conv2.split(" ");
-						if ( tmp[ 1 ] === current ) {
+              // If conv2 outputs current
+              tmp = conv2.split(" ");
+              if (tmp[1] === current) {
 
-							// If prev can be converted to accepted input
-							conv = converters[ prev + " " + tmp[ 0 ] ] ||
-								converters[ "* " + tmp[ 0 ] ];
-							if ( conv ) {
-								// Condense equivalence converters
-								if ( conv === true ) {
-									conv = converters[ conv2 ];
+                // If prev can be converted to accepted input
+                conv = converters[prev + " " + tmp[0]] ||
+                    converters["* " + tmp[0]];
+                if (conv) {
+                  // Condense equivalence converters
+                  if (conv === true) {
+                    conv = converters[conv2];
 
-								// Otherwise, insert the intermediate dataType
-								} else if ( converters[ conv2 ] !== true ) {
-									current = tmp[ 0 ];
-									dataTypes.splice( i--, 0, current );
-								}
+                    // Otherwise, insert the intermediate dataType
+                  } else if (converters[conv2] !== true) {
+                    current = tmp[0];
+                    dataTypes.splice(i--, 0, current);
+                  }
 
-								break;
-							}
-						}
-					}
-				}
+                  break;
+                }
+              }
+            }
+          }
 
-				// Apply converter (if not an equivalence)
-				if ( conv !== true ) {
+          // Apply converter (if not an equivalence)
+          if (conv !== true) {
 
-					// Unless errors are allowed to bubble, catch and return them
-					if ( conv && s["throws"] ) {
-						response = conv( response );
-					} else {
-						try {
-							response = conv( response );
-						} catch ( e ) {
-							return { state: "parsererror", error: conv ? e : "No conversion from " + prev + " to " + current };
-						}
-					}
-				}
-			}
+            // Unless errors are allowed to bubble, catch and return them
+            if (conv && s["throws"]) {
+              response = conv(response);
+            } else {
+              try {
+                response = conv(response);
+              } catch (e) {
+                return {
+                  state: "parsererror",
+                  error: conv ? e : "No conversion from " + prev + " to "
+                      + current
+                };
+              }
+            }
+          }
+        }
 
-			// Update prev for next iteration
-			prev = current;
-		}
-	}
+        // Update prev for next iteration
+        prev = current;
+      }
+    }
 
-	return { state: "success", data: response };
-}
+    return {state: "success", data: response};
+  }
+
 // Install script dataType
 jQuery.ajaxSetup({
 	accepts: {

@@ -16,77 +16,73 @@
 
 package azkaban.execapp.event;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.log4j.Logger;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.log4j.Logger;
 
 public abstract class FlowWatcher {
-  private Logger logger;
 
-  private int execId;
+  private final int execId;
+  private final Map<String, BlockingStatus> map =
+      new ConcurrentHashMap<>();
+  private Logger logger;
   private ExecutableFlow flow;
-  private Map<String, BlockingStatus> map =
-      new ConcurrentHashMap<String, BlockingStatus>();
   private boolean cancelWatch = false;
 
-  public FlowWatcher(int execId) {
+  public FlowWatcher(final int execId) {
     this.execId = execId;
   }
 
-  public void setFlow(ExecutableFlow flow) {
+  public void setFlow(final ExecutableFlow flow) {
     this.flow = flow;
-  }
-
-  public void setLogger(Logger logger) {
-    this.logger = logger;
   }
 
   protected Logger getLogger() {
     return this.logger;
   }
 
+  public void setLogger(final Logger logger) {
+    this.logger = logger;
+  }
+
   /**
    * Called to fire events to the JobRunner listeners
-   *
-   * @param jobId
    */
-  protected synchronized void handleJobStatusChange(String jobId, Status status) {
-    BlockingStatus block = map.get(jobId);
+  protected synchronized void handleJobStatusChange(final String jobId, final Status status) {
+    final BlockingStatus block = this.map.get(jobId);
     if (block != null) {
       block.changeStatus(status);
     }
   }
 
   public int getExecId() {
-    return execId;
+    return this.execId;
   }
 
-  public synchronized BlockingStatus getBlockingStatus(String jobId) {
-    if (cancelWatch) {
+  public synchronized BlockingStatus getBlockingStatus(final String jobId) {
+    if (this.cancelWatch) {
       return null;
     }
 
-    ExecutableNode node = flow.getExecutableNodePath(jobId);
+    final ExecutableNode node = this.flow.getExecutableNodePath(jobId);
     if (node == null) {
       return null;
     }
 
-    BlockingStatus blockingStatus = map.get(jobId);
+    BlockingStatus blockingStatus = this.map.get(jobId);
     if (blockingStatus == null) {
-      blockingStatus = new BlockingStatus(execId, jobId, node.getStatus());
-      map.put(jobId, blockingStatus);
+      blockingStatus = new BlockingStatus(this.execId, jobId, node.getStatus());
+      this.map.put(jobId, blockingStatus);
     }
 
     return blockingStatus;
   }
 
-  public Status peekStatus(String jobId) {
-    ExecutableNode node = flow.getExecutableNodePath(jobId);
+  public Status peekStatus(final String jobId) {
+    final ExecutableNode node = this.flow.getExecutableNodePath(jobId);
     if (node != null) {
       return node.getStatus();
     }
@@ -95,20 +91,20 @@ public abstract class FlowWatcher {
   }
 
   public synchronized void unblockAllWatches() {
-    logger.info("Unblock all watches on " + execId);
-    cancelWatch = true;
+    this.logger.info("Unblock all watches on " + this.execId);
+    this.cancelWatch = true;
 
-    for (BlockingStatus status : map.values()) {
-      logger.info("Unblocking " + status.getJobId());
+    for (final BlockingStatus status : this.map.values()) {
+      this.logger.info("Unblocking " + status.getJobId());
       status.changeStatus(Status.SKIPPED);
       status.unblock();
     }
 
-    logger.info("Successfully unblocked all watches on " + execId);
+    this.logger.info("Successfully unblocked all watches on " + this.execId);
   }
 
   public boolean isWatchCancelled() {
-    return cancelWatch;
+    return this.cancelWatch;
   }
 
   public abstract void stopWatcher();

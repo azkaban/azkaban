@@ -15,16 +15,15 @@
  */
 package azkaban.db;
 
-import java.sql.Connection;
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.log4j.Logger;
+import static java.util.Objects.*;
 
+import com.google.inject.Inject;
+import java.sql.Connection;
 import java.sql.SQLException;
+import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import com.google.inject.Inject;
-
-import static java.util.Objects.*;
+import org.apache.log4j.Logger;
 
 /**
  * Implement AZ DB related operations. This class is thread safe.
@@ -37,23 +36,24 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
 
   /**
    * Note: this queryRunner should include a concrete {@link AzkabanDataSource} inside.
-   *
-   * @param queryRunner
    */
   @Inject
-  public DatabaseOperatorImpl(QueryRunner queryRunner){
+  public DatabaseOperatorImpl(final QueryRunner queryRunner) {
     requireNonNull(queryRunner.getDataSource(), "data source must not be null.");
     this.queryRunner = queryRunner;
   }
 
   /**
-   * query method Implementation. it will call {@link AzkabanDataSource#getConnection()} inside queryrunner.query.
+   * query method Implementation. it will call {@link AzkabanDataSource#getConnection()} inside
+   * queryrunner.query.
    */
   @Override
-  public <T> T query(String baseQuery, ResultSetHandler<T> resultHandler, Object...params) throws SQLException {
-    try{
-      return queryRunner.query(baseQuery, resultHandler, params);
-    } catch (SQLException ex){
+  public <T> T query(final String baseQuery, final ResultSetHandler<T> resultHandler,
+      final Object... params)
+      throws SQLException {
+    try {
+      return this.queryRunner.query(baseQuery, resultHandler, params);
+    } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("query failed", ex);
       throw ex;
@@ -62,19 +62,19 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
 
   /**
    * transaction method Implementation.
-   *
    */
   @Override
-  public <T> T transaction(SQLTransaction<T> operations) throws SQLException {
+  public <T> T transaction(final SQLTransaction<T> operations) throws SQLException {
     Connection conn = null;
-    try{
-      conn = queryRunner.getDataSource().getConnection();
+    try {
+      conn = this.queryRunner.getDataSource().getConnection();
       conn.setAutoCommit(false);
-      DatabaseTransOperator transOperator = new DatabaseTransOperatorImpl(queryRunner, conn);
-      T res = operations.execute(transOperator);
+      final DatabaseTransOperator transOperator = new DatabaseTransOperatorImpl(this.queryRunner,
+          conn);
+      final T res = operations.execute(transOperator);
       conn.commit();
       return res;
-    } catch (SQLException ex) {
+    } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("transaction failed", ex);
       throw ex;
@@ -84,18 +84,18 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
   }
 
   /**
-   * update implementation. it will call {@link AzkabanDataSource#getConnection()} inside queryrunner.update.
+   * update implementation. it will call {@link AzkabanDataSource#getConnection()} inside
+   * queryrunner.update.
    *
    * @param updateClause sql statements to execute
    * @param params Initialize the PreparedStatement's IN parameters
    * @return the number of rows being affected by update
-   * @throws SQLException
    */
   @Override
-  public int update(String updateClause, Object...params) throws SQLException {
-    try{
-      return queryRunner.update(updateClause, params);
-    } catch (SQLException ex){
+  public int update(final String updateClause, final Object... params) throws SQLException {
+    try {
+      return this.queryRunner.update(updateClause, params);
+    } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("update failed", ex);
       throw ex;

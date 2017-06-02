@@ -24,6 +24,42 @@ import java.util.Date;
  * @author gaggarwa
  */
 public class ExecutorLogEvent {
+
+  private final int executorId;
+  private final String user;
+  private final Date time;
+  private final EventType type;
+  private final String message;
+
+  public ExecutorLogEvent(final int executorId, final String user, final Date time,
+      final EventType type, final String message) {
+    this.executorId = executorId;
+    this.user = user;
+    this.time = time;
+    this.type = type;
+    this.message = message;
+  }
+
+  public int getExecutorId() {
+    return this.executorId;
+  }
+
+  public String getUser() {
+    return this.user;
+  }
+
+  public Date getTime() {
+    return this.time;
+  }
+
+  public EventType getType() {
+    return this.type;
+  }
+
+  public String getMessage() {
+    return this.message;
+  }
+
   /**
    * Log event type messages. Do not change the numeric representation of each
    * enum. Only represent from 0 to 255 different codes.
@@ -34,68 +70,33 @@ public class ExecutorLogEvent {
 
     private final int numVal;
 
-    EventType(int numVal) {
+    EventType(final int numVal) {
       this.numVal = numVal;
     }
 
-    public int getNumVal() {
-      return numVal;
-    }
-
-    public static EventType fromInteger(int x)
+    public static EventType fromInteger(final int x)
         throws IllegalArgumentException {
       switch (x) {
-      case 1:
-        return HOST_UPDATE;
-      case 2:
-        return PORT_UPDATE;
-      case 3:
-        return ACTIVATION;
-      case 4:
-        return INACTIVATION;
-      case 5:
-        return CREATED;
-      case 128:
-        return ERROR;
-      default:
-        throw new IllegalArgumentException(String.format(
-          "inalid status code %d", x));
+        case 1:
+          return HOST_UPDATE;
+        case 2:
+          return PORT_UPDATE;
+        case 3:
+          return ACTIVATION;
+        case 4:
+          return INACTIVATION;
+        case 5:
+          return CREATED;
+        case 128:
+          return ERROR;
+        default:
+          throw new IllegalArgumentException(String.format(
+              "inalid status code %d", x));
       }
     }
-  }
 
-  private final int executorId;
-  private final String user;
-  private final Date time;
-  private final EventType type;
-  private final String message;
-
-  public ExecutorLogEvent(int executorId, String user, Date time,
-    EventType type, String message) {
-    this.executorId = executorId;
-    this.user = user;
-    this.time = time;
-    this.type = type;
-    this.message = message;
-  }
-
-  public int getExecutorId() {
-    return executorId;
-  }
-
-  public String getUser() {
-    return user;
-  }
-
-  public Date getTime() {
-    return time;
-  }
-
-  public EventType getType() {
-    return type;
-  }
-
-  public String getMessage() {
-    return message;
+    public int getNumVal() {
+      return this.numVal;
+    }
   }
 }
