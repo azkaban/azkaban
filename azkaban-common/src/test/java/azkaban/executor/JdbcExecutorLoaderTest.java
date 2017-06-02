@@ -57,12 +57,9 @@ public class JdbcExecutorLoaderTest {
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
-//  private static final String database = "azkaban2";
-//  private static final String user = "azkaban";
-//  private static final String password = "azkaban";
-  private static final String database = "azkaban";
-  private static final String user = "root";
-  private static final String password = "123456";
+  private static final String database = "azkaban2";
+  private static final String user = "azkaban";
+  private static final String password = "azkaban";
   private static final int numConnections = 10;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
   private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
