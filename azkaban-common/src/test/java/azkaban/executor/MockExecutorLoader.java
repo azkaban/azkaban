@@ -23,27 +23,22 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MockExecutorLoader implements ExecutorLoader {
 
-  HashMap<Integer, Integer> executionExecutorMapping =
-      new HashMap<>();
-  HashMap<Integer, ExecutableFlow> flows =
-      new HashMap<>();
-  HashMap<String, ExecutableNode> nodes = new HashMap<>();
-  HashMap<Integer, ExecutionReference> refs =
-      new HashMap<>();
+  Map<Integer, Integer> executionExecutorMapping = new ConcurrentHashMap<>();
+  Map<Integer, ExecutableFlow> flows = new ConcurrentHashMap<>();
+  Map<String, ExecutableNode> nodes = new ConcurrentHashMap<>();
+  Map<Integer, ExecutionReference> refs = new ConcurrentHashMap<>();
   int flowUpdateCount = 0;
-  HashMap<String, Integer> jobUpdateCount = new HashMap<>();
-  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
-      new HashMap<>();
+  Map<String, Integer> jobUpdateCount = new ConcurrentHashMap<>();
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new ConcurrentHashMap<>();
   List<Executor> executors = new ArrayList<>();
   int executorIdCounter = 0;
-  Map<Integer, ArrayList<ExecutorLogEvent>> executorEvents =
-      new HashMap<>();
+  Map<Integer, ArrayList<ExecutorLogEvent>> executorEvents = new ConcurrentHashMap<>();
 
   @Override
   public void uploadExecutableFlow(final ExecutableFlow flow)
@@ -122,9 +117,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void updateExecutableNode(final ExecutableNode node)
       throws ExecutorManagerException {
-    if (!this.nodes.containsKey(node.getId())) {
-      uploadExecutableNode(node, new Props());
-    }
     final ExecutableNode foundNode = this.nodes.get(node.getId());
     foundNode.setEndTime(node.getEndTime());
     foundNode.setStartTime(node.getStartTime());
