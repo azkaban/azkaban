@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
@@ -390,7 +391,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
       throws ExecutorManagerException {
     return new ArrayList<>();
   }

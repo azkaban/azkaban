@@ -34,6 +34,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -56,11 +57,15 @@ public class JdbcExecutorLoaderTest {
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
-  private static final String database = "azkaban2";
-  private static final String user = "azkaban";
-  private static final String password = "azkaban";
+//  private static final String database = "azkaban2";
+//  private static final String user = "azkaban";
+//  private static final String password = "azkaban";
+  private static final String database = "azkaban";
+  private static final String user = "root";
+  private static final String password = "123456";
   private static final int numConnections = 10;
-  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofSeconds(1);
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
+  private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
 
   @BeforeClass
   public static void setupDB() {
@@ -885,17 +890,37 @@ public class JdbcExecutorLoaderTest {
     ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
     flow1.setStatus(Status.SUCCEEDED);
-    flow1.setEndTime(System.currentTimeMillis());
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
     loader.updateExecutableFlow(flow1);
+    //Flow just finished. Fetch recently finished flows immediately. Should get it.
     List<ExecutableFlow> flows = loader.fetchRecentlyFinishedFlows(
-        RECENTLY_FINISHED_LIFETIME.toMillis());
+        RECENTLY_FINISHED_LIFETIME);
     Assert.assertEquals(1, flows.size());
     Assert.assertEquals(flow1.getExecutionId(), flows.get(0).getExecutionId());
     Assert.assertEquals(flow1.getProjectName(), flows.get(0).getProjectName());
     Assert.assertEquals(flow1.getFlowId(), flows.get(0).getFlowId());
     Assert.assertEquals(flow1.getVersion(), flows.get(0).getVersion());
-    Thread.currentThread().sleep(RECENTLY_FINISHED_LIFETIME.toMillis());
-    flows = loader.fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME.toMillis());
+  }
+
+  @Test
+  public void testFetchEmptyRecentlyFinishedFlows() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow1);
+    flow1.setStatus(Status.SUCCEEDED);
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    loader.updateExecutableFlow(flow1);
+    //Mock flow finished time to be 2 min ago.
+    DateTimeUtils.setCurrentMillisOffset(-FLOW_FINISHED_TIME.toMillis());
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    loader.updateExecutableFlow(flow1);
+    //Fetch recently finished flows within 1 min. Should be empty.
+    List<ExecutableFlow> flows = loader
+        .fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME);
     Assert.assertTrue(flows.isEmpty());
   }
 

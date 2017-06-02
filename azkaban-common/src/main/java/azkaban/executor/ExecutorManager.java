@@ -106,7 +106,7 @@ public class ExecutorManager extends EventHandler implements
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
   // 10 mins recently finished threshold.
-  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofSeconds(600);
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private long lastCleanerThreadCheckTime = -1;
 
   private long lastThreadCheckTime = -1;
@@ -644,9 +644,9 @@ public class ExecutorManager extends EventHandler implements
     List<ExecutableFlow> flows = new ArrayList<>();
     try {
       flows = executorLoader.fetchRecentlyFinishedFlows(
-          RECENTLY_FINISHED_LIFETIME.toMillis());
+          RECENTLY_FINISHED_LIFETIME);
     } catch(ExecutorManagerException e) {
-      logger.error(e);
+      logger.error("Failed to fetch recently finished flows.", e);
     }
     return flows;
   }

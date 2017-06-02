@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
@@ -202,8 +203,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
+  /**
+   * maxAge indicates how long finished flows are shown in Recently Finished flow page.
+   */
   @Override
-  public List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
       throws ExecutorManagerException {
     QueryRunner runner = createQueryRunner();
     FetchRecentlyFinishedFlows flowHandler = new FetchRecentlyFinishedFlows();
@@ -211,7 +215,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       List<ExecutableFlow> flows =
           runner.query(FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_FLOW,
-              flowHandler, System.currentTimeMillis() - lifeTimeMs,
+              flowHandler, System.currentTimeMillis() - maxAge.toMillis(),
               Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
               Status.FAILED.getNumVal());
       return flows;

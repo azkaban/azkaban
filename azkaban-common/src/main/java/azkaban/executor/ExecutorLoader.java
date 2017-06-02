@@ -19,6 +19,7 @@ package azkaban.executor;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
@@ -32,7 +33,7 @@ public interface ExecutorLoader {
   ExecutableFlow fetchExecutableFlow(int execId)
       throws ExecutorManagerException;
 
-  List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
+  List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
       throws ExecutorManagerException;
 
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
