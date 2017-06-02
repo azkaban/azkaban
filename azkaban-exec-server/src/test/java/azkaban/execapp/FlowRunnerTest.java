@@ -20,22 +20,9 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import azkaban.execapp.jmx.JmxJobMBeanManager;
-import java.io.File;
-import java.io.IOException;
-import java.nio.channels.ClosedByInterruptException;
-import java.util.HashMap;
-
-import azkaban.test.Utils;
-import org.apache.commons.io.FileUtils;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -46,42 +33,53 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
+import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.project.MockProjectLoader;
+import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class FlowRunnerTest extends FlowRunnerTestBase {
+
+  private static final File TEST_DIR = new File(
+      "../azkaban-test/src/test/resources/azkaban/test/executions/exectest1");
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
-  @Mock private ExecutorLoader loader;
-
-  private static final File TEST_DIR = new File("../azkaban-test/src/test/resources/azkaban/test/executions/exectest1");
+  @Mock
+  private ExecutorLoader loader;
 
   @Before
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
-    when(loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+    when(this.loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
     System.out.println("Create temp dir");
     synchronized (this) {
       // clear interrupted status
       Thread.interrupted();
-      workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
-      if (workingDir.exists()) {
-        FileUtils.deleteDirectory(workingDir);
+      this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
+      if (this.workingDir.exists()) {
+        FileUtils.deleteDirectory(this.workingDir);
       }
-      workingDir.mkdirs();
+      this.workingDir.mkdirs();
     }
-    jobtypeManager =
+    this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
-    JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
+    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
     pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    fakeProjectLoader = new MockProjectLoader(workingDir);
+    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
@@ -92,26 +90,26 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
   public void tearDown() throws IOException {
     System.out.println("Teardown temp dir");
     synchronized (this) {
-      if (workingDir != null) {
-        FileUtils.deleteDirectory(workingDir);
-        workingDir = null;
+      if (this.workingDir != null) {
+        FileUtils.deleteDirectory(this.workingDir);
+        this.workingDir = null;
       }
     }
   }
 
   @Test
   public void exec1Normal() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    runner = createFlowRunner(loader, eventCollector, "exec1");
+    this.runner = createFlowRunner(this.loader, eventCollector, "exec1");
 
-    startThread(runner);
+    startThread(this.runner);
     succeedJobs("job3", "job4", "job6");
 
     assertFlowStatus(Status.SUCCEEDED);
     assertThreadShutDown();
-    compareFinishedRuntime(runner);
+    compareFinishedRuntime(this.runner);
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2", Status.SUCCEEDED);
@@ -124,9 +122,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.SUCCEEDED);
 
     try {
-      eventCollector.checkEventExists(new Type[] { Type.FLOW_STARTED,
-          Type.FLOW_FINISHED });
-    } catch (Exception e) {
+      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
+          Type.FLOW_FINISHED});
+    } catch (final Exception e) {
       System.out.println(e.getMessage());
 
       Assert.fail(e.getMessage());
@@ -135,10 +133,10 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void exec1Disabled() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    ExecutableFlow exFlow = prepareExecDir(TEST_DIR, "exec1", 1);
+    final ExecutableFlow exFlow = prepareExecDir(TEST_DIR, "exec1", 1);
 
     // Disable couple in the middle and at the end.
     exFlow.getExecutableNode("job1").setStatus(Status.DISABLED);
@@ -146,16 +144,16 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     exFlow.getExecutableNode("job5").setStatus(Status.DISABLED);
     exFlow.getExecutableNode("job10").setStatus(Status.DISABLED);
 
-    runner = createFlowRunner(exFlow, loader, eventCollector);
+    this.runner = createFlowRunner(exFlow, this.loader, eventCollector);
 
-    Assert.assertTrue(!runner.isKilled());
+    Assert.assertTrue(!this.runner.isKilled());
     assertFlowStatus(Status.READY);
 
-    startThread(runner);
+    startThread(this.runner);
     succeedJobs("job3", "job4");
 
     assertThreadShutDown();
-    compareFinishedRuntime(runner);
+    compareFinishedRuntime(this.runner);
 
     assertFlowStatus(Status.SUCCEEDED);
 
@@ -170,9 +168,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.SKIPPED);
 
     try {
-      eventCollector.checkEventExists(new Type[] { Type.FLOW_STARTED,
-          Type.FLOW_FINISHED });
-    } catch (Exception e) {
+      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
+          Type.FLOW_FINISHED});
+    } catch (final Exception e) {
       System.out.println(e.getMessage());
 
       Assert.fail(e.getMessage());
@@ -181,17 +179,17 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void exec1Failed() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
+    final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
 
-    runner = createFlowRunner(flow, loader, eventCollector);
+    this.runner = createFlowRunner(flow, this.loader, eventCollector);
 
-    startThread(runner);
+    startThread(this.runner);
     succeedJobs("job6");
 
-    Assert.assertTrue(!runner.isKilled());
+    Assert.assertTrue(!this.runner.isKilled());
     assertFlowStatus(Status.FAILED);
 
     assertStatus("job1", Status.SUCCEEDED);
@@ -207,9 +205,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
 
     try {
-      eventCollector.checkEventExists(new Type[] { Type.FLOW_STARTED,
-          Type.FLOW_FINISHED });
-    } catch (Exception e) {
+      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
+          Type.FLOW_FINISHED});
+    } catch (final Exception e) {
       System.out.println(e.getMessage());
 
       Assert.fail(e.getMessage());
@@ -218,17 +216,18 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void exec1FailedKillAll() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
+    final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
     flow.getExecutionOptions().setFailureAction(FailureAction.CANCEL_ALL);
 
-    runner = createFlowRunner(flow, loader, eventCollector);
+    this.runner = createFlowRunner(flow, this.loader, eventCollector);
 
-    runner.run();
+    startThread(this.runner);
+    assertThreadShutDown();
 
-    Assert.assertTrue(runner.isKilled());
+    Assert.assertTrue(this.runner.isKilled());
 
     assertFlowStatus(Status.KILLED);
 
@@ -244,9 +243,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
 
     try {
-      eventCollector.checkEventExists(new Type[] { Type.FLOW_STARTED,
-          Type.FLOW_FINISHED });
-    } catch (Exception e) {
+      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
+          Type.FLOW_FINISHED});
+    } catch (final Exception e) {
       System.out.println(e.getMessage());
       eventCollector.writeAllEvents();
       Assert.fail(e.getMessage());
@@ -255,15 +254,15 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void exec1FailedFinishRest() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec3", 1);
+    final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec3", 1);
     flow.getExecutionOptions().setFailureAction(
         FailureAction.FINISH_ALL_POSSIBLE);
-    runner = createFlowRunner(flow, loader, eventCollector);
+    this.runner = createFlowRunner(flow, this.loader, eventCollector);
 
-    startThread(runner);
+    startThread(this.runner);
     succeedJobs("job3");
 
     assertFlowStatus(Status.FAILED);
@@ -281,9 +280,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
 
     try {
-      eventCollector.checkEventExists(new Type[] { Type.FLOW_STARTED,
-          Type.FLOW_FINISHED });
-    } catch (Exception e) {
+      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
+          Type.FLOW_FINISHED});
+    } catch (final Exception e) {
       System.out.println(e.getMessage());
       eventCollector.writeAllEvents();
       Assert.fail(e.getMessage());
@@ -292,19 +291,19 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void execAndCancel() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    runner = createFlowRunner(loader, eventCollector, "exec1");
+    this.runner = createFlowRunner(this.loader, eventCollector, "exec1");
 
-    startThread(runner);
+    startThread(this.runner);
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2", Status.SUCCEEDED);
-    waitJobsStarted(runner, "job3", "job4", "job6");
+    waitJobsStarted(this.runner, "job3", "job4", "job6");
 
-    runner.kill("me");
-    Assert.assertTrue(runner.isKilled());
+    this.runner.kill("me");
+    Assert.assertTrue(this.runner.isKilled());
 
     assertStatus("job5", Status.CANCELLED);
     assertStatus("job7", Status.CANCELLED);
@@ -318,9 +317,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertFlowStatus(Status.KILLED);
 
     try {
-      eventCollector.checkEventExists(new Type[] { Type.FLOW_STARTED,
-          Type.FLOW_FINISHED });
-    } catch (Exception e) {
+      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
+          Type.FLOW_FINISHED});
+    } catch (final Exception e) {
       System.out.println(e.getMessage());
       eventCollector.writeAllEvents();
       Assert.fail(e.getMessage());
@@ -329,12 +328,13 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void execRetries() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    runner = createFlowRunner(loader, eventCollector, "exec4-retry");
+    this.runner = createFlowRunner(this.loader, eventCollector, "exec4-retry");
 
-    runner.run();
+    startThread(this.runner);
+    assertThreadShutDown();
 
     assertStatus("job-retry", Status.SUCCEEDED);
     assertStatus("job-pass", Status.SUCCEEDED);
@@ -346,65 +346,50 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertFlowStatus(Status.FAILED);
   }
 
-  private void startThread(FlowRunner runner) {
+  private void startThread(final FlowRunner runner) {
     Assert.assertTrue(!runner.isKilled());
-    Thread thread = new Thread(runner);
+    final Thread thread = new Thread(runner);
     thread.start();
   }
 
-  private void assertAttempts(String name, int attempt) {
-    ExecutableNode node = runner.getExecutableFlow().getExecutableNode(name);
+  private void assertAttempts(final String name, final int attempt) {
+    final ExecutableNode node = this.runner.getExecutableFlow().getExecutableNode(name);
     if (node.getAttempt() != attempt) {
       Assert.fail("Expected " + attempt + " got " + node.getAttempt()
           + " attempts " + name);
     }
   }
-  
-  private ExecutableFlow prepareExecDir(File execDir, String flowName,
-      int execId) throws IOException {
-    // copyDirectory has been failing randomly with ClosedByInterruptException. have some retries.
-    for (int i = 0; i < 10; i++) {
-      try {
-        // clean interrupted status
-        Thread.interrupted();
-        synchronized (this) {
-          FileUtils.copyDirectory(execDir, workingDir);
-        }
-        break;
-      } catch (ClosedByInterruptException e) {
-        if (i == 9) {
-          throw e;
-        }
-      }
-    }
 
-    File jsonFlowFile = new File(workingDir, flowName + ".flow");
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
+  private ExecutableFlow prepareExecDir(final File execDir, final String flowName,
+      final int execId) throws IOException {
+    FileUtils.copyDirectory(execDir, this.workingDir);
+
+    final File jsonFlowFile = new File(this.workingDir, flowName + ".flow");
+    final HashMap<String, Object> flowObj =
         (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 
-    Project project = new Project(1, "myproject");
+    final Project project = new Project(1, "myproject");
     project.setVersion(2);
 
-    Flow flow = Flow.flowFromObject(flowObj);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+    final Flow flow = Flow.flowFromObject(flowObj);
+    final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
     execFlow.setExecutionId(execId);
-    execFlow.setExecutionPath(workingDir.getPath());
+    execFlow.setExecutionPath(this.workingDir.getPath());
     return execFlow;
   }
 
-  private void compareFinishedRuntime(FlowRunner runner) throws Exception {
-    ExecutableFlow flow = runner.getExecutableFlow();
-    for (String flowName : flow.getStartNodes()) {
-      ExecutableNode node = flow.getExecutableNode(flowName);
+  private void compareFinishedRuntime(final FlowRunner runner) throws Exception {
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    for (final String flowName : flow.getStartNodes()) {
+      final ExecutableNode node = flow.getExecutableNode(flowName);
       compareStartFinishTimes(flow, node, 0);
     }
   }
 
-  private void compareStartFinishTimes(ExecutableFlow flow,
-      ExecutableNode node, long previousEndTime) throws Exception {
-    long startTime = node.getStartTime();
-    long endTime = node.getEndTime();
+  private void compareStartFinishTimes(final ExecutableFlow flow,
+      final ExecutableNode node, final long previousEndTime) throws Exception {
+    final long startTime = node.getStartTime();
+    final long endTime = node.getEndTime();
 
     // If start time is < 0, so will the endtime.
     if (startTime <= 0) {
@@ -417,43 +402,45 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertTrue("Start time for " + node.getId() + " is " + startTime
         + " and less than " + previousEndTime, startTime >= previousEndTime);
 
-    for (String outNode : node.getOutNodes()) {
-      ExecutableNode childNode = flow.getExecutableNode(outNode);
+    for (final String outNode : node.getOutNodes()) {
+      final ExecutableNode childNode = flow.getExecutableNode(outNode);
       compareStartFinishTimes(flow, childNode, endTime);
     }
   }
 
-  private FlowRunner createFlowRunner(ExecutableFlow flow,
-      ExecutorLoader loader, EventCollectorListener eventCollector) throws Exception {
+  private FlowRunner createFlowRunner(final ExecutableFlow flow,
+      final ExecutorLoader loader, final EventCollectorListener eventCollector) throws Exception {
     return createFlowRunner(flow, loader, eventCollector, new Props());
   }
 
-  private FlowRunner createFlowRunner(ExecutableFlow flow,
-      ExecutorLoader loader, EventCollectorListener eventCollector, Props azkabanProps)
+  private FlowRunner createFlowRunner(final ExecutableFlow flow,
+      final ExecutorLoader loader, final EventCollectorListener eventCollector,
+      final Props azkabanProps)
       throws Exception {
 
     loader.uploadExecutableFlow(flow);
-    FlowRunner runner =
-        new FlowRunner(flow, loader, fakeProjectLoader, jobtypeManager, azkabanProps);
+    final FlowRunner runner =
+        new FlowRunner(flow, loader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 
     return runner;
   }
 
-  private FlowRunner createFlowRunner(ExecutorLoader loader,
-      EventCollectorListener eventCollector, String flowName) throws Exception {
+  private FlowRunner createFlowRunner(final ExecutorLoader loader,
+      final EventCollectorListener eventCollector, final String flowName) throws Exception {
     return createFlowRunner(loader, eventCollector, flowName, new Props());
   }
 
-  private FlowRunner createFlowRunner(ExecutorLoader loader,
-      EventCollectorListener eventCollector, String flowName, Props azkabanProps) throws Exception {
-    ExecutableFlow exFlow = prepareExecDir(TEST_DIR, flowName, 1);
+  private FlowRunner createFlowRunner(final ExecutorLoader loader,
+      final EventCollectorListener eventCollector, final String flowName, final Props azkabanProps)
+      throws Exception {
+    final ExecutableFlow exFlow = prepareExecDir(TEST_DIR, flowName, 1);
 
     loader.uploadExecutableFlow(exFlow);
 
-    FlowRunner runner =
-        new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager, azkabanProps);
+    final FlowRunner runner =
+        new FlowRunner(exFlow, loader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

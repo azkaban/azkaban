@@ -19,7 +19,6 @@ package azkaban.execapp;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -28,8 +27,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class EventCollectorListener implements EventListener {
 
   public static final Object handleEvent = new Object();
-  private final ArrayList<Event> eventList = new ArrayList<>();
-  private final HashSet<Event.Type> filterOutTypes = new HashSet<>();
   // CopyOnWriteArrayList allows concurrent iteration and modification
   private final List<Event> eventList = new CopyOnWriteArrayList<>();
   private final HashSet<Event.Type> filterOutTypes = new HashSet<>();
@@ -37,7 +34,7 @@ public class EventCollectorListener implements EventListener {
   public void setEventFilterOut(final Event.Type... types) {
     this.filterOutTypes.addAll(Arrays.asList(types));
   }
-
+  
   @Override
   public void handleEvent(final Event event) {
     synchronized (handleEvent) {

@@ -19,20 +19,6 @@ package azkaban.execapp;
 import static org.junit.Assert.assertEquals;
 
 import azkaban.execapp.jmx.JmxJobMBeanManager;
-import azkaban.jobExecutor.AllJobExecutorTests;
-import azkaban.test.Utils;
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -43,21 +29,31 @@ import azkaban.executor.JavaJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
+import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
-import azkaban.project.MockProjectLoader;
+import azkaban.test.Utils;
 import azkaban.utils.Props;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Test the flow run, especially with embedded flows.
  *
- * This test uses executions/embedded2. It also mainly uses the flow named
- * jobf. The test is designed to control success/failures explicitly so we
- * don't have to time the flow exactly.
+ * This test uses executions/embedded2. It also mainly uses the flow named jobf. The test is
+ * designed to control success/failures explicitly so we don't have to time the flow exactly.
  *
  * Flow jobf looks like the following:
  *
@@ -92,20 +88,20 @@ import azkaban.utils.Props;
  *           |
  *       innerFlow2
  *
- *  The following tests checks each stage of the flow run by forcing jobs to
- *  succeed or fail.
+ * The following tests checks each stage of the flow run by forcing jobs to succeed or fail.
  */
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
+
+  private static final File TEST_DIR = new File(
+      "../azkaban-test/src/test/resources/azkaban/test/executions/embedded2");
+  private static int id = 101;
+  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
-  private Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private Project project;
   private Map<String, Flow> flowMap;
-  private static int id=101;
-
-  private static final File TEST_DIR = new File("../azkaban-test/src/test/resources/azkaban/test/executions/embedded2");
 
   @Before
   public void setUp() throws Exception {
@@ -113,26 +109,26 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     synchronized (this) {
       // clear interrupted status
       Thread.interrupted();
-      workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
-      if (workingDir.exists()) {
-        FileUtils.deleteDirectory(workingDir);
+      this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
+      if (this.workingDir.exists()) {
+        FileUtils.deleteDirectory(this.workingDir);
       }
-      workingDir.mkdirs();
+      this.workingDir.mkdirs();
     }
-    jobtypeManager = new JobTypeManager(null, null,
+    this.jobtypeManager = new JobTypeManager(null, null,
         this.getClass().getClassLoader());
-    JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
+    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
 
     pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
     pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    fakeProjectLoader = new MockProjectLoader(workingDir);
-    fakeExecutorLoader = new MockExecutorLoader();
-    project = new Project(1, "testProject");
+    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
+    this.fakeExecutorLoader = new MockExecutorLoader();
+    this.project = new Project(1, "testProject");
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
-    prepareProject(project, TEST_DIR);
+    prepareProject(this.project, TEST_DIR);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -140,31 +136,29 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @After
   public void tearDown() throws IOException {
     System.out.println("Teardown temp dir");
-    if (workingDir != null) {
-      FileUtils.deleteDirectory(workingDir);
-      workingDir = null;
+    if (this.workingDir != null) {
+      FileUtils.deleteDirectory(this.workingDir);
+      this.workingDir = null;
     }
   }
 
   /**
-   * Tests the basic successful flow run, and also tests all output variables
-   * from each job.
-   *
-   * @throws Exception
+   * Tests the basic successful flow run, and also tests all output variables from each job.
    */
   @Test
   public void testBasicRun() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
 
-    Props joba = runner.getExecutableFlow().getExecutableNodePath("joba").getInputProps();
+    final Props joba = this.runner.getExecutableFlow().getExecutableNodePath("joba")
+        .getInputProps();
     assertEquals("joba.1", joba.get("param1"));
     assertEquals("test1.2", joba.get("param2"));
     assertEquals("test1.3", joba.get("param3"));
@@ -174,7 +168,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertEquals("test2.7", joba.get("param7"));
     assertEquals("test2.8", joba.get("param8"));
 
-    Props joba1 = runner.getExecutableFlow().getExecutableNodePath("joba1").getInputProps();
+    final Props joba1 = this.runner.getExecutableFlow().getExecutableNodePath("joba1")
+        .getInputProps();
     assertEquals("test1.1", joba1.get("param1"));
     assertEquals("test1.2", joba1.get("param2"));
     assertEquals("test1.3", joba1.get("param3"));
@@ -195,16 +190,18 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd:innerJobA", Status.RUNNING);
     assertStatus("jobb:innerJobA", Status.RUNNING);
 
-    ExecutableNode node = runner.getExecutableFlow().getExecutableNodePath("jobb");
+    final ExecutableNode node = this.runner.getExecutableFlow().getExecutableNodePath("jobb");
     assertEquals(Status.RUNNING, node.getStatus());
-    Props jobb = node.getInputProps();
+    final Props jobb = node.getInputProps();
     assertEquals("override.4", jobb.get("param4"));
     // Test that jobb properties overwrites the output properties
     assertEquals("moo", jobb.get("testprops"));
     assertEquals("jobb", jobb.get("output.override"));
     assertEquals("joba", jobb.get("output.joba"));
 
-    Props jobbInnerJobA = runner.getExecutableFlow().getExecutableNodePath("jobb:innerJobA").getInputProps();
+    final Props jobbInnerJobA = this.runner.getExecutableFlow()
+        .getExecutableNodePath("jobb:innerJobA")
+        .getInputProps();
     assertEquals("test1.1", jobbInnerJobA.get("param1"));
     assertEquals("test1.2", jobbInnerJobA.get("param2"));
     assertEquals("test1.3", jobbInnerJobA.get("param3"));
@@ -222,7 +219,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobb:innerJobA", Status.SUCCEEDED);
     assertStatus("jobb:innerJobB", Status.RUNNING);
     assertStatus("jobb:innerJobC", Status.RUNNING);
-    Props jobbInnerJobB = runner.getExecutableFlow().getExecutableNodePath("jobb:innerJobB").getInputProps();
+    final Props jobbInnerJobB = this.runner.getExecutableFlow()
+        .getExecutableNodePath("jobb:innerJobB")
+        .getInputProps();
     assertEquals("test1.1", jobbInnerJobB.get("param1"));
     assertEquals("override.4", jobbInnerJobB.get("param4"));
     assertEquals("jobb.innerJobA",
@@ -237,7 +236,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobb:innerJobC", Status.SUCCEEDED);
     assertStatus("jobb:innerFlow", Status.RUNNING);
 
-    Props jobbInnerJobD = runner.getExecutableFlow().getExecutableNodePath("jobb:innerFlow").getInputProps();
+    final Props jobbInnerJobD = this.runner.getExecutableFlow()
+        .getExecutableNodePath("jobb:innerFlow")
+        .getInputProps();
     assertEquals("test1.1", jobbInnerJobD.get("param1"));
     assertEquals("override.4", jobbInnerJobD.get("param4"));
     assertEquals("jobb.innerJobB",
@@ -250,7 +251,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
         Props.of("output1.jobb", "test1", "output2.jobb", "test2"));
     assertStatus("jobb:innerFlow", Status.SUCCEEDED);
     assertStatus("jobb", Status.SUCCEEDED);
-    Props jobbOutput = runner.getExecutableFlow().getExecutableNodePath("jobb").getOutputProps();
+    final Props jobbOutput = this.runner.getExecutableFlow().getExecutableNodePath("jobb")
+        .getOutputProps();
     assertEquals("test1", jobbOutput.get("output1.jobb"));
     assertEquals("test2", jobbOutput.get("output2.jobb"));
 
@@ -265,7 +267,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd", Status.SUCCEEDED);
     assertStatus("jobe", Status.RUNNING);
 
-    Props jobd = runner.getExecutableFlow().getExecutableNodePath("jobe").getInputProps();
+    final Props jobd = this.runner.getExecutableFlow().getExecutableNodePath("jobe")
+        .getInputProps();
     assertEquals("test1", jobd.get("output1.jobb"));
     assertEquals("jobc", jobd.get("output.jobc"));
 
@@ -282,22 +285,19 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests a flow with Disabled jobs and flows. They should properly SKIP
-   * executions
-   *
-   * @throws Exception
+   * Tests a flow with Disabled jobs and flows. They should properly SKIP executions
    */
   @Test
   public void testDisabledNormal() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("jobb").setStatus(Status.DISABLED);
-    ((ExecutableFlowBase)flow.getExecutableNode("jobd")).getExecutableNode(
+    ((ExecutableFlowBase) flow.getExecutableNode("jobd")).getExecutableNode(
         "innerJobA").setStatus(Status.DISABLED);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -341,20 +341,17 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests a failure with the default FINISH_CURRENTLY_RUNNING.
-   * After the first failure, every job that started should complete, and the
-   * rest of the jobs should be skipped.
-   *
-   * @throws Exception
+   * Tests a failure with the default FINISH_CURRENTLY_RUNNING. After the first failure, every job
+   * that started should complete, and the rest of the jobs should be skipped.
    */
   @Test
   public void testNormalFailure1() throws Exception {
     // Test propagation of KILLED status to embedded flows.
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -384,16 +381,15 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   /**
    * Test #2 on the default failure case.
-   * @throws Exception
    */
   @Test
   public void testNormalFailure2() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -436,11 +432,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testNormalFailure3() throws Exception {
     // Test propagation of CANCELLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -486,22 +482,19 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests failures when the fail behaviour is FINISH_ALL_POSSIBLE.
-   * In this case, all jobs which have had its pre-requisite met can continue
-   * to run. Finishes when the failure is propagated to the last node of the
-   * flow.
-   *
-   * @throws Exception
+   * Tests failures when the fail behaviour is FINISH_ALL_POSSIBLE. In this case, all jobs which
+   * have had its pre-requisite met can continue to run. Finishes when the failure is propagated to
+   * the last node of the flow.
    */
   @Test
   public void testFailedFinishingFailure3() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.FINISH_ALL_POSSIBLE);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -550,23 +543,20 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests the failure condition when a failure invokes a cancel (or killed)
-   * on the flow.
+   * Tests the failure condition when a failure invokes a cancel (or killed) on the flow.
    *
-   * Any jobs that are running will be assigned a KILLED state, and any nodes
-   * which were skipped due to prior errors will be given a CANCELLED state.
-   *
-   * @throws Exception
+   * Any jobs that are running will be assigned a KILLED state, and any nodes which were skipped due
+   * to prior errors will be given a CANCELLED state.
    */
   @Test
   public void testCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -606,20 +596,19 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   /**
    * Tests retries after a failure
-   * @throws Exception
    */
   @Test
   public void testRetryOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("joba").setStatus(Status.DISABLED);
-    ((ExecutableFlowBase)flow.getExecutableNode("jobb")).getExecutableNode(
+    ((ExecutableFlowBase) flow.getExecutableNode("jobb")).getExecutableNode(
         "innerFlow").setStatus(Status.DISABLED);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     assertStatus("joba", Status.SKIPPED);
     assertStatus("joba1", Status.RUNNING);
@@ -646,14 +635,15 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd", Status.KILLED);
     assertFlowStatus(Status.FAILED_FINISHING);
 
-    ExecutableNode node = runner.getExecutableFlow().getExecutableNodePath("jobd:innerFlow2");
-    ExecutableFlowBase base = node.getParentFlow();
-    for (String nodeId : node.getInNodes()) {
-      ExecutableNode inNode = base.getExecutableNode(nodeId);
+    final ExecutableNode node = this.runner.getExecutableFlow()
+        .getExecutableNodePath("jobd:innerFlow2");
+    final ExecutableFlowBase base = node.getParentFlow();
+    for (final String nodeId : node.getInNodes()) {
+      final ExecutableNode inNode = base.getExecutableNode(nodeId);
       System.out.println(inNode.getId() + " > " + inNode.getStatus());
     }
 
-    runner.retryFailures("me");
+    this.runner.retryFailures("me");
     assertStatus("jobb:innerJobB", Status.RUNNING);
     assertStatus("jobb:innerJobC", Status.RUNNING);
     assertStatus("jobb", Status.RUNNING);
@@ -690,21 +680,18 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests the manual Killing of a flow. In this case, the flow is just fine
-   * before the cancel
-   * is called.
-   *
-   * @throws Exception
+   * Tests the manual Killing of a flow. In this case, the flow is just fine before the cancel is
+   * called.
    */
   @Test
   public void testCancel() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -726,7 +713,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobb:innerJobB", Status.RUNNING);
     assertStatus("jobb:innerJobC", Status.RUNNING);
 
-    runner.kill("me");
+    this.runner.kill("me");
 
     assertStatus("jobb", Status.KILLED);
     assertStatus("jobb:innerJobB", Status.KILLED);
@@ -745,17 +732,15 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   /**
    * Tests the manual invocation of cancel on a flow that is FAILED_FINISHING
-   *
-   * @throws Exception
    */
   @Test
   public void testManualCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -782,7 +767,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobb", Status.FAILED_FINISHING);
     assertFlowStatus(Status.FAILED_FINISHING);
 
-    runner.kill("me");
+    this.runner.kill("me");
 
     assertStatus("jobb", Status.FAILED);
     assertStatus("jobb:innerJobC", Status.KILLED);
@@ -800,29 +785,27 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   /**
    * Tests that pause and resume work
-   *
-   * @throws Exception
    */
   @Test
   public void testPause() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
 
-    runner.pause("test");
+    this.runner.pause("test");
     InteractiveTestJob.getTestJob("joba").succeedJob();
     // 2.1 JOB A COMPLETES SUCCESSFULLY AFTER PAUSE
     assertStatus("joba", Status.SUCCEEDED);
     assertFlowStatus(Status.PAUSED);
 
     // 2.2 Flow is unpaused
-    runner.resume("test");
+    this.runner.resume("test");
     assertFlowStatus(Status.RUNNING);
     assertStatus("joba", Status.SUCCEEDED);
     assertStatus("joba1", Status.RUNNING);
@@ -833,14 +816,14 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobb:innerJobA", Status.RUNNING);
 
     // 3. jobb:Inner completes
-    runner.pause("test");
+    this.runner.pause("test");
 
     /// innerJobA completes, but paused
     InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob(
         Props.of("output.jobb.innerJobA", "jobb.innerJobA"));
     assertStatus("jobb:innerJobA", Status.SUCCEEDED);
 
-    runner.resume("test");
+    this.runner.resume("test");
     assertStatus("jobb:innerJobB", Status.RUNNING);
     assertStatus("jobb:innerJobC", Status.RUNNING);
 
@@ -884,18 +867,16 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Test the condition for a manual invocation of a KILL (cancel) on a flow
-   * that has been paused. The flow should unpause and be killed immediately.
-   *
-   * @throws Exception
+   * Test the condition for a manual invocation of a KILL (cancel) on a flow that has been paused.
+   * The flow should unpause and be killed immediately.
    */
   @Test
   public void testPauseKill() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf");
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -911,14 +892,14 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd:innerJobA", Status.RUNNING);
     assertStatus("jobb:innerJobA", Status.RUNNING);
 
-    runner.pause("me");
+    this.runner.pause("me");
     assertFlowStatus(Status.PAUSED);
     InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
     InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
     assertStatus("jobb:innerJobA", Status.SUCCEEDED);
     assertStatus("jobd:innerJobA", Status.SUCCEEDED);
 
-    runner.kill("me");
+    this.runner.kill("me");
     assertStatus("joba1", Status.KILLED);
     assertStatus("jobb:innerJobB", Status.CANCELLED);
     assertStatus("jobb:innerJobC", Status.CANCELLED);
@@ -935,19 +916,17 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests the case where a failure occurs on a Paused flow. In this case, the
-   * flow should stay paused.
-   *
-   * @throws Exception
+   * Tests the case where a failure occurs on a Paused flow. In this case, the flow should stay
+   * paused.
    */
   @Test
   public void testPauseFail() throws Exception {
-    eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf",
+    this.eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(this.eventCollector, "jobf",
         FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -963,7 +942,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd:innerJobA", Status.RUNNING);
     assertStatus("jobb:innerJobA", Status.RUNNING);
 
-    runner.pause("me");
+    this.runner.pause("me");
     assertFlowStatus(Status.PAUSED);
     InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
     InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
@@ -977,7 +956,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     waitEventFired("jobd:innerJobA", Status.FAILED);
     assertFlowStatus(Status.PAUSED);
 
-    runner.resume("me");
+    this.runner.resume("me");
     assertStatus("jobb:innerJobB", Status.CANCELLED);
     assertStatus("jobb:innerJobC", Status.CANCELLED);
     assertStatus("jobb:innerFlow", Status.CANCELLED);
@@ -997,19 +976,17 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Test the condition when a Finish all possible is called during a pause.
-   * The Failure is not acted upon until the flow is resumed.
-   *
-   * @throws Exception
+   * Test the condition when a Finish all possible is called during a pause. The Failure is not
+   * acted upon until the flow is resumed.
    */
   @Test
   public void testPauseFailFinishAll() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.FINISH_ALL_POSSIBLE);
 
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -1026,14 +1003,14 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd:innerJobA", Status.RUNNING);
     assertStatus("jobb:innerJobA", Status.RUNNING);
 
-    runner.pause("me");
+    this.runner.pause("me");
     assertFlowStatus(Status.PAUSED);
     InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
     InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
     assertStatus("jobd:innerJobA", Status.FAILED);
     assertStatus("jobb:innerJobA", Status.SUCCEEDED);
 
-    runner.resume("me");
+    this.runner.resume("me");
     assertStatus("jobb:innerJobB", Status.RUNNING);
     assertStatus("jobb:innerJobC", Status.RUNNING);
     assertStatus("jobd:innerFlow2", Status.CANCELLED);
@@ -1058,18 +1035,17 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
-   * Tests the case when a flow is paused and a failure causes a kill. The
-   * flow should die immediately regardless of the 'paused' status.
-   * @throws Exception
+   * Tests the case when a flow is paused and a failure causes a kill. The flow should die
+   * immediately regardless of the 'paused' status.
    */
   @Test
   public void testPauseFailKill() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
-    
+
     // 1. START FLOW
-    runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(this.runner);
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
@@ -1084,7 +1060,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobd:innerJobA", Status.RUNNING);
     assertStatus("jobb:innerJobA", Status.RUNNING);
 
-    runner.pause("me");
+    this.runner.pause("me");
     assertFlowStatus(Status.PAUSED);
     InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
     assertStatus("jobd:innerJobA", Status.FAILED);
@@ -1104,67 +1080,67 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertThreadShutDown();
   }
 
-  private Thread runFlowRunnerInThread(FlowRunner runner) {
-    Thread thread = new Thread(runner);
+  private Thread runFlowRunnerInThread(final FlowRunner runner) {
+    final Thread thread = new Thread(runner);
     thread.start();
     return thread;
   }
 
-  private void sleep(long millisec) {
+  private void sleep(final long millisec) {
     try {
       Thread.sleep(millisec);
-    }
-    catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
     }
   }
-  
-  private void prepareProject(Project project, File directory)
+
+  private void prepareProject(final Project project, final File directory)
       throws ProjectManagerException, IOException {
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), this.logger);
     loader.loadProjectFlow(project, directory);
     if (!loader.getErrors().isEmpty()) {
-      for (String error: loader.getErrors()) {
+      for (final String error : loader.getErrors()) {
         System.out.println(error);
       }
       throw new RuntimeException("Errors found in setup");
     }
 
-    flowMap = loader.getFlowMap();
-    project.setFlows(flowMap);
-    FileUtils.copyDirectory(directory, workingDir);
+    this.flowMap = loader.getFlowMap();
+    project.setFlows(this.flowMap);
+    FileUtils.copyDirectory(directory, this.workingDir);
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName) throws Exception {
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName) throws Exception {
     return createFlowRunner(eventCollector, flowName,
         FailureAction.FINISH_CURRENTLY_RUNNING);
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, FailureAction action) throws Exception {
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final FailureAction action) throws Exception {
     return createFlowRunner(eventCollector, flowName, action, new Props());
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, FailureAction action, Props azkabanProps) throws Exception {
-    Flow flow = flowMap.get(flowName);
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final FailureAction action, final Props azkabanProps)
+      throws Exception {
+    final Flow flow = this.flowMap.get(flowName);
 
-    int exId = id++;
-    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
-    exFlow.setExecutionPath(workingDir.getPath());
+    final int exId = id++;
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    exFlow.setExecutionPath(this.workingDir.getPath());
     exFlow.setExecutionId(exId);
 
-    Map<String, String> flowParam = new HashMap<String, String>();
+    final Map<String, String> flowParam = new HashMap<>();
     flowParam.put("param4", "override.4");
     flowParam.put("param10", "override.10");
     flowParam.put("param11", "override.11");
     exFlow.getExecutionOptions().addAllFlowParameters(flowParam);
     exFlow.getExecutionOptions().setFailureAction(action);
-    fakeExecutorLoader.uploadExecutableFlow(exFlow);
+    this.fakeExecutorLoader.uploadExecutableFlow(exFlow);
 
-    FlowRunner runner = new FlowRunner(
-        fakeExecutorLoader.fetchExecutableFlow(exId), fakeExecutorLoader,
-        fakeProjectLoader, jobtypeManager, azkabanProps);
+    final FlowRunner runner = new FlowRunner(
+        this.fakeExecutorLoader.fetchExecutableFlow(exId), this.fakeExecutorLoader,
+        this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 
