@@ -24,20 +24,13 @@ import azkaban.utils.Props;
 import azkaban.utils.Triple;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MockProjectLoader implements ProjectLoader {
 
-  private static int projectId = 0;
-  private final ConcurrentHashMap<Integer, Project> projectsById =
-      new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, Project> projectsByName =
-      new ConcurrentHashMap<>();
   public File dir;
 
   public MockProjectLoader(final File dir) {
@@ -46,43 +39,28 @@ public class MockProjectLoader implements ProjectLoader {
 
   @Override
   public List<Project> fetchAllActiveProjects() throws ProjectManagerException {
-    final ArrayList<Project> activeProjects = new ArrayList<>();
-    for (final Project project : this.projectsById.values()) {
-      if (project.isActive()) {
-        activeProjects.add(project);
-      }
-    }
-    return activeProjects;
+    // TODO Auto-generated method stub
+    return null;
   }
 
   @Override
   public Project fetchProjectById(final int id) throws ProjectManagerException {
-    System.out.println("MockProjectLoader: fetch project by id " + id);
-    if (!this.projectsById.containsKey(id)) {
-      throw new ProjectManagerException("Could not get project by id.");
-    }
-    return this.projectsById.get(id);
+    // TODO Auto-generated method stub
+    return null;
   }
 
   @Override
   public Project createNewProject(final String name, final String description, final User creator)
       throws ProjectManagerException {
-    final Project project = new Project(++projectId, name);
-    project.setDescription(description);
-    project.setActive(true);
-    this.projectsById.put(project.getId(), project);
-    this.projectsByName.put(project.getName(), project);
-    System.out.println("MockProjectLoader: Created project " + project.getName() +
-        ", id: " + project.getId() + ", description: " + description +
-        ", user: " + creator.getUserId());
-    return project;
+    // TODO Auto-generated method stub
+    return null;
   }
 
   @Override
   public void removeProject(final Project project, final String user)
       throws ProjectManagerException {
-    project.setActive(false);
-    System.out.println("MockProjectLoader: removed project " + project.getName());
+    // TODO Auto-generated method stub
+
   }
 
   @Override
@@ -172,7 +150,8 @@ public class MockProjectLoader implements ProjectLoader {
   @Override
   public List<Flow> fetchAllProjectFlows(final Project project)
       throws ProjectManagerException {
-    return new ArrayList<>();
+    // TODO Auto-generated method stub
+    return null;
   }
 
   @Override
@@ -273,10 +252,7 @@ public class MockProjectLoader implements ProjectLoader {
 
   @Override
   public Project fetchProjectByName(final String name) throws ProjectManagerException {
-    System.out.println("MockProjectLoader: fetch project by name " + name);
-    if (!this.projectsByName.containsKey(name)) {
-      throw new ProjectManagerException("Could not get project by name.");
-    }
-    return this.projectsByName.get(name);
+    // TODO Auto-generated method stub
+    return null;
   }
 }
