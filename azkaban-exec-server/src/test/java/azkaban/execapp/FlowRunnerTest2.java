@@ -115,9 +115,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     if (this.workingDir.exists()) {
       FileUtils.deleteDirectory(this.workingDir);
     }
-    if (!this.workingDir.mkdirs()) {
-      throw new RuntimeException("Failed to create working directory: " + this.workingDir);
-    }
+    FileUtils.forceMkdir(this.workingDir);
     this.jobtypeManager = new JobTypeManager(null, null,
         this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
