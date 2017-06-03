@@ -57,7 +57,7 @@ import org.junit.Test;
  *
  * Flow jobf looks like the following:
  *
- *
+ * <pre>
  *       joba       joba1
  *      /  |  \      |
  *     /   |   \     |
@@ -68,25 +68,30 @@ import org.junit.Test;
  *         |     /
  *         |    /
  *        jobf
+ * </pre>
  *
- *  The job 'jobb' is an embedded flow:
+ * The job 'jobb' is an embedded flow:
  *
- *  jobb:innerFlow
+ * jobb:innerFlow
  *
+ * <pre>
  *        innerJobA
  *        /       \
  *   innerJobB   innerJobC
  *        \       /
  *        innerFlow
  *
+ * </pre>
  *
- *  The job 'jobd' is a simple embedded flow:
+ * The job 'jobd' is a simple embedded flow:
  *
- *  jobd:innerFlow2
+ * jobd:innerFlow2
  *
+ * <pre>
  *       innerJobA
  *           |
  *       innerFlow2
+ * </pre>
  *
  * The following tests checks each stage of the flow run by forcing jobs to succeed or fail.
  */
