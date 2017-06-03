@@ -115,7 +115,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     if (this.workingDir.exists()) {
       FileUtils.deleteDirectory(this.workingDir);
     }
-    this.workingDir.mkdirs();
+    if (!this.workingDir.mkdirs()) {
+      throw new RuntimeException("Failed to create working directory: " + this.workingDir);
+    }
     this.jobtypeManager = new JobTypeManager(null, null,
         this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
@@ -1081,17 +1083,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertThreadShutDown();
   }
 
-  private Thread runFlowRunnerInThread(final FlowRunner runner) {
+  private void runFlowRunnerInThread(final FlowRunner runner) {
     final Thread thread = new Thread(runner);
     thread.start();
-    return thread;
-  }
-
-  private void sleep(final long millisec) {
-    try {
-      Thread.sleep(millisec);
-    } catch (final InterruptedException e) {
-    }
   }
 
   private void prepareProject(final Project project, final File directory)
@@ -1111,7 +1105,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
-      final String flowName) throws Exception {
+      @SuppressWarnings("SameParameterValue") final String flowName) throws Exception {
     return createFlowRunner(eventCollector, flowName,
         FailureAction.FINISH_CURRENTLY_RUNNING);
   }
