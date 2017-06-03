@@ -16,18 +16,15 @@
 
 package azkaban.executor;
 
-import azkaban.AzkabanCommonModule;
-import azkaban.ServiceProvider;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -210,21 +207,20 @@ public class ExecutorManagerTest {
     manager.submitExecutableFlow(flow1, testUser.getUserId());
     manager.submitExecutableFlow(flow2, testUser.getUserId());
 
-    List<ExecutableFlow> testFlows = new LinkedList<ExecutableFlow>();
-    testFlows.add(flow1);
-    testFlows.add(flow2);
+    List<Integer> testFlows = Arrays.asList(flow1.getExecutionId(), flow2.getExecutionId());
 
     List<Pair<ExecutionReference, ExecutableFlow>> queuedFlowsDB =
       loader.fetchQueuedFlows();
     Assert.assertEquals(queuedFlowsDB.size(), testFlows.size());
     // Verify things are correctly setup in db
     for (Pair<ExecutionReference, ExecutableFlow> pair : queuedFlowsDB) {
-      Assert.assertTrue(testFlows.contains(pair.getSecond()));
+      Assert.assertTrue(testFlows.contains(pair.getSecond().getExecutionId()));
     }
 
     // Verify running flows using old definition of "running" flows i.e. a
     // non-dispatched flow is also considered running
-    List<ExecutableFlow> managerActiveFlows = manager.getRunningFlows();
+    List<Integer> managerActiveFlows = manager.getRunningFlows()
+        .stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toList());
     Assert.assertTrue(managerActiveFlows.containsAll(testFlows)
       && testFlows.containsAll(managerActiveFlows));
 
