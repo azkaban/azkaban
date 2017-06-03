@@ -102,13 +102,7 @@ public class JobRunnerTest {
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
-    Assert.assertTrue(eventCollector.checkOrdering());
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_STARTED,
-          Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Ignore
@@ -137,12 +131,7 @@ public class JobRunnerTest {
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_STARTED,
-          Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Test
@@ -173,12 +162,7 @@ public class JobRunnerTest {
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_STARTED,
-          Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_FINISHED);
   }
 
   @Test
@@ -209,12 +193,7 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(runner.getLogFilePath() == null);
     Assert.assertTrue(!runner.isKilled());
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_STARTED,
-          Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_FINISHED);
   }
 
   @Ignore
@@ -253,14 +232,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(runner.isKilled());
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_STARTED,
-          Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Ignore
@@ -295,12 +267,7 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
     Assert.assertTrue(eventCollector.checkOrdering());
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_STARTED,
-          Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Test
@@ -339,12 +306,7 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(logFile.exists());
 
-    Assert.assertTrue(eventCollector.checkOrdering());
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.JOB_FINISHED});
-    } catch (final Exception e) {
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.JOB_FINISHED);
   }
 
   private Props createProps(final int sleepSec, final boolean fail) {
