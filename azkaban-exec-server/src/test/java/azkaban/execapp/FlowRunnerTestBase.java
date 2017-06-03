@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -168,6 +169,10 @@ public class FlowRunnerTestBase {
     for (final String name : jobs) {
       InteractiveTestJob.getTestJob(name).succeedJob();
     }
+  }
+
+  protected void assertEvents(final Type... types) {
+    eventCollector.assertEvents(types);
   }
 
 }

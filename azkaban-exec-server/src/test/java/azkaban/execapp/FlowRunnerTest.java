@@ -95,10 +95,10 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Test
   public void exec1Normal() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    this.runner = createFlowRunner(this.loader, eventCollector, "exec1");
+    this.runner = createFlowRunner(this.loader, this.eventCollector, "exec1");
 
     startThread(this.runner);
     succeedJobs("job3", "job4", "job6");
@@ -117,13 +117,13 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SUCCEEDED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
   public void exec1Disabled() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
     final ExecutableFlow exFlow = prepareExecDir(TEST_DIR, "exec1", 1);
 
@@ -133,7 +133,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     exFlow.getExecutableNode("job5").setStatus(Status.DISABLED);
     exFlow.getExecutableNode("job10").setStatus(Status.DISABLED);
 
-    this.runner = createFlowRunner(exFlow, this.loader, eventCollector);
+    this.runner = createFlowRunner(exFlow, this.loader, this.eventCollector);
 
     Assert.assertTrue(!this.runner.isKilled());
     assertFlowStatus(Status.READY);
@@ -156,17 +156,17 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SKIPPED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
   public void exec1Failed() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
     final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
 
-    this.runner = createFlowRunner(flow, this.loader, eventCollector);
+    this.runner = createFlowRunner(flow, this.loader, this.eventCollector);
 
     startThread(this.runner);
     succeedJobs("job6");
@@ -186,18 +186,18 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
   public void exec1FailedKillAll() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
     final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
     flow.getExecutionOptions().setFailureAction(FailureAction.CANCEL_ALL);
 
-    this.runner = createFlowRunner(flow, this.loader, eventCollector);
+    this.runner = createFlowRunner(flow, this.loader, this.eventCollector);
 
     startThread(this.runner);
     assertThreadShutDown();
@@ -217,18 +217,18 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
   public void exec1FailedFinishRest() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
     final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec3", 1);
     flow.getExecutionOptions().setFailureAction(
         FailureAction.FINISH_ALL_POSSIBLE);
-    this.runner = createFlowRunner(flow, this.loader, eventCollector);
+    this.runner = createFlowRunner(flow, this.loader, this.eventCollector);
 
     startThread(this.runner);
     succeedJobs("job3");
@@ -247,15 +247,15 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
   public void execAndCancel() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    this.runner = createFlowRunner(this.loader, eventCollector, "exec1");
+    this.runner = createFlowRunner(this.loader, this.eventCollector, "exec1");
 
     startThread(this.runner);
 
@@ -277,15 +277,15 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     assertFlowStatus(Status.KILLED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
   public void execRetries() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
+    this.eventCollector = new EventCollectorListener();
+    this.eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    this.runner = createFlowRunner(this.loader, eventCollector, "exec4-retry");
+    this.runner = createFlowRunner(this.loader, this.eventCollector, "exec4-retry");
 
     startThread(this.runner);
     assertThreadShutDown();
