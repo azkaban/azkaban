@@ -97,9 +97,8 @@ public class ExecutorManager extends EventHandler implements
 
   private ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
       new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
-  private ConcurrentHashMap<Integer, ExecutableFlow> recentlyFinished =
-      new ConcurrentHashMap<Integer, ExecutableFlow>();
-  
+
+
   QueuedExecutions queuedFlows;
 
   final private Set<Executor> activeExecutors = new HashSet<Executor>();
@@ -110,7 +109,6 @@ public class ExecutorManager extends EventHandler implements
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
-  // 10 mins recently finished threshold.
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private long lastCleanerThreadCheckTime = -1;
 
@@ -634,6 +632,7 @@ public class ExecutorManager extends EventHandler implements
       flows = executorLoader.fetchRecentlyFinishedFlows(
           RECENTLY_FINISHED_LIFETIME);
     } catch(ExecutorManagerException e) {
+      //Todo jamiesjc: fix error handling.
       logger.error("Failed to fetch recently finished flows.", e);
     }
     return flows;

@@ -911,6 +911,7 @@ public class JdbcExecutorLoaderTest {
     flow1.setStatus(Status.SUCCEEDED);
     flow1.setEndTime(DateTimeUtils.currentTimeMillis());
     loader.updateExecutableFlow(flow1);
+    //Todo jamiesjc: use java8.java.time api instead of jodatime
     //Mock flow finished time to be 2 min ago.
     DateTimeUtils.setCurrentMillisOffset(-FLOW_FINISHED_TIME.toMillis());
     flow1.setEndTime(DateTimeUtils.currentTimeMillis());
