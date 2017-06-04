@@ -39,15 +39,21 @@ Project from the Quick Start box or choose Open from the File menu and select th
 Azkaban follows Google code style. The template file, `intellij-java-google-style.xml`, can be found in the root 
 directory.
 
-#### IntelliJ IDEA 2017.1 on Mac OS X
-To install, copy `intellij-java-google-style.xml` into `~/Library/Preferences/IntelliJIdea2017.1/codestyles`
+Follow [the Intellij's code style help](https://www.jetbrains.com/help/idea/2017.1/code-style.html) 
+to import and set up the style.
+ 
+Note: 
+To use different styles for different projects try
+ "You can copy the IDE scheme to the current project, using the Copy to Project... command."
 
-#### IntelliJ IDEA 2017.1 on Linux
-To install, copy `intellij-java-google-style.xml` into `$HOME/.IdeaIC2017.1/config/codestyles`
 
-After that, you should be able to set up the code style from `Preferences > Editor > Code Style > Scheme` 
+We also recommend 
+intellij's [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) to 
+reformat/refactor code automatically:
 
-We also leverage intellij save actions plugin(https://github.com/dubreuia/intellij-plugin-save-actions) to reformat/refactor code automatically:
+Please turn on all the options except 
+  * Remove unused suppress warning annotation
+
 It allows us to do following when saving a file:
 * Organize imports
 * Reformat code based on the code style
@@ -56,7 +62,6 @@ It allows us to do following when saving a file:
 * Add final to field
 * Remove explicit generic type for diamond
 * Qualify field access with this
-* Remove unused suppress warning annotation
 * Remove final from private method
 * Remove unnecessary semicolon
 * Add missing @Override annotations
