@@ -45,7 +45,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -549,8 +548,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    * Any jobs that are running will be assigned a KILLED state, and any nodes which were skipped due
    * to prior errors will be given a CANCELLED state.
    */
-  //todo HappyRay: fix the flaky test issue #1155
-  @Ignore
   @Test
   public void testCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
@@ -600,8 +597,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   /**
    * Tests retries after a failure
    */
-  //todo HappyRay: fix the flaky test issue #1155
-  @Ignore
   @Test
   public void testRetryOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
@@ -648,6 +643,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
       System.out.println(inNode.getId() + " > " + inNode.getStatus());
     }
 
+    assertStatus("jobb:innerFlow", Status.SKIPPED);
+    InteractiveTestJob.clearTestJobs("jobb:innerJobB", "jobb:innerJobC");
     this.runner.retryFailures("me");
     assertStatus("jobb:innerJobB", Status.RUNNING);
     assertStatus("jobb:innerJobC", Status.RUNNING);
@@ -984,8 +981,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    * Test the condition when a Finish all possible is called during a pause. The Failure is not
    * acted upon until the flow is resumed.
    */
-  //todo HappyRay: fix the flaky test issue #1155
-  @Ignore
   @Test
   public void testPauseFailFinishAll() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
