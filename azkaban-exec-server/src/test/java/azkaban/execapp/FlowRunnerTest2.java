@@ -549,6 +549,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    * Any jobs that are running will be assigned a KILLED state, and any nodes which were skipped due
    * to prior errors will be given a CANCELLED state.
    */
+  //todo HappyRay: fix the flaky test issue #1155
+  @Ignore
   @Test
   public void testCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
