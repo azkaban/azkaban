@@ -32,7 +32,6 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
@@ -1086,20 +1085,10 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     thread.start();
   }
 
-  private void prepareProject(final Project project, final File directory)
+  private void prepareProject(final Project project, final File sourceDir)
       throws ProjectManagerException, IOException {
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), this.logger);
-    loader.loadProjectFlow(project, directory);
-    if (!loader.getErrors().isEmpty()) {
-      for (final String error : loader.getErrors()) {
-        System.out.println(error);
-      }
-      throw new RuntimeException("Errors found in setup");
-    }
-
-    this.flowMap = loader.getFlowMap();
-    project.setFlows(this.flowMap);
-    FileUtils.copyDirectory(directory, this.workingDir);
+    this.flowMap = FlowRunnerTestUtil
+        .prepareProject(project, sourceDir, this.logger, this.workingDir);
   }
 
   private FlowRunner createFlowRunner(final EventCollectorListener eventCollector)

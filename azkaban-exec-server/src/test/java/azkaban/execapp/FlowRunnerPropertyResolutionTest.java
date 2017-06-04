@@ -25,7 +25,6 @@ import azkaban.executor.JavaJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
@@ -204,22 +203,10 @@ public class FlowRunnerPropertyResolutionTest {
     Assert.assertEquals("moo4", job3Props.get("props4"));
   }
 
-  private void prepareProject(final Project project, final File directory)
-      throws ProjectManagerException,
-      IOException {
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), this.logger);
-    loader.loadProjectFlow(project, directory);
-    if (!loader.getErrors().isEmpty()) {
-      for (final String error : loader.getErrors()) {
-        System.out.println(error);
-      }
-
-      throw new RuntimeException("Errors found in setup");
-    }
-
-    this.flowMap = loader.getFlowMap();
-    project.setFlows(this.flowMap);
-    FileUtils.copyDirectory(directory, this.workingDir);
+  private void prepareProject(final Project project, final File sourceDir)
+      throws ProjectManagerException, IOException {
+    this.flowMap = FlowRunnerTestUtil
+        .prepareProject(project, sourceDir, this.logger, this.workingDir);
   }
 
   private FlowRunner createFlowRunner(final String flowName,
