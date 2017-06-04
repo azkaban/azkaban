@@ -63,7 +63,7 @@ public class EventCollectorListener implements EventListener {
     return true;
   }
 
-  public void checkEventExists(final Type... expected) {
+  public void assertEvents(final Type... expected) {
     Object[] captured = this.eventList.stream()
         .filter(event -> event.getRunner() != null)
         .map(event -> event.getType())

@@ -117,7 +117,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SUCCEEDED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -156,7 +156,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SKIPPED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -186,7 +186,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -217,7 +217,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -247,7 +247,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -277,7 +277,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     assertFlowStatus(Status.KILLED);
 
-    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
+    eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
