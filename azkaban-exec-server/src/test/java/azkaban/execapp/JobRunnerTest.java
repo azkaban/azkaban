@@ -306,6 +306,7 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(logFile.exists());
 
+    Assert.assertEquals(2L, (long) loader.getNodeUpdateCount("testJob"));
     eventCollector.checkEventExists(Type.JOB_FINISHED);
   }
 
