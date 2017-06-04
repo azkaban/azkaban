@@ -117,14 +117,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SUCCEEDED);
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
-          Type.FLOW_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -163,14 +156,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SKIPPED);
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
-          Type.FLOW_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -200,14 +186,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
-          Type.FLOW_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -238,14 +217,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
-          Type.FLOW_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-      eventCollector.writeAllEvents();
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -275,14 +247,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
-          Type.FLOW_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-      eventCollector.writeAllEvents();
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
@@ -312,14 +277,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     assertFlowStatus(Status.KILLED);
 
-    try {
-      eventCollector.checkEventExists(new Type[]{Type.FLOW_STARTED,
-          Type.FLOW_FINISHED});
-    } catch (final Exception e) {
-      System.out.println(e.getMessage());
-      eventCollector.writeAllEvents();
-      Assert.fail(e.getMessage());
-    }
+    eventCollector.checkEventExists(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
 
   @Test
