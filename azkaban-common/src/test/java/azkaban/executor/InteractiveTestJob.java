@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
+import static org.junit.Assert.assertNotNull;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
@@ -140,5 +141,11 @@ public class InteractiveTestJob extends AbstractProcessJob {
   public void cancel() throws InterruptedException {
     info("Killing job");
     failJob();
+  }
+
+  public static void clearTestJobs(final String... names) {
+    for (String name : names) {
+      assertNotNull(testJobs.remove(name));
+    }
   }
 }
