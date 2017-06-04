@@ -102,7 +102,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   @Parameterized.Parameters
   public static List<Object[]> data() {
-    return Arrays.asList(new Object[100][0]);
+    return Arrays.asList(new Object[50][0]);
   }
 
   private static final File TEST_DIR = new File(
