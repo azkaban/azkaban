@@ -16,6 +16,9 @@
 
 package azkaban.execapp;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
@@ -49,13 +52,6 @@ public class EventCollectorListener implements EventListener {
     return this.eventList;
   }
 
-  public void writeAllEvents() {
-    for (final Event event : this.eventList) {
-      System.out.print(event.getType());
-      System.out.print(",");
-    }
-  }
-
   public boolean checkOrdering() {
     final long time = 0;
     for (final Event event : this.eventList) {
@@ -67,27 +63,11 @@ public class EventCollectorListener implements EventListener {
     return true;
   }
 
-  public void checkEventExists(final Type[] types) {
-    int index = 0;
-    for (final Event event : this.eventList) {
-      if (event.getRunner() == null) {
-        continue;
-      }
-
-      if (index >= types.length) {
-        throw new RuntimeException("More events than expected. Got "
-            + event.getType());
-      }
-      final Type type = types[index++];
-
-      if (type != event.getType()) {
-        throw new RuntimeException("Got " + event.getType() + ", expected "
-            + type + " index:" + index);
-      }
-    }
-
-    if (types.length != index) {
-      throw new RuntimeException("Not enough events.");
-    }
+  public void checkEventExists(final Type... expected) {
+    Object[] captured = this.eventList.stream()
+        .filter(event -> event.getRunner() != null)
+        .map(event -> event.getType())
+        .toArray();
+    assertThat(captured, is(expected));
   }
 }
