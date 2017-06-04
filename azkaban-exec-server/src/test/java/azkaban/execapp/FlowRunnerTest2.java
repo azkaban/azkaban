@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -32,11 +32,9 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.project.ProjectManagerException;
 import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
@@ -129,7 +127,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
-    prepareProject(this.project, TEST_DIR);
+    this.flowMap = FlowRunnerTestUtil
+        .prepareProject(this.project, TEST_DIR, this.logger, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -1084,22 +1083,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   private void runFlowRunnerInThread(final FlowRunner runner) {
     final Thread thread = new Thread(runner);
     thread.start();
-  }
-
-  private void prepareProject(final Project project, final File directory)
-      throws ProjectManagerException, IOException {
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), this.logger);
-    loader.loadProjectFlow(project, directory);
-    if (!loader.getErrors().isEmpty()) {
-      for (final String error : loader.getErrors()) {
-        System.out.println(error);
-      }
-      throw new RuntimeException("Errors found in setup");
-    }
-
-    this.flowMap = loader.getFlowMap();
-    project.setFlows(this.flowMap);
-    FileUtils.copyDirectory(directory, this.workingDir);
   }
 
   private FlowRunner createFlowRunner(final EventCollectorListener eventCollector)
