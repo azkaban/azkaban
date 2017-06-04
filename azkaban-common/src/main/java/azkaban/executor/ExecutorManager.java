@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -96,8 +97,7 @@ public class ExecutorManager extends EventHandler implements
 
   private ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
       new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
-  private ConcurrentHashMap<Integer, ExecutableFlow> recentlyFinished =
-      new ConcurrentHashMap<Integer, ExecutableFlow>();
+
 
   QueuedExecutions queuedFlows;
 
@@ -109,6 +109,7 @@ public class ExecutorManager extends EventHandler implements
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private long lastCleanerThreadCheckTime = -1;
 
   private long lastThreadCheckTime = -1;
@@ -626,7 +627,15 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public List<ExecutableFlow> getRecentlyFinishedFlows() {
-    return new ArrayList<ExecutableFlow>(recentlyFinished.values());
+    List<ExecutableFlow> flows = new ArrayList<>();
+    try {
+      flows = executorLoader.fetchRecentlyFinishedFlows(
+          RECENTLY_FINISHED_LIFETIME);
+    } catch(ExecutorManagerException e) {
+      //Todo jamiesjc: fix error handling.
+      logger.error("Failed to fetch recently finished flows.", e);
+    }
+    return flows;
   }
 
   @Override
@@ -1212,8 +1221,6 @@ public class ExecutorManager extends EventHandler implements
       this.setName("ExecutorManagerUpdaterThread");
     }
 
-    // 10 mins recently finished threshold.
-    private long recentlyFinishedLifetimeMs = 600000;
     private int waitTimeIdleMs = 2000;
     private int waitTimeMs = 500;
 
@@ -1327,10 +1334,6 @@ public class ExecutorManager extends EventHandler implements
               }
             }
 
-            updaterStage = "Evicting old recently finished flows.";
-
-            evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
-            // Add new finished
             for (ExecutableFlow flow : finishedFlows) {
               if (flow.getScheduleId() >= 0
                   && flow.getStatus() == Status.SUCCEEDED) {
@@ -1338,7 +1341,6 @@ public class ExecutorManager extends EventHandler implements
                     cacheDir);
               }
               fireEventListeners(Event.create(flow, Type.FLOW_FINISHED, new EventData(flow)));
-              recentlyFinished.put(flow.getExecutionId(), flow);
             }
 
             updaterStage =
@@ -1404,7 +1406,6 @@ public class ExecutorManager extends EventHandler implements
       updaterStage = "finalizing flow " + execId + " cleaning from memory";
       runningFlows.remove(execId);
       fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED, new EventData(dsFlow)));
-      recentlyFinished.put(execId, dsFlow);
 
     } catch (ExecutorManagerException e) {
       alertUser = false; // failed due to azkaban internal error, not to alert user
@@ -1504,20 +1505,6 @@ public class ExecutorManager extends EventHandler implements
     }
 
     exFlow.setStatus(Status.FAILED);
-  }
-
-  private void evictOldRecentlyFinished(long ageMs) {
-    ArrayList<Integer> recentlyFinishedKeys =
-        new ArrayList<Integer>(recentlyFinished.keySet());
-    long oldAgeThreshold = System.currentTimeMillis() - ageMs;
-    for (Integer key : recentlyFinishedKeys) {
-      ExecutableFlow flow = recentlyFinished.get(key);
-
-      if (flow.getEndTime() < oldAgeThreshold) {
-        // Evict
-        recentlyFinished.remove(key);
-      }
-    }
   }
 
   private ExecutableFlow updateExecution(Map<String, Object> updateData)
