@@ -16,7 +16,7 @@ apply plugin: 'idea'
 
 allprojects {
     repositories {
-        mavenCentral()
+        jcenter()
         mavenLocal()
     }
 }
