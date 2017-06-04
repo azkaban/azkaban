@@ -41,16 +41,26 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+@RunWith(Parameterized.class)
 public class FlowRunnerTest extends FlowRunnerTestBase {
+
+  @Parameterized.Parameters
+  public static List<Object[]> data() {
+    return Arrays.asList(new Object[50][0]);
+  }
 
   private static final File TEST_DIR = new File(
       "../azkaban-test/src/test/resources/azkaban/test/executions/exectest1");
