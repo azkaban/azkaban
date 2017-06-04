@@ -95,8 +95,6 @@ import org.junit.Test;
  */
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
-  private static final File TEST_DIR = new File(
-      "../azkaban-test/src/test/resources/azkaban/test/executions/embedded2");
   private static int id = 101;
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
@@ -127,8 +125,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
+    final String dir = "../azkaban-test/src/test/resources/azkaban/test/executions/embedded2";
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, TEST_DIR, this.logger, this.workingDir);
+        .prepareProject(this.project, dir, this.logger, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }

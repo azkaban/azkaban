@@ -90,7 +90,7 @@ public class FlowRunnerPropertyResolutionTest {
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
 
-    final File dir = new File("unit/executions/execpropstest");
+    final String dir = "unit/executions/execpropstest";
     this.flowMap = FlowRunnerTestUtil
         .prepareProject(this.project, dir, this.logger, this.workingDir);
 

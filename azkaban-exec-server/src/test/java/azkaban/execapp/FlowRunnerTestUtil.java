@@ -41,11 +41,12 @@ class FlowRunnerTestUtil {
    * @throws ProjectManagerException the project manager exception
    * @throws IOException the io exception
    */
-  static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
+  static Map<String, Flow> prepareProject(final Project project, final String sourceDir,
       final Logger logger, final File workingDir)
       throws ProjectManagerException, IOException {
+    File sourceDirFile = new File(sourceDir);
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
-    loader.loadProjectFlow(project, sourceDir);
+    loader.loadProjectFlow(project, sourceDirFile);
     if (!loader.getErrors().isEmpty()) {
       for (final String error : loader.getErrors()) {
         System.out.println(error);
@@ -57,7 +58,7 @@ class FlowRunnerTestUtil {
 
     final Map<String, Flow> flowMap = loader.getFlowMap();
     project.setFlows(flowMap);
-    FileUtils.copyDirectory(sourceDir, workingDir);
+    FileUtils.copyDirectory(sourceDirFile, workingDir);
 
     return flowMap;
   }

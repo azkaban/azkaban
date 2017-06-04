@@ -99,7 +99,7 @@ public class FlowRunnerPipelineTest {
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
 
-    final File dir = new File("unit/executions/embedded2");
+    final String dir = "unit/executions/embedded2";
     this.flowMap = FlowRunnerTestUtil
         .prepareProject(this.project, dir, this.logger, this.workingDir);
 
