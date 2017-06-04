@@ -33,7 +33,6 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.project.ProjectManagerException;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +100,8 @@ public class FlowRunnerPipelineTest {
     this.project = new Project(1, "testProject");
 
     final File dir = new File("unit/executions/embedded2");
-    prepareProject(this.project, dir);
+    this.flowMap = FlowRunnerTestUtil
+        .prepareProject(this.project, dir, this.logger, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -645,12 +645,6 @@ public class FlowRunnerPipelineTest {
             + node.getStatus());
       }
     }
-  }
-
-  private void prepareProject(final Project project, final File sourceDir)
-      throws ProjectManagerException, IOException {
-    this.flowMap = FlowRunnerTestUtil
-        .prepareProject(project, sourceDir, this.logger, this.workingDir);
   }
 
   // private void printCurrentState(String prefix, ExecutableFlowBase flow) {

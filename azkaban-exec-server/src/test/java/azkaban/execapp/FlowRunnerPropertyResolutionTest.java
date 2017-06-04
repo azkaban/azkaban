@@ -28,7 +28,6 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.project.ProjectManagerException;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -92,7 +91,8 @@ public class FlowRunnerPropertyResolutionTest {
     this.project = new Project(1, "testProject");
 
     final File dir = new File("unit/executions/execpropstest");
-    prepareProject(this.project, dir);
+    this.flowMap = FlowRunnerTestUtil
+        .prepareProject(this.project, dir, this.logger, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -201,12 +201,6 @@ public class FlowRunnerPropertyResolutionTest {
     Assert.assertEquals("shared1", job3Props.get("props1"));
     Assert.assertEquals("shared2", job3Props.get("props2"));
     Assert.assertEquals("moo4", job3Props.get("props4"));
-  }
-
-  private void prepareProject(final Project project, final File sourceDir)
-      throws ProjectManagerException, IOException {
-    this.flowMap = FlowRunnerTestUtil
-        .prepareProject(project, sourceDir, this.logger, this.workingDir);
   }
 
   private FlowRunner createFlowRunner(final String flowName,

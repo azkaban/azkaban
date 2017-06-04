@@ -35,7 +35,6 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.project.ProjectManagerException;
 import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
@@ -128,7 +127,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
-    prepareProject(this.project, TEST_DIR);
+    this.flowMap = FlowRunnerTestUtil
+        .prepareProject(this.project, TEST_DIR, this.logger, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -1083,12 +1083,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   private void runFlowRunnerInThread(final FlowRunner runner) {
     final Thread thread = new Thread(runner);
     thread.start();
-  }
-
-  private void prepareProject(final Project project, final File sourceDir)
-      throws ProjectManagerException, IOException {
-    this.flowMap = FlowRunnerTestUtil
-        .prepareProject(project, sourceDir, this.logger, this.workingDir);
   }
 
   private FlowRunner createFlowRunner(final EventCollectorListener eventCollector)
