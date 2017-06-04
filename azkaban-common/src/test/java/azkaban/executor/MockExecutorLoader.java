@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -409,5 +410,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
     this.executionExecutorMapping.remove(executionId);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
+      throws ExecutorManagerException {
+    return new ArrayList<>();
   }
 }
