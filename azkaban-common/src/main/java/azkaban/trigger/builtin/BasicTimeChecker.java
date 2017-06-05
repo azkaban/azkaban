@@ -28,7 +28,6 @@ import org.quartz.CronExpression;
 
 public class BasicTimeChecker implements ConditionChecker {
 
-
   public static final String type = "BasicTimeChecker";
   private final String id;
   private final long firstCheckTime;
@@ -41,8 +40,8 @@ public class BasicTimeChecker implements ConditionChecker {
   private boolean skipPastChecks = true;
 
   public BasicTimeChecker(final String id, final long firstCheckTime,
-      final DateTimeZone timezone, final boolean isRecurring, final boolean skipPastChecks,
-      final ReadablePeriod period, final String cronExpression) {
+                          final DateTimeZone timezone, final boolean isRecurring, final boolean skipPastChecks,
+                          final ReadablePeriod period, final String cronExpression) {
     this.id = id;
     this.firstCheckTime = firstCheckTime;
     this.timezone = timezone;
@@ -56,8 +55,8 @@ public class BasicTimeChecker implements ConditionChecker {
   }
 
   public BasicTimeChecker(final String id, final long firstCheckTime,
-      final DateTimeZone timezone, final long nextCheckTime, final boolean isRecurring,
-      final boolean skipPastChecks, final ReadablePeriod period, final String cronExpression) {
+                          final DateTimeZone timezone, final long nextCheckTime, final boolean isRecurring,
+                          final boolean skipPastChecks, final ReadablePeriod period, final String cronExpression) {
     this.id = id;
     this.firstCheckTime = firstCheckTime;
     this.timezone = timezone;

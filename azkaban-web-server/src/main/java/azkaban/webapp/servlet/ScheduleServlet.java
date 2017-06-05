@@ -16,6 +16,31 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.Constants;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.flow.Flow;
+import azkaban.flow.Node;
+import azkaban.project.Project;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.ProjectManager;
+import azkaban.scheduler.Schedule;
+import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduleManagerException;
+import azkaban.server.HttpRequestUtils;
+import azkaban.server.session.Session;
+import azkaban.sla.SlaOption;
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import azkaban.user.User;
+import azkaban.user.UserManager;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.SplitterOutputStream;
+import azkaban.utils.Utils;
+import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.SchedulerStatistics;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -29,12 +54,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -44,31 +67,6 @@ import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.flow.Flow;
-import azkaban.flow.Node;
-import azkaban.project.Project;
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.ProjectManager;
-import azkaban.scheduler.Schedule;
-import azkaban.scheduler.ScheduleManager;
-import azkaban.scheduler.ScheduleManagerException;
-import azkaban.server.session.Session;
-import azkaban.server.HttpRequestUtils;
-import azkaban.sla.SlaOption;
-import azkaban.user.Permission;
-import azkaban.user.Permission.Type;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.SplitterOutputStream;
-import azkaban.utils.Utils;
-import azkaban.webapp.AzkabanWebServer;
-import azkaban.webapp.SchedulerStatistics;
-
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
@@ -77,17 +75,17 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private UserManager userManager;
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    userManager = server.getUserManager();
-    projectManager = server.getProjectManager();
-    scheduleManager = server.getScheduleManager();
+    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    this.userManager = server.getUserManager();
+    this.projectManager = server.getProjectManager();
+    this.scheduleManager = server.getScheduleManager();
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+                           final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else if (hasParam(req, "calendar")) {
@@ -97,11 +95,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAJAXAction(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleAJAXAction(final HttpServletRequest req,
+                                final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    HashMap<String, Object> ret = new HashMap<String, Object>();
-    String ajaxName = getParam(req, "ajax");
+    HashMap<String, Object> ret = new HashMap<>();
+    final String ajaxName = getParam(req, "ajax");
 
     if (ajaxName.equals("slaInfo")) {
       ajaxSlaInfo(req, ret, session.getUser());
@@ -125,11 +123,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxSetSla(HttpServletRequest req, HashMap<String, Object> ret,
-      User user) {
+  private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret,
+                          final User user) {
     try {
-      int scheduleId = getIntParam(req, "scheduleId");
-      Schedule sched = scheduleManager.getSchedule(scheduleId);
+      final int scheduleId = getIntParam(req, "scheduleId");
+      final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
         ret.put("error",
                 "Error loading schedule. Schedule " + scheduleId
@@ -137,25 +135,25 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      Project project = projectManager.getProject(sched.getProjectId());
+      final Project project = this.projectManager.getProject(sched.getProjectId());
       if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
         ret.put("error", "User " + user
             + " does not have permission to set SLA for this flow.");
         return;
       }
 
-      String emailStr = getParam(req, "slaEmails");
-      String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-      List<String> slaEmails = Arrays.asList(emailSplit);
+      final String emailStr = getParam(req, "slaEmails");
+      final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+      final List<String> slaEmails = Arrays.asList(emailSplit);
 
-      Map<String, String> settings = getParamGroup(req, "settings");
+      final Map<String, String> settings = getParamGroup(req, "settings");
 
-      List<SlaOption> slaOptions = new ArrayList<SlaOption>();
-      for (String set : settings.keySet()) {
-        SlaOption sla;
+      final List<SlaOption> slaOptions = new ArrayList<>();
+      for (final String set : settings.keySet()) {
+        final SlaOption sla;
         try {
           sla = parseSlaSetting(settings.get(set));
-        } catch (Exception e) {
+        } catch (final Exception e) {
           throw new ServletException(e);
         }
         if (sla != null) {
@@ -166,35 +164,35 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       sched.setSlaOptions(slaOptions);
-      scheduleManager.insertSchedule(sched);
+      this.scheduleManager.insertSchedule(sched);
 
       if (slaOptions != null) {
-        projectManager.postProjectEvent(project, EventType.SLA,
+        this.projectManager.postProjectEvent(project, EventType.SLA,
             user.getUserId(), "SLA for flow " + sched.getFlowName()
                 + " has been added/changed.");
       }
 
-    } catch (ServletException e) {
+    } catch (final ServletException e) {
       ret.put("error", e.getMessage());
-    } catch (ScheduleManagerException e) {
+    } catch (final ScheduleManagerException e) {
       logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
   }
 
-  private SlaOption parseSlaSetting(String set) throws ScheduleManagerException {
+  private SlaOption parseSlaSetting(final String set) throws ScheduleManagerException {
     logger.info("Tryint to set sla with the following set: " + set);
 
-    String slaType;
-    List<String> slaActions = new ArrayList<String>();
-    Map<String, Object> slaInfo = new HashMap<String, Object>();
-    String[] parts = set.split(",", -1);
-    String id = parts[0];
-    String rule = parts[1];
-    String duration = parts[2];
-    String emailAction = parts[3];
-    String killAction = parts[4];
+    final String slaType;
+    final List<String> slaActions = new ArrayList<>();
+    final Map<String, Object> slaInfo = new HashMap<>();
+    final String[] parts = set.split(",", -1);
+    final String id = parts[0];
+    final String rule = parts[1];
+    final String duration = parts[2];
+    final String emailAction = parts[3];
+    final String killAction = parts[4];
     if (emailAction.equals("true") || killAction.equals("true")) {
       if (emailAction.equals("true")) {
         slaActions.add(SlaOption.ACTION_ALERT);
@@ -218,16 +216,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
-      ReadablePeriod dur;
+      final ReadablePeriod dur;
       try {
         dur = parseDuration(duration);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new ScheduleManagerException(
             "Unable to parse duration for a SLA that needs to take actions!", e);
       }
 
       slaInfo.put(SlaOption.INFO_DURATION, Utils.createPeriodString(dur));
-      SlaOption r = new SlaOption(slaType, slaActions, slaInfo);
+      final SlaOption r = new SlaOption(slaType, slaActions, slaInfo);
       logger.info("Parsing sla as id:" + id + " type:" + slaType + " rule:"
           + rule + " Duration:" + duration + " actions:" + slaActions);
       return r;
@@ -235,22 +233,22 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     return null;
   }
 
-  private ReadablePeriod parseDuration(String duration) {
-    int hour = Integer.parseInt(duration.split(":")[0]);
-    int min = Integer.parseInt(duration.split(":")[1]);
+  private ReadablePeriod parseDuration(final String duration) {
+    final int hour = Integer.parseInt(duration.split(":")[0]);
+    final int min = Integer.parseInt(duration.split(":")[1]);
     return Minutes.minutes(min + hour * 60).toPeriod();
   }
 
-  private void ajaxFetchSchedule(HttpServletRequest req,
-      HashMap<String, Object> ret, User user) throws ServletException {
+  private void ajaxFetchSchedule(final HttpServletRequest req,
+                                 final HashMap<String, Object> ret, final User user) throws ServletException {
 
-    int projectId = getIntParam(req, "projectId");
-    String flowId = getParam(req, "flowId");
+    final int projectId = getIntParam(req, "projectId");
+    final String flowId = getParam(req, "flowId");
     try {
-      Schedule schedule = scheduleManager.getSchedule(projectId, flowId);
+      final Schedule schedule = this.scheduleManager.getSchedule(projectId, flowId);
 
       if (schedule != null) {
-        Map<String, Object> jsonObj = new HashMap<String, Object>();
+        final Map<String, Object> jsonObj = new HashMap<>();
         jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
         jsonObj.put("submitUser", schedule.getSubmitUser());
         jsonObj.put("firstSchedTime",
@@ -262,18 +260,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);
       }
-    } catch (ScheduleManagerException e) {
+    } catch (final ScheduleManagerException e) {
       logger.error(e.getMessage(), e);
       ret.put("error", e);
     }
   }
 
-  private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret,
-      User user) {
-    int scheduleId;
+  private void ajaxSlaInfo(final HttpServletRequest req, final HashMap<String, Object> ret,
+                           final User user) {
+    final int scheduleId;
     try {
       scheduleId = getIntParam(req, "scheduleId");
-      Schedule sched = scheduleManager.getSchedule(scheduleId);
+      final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
         ret.put("error",
                 "Error loading schedule. Schedule " + scheduleId
@@ -281,7 +279,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      Project project =
+      final Project project =
           getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
       if (project == null) {
         ret.put("error",
@@ -290,58 +288,58 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      Flow flow = project.getFlow(sched.getFlowName());
+      final Flow flow = project.getFlow(sched.getFlowName());
       if (flow == null) {
         ret.put("error", "Error loading flow. Flow " + sched.getFlowName()
             + " doesn't exist in " + sched.getProjectId());
         return;
       }
 
-      List<SlaOption> slaOptions = sched.getSlaOptions();
-      ExecutionOptions flowOptions = sched.getExecutionOptions();
+      final List<SlaOption> slaOptions = sched.getSlaOptions();
+      final ExecutionOptions flowOptions = sched.getExecutionOptions();
 
       if (slaOptions != null && slaOptions.size() > 0) {
         ret.put("slaEmails",
             slaOptions.get(0).getInfo().get(SlaOption.INFO_EMAIL_LIST));
 
-        List<Object> setObj = new ArrayList<Object>();
-        for (SlaOption sla : slaOptions) {
+        final List<Object> setObj = new ArrayList<>();
+        for (final SlaOption sla : slaOptions) {
           setObj.add(sla.toWebObject());
         }
         ret.put("settings", setObj);
       } else if (flowOptions != null) {
         if (flowOptions.getFailureEmails() != null) {
-          List<String> emails = flowOptions.getFailureEmails();
+          final List<String> emails = flowOptions.getFailureEmails();
           if (emails.size() > 0) {
             ret.put("slaEmails", emails);
           }
         }
       } else {
         if (flow.getFailureEmails() != null) {
-          List<String> emails = flow.getFailureEmails();
+          final List<String> emails = flow.getFailureEmails();
           if (emails.size() > 0) {
             ret.put("slaEmails", emails);
           }
         }
       }
 
-      List<String> allJobs = new ArrayList<String>();
-      for (Node n : flow.getNodes()) {
+      final List<String> allJobs = new ArrayList<>();
+      for (final Node n : flow.getNodes()) {
         allJobs.add(n.getId());
       }
 
       ret.put("allJobNames", allJobs);
-    } catch (ServletException e) {
+    } catch (final ServletException e) {
       ret.put("error", e);
-    } catch (ScheduleManagerException e) {
+    } catch (final ScheduleManagerException e) {
       logger.error(e.getMessage(), e);
       ret.put("error", e);
     }
   }
 
-  protected Project getProjectAjaxByPermission(Map<String, Object> ret,
-      int projectId, User user, Permission.Type type) {
-    Project project = projectManager.getProject(projectId);
+  protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
+                                               final int projectId, final User user, final Permission.Type type) {
+    final Project project = this.projectManager.getProject(projectId);
 
     if (project == null) {
       ret.put("error", "Project '" + project + "' not found.");
@@ -356,36 +354,36 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     return null;
   }
 
-  private void handleGetAllSchedules(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleGetAllSchedules(final HttpServletRequest req,
+                                     final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
 
-    List<Schedule> schedules;
+    final List<Schedule> schedules;
     try {
-      schedules = scheduleManager.getSchedules();
-    } catch (ScheduleManagerException e) {
+      schedules = this.scheduleManager.getSchedules();
+    } catch (final ScheduleManagerException e) {
       throw new ServletException(e);
     }
     page.add("schedules", schedules);
     page.render();
   }
 
-  private void handleGetScheduleCalendar(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleGetScheduleCalendar(final HttpServletRequest req,
+                                         final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/scheduledflowcalendarpage.vm");
 
-    List<Schedule> schedules;
+    final List<Schedule> schedules;
     try {
-      schedules = scheduleManager.getSchedules();
-    } catch (ScheduleManagerException e) {
+      schedules = this.scheduleManager.getSchedules();
+    } catch (final ScheduleManagerException e) {
       throw new ServletException(e);
     }
     page.add("schedules", schedules);
@@ -393,14 +391,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+                            final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
-      HashMap<String, Object> ret = new HashMap<String, Object>();
+      final HashMap<String, Object> ret = new HashMap<>();
       if (hasParam(req, "action")) {
-        String action = getParam(req, "action");
+        final String action = getParam(req, "action");
         if (action.equals("scheduleFlow")) {
           ajaxScheduleFlow(req, ret, session.getUser());
         } else if (action.equals("scheduleCronFlow")) {
@@ -419,44 +417,44 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxLoadFlows(HttpServletRequest req,
-      HashMap<String, Object> ret, User user) throws ServletException {
-    List<Schedule> schedules;
+  private void ajaxLoadFlows(final HttpServletRequest req,
+                             final HashMap<String, Object> ret, final User user) throws ServletException {
+    final List<Schedule> schedules;
     try {
-      schedules = scheduleManager.getSchedules();
-    } catch (ScheduleManagerException e) {
+      schedules = this.scheduleManager.getSchedules();
+    } catch (final ScheduleManagerException e) {
       throw new ServletException(e);
     }
     // See if anything is scheduled
     if (schedules.size() <= 0)
       return;
 
-    List<HashMap<String, Object>> output =
-        new ArrayList<HashMap<String, Object>>();
+    final List<HashMap<String, Object>> output =
+        new ArrayList<>();
     ret.put("items", output);
 
-    for (Schedule schedule : schedules) {
+    for (final Schedule schedule : schedules) {
       try {
         writeScheduleData(output, schedule);
-      } catch (ScheduleManagerException e) {
+      } catch (final ScheduleManagerException e) {
         throw new ServletException(e);
       }
     }
   }
 
-  private void writeScheduleData(List<HashMap<String, Object>> output,
-      Schedule schedule) throws ScheduleManagerException {
-    Map<String, Object> stats =
+  private void writeScheduleData(final List<HashMap<String, Object>> output,
+                                 final Schedule schedule) throws ScheduleManagerException {
+    final Map<String, Object> stats =
         SchedulerStatistics.getStatistics(schedule.getScheduleId(),
             (AzkabanWebServer) getApplication());
-    HashMap<String, Object> data = new HashMap<String, Object>();
+    final HashMap<String, Object> data = new HashMap<>();
     data.put("scheduleid", schedule.getScheduleId());
     data.put("flowname", schedule.getFlowName());
     data.put("projectname", schedule.getProjectName());
     data.put("time", schedule.getFirstSchedTime());
     data.put("cron", schedule.getCronExpression());
 
-    DateTime time = DateTime.now();
+    final DateTime time = DateTime.now();
     long period = 0;
     if (schedule.getPeriod() != null) {
       period = time.plus(schedule.getPeriod()).getMillis() - time.getMillis();
@@ -475,26 +473,26 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     output.add(data);
   }
 
-  private void ajaxLoadHistory(HttpServletRequest req,
-      HttpServletResponse resp, User user) throws ServletException, IOException {
+  private void ajaxLoadHistory(final HttpServletRequest req,
+                               final HttpServletResponse resp, final User user) throws ServletException, IOException {
     resp.setContentType(JSON_MIME_TYPE);
-    long today = DateTime.now().withTime(0, 0, 0, 0).getMillis();
+    final long today = DateTime.now().withTime(0, 0, 0, 0).getMillis();
     long startTime = getLongParam(req, "startTime");
-    DateTime start = new DateTime(startTime);
+    final DateTime start = new DateTime(startTime);
     // Ensure start time is 12:00 AM
     startTime = start.withTime(0, 0, 0, 0).getMillis();
     boolean useCache = false;
     if (startTime < today) {
       useCache = true;
     }
-    long endTime = startTime + 24 * 3600 * 1000;
-    int loadAll = getIntParam(req, "loadAll");
+    final long endTime = startTime + 24 * 3600 * 1000;
+    final int loadAll = getIntParam(req, "loadAll");
 
     // Cache file
-    String cacheDir =
+    final String cacheDir =
         getApplication().getServerProps().getString("cache.directory", "cache");
-    File cacheDirFile = new File(cacheDir, "schedule-history");
-    File cache = new File(cacheDirFile, startTime + ".cache");
+    final File cacheDirFile = new File(cacheDir, "schedule-history");
+    final File cache = new File(cacheDirFile, startTime + ".cache");
     cache.getParentFile().mkdirs();
 
     if (useCache) {
@@ -505,7 +503,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
       if (cacheExists) {
         // Send the cache instead
-        InputStream cacheInput =
+        final InputStream cacheInput =
             new BufferedInputStream(new FileInputStream(cache));
         try {
           IOUtils.copy(cacheInput, resp.getOutputStream());
@@ -519,20 +517,20 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     // Load data if not cached
     List<ExecutableFlow> history = null;
     try {
-      AzkabanWebServer server = (AzkabanWebServer) getApplication();
-      ExecutorManagerAdapter executorManager = server.getExecutorManager();
+      final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+      final ExecutorManagerAdapter executorManager = server.getExecutorManager();
       history =
           executorManager.getExecutableFlows(null, null, null, 0, startTime,
               endTime, -1, -1);
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       logger.error(e.getMessage(), e);
     }
 
-    HashMap<String, Object> ret = new HashMap<String, Object>();
-    List<HashMap<String, Object>> output =
-        new ArrayList<HashMap<String, Object>>();
+    final HashMap<String, Object> ret = new HashMap<>();
+    final List<HashMap<String, Object>> output =
+        new ArrayList<>();
     ret.put("items", output);
-    for (ExecutableFlow historyItem : history) {
+    for (final ExecutableFlow historyItem : history) {
       // Check if it is an scheduled execution
       if (historyItem.getScheduleId() >= 0 || loadAll != 0) {
         writeHistoryData(output, historyItem);
@@ -548,12 +546,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     // Create cache file
-    File cacheTemp = new File(cacheDirFile, startTime + ".tmp");
+    final File cacheTemp = new File(cacheDirFile, startTime + ".tmp");
     cacheTemp.createNewFile();
-    OutputStream cacheOutput =
+    final OutputStream cacheOutput =
         new BufferedOutputStream(new FileOutputStream(cacheTemp));
     try {
-      OutputStream outputStream =
+      final OutputStream outputStream =
           new SplitterOutputStream(cacheOutput, resp.getOutputStream());
       // Write to both the cache file and web output
       JSONUtils.toJSON(ret, outputStream, false);
@@ -566,12 +564,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void writeHistoryData(List<HashMap<String, Object>> output,
-      ExecutableFlow history) {
-    HashMap<String, Object> data = new HashMap<String, Object>();
+  private void writeHistoryData(final List<HashMap<String, Object>> output,
+                                final ExecutableFlow history) {
+    final HashMap<String, Object> data = new HashMap<>();
 
     data.put("scheduleid", history.getScheduleId());
-    Project project = projectManager.getProject(history.getProjectId());
+    final Project project = this.projectManager.getProject(history.getProjectId());
     data.put("flowname", history.getFlowId());
     data.put("projectname", project.getName());
     data.put("time", history.getStartTime());
@@ -587,13 +585,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     output.add(data);
   }
 
-  private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret,
-      User user) throws ServletException {
-    int scheduleId = getIntParam(req, "scheduleId");
-    Schedule sched;
+  private void ajaxRemoveSched(final HttpServletRequest req, final Map<String, Object> ret,
+                               final User user) throws ServletException {
+    final int scheduleId = getIntParam(req, "scheduleId");
+    final Schedule sched;
     try {
-      sched = scheduleManager.getSchedule(scheduleId);
-    } catch (ScheduleManagerException e) {
+      sched = this.scheduleManager.getSchedule(scheduleId);
+    } catch (final ScheduleManagerException e) {
       throw new ServletException(e);
     }
     if (sched == null) {
@@ -602,7 +600,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    Project project = projectManager.getProject(sched.getProjectId());
+    final Project project = this.projectManager.getProject(sched.getProjectId());
 
     if (project == null) {
       ret.put("message", "Project " + sched.getProjectId() + " does not exist");
@@ -617,10 +615,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    scheduleManager.removeSchedule(sched);
+    this.scheduleManager.removeSchedule(sched);
     logger.info("User '" + user.getUserId() + " has removed schedule "
         + sched.getScheduleName());
-    projectManager
+    this.projectManager
         .postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
             "Schedule " + sched.toString() + " has been removed.");
 
@@ -630,13 +628,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     return;
   }
 
-  private void ajaxScheduleFlow(HttpServletRequest req,
-      HashMap<String, Object> ret, User user) throws ServletException {
-    String projectName = getParam(req, "projectName");
-    String flowName = getParam(req, "flow");
-    int projectId = getIntParam(req, "projectId");
+  private void ajaxScheduleFlow(final HttpServletRequest req,
+                                final HashMap<String, Object> ret, final User user) throws ServletException {
+    final String projectName = getParam(req, "projectName");
+    final String flowName = getParam(req, "flow");
+    final int projectId = getIntParam(req, "projectId");
 
-    Project project = projectManager.getProject(projectId);
+    final Project project = this.projectManager.getProject(projectId);
 
     if (project == null) {
       ret.put("message", "Project " + projectName + " does not exist");
@@ -650,7 +648,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    Flow flow = project.getFlow(flowName);
+    final Flow flow = project.getFlow(flowName);
     if (flow == null) {
       ret.put("status", "error");
       ret.put("message", "Flow " + flowName + " cannot be found in project "
@@ -658,14 +656,22 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    String scheduleTime = getParam(req, "scheduleTime");
-    String scheduleDate = getParam(req, "scheduleDate");
-    DateTime firstSchedTime;
+    final String scheduleTime = getParam(req, "scheduleTime");
+    final String scheduleDate = getParam(req, "scheduleDate");
+    final DateTime firstSchedTime;
     try {
       firstSchedTime = parseDateTime(scheduleDate, scheduleTime);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       ret.put("error", "Invalid date and/or time '" + scheduleDate + " "
           + scheduleTime);
+      return;
+    }
+
+    final long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    try {
+      // Todo kunkun-tang: Need to verify if passed end time is valid.
+    } catch (final Exception e) {
+      ret.put("error", "Invalid date and time: " + endSchedTime);
       return;
     }
 
@@ -675,29 +681,29 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           && getParam(req, "is_recurring").equals("on")) {
         thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       ret.put("error", e.getMessage());
     }
 
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
-      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
-    } catch (Exception e) {
+      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+    } catch (final Exception e) {
       ret.put("error", e.getMessage());
     }
 
-    List<SlaOption> slaOptions = null;
+    final List<SlaOption> slaOptions = null;
 
-    Schedule schedule =
-        scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
+    final Schedule schedule =
+        this.scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
+            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
             thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             slaOptions);
     logger.info("User '" + user.getUserId() + "' has scheduled " + "["
         + projectName + flowName + " (" + projectId + ")" + "].");
-    projectManager.postProjectEvent(project, EventType.SCHEDULE,
+    this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
         user.getUserId(), "Schedule " + schedule.toString()
             + " has been added.");
 
@@ -711,19 +717,19 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
    * This method is in charge of doing cron scheduling.
    * @throws ServletException
    */
-  private void ajaxScheduleCronFlow(HttpServletRequest req,
-      HashMap<String, Object> ret, User user) throws ServletException {
-    String projectName = getParam(req, "projectName");
-    String flowName = getParam(req, "flow");
+  private void ajaxScheduleCronFlow(final HttpServletRequest req,
+                                    final HashMap<String, Object> ret, final User user) throws ServletException {
+    final String projectName = getParam(req, "projectName");
+    final String flowName = getParam(req, "flow");
 
-    Project project = projectManager.getProject(projectName);
+    final Project project = this.projectManager.getProject(projectName);
 
     if (project == null) {
       ret.put("message", "Project " + projectName + " does not exist");
       ret.put("status", "error");
       return;
     }
-    int projectId = project.getId();
+    final int projectId = project.getId();
 
     if (!hasPermission(project, user, Type.SCHEDULE)) {
       ret.put("status", "error");
@@ -731,7 +737,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    Flow flow = project.getFlow(flowName);
+    final Flow flow = project.getFlow(flowName);
     if (flow == null) {
       ret.put("status", "error");
       ret.put("message", "Flow " + flowName + " cannot be found in project "
@@ -739,8 +745,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    DateTimeZone timezone = DateTimeZone.getDefault();
-    DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
+    final DateTimeZone timezone = DateTimeZone.getDefault();
+    final DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
 
     String cronExpression = null;
     try {
@@ -755,30 +761,39 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
       if(cronExpression == null)
         throw new Exception("Cron expression must exist.");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       ret.put("error", e.getMessage());
+    }
+
+    final long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    try {
+      // Todo kunkun-tang: Need to verify if passed end time is valid.
+    } catch (final Exception e) {
+      ret.put("error", "Invalid date and time: " + endSchedTime);
+      return;
     }
 
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
-      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
-    } catch (Exception e) {
+      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+    } catch (final Exception e) {
       ret.put("error", e.getMessage());
     }
 
-    List<SlaOption> slaOptions = null;
+    final List<SlaOption> slaOptions = null;
 
     // Because either cronExpression or recurrence exists, we build schedule in the below way.
-    Schedule schedule = scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
+    final Schedule schedule = this.scheduleManager
+        .cronScheduleFlow(-1, projectId, projectName, flowName,
+            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
             DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             slaOptions, cronExpression);
 
     logger.info("User '" + user.getUserId() + "' has scheduled " + "["
         + projectName + flowName + " (" + projectId + ")" + "].");
-    projectManager.postProjectEvent(project, EventType.SCHEDULE,
+    this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
         user.getUserId(), "Schedule " + schedule.toString()
             + " has been added.");
 
@@ -787,14 +802,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put("message", projectName + "." + flowName + " scheduled.");
   }
 
-  private DateTime parseDateTime(String scheduleDate, String scheduleTime) {
+  private DateTime parseDateTime(final String scheduleDate, final String scheduleTime) {
     // scheduleTime: 12,00,pm,PDT
-    String[] parts = scheduleTime.split(",", -1);
+    final String[] parts = scheduleTime.split(",", -1);
     int hour = Integer.parseInt(parts[0]);
-    int minutes = Integer.parseInt(parts[1]);
-    boolean isPm = parts[2].equalsIgnoreCase("pm");
+    final int minutes = Integer.parseInt(parts[1]);
+    final boolean isPm = parts[2].equalsIgnoreCase("pm");
 
-    DateTimeZone timezone =
+    final DateTimeZone timezone =
         parts[3].equals("UTC") ? DateTimeZone.UTC : DateTimeZone.getDefault();
 
     // scheduleDate: 02/10/2013
@@ -811,7 +826,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     if (isPm)
       hour += 12;
 
-    DateTime firstSchedTime =
+    final DateTime firstSchedTime =
         day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 
     return firstSchedTime;
@@ -821,14 +836,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
    * @param cronTimezone represents the timezone from remote API call
    * @return if the string is equal to UTC, we return UTC; otherwise, we always return default timezone.
    */
-  private DateTimeZone parseTimeZone(String cronTimezone) {
+  private DateTimeZone parseTimeZone(final String cronTimezone) {
     if(cronTimezone != null && cronTimezone.equals("UTC"))
       return DateTimeZone.UTC;
 
     return DateTimeZone.getDefault();
   }
 
-  private DateTime getPresentTimeByTimezone(DateTimeZone timezone) {
+  private DateTime getPresentTimeByTimezone(final DateTimeZone timezone) {
     return new DateTime(timezone);
   }
 }

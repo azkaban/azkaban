@@ -43,6 +43,7 @@ public class Schedule {
   private final String projectName;
   private final String flowName;
   private final long firstSchedTime;
+  private final long endSchedTime;
   private final DateTimeZone timezone;
   private final long lastModifyTime;
   private final ReadablePeriod period;
@@ -56,40 +57,28 @@ public class Schedule {
   private ExecutionOptions executionOptions;
   private List<SlaOption> slaOptions;
 
-  public Schedule(final int scheduleId, final int projectId, final String projectName,
-      final String flowName, final String status, final long firstSchedTime,
-      final DateTimeZone timezone, final ReadablePeriod period, final long lastModifyTime,
-      final long nextExecTime, final long submitTime, final String submitUser) {
-
-    this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
-        timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser,
-        null, null, null);
-  }
-
-  public Schedule(final int scheduleId, final int projectId, final String projectName,
-      final String flowName, final String status, final long firstSchedTime,
-      final String timezoneId,
-      final String period, final long lastModifyTime, final long nextExecTime,
-      final long submitTime,
-      final String submitUser, final ExecutionOptions executionOptions,
-      final List<SlaOption> slaOptions) {
-    this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
-        DateTimeZone.forID(timezoneId), parsePeriodString(period),
-        lastModifyTime, nextExecTime, submitTime, submitUser, executionOptions,
-        slaOptions, null);
-  }
-
-  public Schedule(final int scheduleId, final int projectId, final String projectName,
-      final String flowName, final String status, final long firstSchedTime,
-      final DateTimeZone timezone, final ReadablePeriod period, final long lastModifyTime,
-      final long nextExecTime, final long submitTime, final String submitUser,
-      final ExecutionOptions executionOptions, final List<SlaOption> slaOptions,
-      final String cronExpression) {
+  public Schedule(final int scheduleId,
+                  final int projectId,
+                  final String projectName,
+                  final String flowName,
+                  final String status,
+                  final long firstSchedTime,
+                  final long endSchedTime,
+                  final DateTimeZone timezone,
+                  final ReadablePeriod period,
+                  final long lastModifyTime,
+                  final long nextExecTime,
+                  final long submitTime,
+                  final String submitUser,
+                  final ExecutionOptions executionOptions,
+                  final List<SlaOption> slaOptions,
+                  final String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
     this.flowName = flowName;
     this.firstSchedTime = firstSchedTime;
+    this.endSchedTime = endSchedTime;
     this.timezone = timezone;
     this.lastModifyTime = lastModifyTime;
     this.period = period;
@@ -112,27 +101,27 @@ public class Schedule {
     final int periodInt =
         Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
     switch (periodUnit) {
-      case 'M':
-        period = Months.months(periodInt);
-        break;
-      case 'w':
-        period = Weeks.weeks(periodInt);
-        break;
-      case 'd':
-        period = Days.days(periodInt);
-        break;
-      case 'h':
-        period = Hours.hours(periodInt);
-        break;
-      case 'm':
-        period = Minutes.minutes(periodInt);
-        break;
-      case 's':
-        period = Seconds.seconds(periodInt);
-        break;
-      default:
-        throw new IllegalArgumentException("Invalid schedule period unit '"
-            + periodUnit);
+    case 'M':
+      period = Months.months(periodInt);
+      break;
+    case 'w':
+      period = Weeks.weeks(periodInt);
+      break;
+    case 'd':
+      period = Days.days(periodInt);
+      break;
+    case 'h':
+      period = Hours.hours(periodInt);
+      break;
+    case 'm':
+      period = Minutes.minutes(periodInt);
+      break;
+    case 's':
+      period = Seconds.seconds(periodInt);
+      break;
+    default:
+      throw new IllegalArgumentException("Invalid schedule period unit '"
+          + periodUnit);
     }
 
     return period;
@@ -192,9 +181,7 @@ public class Schedule {
   public String toString() {
 
     final String underlying =
-        this.projectName + "." + this.flowName + " (" + this.projectId + ")"
-            + " to be run at (starting) "
-            + new DateTime(
+        this.projectName + "." + this.flowName + " (" + this.projectId + ")" + " to be run at (starting) " + new DateTime(
             this.firstSchedTime).toDateTimeISO();
     if (this.period == null && this.cronExpression == null) {
       return underlying + " non-recurring";
@@ -275,8 +262,9 @@ public class Schedule {
     }
 
     if (this.cronExpression != null) {
-      final DateTime nextTime = getNextCronRuntime(this.nextExecTime, this.timezone,
-          Utils.parseCronExpression(this.cronExpression, this.timezone));
+      final DateTime nextTime = getNextCronRuntime(
+          this.nextExecTime, this.timezone, Utils.parseCronExpression(this.cronExpression,
+              this.timezone));
       this.nextExecTime = nextTime.getMillis();
       return true;
     }
@@ -292,7 +280,7 @@ public class Schedule {
   }
 
   private DateTime getNextRuntime(final long scheduleTime, final DateTimeZone timezone,
-      final ReadablePeriod period) {
+                                  final ReadablePeriod period) {
     final DateTime now = new DateTime();
     DateTime date = new DateTime(scheduleTime).withZone(timezone);
     int count = 0;
@@ -315,13 +303,14 @@ public class Schedule {
   }
 
   /**
-   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API
-   * call.
+   *
+   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API call.
    * @param timezone is always UTC (after 3.1.0)
+   * @param ce
    * @return the First Scheduled DateTime to run this flow.
    */
   private DateTime getNextCronRuntime(final long scheduleTime, final DateTimeZone timezone,
-      final CronExpression ce) {
+                                      final CronExpression ce) {
 
     Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
     if (ce != null) {
@@ -387,4 +376,7 @@ public class Schedule {
     return this.skipPastOccurrences;
   }
 
+  public long getEndSchedTime() {
+    return this.endSchedTime;
+  }
 }

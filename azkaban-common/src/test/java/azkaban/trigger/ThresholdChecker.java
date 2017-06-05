@@ -80,31 +80,25 @@ public class ThresholdChecker implements ConditionChecker {
 
   @Override
   public Object getNum() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Object toJson() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public void stopChecker() {
     return;
-
   }
 
   @Override
   public void setContext(final Map<String, Object> context) {
-    // TODO Auto-generated method stub
-
   }
 
   @Override
   public long getNextCheckTime() {
-    // TODO Auto-generated method stub
     return 0;
   }
 
