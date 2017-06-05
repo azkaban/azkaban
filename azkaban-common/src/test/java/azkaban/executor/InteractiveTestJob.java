@@ -16,9 +16,13 @@
 
 package azkaban.executor;
 
+import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
+import static org.junit.Assert.assertNotNull;
+
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 
@@ -36,7 +40,22 @@ public class InteractiveTestJob extends AbstractProcessJob {
   }
 
   public static InteractiveTestJob getTestJob(final String name) {
-    return testJobs.get(name);
+    for (int i = 0; i < 100; i++) {
+      if (testJobs.containsKey(name)) {
+        return testJobs.get(name);
+      }
+      synchronized (testJobs) {
+        try {
+          InteractiveTestJob.testJobs.wait(10L);
+        } catch (final InterruptedException e) {
+        }
+      }
+    }
+    throw new IllegalStateException(name + " wasn't added in testJobs map");
+  }
+
+  public static Collection<String> getTestJobNames() {
+    return testJobs.keySet();
   }
 
   public static void clearTestJobs() {
@@ -53,12 +72,33 @@ public class InteractiveTestJob extends AbstractProcessJob {
       id = groupName + ":" + id;
     }
     testJobs.put(id, this);
+    synchronized (testJobs) {
+      testJobs.notifyAll();
+    }
+
+    if (this.jobProps.getBoolean("fail", false)) {
+      final int passRetry = this.jobProps.getInt("passRetry", -1);
+      if (passRetry > 0 && passRetry < this.jobProps.getInt(JOB_ATTEMPT)) {
+        succeedJob();
+      } else {
+        failJob();
+      }
+    }
+    if (!this.succeed) {
+      throw new RuntimeException("Forced failure of " + getId());
+    }
 
     while (this.isWaiting) {
       synchronized (this) {
-        try {
-          wait(30000);
-        } catch (final InterruptedException e) {
+        final int waitMillis = this.jobProps.getInt("seconds", 5) * 1000;
+        if (waitMillis > 0) {
+          try {
+            wait(waitMillis);
+          } catch (final InterruptedException e) {
+          }
+        }
+        if (this.jobProps.containsKey("fail")) {
+          succeedJob();
         }
 
         if (!this.isWaiting) {
@@ -106,5 +146,11 @@ public class InteractiveTestJob extends AbstractProcessJob {
   public void cancel() throws InterruptedException {
     info("Killing job");
     failJob();
+  }
+
+  public static void clearTestJobs(final String... names) {
+    for (String name : names) {
+      assertNotNull(testJobs.remove(name));
+    }
   }
 }

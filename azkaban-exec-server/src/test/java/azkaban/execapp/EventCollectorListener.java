@@ -16,38 +16,40 @@
 
 package azkaban.execapp;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventCollectorListener implements EventListener {
 
-  private final ArrayList<Event> eventList = new ArrayList<>();
+  public static final Object handleEvent = new Object();
+  // CopyOnWriteArrayList allows concurrent iteration and modification
+  private final List<Event> eventList = new CopyOnWriteArrayList<>();
   private final HashSet<Event.Type> filterOutTypes = new HashSet<>();
 
   public void setEventFilterOut(final Event.Type... types) {
     this.filterOutTypes.addAll(Arrays.asList(types));
   }
-
+  
   @Override
   public void handleEvent(final Event event) {
+    synchronized (handleEvent) {
+      handleEvent.notifyAll();
+    }
     if (!this.filterOutTypes.contains(event.getType())) {
       this.eventList.add(event);
     }
   }
 
-  public ArrayList<Event> getEventList() {
+  public List<Event> getEventList() {
     return this.eventList;
-  }
-
-  public void writeAllEvents() {
-    for (final Event event : this.eventList) {
-      System.out.print(event.getType());
-      System.out.print(",");
-    }
   }
 
   public boolean checkOrdering() {
@@ -61,27 +63,11 @@ public class EventCollectorListener implements EventListener {
     return true;
   }
 
-  public void checkEventExists(final Type[] types) {
-    int index = 0;
-    for (final Event event : this.eventList) {
-      if (event.getRunner() == null) {
-        continue;
-      }
-
-      if (index >= types.length) {
-        throw new RuntimeException("More events than expected. Got "
-            + event.getType());
-      }
-      final Type type = types[index++];
-
-      if (type != event.getType()) {
-        throw new RuntimeException("Got " + event.getType() + ", expected "
-            + type + " index:" + index);
-      }
-    }
-
-    if (types.length != index) {
-      throw new RuntimeException("Not enough events.");
-    }
+  public void assertEvents(final Type... expected) {
+    Object[] captured = this.eventList.stream()
+        .filter(event -> event.getRunner() != null)
+        .map(event -> event.getType())
+        .toArray();
+    assertThat(captured, is(expected));
   }
 }

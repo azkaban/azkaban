@@ -131,8 +131,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   /**
-   * Constructor. If executorService is null, then it will create it's own for
-   * thread pools.
+   * Constructor. If executorService is null, then it will create it's own for thread pools.
    */
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
@@ -257,7 +256,11 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.watcher.setLogger(this.logger);
     }
 
-    this.logger.info("Assigned executor : " + AzkabanExecutorServer.getApp().getExecutorHostPort());
+    // Avoid NPE in unit tests when the static app instance is not set
+    if (AzkabanExecutorServer.getApp() != null) {
+      this.logger
+          .info("Assigned executor : " + AzkabanExecutorServer.getApp().getExecutorHostPort());
+    }
     this.logger.info("Running execid:" + this.execId + " flow:" + flowId + " project:"
         + projectId + " version:" + version);
     if (this.pipelineExecId != null) {
@@ -730,8 +733,8 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   /**
-   * Determines what the state of the next node should be. Returns null if the
-   * node should not be run.
+   * Determines what the state of the next node should be. Returns null if the node should not be
+   * run.
    */
   public Status getImpliedStatus(final ExecutableNode node) {
     // If it's running or finished with 'SUCCEEDED', than don't even

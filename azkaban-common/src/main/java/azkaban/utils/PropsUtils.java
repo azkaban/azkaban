@@ -46,9 +46,9 @@ public class PropsUtils {
       .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
   /**
-   * Load job schedules from the given directories ] * @param dir The directory
-   * to look in
+   * Load job schedules from the given directories
    *
+   * @param dir The directory to look in
    * @param suffixes File suffixes to load
    * @return The loaded set of schedules
    */
@@ -160,7 +160,11 @@ public class PropsUtils {
 
     final LinkedHashSet<String> visitedVariables = new LinkedHashSet<>();
     for (final String key : props.getKeySet()) {
-      final String value = props.get(key);
+      String value = props.get(key);
+      if (value == null) {
+        logger.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
+        value = "";
+      }
 
       visitedVariables.add(key);
       final String replacedValue =
@@ -229,8 +233,8 @@ public class PropsUtils {
   }
 
   /**
-   * Function that looks for expressions to parse. It parses backwards to
-   * capture embedded expressions
+   * Function that looks for expressions to parse. It parses backwards to capture embedded
+   * expressions
    */
   private static String resolveVariableExpression(final String value, final int last,
       final JexlEngine jexl) {
