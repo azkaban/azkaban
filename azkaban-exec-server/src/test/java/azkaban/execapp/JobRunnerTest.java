@@ -102,7 +102,7 @@ public class JobRunnerTest {
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
-    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Ignore
@@ -131,7 +131,7 @@ public class JobRunnerTest {
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
-    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Test
@@ -162,7 +162,7 @@ public class JobRunnerTest {
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 
-    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_FINISHED);
   }
 
   @Test
@@ -193,7 +193,7 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(runner.getLogFilePath() == null);
     Assert.assertTrue(!runner.isKilled());
-    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_FINISHED);
   }
 
   @Ignore
@@ -232,7 +232,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(runner.isKilled());
-    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Ignore
@@ -267,7 +267,7 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
     Assert.assertTrue(eventCollector.checkOrdering());
-    eventCollector.checkEventExists(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
   @Test
@@ -307,7 +307,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
 
     Assert.assertEquals(2L, (long) loader.getNodeUpdateCount("testJob"));
-    eventCollector.checkEventExists(Type.JOB_FINISHED);
+    eventCollector.assertEvents(Type.JOB_FINISHED);
   }
 
   private Props createProps(final int sleepSec, final boolean fail) {
