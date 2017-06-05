@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -98,10 +99,12 @@ public class AzkabanProcess {
       this.startupLatch.countDown();
 
       final LogGobbler outputGobbler =
-          new LogGobbler(new InputStreamReader(this.process.getInputStream()),
+          new LogGobbler(
+              new InputStreamReader(this.process.getInputStream(), StandardCharsets.UTF_8),
               this.logger, Level.INFO, 30);
       final LogGobbler errorGobbler =
-          new LogGobbler(new InputStreamReader(this.process.getErrorStream()),
+          new LogGobbler(
+              new InputStreamReader(this.process.getErrorStream(), StandardCharsets.UTF_8),
               this.logger, Level.ERROR, 30);
 
       outputGobbler.start();
