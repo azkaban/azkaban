@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -85,7 +86,7 @@ public class ServerStatisticsServlet extends HttpServlet {
         final InputStream inputStream = process.getInputStream();
         try {
           final java.io.BufferedReader reader = new java.io.BufferedReader(
-              new InputStreamReader(inputStream));
+              new InputStreamReader(inputStream, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
             output.add(line);
@@ -242,7 +243,7 @@ public class ServerStatisticsServlet extends HttpServlet {
         final InputStream inputStream = process.getInputStream();
         try {
           final java.io.BufferedReader reader = new java.io.BufferedReader(
-              new InputStreamReader(inputStream));
+              new InputStreamReader(inputStream, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
             output.add(line);

@@ -32,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -580,7 +581,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
           InputStream is = p.getInputStream();
           java.io.BufferedReader reader =
-              new java.io.BufferedReader(new InputStreamReader(is));
+              new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
             logger.info(line);
