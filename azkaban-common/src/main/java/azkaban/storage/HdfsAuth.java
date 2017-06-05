@@ -48,13 +48,13 @@ public class HdfsAuth {
   private volatile UserGroupInformation loggedInUser = null;
 
   @Inject
-  public HdfsAuth(Props props, Configuration conf) {
+  public HdfsAuth(final Props props, final Configuration conf) {
     UserGroupInformation.setConfiguration(conf);
-    isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
-    if (isSecurityEnabled) {
+    this.isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
+    if (this.isSecurityEnabled) {
       log.info("The Hadoop cluster has enabled security");
-      keytabPath = requireNonNull(props.getString(AZKABAN_KEYTAB_PATH));
-      keytabPrincipal = requireNonNull(props.getString(AZKABAN_KERBEROS_PRINCIPAL));
+      this.keytabPath = requireNonNull(props.getString(AZKABAN_KEYTAB_PATH));
+      this.keytabPrincipal = requireNonNull(props.getString(AZKABAN_KERBEROS_PRINCIPAL));
     }
   }
 
@@ -68,13 +68,13 @@ public class HdfsAuth {
    * @param <T> return class type
    * @return object returned by action.run()
    */
-  public <T> T doAs(PrivilegedExceptionAction<T> action) {
+  public <T> T doAs(final PrivilegedExceptionAction<T> action) {
     authorize();
     try {
-      return requireNonNull(loggedInUser).doAs(action);
-    } catch (Exception e) {
+      return requireNonNull(this.loggedInUser).doAs(action);
+    } catch (final Exception e) {
       throw new StorageException(
-          String.format("Error while performing doAs user: %s", loggedInUser), e);
+          String.format("Error while performing doAs user: %s", this.loggedInUser), e);
     }
   }
 
@@ -84,30 +84,32 @@ public class HdfsAuth {
    * If the user is already logged in then it renews the TGT.
    */
   private void authorize() {
-    if (isSecurityEnabled) {
+    if (this.isSecurityEnabled) {
       try {
         login();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         log.error(e);
         throw new AzkabanException(String.format(
-            "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", keytabPrincipal,
-            keytabPath));
+            "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", this.keytabPrincipal,
+            this.keytabPath));
       }
     }
   }
 
   private synchronized void login() throws IOException {
-    if (loggedInUser == null) {
+    if (this.loggedInUser == null) {
       log.info(
-          String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
+          String.format("Logging in using Principal: %s Keytab: %s", this.keytabPrincipal,
+              this.keytabPath));
 
-      UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
-      loggedInUser = UserGroupInformation.getLoginUser();
-      log.info(String.format("User %s logged in.", loggedInUser));
+      UserGroupInformation.loginUserFromKeytab(this.keytabPrincipal, this.keytabPath);
+      this.loggedInUser = UserGroupInformation.getLoginUser();
+      log.info(String.format("User %s logged in.", this.loggedInUser));
     } else {
       log.info(
-          String.format("User %s already logged in. Refreshing TGT if required", loggedInUser));
-      loggedInUser.checkTGTAndReloginFromKeytab();
+          String
+              .format("User %s already logged in. Refreshing TGT if required", this.loggedInUser));
+      this.loggedInUser.checkTGTAndReloginFromKeytab();
     }
   }
 }
