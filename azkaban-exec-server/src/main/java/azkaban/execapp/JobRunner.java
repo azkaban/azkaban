@@ -625,8 +625,8 @@ public class JobRunner extends EventHandler implements Runnable {
   private void uploadExecutableNode() {
     try {
       this.loader.uploadExecutableNode(this.node, this.props);
-    } catch (final ExecutorManagerException e1) {
-      this.logger.error("Error writing initial node properties");
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Error writing initial node properties", e);
     }
   }
 
