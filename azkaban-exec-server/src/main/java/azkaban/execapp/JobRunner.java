@@ -584,13 +584,9 @@ public class JobRunner extends EventHandler implements Runnable {
     // Start the node.
     this.node.setStartTime(System.currentTimeMillis());
     Status finalStatus = this.node.getStatus();
+    uploadExecutableNode();
     if (!errorFound && !isKilled()) {
       fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(this.node)));
-      try {
-        this.loader.uploadExecutableNode(this.node, this.props);
-      } catch (final ExecutorManagerException e1) {
-        this.logger.error("Error writing initial node properties");
-      }
 
       final Status prepareStatus = prepareJob();
       if (prepareStatus != null) {
@@ -624,6 +620,14 @@ public class JobRunner extends EventHandler implements Runnable {
     finalizeLogFile(attemptNo);
     finalizeAttachmentFile();
     writeStatus();
+  }
+
+  private void uploadExecutableNode() {
+    try {
+      this.loader.uploadExecutableNode(this.node, this.props);
+    } catch (final ExecutorManagerException e1) {
+      this.logger.error("Error writing initial node properties");
+    }
   }
 
   private Status prepareJob() throws RuntimeException {
