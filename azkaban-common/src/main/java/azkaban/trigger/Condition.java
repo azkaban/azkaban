@@ -30,7 +30,7 @@ public class Condition {
 
   private static final Logger logger = Logger.getLogger(Condition.class);
 
-  private static JexlEngine jexl = new JexlEngine();
+  private static final JexlEngine jexl = new JexlEngine();
   private static CheckerTypeLoader checkerLoader = null;
   private final MapContext context = new MapContext();
   private Expression expression;
@@ -45,18 +45,10 @@ public class Condition {
   }
 
   public Condition(final Map<String, ConditionChecker> checkers, final String expr,
-      final long nextCheckTime) {
+                   final long nextCheckTime) {
     this.nextCheckTime = nextCheckTime;
     setCheckers(checkers);
     this.expression = jexl.createExpression(expr);
-  }
-
-  public synchronized static void setJexlEngine(final JexlEngine jexl) {
-    Condition.jexl = jexl;
-  }
-
-  protected static CheckerTypeLoader getCheckerLoader() {
-    return checkerLoader;
   }
 
   public synchronized static void setCheckerLoader(final CheckerTypeLoader loader) {
@@ -98,12 +90,6 @@ public class Condition {
     return cond;
   }
 
-  protected void registerChecker(final ConditionChecker checker) {
-    this.checkers.put(checker.getId(), checker);
-    this.context.set(checker.getId(), checker);
-    updateNextCheckTime();
-  }
-
   public long getNextCheckTime() {
     return this.nextCheckTime;
   }
@@ -112,18 +98,12 @@ public class Condition {
     return this.checkers;
   }
 
-  public void setCheckers(final Map<String, ConditionChecker> checkers) {
+  private void setCheckers(final Map<String, ConditionChecker> checkers) {
     this.checkers = checkers;
     for (final ConditionChecker checker : checkers.values()) {
       this.context.set(checker.getId(), checker);
     }
     updateNextCheckTime();
-  }
-
-  public void updateCheckTime(final Long ct) {
-    if (this.nextCheckTime < ct) {
-      this.nextCheckTime = ct;
-    }
   }
 
   private void updateNextCheckTime() {

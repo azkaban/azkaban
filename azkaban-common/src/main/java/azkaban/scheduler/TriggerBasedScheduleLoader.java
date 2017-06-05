@@ -16,6 +16,7 @@
 
 package azkaban.scheduler;
 
+import azkaban.Constants;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
@@ -43,7 +44,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   private long lastUpdateTime = -1;
 
   public TriggerBasedScheduleLoader(final TriggerManager triggerManager,
-      final String triggerSource) {
+                                    final String triggerSource) {
     this.triggerManager = triggerManager;
     this.triggerSource = triggerSource;
   }
@@ -95,18 +96,14 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     return cond;
   }
 
-  // if failed to trigger, auto expire?
   private Condition createExpireCondition(final Schedule s) {
-    final Map<String, ConditionChecker> checkers =
-        new HashMap<>();
-    final ConditionChecker checker =
-        new BasicTimeChecker("BasicTimeChecker_2", s.getFirstSchedTime(),
-            s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),
-            s.getPeriod(), s.getCronExpression());
+    final Map<String, ConditionChecker> checkers = new HashMap<>();
+    final ConditionChecker checker = new BasicTimeChecker("EndTimeChecker_1", s.getFirstSchedTime(),
+        s.getTimezone(), s.getEndSchedTime(), false, false,
+        null, null);
     checkers.put(checker.getId(), checker);
     final String expr = checker.getId() + ".eval()";
-    final Condition cond = new Condition(checkers, expr);
-    return cond;
+    return new Condition(checkers, expr);
   }
 
   @Override
@@ -130,33 +127,11 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     }
   }
 
-  // TODO may need to add logic to filter out skip runs
-  @Override
-  public synchronized List<Schedule> loadSchedules()
-      throws ScheduleManagerException {
-    final List<Trigger> triggers = this.triggerManager.getTriggers(this.triggerSource);
-    final List<Schedule> schedules = new ArrayList<>();
-    for (final Trigger t : triggers) {
-      this.lastUpdateTime = Math.max(this.lastUpdateTime, t.getLastModifyTime());
-      final Schedule s = triggerToSchedule(t);
-      schedules.add(s);
-      System.out.println("loaded schedule for "
-          + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");
-    }
-    return schedules;
-
-  }
-
   private Schedule triggerToSchedule(final Trigger t) throws ScheduleManagerException {
-    final Condition triggerCond = t.getTriggerCondition();
-    final Map<String, ConditionChecker> checkers = triggerCond.getCheckers();
-    BasicTimeChecker ck = null;
-    for (final ConditionChecker checker : checkers.values()) {
-      if (checker.getType().equals(BasicTimeChecker.type)) {
-        ck = (BasicTimeChecker) checker;
-        break;
-      }
-    }
+
+    final BasicTimeChecker triggerTimeChecker = getBasicTimeChecker(t.getTriggerCondition().getCheckers());
+    final BasicTimeChecker endTimeChecker = getBasicTimeChecker(t.getExpireCondition().getCheckers());
+
     final List<TriggerAction> actions = t.getActions();
     ExecuteFlowAction act = null;
     for (final TriggerAction action : actions) {
@@ -165,20 +140,38 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
         break;
       }
     }
-    if (ck != null && act != null) {
-      final Schedule s =
-          new Schedule(t.getTriggerId(), act.getProjectId(),
-              act.getProjectName(), act.getFlowName(),
-              t.getStatus().toString(), ck.getFirstCheckTime(),
-              ck.getTimeZone(), ck.getPeriod(), t.getLastModifyTime(),
-              ck.getNextCheckTime(), t.getSubmitTime(), t.getSubmitUser(),
-              act.getExecutionOptions(), act.getSlaOptions(), ck.getCronExpression());
-      return s;
+    if (triggerTimeChecker != null && act != null) {
+      return new Schedule(t.getTriggerId(),
+          act.getProjectId(),
+          act.getProjectName(),
+          act.getFlowName(),
+          t.getStatus().toString(),
+          triggerTimeChecker.getFirstCheckTime(),
+          endTimeChecker == null? Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME: endTimeChecker.getNextCheckTime(),
+          triggerTimeChecker.getTimeZone(),
+          triggerTimeChecker.getPeriod(),
+          t.getLastModifyTime(),
+          triggerTimeChecker.getNextCheckTime(),
+          t.getSubmitTime(),
+          t.getSubmitUser(),
+          act.getExecutionOptions(),
+          act.getSlaOptions(),
+          triggerTimeChecker.getCronExpression());
     } else {
       logger.error("Failed to parse schedule from trigger!");
       throw new ScheduleManagerException(
           "Failed to parse schedule from trigger!");
     }
+  }
+
+  // expirecheckers or triggerCheckers only have BasicTimeChecker today. This should be refactored in future.
+  private BasicTimeChecker getBasicTimeChecker(final Map<String, ConditionChecker> checkers) {
+    for (final ConditionChecker checker : checkers.values()) {
+      if (checker.getType().equals(BasicTimeChecker.type)) {
+        return (BasicTimeChecker) checker;
+      }
+    }
+    return null;
   }
 
   @Override
@@ -212,7 +205,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
       this.lastUpdateTime = Math.max(this.lastUpdateTime, t.getLastModifyTime());
       final Schedule s = triggerToSchedule(t);
       schedules.add(s);
-      System.out.println("loaded schedule for "
+      logger.info("loaded schedule for "
           + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");
     }
     return schedules;
