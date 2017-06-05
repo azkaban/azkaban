@@ -19,6 +19,7 @@ package azkaban.executor;
 public class ExecutionReference {
   private final int execId;
   private Executor executor;
+  //Todo jamiesjc: deprecate updateTime in ExecutionReference class gradually.
   private long updateTime;
   private long nextCheckTime = -1;
   private int numErrors = 0;

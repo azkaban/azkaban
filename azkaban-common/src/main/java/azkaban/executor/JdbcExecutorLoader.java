@@ -195,7 +195,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       List<Pair<ExecutionReference, ExecutableFlow>> flows =
         runner.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
-          flowHandler);
+          flowHandler, Status.PREPARING.getNumVal());
       return flows;
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
@@ -211,7 +211,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       Map<Integer, Pair<ExecutionReference, ExecutableFlow>> properties =
           runner.query(FetchActiveExecutableFlows.FETCH_ACTIVE_EXECUTABLE_FLOW,
-              flowHandler);
+              flowHandler, Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
+              Status.FAILED.getNumVal());
       return properties;
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
@@ -227,7 +228,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       List<Pair<ExecutionReference, ExecutableFlow>> flows =
           runner.query(FetchActiveExecutableFlowByExecId.FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID,
-              flowHandler, execId);
+              flowHandler, execId, Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
+              Status.FAILED.getNumVal());
       if(flows.isEmpty()) {
         return null;
       }
@@ -1308,27 +1310,22 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
     // Select queued unassigned flows
     private static String FETCH_QUEUED_EXECUTABLE_FLOW =
-      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, "
-        + " ax.update_time axUpdateTime FROM execution_flows ex"
-        + " INNER JOIN"
-        + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
-        + " Where ex.executor_id is NULL";
+        "SELECT exec_id, enc_type, flow_data FROM execution_flows"
+            + " Where executor_id is NULL AND status = ?";
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
       throws SQLException {
       if (!rs.next()) {
-        return Collections
-          .<Pair<ExecutionReference, ExecutableFlow>> emptyList();
+        return Collections.emptyList();
       }
 
       List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
-        new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
+        new ArrayList<>();
       do {
         int id = rs.getInt(1);
         int encodingType = rs.getInt(2);
         byte[] data = rs.getBytes(3);
-        long updateTime = rs.getLong(4);
 
         if (data == null) {
           logger.error("Found a flow with empty data blob exec_id: " + id);
@@ -1350,10 +1347,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
             ExecutableFlow exFlow =
               ExecutableFlow.createExecutableFlowFromObject(flowObj);
             ExecutionReference ref = new ExecutionReference(id);
-            ref.setUpdateTime(updateTime);
-
-            execFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref,
-              exFlow));
+            execFlows.add(new Pair<>(ref, exFlow));
           } catch (IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
           }
@@ -1369,19 +1363,17 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     // Select running and executor assigned flows
     private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
       "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-        + "et.port port, ax.update_time axUpdateTime, et.id executorId, et.active executorStatus"
+        + "et.port port, et.id executorId, et.active executorStatus"
         + " FROM execution_flows ex"
         + " INNER JOIN "
-        + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
-        + " INNER JOIN "
-        + " executors et ON ex.executor_id = et.id";
+        + " executors et ON ex.executor_id = et.id"
+        + " Where ex.status NOT IN (?, ?, ?)";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
         ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Collections
-            .<Integer, Pair<ExecutionReference, ExecutableFlow>> emptyMap();
+        return Collections.emptyMap();
       }
 
       Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
@@ -1392,9 +1384,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         byte[] data = rs.getBytes(3);
         String host = rs.getString(4);
         int port = rs.getInt(5);
-        long updateTime = rs.getLong(6);
-        int executorId = rs.getInt(7);
-        boolean executorStatus = rs.getBoolean(8);
+        int executorId = rs.getInt(6);
+        boolean executorStatus = rs.getBoolean(7);
 
         if (data == null) {
           execFlows.put(id, null);
@@ -1417,10 +1408,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
                 ExecutableFlow.createExecutableFlowFromObject(flowObj);
             Executor executor = new Executor(executorId, host, port, executorStatus);
             ExecutionReference ref = new ExecutionReference(id, executor);
-            ref.setUpdateTime(updateTime);
-
-            execFlows.put(id, new Pair<ExecutionReference, ExecutableFlow>(ref,
-                exFlow));
+            execFlows.put(id, new Pair<>(ref, exFlow));
           } catch (IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
           }
@@ -1435,13 +1423,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
     private static String FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ax.update_time axUpdateTime, et.id executorId, et.active executorStatus"
+            + "et.port port, et.id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
             + " INNER JOIN "
-            + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
-            + " INNER JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " WHERE ax.exec_id = ?";
+            + " Where ex.exec_id = ? AND ex.status NOT IN (?, ?, ?)";
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
@@ -1458,9 +1444,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         byte[] data = rs.getBytes(3);
         String host = rs.getString(4);
         int port = rs.getInt(5);
-        long updateTime = rs.getLong(6);
-        int executorId = rs.getInt(7);
-        boolean executorStatus = rs.getBoolean(8);
+        int executorId = rs.getInt(6);
+        boolean executorStatus = rs.getBoolean(7);
 
         if (data == null) {
           logger.error("Found a flow with empty data blob exec_id: " + id);
@@ -1480,8 +1465,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
                 ExecutableFlow.createExecutableFlowFromObject(flowObj);
             Executor executor = new Executor(executorId, host, port, executorStatus);
             ExecutionReference ref = new ExecutionReference(id, executor);
-            ref.setUpdateTime(updateTime);
-
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
