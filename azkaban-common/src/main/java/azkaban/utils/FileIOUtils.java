@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -223,7 +224,7 @@ public class FileIOUtils {
     }
     final Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
     final String outputString =
-        new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
+        new String(buffer, utf8Range.getFirst(), utf8Range.getSecond(), StandardCharsets.UTF_8);
 
     return new LogData(fileOffset + utf8Range.getFirst(),
         utf8Range.getSecond(), outputString);
@@ -254,7 +255,7 @@ public class FileIOUtils {
     }
     final Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
     final String outputString =
-        new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
+        new String(buffer, utf8Range.getFirst(), utf8Range.getSecond(), StandardCharsets.UTF_8);
 
     return new JobMetaData(fileOffset + utf8Range.getFirst(),
         utf8Range.getSecond(), outputString);
@@ -360,7 +361,7 @@ public class FileIOUtils {
     private final CircularBuffer<String> buffer = new CircularBuffer<>(5);
 
     public NullLogger(final InputStream stream) {
-      this.inputReader = new BufferedReader(new InputStreamReader(stream));
+      this.inputReader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 
     @Override
