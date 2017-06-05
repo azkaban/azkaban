@@ -195,8 +195,8 @@ public class AzkabanWebServer extends AzkabanServer {
     // TODO remove hack. Move injection to constructor
     executorManager = SERVICE_PROVIDER.getInstance(ExecutorManager.class);
     projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
+    triggerManager = SERVICE_PROVIDER.getInstance(TriggerManager.class);
 
-    triggerManager = loadTriggerManager(props);
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -277,12 +277,6 @@ public class AzkabanWebServer extends AzkabanServer {
     ScheduleLoader loader =
         new TriggerBasedScheduleLoader(tm, ScheduleManager.triggerSource);
     return new ScheduleManager(loader);
-  }
-
-  private TriggerManager loadTriggerManager(Props props)
-      throws TriggerManagerException {
-    TriggerLoader loader = new JdbcTriggerLoader(props);
-    return new TriggerManager(props, loader, executorManager);
   }
 
   private void loadBuiltinCheckersAndActions() {
