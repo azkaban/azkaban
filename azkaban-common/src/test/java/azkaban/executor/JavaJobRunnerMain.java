@@ -19,14 +19,15 @@ package azkaban.executor;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.Props;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class JavaJobRunnerMain {
       this._logger.addAppender(appender);
 
       final Properties prop = new Properties();
-      prop.load(new BufferedReader(new FileReader(propsFile)));
+      prop.load(Files.newBufferedReader(Paths.get(propsFile), StandardCharsets.UTF_8));
 
       this._logger.info("Running job " + this._jobName);
       final String className = prop.getProperty(JOB_CLASS);
@@ -268,13 +269,13 @@ public class JavaJobRunnerMain {
       // Manually serialize into JSON instead of adding org.json to
       // external classpath. Reduces one dependency for something that's
       // essentially easy.
-      writer.write("{\n".getBytes());
+      writer.write("{\n".getBytes(StandardCharsets.UTF_8));
       for (final Map.Entry<String, String> entry : properties.entrySet()) {
         writer.write(String.format("  \"%s\":\"%s\",\n",
             entry.getKey().replace("\"", "\\\\\""),
-            entry.getValue().replace("\"", "\\\\\"")).getBytes());
+            entry.getValue().replace("\"", "\\\\\"")).getBytes(StandardCharsets.UTF_8));
       }
-      writer.write("}".getBytes());
+      writer.write("}".getBytes(StandardCharsets.UTF_8));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to store output properties to: "
           + outputFileStr);

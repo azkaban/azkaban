@@ -16,8 +16,9 @@
 
 package azkaban.executor;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 
@@ -42,7 +43,7 @@ public class SleepJavaJob {
   public static void main(final String[] args) throws Exception {
     final String propsFile = System.getenv("JOB_PROP_FILE");
     final Properties prop = new Properties();
-    prop.load(new BufferedReader(new FileReader(propsFile)));
+    prop.load(Files.newBufferedReader(Paths.get(propsFile), StandardCharsets.UTF_8));
 
     final String jobName = System.getenv("JOB_NAME");
     final SleepJavaJob job = new SleepJavaJob(jobName, prop);

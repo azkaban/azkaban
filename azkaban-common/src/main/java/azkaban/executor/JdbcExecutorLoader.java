@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -1190,7 +1191,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
           FileIOUtils.getUtf8Range(buffer, 0, buffer.length);
 
       return new LogData(startByte + result.getFirst(), result.getSecond(),
-          new String(buffer, result.getFirst(), result.getSecond()));
+          new String(buffer, result.getFirst(), result.getSecond(), StandardCharsets.UTF_8));
     }
   }
 
