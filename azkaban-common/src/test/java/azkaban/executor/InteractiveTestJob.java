@@ -22,12 +22,13 @@ import static org.junit.Assert.assertNotNull;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 
 public class InteractiveTestJob extends AbstractProcessJob {
 
-  public static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
+  private static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
       new ConcurrentHashMap<>();
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
@@ -51,6 +52,10 @@ public class InteractiveTestJob extends AbstractProcessJob {
       }
     }
     throw new IllegalStateException(name + " wasn't added in testJobs map");
+  }
+
+  public static Collection<String> getTestJobNames() {
+    return testJobs.keySet();
   }
 
   public static void clearTestJobs() {

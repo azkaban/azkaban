@@ -140,7 +140,7 @@ public class FlowRunnerTestBase {
   }
 
   private void printTestJobs() {
-    for (final String testJob : InteractiveTestJob.testJobs.keySet()) {
+    for (final String testJob : InteractiveTestJob.getTestJobNames()) {
       final ExecutableNode testNode = this.runner.getExecutableFlow()
           .getExecutableNodePath(testJob);
       System.err.println("testJob: " + testNode.getNestedId() + " " + testNode.getStatus());
