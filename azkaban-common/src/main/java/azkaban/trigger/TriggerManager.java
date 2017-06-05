@@ -16,6 +16,8 @@
 
 package azkaban.trigger;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
@@ -58,7 +60,9 @@ public class TriggerManager extends EventHandler implements
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
-    this.triggerLoader = triggerLoader;
+    requireNonNull(props);
+    requireNonNull(executorManager);
+    this.triggerLoader = requireNonNull(triggerLoader);
 
     long scannerInterval =
         props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);
