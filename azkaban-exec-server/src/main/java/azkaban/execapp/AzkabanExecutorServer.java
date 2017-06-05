@@ -57,6 +57,9 @@ import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -208,7 +211,7 @@ public class AzkabanExecutorServer {
 
           final InputStream is = p.getInputStream();
           final java.io.BufferedReader reader =
-              new java.io.BufferedReader(new InputStreamReader(is));
+              new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
             logger.info(line);
@@ -294,8 +297,8 @@ public class AzkabanExecutorServer {
 
   private void dumpPortToFile() {
     // By default this should write to the working directory
-    try (BufferedWriter writer = new BufferedWriter(
-        new FileWriter(AZKABAN_EXECUTOR_PORT_FILENAME))) {
+    try (BufferedWriter writer = Files
+        .newBufferedWriter(Paths.get(AZKABAN_EXECUTOR_PORT_FILENAME), StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(getPort()));
       writer.write("\n");
     } catch (final IOException e) {
