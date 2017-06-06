@@ -16,12 +16,16 @@
 
 package azkaban.executor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum Status {
   READY(10),
   PREPARING(20),
   RUNNING(30),
   PAUSED(40),
   SUCCEEDED(50),
+  KILLING(55),
   KILLED(60),
   FAILED(70),
   FAILED_FINISHING(80),
@@ -30,6 +34,16 @@ public enum Status {
   QUEUED(110),
   FAILED_SUCCEEDED(120),
   CANCELLED(130);
+  // status is TINYINT and in H2 DB the possible values are: -128 to 127
+  // so trying to store CANCELLED in H2 fails at the moment
+
+  private static final Map<Integer, Status> numValMap = new HashMap<>();
+
+  static {
+    for (Status status : Status.values()) {
+      numValMap.put(status.getNumVal(), status);
+    }
+  }
 
   private final int numVal;
 
@@ -38,36 +52,10 @@ public enum Status {
   }
 
   public static Status fromInteger(final int x) {
-    switch (x) {
-      case 10:
-        return READY;
-      case 20:
-        return PREPARING;
-      case 30:
-        return RUNNING;
-      case 40:
-        return PAUSED;
-      case 50:
-        return SUCCEEDED;
-      case 60:
-        return KILLED;
-      case 70:
-        return FAILED;
-      case 80:
-        return FAILED_FINISHING;
-      case 90:
-        return SKIPPED;
-      case 100:
-        return DISABLED;
-      case 110:
-        return QUEUED;
-      case 120:
-        return FAILED_SUCCEEDED;
-      case 130:
-        return CANCELLED;
-      default:
-        return READY;
+    if (numValMap.containsKey (x)) {
+      return numValMap.get(x);
     }
+    return READY;
   }
 
   public static boolean isStatusFinished(final Status status) {

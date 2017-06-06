@@ -463,7 +463,8 @@ public class FlowRunner extends EventHandler implements Runnable {
     boolean jobsRun = false;
     for (final ExecutableNode node : nodesToCheck) {
       if (Status.isStatusFinished(node.getStatus())
-          || Status.isStatusRunning(node.getStatus())) {
+          || Status.isStatusRunning(node.getStatus())
+          || Status.KILLING == node.getStatus()) {
         // Really shouldn't get in here.
         continue;
       }
@@ -568,6 +569,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       final ExecutableNode node = flow.getExecutableNode(end);
 
       if (node.getStatus() == Status.KILLED
+          || node.getStatus() == Status.KILLING
           || node.getStatus() == Status.FAILED
           || node.getStatus() == Status.CANCELLED) {
         succeeded = false;
@@ -591,9 +593,14 @@ public class FlowRunner extends EventHandler implements Runnable {
     final long durationSec = (flow.getEndTime() - flow.getStartTime()) / 1000;
     switch (flow.getStatus()) {
       case FAILED_FINISHING:
-        this.logger.info("Setting flow '" + id + "' status to FAILED in "
+        Status status = isKilled() ? Status.KILLED : Status.FAILED;
+        this.logger.info("Setting flow '" + id + "' status to "+status+" in "
             + durationSec + " seconds");
-        flow.setStatus(Status.FAILED);
+        flow.setStatus(status);
+        break;
+      case KILLING:
+        logger.info("Setting flow '" + id + "' status to KILLED in " + durationSec + " seconds");
+        flow.setStatus(Status.KILLED);
         break;
       case FAILED:
       case KILLED:
@@ -863,7 +870,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         if (this.flowFailed) {
           this.flow.setStatus(Status.FAILED_FINISHING);
         } else if (this.flowKilled) {
-          this.flow.setStatus(Status.KILLED);
+          this.flow.setStatus(Status.KILLING);
         } else {
           this.flow.setStatus(Status.RUNNING);
         }
@@ -886,7 +893,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         return;
       }
       this.logger.info("Kill has been called on flow " + this.execId);
-      this.flow.setStatus(Status.KILLED);
+      this.flow.setStatus(Status.KILLING);
       // If the flow is paused, then we'll also unpause
       this.flowPaused = false;
       this.flowKilled = true;
@@ -936,6 +943,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         nodesToRetry.add(node);
         continue;
       } else if (node.getStatus() == Status.RUNNING) {
+        continue;
+      } else if (node.getStatus() == Status.KILLING) {
         continue;
       } else if (node.getStatus() == Status.SKIPPED) {
         node.setStatus(Status.DISABLED);

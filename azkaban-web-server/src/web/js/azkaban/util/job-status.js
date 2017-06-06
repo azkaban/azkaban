@@ -24,6 +24,7 @@ var statusStringMap = {
   "FAILED_FINISHING": "Running w/Failure",
   "RUNNING": "Running",
   "WAITING": "Waiting",
+  "KILLING": "Killing",
   "KILLED": "Killed",
   "CANCELLED": "Cancelled",
   "DISABLED": "Disabled",
