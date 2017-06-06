@@ -62,7 +62,7 @@ public final class ExecutableFlowPriorityComparator implements
       int diff = getPriority(exflow2) - getPriority(exflow1);
       if (diff == 0) {
         // ascending order of update time, if same priority
-        diff = (int) (exflow1.getUpdateTime() - exflow2.getUpdateTime());
+        diff = Long.compare(exflow1.getUpdateTime(), exflow2.getUpdateTime());
       }
       if (diff == 0) {
         // ascending order of execution id, if same priority and updateTime
