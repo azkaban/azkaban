@@ -467,13 +467,13 @@ public class JdbcExecutorLoaderTest {
     int port = 12345;
     Executor executor = loader.addExecutor(host, port);
 
-    // When flow is assigned an executor, it is no longer in queued flows
+    // When a flow is assigned an executor, it is no longer in queued state
     ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     Assert.assertTrue(queuedFlows.isEmpty());
 
-    // When flow status is finished, it is no longer in queued flows
+    // When flow status is finished, it is no longer in queued state
     ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow2);
     flow2.setStatus(Status.SUCCEEDED);
@@ -825,7 +825,7 @@ public class JdbcExecutorLoaderTest {
         loader.fetchActiveFlows();
     Assert.assertTrue(activeFlows.containsKey(flow1.getExecutionId()));
 
-    // When flow status becomes SUCCEEDED/KILLED/FAILED, should not exist in active flows
+    // When flow status becomes SUCCEEDED/KILLED/FAILED, it should not be in active state
     flow1.setStatus(Status.SUCCEEDED);
     loader.updateExecutableFlow(flow1);
     activeFlows = loader.fetchActiveFlows();

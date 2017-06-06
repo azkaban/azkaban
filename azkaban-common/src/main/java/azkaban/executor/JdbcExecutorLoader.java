@@ -195,7 +195,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       List<Pair<ExecutionReference, ExecutableFlow>> flows =
         runner.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
-          flowHandler, Status.PREPARING.getNumVal());
+          flowHandler);
       return flows;
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
@@ -211,8 +211,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       Map<Integer, Pair<ExecutionReference, ExecutableFlow>> properties =
           runner.query(FetchActiveExecutableFlows.FETCH_ACTIVE_EXECUTABLE_FLOW,
-              flowHandler, Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
-              Status.FAILED.getNumVal());
+              flowHandler);
       return properties;
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
@@ -228,8 +227,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       List<Pair<ExecutionReference, ExecutableFlow>> flows =
           runner.query(FetchActiveExecutableFlowByExecId.FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID,
-              flowHandler, execId, Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
-              Status.FAILED.getNumVal());
+              flowHandler, execId);
       if(flows.isEmpty()) {
         return null;
       }
@@ -1311,7 +1309,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     // Select queued unassigned flows
     private static String FETCH_QUEUED_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows"
-            + " Where executor_id is NULL AND status = ?";
+            + " Where executor_id is NULL AND status = "
+            + Status.PREPARING.getNumVal();
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
@@ -1367,7 +1366,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         + " FROM execution_flows ex"
         + " INNER JOIN "
         + " executors et ON ex.executor_id = et.id"
-        + " Where ex.status NOT IN (?, ?, ?)";
+        + " Where ex.status NOT IN ("
+        + Status.SUCCEEDED.getNumVal() + ", "
+        + Status.KILLED.getNumVal() + ", "
+        + Status.FAILED.getNumVal() + ")";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -1427,7 +1429,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
             + " FROM execution_flows ex"
             + " INNER JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " Where ex.exec_id = ? AND ex.status NOT IN (?, ?, ?)";
+            + " Where ex.exec_id = ? AND ex.status NOT IN ("
+            + Status.SUCCEEDED.getNumVal() + ", "
+            + Status.KILLED.getNumVal() + ", "
+            + Status.FAILED.getNumVal() + ")";
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
