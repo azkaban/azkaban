@@ -16,6 +16,8 @@
 
 package azkaban.trigger;
 
+import static org.junit.Assert.assertTrue;
+
 import azkaban.database.AzkabanConnectionPoolTest;
 import azkaban.database.AzkabanDataSource;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -39,33 +41,31 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 
 public class JdbcTriggerImplTest {
 
+  public static AzkabanDataSource dataSource = new AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
   TriggerLoader loader;
   DatabaseOperator dbOperator;
-  public static AzkabanDataSource dataSource = new AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
 
   @BeforeClass
   public static void prepare() throws Exception {
-    Props props = new Props();
+    final Props props = new Props();
 
-    String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
+    final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
     props.put("database.sql.scripts.dir", sqlScriptsDir);
 
-    AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSource, props);
+    final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSource, props);
     setup.loadTableInfo();
     setup.updateDatabase(true, false);
 
-    CheckerTypeLoader checkerTypeLoader = new CheckerTypeLoader();
-    ActionTypeLoader actionTypeLoader = new ActionTypeLoader();
+    final CheckerTypeLoader checkerTypeLoader = new CheckerTypeLoader();
+    final ActionTypeLoader actionTypeLoader = new ActionTypeLoader();
 
     try {
       checkerTypeLoader.init(null);
       actionTypeLoader.init(null);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TriggerManagerException(e);
     }
 
@@ -79,41 +79,41 @@ public class JdbcTriggerImplTest {
   @Before
   public void setUp() {
 
-    dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
-    loader = new JdbcTriggerImpl(dbOperator);
+    this.dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
+    this.loader = new JdbcTriggerImpl(this.dbOperator);
   }
 
   @Test
   public void testRemoveTriggers() throws Exception {
-    Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
-    Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
-    loader.addTrigger(t1);
-    loader.addTrigger(t2);
-    List<Trigger> ts = loader.loadTriggers();
+    final Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
+    final Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
+    this.loader.addTrigger(t1);
+    this.loader.addTrigger(t2);
+    List<Trigger> ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 2);
-    loader.removeTrigger(t2);
-    ts = loader.loadTriggers();
+    this.loader.removeTrigger(t2);
+    ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 1);
     assertTrue(ts.get(0).getTriggerId() == t1.getTriggerId());
   }
 
   @Test
   public void testAddTrigger() throws Exception {
-    Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
-    Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
-    loader.addTrigger(t1);
+    final Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
+    final Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
+    this.loader.addTrigger(t1);
 
-    List<Trigger> ts = loader.loadTriggers();
+    List<Trigger> ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 1);
 
-    Trigger t3 = ts.get(0);
+    final Trigger t3 = ts.get(0);
     assertTrue(t3.getSource().equals("source1"));
 
-    loader.addTrigger(t2);
-    ts = loader.loadTriggers();
+    this.loader.addTrigger(t2);
+    ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 2);
 
-    for (Trigger t : ts) {
+    for (final Trigger t : ts) {
       if (t.getTriggerId() == t2.getTriggerId()) {
         t.getSource().equals(t2.getSource());
       }
@@ -122,35 +122,35 @@ public class JdbcTriggerImplTest {
 
   @Test
   public void testUpdateTrigger() throws Exception {
-    Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
+    final Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
     t1.setResetOnExpire(true);
-    loader.addTrigger(t1);
-    List<Trigger> ts = loader.loadTriggers();
+    this.loader.addTrigger(t1);
+    List<Trigger> ts = this.loader.loadTriggers();
     assertTrue(ts.get(0).isResetOnExpire() == true);
     t1.setResetOnExpire(false);
-    loader.updateTrigger(t1);
-    ts = loader.loadTriggers();
+    this.loader.updateTrigger(t1);
+    ts = this.loader.loadTriggers();
     assertTrue(ts.get(0).isResetOnExpire() == false);
   }
 
-  private Trigger createTrigger(String projName, String flowName, String source) {
-    DateTime now = DateTime.now();
-    ConditionChecker checker1 =
+  private Trigger createTrigger(final String projName, final String flowName, final String source) {
+    final DateTime now = DateTime.now();
+    final ConditionChecker checker1 =
         new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(),
             true, true, Utils.parsePeriodString("1h"), null);
-    Map<String, ConditionChecker> checkers1 =
-        new HashMap<String, ConditionChecker>();
+    final Map<String, ConditionChecker> checkers1 =
+        new HashMap<>();
     checkers1.put(checker1.getId(), checker1);
-    String expr1 = checker1.getId() + ".eval()";
-    Condition triggerCond = new Condition(checkers1, expr1);
-    Condition expireCond = new Condition(checkers1, expr1);
-    List<TriggerAction> actions = new ArrayList<TriggerAction>();
-    TriggerAction action =
+    final String expr1 = checker1.getId() + ".eval()";
+    final Condition triggerCond = new Condition(checkers1, expr1);
+    final Condition expireCond = new Condition(checkers1, expr1);
+    final List<TriggerAction> actions = new ArrayList<>();
+    final TriggerAction action =
         new ExecuteFlowAction("executeAction", 1, projName, flowName,
             "azkaban", new ExecutionOptions(), null);
     actions.add(action);
 
-    Trigger t = new Trigger.TriggerBuilder("azkaban",
+    final Trigger t = new Trigger.TriggerBuilder("azkaban",
         source,
         triggerCond,
         expireCond,
@@ -163,9 +163,9 @@ public class JdbcTriggerImplTest {
   @After
   public void clearDB() {
     try {
-      dbOperator.update("DELETE FROM triggers");
+      this.dbOperator.update("DELETE FROM triggers");
 
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       return;
     }

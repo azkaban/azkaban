@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Edge {
+
   private final String sourceId;
   private final String targetId;
   private Node source;
@@ -33,15 +34,48 @@ public class Edge {
   private String guideType;
   private List<Point2D> guideValues;
 
-  public Edge(String fromId, String toId) {
+  public Edge(final String fromId, final String toId) {
     this.sourceId = fromId;
     this.targetId = toId;
   }
 
-  public Edge(Edge clone) {
+  public Edge(final Edge clone) {
     this.sourceId = clone.getSourceId();
     this.targetId = clone.getTargetId();
     this.error = clone.getError();
+  }
+
+  public static Edge fromObject(final Object obj) {
+    final HashMap<String, Object> edgeObj = (HashMap<String, Object>) obj;
+
+    final String source = (String) edgeObj.get("source");
+    final String target = (String) edgeObj.get("target");
+
+    final String error = (String) edgeObj.get("error");
+
+    final Edge edge = new Edge(source, target);
+    edge.setError(error);
+
+    if (edgeObj.containsKey("guides")) {
+      final Map<String, Object> guideMap =
+          (Map<String, Object>) edgeObj.get("guides");
+      final List<Object> values = (List<Object>) guideMap.get("values");
+      final String type = (String) guideMap.get("type");
+
+      final ArrayList<Point2D> valuePoints = new ArrayList<>();
+      for (final Object pointObj : values) {
+        final Map<String, Double> point = (Map<String, Double>) pointObj;
+
+        final Double x = point.get("x");
+        final Double y = point.get("y");
+
+        valuePoints.add(new Point2D.Double(x, y));
+      }
+
+      edge.setGuides(type, valuePoints);
+    }
+
+    return edge;
   }
 
   public String getId() {
@@ -49,19 +83,19 @@ public class Edge {
   }
 
   public String getSourceId() {
-    return sourceId;
+    return this.sourceId;
   }
 
   public String getTargetId() {
-    return targetId;
-  }
-
-  public void setError(String error) {
-    this.error = error;
+    return this.targetId;
   }
 
   public String getError() {
     return this.error;
+  }
+
+  public void setError(final String error) {
+    this.error = error;
   }
 
   public boolean hasError() {
@@ -69,48 +103,48 @@ public class Edge {
   }
 
   public Node getSource() {
-    return source;
+    return this.source;
   }
 
-  public void setSource(Node source) {
+  public void setSource(final Node source) {
     this.source = source;
   }
 
   public Node getTarget() {
-    return target;
+    return this.target;
   }
 
-  public void setTarget(Node target) {
+  public void setTarget(final Node target) {
     this.target = target;
   }
 
   public String getGuideType() {
-    return guideType;
+    return this.guideType;
   }
 
   public List<Point2D> getGuideValues() {
-    return guideValues;
+    return this.guideValues;
   }
 
-  public void setGuides(String type, List<Point2D> values) {
+  public void setGuides(final String type, final List<Point2D> values) {
     this.guideType = type;
     this.guideValues = values;
   }
 
   public Object toObject() {
-    HashMap<String, Object> obj = new HashMap<String, Object>();
+    final HashMap<String, Object> obj = new HashMap<>();
     obj.put("source", getSourceId());
     obj.put("target", getTargetId());
     if (hasError()) {
-      obj.put("error", error);
+      obj.put("error", this.error);
     }
-    if (guideValues != null) {
-      HashMap<String, Object> lineGuidesObj = new HashMap<String, Object>();
-      lineGuidesObj.put("type", guideType);
+    if (this.guideValues != null) {
+      final HashMap<String, Object> lineGuidesObj = new HashMap<>();
+      lineGuidesObj.put("type", this.guideType);
 
-      ArrayList<Object> guides = new ArrayList<Object>();
-      for (Point2D point : this.guideValues) {
-        HashMap<String, Double> pointObj = new HashMap<String, Double>();
+      final ArrayList<Object> guides = new ArrayList<>();
+      for (final Point2D point : this.guideValues) {
+        final HashMap<String, Double> pointObj = new HashMap<>();
         pointObj.put("x", point.getX());
         pointObj.put("y", point.getY());
         guides.add(pointObj);
@@ -121,40 +155,6 @@ public class Edge {
     }
 
     return obj;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static Edge fromObject(Object obj) {
-    HashMap<String, Object> edgeObj = (HashMap<String, Object>) obj;
-
-    String source = (String) edgeObj.get("source");
-    String target = (String) edgeObj.get("target");
-
-    String error = (String) edgeObj.get("error");
-
-    Edge edge = new Edge(source, target);
-    edge.setError(error);
-
-    if (edgeObj.containsKey("guides")) {
-      Map<String, Object> guideMap =
-          (Map<String, Object>) edgeObj.get("guides");
-      List<Object> values = (List<Object>) guideMap.get("values");
-      String type = (String) guideMap.get("type");
-
-      ArrayList<Point2D> valuePoints = new ArrayList<Point2D>();
-      for (Object pointObj : values) {
-        Map<String, Double> point = (Map<String, Double>) pointObj;
-
-        Double x = point.get("x");
-        Double y = point.get("y");
-
-        valuePoints.add(new Point2D.Double(x, y));
-      }
-
-      edge.setGuides(type, valuePoints);
-    }
-
-    return edge;
   }
 
 }

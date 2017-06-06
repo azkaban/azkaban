@@ -18,15 +18,13 @@ package azkaban.trigger;
 
 import java.util.Map;
 
-import azkaban.trigger.TriggerAction;
-
 public class DummyTriggerAction implements TriggerAction {
 
   public static final String type = "DummyAction";
 
-  private String message;
+  private final String message;
 
-  public DummyTriggerAction(String message) {
+  public DummyTriggerAction(final String message) {
     this.message = message;
   }
 
@@ -36,7 +34,7 @@ public class DummyTriggerAction implements TriggerAction {
   }
 
   @Override
-  public TriggerAction fromJson(Object obj) {
+  public TriggerAction fromJson(final Object obj) {
     return null;
   }
 
@@ -48,7 +46,7 @@ public class DummyTriggerAction implements TriggerAction {
   @Override
   public void doAction() {
     System.out.println(getType() + " invoked.");
-    System.out.println(message);
+    System.out.println(this.message);
   }
 
   @Override
@@ -62,6 +60,6 @@ public class DummyTriggerAction implements TriggerAction {
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 }

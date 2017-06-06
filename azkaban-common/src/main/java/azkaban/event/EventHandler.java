@@ -20,24 +20,25 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class EventHandler {
-  private HashSet<EventListener> listeners = new HashSet<EventListener>();
+
+  private final HashSet<EventListener> listeners = new HashSet<>();
 
   public EventHandler() {
   }
 
-  public void addListener(EventListener listener) {
-    listeners.add(listener);
+  public void addListener(final EventListener listener) {
+    this.listeners.add(listener);
   }
 
-  public void fireEventListeners(Event event) {
-    ArrayList<EventListener> listeners =
-        new ArrayList<EventListener>(this.listeners);
-    for (EventListener listener : listeners) {
+  public void fireEventListeners(final Event event) {
+    final ArrayList<EventListener> listeners =
+        new ArrayList<>(this.listeners);
+    for (final EventListener listener : listeners) {
       listener.handleEvent(event);
     }
   }
 
-  public void removeListener(EventListener listener) {
-    listeners.remove(listener);
+  public void removeListener(final EventListener listener) {
+    this.listeners.remove(listener);
   }
 }

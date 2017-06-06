@@ -17,13 +17,14 @@
 package azkaban.security.commons;
 
 public class HadoopSecurityManagerException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
-  public HadoopSecurityManagerException(String message) {
+  public HadoopSecurityManagerException(final String message) {
     super(message);
   }
 
-  public HadoopSecurityManagerException(String message, Throwable cause) {
+  public HadoopSecurityManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

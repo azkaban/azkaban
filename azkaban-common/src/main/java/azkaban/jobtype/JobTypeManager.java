@@ -16,16 +16,6 @@
 
 package azkaban.jobtype;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.log4j.Logger;
-
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobExecutor.NoopJob;
@@ -37,10 +27,16 @@ import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.log4j.Logger;
 
 public class JobTypeManager {
-  private final String jobTypePluginDir; // the dir for jobtype plugins
-  private final ClassLoader parentLoader;
 
   public static final String DEFAULT_JOBTYPEPLUGINDIR = "plugins/jobtypes";
   // need jars.to.include property, will be loaded with user property
@@ -52,12 +48,13 @@ public class JobTypeManager {
   // common private properties for multiple plugins
   private static final String COMMONSYSCONFFILE = "commonprivate.properties";
   private static final Logger logger = Logger.getLogger(JobTypeManager.class);
-
+  private final String jobTypePluginDir; // the dir for jobtype plugins
+  private final ClassLoader parentLoader;
+  private final Props globalProperties;
   private JobTypePluginSet pluginSet;
-  private Props globalProperties;
 
-  public JobTypeManager(String jobtypePluginDir, Props globalProperties,
-      ClassLoader parentClassLoader) {
+  public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
+      final ClassLoader parentClassLoader) {
     this.jobTypePluginDir = jobtypePluginDir;
     this.parentLoader = parentClassLoader;
     this.globalProperties = globalProperties;
@@ -66,18 +63,18 @@ public class JobTypeManager {
   }
 
   public void loadPlugins() throws JobTypeManagerException {
-    JobTypePluginSet plugins = new JobTypePluginSet();
+    final JobTypePluginSet plugins = new JobTypePluginSet();
 
     loadDefaultTypes(plugins);
-    if (jobTypePluginDir != null) {
-      File pluginDir = new File(jobTypePluginDir);
+    if (this.jobTypePluginDir != null) {
+      final File pluginDir = new File(this.jobTypePluginDir);
       if (pluginDir.exists()) {
         logger
             .info("Job type plugin directory set. Loading extra job types from "
                 + pluginDir);
         try {
           loadPluginJobTypes(plugins);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.info("Plugin jobtypes failed to load. " + e.getCause(), e);
           throw new JobTypeManagerException(e);
         }
@@ -86,11 +83,11 @@ public class JobTypeManager {
 
     // Swap the plugin set. If exception is thrown, then plugin isn't swapped.
     synchronized (this) {
-      pluginSet = plugins;
+      this.pluginSet = plugins;
     }
   }
 
-  private void loadDefaultTypes(JobTypePluginSet plugins)
+  private void loadDefaultTypes(final JobTypePluginSet plugins)
       throws JobTypeManagerException {
     logger.info("Loading plugin default job types");
     plugins.addPluginClass("command", ProcessJob.class);
@@ -102,31 +99,31 @@ public class JobTypeManager {
   }
 
   // load Job Types from jobtype plugin dir
-  private void loadPluginJobTypes(JobTypePluginSet plugins)
+  private void loadPluginJobTypes(final JobTypePluginSet plugins)
       throws JobTypeManagerException {
-    File jobPluginsDir = new File(jobTypePluginDir);
+    final File jobPluginsDir = new File(this.jobTypePluginDir);
 
     if (!jobPluginsDir.exists()) {
-      logger.error("Job type plugin dir " + jobTypePluginDir
+      logger.error("Job type plugin dir " + this.jobTypePluginDir
           + " doesn't exist. Will not load any external plugins.");
       return;
     } else if (!jobPluginsDir.isDirectory()) {
       throw new JobTypeManagerException("Job type plugin dir "
-          + jobTypePluginDir + " is not a directory!");
+          + this.jobTypePluginDir + " is not a directory!");
     } else if (!jobPluginsDir.canRead()) {
       throw new JobTypeManagerException("Job type plugin dir "
-          + jobTypePluginDir + " is not readable!");
+          + this.jobTypePluginDir + " is not readable!");
     }
 
     // Load the common properties used by all jobs that are run
     Props commonPluginJobProps = null;
-    File commonJobPropsFile = new File(jobPluginsDir, COMMONCONFFILE);
+    final File commonJobPropsFile = new File(jobPluginsDir, COMMONCONFFILE);
     if (commonJobPropsFile.exists()) {
       logger.info("Common plugin job props file " + commonJobPropsFile
           + " found. Attempt to load.");
       try {
-        commonPluginJobProps = new Props(globalProperties, commonJobPropsFile);
-      } catch (IOException e) {
+        commonPluginJobProps = new Props(this.globalProperties, commonJobPropsFile);
+      } catch (final IOException e) {
         throw new JobTypeManagerException(
             "Failed to load common plugin job properties" + e.getCause());
       }
@@ -138,13 +135,13 @@ public class JobTypeManager {
 
     // Loads the common properties used by all plugins when loading
     Props commonPluginLoadProps = null;
-    File commonLoadPropsFile = new File(jobPluginsDir, COMMONSYSCONFFILE);
+    final File commonLoadPropsFile = new File(jobPluginsDir, COMMONSYSCONFFILE);
     if (commonLoadPropsFile.exists()) {
       logger.info("Common plugin load props file " + commonLoadPropsFile
           + " found. Attempt to load.");
       try {
         commonPluginLoadProps = new Props(null, commonLoadPropsFile);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new JobTypeManagerException(
             "Failed to load common plugin loader properties" + e.getCause());
       }
@@ -158,11 +155,11 @@ public class JobTypeManager {
     plugins.setCommonPluginLoadProps(commonPluginLoadProps);
 
     // Loading job types
-    for (File dir : jobPluginsDir.listFiles()) {
+    for (final File dir : jobPluginsDir.listFiles()) {
       if (dir.isDirectory() && dir.canRead()) {
         try {
           loadJobTypes(dir, plugins);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error(
               "Failed to load jobtype " + dir.getName() + e.getMessage(), e);
           throw new JobTypeManagerException(e);
@@ -171,18 +168,17 @@ public class JobTypeManager {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private void loadJobTypes(File pluginDir, JobTypePluginSet plugins)
+  private void loadJobTypes(final File pluginDir, final JobTypePluginSet plugins)
       throws JobTypeManagerException {
     // Directory is the jobtypeName
-    String jobTypeName = pluginDir.getName();
+    final String jobTypeName = pluginDir.getName();
     logger.info("Loading plugin " + jobTypeName);
 
     Props pluginJobProps = null;
     Props pluginLoadProps = null;
 
-    File pluginJobPropsFile = new File(pluginDir, JOBTYPECONFFILE);
-    File pluginLoadPropsFile = new File(pluginDir, JOBTYPESYSCONFFILE);
+    final File pluginJobPropsFile = new File(pluginDir, JOBTYPECONFFILE);
+    final File pluginLoadPropsFile = new File(pluginDir, JOBTYPESYSCONFFILE);
 
     if (!pluginLoadPropsFile.exists()) {
       logger.info("Plugin load props file " + pluginLoadPropsFile
@@ -191,8 +187,8 @@ public class JobTypeManager {
     }
 
     try {
-      Props commonPluginJobProps = plugins.getCommonPluginJobProps();
-      Props commonPluginLoadProps = plugins.getCommonPluginLoadProps();
+      final Props commonPluginJobProps = plugins.getCommonPluginJobProps();
+      final Props commonPluginLoadProps = plugins.getCommonPluginLoadProps();
       if (pluginJobPropsFile.exists()) {
         pluginJobProps = new Props(commonPluginJobProps, pluginJobPropsFile);
       } else {
@@ -202,7 +198,7 @@ public class JobTypeManager {
       pluginLoadProps = new Props(commonPluginLoadProps, pluginLoadPropsFile);
       pluginLoadProps.put("plugin.dir", pluginDir.getAbsolutePath());
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("pluginLoadProps to help with debugging: " + pluginLoadProps);
       throw new JobTypeManagerException("Failed to get jobtype properties"
           + e.getMessage(), e);
@@ -213,27 +209,26 @@ public class JobTypeManager {
       plugins.addPluginJobProps(jobTypeName, pluginJobProps);
     }
 
-    ClassLoader jobTypeLoader =
+    final ClassLoader jobTypeLoader =
         loadJobTypeClassLoader(pluginDir, jobTypeName, plugins);
-    String jobtypeClass = pluginLoadProps.get("jobtype.class");
+    final String jobtypeClass = pluginLoadProps.get("jobtype.class");
 
     Class<? extends Job> clazz = null;
     try {
       clazz = (Class<? extends Job>) jobTypeLoader.loadClass(jobtypeClass);
       plugins.addPluginClass(jobTypeName, clazz);
-    } catch (ClassNotFoundException e) {
+    } catch (final ClassNotFoundException e) {
       throw new JobTypeManagerException(e);
     }
 
     logger.info("Verifying job plugin " + jobTypeName);
     try {
-      Props fakeSysProps = new Props(pluginLoadProps);
-      Props fakeJobProps = new Props(pluginJobProps);
-      @SuppressWarnings("unused")
-      Job job =
+      final Props fakeSysProps = new Props(pluginLoadProps);
+      final Props fakeJobProps = new Props(pluginJobProps);
+      final Job job =
           (Job) Utils.callConstructor(clazz, "dummy", fakeSysProps,
               fakeJobProps, logger);
-    } catch (Throwable t) {
+    } catch (final Throwable t) {
       logger.info("Jobtype " + jobTypeName + " failed test!", t);
       throw new JobExecutionException(t);
     }
@@ -243,26 +238,21 @@ public class JobTypeManager {
 
   /**
    * Creates and loads all plugin resources (jars) into a ClassLoader
-   *
-   * @param pluginDir
-   * @param jobTypeName
-   * @param plugins
-   * @return
    */
-  private ClassLoader loadJobTypeClassLoader(File pluginDir,
-      String jobTypeName, JobTypePluginSet plugins) {
+  private ClassLoader loadJobTypeClassLoader(final File pluginDir,
+      final String jobTypeName, final JobTypePluginSet plugins) {
     // sysconf says what jars/confs to load
-    List<URL> resources = new ArrayList<URL>();
-    Props pluginLoadProps = plugins.getPluginLoaderProps(jobTypeName);
+    final List<URL> resources = new ArrayList<>();
+    final Props pluginLoadProps = plugins.getPluginLoaderProps(jobTypeName);
 
     try {
       // first global classpath
       logger.info("Adding global resources for " + jobTypeName);
-      List<String> typeGlobalClassPath =
+      final List<String> typeGlobalClassPath =
           pluginLoadProps.getStringList("jobtype.global.classpath", null, ",");
       if (typeGlobalClassPath != null) {
-        for (String jar : typeGlobalClassPath) {
-          URL cpItem = new File(jar).toURI().toURL();
+        for (final String jar : typeGlobalClassPath) {
+          final URL cpItem = new File(jar).toURI().toURL();
           if (!resources.contains(cpItem)) {
             logger.info("adding to classpath " + cpItem);
             resources.add(cpItem);
@@ -272,22 +262,22 @@ public class JobTypeManager {
 
       // type specific classpath
       logger.info("Adding type resources.");
-      List<String> typeClassPath =
+      final List<String> typeClassPath =
           pluginLoadProps.getStringList("jobtype.classpath", null, ",");
       if (typeClassPath != null) {
-        for (String jar : typeClassPath) {
-          URL cpItem = new File(jar).toURI().toURL();
+        for (final String jar : typeClassPath) {
+          final URL cpItem = new File(jar).toURI().toURL();
           if (!resources.contains(cpItem)) {
             logger.info("adding to classpath " + cpItem);
             resources.add(cpItem);
           }
         }
       }
-      List<String> jobtypeLibDirs =
+      final List<String> jobtypeLibDirs =
           pluginLoadProps.getStringList("jobtype.lib.dir", null, ",");
       if (jobtypeLibDirs != null) {
-        for (String libDir : jobtypeLibDirs) {
-          for (File f : new File(libDir).listFiles()) {
+        for (final String libDir : jobtypeLibDirs) {
+          for (final File f : new File(libDir).listFiles()) {
             if (f.getName().endsWith(".jar")) {
               resources.add(f.toURI().toURL());
               logger.info("adding to classpath " + f.toURI().toURL());
@@ -297,26 +287,28 @@ public class JobTypeManager {
       }
 
       logger.info("Adding type override resources.");
-      for (File f : pluginDir.listFiles()) {
+      for (final File f : pluginDir.listFiles()) {
         if (f.getName().endsWith(".jar")) {
           resources.add(f.toURI().toURL());
           logger.info("adding to classpath " + f.toURI().toURL());
         }
       }
 
-    } catch (MalformedURLException e) {
+    } catch (final MalformedURLException e) {
       throw new JobTypeManagerException(e);
     }
 
     // each job type can have a different class loader
-    logger.info(String.format("Classpath for plugin[dir: %s, JobType: %s]: %s", pluginDir, jobTypeName, resources));
-    ClassLoader jobTypeLoader =
+    logger.info(String
+        .format("Classpath for plugin[dir: %s, JobType: %s]: %s", pluginDir, jobTypeName,
+            resources));
+    final ClassLoader jobTypeLoader =
         new URLClassLoader(resources.toArray(new URL[resources.size()]),
-            parentLoader);
+            this.parentLoader);
     return jobTypeLoader;
   }
 
-  public Job buildJobExecutor(String jobId, Props jobProps, Logger logger)
+  public Job buildJobExecutor(final String jobId, Props jobProps, final Logger logger)
       throws JobTypeManagerException {
     // This is final because during build phase, you should never need to swap
     // the pluginSet for safety reasons
@@ -324,7 +316,7 @@ public class JobTypeManager {
 
     Job job = null;
     try {
-      String jobType = jobProps.getString("type");
+      final String jobType = jobProps.getString("type");
       if (jobType == null || jobType.length() == 0) {
         /* throw an exception when job name is null or empty */
         throw new JobExecutionException(String.format(
@@ -333,10 +325,10 @@ public class JobTypeManager {
 
       logger.info("Building " + jobType + " job executor. ");
 
-      Class<? extends Object> executorClass = pluginSet.getPluginClass(jobType);
+      final Class<? extends Object> executorClass = pluginSet.getPluginClass(jobType);
       if (executorClass == null) {
         throw new JobExecutionException(String.format("Job type '" + jobType
-            + "' is unrecognized. Could not construct job[%s] of type[%s].",
+                + "' is unrecognized. Could not construct job[%s] of type[%s].",
             jobProps, jobType));
       }
 
@@ -344,11 +336,11 @@ public class JobTypeManager {
       // For default jobtypes, even though they don't have pluginJobProps configured,
       // they still need to load properties from common.properties file if it's present
       // because common.properties file is global to all jobtypes.
-      if(pluginJobProps == null) {
+      if (pluginJobProps == null) {
         pluginJobProps = pluginSet.getCommonPluginJobProps();
       }
       if (pluginJobProps != null) {
-        for (String k : pluginJobProps.getKeySet()) {
+        for (final String k : pluginJobProps.getKeySet()) {
           if (!jobProps.containsKey(k)) {
             jobProps.put(k, pluginJobProps.get(k));
           }
@@ -363,19 +355,20 @@ public class JobTypeManager {
         // pluginSet.getCommonPluginLoadProps() will return null if there is no plugins directory.
         // hence assigning default Props() if that's the case
         pluginLoadProps = pluginSet.getCommonPluginLoadProps();
-        if(pluginLoadProps == null)
-        	pluginLoadProps = new Props();
+        if (pluginLoadProps == null) {
+          pluginLoadProps = new Props();
+        }
       }
 
       job =
           (Job) Utils.callConstructor(executorClass, jobId, pluginLoadProps,
               jobProps, logger);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());
       throw new JobTypeManagerException("Failed to build job executor for job "
           + jobId, e);
-    } catch (Throwable t) {
+    } catch (final Throwable t) {
       logger.error(
           "Failed to build job executor for job " + jobId + t.getMessage(), t);
       throw new JobTypeManagerException("Failed to build job executor for job "

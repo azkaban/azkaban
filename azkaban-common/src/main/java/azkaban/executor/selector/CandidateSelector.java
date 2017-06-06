@@ -21,67 +21,74 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.log4j.Logger;
 
-/** Implementation of the CandidateSelector.
- *  @param K executor object type.
- *  @param V dispatching object type.
- * */
+/**
+ * Implementation of the CandidateSelector.
+ *
+ * @param K executor object type.
+ * @param V dispatching object type.
+ */
 public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K, V> {
-  private static Logger logger = Logger.getLogger(CandidateComparator.class);
 
-  private CandidateFilter<K,V> filter;
-  private CandidateComparator<K> comparator;
+  private static final Logger logger = Logger.getLogger(CandidateComparator.class);
 
-  /**constructor of the class.
+  private final CandidateFilter<K, V> filter;
+  private final CandidateComparator<K> comparator;
+
+  /**
+   * constructor of the class.
+   *
    * @param filter CandidateFilter object to be used to perform the candidate filtering.
-   * @param comparator CandidateComparator object to be used to find the best suit candidate from the filtered list.
-   * */
-  public CandidateSelector(CandidateFilter<K,V> filter,
-      CandidateComparator<K> comparator){
+   * @param comparator CandidateComparator object to be used to find the best suit candidate from
+   * the filtered list.
+   */
+  public CandidateSelector(final CandidateFilter<K, V> filter,
+      final CandidateComparator<K> comparator) {
     this.filter = filter;
     this.comparator = comparator;
   }
 
   @Override
-  public K getBest(Collection<K> candidateList, V dispatchingObject) {
+  public K getBest(final Collection<K> candidateList, final V dispatchingObject) {
 
-     // shortcut if the candidateList is empty.
-     if ( null == candidateList || candidateList.size() == 0){
-       logger.error("failed to getNext candidate as the passed candidateList is null or empty.");
-       return null;
-     }
+    // shortcut if the candidateList is empty.
+    if (null == candidateList || candidateList.size() == 0) {
+      logger.error("failed to getNext candidate as the passed candidateList is null or empty.");
+      return null;
+    }
 
-     logger.debug("start candidate selection logic.");
-     logger.debug(String.format("candidate count before filtering: %s", candidateList.size()));
+    logger.debug("start candidate selection logic.");
+    logger.debug(String.format("candidate count before filtering: %s", candidateList.size()));
 
-     // to keep the input untouched, we will form up a new list based off the filtering result.
-     Collection<K> filteredList = new ArrayList<K>();
+    // to keep the input untouched, we will form up a new list based off the filtering result.
+    Collection<K> filteredList = new ArrayList<>();
 
-     if (null != this.filter){
-       for (K candidateInfo : candidateList){
-         if (filter.filterTarget(candidateInfo,dispatchingObject)){
-           filteredList.add(candidateInfo);
-         }
-       }
-     } else{
-       filteredList = candidateList;
-       logger.debug("skipping the candidate filtering as the filter object is not specifed.");
-     }
+    if (null != this.filter) {
+      for (final K candidateInfo : candidateList) {
+        if (this.filter.filterTarget(candidateInfo, dispatchingObject)) {
+          filteredList.add(candidateInfo);
+        }
+      }
+    } else {
+      filteredList = candidateList;
+      logger.debug("skipping the candidate filtering as the filter object is not specifed.");
+    }
 
-     logger.debug(String.format("candidate count after filtering: %s", filteredList.size()));
-     if (filteredList.size() == 0){
-       logger.debug("failed to select candidate as the filtered candidate list is empty.");
-       return null;
-     }
+    logger.debug(String.format("candidate count after filtering: %s", filteredList.size()));
+    if (filteredList.size() == 0) {
+      logger.debug("failed to select candidate as the filtered candidate list is empty.");
+      return null;
+    }
 
-     if (null == comparator){
-       logger.debug("candidate comparator is not specified, default hash code comparator class will be used.");
-     }
+    if (null == this.comparator) {
+      logger.debug(
+          "candidate comparator is not specified, default hash code comparator class will be used.");
+    }
 
-     // final work - find the best candidate from the filtered list.
-     K executor = Collections.max(filteredList, comparator);
-     logger.debug(String.format("candidate selected %s",
-         null == executor ? "(null)" : executor.toString()));
-     return executor;
+    // final work - find the best candidate from the filtered list.
+    final K executor = Collections.max(filteredList, this.comparator);
+    logger.debug(String.format("candidate selected %s",
+        null == executor ? "(null)" : executor.toString()));
+    return executor;
   }
 
   @Override

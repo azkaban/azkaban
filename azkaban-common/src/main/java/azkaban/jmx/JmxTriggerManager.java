@@ -20,25 +20,26 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerAdapter.TriggerJMX;
 
 public class JmxTriggerManager implements JmxTriggerManagerMBean {
-  private TriggerJMX jmxStats;
 
-  public JmxTriggerManager(TriggerManagerAdapter manager) {
+  private final TriggerJMX jmxStats;
+
+  public JmxTriggerManager(final TriggerManagerAdapter manager) {
     this.jmxStats = manager.getJMX();
   }
 
   @Override
   public long getLastRunnerThreadCheckTime() {
-    return jmxStats.getLastRunnerThreadCheckTime();
+    return this.jmxStats.getLastRunnerThreadCheckTime();
   }
 
   @Override
   public boolean isRunnerThreadActive() {
-    return jmxStats.isRunnerThreadActive();
+    return this.jmxStats.isRunnerThreadActive();
   }
 
   @Override
   public String getPrimaryTriggerHostPort() {
-    return jmxStats.getPrimaryServerHost();
+    return this.jmxStats.getPrimaryServerHost();
   }
 
   // @Override
@@ -48,26 +49,26 @@ public class JmxTriggerManager implements JmxTriggerManagerMBean {
 
   @Override
   public int getNumTriggers() {
-    return jmxStats.getNumTriggers();
+    return this.jmxStats.getNumTriggers();
   }
 
   @Override
   public String getTriggerSources() {
-    return jmxStats.getTriggerSources();
+    return this.jmxStats.getTriggerSources();
   }
 
   @Override
   public String getTriggerIds() {
-    return jmxStats.getTriggerIds();
+    return this.jmxStats.getTriggerIds();
   }
 
   @Override
   public long getScannerIdleTime() {
-    return jmxStats.getScannerIdleTime();
+    return this.jmxStats.getScannerIdleTime();
   }
 
   @Override
   public String getScannerThreadStage() {
-    return jmxStats.getScannerThreadStage();
+    return this.jmxStats.getScannerThreadStage();
   }
 }

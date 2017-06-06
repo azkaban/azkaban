@@ -16,15 +16,14 @@
 
 package azkaban.utils;
 
-import org.apache.log4j.PatternLayout;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.apache.log4j.spi.LoggingEvent;
-
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test output of PatternLayoutEscapedTest
@@ -32,56 +31,58 @@ import static org.junit.Assert.assertTrue;
  * This is necessary when we are logging these messages out as JSON objects
  */
 public class PatternLayoutEscapedTest {
-  private Logger logger = Logger.getLogger(this.getClass());
-  private PatternLayout layout = new PatternLayoutEscaped();
+
+  private final Logger logger = Logger.getLogger(this.getClass());
+  private final PatternLayout layout = new PatternLayoutEscaped();
 
   @Before
   public void beforeTest() {
-    layout.setConversionPattern("%m");
+    this.layout.setConversionPattern("%m");
   }
 
   @Test
   public void testWithException() {
     try {
       throw new Exception("This is an exception");
-    } catch (Exception e) {
-      LoggingEvent event = createEventWithException("There was an exception", e);
+    } catch (final Exception e) {
+      final LoggingEvent event = createEventWithException("There was an exception", e);
       // Stack trace might change if the codebase changes, but this prefix should always remain the same
-      assertTrue(layout.format(event).startsWith("There was an exception\\njava.lang.Exception: This is an exception"));
+      assertTrue(this.layout.format(event)
+          .startsWith("There was an exception\\njava.lang.Exception: This is an exception"));
     }
   }
 
   @Test
   public void testNewLine() {
-    LoggingEvent event = createMessageEvent("This message contains \n new lines");
-    assertTrue(layout.format(event).equals("This message contains \\n new lines"));
+    final LoggingEvent event = createMessageEvent("This message contains \n new lines");
+    assertTrue(this.layout.format(event).equals("This message contains \\n new lines"));
   }
 
   @Test
   public void testQuote() {
-    LoggingEvent event = createMessageEvent("This message contains \" quotes");
-    assertTrue(layout.format(event).equals("This message contains \\\" quotes"));
+    final LoggingEvent event = createMessageEvent("This message contains \" quotes");
+    assertTrue(this.layout.format(event).equals("This message contains \\\" quotes"));
   }
 
   @Test
   public void testTab() {
-    LoggingEvent event = createMessageEvent("This message contains a tab \t");
-    assertTrue(layout.format(event).equals("This message contains a tab \\t"));
+    final LoggingEvent event = createMessageEvent("This message contains a tab \t");
+    assertTrue(this.layout.format(event).equals("This message contains a tab \\t"));
   }
 
   @Test
   public void testBackSlash() {
-    LoggingEvent event = createMessageEvent("This message contains a backslash \\");
-    assertTrue(layout.format(event).equals("This message contains a backslash \\\\"));
+    final LoggingEvent event = createMessageEvent("This message contains a backslash \\");
+    assertTrue(this.layout.format(event).equals("This message contains a backslash \\\\"));
   }
 
-  private LoggingEvent createMessageEvent(String message) {
+  private LoggingEvent createMessageEvent(final String message) {
     return createEventWithException(message, null);
   }
 
-  private LoggingEvent createEventWithException(String message, Exception e) {
+  private LoggingEvent createEventWithException(final String message, final Exception e) {
     return new LoggingEvent(this.getClass().getCanonicalName(),
-        logger,
+        this.logger,
         0,
         Level.toLevel("INFO"),
         message,

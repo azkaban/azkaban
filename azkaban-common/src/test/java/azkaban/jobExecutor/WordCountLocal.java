@@ -30,57 +30,57 @@ import org.apache.log4j.Logger;
 
 public class WordCountLocal extends AbstractJob {
 
+  private final Map<String, Integer> dict = new HashMap<>();
   private String input = null;
   private String output = null;
-  private Map<String, Integer> dict = new HashMap<>();
 
-  public static void main(String[] args) throws Exception {
-    String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
-    System.out.println("propsFile: " + propsFile);
-    Props prop = new Props(null, propsFile);
-    WordCountLocal instance = new WordCountLocal("", prop);
-    instance.run();
+  private WordCountLocal(final String id, final Props prop) {
+    super(id, Logger.getLogger(WordCountLocal.class));
+    this.input = prop.getString("input");
+    this.output = prop.getString("output");
   }
 
-  private WordCountLocal(String id, Props prop) {
-    super(id, Logger.getLogger(WordCountLocal.class));
-    input = prop.getString("input");
-    output = prop.getString("output");
+  public static void main(final String[] args) throws Exception {
+    final String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
+    System.out.println("propsFile: " + propsFile);
+    final Props prop = new Props(null, propsFile);
+    final WordCountLocal instance = new WordCountLocal("", prop);
+    instance.run();
   }
 
   @Override
   public void run() throws Exception {
 
-    if (input == null) {
+    if (this.input == null) {
       throw new Exception("input file is null");
     }
-    if (output == null) {
+    if (this.output == null) {
       throw new Exception("output file is null");
     }
-    List<String> lines = Files.readAllLines(Paths.get(input), StandardCharsets.UTF_8);
-    for (String line : lines) {
-      StringTokenizer tokenizer = new StringTokenizer(line);
+    final List<String> lines = Files.readAllLines(Paths.get(this.input), StandardCharsets.UTF_8);
+    for (final String line : lines) {
+      final StringTokenizer tokenizer = new StringTokenizer(line);
       while (tokenizer.hasMoreTokens()) {
-        String word = tokenizer.nextToken();
+        final String word = tokenizer.nextToken();
 
         if (word.equals("end_here")) { // expect an out-of-bound
           // exception
           // todo HappyRay: investigate what the following statements are designed to do.
-          String[] errArray = new String[1];
+          final String[] errArray = new String[1];
           System.out.println("string in possition 2 is " + errArray[1]);
         }
 
-        if (dict.containsKey(word)) {
-          Integer num = dict.get(word);
-          dict.put(word, num + 1);
+        if (this.dict.containsKey(word)) {
+          final Integer num = this.dict.get(word);
+          this.dict.put(word, num + 1);
         } else {
-          dict.put(word, 1);
+          this.dict.put(word, 1);
         }
       }
     }
 
-    try (PrintWriter out = new PrintWriter(output, StandardCharsets.UTF_8.toString())) {
-      for (Map.Entry<String, Integer> entry : dict.entrySet()) {
+    try (PrintWriter out = new PrintWriter(this.output, StandardCharsets.UTF_8.toString())) {
+      for (final Map.Entry<String, Integer> entry : this.dict.entrySet()) {
         out.println(entry.getKey() + "\t" + entry.getValue());
       }
     }

@@ -16,6 +16,10 @@
 
 package azkaban.trigger;
 
+import azkaban.database.AbstractJdbcLoader;
+import azkaban.utils.GZIPUtils;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -23,71 +27,57 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
-
 import org.joda.time.DateTime;
-
-import azkaban.database.AbstractJdbcLoader;
-import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 
 public class JdbcTriggerLoader extends AbstractJdbcLoader implements
     TriggerLoader {
-  private static Logger logger = Logger.getLogger(JdbcTriggerLoader.class);
-
-  private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   private static final String triggerTblName = "triggers";
-
   private static final String GET_UPDATED_TRIGGERS =
       "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM "
           + triggerTblName + " WHERE modify_time>=?";
-
-  private static String GET_ALL_TRIGGERS =
+  private static final Logger logger = Logger.getLogger(JdbcTriggerLoader.class);
+  private static final String GET_ALL_TRIGGERS =
       "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM "
           + triggerTblName;
-
-  private static String GET_TRIGGER =
+  private static final String GET_TRIGGER =
       "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM "
           + triggerTblName + " WHERE trigger_id=?";
-
-  private static String ADD_TRIGGER = "INSERT INTO " + triggerTblName
+  private static final String ADD_TRIGGER = "INSERT INTO " + triggerTblName
       + " ( modify_time) values (?)";
-
-  private static String REMOVE_TRIGGER = "DELETE FROM " + triggerTblName
+  private static final String REMOVE_TRIGGER = "DELETE FROM " + triggerTblName
       + " WHERE trigger_id=?";
-
-  private static String UPDATE_TRIGGER =
+  private static final String UPDATE_TRIGGER =
       "UPDATE "
           + triggerTblName
           + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
+  private EncodingType defaultEncodingType = EncodingType.GZIP;
 
-  public EncodingType getDefaultEncodingType() {
-    return defaultEncodingType;
-  }
-
-  public void setDefaultEncodingType(EncodingType defaultEncodingType) {
-    this.defaultEncodingType = defaultEncodingType;
-  }
-
-  public JdbcTriggerLoader(Props props) {
+  public JdbcTriggerLoader(final Props props) {
     super(props);
   }
 
+  public EncodingType getDefaultEncodingType() {
+    return this.defaultEncodingType;
+  }
+
+  public void setDefaultEncodingType(final EncodingType defaultEncodingType) {
+    this.defaultEncodingType = defaultEncodingType;
+  }
+
   @Override
-  public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
+  public List<Trigger> getUpdatedTriggers(final long lastUpdateTime)
       throws TriggerLoaderException {
     logger.info("Loading triggers changed since "
         + new DateTime(lastUpdateTime).toString());
-    Connection connection = getConnection();
+    final Connection connection = getConnection();
 
-    QueryRunner runner = new QueryRunner();
-    ResultSetHandler<List<Trigger>> handler = new TriggerResultHandler();
+    final QueryRunner runner = new QueryRunner();
+    final ResultSetHandler<List<Trigger>> handler = new TriggerResultHandler();
 
     List<Trigger> triggers;
 
@@ -95,7 +85,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       triggers =
           runner.query(connection, GET_UPDATED_TRIGGERS, handler,
               lastUpdateTime);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       logger.error(GET_ALL_TRIGGERS + " failed.");
 
       throw new TriggerLoaderException("Loading triggers from db failed. ", e);
@@ -111,16 +101,16 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
   @Override
   public List<Trigger> loadTriggers() throws TriggerLoaderException {
     logger.info("Loading all triggers from db.");
-    Connection connection = getConnection();
+    final Connection connection = getConnection();
 
-    QueryRunner runner = new QueryRunner();
-    ResultSetHandler<List<Trigger>> handler = new TriggerResultHandler();
+    final QueryRunner runner = new QueryRunner();
+    final ResultSetHandler<List<Trigger>> handler = new TriggerResultHandler();
 
     List<Trigger> triggers;
 
     try {
       triggers = runner.query(connection, GET_ALL_TRIGGERS, handler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       logger.error(GET_ALL_TRIGGERS + " failed.");
 
       throw new TriggerLoaderException("Loading triggers from db failed. ", e);
@@ -134,16 +124,16 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
   }
 
   @Override
-  public void removeTrigger(Trigger t) throws TriggerLoaderException {
+  public void removeTrigger(final Trigger t) throws TriggerLoaderException {
     logger.info("Removing trigger " + t.toString() + " from db.");
 
-    QueryRunner runner = createQueryRunner();
+    final QueryRunner runner = createQueryRunner();
     try {
-      int removes = runner.update(REMOVE_TRIGGER, t.getTriggerId());
+      final int removes = runner.update(REMOVE_TRIGGER, t.getTriggerId());
       if (removes == 0) {
         throw new TriggerLoaderException("No trigger has been removed.");
       }
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       logger.error(REMOVE_TRIGGER + " failed.");
       throw new TriggerLoaderException("Remove trigger " + t.toString()
           + " from db failed. ", e);
@@ -151,25 +141,25 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
   }
 
   @Override
-  public void addTrigger(Trigger t) throws TriggerLoaderException {
+  public void addTrigger(final Trigger t) throws TriggerLoaderException {
     logger.info("Inserting trigger " + t.toString() + " into db.");
     t.setLastModifyTime(System.currentTimeMillis());
-    Connection connection = getConnection();
+    final Connection connection = getConnection();
     try {
-      addTrigger(connection, t, defaultEncodingType);
-    } catch (Exception e) {
+      addTrigger(connection, t, this.defaultEncodingType);
+    } catch (final Exception e) {
       throw new TriggerLoaderException("Error uploading trigger", e);
     } finally {
       DbUtils.closeQuietly(connection);
     }
   }
 
-  private synchronized void addTrigger(Connection connection, Trigger t,
-      EncodingType encType) throws TriggerLoaderException {
+  private synchronized void addTrigger(final Connection connection, final Trigger t,
+      final EncodingType encType) throws TriggerLoaderException {
 
-    QueryRunner runner = new QueryRunner();
+    final QueryRunner runner = new QueryRunner();
 
-    long id;
+    final long id;
 
     try {
       runner.update(connection, ADD_TRIGGER, DateTime.now().getMillis());
@@ -186,22 +176,22 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       t.setTriggerId((int) id);
       updateTrigger(t);
       logger.info("uploaded trigger " + t.getDescription());
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       throw new TriggerLoaderException("Error creating trigger.", e);
     }
 
   }
 
   @Override
-  public void updateTrigger(Trigger t) throws TriggerLoaderException {
+  public void updateTrigger(final Trigger t) throws TriggerLoaderException {
     if (logger.isDebugEnabled()) {
       logger.debug("Updating trigger " + t.getTriggerId() + " into db.");
     }
     t.setLastModifyTime(System.currentTimeMillis());
-    Connection connection = getConnection();
+    final Connection connection = getConnection();
     try {
-      updateTrigger(connection, t, defaultEncodingType);
-    } catch (Exception e) {
+      updateTrigger(connection, t, this.defaultEncodingType);
+    } catch (final Exception e) {
       e.printStackTrace();
       throw new TriggerLoaderException("Failed to update trigger "
           + t.toString() + " into db!");
@@ -210,13 +200,13 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
     }
   }
 
-  private void updateTrigger(Connection connection, Trigger t,
-      EncodingType encType) throws TriggerLoaderException {
+  private void updateTrigger(final Connection connection, final Trigger t,
+      final EncodingType encType) throws TriggerLoaderException {
 
-    String json = JSONUtils.toJSON(t.toJson());
+    final String json = JSONUtils.toJSON(t.toJson());
     byte[] data = null;
     try {
-      byte[] stringData = json.getBytes("UTF-8");
+      final byte[] stringData = json.getBytes("UTF-8");
       data = stringData;
 
       if (encType == EncodingType.GZIP) {
@@ -224,15 +214,15 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       }
       logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length
           + " Gzip:" + data.length);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TriggerLoaderException("Error encoding the trigger "
           + t.toString());
     }
 
-    QueryRunner runner = new QueryRunner();
+    final QueryRunner runner = new QueryRunner();
 
     try {
-      int updates =
+      final int updates =
           runner.update(connection, UPDATE_TRIGGER, t.getSource(),
               t.getLastModifyTime(), encType.getNumVal(), data,
               t.getTriggerId());
@@ -244,82 +234,18 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
           logger.debug("Updated " + updates + " records.");
         }
       }
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       logger.error(UPDATE_TRIGGER + " failed.");
       throw new TriggerLoaderException("Update trigger " + t.toString()
           + " into db failed. ", e);
     }
   }
 
-  private static class LastInsertID implements ResultSetHandler<Long> {
-    private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
-
-    @Override
-    public Long handle(ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return -1L;
-      }
-
-      long id = rs.getLong(1);
-      return id;
-    }
-
-  }
-
-  public static class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
-
-    @Override
-    public List<Trigger> handle(ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return Collections.<Trigger> emptyList();
-      }
-
-      ArrayList<Trigger> triggers = new ArrayList<Trigger>();
-      do {
-        int triggerId = rs.getInt(1);
-        int encodingType = rs.getInt(4);
-        byte[] data = rs.getBytes(5);
-
-        Object jsonObj = null;
-        if (data != null) {
-          EncodingType encType = EncodingType.fromInteger(encodingType);
-
-          try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              jsonObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              String jsonString = new String(data, "UTF-8");
-              jsonObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-          } catch (IOException e) {
-            throw new SQLException("Error reconstructing trigger data ");
-          }
-        }
-
-        Trigger t = null;
-        try {
-          t = Trigger.fromJson(jsonObj);
-          triggers.add(t);
-        } catch (Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to load trigger " + triggerId);
-        }
-      } while (rs.next());
-
-      return triggers;
-    }
-
-  }
-
   private Connection getConnection() throws TriggerLoaderException {
     Connection connection = null;
     try {
       connection = super.getDBConnection(false);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       DbUtils.closeQuietly(connection);
       throw new TriggerLoaderException("Error getting DB connection.", e);
     }
@@ -328,18 +254,18 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
   }
 
   @Override
-  public Trigger loadTrigger(int triggerId) throws TriggerLoaderException {
+  public Trigger loadTrigger(final int triggerId) throws TriggerLoaderException {
     logger.info("Loading trigger " + triggerId + " from db.");
-    Connection connection = getConnection();
+    final Connection connection = getConnection();
 
-    QueryRunner runner = new QueryRunner();
-    ResultSetHandler<List<Trigger>> handler = new TriggerResultHandler();
+    final QueryRunner runner = new QueryRunner();
+    final ResultSetHandler<List<Trigger>> handler = new TriggerResultHandler();
 
     List<Trigger> triggers;
 
     try {
       triggers = runner.query(connection, GET_TRIGGER, handler, triggerId);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       logger.error(GET_TRIGGER + " failed.");
       throw new TriggerLoaderException("Loading trigger from db failed. ", e);
     } finally {
@@ -353,6 +279,71 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
     }
 
     return triggers.get(0);
+  }
+
+  private static class LastInsertID implements ResultSetHandler<Long> {
+
+    private static final String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
+
+    @Override
+    public Long handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return -1L;
+      }
+
+      final long id = rs.getLong(1);
+      return id;
+    }
+
+  }
+
+  public static class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
+
+    @Override
+    public List<Trigger> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.<Trigger>emptyList();
+      }
+
+      final ArrayList<Trigger> triggers = new ArrayList<>();
+      do {
+        final int triggerId = rs.getInt(1);
+        final int encodingType = rs.getInt(4);
+        final byte[] data = rs.getBytes(5);
+
+        Object jsonObj = null;
+        if (data != null) {
+          final EncodingType encType = EncodingType.fromInteger(encodingType);
+
+          try {
+            // Convoluted way to inflate strings. Should find common package or
+            // helper function.
+            if (encType == EncodingType.GZIP) {
+              // Decompress the sucker.
+              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              jsonObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              final String jsonString = new String(data, "UTF-8");
+              jsonObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+          } catch (final IOException e) {
+            throw new SQLException("Error reconstructing trigger data ");
+          }
+        }
+
+        Trigger t = null;
+        try {
+          t = Trigger.fromJson(jsonObj);
+          triggers.add(t);
+        } catch (final Exception e) {
+          e.printStackTrace();
+          logger.error("Failed to load trigger " + triggerId);
+        }
+      } while (rs.next());
+
+      return triggers;
+    }
+
   }
 
 }

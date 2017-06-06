@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.utils.TypedMapWrapper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,13 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import azkaban.executor.mail.DefaultMailCreator;
-import azkaban.utils.TypedMapWrapper;
-
 /**
  * Execution options for submitted flows and scheduled flows
  */
 public class ExecutionOptions {
+
   public static final String CONCURRENT_OPTION_SKIP = "skip";
   public static final String CONCURRENT_OPTION_PIPELINE = "pipeline";
   public static final String CONCURRENT_OPTION_IGNORE = "ignore";
@@ -58,8 +58,8 @@ public class ExecutionOptions {
   private boolean notifyOnLastFailure = false;
   private boolean failureEmailsOverride = false;
   private boolean successEmailsOverride = false;
-  private ArrayList<String> failureEmails = new ArrayList<String>();
-  private ArrayList<String> successEmails = new ArrayList<String>();
+  private ArrayList<String> failureEmails = new ArrayList<>();
+  private ArrayList<String> successEmails = new ArrayList<>();
 
   private Integer pipelineLevel = null;
   private Integer pipelineExecId = null;
@@ -67,168 +67,24 @@ public class ExecutionOptions {
   private String concurrentOption = CONCURRENT_OPTION_IGNORE;
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private boolean memoryCheck = true;
-  private Map<String, String> flowParameters = new HashMap<String, String>();
-
-  public enum FailureAction {
-    FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
-  }
-
+  private Map<String, String> flowParameters = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
+  private List<Object> initiallyDisabledJobs = new ArrayList<>();
 
-  private List<Object> initiallyDisabledJobs = new ArrayList<Object>();
-
-  public void addAllFlowParameters(Map<String, String> flowParam) {
-    flowParameters.putAll(flowParam);
-  }
-
-  public Map<String, String> getFlowParameters() {
-    return flowParameters;
-  }
-
-  public void setFailureEmails(Collection<String> emails) {
-    failureEmails = new ArrayList<String>(emails);
-  }
-
-  public boolean isFailureEmailsOverridden() {
-    return this.failureEmailsOverride;
-  }
-
-  public boolean isSuccessEmailsOverridden() {
-    return this.successEmailsOverride;
-  }
-
-  public void setSuccessEmailsOverridden(boolean override) {
-    this.successEmailsOverride = override;
-  }
-
-  public void setFailureEmailsOverridden(boolean override) {
-    this.failureEmailsOverride = override;
-  }
-
-  public List<String> getFailureEmails() {
-    return failureEmails;
-  }
-
-  public void setSuccessEmails(Collection<String> emails) {
-    successEmails = new ArrayList<String>(emails);
-  }
-
-  public List<String> getSuccessEmails() {
-    return successEmails;
-  }
-
-  public boolean getNotifyOnFirstFailure() {
-    return notifyOnFirstFailure;
-  }
-
-  public boolean getNotifyOnLastFailure() {
-    return notifyOnLastFailure;
-  }
-
-  public void setNotifyOnFirstFailure(boolean notify) {
-    this.notifyOnFirstFailure = notify;
-  }
-
-  public void setNotifyOnLastFailure(boolean notify) {
-    this.notifyOnLastFailure = notify;
-  }
-
-  public FailureAction getFailureAction() {
-    return failureAction;
-  }
-
-  public void setFailureAction(FailureAction action) {
-    failureAction = action;
-  }
-
-  public void setConcurrentOption(String concurrentOption) {
-    this.concurrentOption = concurrentOption;
-  }
-
-  public void setMailCreator(String mailCreator) {
-    this.mailCreator = mailCreator;
-  }
-
-  public String getConcurrentOption() {
-    return concurrentOption;
-  }
-
-  public String getMailCreator() {
-    return mailCreator;
-  }
-
-  public Integer getPipelineLevel() {
-    return pipelineLevel;
-  }
-
-  public Integer getPipelineExecutionId() {
-    return pipelineExecId;
-  }
-
-  public void setPipelineLevel(Integer level) {
-    pipelineLevel = level;
-  }
-
-  public void setPipelineExecutionId(Integer id) {
-    this.pipelineExecId = id;
-  }
-
-  public Integer getQueueLevel() {
-    return queueLevel;
-  }
-
-  public List<Object> getDisabledJobs() {
-    return new ArrayList<Object>(initiallyDisabledJobs);
-  }
-
-  public void setDisabledJobs(List<Object> disabledJobs) {
-    initiallyDisabledJobs = disabledJobs;
-  }
-
-  public boolean getMemoryCheck() {
-    return memoryCheck;
-  }
-
-  public void setMemoryCheck(boolean memoryCheck) {
-    this.memoryCheck = memoryCheck;
-  }
-
-  public Map<String, Object> toObject() {
-    HashMap<String, Object> flowOptionObj = new HashMap<String, Object>();
-
-    flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
-    flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
-    flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
-    flowOptionObj.put(SUCCESS_EMAILS, successEmails);
-    flowOptionObj.put(FAILURE_EMAILS, failureEmails);
-    flowOptionObj.put(FAILURE_ACTION, failureAction.toString());
-    flowOptionObj.put(PIPELINE_LEVEL, pipelineLevel);
-    flowOptionObj.put(PIPELINE_EXECID, pipelineExecId);
-    flowOptionObj.put(QUEUE_LEVEL, queueLevel);
-    flowOptionObj.put(CONCURRENT_OPTION, concurrentOption);
-    flowOptionObj.put(DISABLE, initiallyDisabledJobs);
-    flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, failureEmailsOverride);
-    flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, successEmailsOverride);
-    flowOptionObj.put(MAIL_CREATOR, mailCreator);
-    flowOptionObj.put(MEMORY_CHECK, memoryCheck);
-    return flowOptionObj;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static ExecutionOptions createFromObject(Object obj) {
+  public static ExecutionOptions createFromObject(final Object obj) {
     if (obj == null || !(obj instanceof Map)) {
       return null;
     }
 
-    Map<String, Object> optionsMap = (Map<String, Object>) obj;
-    TypedMapWrapper<String, Object> wrapper =
-        new TypedMapWrapper<String, Object>(optionsMap);
+    final Map<String, Object> optionsMap = (Map<String, Object>) obj;
+    final TypedMapWrapper<String, Object> wrapper =
+        new TypedMapWrapper<>(optionsMap);
 
-    ExecutionOptions options = new ExecutionOptions();
+    final ExecutionOptions options = new ExecutionOptions();
     if (optionsMap.containsKey(FLOW_PARAMETERS)) {
-      options.flowParameters = new HashMap<String, String>();
+      options.flowParameters = new HashMap<>();
       options.flowParameters.putAll(wrapper
-          .<String, String> getMap(FLOW_PARAMETERS));
+          .<String, String>getMap(FLOW_PARAMETERS));
     }
     // Failure notification
     options.notifyOnFirstFailure =
@@ -239,7 +95,7 @@ public class ExecutionOptions {
         wrapper.getString(CONCURRENT_OPTION, options.concurrentOption);
 
     if (wrapper.containsKey(DISABLE)) {
-      options.initiallyDisabledJobs = wrapper.<Object> getList(DISABLE);
+      options.initiallyDisabledJobs = wrapper.<Object>getList(DISABLE);
     }
 
     if (optionsMap.containsKey(MAIL_CREATOR)) {
@@ -257,10 +113,10 @@ public class ExecutionOptions {
     options.queueLevel = wrapper.getInt(QUEUE_LEVEL, options.queueLevel);
 
     // Success emails
-    options.setSuccessEmails(wrapper.<String> getList(SUCCESS_EMAILS,
-        Collections.<String> emptyList()));
-    options.setFailureEmails(wrapper.<String> getList(FAILURE_EMAILS,
-        Collections.<String> emptyList()));
+    options.setSuccessEmails(wrapper.<String>getList(SUCCESS_EMAILS,
+        Collections.<String>emptyList()));
+    options.setFailureEmails(wrapper.<String>getList(FAILURE_EMAILS,
+        Collections.<String>emptyList()));
 
     options.setSuccessEmailsOverridden(wrapper.getBool(SUCCESS_EMAILS_OVERRIDE,
         false));
@@ -270,5 +126,146 @@ public class ExecutionOptions {
     options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
 
     return options;
+  }
+
+  public void addAllFlowParameters(final Map<String, String> flowParam) {
+    this.flowParameters.putAll(flowParam);
+  }
+
+  public Map<String, String> getFlowParameters() {
+    return this.flowParameters;
+  }
+
+  public boolean isFailureEmailsOverridden() {
+    return this.failureEmailsOverride;
+  }
+
+  public void setFailureEmailsOverridden(final boolean override) {
+    this.failureEmailsOverride = override;
+  }
+
+  public boolean isSuccessEmailsOverridden() {
+    return this.successEmailsOverride;
+  }
+
+  public void setSuccessEmailsOverridden(final boolean override) {
+    this.successEmailsOverride = override;
+  }
+
+  public List<String> getFailureEmails() {
+    return this.failureEmails;
+  }
+
+  public void setFailureEmails(final Collection<String> emails) {
+    this.failureEmails = new ArrayList<>(emails);
+  }
+
+  public List<String> getSuccessEmails() {
+    return this.successEmails;
+  }
+
+  public void setSuccessEmails(final Collection<String> emails) {
+    this.successEmails = new ArrayList<>(emails);
+  }
+
+  public boolean getNotifyOnFirstFailure() {
+    return this.notifyOnFirstFailure;
+  }
+
+  public void setNotifyOnFirstFailure(final boolean notify) {
+    this.notifyOnFirstFailure = notify;
+  }
+
+  public boolean getNotifyOnLastFailure() {
+    return this.notifyOnLastFailure;
+  }
+
+  public void setNotifyOnLastFailure(final boolean notify) {
+    this.notifyOnLastFailure = notify;
+  }
+
+  public FailureAction getFailureAction() {
+    return this.failureAction;
+  }
+
+  public void setFailureAction(final FailureAction action) {
+    this.failureAction = action;
+  }
+
+  public String getConcurrentOption() {
+    return this.concurrentOption;
+  }
+
+  public void setConcurrentOption(final String concurrentOption) {
+    this.concurrentOption = concurrentOption;
+  }
+
+  public String getMailCreator() {
+    return this.mailCreator;
+  }
+
+  public void setMailCreator(final String mailCreator) {
+    this.mailCreator = mailCreator;
+  }
+
+  public Integer getPipelineLevel() {
+    return this.pipelineLevel;
+  }
+
+  public void setPipelineLevel(final Integer level) {
+    this.pipelineLevel = level;
+  }
+
+  public Integer getPipelineExecutionId() {
+    return this.pipelineExecId;
+  }
+
+  public void setPipelineExecutionId(final Integer id) {
+    this.pipelineExecId = id;
+  }
+
+  public Integer getQueueLevel() {
+    return this.queueLevel;
+  }
+
+  public List<Object> getDisabledJobs() {
+    return new ArrayList<>(this.initiallyDisabledJobs);
+  }
+
+  public void setDisabledJobs(final List<Object> disabledJobs) {
+    this.initiallyDisabledJobs = disabledJobs;
+  }
+
+  public boolean getMemoryCheck() {
+    return this.memoryCheck;
+  }
+
+  public void setMemoryCheck(final boolean memoryCheck) {
+    this.memoryCheck = memoryCheck;
+  }
+
+  public Map<String, Object> toObject() {
+    final HashMap<String, Object> flowOptionObj = new HashMap<>();
+
+    flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
+    flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
+    flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
+    flowOptionObj.put(SUCCESS_EMAILS, this.successEmails);
+    flowOptionObj.put(FAILURE_EMAILS, this.failureEmails);
+    flowOptionObj.put(FAILURE_ACTION, this.failureAction.toString());
+    flowOptionObj.put(PIPELINE_LEVEL, this.pipelineLevel);
+    flowOptionObj.put(PIPELINE_EXECID, this.pipelineExecId);
+    flowOptionObj.put(QUEUE_LEVEL, this.queueLevel);
+    flowOptionObj.put(CONCURRENT_OPTION, this.concurrentOption);
+    flowOptionObj.put(DISABLE, this.initiallyDisabledJobs);
+    flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, this.failureEmailsOverride);
+    flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, this.successEmailsOverride);
+    flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
+    flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
+    return flowOptionObj;
+  }
+
+  public enum FailureAction {
+    FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
   }
 }

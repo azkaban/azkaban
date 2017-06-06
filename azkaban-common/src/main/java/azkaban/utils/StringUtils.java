@@ -21,11 +21,14 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class StringUtils {
+
   public static final char SINGLE_QUOTE = '\'';
   public static final char DOUBLE_QUOTE = '\"';
+  private static final Pattern BROWSWER_PATTERN = Pattern
+      .compile(".*Gecko.*|.*AppleWebKit.*|.*Trident.*|.*Chrome.*");
 
-  public static String shellQuote(String s, char quoteCh) {
-    StringBuffer buf = new StringBuffer(s.length() + 2);
+  public static String shellQuote(final String s, final char quoteCh) {
+    final StringBuffer buf = new StringBuffer(s.length() + 2);
 
     buf.append(quoteCh);
     for (int i = 0; i < s.length(); i++) {
@@ -41,9 +44,9 @@ public class StringUtils {
   }
 
   @Deprecated
-  public static String join(List<String> list, String delimiter) {
-    StringBuffer buffer = new StringBuffer();
-    for (String str : list) {
+  public static String join(final List<String> list, final String delimiter) {
+    final StringBuffer buffer = new StringBuffer();
+    for (final String str : list) {
       buffer.append(str);
       buffer.append(delimiter);
     }
@@ -53,14 +56,10 @@ public class StringUtils {
 
   /**
    * Use this when you don't want to include Apache Common's string for plugins.
-   *
-   * @param list
-   * @param delimiter
-   * @return
    */
-  public static String join(Collection<String> list, String delimiter) {
-    StringBuffer buffer = new StringBuffer();
-    for (String str : list) {
+  public static String join(final Collection<String> list, final String delimiter) {
+    final StringBuffer buffer = new StringBuffer();
+    for (final String str : list) {
       buffer.append(str);
       buffer.append(delimiter);
     }
@@ -70,15 +69,13 @@ public class StringUtils {
 
   /**
    * Don't bother to add delimiter for last element
-   * 
-   * @param list
-   * @param delimiter
+   *
    * @return String - elements in the list separated by delimiter
    */
-  public static String join2(Collection<String> list, String delimiter) {
-    StringBuffer buffer = new StringBuffer();
+  public static String join2(final Collection<String> list, final String delimiter) {
+    final StringBuffer buffer = new StringBuffer();
     boolean first = true;
-    for (String str : list) {
+    for (final String str : list) {
       if (!first) {
         buffer.append(delimiter);
       }
@@ -90,10 +87,7 @@ public class StringUtils {
     return buffer.toString();
   }
 
-  private static final Pattern BROWSWER_PATTERN = Pattern
-      .compile(".*Gecko.*|.*AppleWebKit.*|.*Trident.*|.*Chrome.*");
-
-  public static boolean isFromBrowser(String userAgent) {
+  public static boolean isFromBrowser(final String userAgent) {
     if (userAgent == null) {
       return false;
     }

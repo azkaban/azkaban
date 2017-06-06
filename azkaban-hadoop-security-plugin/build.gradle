@@ -1,12 +1,12 @@
 apply plugin: 'distribution'
 
 dependencies {
-  compile project(":azkaban-common")
+    compile project(":azkaban-common")
 
-  compileOnly "org.apache.hadoop:hadoop-common:$hadoopVersion"
-  compileOnly "org.apache.hadoop:hadoop-mapreduce-client-common:$hadoopVersion"
-  compileOnly "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion"
-  compileOnly "org.apache.hive:hive-metastore:$hiveVersion"
+    compileOnly "org.apache.hadoop:hadoop-common:$hadoopVersion"
+    compileOnly "org.apache.hadoop:hadoop-mapreduce-client-common:$hadoopVersion"
+    compileOnly "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion"
+    compileOnly "org.apache.hive:hive-metastore:$hiveVersion"
 }
 
 /**
@@ -17,11 +17,11 @@ dependencies {
  * It is assumed that classpaths of hadoop, hive, pig, etc will be externally fed into the application.
  */
 distributions {
-  main {
-    contents {
-      from(jar) {
-        into 'lib'
-      }
+    main {
+        contents {
+            from(jar) {
+                into 'lib'
+            }
+        }
     }
-  }
 }

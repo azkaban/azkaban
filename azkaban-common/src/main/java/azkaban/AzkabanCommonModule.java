@@ -16,6 +16,10 @@
  */
 package azkaban;
 
+import static azkaban.Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
@@ -50,23 +54,20 @@ import org.apache.hadoop.fs.FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static azkaban.Constants.ConfigurationKeys.*;
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
-
 
 /**
- * This Guice module is currently a one place container for all bindings in the current module. This is intended to
- * help during the migration process to Guice. Once this class starts growing we can move towards more modular
- * structuring of Guice components.
+ * This Guice module is currently a one place container for all bindings in the current module. This
+ * is intended to help during the migration process to Guice. Once this class starts growing we can
+ * move towards more modular structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
+
   private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
   private final Props props;
   private final AzkabanCommonModuleConfig config;
 
-  public AzkabanCommonModule(Props props) {
+  public AzkabanCommonModule(final Props props) {
     this.props = props;
     this.config = new AzkabanCommonModuleConfig(props);
   }
@@ -75,7 +76,7 @@ public class AzkabanCommonModule extends AbstractModule {
   protected void configure() {
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
-    bind(Props.class).toInstance(config.getProps());
+    bind(Props.class).toInstance(this.config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
     bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class).in(Scopes.SINGLETON);
@@ -85,19 +86,19 @@ public class AzkabanCommonModule extends AbstractModule {
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
-    final StorageImplementationType type = StorageImplementationType.from(config.getStorageImplementation());
+    final StorageImplementationType type = StorageImplementationType
+        .from(this.config.getStorageImplementation());
     if (type != null) {
       return type.getImplementationClass();
     } else {
-      return loadCustomStorageClass(config.getStorageImplementation());
+      return loadCustomStorageClass(this.config.getStorageImplementation());
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private Class<? extends Storage> loadCustomStorageClass(String storageImplementation) {
+  private Class<? extends Storage> loadCustomStorageClass(final String storageImplementation) {
     try {
       return (Class<? extends Storage>) Class.forName(storageImplementation);
-    } catch (ClassNotFoundException e) {
+    } catch (final ClassNotFoundException e) {
       throw new StorageException(e);
     }
   }
@@ -106,21 +107,21 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public AzkabanDataSource getDataSource(Props props) {
-    String databaseType = props.getString("database.type");
+  public AzkabanDataSource getDataSource(final Props props) {
+    final String databaseType = props.getString("database.type");
 
-    if(databaseType.equals("h2")) {
-      String path = props.getString("h2.path");
-      Path h2DbPath = Paths.get(path).toAbsolutePath();
+    if (databaseType.equals("h2")) {
+      final String path = props.getString("h2.path");
+      final Path h2DbPath = Paths.get(path).toAbsolutePath();
       log.info("h2 DB path: " + h2DbPath);
       return new H2FileDataSource(h2DbPath);
     }
-    int port = props.getInt("mysql.port");
-    String host = props.getString("mysql.host");
-    String database = props.getString("mysql.database");
-    String user = props.getString("mysql.user");
-    String password = props.getString("mysql.password");
-    int numConnections = props.getInt("mysql.numconnections");
+    final int port = props.getInt("mysql.port");
+    final String host = props.getString("mysql.host");
+    final String database = props.getString("mysql.database");
+    final String user = props.getString("mysql.user");
+    final String password = props.getString("mysql.password");
+    final int numConnections = props.getInt("mysql.numconnections");
 
     return MySQLDataSource.getInstance(host, port, database, user, password, numConnections);
   }
@@ -129,7 +130,7 @@ public class AzkabanCommonModule extends AbstractModule {
   @Provides
   @Singleton
   public Configuration createHadoopConfiguration() {
-    final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
+    final String hadoopConfDirPath = requireNonNull(this.props.get(HADOOP_CONF_DIR_PATH));
 
     final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
     checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
@@ -147,14 +148,14 @@ public class AzkabanCommonModule extends AbstractModule {
   public FileSystem createHadoopFileSystem(final Configuration hadoopConf) {
     try {
       return FileSystem.get(hadoopConf);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Unable to initialize HDFS", e);
       throw new AzkabanException(e);
     }
   }
 
   @Provides
-  public QueryRunner createQueryRunner(AzkabanDataSource dataSource) {
+  public QueryRunner createQueryRunner(final AzkabanDataSource dataSource) {
     return new QueryRunner(dataSource);
   }
 }

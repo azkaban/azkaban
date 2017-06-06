@@ -16,17 +16,16 @@
 
 package azkaban.executor;
 
+import azkaban.project.Project;
+import azkaban.utils.FileIOUtils.JobMetaData;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import azkaban.project.Project;
-import azkaban.utils.FileIOUtils.JobMetaData;
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.Pair;
 
 public interface ExecutorManagerAdapter {
 
@@ -94,12 +93,9 @@ public interface ExecutorManagerAdapter {
    * Returns All running with executors and queued flows
    * Note, returns empty list if there isn't any running or queued flows
    * </pre>
-   *
-   * @return
-   * @throws IOException
    */
   public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
-    throws IOException;
+      throws IOException;
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
@@ -190,10 +186,9 @@ public interface ExecutorManagerAdapter {
    * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li>
    * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li>
    * </ul>
-   * @throws ExecutorManagerException
    */
   public Map<String, Object> callExecutorStats(int executorId, String action,
-    Pair<String, String>... param) throws IOException, ExecutorManagerException;
+      Pair<String, String>... param) throws IOException, ExecutorManagerException;
 
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;
@@ -213,8 +208,6 @@ public interface ExecutorManagerAdapter {
   /**
    * Returns a collection of all the active executors maintained by active
    * executors
-   *
-   * @return
    */
   public Collection<Executor> getAllActiveExecutors();
 
@@ -225,9 +218,6 @@ public interface ExecutorManagerAdapter {
    * 1. throws an Exception in case of a SQL issue
    * 2. return null when no executor is found with the given executorId
    * </pre>
-   *
-   * @throws ExecutorManagerException
-   *
    */
   public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
 
@@ -242,22 +232,16 @@ public interface ExecutorManagerAdapter {
    * 3. In local mode, If a local executor is specified and it is marked inactive in db,
    *    this method will convert local executor as active in DB
    * </pre>
-   *
-   * @throws ExecutorManagerException
    */
-   public void setupExecutors() throws ExecutorManagerException;
+  public void setupExecutors() throws ExecutorManagerException;
 
-   /**
-    * Enable flow dispatching in QueueProcessor
-    *
-    * @throws ExecutorManagerException
-    */
-   public void enableQueueProcessorThread() throws ExecutorManagerException;
+  /**
+   * Enable flow dispatching in QueueProcessor
+   */
+  public void enableQueueProcessorThread() throws ExecutorManagerException;
 
-   /**
-    * Disable flow dispatching in QueueProcessor
-    *
-    * @throws ExecutorManagerException
-    */
-   public void disableQueueProcessorThread() throws ExecutorManagerException;
+  /**
+   * Disable flow dispatching in QueueProcessor
+   */
+  public void disableQueueProcessorThread() throws ExecutorManagerException;
 }

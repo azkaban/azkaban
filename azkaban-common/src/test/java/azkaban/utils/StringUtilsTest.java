@@ -16,16 +16,16 @@ public class StringUtilsTest {
   private static final String fireFoxOnLinux =
       "Mozilla/5.0 (X11; Linux x86_64; rv:39.0) Gecko/20100101 Firefox/39.0";
 
-  private static final String[] browserVariants = { chromeOnMac, fireFoxOnMac,
-      safariOnMac, chromeOnLinux, fireFoxOnLinux };
+  private static final String[] browserVariants = {chromeOnMac, fireFoxOnMac,
+      safariOnMac, chromeOnLinux, fireFoxOnLinux};
 
-  private static final String[] BROWSER_NAMES = { "AppleWebKit", "Gecko",
-      "Chrome" };
+  private static final String[] BROWSER_NAMES = {"AppleWebKit", "Gecko",
+      "Chrome"};
 
   @Test
   public void isBrowser() throws Exception {
 
-    for (String browser : browserVariants) {
+    for (final String browser : browserVariants) {
       Assert.assertTrue(browser, StringUtils.isFromBrowser(browser));
     }
   }
@@ -33,7 +33,7 @@ public class StringUtilsTest {
   @Test
   public void notBrowserWithLowercase() throws Exception {
 
-    for (String browser : browserVariants) {
+    for (final String browser : browserVariants) {
       Assert.assertFalse(browser.toLowerCase(),
           StringUtils.isFromBrowser(browser.toLowerCase()));
     }
@@ -41,7 +41,7 @@ public class StringUtilsTest {
 
   @Test
   public void notBrowser() throws Exception {
-    String testStr = "curl";
+    final String testStr = "curl";
     Assert.assertFalse(testStr, StringUtils.isFromBrowser(testStr));
   }
 
@@ -59,21 +59,21 @@ public class StringUtilsTest {
 
   @Test
   public void startsWithBrowserName() {
-    for (String name : BROWSER_NAMES) {
+    for (final String name : BROWSER_NAMES) {
       Assert.assertTrue(StringUtils.isFromBrowser(name + " is awesome"));
     }
   }
 
   @Test
   public void endsWithBrowserName() {
-    for (String name : BROWSER_NAMES) {
+    for (final String name : BROWSER_NAMES) {
       Assert.assertTrue(StringUtils.isFromBrowser("awesome is" + name));
     }
   }
 
   @Test
   public void containsBrowserName() {
-    for (String name : BROWSER_NAMES) {
+    for (final String name : BROWSER_NAMES) {
       Assert.assertTrue(StringUtils.isFromBrowser("awesome " + name + " is"));
     }
   }

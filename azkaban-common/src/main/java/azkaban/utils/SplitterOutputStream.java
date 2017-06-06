@@ -22,32 +22,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SplitterOutputStream extends OutputStream {
+
   List<OutputStream> outputs;
 
-  public SplitterOutputStream(OutputStream... outputs) {
-    this.outputs = new ArrayList<OutputStream>(outputs.length);
-    for (OutputStream output : outputs) {
+  public SplitterOutputStream(final OutputStream... outputs) {
+    this.outputs = new ArrayList<>(outputs.length);
+    for (final OutputStream output : outputs) {
       this.outputs.add(output);
     }
   }
 
   @Override
-  public void write(int b) throws IOException {
-    for (OutputStream output : outputs) {
+  public void write(final int b) throws IOException {
+    for (final OutputStream output : this.outputs) {
       output.write(b);
     }
   }
 
   @Override
-  public void write(byte[] b) throws IOException {
-    for (OutputStream output : outputs) {
+  public void write(final byte[] b) throws IOException {
+    for (final OutputStream output : this.outputs) {
       output.write(b);
     }
   }
 
   @Override
-  public void write(byte[] b, int off, int len) throws IOException {
-    for (OutputStream output : outputs) {
+  public void write(final byte[] b, final int off, final int len) throws IOException {
+    for (final OutputStream output : this.outputs) {
       output.write(b, off, len);
     }
   }
@@ -55,10 +56,10 @@ public class SplitterOutputStream extends OutputStream {
   @Override
   public void flush() throws IOException {
     IOException exception = null;
-    for (OutputStream output : outputs) {
+    for (final OutputStream output : this.outputs) {
       try {
         output.flush();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         exception = e;
       }
     }
@@ -70,10 +71,10 @@ public class SplitterOutputStream extends OutputStream {
   @Override
   public void close() throws IOException {
     IOException exception = null;
-    for (OutputStream output : outputs) {
+    for (final OutputStream output : this.outputs) {
       try {
         output.close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         exception = e;
       }
     }

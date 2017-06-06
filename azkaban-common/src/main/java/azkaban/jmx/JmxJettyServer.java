@@ -20,10 +20,11 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 
 public class JmxJettyServer implements JmxJettyServerMBean {
-  private Server server;
-  private Connector connector;
 
-  public JmxJettyServer(Server server) {
+  private final Server server;
+  private final Connector connector;
+
+  public JmxJettyServer(final Server server) {
     this.server = server;
     this.connector = server.getConnectors()[0];
   }
@@ -55,91 +56,91 @@ public class JmxJettyServer implements JmxJettyServerMBean {
 
   @Override
   public String getHost() {
-    return connector.getHost();
+    return this.connector.getHost();
   }
 
   @Override
   public int getPort() {
-    return connector.getPort();
+    return this.connector.getPort();
   }
 
   @Override
   public int getConfidentialPort() {
-    return connector.getConfidentialPort();
+    return this.connector.getConfidentialPort();
   }
 
   @Override
   public int getConnections() {
-    return connector.getConnections();
+    return this.connector.getConnections();
   }
 
   @Override
   public int getConnectionsOpen() {
-    return connector.getConnectionsOpen();
+    return this.connector.getConnectionsOpen();
   }
 
   @Override
   public int getConnectionsOpenMax() {
-    return connector.getConnectionsOpenMax();
+    return this.connector.getConnectionsOpenMax();
   }
 
   @Override
   public int getConnectionsOpenMin() {
-    return connector.getConnectionsOpenMin();
+    return this.connector.getConnectionsOpenMin();
   }
 
   @Override
   public long getConnectionsDurationAve() {
-    return connector.getConnectionsDurationAve();
+    return this.connector.getConnectionsDurationAve();
   }
 
   @Override
   public long getConnectionsDurationMax() {
-    return connector.getConnectionsDurationMax();
+    return this.connector.getConnectionsDurationMax();
   }
 
   @Override
   public long getConnectionsDurationMin() {
-    return connector.getConnectionsDurationMin();
+    return this.connector.getConnectionsDurationMin();
   }
 
   @Override
   public long getConnectionsDurationTotal() {
-    return connector.getConnectionsDurationTotal();
+    return this.connector.getConnectionsDurationTotal();
   }
 
   @Override
   public long getConnectionsRequestAve() {
-    return connector.getConnectionsRequestsAve();
+    return this.connector.getConnectionsRequestsAve();
   }
 
   @Override
   public long getConnectionsRequestMax() {
-    return connector.getConnectionsRequestsMax();
+    return this.connector.getConnectionsRequestsMax();
   }
 
   @Override
   public long getConnectionsRequestMin() {
-    return connector.getConnectionsRequestsMin();
+    return this.connector.getConnectionsRequestsMin();
   }
 
   @Override
   public void turnStatsOn() {
-    connector.setStatsOn(true);
+    this.connector.setStatsOn(true);
   }
 
   @Override
   public void turnStatsOff() {
-    connector.setStatsOn(false);
+    this.connector.setStatsOn(false);
   }
 
   @Override
   public void resetStats() {
-    connector.statsReset();
+    this.connector.statsReset();
   }
 
   @Override
   public boolean isStatsOn() {
-    return connector.getStatsOn();
+    return this.connector.getStatsOn();
   }
 }

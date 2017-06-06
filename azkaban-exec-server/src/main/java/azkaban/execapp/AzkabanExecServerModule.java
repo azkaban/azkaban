@@ -24,11 +24,12 @@ import com.google.inject.Scopes;
 
 
 /**
- * This Guice module is currently a one place container for all bindings in the current module. This is intended to
- * help during the migration process to Guice. Once this class starts growing we can move towards more modular
- * structuring of Guice components.
+ * This Guice module is currently a one place container for all bindings in the current module. This
+ * is intended to help during the migration process to Guice. Once this class starts growing we can
+ * move towards more modular structuring of Guice components.
  */
 public class AzkabanExecServerModule extends AbstractModule {
+
   @Override
   protected void configure() {
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);

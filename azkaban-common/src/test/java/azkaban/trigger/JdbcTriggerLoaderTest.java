@@ -16,28 +16,7 @@
 
 package azkaban.trigger;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.sql.DataSource;
-
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.ResultSetHandler;
-
-import org.joda.time.DateTime;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.database.DataSourceUtils;
 import azkaban.executor.ExecutionOptions;
@@ -45,10 +24,25 @@ import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.sql.DataSource;
+import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.joda.time.DateTime;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class JdbcTriggerLoaderTest {
 
-  private static boolean testDBExists = false;
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
@@ -56,14 +50,14 @@ public class JdbcTriggerLoaderTest {
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
-
+  private static boolean testDBExists = false;
   private TriggerLoader loader;
   private CheckerTypeLoader checkerLoader;
   private ActionTypeLoader actionLoader;
 
   @Before
   public void setup() throws TriggerException {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("database.type", "mysql");
 
     props.put("mysql.host", host);
@@ -73,23 +67,23 @@ public class JdbcTriggerLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    loader = new JdbcTriggerLoader(props);
-    checkerLoader = new CheckerTypeLoader();
-    checkerLoader.init(new Props());
-    checkerLoader.registerCheckerType(BasicTimeChecker.type,
+    this.loader = new JdbcTriggerLoader(props);
+    this.checkerLoader = new CheckerTypeLoader();
+    this.checkerLoader.init(new Props());
+    this.checkerLoader.registerCheckerType(BasicTimeChecker.type,
         BasicTimeChecker.class);
-    Condition.setCheckerLoader(checkerLoader);
-    actionLoader = new ActionTypeLoader();
-    actionLoader.init(new Props());
+    Condition.setCheckerLoader(this.checkerLoader);
+    this.actionLoader = new ActionTypeLoader();
+    this.actionLoader.init(new Props());
 
-    actionLoader.registerActionType(ExecuteFlowAction.type,
+    this.actionLoader.registerActionType(ExecuteFlowAction.type,
         ExecuteFlowAction.class);
-    Trigger.setActionTypeLoader(actionLoader);
+    Trigger.setActionTypeLoader(this.actionLoader);
     setupDB();
   }
 
   public void setupDB() {
-    DataSource dataSource =
+    final DataSource dataSource =
         DataSourceUtils.getMySQLDataSource(host, port, database, user,
             password, numConnections);
     testDBExists = true;
@@ -97,18 +91,18 @@ public class JdbcTriggerLoaderTest {
     Connection connection = null;
     try {
       connection = dataSource.getConnection();
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
       return;
     }
 
-    CountHandler countHandler = new CountHandler();
-    QueryRunner runner = new QueryRunner();
+    final CountHandler countHandler = new CountHandler();
+    final QueryRunner runner = new QueryRunner();
     try {
       runner.query(connection, "SELECT COUNT(1) FROM triggers", countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -126,24 +120,24 @@ public class JdbcTriggerLoaderTest {
       return;
     }
 
-    DataSource dataSource =
+    final DataSource dataSource =
         DataSourceUtils.getMySQLDataSource(host, port, database, user,
             password, numConnections);
     Connection connection = null;
     try {
       connection = dataSource.getConnection();
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
       return;
     }
 
-    QueryRunner runner = new QueryRunner();
+    final QueryRunner runner = new QueryRunner();
     try {
       runner.update(connection, "DELETE FROM triggers");
 
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -153,73 +147,76 @@ public class JdbcTriggerLoaderTest {
     DbUtils.closeQuietly(connection);
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void addTriggerTest() throws TriggerLoaderException {
-    Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
-    Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
-    loader.addTrigger(t1);
-    List<Trigger> ts = loader.loadTriggers();
+    final Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
+    final Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
+    this.loader.addTrigger(t1);
+    List<Trigger> ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 1);
 
-    Trigger t3 = ts.get(0);
+    final Trigger t3 = ts.get(0);
     assertTrue(t3.getSource().equals("source1"));
 
-    loader.addTrigger(t2);
-    ts = loader.loadTriggers();
+    this.loader.addTrigger(t2);
+    ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 2);
 
-    for (Trigger t : ts) {
+    for (final Trigger t : ts) {
       if (t.getTriggerId() == t2.getTriggerId()) {
         t.getSource().equals(t2.getSource());
       }
     }
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void removeTriggerTest() throws TriggerLoaderException {
-    Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
-    Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
-    loader.addTrigger(t1);
-    loader.addTrigger(t2);
-    List<Trigger> ts = loader.loadTriggers();
+    final Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
+    final Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
+    this.loader.addTrigger(t1);
+    this.loader.addTrigger(t2);
+    List<Trigger> ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 2);
-    loader.removeTrigger(t2);
-    ts = loader.loadTriggers();
+    this.loader.removeTrigger(t2);
+    ts = this.loader.loadTriggers();
     assertTrue(ts.size() == 1);
     assertTrue(ts.get(0).getTriggerId() == t1.getTriggerId());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void updateTriggerTest() throws TriggerLoaderException {
-    Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
+    final Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
     t1.setResetOnExpire(true);
-    loader.addTrigger(t1);
-    List<Trigger> ts = loader.loadTriggers();
+    this.loader.addTrigger(t1);
+    List<Trigger> ts = this.loader.loadTriggers();
     assertTrue(ts.get(0).isResetOnExpire() == true);
     t1.setResetOnExpire(false);
-    loader.updateTrigger(t1);
-    ts = loader.loadTriggers();
+    this.loader.updateTrigger(t1);
+    ts = this.loader.loadTriggers();
     assertTrue(ts.get(0).isResetOnExpire() == false);
   }
 
-  private Trigger createTrigger(String projName, String flowName, String source) {
-    DateTime now = DateTime.now();
-    ConditionChecker checker1 =
+  private Trigger createTrigger(final String projName, final String flowName, final String source) {
+    final DateTime now = DateTime.now();
+    final ConditionChecker checker1 =
         new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(),
             true, true, Utils.parsePeriodString("1h"), null);
-    Map<String, ConditionChecker> checkers1 =
-        new HashMap<String, ConditionChecker>();
+    final Map<String, ConditionChecker> checkers1 =
+        new HashMap<>();
     checkers1.put(checker1.getId(), checker1);
-    String expr1 = checker1.getId() + ".eval()";
-    Condition triggerCond = new Condition(checkers1, expr1);
-    Condition expireCond = new Condition(checkers1, expr1);
-    List<TriggerAction> actions = new ArrayList<TriggerAction>();
-    TriggerAction action =
+    final String expr1 = checker1.getId() + ".eval()";
+    final Condition triggerCond = new Condition(checkers1, expr1);
+    final Condition expireCond = new Condition(checkers1, expr1);
+    final List<TriggerAction> actions = new ArrayList<>();
+    final TriggerAction action =
         new ExecuteFlowAction("executeAction", 1, projName, flowName,
             "azkaban", new ExecutionOptions(), null);
     actions.add(action);
 
-    Trigger t = new Trigger.TriggerBuilder("azkaban",
+    final Trigger t = new Trigger.TriggerBuilder("azkaban",
         source,
         triggerCond,
         expireCond,
@@ -229,8 +226,9 @@ public class JdbcTriggerLoaderTest {
   }
 
   public static class CountHandler implements ResultSetHandler<Integer> {
+
     @Override
-    public Integer handle(ResultSet rs) throws SQLException {
+    public Integer handle(final ResultSet rs) throws SQLException {
       int val = 0;
       while (rs.next()) {
         val++;

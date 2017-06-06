@@ -18,17 +18,16 @@ apply plugin: 'distribution'
 
 dependencies {
 
-  // todo kunkun-tang: consolidate dependencies in azkaban-common and azkaban-db
-  compile('log4j:log4j:1.2.16')
-  compile('com.google.inject:guice:4.1.0')
+    // todo kunkun-tang: consolidate dependencies in azkaban-common and azkaban-db
+    compile('log4j:log4j:1.2.16')
+    compile('com.google.inject:guice:4.1.0')
 
-  compile('commons-dbutils:commons-dbutils:1.5')
-  compile('org.apache.commons:commons-dbcp2:2.1.1')
+    compile('commons-dbutils:commons-dbutils:1.5')
+    compile('org.apache.commons:commons-dbcp2:2.1.1')
 
-  testCompile('org.mockito:mockito-all:1.10.19')
-  testRuntime('com.h2database:h2:1.4.193')
+    testCompile('org.mockito:mockito-all:1.10.19')
+    testRuntime('com.h2database:h2:1.4.193')
 }
-
 
 /**
  * concat task
@@ -36,15 +35,15 @@ dependencies {
  * SQL file.
  */
 task concat() {
-  doLast {
-    ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
-    ant.concat(destfile: destFile, fixlastline: 'yes') {
-      logger.info('Concating create scripts to ' + destFile)
-      fileset(dir: 'src/main/sql') {
-        exclude(name: 'database.properties')
-      }
+    doLast {
+        ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
+        ant.concat(destfile: destFile, fixlastline: 'yes') {
+            logger.info('Concating create scripts to ' + destFile)
+            fileset(dir: 'src/main/sql') {
+                exclude(name: 'database.properties')
+            }
+        }
     }
-  }
 }
 
 installDist.dependsOn concat
@@ -52,10 +51,10 @@ distTar.dependsOn concat
 distZip.dependsOn concat
 
 distributions {
-  main {
-    contents {
-      from('src/main/sql')
-      from("$buildDir/sql")
+    main {
+        contents {
+            from('src/main/sql')
+            from("$buildDir/sql")
+        }
     }
-  }
 }

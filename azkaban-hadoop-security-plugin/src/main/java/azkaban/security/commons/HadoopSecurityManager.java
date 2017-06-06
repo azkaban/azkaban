@@ -16,15 +16,13 @@
 
 package azkaban.security.commons;
 
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
-
-import azkaban.utils.Props;
 
 public abstract class HadoopSecurityManager {
 
@@ -41,6 +39,12 @@ public abstract class HadoopSecurityManager {
       "obtain.jobtracker.token";
   public static final String OBTAIN_NAMENODE_TOKEN = "obtain.namenode.token";
   public static final String OBTAIN_HCAT_TOKEN = "obtain.hcat.token";
+
+  public static boolean shouldProxy(final Properties prop) {
+    final String shouldProxy = prop.getProperty(ENABLE_PROXYING);
+
+    return shouldProxy != null && shouldProxy.equals("true");
+  }
 
   public boolean isHadoopSecurityEnabled()
       throws HadoopSecurityManagerException {
@@ -67,12 +71,6 @@ public abstract class HadoopSecurityManager {
 
   public abstract FileSystem getFSAsUser(String user)
       throws HadoopSecurityManagerException;
-
-  public static boolean shouldProxy(Properties prop) {
-    String shouldProxy = prop.getProperty(ENABLE_PROXYING);
-
-    return shouldProxy != null && shouldProxy.equals("true");
-  }
 
   public abstract void prefetchToken(File tokenFile, String userToProxy,
       Logger logger) throws HadoopSecurityManagerException;

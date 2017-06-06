@@ -1,14 +1,12 @@
 package azkaban.execapp.jmx;
 
-import java.util.Map;
-
 import azkaban.jmx.DisplayName;
+import java.util.Map;
 
 /**
  * Define all the MBean attributes at the job level
- * 
- * @author hluu
  *
+ * @author hluu
  */
 public interface JmxJobMXBean {
 

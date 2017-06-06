@@ -17,6 +17,10 @@
 
 package azkaban.execapp;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.storage.StorageManager;
@@ -29,11 +33,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
 
 public class FlowPreparerTest {
+
   public static final String SAMPLE_FLOW_01 = "sample_flow_01";
 
   final File executionsDir = new File("executions");
@@ -46,32 +48,34 @@ public class FlowPreparerTest {
   public void setUp() throws Exception {
     tearDown();
 
-    executionsDir.mkdirs();
-    projectsDir.mkdirs();
+    this.executionsDir.mkdirs();
+    this.projectsDir.mkdirs();
 
-    ClassLoader classLoader = getClass().getClassLoader();
-    File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
+    final ClassLoader classLoader = getClass().getClassLoader();
+    final File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
 
-    ProjectFileHandler projectFileHandler = mock(ProjectFileHandler.class);
+    final ProjectFileHandler projectFileHandler = mock(ProjectFileHandler.class);
     when(projectFileHandler.getFileType()).thenReturn("zip");
     when(projectFileHandler.getLocalFile()).thenReturn(file);
 
-    StorageManager storageManager = mock(StorageManager.class);
+    final StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getProjectFile(12, 34)).thenReturn(projectFileHandler);
 
-    instance = new FlowPreparer(storageManager, executionsDir, projectsDir, installedProjects);
+    this.instance = new FlowPreparer(storageManager, this.executionsDir, this.projectsDir,
+        this.installedProjects);
   }
 
   @After
   public void tearDown() throws Exception {
-    FileUtils.deleteDirectory(executionsDir);
-    FileUtils.deleteDirectory(projectsDir);
+    FileUtils.deleteDirectory(this.executionsDir);
+    FileUtils.deleteDirectory(this.projectsDir);
   }
 
   @Test
   public void testSetupProject() throws Exception {
-    ProjectVersion pv = new ProjectVersion(12, 34, new File(projectsDir, "sample_project_01"));
-    instance.setupProject(pv);
+    final ProjectVersion pv = new ProjectVersion(12, 34,
+        new File(this.projectsDir, "sample_project_01"));
+    this.instance.setupProject(pv);
 
     assertTrue(pv.getInstalledDir().exists());
     assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
@@ -79,13 +83,13 @@ public class FlowPreparerTest {
 
   @Test
   public void testSetupFlow() throws Exception {
-    ExecutableFlow executableFlow = mock(ExecutableFlow.class);
+    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
     when(executableFlow.getExecutionId()).thenReturn(12345);
     when(executableFlow.getProjectId()).thenReturn(12);
     when(executableFlow.getVersion()).thenReturn(34);
 
-    instance.setup(executableFlow);
-    File execDir = new File(executionsDir, "12345");
+    this.instance.setup(executableFlow);
+    final File execDir = new File(this.executionsDir, "12345");
     assertTrue(execDir.exists());
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }

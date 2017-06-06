@@ -20,101 +20,89 @@ import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.TestExecutions;
-import com.google.common.io.Resources;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
 
 public class EmailerTest {
 
-    String host = "smtp.domain.com";//smtp server address
-    int mailPort = 25;//smtp server port
-    String sender = "somebody@domain.com";//sender email address
-    String user = "somebody@domain.com";// the sender username
-    String password = "pwd"; //the sender password
+  String host = "smtp.domain.com";//smtp server address
+  int mailPort = 25;//smtp server port
+  String sender = "somebody@domain.com";//sender email address
+  String user = "somebody@domain.com";// the sender username
+  String password = "pwd"; //the sender password
 
-    String receiveAddr = "receive@domain.com";//receiver email address
-    List<String> receiveAddrList = new ArrayList<String>();
+  String receiveAddr = "receive@domain.com";//receiver email address
+  List<String> receiveAddrList = new ArrayList<>();
 
-    private Project project;
-    private Props props;
-
-
+  private Project project;
+  private Props props;
 
 
-    @Before
-    public void setUp() throws Exception {
-        receiveAddrList.add(receiveAddr);
-        project = new Project(11, "myTestProject");
-        Logger logger = Logger.getLogger(this.getClass());
+  @Before
+  public void setUp() throws Exception {
+    this.receiveAddrList.add(this.receiveAddr);
+    this.project = new Project(11, "myTestProject");
+    final Logger logger = Logger.getLogger(this.getClass());
 
-        props =  createMailProperties();
-        DirectoryFlowLoader loader = new DirectoryFlowLoader(props, logger);
-        loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded"));
-        Assert.assertEquals(0, loader.getErrors().size());
-        project.setFlows(loader.getFlowMap());
-        project.setVersion(123);
-    }
-
-
-    /**
-     * this is an integration test for Emailer sending  email.
-     * if you want to run this case and send email successfully,
-     * please remove @Ignore and make sure these variable{host,mailPort,password,receiveAddr} are set to real values.
-     * the test will currently succeed because email sending errors are caught,
-     * you need to manually verify that a real email is sent and received.
-     */
-    @Ignore
-    @Test
-    public void testSendEmail() throws Exception{
-
-        Flow flow = project.getFlow("jobe");
-        flow.addFailureEmails(receiveAddrList);
-        Assert.assertNotNull(flow);
-
-        ExecutableFlow exFlow = new ExecutableFlow(project, flow);
-        Emailer emailer = new Emailer(props);
-        emailer.sendErrorEmail(exFlow);
-
-    }
-    @Test
-    public void testCreateEmailMessage(){
-        Emailer emailer = new Emailer(props);
-        EmailMessage em = emailer.createEmailMessage("subject","text/html",receiveAddrList);
-        assert  em.getMailPort() == mailPort;
-
-    }
+    this.props = createMailProperties();
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props, logger);
+    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("embedded"));
+    Assert.assertEquals(0, loader.getErrors().size());
+    this.project.setFlows(loader.getFlowMap());
+    this.project.setVersion(123);
+  }
 
 
+  /**
+   * this is an integration test for Emailer sending  email. if you want to run this case and send
+   * email successfully, please remove @Ignore and make sure these variable{host,mailPort,password,receiveAddr}
+   * are set to real values. the test will currently succeed because email sending errors are
+   * caught, you need to manually verify that a real email is sent and received.
+   */
+  @Ignore
+  @Test
+  public void testSendEmail() throws Exception {
+
+    final Flow flow = this.project.getFlow("jobe");
+    flow.addFailureEmails(this.receiveAddrList);
+    Assert.assertNotNull(flow);
+
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    final Emailer emailer = new Emailer(this.props);
+    emailer.sendErrorEmail(exFlow);
+
+  }
+
+  @Test
+  public void testCreateEmailMessage() {
+    final Emailer emailer = new Emailer(this.props);
+    final EmailMessage em = emailer
+        .createEmailMessage("subject", "text/html", this.receiveAddrList);
+    assert em.getMailPort() == this.mailPort;
+
+  }
 
 
-    public   Props  createMailProperties(){
-        Props props = new Props();
-        props.put("mail.user",user);
-        props.put("mail.password",password);
-        props.put("mail.sender",sender);
-        props.put("mail.host",host);
-        props.put("mail.port",mailPort);
-        props.put("job.failure.email",receiveAddr);
-        props.put("server.port","114");
-        props.put("jetty.use.ssl","false");
-        props.put("server.useSSL","false");
-        props.put("jetty.port","8786");
-        return props;
-    }
-
-
-
+  public Props createMailProperties() {
+    final Props props = new Props();
+    props.put("mail.user", this.user);
+    props.put("mail.password", this.password);
+    props.put("mail.sender", this.sender);
+    props.put("mail.host", this.host);
+    props.put("mail.port", this.mailPort);
+    props.put("job.failure.email", this.receiveAddr);
+    props.put("server.port", "114");
+    props.put("jetty.use.ssl", "false");
+    props.put("server.useSSL", "false");
+    props.put("jetty.port", "8786");
+    return props;
+  }
 
 
 }

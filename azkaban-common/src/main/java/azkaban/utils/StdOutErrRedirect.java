@@ -18,7 +18,6 @@ package azkaban.utils;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -29,6 +28,7 @@ import org.apache.log4j.Logger;
  */
 
 public class StdOutErrRedirect {
+
   private static final Logger logger = Logger.getLogger(StdOutErrRedirect.class);
   private static final PrintStream infoStream = createStream(System.out, Level.INFO);
   private static final PrintStream errorStream = createStream(System.out, Level.ERROR);
@@ -38,21 +38,22 @@ public class StdOutErrRedirect {
     System.setErr(errorStream);
   }
 
-  private static PrintStream createStream(PrintStream stream, Level level) {
+  private static PrintStream createStream(final PrintStream stream, final Level level) {
     return new LogStream(stream, level);
-  };
+  }
 
   private static class LogStream extends PrintStream {
+
     private final Level level;
 
-    public LogStream(OutputStream out, Level level) {
+    public LogStream(final OutputStream out, final Level level) {
       super(out);
       this.level = level;
     }
 
     // Underlying mechanism to log to log4j - all print methods will use this
-    private void write(String string) {
-      logger.log(level, string);
+    private void write(final String string) {
+      logger.log(this.level, string);
     }
 
     // String
@@ -69,89 +70,89 @@ public class StdOutErrRedirect {
     // Boolean
     @Override
     public void println(final boolean bool) {
-        print(bool);
+      print(bool);
     }
 
     @Override
     public void print(final boolean bool) {
-        write(String.valueOf(bool));
+      write(String.valueOf(bool));
     }
 
     // Int
     @Override
     public void println(final int i) {
-        print(i);
+      print(i);
     }
 
     @Override
     public void print(final int i) {
-        write(String.valueOf(i));
+      write(String.valueOf(i));
     }
 
     // Float
     @Override
     public void println(final float f) {
-        print(f);
+      print(f);
     }
 
     @Override
     public void print(final float f) {
-        write(String.valueOf(f));
+      write(String.valueOf(f));
     }
 
     // Char
     @Override
     public void println(final char c) {
-        print(c);
+      print(c);
     }
 
     @Override
     public void print(final char c) {
-        write(String.valueOf(c));
+      write(String.valueOf(c));
     }
 
     // Long
     @Override
     public void println(final long l) {
-        print(l);
+      print(l);
     }
 
     @Override
     public void print(final long l) {
-        write(String.valueOf(l));
+      write(String.valueOf(l));
     }
 
     // Double
     @Override
     public void println(final double d) {
-        print(d);
+      print(d);
     }
 
     @Override
     public void print(final double d) {
-        write(String.valueOf(d));
+      write(String.valueOf(d));
     }
 
     // Char []
     @Override
     public void println(final char[] c) {
-        print(c);
+      print(c);
     }
 
     @Override
     public void print(final char[] c) {
-        write(new String(c));
+      write(new String(c));
     }
 
     // Object
     @Override
     public void println(final Object o) {
-        print(o);
+      print(o);
     }
 
     @Override
     public void print(final Object o) {
-        write(o.toString());
+      write(o.toString());
     }
   }
 }

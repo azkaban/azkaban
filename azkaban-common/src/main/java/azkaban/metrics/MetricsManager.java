@@ -16,50 +16,48 @@
 
 package azkaban.metrics;
 
-import azkaban.utils.Props;
-import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
 import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CLASS_NAME;
+import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
 
-import com.codahale.metrics.MetricRegistry;
+import azkaban.utils.Props;
 import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-
-import org.apache.log4j.Logger;
-
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.apache.log4j.Logger;
 
 /**
- * The singleton class, MetricsManager, is the place to have MetricRegistry and
- * ConsoleReporter in this class. Also, web servers and executors can call {@link #startReporting(String, Props)}
- * to start reporting AZ metrics to remote metrics server.
+ * The singleton class, MetricsManager, is the place to have MetricRegistry and ConsoleReporter in
+ * this class. Also, web servers and executors can call {@link #startReporting(String, Props)} to
+ * start reporting AZ metrics to remote metrics server.
  */
 public enum MetricsManager {
   INSTANCE;
 
-  private final MetricRegistry registry        = new MetricRegistry();
-  private ConsoleReporter consoleReporter      = null;
   private static final Logger logger = Logger.getLogger(MetricsManager.class);
+  private final MetricRegistry registry = new MetricRegistry();
+  private ConsoleReporter consoleReporter = null;
 
   /**
    * Constructor is eaagerly called when this class is loaded.
    */
   private MetricsManager() {
-    registry.register("MEMORY_Gauge", new MemoryUsageGaugeSet());
-    registry.register("GC_Gauge", new GarbageCollectorMetricSet());
-    registry.register("Thread_State_Gauge", new ThreadStatesGaugeSet());
+    this.registry.register("MEMORY_Gauge", new MemoryUsageGaugeSet());
+    this.registry.register("GC_Gauge", new GarbageCollectorMetricSet());
+    this.registry.register("Thread_State_Gauge", new ThreadStatesGaugeSet());
   }
+
   /**
    * Return the Metrics registry.
    *
-   * @return the single {@code MetricRegistry} used for all of Az Metrics
-   *         monitoring
+   * @return the single {@code MetricRegistry} used for all of Az Metrics monitoring
    */
   public MetricRegistry getRegistry() {
-    return registry;
+    return this.registry;
   }
 
   /**
@@ -67,19 +65,19 @@ public enum MetricsManager {
    * Note: this method must be synchronized, since both web server and executor
    * will call it during initialization.
    */
-  public synchronized void startReporting(String reporterName, Props props) {
-    String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
-    String metricsServerURL = props.get(METRICS_SERVER_URL);
+  public synchronized void startReporting(final String reporterName, final Props props) {
+    final String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
+    final String metricsServerURL = props.get(METRICS_SERVER_URL);
     if (metricsReporterClassName != null && metricsServerURL != null) {
       try {
         logger.info("metricsReporterClassName: " + metricsReporterClassName);
-        Class metricsClass = Class.forName(metricsReporterClassName);
+        final Class metricsClass = Class.forName(metricsReporterClassName);
 
-        Constructor[] constructors =
+        final Constructor[] constructors =
             metricsClass.getConstructors();
-        constructors[0].newInstance(reporterName, registry, metricsServerURL);
+        constructors[0].newInstance(reporterName, this.registry, metricsServerURL);
 
-      } catch (Exception e) {
+      } catch (final Exception e) {
         logger.error("Encountered error while loading and instantiating "
             + metricsReporterClassName, e);
         throw new IllegalStateException(
@@ -96,16 +94,16 @@ public enum MetricsManager {
 
   /**
    * Create a ConsoleReporter to the AZ Metrics registry.
-   * @param reportInterval
-   *            time to wait between dumping metrics to the console
+   *
+   * @param reportInterval time to wait between dumping metrics to the console
    */
-  public synchronized void addConsoleReporter(Duration reportInterval) {
-    if (null != consoleReporter) {
+  public synchronized void addConsoleReporter(final Duration reportInterval) {
+    if (null != this.consoleReporter) {
       return;
     }
 
-    consoleReporter = ConsoleReporter.forRegistry(getRegistry()).build();
-    consoleReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
+    this.consoleReporter = ConsoleReporter.forRegistry(getRegistry()).build();
+    this.consoleReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -113,9 +111,10 @@ public enum MetricsManager {
    * {@link #addConsoleReporter(Duration)} and release it for GC.
    */
   public synchronized void removeConsoleReporter() {
-    if (null != consoleReporter)
-      consoleReporter.stop();
+    if (null != this.consoleReporter) {
+      this.consoleReporter.stop();
+    }
 
-    consoleReporter = null;
+    this.consoleReporter = null;
   }
 }

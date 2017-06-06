@@ -16,13 +16,14 @@
 
 package azkaban.metrics;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 
 public class CommonMetricsTest {
+
   private MetricsTestUtility testUtil;
   private CommonMetrics metrics;
 
@@ -34,22 +35,22 @@ public class CommonMetricsTest {
     // the registry.
     // This can also cause problem when we run tests in parallel in the future.
     // todo HappyRay: move MetricsManager, CommonMetrics to use Juice.
-    testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
-    metrics = CommonMetrics.INSTANCE;
+    this.testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
+    this.metrics = CommonMetrics.INSTANCE;
   }
 
   @Test
   public void testDBConnectionTimeMetrics() {
-    metrics.setDBConnectionTime(14);
-    assertEquals(14, testUtil.getGaugeValue("dbConnectionTime"));
+    this.metrics.setDBConnectionTime(14);
+    assertEquals(14, this.testUtil.getGaugeValue("dbConnectionTime"));
   }
 
   @Test
   public void testOOMWaitingJobMetrics() {
     final String metricName = "OOM-waiting-job-count";
 
-    assertEquals(0, testUtil.getGaugeValue(metricName));
-    metrics.incrementOOMJobWaitCount();
-    assertEquals(1, testUtil.getGaugeValue(metricName));
+    assertEquals(0, this.testUtil.getGaugeValue(metricName));
+    this.metrics.incrementOOMJobWaitCount();
+    assertEquals(1, this.testUtil.getGaugeValue(metricName));
   }
 }

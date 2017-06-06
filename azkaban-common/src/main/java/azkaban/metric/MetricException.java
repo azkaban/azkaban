@@ -20,17 +20,18 @@ package azkaban.metric;
  * Exception for Azkaban's Metric Component
  */
 public class MetricException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
-  public MetricException(String message) {
+  public MetricException(final String message) {
     super(message);
   }
 
-  public MetricException(Throwable cause) {
+  public MetricException(final Throwable cause) {
     super(cause);
   }
 
-  public MetricException(String message, Throwable cause) {
+  public MetricException(final String message, final Throwable cause) {
     super(message, cause);
   }
 

@@ -16,14 +16,12 @@
 
 package azkaban.executor;
 
+import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.utils.Props;
 import java.io.File;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import org.apache.log4j.Logger;
-
-import azkaban.jobExecutor.JavaProcessJob;
-import azkaban.utils.Props;
 
 public class JavaJob extends JavaProcessJob {
 
@@ -35,49 +33,24 @@ public class JavaJob extends JavaProcessJob {
   public static final String DEFAULT_CANCEL_METHOD = "cancel";
   public static final String DEFAULT_RUN_METHOD = "run";
   public static final String DEFAULT_PROGRESS_METHOD = "getProgress";
-
+  private final Object _javaObject = null;
   private String _runMethod;
   private String _cancelMethod;
   private String _progressMethod;
-
-  private Object _javaObject = null;
   private String props;
 
-  public JavaJob(String jobid, Props sysProps, Props jobProps, Logger log) {
+  public JavaJob(final String jobid, final Props sysProps, final Props jobProps, final Logger log) {
     super(jobid, sysProps, new Props(sysProps, jobProps), log);
   }
 
-  @Override
-  protected List<String> getClassPaths() {
-    List<String> classPath = super.getClassPaths();
-
-    classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
-    classPath.add(getSourcePathFromClass(Props.class));
-
-    String loggerPath = getSourcePathFromClass(org.apache.log4j.Logger.class);
-    if (!classPath.contains(loggerPath)) {
-      classPath.add(loggerPath);
-    }
-
-    // Add hadoop home to classpath
-    String hadoopHome = System.getenv("HADOOP_HOME");
-    if (hadoopHome == null) {
-      info("HADOOP_HOME not set, using default hadoop config.");
-    } else {
-      info("Using hadoop config found in " + hadoopHome);
-      classPath.add(new File(hadoopHome, "conf").getPath());
-    }
-    return classPath;
-  }
-
-  private static String getSourcePathFromClass(Class<?> containedClass) {
+  private static String getSourcePathFromClass(final Class<?> containedClass) {
     File file =
         new File(containedClass.getProtectionDomain().getCodeSource()
             .getLocation().getPath());
 
     if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      String name = containedClass.getName();
-      StringTokenizer tokenizer = new StringTokenizer(name, ".");
+      final String name = containedClass.getName();
+      final StringTokenizer tokenizer = new StringTokenizer(name, ".");
       while (tokenizer.hasMoreTokens()) {
         tokenizer.nextElement();
         file = file.getParentFile();
@@ -90,15 +63,38 @@ public class JavaJob extends JavaProcessJob {
   }
 
   @Override
+  protected List<String> getClassPaths() {
+    final List<String> classPath = super.getClassPaths();
+
+    classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
+    classPath.add(getSourcePathFromClass(Props.class));
+
+    final String loggerPath = getSourcePathFromClass(org.apache.log4j.Logger.class);
+    if (!classPath.contains(loggerPath)) {
+      classPath.add(loggerPath);
+    }
+
+    // Add hadoop home to classpath
+    final String hadoopHome = System.getenv("HADOOP_HOME");
+    if (hadoopHome == null) {
+      info("HADOOP_HOME not set, using default hadoop config.");
+    } else {
+      info("Using hadoop config found in " + hadoopHome);
+      classPath.add(new File(hadoopHome, "conf").getPath());
+    }
+    return classPath;
+  }
+
+  @Override
   protected String getJavaClass() {
     return JavaJobRunnerMain.class.getName();
   }
 
   @Override
   public String toString() {
-    return "JavaJob{" + "_runMethod='" + _runMethod + '\''
-        + ", _cancelMethod='" + _cancelMethod + '\'' + ", _progressMethod='"
-        + _progressMethod + '\'' + ", _javaObject=" + _javaObject + ", props="
-        + props + '}';
+    return "JavaJob{" + "_runMethod='" + this._runMethod + '\''
+        + ", _cancelMethod='" + this._cancelMethod + '\'' + ", _progressMethod='"
+        + this._progressMethod + '\'' + ", _javaObject=" + this._javaObject + ", props="
+        + this.props + '}';
   }
 }

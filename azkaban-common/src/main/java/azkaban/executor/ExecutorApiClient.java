@@ -16,47 +16,54 @@
 
 package azkaban.executor;
 
+import azkaban.utils.RestfulApiClient;
 import java.io.IOException;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.util.EntityUtils;
-import azkaban.utils.RestfulApiClient;
 
-/** Client class that will be used to handle all Restful API calls between Executor and the host application.
- * */
+/**
+ * Client class that will be used to handle all Restful API calls between Executor and the host
+ * application.
+ */
 public class ExecutorApiClient extends RestfulApiClient<String> {
+
   private static ExecutorApiClient instance = null;
-  private ExecutorApiClient(){}
+
+  private ExecutorApiClient() {
+  }
 
   /**
    * Singleton method to return the instance of the current object.
-   * */
-  public static ExecutorApiClient getInstance(){
-    if (null == instance){
+   */
+  public static ExecutorApiClient getInstance() {
+    if (null == instance) {
       instance = new ExecutorApiClient();
     }
 
     return instance;
   }
 
-  /**Implementing the parseResponse function to return de-serialized Json object.
-   * @param response  the returned response from the HttpClient.
+  /**
+   * Implementing the parseResponse function to return de-serialized Json object.
+   *
+   * @param response the returned response from the HttpClient.
    * @return de-serialized object from Json or null if the response doesn't have a body.
-   * */
+   */
   @Override
-  protected String parseResponse(HttpResponse response)
+  protected String parseResponse(final HttpResponse response)
       throws HttpResponseException, IOException {
     final StatusLine statusLine = response.getStatusLine();
-    String responseBody = response.getEntity() != null ?
+    final String responseBody = response.getEntity() != null ?
         EntityUtils.toString(response.getEntity()) : "";
 
     if (statusLine.getStatusCode() >= 300) {
 
-        logger.error(String.format("unable to parse response as the response status is %s",
-            statusLine.getStatusCode()));
+      logger.error(String.format("unable to parse response as the response status is %s",
+          statusLine.getStatusCode()));
 
-        throw new HttpResponseException(statusLine.getStatusCode(),responseBody);
+      throw new HttpResponseException(statusLine.getStatusCode(), responseBody);
     }
 
     return responseBody;

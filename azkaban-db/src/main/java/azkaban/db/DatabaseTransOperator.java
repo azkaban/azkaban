@@ -22,13 +22,14 @@ import org.apache.commons.dbutils.ResultSetHandler;
 
 
 /**
- * This interface is designed as an supplement of {@link DatabaseOperator}, which do commit at the end of every query. Given
- * this interface, users/callers (implementation code) should decide where to {@link Connection#commit()}
- * based on their requirements.
+ * This interface is designed as an supplement of {@link DatabaseOperator}, which do commit at the
+ * end of every query. Given this interface, users/callers (implementation code) should decide where
+ * to {@link Connection#commit()} based on their requirements.
  *
- * The diff between DatabaseTransOperator and DatabaseOperator:
- * * Auto commit and Auto close connection are enforced in DatabaseOperator, but not enabled in DatabaseTransOperator.
- * * We usually group a couple of sql operations which need the same connection into DatabaseTransOperator.
+ * The diff between DatabaseTransOperator and DatabaseOperator: * Auto commit and Auto close
+ * connection are enforced in DatabaseOperator, but not enabled in DatabaseTransOperator. * We
+ * usually group a couple of sql operations which need the same connection into
+ * DatabaseTransOperator.
  *
  * @see org.apache.commons.dbutils.QueryRunner
  */
@@ -39,7 +40,6 @@ public interface DatabaseTransOperator {
    * Note that last insert and this operation should use the same connection.
    *
    * @return the last inserted id in mysql per connection.
-   * @throws SQLException
    */
   long getLastInsertId() throws SQLException;
 
@@ -52,7 +52,8 @@ public interface DatabaseTransOperator {
    * @return
    * @throws SQLException
    */
-  <T> T query(String querySql, ResultSetHandler<T> resultHandler, Object... params) throws SQLException;
+  <T> T query(String querySql, ResultSetHandler<T> resultHandler, Object... params)
+      throws SQLException;
 
   /**
    *
@@ -64,7 +65,6 @@ public interface DatabaseTransOperator {
   int update(String updateClause, Object... params) throws SQLException;
 
   /**
-   *
    * @return the JDBC connection associated with this operator.
    */
   Connection getConnection();
