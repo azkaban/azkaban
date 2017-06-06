@@ -471,18 +471,17 @@ public class JdbcExecutorLoaderTest {
     int port = 12345;
     Executor executor = loader.addExecutor(host, port);
 
+    // When a flow is assigned an executor, it is no longer in queued state
     ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
-    // only completed flows
     Assert.assertTrue(queuedFlows.isEmpty());
 
+    // When flow status is finished, it is no longer in queued state
     ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
-    loader.uploadExecutableFlow(flow);
-    loader.assignExecutor(executor.getId(), flow.getExecutionId());
-    ExecutionReference ref = new ExecutionReference(flow2.getExecutionId());
-    loader.addActiveExecutableReference(ref);
-    // only running and completed flows
+    loader.uploadExecutableFlow(flow2);
+    flow2.setStatus(Status.SUCCEEDED);
+    loader.updateExecutableFlow(flow2);
     Assert.assertTrue(queuedFlows.isEmpty());
   }
 
@@ -495,29 +494,20 @@ public class JdbcExecutorLoaderTest {
     }
 
     ExecutorLoader loader = createLoader();
-    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
-      new LinkedList<Pair<ExecutionReference, ExecutableFlow>>();
 
     ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow2);
 
-    ExecutionReference ref2 = new ExecutionReference(flow2.getExecutionId());
-    loader.addActiveExecutableReference(ref2);
-    ExecutionReference ref = new ExecutionReference(flow.getExecutionId());
-    loader.addActiveExecutableReference(ref);
-
     List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = loader.fetchQueuedFlows();
     Assert.assertEquals(2, fetchedQueuedFlows.size());
     Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
     Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
 
-    Assert.assertEquals(ref.getExecId(), fetchedFlow1.getFirst().getExecId());
     Assert.assertEquals(flow.getExecutionId(), fetchedFlow1.getSecond().getExecutionId());
     Assert.assertEquals(flow.getFlowId(), fetchedFlow1.getSecond().getFlowId());
     Assert.assertEquals(flow.getProjectId(), fetchedFlow1.getSecond().getProjectId());
-    Assert.assertEquals(ref2.getExecId(), fetchedFlow2.getFirst().getExecId());
     Assert.assertEquals(flow2.getExecutionId(), fetchedFlow2.getSecond().getExecutionId());
     Assert.assertEquals(flow2.getFlowId(), fetchedFlow2.getSecond().getFlowId());
     Assert.assertEquals(flow2.getProjectId(), fetchedFlow2.getSecond().getProjectId());
@@ -785,32 +775,28 @@ public class JdbcExecutorLoaderTest {
   }
 
   @Test
-  public void testActiveReference() throws Exception {
+  public void testFetchActiveFlowsExecutorAssigned() throws Exception {
     if (!isTestSetup()) {
       return;
     }
 
+    // Upload flow1, executor assigned
     ExecutorLoader loader = createLoader();
     ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
     Executor executor = loader.addExecutor("test", 1);
     loader.assignExecutor(executor.getId(), flow1.getExecutionId());
-    ExecutionReference ref1 =
-        new ExecutionReference(flow1.getExecutionId(), executor);
-    loader.addActiveExecutableReference(ref1);
 
-    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    // Upload flow2, executor not assigned
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow2);
-    loader.assignExecutor(executor.getId(), flow2.getExecutionId());
-    ExecutionReference ref2 =
-        new ExecutionReference(flow2.getExecutionId(), executor);
-    loader.addActiveExecutableReference(ref2);
-
-    ExecutableFlow flow3 = TestUtils.createExecutableFlow("exectest1", "exec1");
-    loader.uploadExecutableFlow(flow3);
 
     Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
         loader.fetchActiveFlows();
+
+    Assert.assertTrue(activeFlows1.containsKey(flow1.getExecutionId()));
+    Assert.assertFalse(activeFlows1.containsKey(flow2.getExecutionId()));
+
     ExecutableFlow flow1Result =
         activeFlows1.get(flow1.getExecutionId()).getSecond();
     Assert.assertNotNull(flow1Result);
@@ -824,28 +810,64 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(flow1.getVersion(), flow1Result.getVersion());
     Assert.assertEquals(flow1.getExecutionOptions().getFailureAction(),
         flow1Result.getExecutionOptions().getFailureAction());
+  }
 
-    ExecutableFlow flow1Result2 =
-        activeFlows1.get(flow2.getExecutionId()).getSecond();
-    Assert.assertNotNull(flow1Result2);
-    Assert.assertTrue(flow2 != flow1Result2);
-    Assert.assertEquals(flow2.getExecutionId(), flow1Result2.getExecutionId());
-    Assert.assertEquals(flow2.getEndTime(), flow1Result2.getEndTime());
-    Assert.assertEquals(flow2.getStartTime(), flow1Result2.getStartTime());
-    Assert.assertEquals(flow2.getSubmitTime(), flow1Result2.getSubmitTime());
-    Assert.assertEquals(flow2.getFlowId(), flow1Result2.getFlowId());
-    Assert.assertEquals(flow2.getProjectId(), flow1Result2.getProjectId());
-    Assert.assertEquals(flow2.getVersion(), flow1Result2.getVersion());
-    Assert.assertEquals(flow2.getExecutionOptions().getFailureAction(),
-        flow1Result2.getExecutionOptions().getFailureAction());
+  @Test
+  public void testFetchActiveFlowsStatusChanged() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
 
-    loader.removeActiveExecutableReference(flow2.getExecutionId());
-    Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows2 =
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    // Flow status is PREPARING when uploaded, should be in active flows
+    loader.uploadExecutableFlow(flow1);
+    Executor executor = loader.addExecutor("test", 1);
+    loader.assignExecutor(executor.getId(), flow1.getExecutionId());
+
+    Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
         loader.fetchActiveFlows();
+    Assert.assertTrue(activeFlows.containsKey(flow1.getExecutionId()));
 
-    Assert.assertTrue(activeFlows2.containsKey(flow1.getExecutionId()));
-    Assert.assertFalse(activeFlows2.containsKey(flow3.getExecutionId()));
-    Assert.assertFalse(activeFlows2.containsKey(flow2.getExecutionId()));
+    // When flow status becomes SUCCEEDED/KILLED/FAILED, it should not be in active state
+    flow1.setStatus(Status.SUCCEEDED);
+    loader.updateExecutableFlow(flow1);
+    activeFlows = loader.fetchActiveFlows();
+    Assert.assertFalse(activeFlows.containsKey(flow1.getExecutionId()));
+
+    flow1.setStatus(Status.KILLED);
+    loader.updateExecutableFlow(flow1);
+    activeFlows = loader.fetchActiveFlows();
+    Assert.assertFalse(activeFlows.containsKey(flow1.getExecutionId()));
+
+    flow1.setStatus(Status.FAILED);
+    loader.updateExecutableFlow(flow1);
+    activeFlows = loader.fetchActiveFlows();
+    Assert.assertFalse(activeFlows.containsKey(flow1.getExecutionId()));
+  }
+
+  @Test
+  public void testFetchActiveFlowsReferenceChanged() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow1);
+    Executor executor = loader.addExecutor("test", 1);
+    loader.assignExecutor(executor.getId(), flow1.getExecutionId());
+    ExecutionReference ref1 =
+        new ExecutionReference(flow1.getExecutionId(), executor);
+    loader.addActiveExecutableReference(ref1);
+
+    Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
+        loader.fetchActiveFlows();
+    Assert.assertTrue(activeFlows1.containsKey(flow1.getExecutionId()));
+
+    // Verify active flows are not fetched from active_executing_flows DB table any more
+    loader.removeActiveExecutableReference(flow1.getExecutionId());
+    Assert.assertTrue(activeFlows1.containsKey(flow1.getExecutionId()));
   }
 
   @Test
@@ -859,8 +881,6 @@ public class JdbcExecutorLoaderTest {
     loader.uploadExecutableFlow(flow1);
     Executor executor = loader.addExecutor("test", 1);
     loader.assignExecutor(executor.getId(), flow1.getExecutionId());
-    ExecutionReference ref1 = new ExecutionReference(flow1.getExecutionId(), executor);
-    loader.addActiveExecutableReference(ref1);
 
     Pair<ExecutionReference, ExecutableFlow> activeFlow1 =
         loader.fetchActiveFlowByExecId(flow1.getExecutionId());
@@ -868,8 +888,6 @@ public class JdbcExecutorLoaderTest {
     ExecutionReference execRef1 = activeFlow1.getFirst();
     ExecutableFlow execFlow1 = activeFlow1.getSecond();
     Assert.assertNotNull(execRef1);
-    Assert.assertEquals(ref1.getExecId(), execRef1.getExecId());
-    Assert.assertEquals(ref1.getExecutor(), execRef1.getExecutor());
     Assert.assertNotNull(execFlow1);
     Assert.assertEquals(flow1.getExecutionId(), execFlow1.getExecutionId());
     Assert.assertEquals(flow1.getFlowId(), execFlow1.getFlowId());
