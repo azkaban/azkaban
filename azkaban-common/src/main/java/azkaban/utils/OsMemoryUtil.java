@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +23,7 @@ class OsMemoryUtil {
   // This file is used by Linux. It doesn't exist on Mac for example.
   private static final String MEM_INFO_FILE = "/proc/meminfo";
 
-  private static final Set<String> MEM_KEYS = ImmutableSet
+  private static final ImmutableSet<String> MEM_KEYS = ImmutableSet
       .of("MemFree", "Buffers", "Cached", "SwapFree");
 
   /**
