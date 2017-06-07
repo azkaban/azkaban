@@ -40,7 +40,7 @@ public enum Status {
   private static final Map<Integer, Status> numValMap = new HashMap<>();
 
   static {
-    for (Status status : Status.values()) {
+    for (final Status status : Status.values()) {
       numValMap.put(status.getNumVal(), status);
     }
   }
@@ -52,7 +52,7 @@ public enum Status {
   }
 
   public static Status fromInteger(final int x) {
-    if (numValMap.containsKey (x)) {
+    if (numValMap.containsKey(x)) {
       return numValMap.get(x);
     }
     return READY;
