@@ -7,6 +7,7 @@ import java.io.IOException;
  * Utility to assert based on expected files in the webserver project.
  */
 public class WebFileAssertion {
+
   private static final String EXPECTED_FILE_DIR = "src/test/expected/";
 
   /**
@@ -16,9 +17,10 @@ public class WebFileAssertion {
    * @param actual the actual
    * @throws IOException the io exception
    */
-  public static void assertStringEqualFileContent(String expectedFileName, String actual)
+  public static void assertStringEqualFileContent(final String expectedFileName,
+      final String actual)
       throws IOException {
-    String expectedFilePath = EXPECTED_FILE_DIR + expectedFileName;
+    final String expectedFilePath = EXPECTED_FILE_DIR + expectedFileName;
     FileAssertion.assertStringEqualFileContent(expectedFilePath, actual);
   }
 }

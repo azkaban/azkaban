@@ -16,18 +16,6 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.log4j.Logger;
-
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
@@ -37,11 +25,21 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.log4j.Logger;
 
 /**
  * The main page
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
+
   private static final Logger logger = Logger.getLogger(ProjectServlet.class
       .getName());
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
@@ -53,23 +51,23 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
 
-    userManager = server.getUserManager();
-    lockdownCreateProjects =
+    this.userManager = server.getUserManager();
+    this.lockdownCreateProjects =
         server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
-    if (lockdownCreateProjects) {
+    if (this.lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
 
-    ProjectManager manager =
+    final ProjectManager manager =
         ((AzkabanWebServer) getApplication()).getProjectManager();
 
     if (hasParam(req, "ajax")) {
@@ -83,26 +81,20 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * ProjectServlet class now handles ajax requests. It returns a
-   * @SimplifiedProject object: information regarding projects, and information
-   * regarding user and project association
    *
-   * @param req
-   * @param resp
-   * @param session
-   * @param manager
-   * @throws ServletException
-   * @throws IOException
+   * @SimplifiedProject object: information regarding projects, and information regarding user and
+   * project association
    */
-  private void handleAjaxAction(HttpServletRequest req,
-      HttpServletResponse resp, Session session, ProjectManager manager)
+  private void handleAjaxAction(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session, final ProjectManager manager)
       throws ServletException, IOException {
 
-    String ajaxName = getParam(req, "ajax");
-    HashMap<String, Object> ret = new HashMap<String, Object>();
+    final String ajaxName = getParam(req, "ajax");
+    final HashMap<String, Object> ret = new HashMap<>();
 
     if (ajaxName.equals("fetchallprojects")) {
-      List<Project> projects = manager.getProjects();
-      List<SimplifiedProject> simplifiedProjects =
+      final List<Project> projects = manager.getProjects();
+      final List<SimplifiedProject> simplifiedProjects =
           toSimplifiedProjects(projects);
       ret.put("projects", simplifiedProjects);
     } else if (ajaxName.equals("fetchuserprojects")) {
@@ -119,21 +111,15 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
    * If user provides an empty user name, the user defaults to the session user<br>
    * If user does not provide the user param, the user also defaults to the
    * session user<br>
-   *
-   * @param req
-   * @param session
-   * @param manager
-   * @param ret
-   * @throws ServletException
    */
-  private void handleFetchUserProjects(HttpServletRequest req, Session session,
-      ProjectManager manager, HashMap<String, Object> ret)
+  private void handleFetchUserProjects(final HttpServletRequest req, final Session session,
+      final ProjectManager manager, final HashMap<String, Object> ret)
       throws ServletException {
     User user = null;
 
     // if key "user" is specified, follow this logic
     if (hasParam(req, "user")) {
-      String userParam = getParam(req, "user");
+      final String userParam = getParam(req, "user");
       if (userParam.isEmpty()) {
         user = session.getUser();
       } else {
@@ -144,21 +130,18 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       user = session.getUser();
     }
 
-    List<Project> projects = manager.getUserProjects(user);
-    List<SimplifiedProject> simplifiedProjects = toSimplifiedProjects(projects);
+    final List<Project> projects = manager.getUserProjects(user);
+    final List<SimplifiedProject> simplifiedProjects = toSimplifiedProjects(projects);
     ret.put("projects", simplifiedProjects);
   }
 
   /**
    * A simple helper method that converts a List<Project> to List<SimplifiedProject>
-   *
-   * @param projects
-   * @return
    */
-  private List<SimplifiedProject> toSimplifiedProjects(List<Project> projects) {
-    List<SimplifiedProject> simplifiedProjects = new ArrayList<>();
-    for (Project p : projects) {
-      SimplifiedProject sp =
+  private List<SimplifiedProject> toSimplifiedProjects(final List<Project> projects) {
+    final List<SimplifiedProject> simplifiedProjects = new ArrayList<>();
+    for (final Project p : projects) {
+      final SimplifiedProject sp =
           new SimplifiedProject(p.getId(), p.getName(),
               p.getLastModifiedUser(), p.getCreateTimestamp(),
               p.getUserPermissions(), p.getGroupPermissions());
@@ -169,33 +152,28 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Renders the user homepage that users see when they log in
-   *
-   * @param req
-   * @param resp
-   * @param session
-   * @param manager
    */
-  private void handlePageRender(HttpServletRequest req,
-      HttpServletResponse resp, Session session, ProjectManager manager) {
-    User user = session.getUser();
+  private void handlePageRender(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session, final ProjectManager manager) {
+    final User user = session.getUser();
 
-    Page page =
+    final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 
-    if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
+    if (this.lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
       page.add("hideCreateProject", true);
     }
 
     if (hasParam(req, "all")) {
-      List<Project> projects = manager.getProjects();
+      final List<Project> projects = manager.getProjects();
       page.add("viewProjects", "all");
       page.add("projects", projects);
     } else if (hasParam(req, "group")) {
-      List<Project> projects = manager.getGroupProjects(user);
+      final List<Project> projects = manager.getGroupProjects(user);
       page.add("viewProjects", "group");
       page.add("projects", projects);
     } else {
-      List<Project> projects = manager.getUserProjects(user);
+      final List<Project> projects = manager.getUserProjects(user);
       page.add("viewProjects", "personal");
       page.add("projects", projects);
     }
@@ -203,10 +181,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleDoAction(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException {
+  private void handleDoAction(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException {
     if (getParam(req, "doaction").equals("search")) {
-      String searchTerm = getParam(req, "searchterm");
+      final String searchTerm = getParam(req, "searchterm");
       if (!searchTerm.equals("") && !searchTerm.equals(".*")) {
         handleFilter(req, resp, session, searchTerm);
         return;
@@ -214,21 +192,21 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleFilter(HttpServletRequest req, HttpServletResponse resp,
-      Session session, String searchTerm) {
-    User user = session.getUser();
-    ProjectManager manager =
+  private void handleFilter(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session, final String searchTerm) {
+    final User user = session.getUser();
+    final ProjectManager manager =
         ((AzkabanWebServer) getApplication()).getProjectManager();
-    Page page =
+    final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
     if (hasParam(req, "all")) {
       // do nothing special if one asks for 'ALL' projects
-      List<Project> projects = manager.getProjectsByRegex(searchTerm);
+      final List<Project> projects = manager.getProjectsByRegex(searchTerm);
       page.add("allProjects", "");
       page.add("projects", projects);
       page.add("search_term", searchTerm);
     } else {
-      List<Project> projects = manager.getUserProjectsByRegex(user, searchTerm);
+      final List<Project> projects = manager.getUserProjectsByRegex(user, searchTerm);
       page.add("projects", projects);
       page.add("search_term", searchTerm);
     }
@@ -237,15 +215,15 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     // TODO Auto-generated method stub
   }
 
-  private boolean hasPermissionToCreateProject(User user) {
-    for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      Permission perm = role.getPermission();
+  private boolean hasPermissionToCreateProject(final User user) {
+    for (final String roleName : user.getRoles()) {
+      final Role role = this.userManager.getRole(roleName);
+      final Permission perm = role.getPermission();
       if (perm.isPermissionSet(Permission.Type.ADMIN)
           || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
         return true;
@@ -262,9 +240,9 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
    * but does not want every flow and every job inside that project.
    *
    * @author jyu
-   *
    */
   private static class SimplifiedProject {
+
     private int projectId;
     private String projectName;
     private String createdBy;
@@ -272,10 +250,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     private List<Pair<String, Permission>> userPermissions;
     private List<Pair<String, Permission>> groupPermissions;
 
-    public SimplifiedProject(int projectId, String projectName,
-        String createdBy, long createdTime,
-        List<Pair<String, Permission>> userPermissions,
-        List<Pair<String, Permission>> groupPermissions) {
+    public SimplifiedProject(final int projectId, final String projectName,
+        final String createdBy, final long createdTime,
+        final List<Pair<String, Permission>> userPermissions,
+        final List<Pair<String, Permission>> groupPermissions) {
       this.projectId = projectId;
       this.projectName = projectName;
       this.createdBy = createdBy;
@@ -285,52 +263,52 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     }
 
     public int getProjectId() {
-      return projectId;
+      return this.projectId;
     }
 
-    public void setProjectId(int projectId) {
+    public void setProjectId(final int projectId) {
       this.projectId = projectId;
     }
 
     public String getProjectName() {
-      return projectName;
+      return this.projectName;
     }
 
-    public void setProjectName(String projectName) {
+    public void setProjectName(final String projectName) {
       this.projectName = projectName;
     }
 
     public String getCreatedBy() {
-      return createdBy;
+      return this.createdBy;
     }
 
-    public void setCreatedBy(String createdBy) {
+    public void setCreatedBy(final String createdBy) {
       this.createdBy = createdBy;
     }
 
     public long getCreatedTime() {
-      return createdTime;
+      return this.createdTime;
     }
 
-    public void setCreatedTime(long createdTime) {
+    public void setCreatedTime(final long createdTime) {
       this.createdTime = createdTime;
     }
 
     public List<Pair<String, Permission>> getUserPermissions() {
-      return userPermissions;
+      return this.userPermissions;
     }
 
     public void setUserPermissions(
-        List<Pair<String, Permission>> userPermissions) {
+        final List<Pair<String, Permission>> userPermissions) {
       this.userPermissions = userPermissions;
     }
 
     public List<Pair<String, Permission>> getGroupPermissions() {
-      return groupPermissions;
+      return this.groupPermissions;
     }
 
     public void setGroupPermissions(
-        List<Pair<String, Permission>> groupPermissions) {
+        final List<Pair<String, Permission>> groupPermissions) {
       this.groupPermissions = groupPermissions;
     }
 

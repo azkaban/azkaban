@@ -16,17 +16,6 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.joda.time.format.DateTimeFormat;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
@@ -34,6 +23,14 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.joda.time.format.DateTimeFormat;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
@@ -44,17 +41,17 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
   private ExecutorVMHelper vmHelper;
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    executorManager = server.getExecutorManager();
-    projectManager = server.getProjectManager();
-    vmHelper = new ExecutorVMHelper();
+    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    this.executorManager = server.getExecutorManager();
+    this.projectManager = server.getProjectManager();
+    this.vmHelper = new ExecutorVMHelper();
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
 
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
@@ -67,11 +64,11 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAJAXAction(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleAJAXAction(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    HashMap<String, Object> ret = new HashMap<String, Object>();
-    String ajaxName = getParam(req, "ajax");
+    final HashMap<String, Object> ret = new HashMap<>();
+    final String ajaxName = getParam(req, "ajax");
 
     if (ajaxName.equals("fetch")) {
       fetchHistoryData(req, resp, ret);
@@ -82,62 +79,62 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void fetchHistoryData(HttpServletRequest req,
-      HttpServletResponse resp, HashMap<String, Object> ret)
+  private void fetchHistoryData(final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> ret)
       throws ServletException {
   }
 
-  private void handleHistoryPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException {
-    Page page =
+  private void handleHistoryPage(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException {
+    final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/historypage.vm");
     int pageNum = getIntParam(req, "page", 1);
-    int pageSize = getIntParam(req, "size", 16);
-    page.add("vmutils", vmHelper);
+    final int pageSize = getIntParam(req, "size", 16);
+    page.add("vmutils", this.vmHelper);
 
     if (pageNum < 0) {
       pageNum = 1;
     }
     List<ExecutableFlow> history = null;
     if (hasParam(req, "advfilter")) {
-      String projContain = getParam(req, "projcontain");
-      String flowContain = getParam(req, "flowcontain");
-      String userContain = getParam(req, "usercontain");
-      int status = getIntParam(req, "status");
-      String begin = getParam(req, "begin");
+      final String projContain = getParam(req, "projcontain");
+      final String flowContain = getParam(req, "flowcontain");
+      final String userContain = getParam(req, "usercontain");
+      final int status = getIntParam(req, "status");
+      final String begin = getParam(req, "begin");
 
-      long beginTime =
+      final long beginTime =
           begin == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(begin).getMillis();
-      String end = getParam(req, "end");
+      final String end = getParam(req, "end");
 
-      long endTime =
+      final long endTime =
           end == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(end).getMillis();
       try {
         history =
-            executorManager.getExecutableFlows(projContain, flowContain,
+            this.executorManager.getExecutableFlows(projContain, flowContain,
                 userContain, status, beginTime, endTime, (pageNum - 1)
                     * pageSize, pageSize);
-      } catch (ExecutorManagerException e) {
+      } catch (final ExecutorManagerException e) {
         page.add("error", e.getMessage());
       }
     } else if (hasParam(req, "search")) {
-      String searchTerm = getParam(req, "searchterm");
+      final String searchTerm = getParam(req, "searchterm");
       try {
         history =
-            executorManager.getExecutableFlows(searchTerm, (pageNum - 1)
+            this.executorManager.getExecutableFlows(searchTerm, (pageNum - 1)
                 * pageSize, pageSize);
-      } catch (ExecutorManagerException e) {
+      } catch (final ExecutorManagerException e) {
         page.add("error", e.getMessage());
       }
     } else {
       try {
         history =
-            executorManager.getExecutableFlows((pageNum - 1) * pageSize,
+            this.executorManager.getExecutableFlows((pageNum - 1) * pageSize,
                 pageSize);
-      } catch (ExecutorManagerException e) {
+      } catch (final ExecutorManagerException e) {
         e.printStackTrace();
       }
     }
@@ -192,21 +189,28 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleHistoryTimelinePage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) {
+  private void handleHistoryTimelinePage(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) {
   }
 
-  private void handleHistoryDayPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) {
+  private void handleHistoryDayPage(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) {
+  }
+
+  @Override
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
   }
 
   public static class PageSelection {
-    private int page;
-    private int size;
-    private boolean disabled;
+
+    private final int page;
+    private final int size;
+    private final boolean disabled;
     private boolean selected;
 
-    public PageSelection(int page, int size, boolean disabled, boolean selected) {
+    public PageSelection(final int page, final int size, final boolean disabled,
+        final boolean selected) {
       this.page = page;
       this.size = size;
       this.disabled = disabled;
@@ -214,34 +218,30 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     }
 
     public int getPage() {
-      return page;
+      return this.page;
     }
 
     public int getSize() {
-      return size;
+      return this.size;
     }
 
     public boolean getDisabled() {
-      return disabled;
+      return this.disabled;
     }
 
     public boolean isSelected() {
-      return selected;
+      return this.selected;
     }
 
-    public void setSelected(boolean selected) {
+    public void setSelected(final boolean selected) {
       this.selected = selected;
     }
   }
 
-  @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
-  }
-
   public class ExecutorVMHelper {
-    public String getProjectName(int id) {
-      Project project = projectManager.getProject(id);
+
+    public String getProjectName(final int id) {
+      final Project project = HistoryServlet.this.projectManager.getProject(id);
       if (project == null) {
         return String.valueOf(id);
       }

@@ -11,6 +11,7 @@ import org.junit.Assert;
  * The type File assertion.
  */
 public class FileAssertion {
+
   /**
    * Assert the given string equals the given file's content.
    *
@@ -18,9 +19,11 @@ public class FileAssertion {
    * @param actual the actual string
    * @throws IOException the io exception
    */
-  public static void assertStringEqualFileContent(String expectedFilePath, String actual)
+  public static void assertStringEqualFileContent(final String expectedFilePath,
+      final String actual)
       throws IOException {
-    String expected = new String(Files.readAllBytes(Paths.get(expectedFilePath)), StandardCharsets.UTF_8);
+    final String expected = new String(Files.readAllBytes(Paths.get(expectedFilePath)),
+        StandardCharsets.UTF_8);
     Assert.assertEquals(expected, actual);
   }
 
@@ -33,7 +36,7 @@ public class FileAssertion {
    * @param content the content
    * @return string
    */
-  public static String surroundWithHtmlTag(String content) {
+  public static String surroundWithHtmlTag(final String content) {
     return "<html>\n" + content + "</html>\n";
   }
 }
