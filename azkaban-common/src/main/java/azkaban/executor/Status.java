@@ -16,8 +16,8 @@
 
 package azkaban.executor;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 
 public enum Status {
   READY(10),
@@ -37,13 +37,8 @@ public enum Status {
   // status is TINYINT and in H2 DB the possible values are: -128 to 127
   // so trying to store CANCELLED in H2 fails at the moment
 
-  private static final Map<Integer, Status> numValMap = new HashMap<>();
-
-  static {
-    for (final Status status : Status.values()) {
-      numValMap.put(status.getNumVal(), status);
-    }
-  }
+  private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
+      .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
 
   private final int numVal;
 
