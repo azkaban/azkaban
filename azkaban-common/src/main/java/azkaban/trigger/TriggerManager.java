@@ -50,8 +50,6 @@ public class TriggerManager extends EventHandler implements
   private final ActionTypeLoader actionTypeLoader;
   private final TriggerLoader triggerLoader;
   private final LocalTriggerJMX jmxStats = new LocalTriggerJMX();
-  private final ExecutorManagerEventListener listener =
-      new ExecutorManagerEventListener();
   private long lastRunnerThreadCheckTime = -1;
   private long runnerThreadIdleTime = -1;
   private String scannerStage = "";
@@ -80,8 +78,6 @@ public class TriggerManager extends EventHandler implements
 
     Condition.setCheckerLoader(checkerTypeLoader);
     Trigger.setActionTypeLoader(actionTypeLoader);
-
-    executorManager.addListener(listener);
 
     logger.info("TriggerManager loaded.");
   }
@@ -255,12 +251,10 @@ public class TriggerManager extends EventHandler implements
   private class TriggerScannerThread extends Thread {
     private final long scannerInterval;
     private final BlockingQueue<Trigger> triggers;
-    private final Map<Integer, ExecutableFlow> justFinishedFlows;
     private boolean shutdown = false;
 
     public TriggerScannerThread(long scannerInterval) {
       triggers = new PriorityBlockingQueue<>(1, new TriggerComparator());
-      justFinishedFlows = new ConcurrentHashMap<>();
       this.setName("TriggerRunnerManager-Trigger-Scanner-Thread");
       this.scannerInterval = scannerInterval;
     }
@@ -269,12 +263,6 @@ public class TriggerManager extends EventHandler implements
       logger.error("Shutting down trigger manager thread " + this.getName());
       shutdown = true;
       this.interrupt();
-    }
-
-    public void addJustFinishedFlow(ExecutableFlow flow) {
-      synchronized (syncObj) {
-        justFinishedFlows.put(flow.getExecutionId(), flow);
-      }
     }
 
     public void addTrigger(Trigger t) {
@@ -301,7 +289,6 @@ public class TriggerManager extends EventHandler implements
 
             try {
               checkAllTriggers();
-              justFinishedFlows.clear();
             } catch (Exception e) {
               e.printStackTrace();
               logger.error(e.getMessage());
@@ -475,22 +462,4 @@ public class TriggerManager extends EventHandler implements
     }
 
   }
-
-  private class ExecutorManagerEventListener implements EventListener {
-    public ExecutorManagerEventListener() {
-    }
-
-    @Override
-    public void handleEvent(Event event) {
-      // this needs to be fixed for perf
-      synchronized (syncObj) {
-        ExecutableFlow flow = (ExecutableFlow) event.getRunner();
-        if (event.getType() == Type.FLOW_FINISHED) {
-          logger.info("Flow finish event received. " + flow.getExecutionId());
-          runnerThread.addJustFinishedFlow(flow);
-        }
-      }
-    }
-  }
-
 }

@@ -1343,7 +1343,6 @@ public class ExecutorManager extends EventHandler implements
                 ScheduleStatisticManager.invalidateCache(flow.getScheduleId(),
                     cacheDir);
               }
-              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED, new EventData(flow)));
             }
 
             updaterStage =
@@ -1408,8 +1407,6 @@ public class ExecutorManager extends EventHandler implements
 
       updaterStage = "finalizing flow " + execId + " cleaning from memory";
       runningFlows.remove(execId);
-      fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED, new EventData(dsFlow)));
-
     } catch (ExecutorManagerException e) {
       alertUser = false; // failed due to azkaban internal error, not to alert user
       logger.error(e);
