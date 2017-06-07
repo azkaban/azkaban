@@ -594,7 +594,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     switch (flow.getStatus()) {
       case FAILED_FINISHING:
         Status status = isKilled() ? Status.KILLED : Status.FAILED;
-        this.logger.info("Setting flow '" + id + "' status to "+status+" in "
+        this.logger.info("Setting flow '" + id + "' status to " + status + " in "
             + durationSec + " seconds");
         flow.setStatus(status);
         break;
