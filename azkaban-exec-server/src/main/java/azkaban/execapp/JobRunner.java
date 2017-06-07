@@ -740,7 +740,7 @@ public class JobRunner extends EventHandler implements Runnable {
     Status finalStatus;
     try {
       this.job.run();
-      finalStatus = node.getStatus();
+      finalStatus = this.node.getStatus();
     } catch (final Throwable e) {
       if (this.props.getBoolean("job.succeed.on.failure", false)) {
         finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
