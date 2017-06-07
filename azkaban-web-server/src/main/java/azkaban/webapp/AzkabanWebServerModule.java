@@ -22,11 +22,12 @@ import com.google.inject.Scopes;
 import org.mortbay.jetty.Server;
 
 /**
- * This Guice module is currently a one place container for all bindings in the current module. This is intended to
- * help during the migration process to Guice. Once this class starts growing we can move towards more modular
- * structuring of Guice components.
+ * This Guice module is currently a one place container for all bindings in the current module. This
+ * is intended to help during the migration process to Guice. Once this class starts growing we can
+ * move towards more modular structuring of Guice components.
  */
 public class AzkabanWebServerModule extends AbstractModule {
+
   @Override
   protected void configure() {
     bind(Server.class).toProvider(WebServerProvider.class);

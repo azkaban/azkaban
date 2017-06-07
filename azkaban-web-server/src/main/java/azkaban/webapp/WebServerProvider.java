@@ -17,6 +17,8 @@
 
 package azkaban.webapp;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
@@ -28,10 +30,9 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
 
-import static java.util.Objects.*;
-
 
 public class WebServerProvider implements Provider<Server> {
+
   private static final Logger logger = Logger.getLogger(WebServerProvider.class);
   private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
 
@@ -40,33 +41,36 @@ public class WebServerProvider implements Provider<Server> {
 
   @Override
   public Server get() {
-    requireNonNull(props);
+    requireNonNull(this.props);
 
-    final int maxThreads = props.getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
-    boolean isStatsOn = props.getBoolean("jetty.connector.stats", true);
+    final int maxThreads = this.props
+        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
+    final boolean isStatsOn = this.props.getBoolean("jetty.connector.stats", true);
     logger.info("Setting up connector with stats on: " + isStatsOn);
 
-    boolean ssl;
-    int port;
+    final boolean ssl;
+    final int port;
     final Server server = new Server();
-    if (props.getBoolean("jetty.use.ssl", true)) {
-      int sslPortNumber = props.getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
+    if (this.props.getBoolean("jetty.use.ssl", true)) {
+      final int sslPortNumber = this.props
+          .getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
       port = sslPortNumber;
       ssl = true;
       logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
           + " and numThreads:" + maxThreads);
 
-      SslSocketConnector secureConnector = new SslSocketConnector();
+      final SslSocketConnector secureConnector = new SslSocketConnector();
       secureConnector.setPort(sslPortNumber);
-      secureConnector.setKeystore(props.getString("jetty.keystore"));
-      secureConnector.setPassword(props.getString("jetty.password"));
-      secureConnector.setKeyPassword(props.getString("jetty.keypassword"));
-      secureConnector.setTruststore(props.getString("jetty.truststore"));
-      secureConnector.setTrustPassword(props.getString("jetty.trustpassword"));
+      secureConnector.setKeystore(this.props.getString("jetty.keystore"));
+      secureConnector.setPassword(this.props.getString("jetty.password"));
+      secureConnector.setKeyPassword(this.props.getString("jetty.keypassword"));
+      secureConnector.setTruststore(this.props.getString("jetty.truststore"));
+      secureConnector.setTrustPassword(this.props.getString("jetty.trustpassword"));
       secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 
       // set up vulnerable cipher suites to exclude
-      List<String> cipherSuitesToExclude = props.getStringList("jetty.excludeCipherSuites");
+      final List<String> cipherSuitesToExclude = this.props
+          .getStringList("jetty.excludeCipherSuites");
       logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
       if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
         secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
@@ -75,15 +79,15 @@ public class WebServerProvider implements Provider<Server> {
       server.addConnector(secureConnector);
     } else {
       ssl = false;
-      port = props.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
-      SocketConnector connector = new SocketConnector();
+      port = this.props.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
+      final SocketConnector connector = new SocketConnector();
       connector.setPort(port);
       connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
       server.addConnector(connector);
     }
 
     // setting stats configuration for connectors
-    for (Connector connector : server.getConnectors()) {
+    for (final Connector connector : server.getConnectors()) {
       connector.setStatsOn(isStatsOn);
     }
 

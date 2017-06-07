@@ -68,6 +68,7 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
+
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
@@ -85,7 +86,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
-                           final Session session) throws ServletException, IOException {
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else if (hasParam(req, "calendar")) {
@@ -96,7 +97,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-                                final HttpServletResponse resp, final Session session) throws ServletException,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
     HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
@@ -124,14 +125,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret,
-                          final User user) {
+      final User user) {
     try {
       final int scheduleId = getIntParam(req, "scheduleId");
       final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
         ret.put("error",
-                "Error loading schedule. Schedule " + scheduleId
-                        + " doesn't exist");
+            "Error loading schedule. Schedule " + scheduleId
+                + " doesn't exist");
         return;
       }
 
@@ -240,7 +241,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchSchedule(final HttpServletRequest req,
-                                 final HashMap<String, Object> ret, final User user) throws ServletException {
+      final HashMap<String, Object> ret, final User user) throws ServletException {
 
     final int projectId = getIntParam(req, "projectId");
     final String flowId = getParam(req, "flowId");
@@ -267,15 +268,15 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxSlaInfo(final HttpServletRequest req, final HashMap<String, Object> ret,
-                           final User user) {
+      final User user) {
     final int scheduleId;
     try {
       scheduleId = getIntParam(req, "scheduleId");
       final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
         ret.put("error",
-                "Error loading schedule. Schedule " + scheduleId
-                        + " doesn't exist");
+            "Error loading schedule. Schedule " + scheduleId
+                + " doesn't exist");
         return;
       }
 
@@ -338,7 +339,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
-                                               final int projectId, final User user, final Permission.Type type) {
+      final int projectId, final User user, final Permission.Type type) {
     final Project project = this.projectManager.getProject(projectId);
 
     if (project == null) {
@@ -355,7 +356,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleGetAllSchedules(final HttpServletRequest req,
-                                     final HttpServletResponse resp, final Session session) throws ServletException,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
     final Page page =
@@ -373,7 +374,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleGetScheduleCalendar(final HttpServletRequest req,
-                                         final HttpServletResponse resp, final Session session) throws ServletException,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
     final Page page =
@@ -392,7 +393,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
-                            final Session session) throws ServletException, IOException {
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
@@ -408,17 +409,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
-      if (ret.get("status") == ("success"))
+      if (ret.get("status") == ("success")) {
         setSuccessMessageInCookie(resp, (String) ret.get("message"));
-      else
+      } else {
         setErrorMessageInCookie(resp, (String) ret.get("message"));
+      }
 
       this.writeJSON(resp, ret);
     }
   }
 
   private void ajaxLoadFlows(final HttpServletRequest req,
-                             final HashMap<String, Object> ret, final User user) throws ServletException {
+      final HashMap<String, Object> ret, final User user) throws ServletException {
     final List<Schedule> schedules;
     try {
       schedules = this.scheduleManager.getSchedules();
@@ -426,8 +428,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       throw new ServletException(e);
     }
     // See if anything is scheduled
-    if (schedules.size() <= 0)
+    if (schedules.size() <= 0) {
       return;
+    }
 
     final List<HashMap<String, Object>> output =
         new ArrayList<>();
@@ -443,7 +446,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void writeScheduleData(final List<HashMap<String, Object>> output,
-                                 final Schedule schedule) throws ScheduleManagerException {
+      final Schedule schedule) throws ScheduleManagerException {
     final Map<String, Object> stats =
         SchedulerStatistics.getStatistics(schedule.getScheduleId(),
             (AzkabanWebServer) getApplication());
@@ -474,7 +477,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxLoadHistory(final HttpServletRequest req,
-                               final HttpServletResponse resp, final User user) throws ServletException, IOException {
+      final HttpServletResponse resp, final User user) throws ServletException, IOException {
     resp.setContentType(JSON_MIME_TYPE);
     final long today = DateTime.now().withTime(0, 0, 0, 0).getMillis();
     long startTime = getLongParam(req, "startTime");
@@ -565,7 +568,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void writeHistoryData(final List<HashMap<String, Object>> output,
-                                final ExecutableFlow history) {
+      final ExecutableFlow history) {
     final HashMap<String, Object> data = new HashMap<>();
 
     data.put("scheduleid", history.getScheduleId());
@@ -586,7 +589,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxRemoveSched(final HttpServletRequest req, final Map<String, Object> ret,
-                               final User user) throws ServletException {
+      final User user) throws ServletException {
     final int scheduleId = getIntParam(req, "scheduleId");
     final Schedule sched;
     try {
@@ -629,7 +632,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxScheduleFlow(final HttpServletRequest req,
-                                final HashMap<String, Object> ret, final User user) throws ServletException {
+      final HashMap<String, Object> ret, final User user) throws ServletException {
     final String projectName = getParam(req, "projectName");
     final String flowName = getParam(req, "flow");
     final int projectId = getIntParam(req, "projectId");
@@ -667,7 +670,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    final long endSchedTime = getLongParam(req, "endSchedTime",
+        Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (final Exception e) {
@@ -713,12 +717,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   *
    * This method is in charge of doing cron scheduling.
-   * @throws ServletException
    */
   private void ajaxScheduleCronFlow(final HttpServletRequest req,
-                                    final HashMap<String, Object> ret, final User user) throws ServletException {
+      final HashMap<String, Object> ret, final User user) throws ServletException {
     final String projectName = getParam(req, "projectName");
     final String flowName = getParam(req, "flow");
 
@@ -754,18 +756,21 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         // everything in Azkaban functions is at the minute granularity, so we add 0 here
         // to let the expression to be complete.
         cronExpression = getParam(req, "cronExpression");
-        if(azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
-          ret.put("error", "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
+        if (azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
+          ret.put("error",
+              "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
           return;
         }
       }
-      if(cronExpression == null)
+      if (cronExpression == null) {
         throw new Exception("Cron expression must exist.");
+      }
     } catch (final Exception e) {
       ret.put("error", e.getMessage());
     }
 
-    final long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    final long endSchedTime = getLongParam(req, "endSchedTime",
+        Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (final Exception e) {
@@ -823,8 +828,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     hour %= 12;
 
-    if (isPm)
+    if (isPm) {
       hour += 12;
+    }
 
     final DateTime firstSchedTime =
         day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
@@ -834,11 +840,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * @param cronTimezone represents the timezone from remote API call
-   * @return if the string is equal to UTC, we return UTC; otherwise, we always return default timezone.
+   * @return if the string is equal to UTC, we return UTC; otherwise, we always return default
+   * timezone.
    */
   private DateTimeZone parseTimeZone(final String cronTimezone) {
-    if(cronTimezone != null && cronTimezone.equals("UTC"))
+    if (cronTimezone != null && cronTimezone.equals("UTC")) {
       return DateTimeZone.UTC;
+    }
 
     return DateTimeZone.getDefault();
   }

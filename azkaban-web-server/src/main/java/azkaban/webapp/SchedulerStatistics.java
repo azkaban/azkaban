@@ -16,23 +16,23 @@
 
 package azkaban.webapp;
 
-import java.io.File;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
-import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.scheduler.ScheduleStatisticManager;
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SchedulerStatistics {
+
   public static Map<String, Object> getStatistics(
-      int scheduleId, AzkabanWebServer server)
+      final int scheduleId, final AzkabanWebServer server)
       throws ScheduleManagerException {
     if (ScheduleStatisticManager.getCacheDirectory() == null) {
       ScheduleStatisticManager.setCacheFolder(
@@ -50,15 +50,15 @@ public class SchedulerStatistics {
   }
 
   private static Map<String, Object> calculateStats(
-      int scheduleId, AzkabanWebServer server)
+      final int scheduleId, final AzkabanWebServer server)
       throws ScheduleManagerException {
-    Map<String, Object> data = new HashMap<String, Object>();
-    ExecutorManagerAdapter executorManager = server.getExecutorManager();
-    ScheduleManager scheduleManager = server.getScheduleManager();
-    Schedule schedule = scheduleManager.getSchedule(scheduleId);
+    final Map<String, Object> data = new HashMap<>();
+    final ExecutorManagerAdapter executorManager = server.getExecutorManager();
+    final ScheduleManager scheduleManager = server.getScheduleManager();
+    final Schedule schedule = scheduleManager.getSchedule(scheduleId);
 
     try {
-      List<ExecutableFlow> executables = executorManager.getExecutableFlows(
+      final List<ExecutableFlow> executables = executorManager.getExecutableFlows(
           schedule.getProjectId(), schedule.getFlowName(), 0,
           ScheduleStatisticManager.STAT_NUMBERS, Status.SUCCEEDED);
 
@@ -70,8 +70,8 @@ public class SchedulerStatistics {
         min = 0;
         max = 0;
       } else {
-        for (ExecutableFlow flow : executables) {
-          long time = flow.getEndTime() - flow.getStartTime();
+        for (final ExecutableFlow flow : executables) {
+          final long time = flow.getEndTime() - flow.getStartTime();
           average += time;
           if (time < min) {
             min = time;
@@ -86,7 +86,7 @@ public class SchedulerStatistics {
       data.put("average", average);
       data.put("min", min);
       data.put("max", max);
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       e.printStackTrace();
     }
 

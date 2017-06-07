@@ -22,7 +22,6 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.restli.server.PathKeys;
 import com.linkedin.restli.server.ProjectionMode;
 import com.linkedin.restli.server.ResourceContext;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,113 +29,114 @@ import java.util.Map;
 
 public class MockResourceContext implements ResourceContext {
 
-    Map<String, String> requestHeaders;
-    RequestContext requestContext;
+  Map<String, String> requestHeaders;
+  RequestContext requestContext;
 
-    @Override
-    public RestRequest getRawRequest() {
-        return null;
-    }
+  public MockResourceContext() {
+    this.requestHeaders = new HashMap<>();
+    this.requestContext = new RequestContext();
+  }
 
-    @Override
-    public String getRequestMethod() {
-        return null;
-    }
+  public static MockResourceContext getResourceContextWithUpstream(final String clientIp,
+      final String upstream) {
+    final MockResourceContext ctx = new MockResourceContext();
 
-    @Override
-    public PathKeys getPathKeys() {
-        return null;
-    }
+    ctx.setLocalAttr("REMOTE_ADDR", clientIp);
+    ctx.setRequestHeader("X-Forwarded-For", upstream);
 
-    @Override
-    public MaskTree getProjectionMask() {
-        return null;
-    }
+    return ctx;
+  }
 
-    @Override
-    public boolean hasParameter(String key) {
-        return false;
-    }
+  public static MockResourceContext getResourceContextWithMultipleUpstreams(final String clientIp,
+      final String firstUpstream) {
+    final MockResourceContext ctx = new MockResourceContext();
 
-    @Override
-    public String getParameter(String key) {
-        return null;
-    }
+    ctx.setLocalAttr("REMOTE_ADDR", clientIp);
+    ctx.setRequestHeader("X-Forwarded-For", firstUpstream + ",55.55.55.55:55555,1.1.1.1:9999");
 
-    @Override
-    public Object getStructuredParameter(String key) {
-        return null;
-    }
+    return ctx;
+  }
 
-    @Override
-    public List<String> getParameterValues(String key) {
-        return null;
-    }
+  public static MockResourceContext getResourceContext(final String clientIp) {
+    final MockResourceContext ctx = new MockResourceContext();
 
-    public void setRequestHeader(String name, String value){
+    ctx.setLocalAttr("REMOTE_ADDR", clientIp);
 
-        this.requestHeaders.put(name, value);
-    }
+    return ctx;
+  }
 
-    @Override
-    public Map<String, String> getRequestHeaders() {
-        return this.requestHeaders;
-    }
+  @Override
+  public RestRequest getRawRequest() {
+    return null;
+  }
 
-    @Override
-    public void setResponseHeader(String name, String value) {
+  @Override
+  public String getRequestMethod() {
+    return null;
+  }
 
-    }
+  @Override
+  public PathKeys getPathKeys() {
+    return null;
+  }
 
-    @Override
-    public RequestContext getRawRequestContext() {
-        return this.requestContext;
-    }
+  @Override
+  public MaskTree getProjectionMask() {
+    return null;
+  }
 
-    @Override
-    public ProjectionMode getProjectionMode() {
-        return null;
-    }
+  @Override
+  public boolean hasParameter(final String key) {
+    return false;
+  }
 
-    @Override
-    public void setProjectionMode(ProjectionMode mode) {
+  @Override
+  public String getParameter(final String key) {
+    return null;
+  }
 
-    }
+  @Override
+  public Object getStructuredParameter(final String key) {
+    return null;
+  }
 
-    public void setLocalAttr(String name, String value){
-        requestContext.putLocalAttr(name, value);
-    }
+  @Override
+  public List<String> getParameterValues(final String key) {
+    return null;
+  }
 
-    public MockResourceContext(){
-        requestHeaders = new HashMap<>();
-        requestContext = new RequestContext();
-    }
+  public void setRequestHeader(final String name, final String value) {
 
-    public static MockResourceContext getResourceContextWithUpstream(String clientIp, String upstream){
-        MockResourceContext ctx = new MockResourceContext();
+    this.requestHeaders.put(name, value);
+  }
 
-        ctx.setLocalAttr("REMOTE_ADDR", clientIp);
-        ctx.setRequestHeader("X-Forwarded-For", upstream);
+  @Override
+  public Map<String, String> getRequestHeaders() {
+    return this.requestHeaders;
+  }
 
-        return ctx;
-    }
+  @Override
+  public void setResponseHeader(final String name, final String value) {
 
-    public static MockResourceContext getResourceContextWithMultipleUpstreams(String clientIp,
-                                                                              String firstUpstream){
-        MockResourceContext ctx = new MockResourceContext();
+  }
 
-        ctx.setLocalAttr("REMOTE_ADDR", clientIp);
-        ctx.setRequestHeader("X-Forwarded-For", firstUpstream + ",55.55.55.55:55555,1.1.1.1:9999");
+  @Override
+  public RequestContext getRawRequestContext() {
+    return this.requestContext;
+  }
 
-        return ctx;
-    }
+  @Override
+  public ProjectionMode getProjectionMode() {
+    return null;
+  }
 
-    public static MockResourceContext getResourceContext(String clientIp){
-        MockResourceContext ctx = new MockResourceContext();
+  @Override
+  public void setProjectionMode(final ProjectionMode mode) {
 
-        ctx.setLocalAttr("REMOTE_ADDR", clientIp);
+  }
 
-        return ctx;
-    }
+  public void setLocalAttr(final String name, final String value) {
+    this.requestContext.putLocalAttr(name, value);
+  }
 
 }
