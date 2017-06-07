@@ -9,6 +9,7 @@ import org.apache.velocity.tools.generic.EscapeTool;
  * The type Velocity context test util.
  */
 public class VelocityContextTestUtil {
+
   /**
    * Gets an instance of the velocity context
    *
@@ -17,9 +18,9 @@ public class VelocityContextTestUtil {
    * @return the instance
    */
   public static VelocityContext getInstance() {
-    VelocityContext context = new VelocityContext();
+    final VelocityContext context = new VelocityContext();
     context.put("esc", new EscapeTool());
-    WebUtils utils = new WebUtils();
+    final WebUtils utils = new WebUtils();
     context.put("utils", utils);
     return context;
   }

@@ -188,7 +188,7 @@ public class JdbcTriggerImpl implements TriggerLoader {
     }
   }
 
-  public class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
+  public static class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
 
     @Override
     public List<Trigger> handle(final ResultSet rs) throws SQLException {

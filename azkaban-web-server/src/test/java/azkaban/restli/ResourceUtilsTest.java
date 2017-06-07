@@ -16,62 +16,63 @@
 
 package azkaban.restli;
 
-import azkaban.fixture.MockResourceContext;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import azkaban.fixture.MockResourceContext;
+import org.junit.Test;
+
 public class ResourceUtilsTest {
 
-    @Test
-    public void testWhenNoXForwardedForHeaderUseClientIp(){
+  @Test
+  public void testWhenNoXForwardedForHeaderUseClientIp() {
 
-        String clientIp = "127.0.0.1:10000";
-        MockResourceContext ctx = MockResourceContext.getResourceContext(clientIp);
-        assertNotNull(ctx);
+    final String clientIp = "127.0.0.1:10000";
+    final MockResourceContext ctx = MockResourceContext.getResourceContext(clientIp);
+    assertNotNull(ctx);
 
-        String ip = ResourceUtils.getRealClientIpAddr(ctx);
+    final String ip = ResourceUtils.getRealClientIpAddr(ctx);
 
-        assertEquals(ip, "127.0.0.1");
-    }
+    assertEquals(ip, "127.0.0.1");
+  }
 
-    @Test
-    public void testWhenClientIpNoPort(){
+  @Test
+  public void testWhenClientIpNoPort() {
 
-        String clientIp = "192.168.1.1";
-        MockResourceContext ctx = MockResourceContext.getResourceContext(clientIp);
-        assertNotNull(ctx);
+    final String clientIp = "192.168.1.1";
+    final MockResourceContext ctx = MockResourceContext.getResourceContext(clientIp);
+    assertNotNull(ctx);
 
-        String ip = ResourceUtils.getRealClientIpAddr(ctx);
+    final String ip = ResourceUtils.getRealClientIpAddr(ctx);
 
-        assertEquals(ip, "192.168.1.1");
-    }
+    assertEquals(ip, "192.168.1.1");
+  }
 
-    @Test
-    public void testWhenXForwardedForHeaderUseHeader(){
+  @Test
+  public void testWhenXForwardedForHeaderUseHeader() {
 
-        String clientIp = "127.0.0.1:10000";
-        String upstreamIp = "192.168.1.1:10000";
-        MockResourceContext ctx = MockResourceContext.getResourceContextWithUpstream(clientIp, upstreamIp);
-        assertNotNull(ctx);
+    final String clientIp = "127.0.0.1:10000";
+    final String upstreamIp = "192.168.1.1:10000";
+    final MockResourceContext ctx = MockResourceContext
+        .getResourceContextWithUpstream(clientIp, upstreamIp);
+    assertNotNull(ctx);
 
-        String ip = ResourceUtils.getRealClientIpAddr(ctx);
+    final String ip = ResourceUtils.getRealClientIpAddr(ctx);
 
-        assertEquals(ip, "192.168.1.1");
-    }
+    assertEquals(ip, "192.168.1.1");
+  }
 
-    @Test
-    public void testWhenXForwardedForHeaderMultipleUpstreamsUseHeader(){
+  @Test
+  public void testWhenXForwardedForHeaderMultipleUpstreamsUseHeader() {
 
-        String clientIp = "127.0.0.1:10000";
-        String upstreamIp = "192.168.1.1:10000";
-        MockResourceContext ctx = MockResourceContext.getResourceContextWithMultipleUpstreams(clientIp, upstreamIp);
-        assertNotNull(ctx);
+    final String clientIp = "127.0.0.1:10000";
+    final String upstreamIp = "192.168.1.1:10000";
+    final MockResourceContext ctx = MockResourceContext
+        .getResourceContextWithMultipleUpstreams(clientIp, upstreamIp);
+    assertNotNull(ctx);
 
-        String ip = ResourceUtils.getRealClientIpAddr(ctx);
+    final String ip = ResourceUtils.getRealClientIpAddr(ctx);
 
-        assertEquals(ip, "192.168.1.1");
-    }
+    assertEquals(ip, "192.168.1.1");
+  }
 }

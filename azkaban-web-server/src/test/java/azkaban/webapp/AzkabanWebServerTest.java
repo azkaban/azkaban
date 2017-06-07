@@ -17,8 +17,13 @@
 
 package azkaban.webapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
+import static org.junit.Assert.assertNotNull;
+
 import azkaban.AzkabanCommonModule;
-import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.executor.Executor;
@@ -35,30 +40,26 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static azkaban.ServiceProvider.*;
-import static azkaban.executor.ExecutorManager.*;
-import static java.util.Objects.*;
-import static org.apache.commons.io.FileUtils.*;
-import static org.junit.Assert.*;
-
 
 public class AzkabanWebServerTest {
+
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
 
   private static final Props props = new Props();
 
   private static String getUserManagerXmlFile() {
-    URL resource = AzkabanWebServerTest.class.getClassLoader().getResource("azkaban-users.xml");
+    final URL resource = AzkabanWebServerTest.class.getClassLoader()
+        .getResource("azkaban-users.xml");
     return requireNonNull(resource).getPath();
   }
 
   private static String getSqlScriptsDir() throws IOException {
     // Dummy because any resource file works.
     final String dummyResourcePath = getUserManagerXmlFile();
-    Path resources = Paths.get(dummyResourcePath).getParent();
-    Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
+    final Path resources = Paths.get(dummyResourcePath).getParent();
+    final Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
 
-    File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
+    final File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
     return sqlScriptDir.getCanonicalPath();
   }
 
@@ -66,7 +67,7 @@ public class AzkabanWebServerTest {
   public static void setUp() throws Exception {
     tearDown();
 
-    String sqlScriptsDir = getSqlScriptsDir();
+    final String sqlScriptsDir = getSqlScriptsDir();
     props.put(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptsDir);
 
     props.put("database.type", "h2");
@@ -95,17 +96,17 @@ public class AzkabanWebServerTest {
 
   @Test
   public void testInjection() throws Exception {
-    Injector injector = Guice.createInjector(
+    final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
 
-    ExecutorLoader executorLoader = injector.getInstance(ExecutorLoader.class);
+    final ExecutorLoader executorLoader = injector.getInstance(ExecutorLoader.class);
     assertNotNull(executorLoader);
 
-    Executor executor = executorLoader.addExecutor("localhost", 60000);
+    final Executor executor = executorLoader.addExecutor("localhost", 60000);
     executor.setActive(true);
     executorLoader.updateExecutor(executor);
 

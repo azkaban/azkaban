@@ -18,10 +18,8 @@ package azkaban.webapp;
 
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
-
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -41,10 +39,10 @@ public enum WebMetrics {
   private final AtomicLong logFetchLatency = new AtomicLong(0L);
 
   WebMetrics() {
-    registry = MetricsManager.INSTANCE.getRegistry();
-    webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
-    webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
-    MetricsUtility.addGauge("fetchLogLatency", registry, logFetchLatency::get);
+    this.registry = MetricsManager.INSTANCE.getRegistry();
+    this.webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", this.registry);
+    this.webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", this.registry);
+    MetricsUtility.addGauge("fetchLogLatency", this.registry, this.logFetchLatency::get);
   }
 
   public void markWebGetCall() {
@@ -55,15 +53,15 @@ public enum WebMetrics {
      * 1). drop wizard metrics deals with concurrency internally;
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
-    webGetCall.mark();
+    this.webGetCall.mark();
   }
 
   public void markWebPostCall() {
 
-    webPostCall.mark();
+    this.webPostCall.mark();
   }
 
-  public void setFetchLogLatency(long milliseconds) {
-    logFetchLatency.set(milliseconds);
+  public void setFetchLogLatency(final long milliseconds) {
+    this.logFetchLatency.set(milliseconds);
   }
 }

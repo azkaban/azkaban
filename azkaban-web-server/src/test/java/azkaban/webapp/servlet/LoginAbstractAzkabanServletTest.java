@@ -17,177 +17,161 @@
 package azkaban.webapp.servlet;
 
 
-import azkaban.fixture.MockLoginAzkabanServlet;
-import azkaban.server.session.Session;
-import azkaban.server.session.SessionCache;
-import org.junit.Test;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
-
-import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.fixture.MockLoginAzkabanServlet;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.junit.Test;
+
 public class LoginAbstractAzkabanServletTest {
 
-    private HttpServletResponse getResponse(StringWriter stringWriter){
-        HttpServletResponse resp = mock(HttpServletResponse.class);
-        PrintWriter writer = new PrintWriter(stringWriter);
+  private HttpServletResponse getResponse(final StringWriter stringWriter) {
+    final HttpServletResponse resp = mock(HttpServletResponse.class);
+    final PrintWriter writer = new PrintWriter(stringWriter);
 
-        try{
-            when(resp.getWriter()).thenReturn(writer);
-        }
-        catch(IOException ex){
-            System.out.println(ex);
-        }
-
-        return resp;
+    try {
+      when(resp.getWriter()).thenReturn(writer);
+    } catch (final IOException ex) {
+      System.out.println(ex);
     }
 
-    @Test
-    public void testWhenGetRequestSessionIsValid() throws Exception, IOException, ServletException {
+    return resp;
+  }
 
-        String clientIp = "127.0.0.1:10000";
-        String sessionId = "111";
+  @Test
+  public void testWhenGetRequestSessionIsValid() throws Exception, IOException, ServletException {
 
+    final String clientIp = "127.0.0.1:10000";
+    final String sessionId = "111";
 
-        HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithNoUpstream(clientIp, sessionId, "GET");
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithNoUpstream(clientIp, sessionId, "GET");
 
-        StringWriter writer = new StringWriter();
-        HttpServletResponse resp = getResponse(writer);
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
 
-        MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
-                "user", "127.0.0.1");
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "127.0.0.1");
 
-        servlet.doGet(req, resp);
+    servlet.doGet(req, resp);
 
-        // Assert that our response was written (we have a valid session)
-        assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
-    }
+    // Assert that our response was written (we have a valid session)
+    assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
 
-    @Test
-    public void testWhenPostRequestSessionIsValid() throws Exception{
+  @Test
+  public void testWhenPostRequestSessionIsValid() throws Exception {
 
-        String clientIp = "127.0.0.1:10000";
-        String sessionId = "111";
+    final String clientIp = "127.0.0.1:10000";
+    final String sessionId = "111";
 
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithNoUpstream(clientIp, sessionId, "POST");
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
 
-        HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithNoUpstream(clientIp, sessionId, "POST");
-        StringWriter writer = new StringWriter();
-        HttpServletResponse resp = getResponse(writer);
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "127.0.0.1");
 
-        MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
-                "user", "127.0.0.1");
+    servlet.doPost(req, resp);
 
+    // Assert that our response was written (we have a valid session)
+    assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
 
-        servlet.doPost(req, resp);
+  @Test
+  public void testWhenPostRequestChangedClientIpSessionIsInvalid() throws Exception {
 
-        // Assert that our response was written (we have a valid session)
-        assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
-    }
+    final String clientIp = "127.0.0.2:10000";
+    final String sessionId = "111";
 
-    @Test
-    public void testWhenPostRequestChangedClientIpSessionIsInvalid() throws Exception{
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithNoUpstream(clientIp, sessionId, "POST");
 
-        String clientIp = "127.0.0.2:10000";
-        String sessionId = "111";
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
 
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "127.0.0.1");
 
-        HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithNoUpstream(clientIp, sessionId, "POST");
+    servlet.doPost(req, resp);
 
-        StringWriter writer = new StringWriter();
-        HttpServletResponse resp = getResponse(writer);
+    // Assert that our response was written (we have a valid session)
+    assertNotSame("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
 
+  @Test
+  public void testWhenPostRequestChangedClientPortSessionIsValid() throws Exception {
 
-        MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
-                "user", "127.0.0.1");
+    final String clientIp = "127.0.0.1:10000";
+    final String sessionId = "111";
 
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithNoUpstream(clientIp, sessionId, "POST");
 
-        servlet.doPost(req, resp);
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
 
-        // Assert that our response was written (we have a valid session)
-        assertNotSame("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
-    }
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "127.0.0.1");
 
-    @Test
-    public void testWhenPostRequestChangedClientPortSessionIsValid() throws Exception{
+    servlet.doPost(req, resp);
 
-        String clientIp = "127.0.0.1:10000";
-        String sessionId = "111";
+    // Assert that our response was written (we have a valid session)
+    assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
 
+  @Test
+  public void testWhenPostRequestWithUpstreamSessionIsValid() throws Exception {
 
-        HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithNoUpstream(clientIp, sessionId, "POST");
+    final String clientIp = "127.0.0.1:10000";
+    final String upstreamIp = "192.168.1.1:11111";
+    final String sessionId = "111";
 
-        StringWriter writer = new StringWriter();
-        HttpServletResponse resp = getResponse(writer);
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithUpstream(clientIp, upstreamIp,
+            sessionId, "POST");
 
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
 
-        MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
-                "user", "127.0.0.1");
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "192.168.1.1");
 
+    servlet.doPost(req, resp);
 
-        servlet.doPost(req, resp);
+    // Assert that our response was written (we have a valid session)
+    assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
 
-        // Assert that our response was written (we have a valid session)
-        assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
-    }
+  @Test
+  public void testWhenPostRequestWithMultipleUpstreamsSessionIsValid() throws Exception {
 
-    @Test
-    public void testWhenPostRequestWithUpstreamSessionIsValid() throws Exception{
+    final String clientIp = "127.0.0.1:10000";
+    final String upstreamIp = "192.168.1.1:11111,888.8.8.8:2222,5.5.5.5:5555";
+    final String sessionId = "111";
 
-        String clientIp = "127.0.0.1:10000";
-        String upstreamIp = "192.168.1.1:11111";
-        String sessionId = "111";
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithUpstream(clientIp, upstreamIp,
+            sessionId, "POST");
 
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
 
-        HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithUpstream(clientIp, upstreamIp,
-                sessionId, "POST");
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "192.168.1.1");
 
-        StringWriter writer = new StringWriter();
-        HttpServletResponse resp = getResponse(writer);
+    servlet.doPost(req, resp);
 
-
-        MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
-                "user", "192.168.1.1");
-
-
-        servlet.doPost(req, resp);
-
-        // Assert that our response was written (we have a valid session)
-        assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
-    }
-
-    @Test
-    public void testWhenPostRequestWithMultipleUpstreamsSessionIsValid() throws Exception{
-
-        String clientIp = "127.0.0.1:10000";
-        String upstreamIp = "192.168.1.1:11111,888.8.8.8:2222,5.5.5.5:5555";
-        String sessionId = "111";
-
-
-        HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithUpstream(clientIp, upstreamIp,
-                sessionId, "POST");
-
-        StringWriter writer = new StringWriter();
-        HttpServletResponse resp = getResponse(writer);
-
-
-        MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
-                "user", "192.168.1.1");
-
-
-        servlet.doPost(req, resp);
-
-        // Assert that our response was written (we have a valid session)
-        assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
-    }
+    // Assert that our response was written (we have a valid session)
+    assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
 }

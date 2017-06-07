@@ -26,6 +26,7 @@ public class ExecutionFlowViewTest {
   /**
    * Test aims to check that the external analyzer button is displayed
    * in the page.
+   *
    * @throws Exception the exception
    */
   @Test

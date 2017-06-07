@@ -1034,8 +1034,11 @@ public class ExecutorManager extends EventHandler implements
           try {
             dispatch(reference, exflow, choosenExecutor);
           } catch (ExecutorManagerException e) {
-            executorLoader.removeActiveExecutableReference(reference
-              .getExecId());
+            // When flow dispatch fails, should update the flow status
+            // to FAILED in execution_flows DB table as well. Currently
+            // this logic is only implemented in multiExecutorMode but
+            // missed in single executor case.
+            finalizeFlows(exflow);
             throw e;
           }
         }

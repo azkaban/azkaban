@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -171,7 +172,9 @@ public class StorageManager {
     final byte[] hash = Md5Hasher.md5Hash(file);
     checkState(Arrays.equals(pfh.getMd5Hash(), hash),
         String.format("MD5 HASH Failed. project ID: %d version: %d Expected: %s Actual: %s",
-            pfh.getProjectId(), pfh.getVersion(), new String(pfh.getMd5Hash()), new String(hash))
+            pfh.getProjectId(), pfh.getVersion(),
+            new String(pfh.getMd5Hash(), StandardCharsets.UTF_8),
+            new String(hash, StandardCharsets.UTF_8))
     );
   }
 
