@@ -16,10 +16,13 @@
 
 package azkaban.webapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.google.inject.Inject;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -27,8 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * This singleton class WebMetrics is in charge of collecting varieties of metrics
  * from azkaban-web-server modules.
  */
-public enum WebMetrics {
-  INSTANCE;
+public class WebMetrics {
 
   private final MetricRegistry registry;
 
@@ -38,8 +40,9 @@ public enum WebMetrics {
   // How long does user log fetch take when user call fetch-log api.
   private final AtomicLong logFetchLatency = new AtomicLong(0L);
 
+  @Inject
   WebMetrics() {
-    this.registry = MetricsManager.INSTANCE.getRegistry();
+    this.registry = SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry();
     this.webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", this.registry);
     this.webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", this.registry);
     MetricsUtility.addGauge("fetchLogLatency", this.registry, this.logFetchLatency::get);

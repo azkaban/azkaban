@@ -16,29 +16,32 @@
 
 package azkaban.webapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.junit.Assert.assertEquals;
 
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsTestUtility;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
 public class WebMetricsTest {
 
-  private MetricsTestUtility testUtil;
-  private WebMetrics metrics;
+  private static MetricsTestUtility testUtil;
+  private static WebMetrics metrics;
 
-  @Before
-  public void setUp() {
-    // todo HappyRay: move MetricsManager, WebMetrics to use Juice.
-    this.testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
-    this.metrics = WebMetrics.INSTANCE;
+  @BeforeClass
+  public static void setUp() {
+    // initialize new guice MetricsManager
+    MetricsTestUtility.initServiceProvider();
+    testUtil = new MetricsTestUtility(
+        SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry());
+    metrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   }
 
   @Test
   public void testLogFetchLatencyMetrics() {
-    this.metrics.setFetchLogLatency(14);
-    assertEquals(14, this.testUtil.getGaugeValue("fetchLogLatency"));
+    metrics.setFetchLogLatency(14);
+    assertEquals(14, testUtil.getGaugeValue("fetchLogLatency"));
   }
 }

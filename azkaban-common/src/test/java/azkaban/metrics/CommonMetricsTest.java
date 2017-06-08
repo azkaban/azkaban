@@ -16,41 +16,39 @@
 
 package azkaban.metrics;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
 public class CommonMetricsTest {
 
-  private MetricsTestUtility testUtil;
-  private CommonMetrics metrics;
+  private static MetricsTestUtility testUtil;
+  private static CommonMetrics metrics;
 
-  @Before
-  public void setUp() {
-    // Use of global state can cause problems e.g.
-    // The state is shared among tests.
-    // e.g. we can't run a variant of the testOOMWaitingJobMetrics twice since it relies on the initial state of
-    // the registry.
-    // This can also cause problem when we run tests in parallel in the future.
-    // todo HappyRay: move MetricsManager, CommonMetrics to use Juice.
-    this.testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
-    this.metrics = CommonMetrics.INSTANCE;
+  @BeforeClass
+  public static void setUp() {
+    // initialize new guice MetricsManager
+    MetricsTestUtility.initServiceProvider();
+    testUtil = new MetricsTestUtility(
+        SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry());
+    metrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
   }
 
   @Test
   public void testDBConnectionTimeMetrics() {
-    this.metrics.setDBConnectionTime(14);
-    assertEquals(14, this.testUtil.getGaugeValue("dbConnectionTime"));
+    metrics.setDBConnectionTime(14);
+    assertEquals(14, testUtil.getGaugeValue("dbConnectionTime"));
   }
 
   @Test
   public void testOOMWaitingJobMetrics() {
     final String metricName = "OOM-waiting-job-count";
 
-    assertEquals(0, this.testUtil.getGaugeValue(metricName));
-    this.metrics.incrementOOMJobWaitCount();
-    assertEquals(1, this.testUtil.getGaugeValue(metricName));
+    assertEquals(0, testUtil.getGaugeValue(metricName));
+    metrics.incrementOOMJobWaitCount();
+    assertEquals(1, testUtil.getGaugeValue(metricName));
   }
 }

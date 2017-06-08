@@ -140,7 +140,7 @@ public class ProcessJob extends AbstractProcessJob {
         if (isMemGranted) {
           info(String.format("Memory granted for job %s", getId()));
           if (attempt > 1) {
-            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+            SERVICE_PROVIDER.getInstance(CommonMetrics.class).decrementOOMJobWaitCount();
           }
           break;
         }
@@ -150,7 +150,7 @@ public class ProcessJob extends AbstractProcessJob {
                   Constants.MEMORY_CHECK_INTERVAL_MS), attempt,
               Constants.MEMORY_CHECK_RETRY_LIMIT));
           if (attempt == 1) {
-            CommonMetrics.INSTANCE.incrementOOMJobWaitCount();
+            SERVICE_PROVIDER.getInstance(CommonMetrics.class).incrementOOMJobWaitCount();
           }
           synchronized (this) {
             try {
@@ -161,7 +161,7 @@ public class ProcessJob extends AbstractProcessJob {
             }
           }
           if (this.killed) {
-            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+            SERVICE_PROVIDER.getInstance(CommonMetrics.class).decrementOOMJobWaitCount();
             info(String.format("Job %s was killed while waiting for memory check retry", getId()));
             return;
           }
@@ -169,7 +169,7 @@ public class ProcessJob extends AbstractProcessJob {
       }
 
       if (!isMemGranted) {
-        CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+        SERVICE_PROVIDER.getInstance(CommonMetrics.class).decrementOOMJobWaitCount();
         handleError(oomMsg, null);
       }
     }

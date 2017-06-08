@@ -23,15 +23,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import azkaban.fixture.MockLoginAzkabanServlet;
+import azkaban.metrics.MetricsTestUtility;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.junit.Before;
 import org.junit.Test;
 
 public class LoginAbstractAzkabanServletTest {
+
+  @Before
+  public void setUp() {
+    // initialize new guice MetricsManager
+    MetricsTestUtility.initServiceProvider();
+  }
 
   private HttpServletResponse getResponse(final StringWriter stringWriter) {
     final HttpServletResponse resp = mock(HttpServletResponse.class);

@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.project.Project;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
@@ -99,7 +101,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
-    WebMetrics.INSTANCE.markWebGetCall();
+    SERVICE_PROVIDER.getInstance(WebMetrics.class).markWebGetCall();
     // Set session id
     final Session session = getSessionFromRequest(req);
     logRequest(req, session);
@@ -274,7 +276,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
-    WebMetrics.INSTANCE.markWebPostCall();
+    SERVICE_PROVIDER.getInstance(WebMetrics.class).markWebPostCall();
     logRequest(req, session);
 
     // Handle Multipart differently from other post messages

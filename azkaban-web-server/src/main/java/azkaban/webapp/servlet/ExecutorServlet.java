@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -517,7 +519,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
      * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
      * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
      */
-    WebMetrics.INSTANCE.setFetchLogLatency(System.currentTimeMillis() - startMs);
+    SERVICE_PROVIDER.getInstance(WebMetrics.class)
+        .setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**

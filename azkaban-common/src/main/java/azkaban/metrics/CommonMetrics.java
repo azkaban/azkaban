@@ -16,8 +16,11 @@
 
 package azkaban.metrics;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.google.inject.Inject;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -25,8 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * which are accessed in both web and exec modules. That said, these metrics will be
  * exposed in both Web server and executor.
  */
-public enum CommonMetrics {
-  INSTANCE;
+public class CommonMetrics {
 
   private final AtomicLong dbConnectionTime = new AtomicLong(0L);
   private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
@@ -34,8 +36,9 @@ public enum CommonMetrics {
   private Meter dbConnectionMeter;
   private Meter flowFailMeter;
 
+  @Inject
   CommonMetrics() {
-    this.registry = MetricsManager.INSTANCE.getRegistry();
+    this.registry = SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry();
     setupAllMetrics();
   }
 

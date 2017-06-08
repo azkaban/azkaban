@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FlowUtils;
@@ -1530,7 +1532,7 @@ public class ExecutorManager extends EventHandler implements
     Status newStatus = flow.getStatus();
 
     if(oldStatus != newStatus && newStatus == Status.FAILED) {
-      CommonMetrics.INSTANCE.markFlowFail();
+      SERVICE_PROVIDER.getInstance(CommonMetrics.class).markFlowFail();
     }
 
     ExecutionOptions options = flow.getExecutionOptions();

@@ -50,7 +50,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -276,7 +275,7 @@ public class AzkabanExecutorServer {
     ExecMetrics.INSTANCE.addFlowRunnerManagerMetrics(getFlowRunnerManager());
 
     logger.info("starting reporting Executor Metrics");
-    MetricsManager.INSTANCE.startReporting("AZ-EXEC", this.props);
+    SERVICE_PROVIDER.getInstance(MetricsManager.class).startReporting("AZ-EXEC", this.props);
   }
 
   private void insertExecutorEntryIntoDB() {

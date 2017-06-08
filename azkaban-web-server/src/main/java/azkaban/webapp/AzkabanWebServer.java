@@ -705,7 +705,8 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void startWebMetrics() throws Exception {
 
-    final MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
+    final MetricRegistry registry = SERVICE_PROVIDER.getInstance(MetricsManager.class)
+        .getRegistry();
 
     // The number of idle threads in Jetty thread pool
     MetricsUtility
@@ -732,7 +733,7 @@ public class AzkabanWebServer extends AzkabanServer {
             () -> this.executorManager.getRunningFlows().size());
 
     logger.info("starting reporting Web Server Metrics");
-    MetricsManager.INSTANCE.startReporting("AZ-WEB", this.props);
+    SERVICE_PROVIDER.getInstance(MetricsManager.class).startReporting("AZ-WEB", this.props);
   }
 
   private UserManager loadUserManager(final Props props) {
