@@ -58,7 +58,6 @@ import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
-import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
@@ -1334,14 +1333,6 @@ public class ExecutorManager extends EventHandler implements
                     }
                   }
                 }
-              }
-            }
-
-            for (ExecutableFlow flow : finishedFlows) {
-              if (flow.getScheduleId() >= 0
-                  && flow.getStatus() == Status.SUCCEEDED) {
-                ScheduleStatisticManager.invalidateCache(flow.getScheduleId(),
-                    cacheDir);
               }
             }
 
