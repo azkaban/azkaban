@@ -123,7 +123,7 @@ public class AzkabanCommonModule extends AbstractModule {
     final String password = props.getString("mysql.password");
     final int numConnections = props.getInt("mysql.numconnections");
 
-    return MySQLDataSource.getInstance(host, port, database, user, password, numConnections);
+    return new MySQLDataSource(host, port, database, user, password, numConnections);
   }
 
   @Inject
