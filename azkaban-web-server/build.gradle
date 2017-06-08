@@ -58,7 +58,6 @@ dependencies {
 
   testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
   testCompile('commons-collections:commons-collections:3.2.2')
-  testCompile('org.hamcrest:hamcrest-all:1.3')
 
   //AZ web module tests need to access classes defined in azkaban-common test module
   testCompile project(':azkaban-common').sourceSets.test.output
