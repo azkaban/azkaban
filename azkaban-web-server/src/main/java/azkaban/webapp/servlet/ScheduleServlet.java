@@ -40,7 +40,6 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.SplitterOutputStream;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
-import azkaban.webapp.SchedulerStatistics;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -89,8 +88,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
-    } else if (hasParam(req, "calendar")) {
-      handleGetScheduleCalendar(req, resp, session);
     } else {
       handleGetAllSchedules(req, resp, session);
     }
@@ -106,11 +103,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ajaxSlaInfo(req, ret, session.getUser());
     } else if (ajaxName.equals("setSla")) {
       ajaxSetSla(req, ret, session.getUser());
-    } else if (ajaxName.equals("loadFlow")) {
-      ajaxLoadFlows(req, ret, session.getUser());
-    } else if (ajaxName.equals("loadHistory")) {
-      ajaxLoadHistory(req, resp, session.getUser());
-      ret = null;
     } else if (ajaxName.equals("scheduleFlow")) {
       ajaxScheduleFlow(req, ret, session.getUser());
     } else if (ajaxName.equals("scheduleCronFlow")) {
@@ -373,24 +365,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleGetScheduleCalendar(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
-
-    final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/scheduledflowcalendarpage.vm");
-
-    final List<Schedule> schedules;
-    try {
-      schedules = this.scheduleManager.getSchedules();
-    } catch (final ScheduleManagerException e) {
-      throw new ServletException(e);
-    }
-    page.add("schedules", schedules);
-    page.render();
-  }
-
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
@@ -417,175 +391,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
       this.writeJSON(resp, ret);
     }
-  }
-
-  private void ajaxLoadFlows(final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws ServletException {
-    final List<Schedule> schedules;
-    try {
-      schedules = this.scheduleManager.getSchedules();
-    } catch (final ScheduleManagerException e) {
-      throw new ServletException(e);
-    }
-    // See if anything is scheduled
-    if (schedules.size() <= 0) {
-      return;
-    }
-
-    final List<HashMap<String, Object>> output =
-        new ArrayList<>();
-    ret.put("items", output);
-
-    for (final Schedule schedule : schedules) {
-      try {
-        writeScheduleData(output, schedule);
-      } catch (final ScheduleManagerException e) {
-        throw new ServletException(e);
-      }
-    }
-  }
-
-  private void writeScheduleData(final List<HashMap<String, Object>> output,
-      final Schedule schedule) throws ScheduleManagerException {
-    final Map<String, Object> stats =
-        SchedulerStatistics.getStatistics(schedule.getScheduleId(),
-            (AzkabanWebServer) getApplication());
-    final HashMap<String, Object> data = new HashMap<>();
-    data.put("scheduleid", schedule.getScheduleId());
-    data.put("flowname", schedule.getFlowName());
-    data.put("projectname", schedule.getProjectName());
-    data.put("time", schedule.getFirstSchedTime());
-    data.put("cron", schedule.getCronExpression());
-
-    final DateTime time = DateTime.now();
-    long period = 0;
-    if (schedule.getPeriod() != null) {
-      period = time.plus(schedule.getPeriod()).getMillis() - time.getMillis();
-    }
-    data.put("period", period);
-    int length = 3600 * 1000;
-    if (stats.get("average") != null && stats.get("average") instanceof Integer) {
-      length = (int) (Integer) stats.get("average");
-      if (length == 0) {
-        length = 3600 * 1000;
-      }
-    }
-    data.put("length", length);
-    data.put("history", false);
-    data.put("stats", stats);
-    output.add(data);
-  }
-
-  private void ajaxLoadHistory(final HttpServletRequest req,
-      final HttpServletResponse resp, final User user) throws ServletException, IOException {
-    resp.setContentType(JSON_MIME_TYPE);
-    final long today = DateTime.now().withTime(0, 0, 0, 0).getMillis();
-    long startTime = getLongParam(req, "startTime");
-    final DateTime start = new DateTime(startTime);
-    // Ensure start time is 12:00 AM
-    startTime = start.withTime(0, 0, 0, 0).getMillis();
-    boolean useCache = false;
-    if (startTime < today) {
-      useCache = true;
-    }
-    final long endTime = startTime + 24 * 3600 * 1000;
-    final int loadAll = getIntParam(req, "loadAll");
-
-    // Cache file
-    final String cacheDir =
-        getApplication().getServerProps().getString("cache.directory", "cache");
-    final File cacheDirFile = new File(cacheDir, "schedule-history");
-    final File cache = new File(cacheDirFile, startTime + ".cache");
-    cache.getParentFile().mkdirs();
-
-    if (useCache) {
-      // Determine if cache exists
-      boolean cacheExists = false;
-      synchronized (this) {
-        cacheExists = cache.exists() && cache.isFile();
-      }
-      if (cacheExists) {
-        // Send the cache instead
-        final InputStream cacheInput =
-            new BufferedInputStream(new FileInputStream(cache));
-        try {
-          IOUtils.copy(cacheInput, resp.getOutputStream());
-          return;
-        } finally {
-          IOUtils.closeQuietly(cacheInput);
-        }
-      }
-    }
-
-    // Load data if not cached
-    List<ExecutableFlow> history = null;
-    try {
-      final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-      final ExecutorManagerAdapter executorManager = server.getExecutorManager();
-      history =
-          executorManager.getExecutableFlows(null, null, null, 0, startTime,
-              endTime, -1, -1);
-    } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
-    }
-
-    final HashMap<String, Object> ret = new HashMap<>();
-    final List<HashMap<String, Object>> output =
-        new ArrayList<>();
-    ret.put("items", output);
-    for (final ExecutableFlow historyItem : history) {
-      // Check if it is an scheduled execution
-      if (historyItem.getScheduleId() >= 0 || loadAll != 0) {
-        writeHistoryData(output, historyItem);
-      }
-    }
-
-    // Make sure we're ready to cache it, otherwise output and return
-    synchronized (this) {
-      if (!useCache || cache.exists()) {
-        JSONUtils.toJSON(ret, resp.getOutputStream(), false);
-        return;
-      }
-    }
-
-    // Create cache file
-    final File cacheTemp = new File(cacheDirFile, startTime + ".tmp");
-    cacheTemp.createNewFile();
-    final OutputStream cacheOutput =
-        new BufferedOutputStream(new FileOutputStream(cacheTemp));
-    try {
-      final OutputStream outputStream =
-          new SplitterOutputStream(cacheOutput, resp.getOutputStream());
-      // Write to both the cache file and web output
-      JSONUtils.toJSON(ret, outputStream, false);
-    } finally {
-      IOUtils.closeQuietly(cacheOutput);
-    }
-    // Move cache file
-    synchronized (this) {
-      cacheTemp.renameTo(cache);
-    }
-  }
-
-  private void writeHistoryData(final List<HashMap<String, Object>> output,
-      final ExecutableFlow history) {
-    final HashMap<String, Object> data = new HashMap<>();
-
-    data.put("scheduleid", history.getScheduleId());
-    final Project project = this.projectManager.getProject(history.getProjectId());
-    data.put("flowname", history.getFlowId());
-    data.put("projectname", project.getName());
-    data.put("time", history.getStartTime());
-    data.put("period", "0");
-    long endTime = history.getEndTime();
-    if (endTime == -1) {
-      endTime = System.currentTimeMillis();
-    }
-    data.put("length", endTime - history.getStartTime());
-    data.put("history", true);
-    data.put("status", history.getStatus().getNumVal());
-
-    output.add(data);
   }
 
   private void ajaxRemoveSched(final HttpServletRequest req, final Map<String, Object> ret,
