@@ -17,6 +17,12 @@ public class ExecutionFlowViewTest {
           + "class=\"btn btn-info btn-sm\" type=\"button\" target=\"_blank\" "
           + "title=\"Analyze job in Dr. Elephant\">Dr. Elephant</a></li>";
 
+  private static boolean ignoreCaseContains(final String source, final String target) {
+    final String sourceNoSpace = source.replaceAll("\\s+", "");
+    final String targetNoSpace = target.replaceAll("\\s+", "");
+    return sourceNoSpace.contains(targetNoSpace);
+  }
+
   /**
    * Test aims to check that the external analyzer button is displayed
    * in the page.
@@ -35,8 +41,7 @@ public class ExecutionFlowViewTest {
     context.put("flowid", 27);
 
     final String result =
-        VelocityTemplateTestUtil.renderTemplate("executingflowpage", context)
-            .replaceAll("\\s+", "");
-    assertTrue(result.contains(EXTERNAL_ANALYZER_ELEMENT.replaceAll("\\s+", "")));
+        VelocityTemplateTestUtil.renderTemplate("executingflowpage", context);
+    assertTrue(ignoreCaseContains(result, EXTERNAL_ANALYZER_ELEMENT));
   }
 }

@@ -49,8 +49,7 @@ public class UserManagerResource extends ResourceContextHolder {
 
     final Session session = createSession(username, password, ip);
 
-    logger.info("Session id " + session.getSessionId() + " created for user '"
-        + username + "' and ip " + ip);
+    logger.info("Session id created for user '" + username + "' and ip " + ip);
     return session.getSessionId();
   }
 

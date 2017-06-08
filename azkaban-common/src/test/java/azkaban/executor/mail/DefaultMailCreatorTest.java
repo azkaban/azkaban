@@ -1,5 +1,6 @@
 package azkaban.executor.mail;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -96,8 +97,7 @@ public class DefaultMailCreatorTest {
         this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has failed on unit-tests", this.message.getSubject());
-    assertEquals(read("errorEmail.html").replaceAll("\\s+", ""),
-        this.message.getBody().replaceAll("\\s+", ""));
+    assertThat(read("errorEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
@@ -109,8 +109,7 @@ public class DefaultMailCreatorTest {
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests",
         this.message.getSubject());
-    assertEquals(read("firstErrorMessage.html").replaceAll("\\s+", ""),
-        this.message.getBody().replaceAll("\\s+", ""));
+    assertThat(read("firstErrorMessage.html")).isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
@@ -122,8 +121,7 @@ public class DefaultMailCreatorTest {
         this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", this.message.getSubject());
-    assertEquals(read("successEmail.html").replaceAll("\\s+", ""),
-        this.message.getBody().replaceAll("\\s+", ""));
+    assertThat(read("successEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   private String read(final String file) throws Exception {
