@@ -26,7 +26,6 @@ import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -106,12 +105,12 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       final String begin = getParam(req, "begin");
 
       final long beginTime =
-          Objects.equals(begin, "") ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+          "".equals(begin) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(begin).getMillis();
       final String end = getParam(req, "end");
 
       final long endTime =
-          Objects.equals(end, "") ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+          "".equals(end) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(end).getMillis();
       try {
         history =
