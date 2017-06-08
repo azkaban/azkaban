@@ -56,7 +56,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       @ActionParam("packageUrl") final String packageUrl)
       throws ProjectManagerException, RestLiServiceException, UserManagerException,
       ServletException, IOException {
-    logger.info("Deploy called. {ProjectName: " + projectName + ", packageUrl:" + packageUrl + "}");
+    logger.info("Deploy called. {projectName: " + projectName + ", packageUrl:" + packageUrl + "}");
 
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
     final User user = ResourceUtils.getUserFromSessionId(sessionId, ip);
