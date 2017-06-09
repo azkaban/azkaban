@@ -193,8 +193,6 @@ public class FlowRunner extends EventHandler implements Runnable {
       setupFlowExecution();
       this.flow.setStartTime(System.currentTimeMillis());
 
-      updateFlowReference();
-
       this.logger.info("Updating initial flow directory.");
       updateFlow();
       this.logger.info("Fetching job and shared properties.");
@@ -271,15 +269,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     // The current thread is used for interrupting blocks
     this.flowRunnerThread = Thread.currentThread();
     this.flowRunnerThread.setName("FlowRunner-exec-" + this.flow.getExecutionId());
-  }
-
-  private void updateFlowReference() throws ExecutorManagerException {
-    this.logger.info("Update active reference");
-    if (!this.executorLoader.updateExecutableReference(this.execId,
-        System.currentTimeMillis())) {
-      throw new ExecutorManagerException(
-          "The executor reference doesn't exist. May have been killed prematurely.");
-    }
   }
 
   private void updateFlow() {
