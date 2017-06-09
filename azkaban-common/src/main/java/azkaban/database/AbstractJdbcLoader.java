@@ -22,6 +22,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.Connection;
+import javax.inject.Inject;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 
@@ -29,14 +30,17 @@ import org.apache.commons.dbutils.QueryRunner;
 public abstract class AbstractJdbcLoader {
 
   private final AzkabanDataSource dataSource;
+  private final CommonMetrics commonMetrics;
 
-  public AbstractJdbcLoader(final Props props) {
+  @Inject
+  public AbstractJdbcLoader(final Props props, final CommonMetrics commonMetrics) {
     this.dataSource = DataSourceUtils.getDataSource(props);
+    this.commonMetrics = commonMetrics;
   }
 
   protected Connection getDBConnection(final boolean autoCommit) throws IOException {
     Connection connection = null;
-    SERVICE_PROVIDER.getInstance(CommonMetrics.class).markDBConnection();
+    this.commonMetrics.markDBConnection();
     final long startMs = System.currentTimeMillis();
     try {
       connection = this.dataSource.getConnection();

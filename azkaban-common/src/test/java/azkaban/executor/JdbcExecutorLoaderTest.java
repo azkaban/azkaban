@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.metrics.CommonMetrics;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -1055,7 +1056,7 @@ public class JdbcExecutorLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcExecutorLoader(props);
+    return new JdbcExecutorLoader(props, new CommonMetrics());
   }
 
   private boolean isTestSetup() {

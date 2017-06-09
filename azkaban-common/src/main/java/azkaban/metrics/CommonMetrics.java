@@ -37,7 +37,7 @@ public class CommonMetrics {
   private Meter flowFailMeter;
 
   @Inject
-  CommonMetrics() {
+  public CommonMetrics() {
     this.registry = SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry();
     setupAllMetrics();
   }

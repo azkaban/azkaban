@@ -20,6 +20,7 @@ import azkaban.database.DataSourceUtils;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -653,7 +654,7 @@ public class JdbcProjectLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcProjectLoader(props);
+    return new JdbcProjectLoader(props, new CommonMetrics());
   }
 
   private boolean isTestSetup() {
