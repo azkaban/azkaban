@@ -39,14 +39,15 @@ import org.apache.log4j.Logger;
 public class MetricsManager {
 
   private static final Logger logger = Logger.getLogger(MetricsManager.class);
-  private final MetricRegistry registry = new MetricRegistry();
+  private final MetricRegistry registry;
   private ConsoleReporter consoleReporter = null;
 
   /**
    * Constructor is eaagerly called when this class is loaded.
    */
   @Inject
-  public MetricsManager() {
+  public MetricsManager(MetricRegistry registry) {
+    this.registry = registry;
     this.registry.register("MEMORY_Gauge", new MemoryUsageGaugeSet());
     this.registry.register("GC_Gauge", new GarbageCollectorMetricSet());
     this.registry.register("Thread_State_Gauge", new ThreadStatesGaugeSet());

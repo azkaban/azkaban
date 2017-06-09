@@ -21,12 +21,14 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -654,7 +656,7 @@ public class JdbcProjectLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcProjectLoader(props, new CommonMetrics());
+    return new JdbcProjectLoader(props, new CommonMetrics(new MetricsManager(new MetricRegistry())));
   }
 
   private boolean isTestSetup() {

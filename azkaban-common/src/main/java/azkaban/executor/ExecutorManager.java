@@ -16,8 +16,6 @@
 
 package azkaban.executor;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FlowUtils;
@@ -121,15 +119,18 @@ public class ExecutorManager extends EventHandler implements
   File cacheDir;
 
   private final Props azkProps;
+  private final CommonMetrics commonMetrics;
   private List<String> filterList;
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
   private ExecutorService executorInforRefresherService;
 
   @Inject
-  public ExecutorManager(Props azkProps, ExecutorLoader loader, AlerterHolder alerterHolder) throws ExecutorManagerException {
+  public ExecutorManager(Props azkProps, ExecutorLoader loader, AlerterHolder alerterHolder,
+      CommonMetrics commonMetrics) throws ExecutorManagerException {
     this.alerterHolder = alerterHolder;
     this.azkProps = azkProps;
+    this.commonMetrics = commonMetrics;
     this.executorLoader = loader;
     this.setupExecutors();
     this.loadRunningFlows();
@@ -1532,7 +1533,7 @@ public class ExecutorManager extends EventHandler implements
     Status newStatus = flow.getStatus();
 
     if(oldStatus != newStatus && newStatus == Status.FAILED) {
-      SERVICE_PROVIDER.getInstance(CommonMetrics.class).markFlowFail();
+      commonMetrics.markFlowFail();
     }
 
     ExecutionOptions options = flow.getExecutionOptions();
