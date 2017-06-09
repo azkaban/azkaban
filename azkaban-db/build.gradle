@@ -25,7 +25,6 @@ dependencies {
     compile('commons-dbutils:commons-dbutils:1.5')
     compile('org.apache.commons:commons-dbcp2:2.1.1')
 
-    testCompile('org.mockito:mockito-all:1.10.19')
     testRuntime('com.h2database:h2:1.4.193')
 }
 
