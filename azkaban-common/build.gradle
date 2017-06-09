@@ -66,9 +66,7 @@ dependencies {
     compile('io.dropwizard.metrics:metrics-core:3.1.0')
     compile('io.dropwizard.metrics:metrics-jvm:3.1.0')
 
-    testCompile('org.mockito:mockito-all:1.10.19')
     testCompile(project(':azkaban-test').sourceSets.test.output)
-    testCompile('org.assertj:assertj-core:3.8.0')
 
     testRuntime('com.h2database:h2:1.4.193')
     testRuntime('org.slf4j:slf4j-log4j12:1.7.18')
