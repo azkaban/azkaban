@@ -28,7 +28,7 @@ import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import org.apache.log4j.Logger;
 
 /**
