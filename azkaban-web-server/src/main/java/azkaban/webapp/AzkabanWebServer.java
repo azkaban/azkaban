@@ -175,7 +175,7 @@ public class AzkabanWebServer extends AzkabanServer {
     this.projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
     this.triggerManager = SERVICE_PROVIDER.getInstance(TriggerManager.class);
     this.metricsManager = SERVICE_PROVIDER.getInstance(MetricsManager.class);
-    this.registry = new MetricRegistry();
+    this.registry = SERVICE_PROVIDER.getInstance(MetricRegistry.class);
 
     loadBuiltinCheckersAndActions();
 

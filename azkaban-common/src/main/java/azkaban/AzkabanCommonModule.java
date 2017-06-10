@@ -88,6 +88,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(AlerterHolder.class).in(Scopes.SINGLETON);
     bind(CommonMetrics.class).in(Scopes.SINGLETON);
     bind(MetricsManager.class).in(Scopes.SINGLETON);
+    bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -164,9 +165,4 @@ public class AzkabanCommonModule extends AbstractModule {
     return new QueryRunner(dataSource);
   }
 
-  @Provides
-  @Singleton
-  public MetricRegistry createMetricRegistry() {
-    return new MetricRegistry();
-  }
 }
