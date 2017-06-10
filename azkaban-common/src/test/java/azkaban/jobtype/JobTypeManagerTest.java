@@ -16,20 +16,15 @@
 
 package azkaban.jobtype;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.test.Utils.initServiceProvider;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import azkaban.jobExecutor.Job;
-import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
 import com.google.common.io.Resources;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -59,19 +54,8 @@ public class JobTypeManagerTest {
 
   @Before
   public void setUp() throws Exception {
-    // TODO: reallocf Remove injector creation/deletion when ProcessJob is fully guicified
-    final Props props = new Props();
-
-    final Injector injector = Guice.createInjector(new AbstractModule() {
-      @Override
-      protected void configure() {
-        bind(CommonMetrics.class).in(Scopes.SINGLETON);
-      }
-    });
-    // Because SERVICE_PROVIDER is a singleton and it is shared among many tests,
-    // need to reset the state to avoid assertion failures.
-    SERVICE_PROVIDER.unsetInjector();
-    SERVICE_PROVIDER.setInjector(injector);
+    // TODO: reallocf Remove initServiceProvider when ProcessJob fully guiced
+    initServiceProvider();
 
     final File jobTypeDir = this.temp.newFolder(TEST_PLUGIN_DIR);
     this.testPluginDirPath = jobTypeDir.getCanonicalPath();

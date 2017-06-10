@@ -17,18 +17,13 @@
 package azkaban.webapp.servlet;
 
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.test.Utils.initServiceProvider;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import azkaban.AzkabanCommonModule;
 import azkaban.fixture.MockLoginAzkabanServlet;
-import azkaban.utils.Props;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -42,19 +37,8 @@ public class LoginAbstractAzkabanServletTest {
 
   @Before
   public void setUp() {
-    // TODO: reallocf remove setUp() when LoginAbstractServlet fully guicified
-    final Props props = new Props();
-
-    final Injector injector = Guice.createInjector(new AbstractModule() {
-      @Override
-      protected void configure() {
-        new AzkabanCommonModule(props);
-      }
-    });
-    // Because SERVICE_PROVIDER is a singleton and it is shared among many tests,
-    // need to reset the state to avoid assertion failures.
-    SERVICE_PROVIDER.unsetInjector();
-    SERVICE_PROVIDER.setInjector(injector);
+    // TODO: reallocf remove setUp() when LoginAbstractServlet fully guiced
+    initServiceProvider();
   }
 
   private HttpServletResponse getResponse(final StringWriter stringWriter) {
