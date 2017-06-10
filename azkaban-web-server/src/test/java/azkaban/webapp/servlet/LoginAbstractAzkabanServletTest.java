@@ -42,6 +42,7 @@ public class LoginAbstractAzkabanServletTest {
 
   @Before
   public void setUp() {
+    // TODO: reallocf remove setUp() when LoginAbstractServlet fully guicified
     final Props props = new Props();
 
     final Injector injector = Guice.createInjector(new AbstractModule() {
