@@ -30,7 +30,7 @@ public class SystemMemoryInfo {
    * @return true if the system can satisfy the memory request
    *
    * Given Xmx value (in kb) used by java process, determine if system can satisfy the memory
-   * request
+   * request.
    */
   public boolean canSystemGrantMemory(final long xmx) {
     final long freeMemSize = this.util.getOsTotalFreeMemorySize();
@@ -41,7 +41,8 @@ public class SystemMemoryInfo {
     }
     if (freeMemSize - xmx < LOW_MEM_THRESHOLD) {
       logger.info(String.format(
-          "Free memory amount minus Xmx (%d - %d kb) is less than low mem threshold (%d kb),  memory request declined.",
+          "Free memory amount minus Xmx (%d - %d kb) is less than low mem threshold (%d kb), "
+              + "memory request declined.",
           freeMemSize, xmx, LOW_MEM_THRESHOLD));
       return false;
     }
