@@ -17,13 +17,18 @@
 package azkaban.webapp.servlet;
 
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.AzkabanCommonModule;
 import azkaban.fixture.MockLoginAzkabanServlet;
-import azkaban.metrics.MetricsTestUtility;
+import azkaban.utils.Props;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -37,8 +42,18 @@ public class LoginAbstractAzkabanServletTest {
 
   @Before
   public void setUp() {
-    // initialize new guice MetricsManager
-    MetricsTestUtility.initServiceProvider();
+    final Props props = new Props();
+
+    final Injector injector = Guice.createInjector(new AbstractModule() {
+      @Override
+      protected void configure() {
+        new AzkabanCommonModule(props);
+      }
+    });
+    // Because SERVICE_PROVIDER is a singleton and it is shared among many tests,
+    // need to reset the state to avoid assertion failures.
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(injector);
   }
 
   private HttpServletResponse getResponse(final StringWriter stringWriter) {

@@ -32,5 +32,6 @@ public class AzkabanWebServerModule extends AbstractModule {
   protected void configure() {
     bind(Server.class).toProvider(WebServerProvider.class);
     bind(AzkabanWebServer.class).in(Scopes.SINGLETON);
+    bind(WebMetrics.class).in(Scopes.SINGLETON);
   }
 }

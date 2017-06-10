@@ -16,39 +16,37 @@
 
 package azkaban.metrics;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.junit.Assert.assertEquals;
 
-import org.junit.BeforeClass;
+import com.codahale.metrics.MetricRegistry;
+import org.junit.Before;
 import org.junit.Test;
 
 
 public class CommonMetricsTest {
 
-  private static MetricsTestUtility testUtil;
-  private static CommonMetrics metrics;
+  private MetricsTestUtility testUtil;
+  private CommonMetrics metrics;
 
-  @BeforeClass
-  public static void setUp() {
-    // initialize new guice MetricsManager
-    MetricsTestUtility.initServiceProvider();
-    testUtil = new MetricsTestUtility(
-        SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry());
-    metrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
+  @Before
+  public void setUp() {
+    final MetricRegistry metricRegistry = new MetricRegistry();
+    this.testUtil = new MetricsTestUtility(metricRegistry);
+    this.metrics = new CommonMetrics(metricRegistry);
   }
 
   @Test
   public void testDBConnectionTimeMetrics() {
-    metrics.setDBConnectionTime(14);
-    assertEquals(14, testUtil.getGaugeValue("dbConnectionTime"));
+    this.metrics.setDBConnectionTime(14);
+    assertEquals(14, this.testUtil.getGaugeValue("dbConnectionTime"));
   }
 
   @Test
   public void testOOMWaitingJobMetrics() {
     final String metricName = "OOM-waiting-job-count";
 
-    assertEquals(0, testUtil.getGaugeValue(metricName));
-    metrics.incrementOOMJobWaitCount();
-    assertEquals(1, testUtil.getGaugeValue(metricName));
+    assertEquals(0, this.testUtil.getGaugeValue(metricName));
+    this.metrics.incrementOOMJobWaitCount();
+    assertEquals(1, this.testUtil.getGaugeValue(metricName));
   }
 }

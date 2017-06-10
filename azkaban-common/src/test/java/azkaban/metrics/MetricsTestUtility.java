@@ -16,13 +16,7 @@
 
 package azkaban.metrics;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import com.codahale.metrics.MetricRegistry;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
 
 
 /**
@@ -34,19 +28,6 @@ public class MetricsTestUtility {
 
   public MetricsTestUtility(final MetricRegistry registry) {
     this.registry = registry;
-  }
-
-  public static void initServiceProvider() {
-    final Injector injector = Guice.createInjector(new AbstractModule() {
-      @Override
-      protected void configure() {
-        bind(MetricsManager.class).in(Scopes.SINGLETON);
-      }
-    });
-    // Because SERVICE_PROVIDER is a singleton and it is shared among many tests,
-    // need to reset the state to avoid assertion failures.
-    SERVICE_PROVIDER.unsetInjector();
-    SERVICE_PROVIDER.setInjector(injector);
   }
 
   public long getGaugeValue(final String name) {

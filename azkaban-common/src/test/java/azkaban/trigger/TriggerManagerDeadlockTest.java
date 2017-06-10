@@ -49,7 +49,7 @@ public class TriggerManagerDeadlockTest {
     props.put("executor.port", 12321);
     this.execLoader = new MockExecutorLoader();
     final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        new AlerterHolder(props), new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new AlerterHolder(props), new CommonMetrics(new MetricRegistry()));
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 

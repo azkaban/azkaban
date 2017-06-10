@@ -1058,7 +1058,7 @@ public class JdbcExecutorLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcExecutorLoader(props, new CommonMetrics(new MetricsManager(new MetricRegistry())));
+    return new JdbcExecutorLoader(props, new CommonMetrics(new MetricRegistry()));
   }
 
   private boolean isTestSetup() {

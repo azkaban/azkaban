@@ -29,6 +29,7 @@ import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.AzkabanException;
@@ -38,6 +39,7 @@ import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
@@ -83,6 +85,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorManager.class).in(Scopes.SINGLETON);
     bind(AlerterHolder.class).in(Scopes.SINGLETON);
+    bind(CommonMetrics.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -157,5 +160,11 @@ public class AzkabanCommonModule extends AbstractModule {
   @Provides
   public QueryRunner createQueryRunner(final AzkabanDataSource dataSource) {
     return new QueryRunner(dataSource);
+  }
+
+  @Provides
+  @Singleton
+  public MetricRegistry createMetricRegistry() {
+    return new MetricRegistry();
   }
 }

@@ -656,7 +656,7 @@ public class JdbcProjectLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcProjectLoader(props, new CommonMetrics(new MetricsManager(new MetricRegistry())));
+    return new JdbcProjectLoader(props, new CommonMetrics(new MetricRegistry()));
   }
 
   private boolean isTestSetup() {

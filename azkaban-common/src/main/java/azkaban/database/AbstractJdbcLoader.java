@@ -16,13 +16,10 @@
 
 package azkaban.database;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.Connection;
-import javax.inject.Inject;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 
@@ -32,7 +29,6 @@ public abstract class AbstractJdbcLoader {
   private final AzkabanDataSource dataSource;
   private final CommonMetrics commonMetrics;
 
-  @Inject
   public AbstractJdbcLoader(final Props props, final CommonMetrics commonMetrics) {
     this.dataSource = DataSourceUtils.getDataSource(props);
     this.commonMetrics = commonMetrics;
@@ -49,8 +45,7 @@ public abstract class AbstractJdbcLoader {
       DbUtils.closeQuietly(connection);
       throw new IOException("Error getting DB connection.", e);
     }
-    SERVICE_PROVIDER.getInstance(CommonMetrics.class)
-        .setDBConnectionTime(System.currentTimeMillis() - startMs);
+    this.commonMetrics.setDBConnectionTime(System.currentTimeMillis() - startMs);
     return connection;
   }
 

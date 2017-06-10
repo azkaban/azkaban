@@ -16,8 +16,6 @@
 
 package azkaban.metrics;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
@@ -37,8 +35,8 @@ public class CommonMetrics {
   private Meter flowFailMeter;
 
   @Inject
-  public CommonMetrics(MetricsManager metricsManager) {
-    this.registry = metricsManager.getRegistry();
+  public CommonMetrics(final MetricRegistry metricsRegistry) {
+    this.registry = metricsRegistry;
     setupAllMetrics();
   }
 
