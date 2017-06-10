@@ -164,5 +164,4 @@ public class AzkabanCommonModule extends AbstractModule {
   public QueryRunner createQueryRunner(final AzkabanDataSource dataSource) {
     return new QueryRunner(dataSource);
   }
-
 }
