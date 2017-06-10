@@ -82,6 +82,9 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   private boolean shouldLogRawUserAgent = false;
 
+  // TODO: reallocf properly guicify WebMetrics
+  private WebMetrics webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
@@ -101,7 +104,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
-    SERVICE_PROVIDER.getInstance(WebMetrics.class).markWebGetCall();
+    webMetrics.markWebGetCall();
     // Set session id
     final Session session = getSessionFromRequest(req);
     logRequest(req, session);
@@ -276,7 +279,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
-    SERVICE_PROVIDER.getInstance(WebMetrics.class).markWebPostCall();
+    webMetrics.markWebPostCall();
     logRequest(req, session);
 
     // Handle Multipart differently from other post messages
