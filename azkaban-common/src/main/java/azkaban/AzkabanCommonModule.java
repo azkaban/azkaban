@@ -30,6 +30,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.AzkabanException;
@@ -86,6 +87,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ExecutorManager.class).in(Scopes.SINGLETON);
     bind(AlerterHolder.class).in(Scopes.SINGLETON);
     bind(CommonMetrics.class).in(Scopes.SINGLETON);
+    bind(MetricsManager.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {

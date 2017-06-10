@@ -22,7 +22,6 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.metrics.CommonMetrics;
-import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
