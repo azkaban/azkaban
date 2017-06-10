@@ -36,9 +36,25 @@ public interface DatabaseOperator {
    * @param params Initialize the PreparedStatement's IN parameters
    * @param <T> The type of object that the qeury handler returns
    * @return The object returned by the handler.
+   * @throws SQLException
    */
-  <T> T query(String sqlQuery, ResultSetHandler<T> resultHandler, Object... params)
-      throws SQLException;
+  <T> T query(String sqlQuery, ResultSetHandler<T> resultHandler, Object...params) throws SQLException;
+
+  /**
+   * Provide a way to allow users define custom SQL operations without relying on fixed
+   * SQL interface. The common use case is to group a sequence of SQL operations without
+   * commit every time.
+   *
+   * Rollback is always enforced if it encounters any database exception.
+   *
+   * @param operations A sequence of DB operations
+   * @param <T> The type of object that the operations returns. Note that T could be null
+   * @return T The object returned by the SQL statement, expected by the caller
+   * @throws SQLException
+   */
+  default <T> T transaction(final SQLTransaction<T> operations) throws SQLException {
+    return transaction(operations, true);
+  }
 
   /**
    * Provide a way to allow users define custom SQL operations without relying on fixed
@@ -46,10 +62,12 @@ public interface DatabaseOperator {
    * commit every time.
    *
    * @param operations A sequence of DB operations
+   * @param enableRollback decides if we want to roll back the transaction when sql exception is thrown.
    * @param <T> The type of object that the operations returns. Note that T could be null
    * @return T The object returned by the SQL statement, expected by the caller
+   * @throws SQLException
    */
-  <T> T transaction(SQLTransaction<T> operations) throws SQLException;
+  <T> T transaction(SQLTransaction<T> operations, boolean enableRollback) throws SQLException;
 
   /**
    * Executes the given AZ related INSERT, UPDATE, or DELETE SQL statement.
@@ -57,6 +75,12 @@ public interface DatabaseOperator {
    * @param updateClause sql statements to execute
    * @param params Initialize the PreparedStatement's IN parameters
    * @return The number of rows updated.
+   * @throws SQLException
    */
-  int update(String updateClause, Object... params) throws SQLException;
+  int update(String updateClause, Object...params) throws SQLException;
+
+  /**
+   * @return datasource wrapped in the database operator.
+   */
+  AzkabanDataSource getDataSource();
 }

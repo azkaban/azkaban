@@ -15,7 +15,7 @@
  */
 package azkaban.db;
 
-import static java.util.Objects.*;
+import static java.util.Objects.requireNonNull;
 
 import com.google.inject.Inject;
 import java.sql.Connection;
@@ -49,8 +49,7 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
    */
   @Override
   public <T> T query(final String baseQuery, final ResultSetHandler<T> resultHandler,
-      final Object... params)
-      throws SQLException {
+                     final Object...params) throws SQLException {
     try {
       return this.queryRunner.query(baseQuery, resultHandler, params);
     } catch (final SQLException ex) {
@@ -61,22 +60,30 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
   }
 
   /**
-   * transaction method Implementation.
+   * transaction method Implementation. We enforce connection rollback if SQL exception is encountered
+   * during transaction process.
    */
   @Override
-  public <T> T transaction(final SQLTransaction<T> operations) throws SQLException {
+  public <T> T transaction(final SQLTransaction<T> operations,
+                           final boolean enableRollback) throws SQLException {
     Connection conn = null;
     try {
       conn = this.queryRunner.getDataSource().getConnection();
       conn.setAutoCommit(false);
-      final DatabaseTransOperator transOperator = new DatabaseTransOperatorImpl(this.queryRunner,
-          conn);
+      final DatabaseTransOperator transOperator =
+          new DatabaseTransOperatorImpl(this.queryRunner, conn);
       final T res = operations.execute(transOperator);
       conn.commit();
       return res;
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("transaction failed", ex);
+      try {
+        if(enableRollback && conn != null)
+          conn.rollback();
+      } catch (final SQLException ex2) {
+        logger.error("connection rollback failed", ex2);
+      }
       throw ex;
     } finally {
       DbUtils.closeQuietly(conn);
@@ -92,7 +99,7 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
    * @return the number of rows being affected by update
    */
   @Override
-  public int update(final String updateClause, final Object... params) throws SQLException {
+  public int update(final String updateClause, final Object...params) throws SQLException {
     try {
       return this.queryRunner.update(updateClause, params);
     } catch (final SQLException ex) {
@@ -100,5 +107,10 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
       logger.error("update failed", ex);
       throw ex;
     }
+  }
+
+  @Override
+  public AzkabanDataSource getDataSource() {
+    return (AzkabanDataSource) this.queryRunner.getDataSource();
   }
 }
