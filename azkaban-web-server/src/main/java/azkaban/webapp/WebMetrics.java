@@ -20,6 +20,7 @@ import azkaban.metrics.MetricsUtility;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * This singleton class WebMetrics is in charge of collecting varieties of metrics
  * from azkaban-web-server modules.
  */
+@Singleton
 public class WebMetrics {
 
   private final MetricRegistry registry;
@@ -39,10 +41,6 @@ public class WebMetrics {
 
   @Inject
   WebMetrics(final MetricRegistry registry) {
-    // Add unit test coverage to guarantee no duplication
-    // Seeing this error after guicifying, but before binding as singleton in AzkabanWebServerModule:
-    // `Error injecting constructor, java.lang.IllegalArgumentException: A metric named Web-Get-Call-Meter-gauge already exists`
-    // when trying to log in
     this.registry = registry;
     this.webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", this.registry);
     this.webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", this.registry);

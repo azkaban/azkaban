@@ -19,6 +19,7 @@ package azkaban.metrics;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * which are accessed in both web and exec modules. That said, these metrics will be
  * exposed in both Web server and executor.
  */
+@Singleton
 public class CommonMetrics {
 
   private final AtomicLong dbConnectionTime = new AtomicLong(0L);
