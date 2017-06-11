@@ -27,14 +27,16 @@ import org.apache.commons.dbutils.QueryRunner;
 public abstract class AbstractJdbcLoader {
 
   private final AzkabanDataSource dataSource;
+  private final CommonMetrics commonMetrics;
 
-  public AbstractJdbcLoader(final Props props) {
+  public AbstractJdbcLoader(final Props props, final CommonMetrics commonMetrics) {
     this.dataSource = DataSourceUtils.getDataSource(props);
+    this.commonMetrics = commonMetrics;
   }
 
   protected Connection getDBConnection(final boolean autoCommit) throws IOException {
     Connection connection = null;
-    CommonMetrics.INSTANCE.markDBConnection();
+    this.commonMetrics.markDBConnection();
     final long startMs = System.currentTimeMillis();
     try {
       connection = this.dataSource.getConnection();
@@ -43,7 +45,7 @@ public abstract class AbstractJdbcLoader {
       DbUtils.closeQuietly(connection);
       throw new IOException("Error getting DB connection.", e);
     }
-    CommonMetrics.INSTANCE.setDBConnectionTime(System.currentTimeMillis() - startMs);
+    this.commonMetrics.setDBConnectionTime(System.currentTimeMillis() - startMs);
     return connection;
   }
 
