@@ -17,7 +17,6 @@
 
 package azkaban.execapp;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
@@ -87,9 +86,6 @@ public class AzkabanExecutorServerTest {
         new AzkabanCommonModule(props),
         new AzkabanExecServerModule()
     );
-    SERVICE_PROVIDER.unsetInjector();
-    SERVICE_PROVIDER.setInjector(injector);
 
-    assertNotNull(SERVICE_PROVIDER.getInstance(AzkabanExecutorServer.class));
   }
 }
