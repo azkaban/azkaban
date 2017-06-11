@@ -25,11 +25,11 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import com.google.inject.Inject;
 import org.apache.log4j.Logger;
 
 /**
