@@ -32,7 +32,7 @@ public enum ExecMetrics {
 
   ExecMetrics() {
     // TODO: reallocf make guicy
-    this.registry = SERVICE_PROVIDER.getInstance(MetricsManager.class).getRegistry();
+    this.registry = SERVICE_PROVIDER.getInstance(MetricRegistry.class);
     setupStaticMetrics();
   }
 
