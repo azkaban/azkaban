@@ -44,7 +44,6 @@ import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
-import com.google.common.base.Throwables;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -280,7 +279,7 @@ public class AzkabanExecutorServer {
     this.metricsManager.startReporting("AZ-EXEC", this.props);
   }
 
-  private void insertExecutorEntryIntoDB() {
+  private void insertExecutorEntryIntoDB() throws ExecutorManagerException {
     try {
       final String host = requireNonNull(getHost());
       final int port = getPort();
@@ -292,19 +291,19 @@ public class AzkabanExecutorServer {
       // If executor already exists, ignore it
     } catch (final ExecutorManagerException e) {
       logger.error("Error inserting executor entry into DB", e);
-      Throwables.propagate(e);
+      throw e;
     }
   }
 
-  private void dumpPortToFile() {
+  private void dumpPortToFile() throws IOException {
     // By default this should write to the working directory
     try (BufferedWriter writer = Files
         .newBufferedWriter(Paths.get(AZKABAN_EXECUTOR_PORT_FILENAME), StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(getPort()));
       writer.write("\n");
     } catch (final IOException e) {
-      logger.error(e);
-      Throwables.propagate(e);
+      logger.error("Failed to write the port number to a file", e);
+      throw e;
     }
   }
 
