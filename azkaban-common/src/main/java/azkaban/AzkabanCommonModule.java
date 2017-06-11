@@ -86,8 +86,6 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorManager.class).in(Scopes.SINGLETON);
     bind(AlerterHolder.class).in(Scopes.SINGLETON);
-    bind(CommonMetrics.class).in(Scopes.SINGLETON);
-    bind(MetricsManager.class).in(Scopes.SINGLETON);
     bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 
