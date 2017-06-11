@@ -17,7 +17,6 @@
 package azkaban.executor;
 
 import azkaban.metrics.CommonMetrics;
-import azkaban.metrics.MetricsManager;
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.util.Arrays;
