@@ -87,5 +87,6 @@ public class AzkabanExecutorServerTest {
         new AzkabanExecServerModule()
     );
 
+    assertNotNull(injector.getInstance(AzkabanExecutorServer.class));
   }
 }
