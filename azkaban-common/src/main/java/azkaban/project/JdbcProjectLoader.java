@@ -18,6 +18,7 @@ package azkaban.project;
 
 import azkaban.database.AbstractJdbcLoader;
 import azkaban.flow.Flow;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -64,8 +65,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  public JdbcProjectLoader(final Props props) {
-    super(props);
+  public JdbcProjectLoader(final Props props, final CommonMetrics commonMetrics) {
+    super(props, commonMetrics);
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
     if (!this.tempDir.exists()) {
       this.tempDir.mkdirs();
