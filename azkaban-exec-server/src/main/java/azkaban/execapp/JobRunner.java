@@ -762,7 +762,7 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setOutputProps(this.job.getJobGeneratedProperties());
     }
 
-    // If the job is still running, set the status to Success.
+    // If the job is still running (but not killed), set the status to Success.
     if (!Status.isStatusFinished(finalStatus) && finalStatus != Status.KILLING) {
       finalStatus = changeStatus(Status.SUCCEEDED);
     }
