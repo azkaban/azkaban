@@ -16,23 +16,22 @@
 
 package azkaban.execapp;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
-import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
 import com.codahale.metrics.MetricRegistry;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * This class ExecMetrics is in charge of collecting metrics from executors.
  */
-public enum ExecMetrics {
-  INSTANCE;
+@Singleton
+public class ExecMetrics {
 
   private final MetricRegistry registry;
 
-  ExecMetrics() {
-    // TODO: reallocf make guicy
-    this.registry = SERVICE_PROVIDER.getInstance(MetricRegistry.class);
+  @Inject
+  ExecMetrics(final MetricRegistry registry) {
+    this.registry = registry;
     setupStaticMetrics();
   }
 
