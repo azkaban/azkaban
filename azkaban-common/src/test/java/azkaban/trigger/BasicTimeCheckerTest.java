@@ -24,6 +24,7 @@ import azkaban.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.junit.Test;
@@ -40,43 +41,36 @@ public class BasicTimeCheckerTest {
     return new Condition(checkers, expr);
   }
 
+
+  /**
+   * This test manipulates global states (time) in org.joda.time.DateTimeUtils . Thus this test
+   * can run in parallel with tests that do the same.
+   */
   @Test
   public void periodTimerTest() {
 
     // get a new timechecker, start from now, repeat every minute. should
     // evaluate to false now, and true a minute later.
-    final DateTime now = DateTime.now();
+    final long baseTimeInMilliSeconds = 1000;
     final ReadablePeriod period = Utils.parsePeriodString("10s");
 
+    DateTimeUtils.setCurrentMillisFixed(baseTimeInMilliSeconds);
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
-            now.getZone(), true, true, period, null);
-
+        new BasicTimeChecker("BasicTimeChecket_1", baseTimeInMilliSeconds,
+            DateTimeZone.UTC, true, true, period, null);
     final Condition cond = getCondition(timeChecker);
-
     assertFalse(cond.isMet());
 
-    // sleep for 1 min
-    try {
-      Thread.sleep(10000);
-    } catch (final InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
+    DateTimeUtils.setCurrentMillisFixed(baseTimeInMilliSeconds + 11 * 1000);
     assertTrue(cond.isMet());
+
     cond.resetCheckers();
     assertFalse(cond.isMet());
 
-    // sleep for 1 min
-    try {
-      Thread.sleep(10000);
-    } catch (final InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
+    DateTimeUtils.setCurrentMillisFixed(baseTimeInMilliSeconds + 22 * 1000);
     assertTrue(cond.isMet());
+
+    DateTimeUtils.setCurrentMillisSystem();
   }
 
   /**
