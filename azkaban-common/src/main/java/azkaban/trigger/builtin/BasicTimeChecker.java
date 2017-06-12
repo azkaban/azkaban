@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.quartz.CronExpression;
@@ -131,7 +132,7 @@ public class BasicTimeChecker implements ConditionChecker {
 
   @Override
   public Boolean eval() {
-    return this.nextCheckTime < System.currentTimeMillis();
+    return this.nextCheckTime < DateTimeUtils.currentTimeMillis();
   }
 
   @Override

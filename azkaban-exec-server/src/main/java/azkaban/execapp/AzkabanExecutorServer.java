@@ -88,6 +88,7 @@ public class AzkabanExecutorServer {
 
   private final ExecutorLoader executionLoader;
   private final FlowRunnerManager runnerManager;
+  private final MetricsManager metricsManager;
   private final Props props;
   private final Server server;
 
@@ -97,10 +98,11 @@ public class AzkabanExecutorServer {
   @Inject
   public AzkabanExecutorServer(final Props props,
       final ExecutorLoader executionLoader,
-      final FlowRunnerManager runnerManager) throws Exception {
+      final FlowRunnerManager runnerManager, final MetricsManager metricsManager) throws Exception {
     this.props = props;
     this.executionLoader = executionLoader;
     this.runnerManager = runnerManager;
+    this.metricsManager = metricsManager;
 
     this.server = createJettyServer(props);
 
@@ -274,7 +276,7 @@ public class AzkabanExecutorServer {
     ExecMetrics.INSTANCE.addFlowRunnerManagerMetrics(getFlowRunnerManager());
 
     logger.info("starting reporting Executor Metrics");
-    MetricsManager.INSTANCE.startReporting("AZ-EXEC", this.props);
+    this.metricsManager.startReporting("AZ-EXEC", this.props);
   }
 
   private void insertExecutorEntryIntoDB() throws ExecutorManagerException {

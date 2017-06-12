@@ -16,6 +16,7 @@
 
 package azkaban.jobtype;
 
+import static azkaban.test.Utils.initServiceProvider;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -53,6 +54,9 @@ public class JobTypeManagerTest {
 
   @Before
   public void setUp() throws Exception {
+    // TODO: reallocf Remove initServiceProvider when ProcessJob fully guiced
+    initServiceProvider();
+
     final File jobTypeDir = this.temp.newFolder(TEST_PLUGIN_DIR);
     this.testPluginDirPath = jobTypeDir.getCanonicalPath();
 
