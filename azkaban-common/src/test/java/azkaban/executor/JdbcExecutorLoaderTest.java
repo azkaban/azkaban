@@ -55,7 +55,7 @@ public class JdbcExecutorLoaderTest {
   private static boolean testDBExists;
   /* Directory with serialized description of test flows */
   private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/azkaban/test/executions";
+    "../test/src/test/resources/azkaban/test/executions";
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;

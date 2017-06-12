@@ -53,7 +53,7 @@ import org.mockito.MockitoAnnotations;
 public class FlowRunnerTest extends FlowRunnerTestBase {
 
   private static final File TEST_DIR = new File(
-      "../azkaban-test/src/test/resources/azkaban/test/executions/exectest1");
+      "../test/src/test/resources/azkaban/test/executions/exectest1");
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
