@@ -76,4 +76,9 @@ public class MySQLDataSource extends AzkabanDataSource {
   public String getDBType() {
     return "mysql";
   }
+
+  @Override
+  public boolean allowsOnDuplicateKey() {
+    return true;
+  }
 }
