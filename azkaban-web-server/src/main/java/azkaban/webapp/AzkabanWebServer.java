@@ -143,6 +143,8 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
   private final ClassLoader baseClassLoader;
+  private final MetricRegistry registry;
+  private final MetricsManager metricsManager;
   private final Props props;
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
@@ -172,6 +174,8 @@ public class AzkabanWebServer extends AzkabanServer {
     this.executorManager = SERVICE_PROVIDER.getInstance(ExecutorManager.class);
     this.projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
     this.triggerManager = SERVICE_PROVIDER.getInstance(TriggerManager.class);
+    this.metricsManager = SERVICE_PROVIDER.getInstance(MetricsManager.class);
+    this.registry = SERVICE_PROVIDER.getInstance(MetricRegistry.class);
 
     loadBuiltinCheckersAndActions();
 
@@ -705,21 +709,21 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void startWebMetrics() throws Exception {
 
-    final MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
-
     // The number of idle threads in Jetty thread pool
     MetricsUtility
-        .addGauge("JETTY-NumIdleThreads", registry, this.queuedThreadPool::getIdleThreads);
+        .addGauge("JETTY-NumIdleThreads", this.registry, this.queuedThreadPool::getIdleThreads);
 
     // The number of threads in Jetty thread pool. The formula is:
     // threads = idleThreads + busyThreads
-    MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, this.queuedThreadPool::getThreads);
+    MetricsUtility
+        .addGauge("JETTY-NumTotalThreads", this.registry, this.queuedThreadPool::getThreads);
 
     // The number of requests queued in the Jetty thread pool.
-    MetricsUtility.addGauge("JETTY-NumQueueSize", registry, this.queuedThreadPool::getQueueSize);
+    MetricsUtility
+        .addGauge("JETTY-NumQueueSize", this.registry, this.queuedThreadPool::getQueueSize);
 
     MetricsUtility
-        .addGauge("WEB-NumQueuedFlows", registry, this.executorManager::getQueuedFlowSize);
+        .addGauge("WEB-NumQueuedFlows", this.registry, this.executorManager::getQueuedFlowSize);
     /**
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
      * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
@@ -728,11 +732,11 @@ public class AzkabanWebServer extends AzkabanServer {
      * a thread safe subtraction. We need to fix this in the future.
      */
     MetricsUtility
-        .addGauge("WEB-NumRunningFlows", registry,
+        .addGauge("WEB-NumRunningFlows", this.registry,
             () -> this.executorManager.getRunningFlows().size());
 
     logger.info("starting reporting Web Server Metrics");
-    MetricsManager.INSTANCE.startReporting("AZ-WEB", this.props);
+    this.metricsManager.startReporting("AZ-WEB", this.props);
   }
 
   private UserManager loadUserManager(final Props props) {

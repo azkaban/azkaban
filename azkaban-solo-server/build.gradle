@@ -1,3 +1,5 @@
+description = 'A test server which runs the web server and an executor in one process.'
+
 apply plugin: 'distribution'
 
 dependencies {

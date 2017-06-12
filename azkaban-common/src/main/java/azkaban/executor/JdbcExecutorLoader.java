@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.metrics.CommonMetrics;
 import com.google.inject.Inject;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -61,8 +62,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  public JdbcExecutorLoader(Props props) {
-    super(props);
+  public JdbcExecutorLoader(Props props, CommonMetrics commonMetrics) {
+    super(props, commonMetrics);
   }
 
   public EncodingType getDefaultEncodingType() {

@@ -24,8 +24,6 @@ import com.codahale.metrics.MetricRegistry;
  */
 public class MetricsTestUtility {
 
-  // todo HappyRay: move singletons to Juice.
-  // This can cause problems when we run tests in parallel in the future.
   private final MetricRegistry registry;
 
   public MetricsTestUtility(final MetricRegistry registry) {
