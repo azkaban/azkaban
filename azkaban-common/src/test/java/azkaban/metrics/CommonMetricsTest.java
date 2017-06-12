@@ -18,6 +18,7 @@ package azkaban.metrics;
 
 import static org.junit.Assert.assertEquals;
 
+import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,14 +30,9 @@ public class CommonMetricsTest {
 
   @Before
   public void setUp() {
-    // Use of global state can cause problems e.g.
-    // The state is shared among tests.
-    // e.g. we can't run a variant of the testOOMWaitingJobMetrics twice since it relies on the initial state of
-    // the registry.
-    // This can also cause problem when we run tests in parallel in the future.
-    // todo HappyRay: move MetricsManager, CommonMetrics to use Juice.
-    this.testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
-    this.metrics = CommonMetrics.INSTANCE;
+    final MetricRegistry metricRegistry = new MetricRegistry();
+    this.testUtil = new MetricsTestUtility(metricRegistry);
+    this.metrics = new CommonMetrics(metricRegistry);
   }
 
   @Test

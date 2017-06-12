@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
 import com.codahale.metrics.MetricRegistry;
@@ -29,7 +31,8 @@ public enum ExecMetrics {
   private final MetricRegistry registry;
 
   ExecMetrics() {
-    this.registry = MetricsManager.INSTANCE.getRegistry();
+    // TODO: reallocf make guicy
+    this.registry = SERVICE_PROVIDER.getInstance(MetricRegistry.class);
     setupStaticMetrics();
   }
 

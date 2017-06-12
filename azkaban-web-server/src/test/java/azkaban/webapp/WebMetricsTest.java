@@ -18,8 +18,8 @@ package azkaban.webapp;
 
 import static org.junit.Assert.assertEquals;
 
-import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsTestUtility;
+import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,9 +31,9 @@ public class WebMetricsTest {
 
   @Before
   public void setUp() {
-    // todo HappyRay: move MetricsManager, WebMetrics to use Juice.
-    this.testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
-    this.metrics = WebMetrics.INSTANCE;
+    final MetricRegistry metricRegistry = new MetricRegistry();
+    this.testUtil = new MetricsTestUtility(metricRegistry);
+    this.metrics = new WebMetrics(metricRegistry);
   }
 
   @Test
