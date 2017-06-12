@@ -31,4 +31,9 @@ public class H2FileDataSource extends AzkabanDataSource {
   public String getDBType() {
     return "h2";
   }
+
+  @Override
+  public boolean allowsOnDuplicateKey() {
+    return false;
+  }
 }
