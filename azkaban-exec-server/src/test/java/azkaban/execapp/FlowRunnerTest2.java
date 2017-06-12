@@ -96,7 +96,7 @@ import org.junit.Test;
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   private static final File TEST_DIR = new File(
-      "../azkaban-test/src/test/resources/azkaban/test/executions/embedded2");
+      "../test/src/test/resources/azkaban/test/executions/embedded2");
   private static int id = 101;
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
