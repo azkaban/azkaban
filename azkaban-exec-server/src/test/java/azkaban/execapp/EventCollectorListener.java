@@ -16,8 +16,7 @@
 
 package azkaban.execapp;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
@@ -37,7 +36,7 @@ public class EventCollectorListener implements EventListener {
   public void setEventFilterOut(final Event.Type... types) {
     this.filterOutTypes.addAll(Arrays.asList(types));
   }
-  
+
   @Override
   public void handleEvent(final Event event) {
     synchronized (handleEvent) {
@@ -64,10 +63,10 @@ public class EventCollectorListener implements EventListener {
   }
 
   public void assertEvents(final Type... expected) {
-    Object[] captured = this.eventList.stream()
+    final Object[] captured = this.eventList.stream()
         .filter(event -> event.getRunner() != null)
         .map(event -> event.getType())
         .toArray();
-    assertThat(captured, is(expected));
+    assertThat(captured).isEqualTo(expected);
   }
 }

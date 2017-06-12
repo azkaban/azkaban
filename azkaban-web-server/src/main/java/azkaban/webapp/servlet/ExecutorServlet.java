@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -66,6 +68,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final Logger LOGGER =
       Logger.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
+  private WebMetrics webMetrics;
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
@@ -81,6 +84,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     this.executorManager = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.velocityHelper = new ExecutorVelocityHelper();
+    // TODO: reallocf fully guicify
+    this.webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   }
 
   @Override
@@ -517,7 +522,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
      * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
      * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
      */
-    WebMetrics.INSTANCE.setFetchLogLatency(System.currentTimeMillis() - startMs);
+    this.webMetrics.setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**

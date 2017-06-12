@@ -17,6 +17,7 @@
 package azkaban.webapp.servlet;
 
 
+import static azkaban.test.Utils.initServiceProvider;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotSame;
 import static org.mockito.Mockito.mock;
@@ -29,9 +30,16 @@ import java.io.StringWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.junit.Before;
 import org.junit.Test;
 
 public class LoginAbstractAzkabanServletTest {
+
+  @Before
+  public void setUp() {
+    // TODO: reallocf remove setUp() when LoginAbstractServlet fully guiced
+    initServiceProvider();
+  }
 
   private HttpServletResponse getResponse(final StringWriter stringWriter) {
     final HttpServletResponse resp = mock(HttpServletResponse.class);

@@ -25,10 +25,7 @@ public class MySQLDataSource extends AzkabanDataSource {
 
   private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
 
-  private static volatile MySQLDataSource instance = null;
-
-  // TODO kunkun-tang: have guice inject working here
-  private MySQLDataSource(final String host, final int port, final String dbName,
+  public MySQLDataSource(final String host, final int port, final String dbName,
       final String user, final String password, final int numConnections) {
     super();
 
@@ -42,22 +39,6 @@ public class MySQLDataSource extends AzkabanDataSource {
     setMaxTotal(numConnections);
     setValidationQuery("/* ping */ select 1");
     setTestOnBorrow(true);
-  }
-
-  /**
-   * Get a singleton object for MySQL BasicDataSource
-   */
-  public static MySQLDataSource getInstance(final String host, final int port, final String dbName,
-      final String user, final String password, final int numConnections) {
-    if (instance == null) {
-      synchronized (MySQLDataSource.class) {
-        if (instance == null) {
-          logger.info("Instantiating MetricReportManager");
-          instance = new MySQLDataSource(host, port, dbName, user, password, numConnections);
-        }
-      }
-    }
-    return instance;
   }
 
   /**
