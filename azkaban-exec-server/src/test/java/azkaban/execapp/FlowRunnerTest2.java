@@ -39,13 +39,17 @@ import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Test the flow run, especially with embedded flows.
@@ -93,7 +97,13 @@ import org.junit.Test;
  *
  * The following tests checks each stage of the flow run by forcing jobs to succeed or fail.
  */
+@RunWith(Parameterized.class)
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
+
+  @Parameterized.Parameters
+  public static List<Object[]> data() {
+    return Arrays.asList(new Object[50][0]);
+  }
 
   private static final File TEST_DIR = new File(
       "../azkaban-test/src/test/resources/azkaban/test/executions/embedded2");
