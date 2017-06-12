@@ -462,9 +462,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Instant kill or skip if necessary.
     boolean jobsRun = false;
     for (final ExecutableNode node : nodesToCheck) {
-      if (Status.isStatusFinished(node.getStatus())
-          || Status.isStatusRunning(node.getStatus())
-          || Status.KILLING == node.getStatus()) {
+      if (notReadyToRun(node.getStatus())) {
         // Really shouldn't get in here.
         continue;
       }
@@ -478,6 +476,12 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     return false;
+  }
+
+  private boolean notReadyToRun(Status status) {
+    return Status.isStatusFinished(status)
+        || Status.isStatusRunning(status)
+        || Status.KILLING == status;
   }
 
   private boolean runReadyJob(final ExecutableNode node) throws IOException {
