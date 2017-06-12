@@ -47,10 +47,7 @@ public enum Status {
   }
 
   public static Status fromInteger(final int x) {
-    if (numValMap.containsKey(x)) {
-      return numValMap.get(x);
-    }
-    return READY;
+    return numValMap.getOrDefault(x, READY);
   }
 
   public static boolean isStatusFinished(final Status status) {
