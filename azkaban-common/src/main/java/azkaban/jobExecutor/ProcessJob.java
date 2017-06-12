@@ -48,12 +48,15 @@ public class ProcessJob extends AbstractProcessJob {
   public static final String KRB5CCNAME = "KRB5CCNAME";
   private static final Duration KILL_TIME = Duration.ofSeconds(30);
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
+  private final CommonMetrics commonMetrics;
   private volatile AzkabanProcess process;
   private volatile boolean killed = false;
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
     super(jobId, sysProps, jobProps, log);
+    // TODO: reallocf fully guicify CommonMetrics through ProcessJob dependents
+    this.commonMetrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
   }
 
   /**
@@ -140,7 +143,7 @@ public class ProcessJob extends AbstractProcessJob {
         if (isMemGranted) {
           info(String.format("Memory granted for job %s", getId()));
           if (attempt > 1) {
-            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+            this.commonMetrics.decrementOOMJobWaitCount();
           }
           break;
         }
@@ -150,7 +153,7 @@ public class ProcessJob extends AbstractProcessJob {
                   Constants.MEMORY_CHECK_INTERVAL_MS), attempt,
               Constants.MEMORY_CHECK_RETRY_LIMIT));
           if (attempt == 1) {
-            CommonMetrics.INSTANCE.incrementOOMJobWaitCount();
+            this.commonMetrics.incrementOOMJobWaitCount();
           }
           synchronized (this) {
             try {
@@ -161,7 +164,7 @@ public class ProcessJob extends AbstractProcessJob {
             }
           }
           if (this.killed) {
-            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+            this.commonMetrics.decrementOOMJobWaitCount();
             info(String.format("Job %s was killed while waiting for memory check retry", getId()));
             return;
           }
@@ -169,7 +172,7 @@ public class ProcessJob extends AbstractProcessJob {
       }
 
       if (!isMemGranted) {
-        CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+        this.commonMetrics.decrementOOMJobWaitCount();
         handleError(oomMsg, null);
       }
     }
