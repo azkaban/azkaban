@@ -20,9 +20,9 @@ import java.nio.file.Path;
 
 public class H2FileDataSource extends AzkabanDataSource {
 
-  public H2FileDataSource(Path filePath) {
+  public H2FileDataSource(final Path filePath) {
     super();
-    String url = "jdbc:h2:file:" + filePath;
+    final String url = "jdbc:h2:file:" + filePath;
     setDriverClassName("org.h2.Driver");
     setUrl(url);
   }

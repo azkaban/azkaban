@@ -17,14 +17,14 @@
 package azkaban.test.executions;
 
 import java.io.File;
-import java.net.URL;
 import java.net.URISyntaxException;
-
+import java.net.URL;
 import org.junit.Assert;
 
 public class TestExecutions {
+
   public static File getFlowDir(final String path) throws URISyntaxException {
-    URL url = TestExecutions.class.getResource(path);
+    final URL url = TestExecutions.class.getResource(path);
     Assert.assertNotNull(url);
     return new File(url.toURI());
   }

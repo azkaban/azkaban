@@ -16,48 +16,41 @@
 
 package azkaban.soloserver;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.AzkabanCommonModule;
+import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.execapp.AzkabanExecServerModule;
+import azkaban.execapp.AzkabanExecutorServer;
+import azkaban.server.AzkabanServer;
+import azkaban.utils.Props;
+import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.apache.log4j.Logger;
 
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.database.AzkabanDatabaseUpdater;
-import azkaban.execapp.AzkabanExecutorServer;
-import azkaban.server.AzkabanServer;
-import azkaban.webapp.AzkabanWebServer;
-import azkaban.utils.Props;
-
-import static azkaban.ServiceProvider.*;
-
 
 public class AzkabanSingleServer {
+
   private static final Logger log = Logger.getLogger(AzkabanWebServer.class);
 
   private final AzkabanWebServer webServer;
   private final AzkabanExecutorServer executor;
 
   @Inject
-  public AzkabanSingleServer(AzkabanWebServer webServer, AzkabanExecutorServer executor) {
+  public AzkabanSingleServer(final AzkabanWebServer webServer,
+      final AzkabanExecutorServer executor) {
     this.webServer = webServer;
     this.executor = executor;
   }
 
-  private void launch() throws Exception {
-    AzkabanWebServer.launch(webServer);
-    log.info("Azkaban Web Server started...");
-
-    AzkabanExecutorServer.launch(executor);
-    log.info("Azkaban Exec Server started...");
-  }
-
-  public static void main(String[] args) throws Exception {
+  public static void main(final String[] args) throws Exception {
     log.info("Starting Azkaban Server");
 
-    Props props = AzkabanServer.loadProps(args);
+    final Props props = AzkabanServer.loadProps(args);
     if (props == null) {
       log.error("Properties not found. Need it to connect to the db.");
       log.error("Exiting...");
@@ -65,8 +58,9 @@ public class AzkabanSingleServer {
     }
 
     if (props.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, true)) {
-      boolean updateDB = props.getBoolean(AzkabanDatabaseSetup.DATABASE_AUTO_UPDATE_TABLES, true);
-      String scriptDir = props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, "sql");
+      final boolean updateDB = props
+          .getBoolean(AzkabanDatabaseSetup.DATABASE_AUTO_UPDATE_TABLES, true);
+      final String scriptDir = props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, "sql");
       AzkabanDatabaseUpdater.runDatabaseUpdater(props, scriptDir, updateDB);
     }
 
@@ -80,5 +74,13 @@ public class AzkabanSingleServer {
 
     /* Launch server */
     injector.getInstance(AzkabanSingleServer.class).launch();
+  }
+
+  private void launch() throws Exception {
+    AzkabanWebServer.launch(this.webServer);
+    log.info("Azkaban Web Server started...");
+
+    AzkabanExecutorServer.launch(this.executor);
+    log.info("Azkaban Exec Server started...");
   }
 }

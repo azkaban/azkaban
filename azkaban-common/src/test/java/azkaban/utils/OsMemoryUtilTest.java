@@ -1,5 +1,8 @@
 package azkaban.utils;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,16 +11,15 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 
 public class OsMemoryUtilTest {
-  private OsMemoryUtil util = new OsMemoryUtil();
+
+  private final OsMemoryUtil util = new OsMemoryUtil();
 
   @Test
   public void canReadMemInfoFileIfExists() {
-    long size = util.getOsTotalFreeMemorySize();
-    Path memFile = Paths.get("/proc/meminfo");
+    final long size = this.util.getOsTotalFreeMemorySize();
+    final Path memFile = Paths.get("/proc/meminfo");
     if (!(Files.isRegularFile(memFile) && Files.isReadable(memFile))) {
       assertTrue(size == 0);
     }
@@ -27,41 +29,42 @@ public class OsMemoryUtilTest {
 
   @Test
   public void getOsTotalFreeMemorySize() {
-    List<String> lines =
-        Arrays.asList("MemFree:        1 kB", "Buffers:          2 kB", "Cached:          3 kB", "SwapFree:    4 kB",
+    final List<String> lines =
+        Arrays.asList("MemFree:        1 kB", "Buffers:          2 kB", "Cached:          3 kB",
+            "SwapFree:    4 kB",
             "Foo: 10 kB");
 
-    long size = util.getOsTotalFreeMemorySizeFromStrings(lines);
+    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines);
     assertEquals(10, size);
   }
 
   @Test
   public void getOsTotalFreeMemorySizeMissingEntry() {
-    List<String> lines = Arrays.asList("MemFree:        1 kB", "Foo: 10 kB");
+    final List<String> lines = Arrays.asList("MemFree:        1 kB", "Foo: 10 kB");
 
-    long size = util.getOsTotalFreeMemorySizeFromStrings(lines);
+    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines);
     assertEquals(0, size);
   }
 
   @Test
   public void getOsTotalFreeMemorySizeWrongEntry() {
-    List<String> lines = Collections.singletonList("MemFree:        foo kB");
+    final List<String> lines = Collections.singletonList("MemFree:        foo kB");
 
-    long size = util.getOsTotalFreeMemorySizeFromStrings(lines);
+    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines);
     assertEquals(0, size);
   }
 
   @Test
   public void parseMemoryLine() {
-    String line = "MemFree:        500 kB";
-    long size = util.parseMemoryLine(line);
+    final String line = "MemFree:        500 kB";
+    final long size = this.util.parseMemoryLine(line);
     assertEquals(500, size);
   }
 
   @Test
   public void parseIncorrectMemoryLine() {
-    String line = "MemFree:        ab kB";
-    long size = util.parseMemoryLine(line);
+    final String line = "MemFree:        ab kB";
+    final long size = this.util.parseMemoryLine(line);
     assertEquals(0, size);
   }
 }

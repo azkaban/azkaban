@@ -17,41 +17,42 @@
 package azkaban.executor;
 
 public class ExecutorManagerException extends Exception {
-  public enum Reason {
-    SkippedExecution
-  }
 
   private static final long serialVersionUID = 1L;
   private ExecutableFlow flow = null;
   private Reason reason = null;
 
-  public ExecutorManagerException(Exception e) {
+  public ExecutorManagerException(final Exception e) {
     super(e);
   }
 
-  public ExecutorManagerException(String message) {
+  public ExecutorManagerException(final String message) {
     super(message);
   }
 
-  public ExecutorManagerException(String message, ExecutableFlow flow) {
+  public ExecutorManagerException(final String message, final ExecutableFlow flow) {
     super(message);
     this.flow = flow;
   }
 
-  public ExecutorManagerException(String message, Reason reason) {
+  public ExecutorManagerException(final String message, final Reason reason) {
     super(message);
     this.reason = reason;
   }
 
-  public ExecutorManagerException(String message, Throwable cause) {
+  public ExecutorManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
   public ExecutableFlow getExecutableFlow() {
-    return flow;
+    return this.flow;
   }
 
   public Reason getReason() {
-    return reason;
+    return this.reason;
+  }
+
+  public enum Reason {
+    SkippedExecution
   }
 }

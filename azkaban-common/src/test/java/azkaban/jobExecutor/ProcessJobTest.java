@@ -31,12 +31,12 @@ import org.junit.rules.TemporaryFolder;
 
 
 public class ProcessJobTest {
+
+  private final Logger log = Logger.getLogger(ProcessJob.class);
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-
   private ProcessJob job = null;
   private Props props = null;
-  private Logger log = Logger.getLogger(ProcessJob.class);
 
   @BeforeClass
   public static void classInit() throws Exception {
@@ -46,68 +46,66 @@ public class ProcessJobTest {
 
   @Before
   public void setUp() throws IOException {
-    File workingDir = temp.newFolder("TestProcess");
+    final File workingDir = this.temp.newFolder("TestProcess");
 
     // Initialize job
-    props = AllJobExecutorTests.setUpCommonProps();
-    props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
-    props.put("type", "command");
+    this.props = AllJobExecutorTests.setUpCommonProps();
+    this.props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
+    this.props.put("type", "command");
 
-    job = new ProcessJob("TestProcess", props, props, log);
+    this.job = new ProcessJob("TestProcess", this.props, this.props, this.log);
   }
 
   @After
   public void tearDown() {
-    temp.delete();
+    this.temp.delete();
   }
 
   @Test
   public void testOneUnixCommand() throws Exception {
     // Initialize the Props
-    props.put(ProcessJob.COMMAND, "ls -al");
-    job.run();
+    this.props.put(ProcessJob.COMMAND, "ls -al");
+    this.job.run();
 
   }
 
   /**
    * this job should run fine if the props contain user.to.proxy
-   * @throws Exception
    */
   @Test
   public void testOneUnixCommandWithProxyUserInsteadOfSubmitUser() throws Exception {
 
     // Initialize the Props
-    props.removeLocal(CommonJobProperties.SUBMIT_USER);
-    props.put("user.to.proxy", "test_user");
-    props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    this.props.put("user.to.proxy", "test_user");
+    this.props.put(ProcessJob.COMMAND, "ls -al");
 
-    job.run();
+    this.job.run();
 
   }
 
   /**
    * this job should fail because there is no user.to.proxy and no CommonJobProperties.SUBMIT_USER
-   * @throws Exception
    */
-  @Test (expected=RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testOneUnixCommandWithNoUser() throws Exception {
 
     // Initialize the Props
-    props.removeLocal(CommonJobProperties.SUBMIT_USER);
-    props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    this.props.put(ProcessJob.COMMAND, "ls -al");
 
-    job.run();
+    this.job.run();
 
   }
 
   @Test
   public void testFailedUnixCommand() throws Exception {
     // Initialize the Props
-    props.put(ProcessJob.COMMAND, "xls -al");
+    this.props.put(ProcessJob.COMMAND, "xls -al");
 
     try {
-      job.run();
-    } catch (RuntimeException e) {
+      this.job.run();
+    } catch (final RuntimeException e) {
       Assert.assertTrue(true);
       e.printStackTrace();
     }
@@ -116,26 +114,26 @@ public class ProcessJobTest {
   @Test
   public void testMultipleUnixCommands() throws Exception {
     // Initialize the Props
-    props.put(ProcessJob.COMMAND, "pwd");
-    props.put("command.1", "date");
-    props.put("command.2", "whoami");
+    this.props.put(ProcessJob.COMMAND, "pwd");
+    this.props.put("command.1", "date");
+    this.props.put("command.2", "whoami");
 
-    job.run();
+    this.job.run();
   }
 
   @Test
   public void testPartitionCommand() throws Exception {
-    String test1 = "a b c";
+    final String test1 = "a b c";
 
-    Assert.assertArrayEquals(new String[] { "a", "b", "c" },
+    Assert.assertArrayEquals(new String[]{"a", "b", "c"},
         ProcessJob.partitionCommandLine(test1));
 
-    String test2 = "a 'b c'";
-    Assert.assertArrayEquals(new String[] { "a", "b c" },
+    final String test2 = "a 'b c'";
+    Assert.assertArrayEquals(new String[]{"a", "b c"},
         ProcessJob.partitionCommandLine(test2));
 
-    String test3 = "a e='b c'";
-    Assert.assertArrayEquals(new String[] { "a", "e=b c" },
+    final String test3 = "a e='b c'";
+    Assert.assertArrayEquals(new String[]{"a", "e=b c"},
         ProcessJob.partitionCommandLine(test3));
   }
 }

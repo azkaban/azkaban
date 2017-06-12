@@ -24,33 +24,30 @@ import java.util.Map;
 
 
 public class FlowUtils {
+
   /**
    * Change job status to disabled in exflow if the job is in disabledJobs
-   * @param disabledJobs
-   * @param exflow
    */
-  public static void applyDisabledJobs(List<Object> disabledJobs,
-      ExecutableFlowBase exflow) {
-    for (Object disabled : disabledJobs) {
+  public static void applyDisabledJobs(final List<Object> disabledJobs,
+      final ExecutableFlowBase exflow) {
+    for (final Object disabled : disabledJobs) {
       if (disabled instanceof String) {
-        String nodeName = (String) disabled;
-        ExecutableNode node = exflow.getExecutableNode(nodeName);
+        final String nodeName = (String) disabled;
+        final ExecutableNode node = exflow.getExecutableNode(nodeName);
         if (node != null) {
           node.setStatus(Status.DISABLED);
         }
       } else if (disabled instanceof Map) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> nestedDisabled = (Map<String, Object>) disabled;
-        String nodeName = (String) nestedDisabled.get("id");
-        @SuppressWarnings("unchecked")
-        List<Object> subDisabledJobs =
+        final Map<String, Object> nestedDisabled = (Map<String, Object>) disabled;
+        final String nodeName = (String) nestedDisabled.get("id");
+        final List<Object> subDisabledJobs =
             (List<Object>) nestedDisabled.get("children");
 
         if (nodeName == null || subDisabledJobs == null) {
           return;
         }
 
-        ExecutableNode node = exflow.getExecutableNode(nodeName);
+        final ExecutableNode node = exflow.getExecutableNode(nodeName);
         if (node != null && node instanceof ExecutableFlowBase) {
           applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase) node);
         }

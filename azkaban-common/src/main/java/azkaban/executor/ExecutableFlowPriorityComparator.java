@@ -16,19 +16,18 @@
 
 package azkaban.executor;
 
-import java.util.Comparator;
-
-import org.apache.log4j.Logger;
-
 import azkaban.utils.Pair;
+import java.util.Comparator;
+import org.apache.log4j.Logger;
 
 /**
  * Comparator implicitly used in priority queue for QueuedExecutions.
  */
 public final class ExecutableFlowPriorityComparator implements
-  Comparator<Pair<ExecutionReference, ExecutableFlow>> {
-  private static Logger logger = Logger
-    .getLogger(ExecutableFlowPriorityComparator.class);
+    Comparator<Pair<ExecutionReference, ExecutableFlow>> {
+
+  private static final Logger logger = Logger
+      .getLogger(ExecutableFlowPriorityComparator.class);
 
   /**
    * <pre>
@@ -43,8 +42,8 @@ public final class ExecutableFlowPriorityComparator implements
    * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
    */
   @Override
-  public int compare(Pair<ExecutionReference, ExecutableFlow> pair1,
-    Pair<ExecutionReference, ExecutableFlow> pair2) {
+  public int compare(final Pair<ExecutionReference, ExecutableFlow> pair1,
+      final Pair<ExecutionReference, ExecutableFlow> pair2) {
     ExecutableFlow exflow1 = null, exflow2 = null;
     if (pair1 != null && pair1.getSecond() != null) {
       exflow1 = pair1.getSecond();
@@ -52,18 +51,18 @@ public final class ExecutableFlowPriorityComparator implements
     if (pair2 != null && pair2.getSecond() != null) {
       exflow2 = pair2.getSecond();
     }
-    if (exflow1 == null && exflow2 == null)
+    if (exflow1 == null && exflow2 == null) {
       return 0;
-    else if (exflow1 == null)
+    } else if (exflow1 == null) {
       return -1;
-    else if (exflow2 == null)
+    } else if (exflow2 == null) {
       return 1;
-    else {
+    } else {
       // descending order of priority
       int diff = getPriority(exflow2) - getPriority(exflow1);
       if (diff == 0) {
         // ascending order of update time, if same priority
-        diff = (int) (exflow1.getUpdateTime() - exflow2.getUpdateTime());
+        diff = Long.compare(exflow1.getUpdateTime(), exflow2.getUpdateTime());
       }
       if (diff == 0) {
         // ascending order of execution id, if same priority and updateTime
@@ -74,22 +73,22 @@ public final class ExecutableFlowPriorityComparator implements
   }
 
   /* Helper method to fetch flow priority from flow props */
-  private int getPriority(ExecutableFlow exflow) {
-    ExecutionOptions options = exflow.getExecutionOptions();
+  private int getPriority(final ExecutableFlow exflow) {
+    final ExecutionOptions options = exflow.getExecutionOptions();
     int priority = ExecutionOptions.DEFAULT_FLOW_PRIORITY;
     if (options != null
-      && options.getFlowParameters() != null
-      && options.getFlowParameters()
+        && options.getFlowParameters() != null
+        && options.getFlowParameters()
         .containsKey(ExecutionOptions.FLOW_PRIORITY)) {
       try {
         priority =
-          Integer.valueOf(options.getFlowParameters().get(
-            ExecutionOptions.FLOW_PRIORITY));
-      } catch (NumberFormatException ex) {
+            Integer.valueOf(options.getFlowParameters().get(
+                ExecutionOptions.FLOW_PRIORITY));
+      } catch (final NumberFormatException ex) {
         priority = ExecutionOptions.DEFAULT_FLOW_PRIORITY;
         logger.error(
-          "Failed to parse flow priority for exec_id = "
-            + exflow.getExecutionId(), ex);
+            "Failed to parse flow priority for exec_id = "
+                + exflow.getExecutionId(), ex);
       }
     }
     return priority;

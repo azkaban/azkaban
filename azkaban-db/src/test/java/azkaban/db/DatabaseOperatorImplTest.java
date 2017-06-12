@@ -16,6 +16,8 @@
  */
 package azkaban.db;
 
+import static org.mockito.Mockito.*;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -23,110 +25,107 @@ import java.util.List;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
-
 
 public class DatabaseOperatorImplTest {
 
-  private AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
-
-  private DatabaseOperator dbOperator;
-  private QueryRunner queryRunner;
-  private Connection conn;
-
-  private ResultSetHandler<Integer> handler = rs -> {
+  private static final List<Integer> list = new ArrayList<>();
+  private static final int index_2 = 15;
+  private static int index_1 = 3;
+  private final AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
+  private final ResultSetHandler<Integer> handler = rs -> {
     if (!rs.next()) {
       return 0;
     }
     return rs.getInt(1);
   };
-
-  private static final List<Integer> list = new ArrayList<>();
-
-  private static int index_1 = 3;
-  private static int index_2 = 15;
+  private DatabaseOperator dbOperator;
+  private QueryRunner queryRunner;
+  private Connection conn;
 
   @Before
   public void setUp() throws Exception {
-    queryRunner = mock(QueryRunner.class);
+    this.queryRunner = mock(QueryRunner.class);
 
-    conn = datasource.getConnection();
-    DataSource mockDataSource = mock(datasource.getClass());
+    this.conn = this.datasource.getConnection();
+    final DataSource mockDataSource = mock(this.datasource.getClass());
 
-    when(queryRunner.getDataSource()).thenReturn(mockDataSource);
-    when(mockDataSource.getConnection()).thenReturn(conn);
+    when(this.queryRunner.getDataSource()).thenReturn(mockDataSource);
+    when(mockDataSource.getConnection()).thenReturn(this.conn);
 
-    this.dbOperator = new DatabaseOperatorImpl(queryRunner);
+    this.dbOperator = new DatabaseOperatorImpl(this.queryRunner);
 
     list.add(index_1);
     list.add(index_2);
 
     // valid query returns correct value
-    when(queryRunner.query("select * from blah where ? = ?", handler, "id", 2)).thenReturn(index_2);
+    when(this.queryRunner.query("select * from blah where ? = ?", this.handler, "id", 2))
+        .thenReturn(index_2);
 
     // If select an non-existing entry, handler returns 0.
-    when(queryRunner.query("select * from blah where ? = ?", handler, "id", 3)).thenReturn(0);
+    when(this.queryRunner.query("select * from blah where ? = ?", this.handler, "id", 3))
+        .thenReturn(0);
 
     //If typos, throw Exceptions.
-    doThrow(SQLException.class).when(queryRunner).query("sele * from blah where ? = ?", handler, "id", 2);
+    doThrow(SQLException.class).when(this.queryRunner)
+        .query("sele * from blah where ? = ?", this.handler, "id", 2);
 
     doAnswer(invocation -> {
       index_1 = 26;
       return 1;
-    }).when(queryRunner).update("update blah set ? = ?", "1", 26);
+    }).when(this.queryRunner).update("update blah set ? = ?", "1", 26);
   }
 
   @Test
   public void testValidQuery() throws Exception {
-    int res = dbOperator.query("select * from blah where ? = ?", handler, "id", 2);
+    final int res = this.dbOperator.query("select * from blah where ? = ?", this.handler, "id", 2);
     Assert.assertEquals(15, res);
-    verify(queryRunner).query("select * from blah where ? = ?", handler, "id", 2);
+    verify(this.queryRunner).query("select * from blah where ? = ?", this.handler, "id", 2);
   }
 
   @Test
   public void testInvalidQuery() throws Exception {
-    int res = dbOperator.query("select * from blah where ? = ?", handler, "id", 3);
+    final int res = this.dbOperator.query("select * from blah where ? = ?", this.handler, "id", 3);
     Assert.assertEquals(0, res);
   }
 
   @Test(expected = SQLException.class)
   public void testTypoSqlStatement() throws Exception {
     System.out.println("testTypoSqlStatement");
-    dbOperator.query("sele * from blah where ? = ?", handler, "id", 2);
+    this.dbOperator.query("sele * from blah where ? = ?", this.handler, "id", 2);
   }
 
   @Test
   public void testTransaction() throws Exception {
-    when(queryRunner.update(conn, "update blah set ? = ?", "1", 26)).thenReturn(1);
-    when(queryRunner.query(conn, "select * from blah where ? = ?", handler, "id", 1)).thenReturn(26);
+    when(this.queryRunner.update(this.conn, "update blah set ? = ?", "1", 26)).thenReturn(1);
+    when(this.queryRunner.query(this.conn, "select * from blah where ? = ?", this.handler, "id", 1))
+        .thenReturn(26);
 
-    SQLTransaction<Integer> transaction = transOperator -> {
+    final SQLTransaction<Integer> transaction = transOperator -> {
       transOperator.update("update blah set ? = ?", "1", 26);
-      return transOperator.query("select * from blah where ? = ?", handler, "id", 1);
+      return transOperator.query("select * from blah where ? = ?", this.handler, "id", 1);
     };
 
-    int res = dbOperator.transaction(transaction);
+    final int res = this.dbOperator.transaction(transaction);
     Assert.assertEquals(26, res);
   }
 
   @Test
   public void testValidUpdate() throws Exception {
-    int res = dbOperator.update("update blah set ? = ?", "1", 26);
+    final int res = this.dbOperator.update("update blah set ? = ?", "1", 26);
 
     // 1 row is affected
     Assert.assertEquals(1, res);
     Assert.assertEquals(26, index_1);
-    verify(queryRunner).update("update blah set ? = ?", "1", 26);
+    verify(this.queryRunner).update("update blah set ? = ?", "1", 26);
   }
 
   @Test
   public void testInvalidUpdate() throws Exception {
-    int res = dbOperator.update("update blah set ? = ?", "3", 26);
+    final int res = this.dbOperator.update("update blah set ? = ?", "3", 26);
 
     // 0 row is affected
     Assert.assertEquals(0, res);

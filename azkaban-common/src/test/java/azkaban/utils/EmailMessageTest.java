@@ -16,13 +16,12 @@
 
 package azkaban.utils;
 
+import java.io.IOException;
+import javax.mail.MessagingException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import javax.mail.MessagingException;
-import java.io.IOException;
 
 public class EmailMessageTest {
 
@@ -38,8 +37,8 @@ public class EmailMessageTest {
 
   @Before
   public void setUp() throws Exception {
-    em = new EmailMessage(host, port, user, password);
-    em.setFromAddress(sender);
+    this.em = new EmailMessage(this.host, this.port, this.user, this.password);
+    this.em.setFromAddress(this.sender);
   }
 
   @After
@@ -49,13 +48,13 @@ public class EmailMessageTest {
   @Ignore
   @Test
   public void testSendEmail() throws IOException {
-    em.addToAddress(toAddr);
+    this.em.addToAddress(this.toAddr);
     // em.addToAddress("cyu@linkedin.com");
-    em.setSubject("azkaban test email");
-    em.setBody("azkaban test email");
+    this.em.setSubject("azkaban test email");
+    this.em.setBody("azkaban test email");
     try {
-      em.sendEmail();
-    } catch (MessagingException e) {
+      this.em.sendEmail();
+    } catch (final MessagingException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }

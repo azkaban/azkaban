@@ -16,28 +16,26 @@
 
 package azkaban.jobExecutor;
 
-import org.apache.log4j.Logger;
-
-import com.google.common.collect.ImmutableSet;
-
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableSet;
+import org.apache.log4j.Logger;
 
 /**
  * A script job issues a command of the form [EXECUTABLE] [SCRIPT] --key1 val1
  * ... --key2 val2 executable -- the interpretor command to execute script --
  * the script to pass in (requried)
- *
  */
 public class ScriptJob extends LongArgJob {
 
   private static final String DEFAULT_EXECUTABLE_KEY = "executable";
   private static final String SCRIPT_KEY = "script";
 
-  public ScriptJob(String jobid, Props sysProps, Props jobProps, Logger log) {
+  public ScriptJob(final String jobid, final Props sysProps, final Props jobProps,
+      final Logger log) {
     super(jobid,
-        new String[] {
-          jobProps.getString(DEFAULT_EXECUTABLE_KEY),
-          jobProps.getString(SCRIPT_KEY)
+        new String[]{
+            jobProps.getString(DEFAULT_EXECUTABLE_KEY),
+            jobProps.getString(SCRIPT_KEY)
         },
         sysProps,
         jobProps,

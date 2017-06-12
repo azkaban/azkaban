@@ -16,6 +16,13 @@
 
 package azkaban.security.commons;
 
+import azkaban.utils.Props;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Properties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
@@ -27,22 +34,16 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.log4j.Logger;
 
-import azkaban.utils.Props;
-
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
-import java.util.Properties;
-
 public class SecurityUtils {
+
   // Secure Hadoop proxy user params
   public static final String ENABLE_PROXYING = "azkaban.should.proxy"; // boolean
   public static final String PROXY_KEYTAB_LOCATION = "proxy.keytab.location";
   public static final String PROXY_USER = "proxy.user";
   public static final String TO_PROXY = "user.to.proxy";
-
+  public static final String OBTAIN_BINARY_TOKEN = "obtain.binary.token";
+  public static final String MAPREDUCE_JOB_CREDENTIALS_BINARY =
+      "mapreduce.job.credentials.binary";
   private static UserGroupInformation loginUser = null;
 
   /**
@@ -50,7 +51,7 @@ public class SecurityUtils {
    * parameters necessary from properties file.
    */
   public static synchronized UserGroupInformation getProxiedUser(
-      String toProxy, Properties prop, Logger log, Configuration conf)
+      final String toProxy, final Properties prop, final Logger log, final Configuration conf)
       throws IOException {
 
     if (conf == null) {
@@ -64,8 +65,8 @@ public class SecurityUtils {
 
     if (loginUser == null) {
       log.info("No login user. Creating login user");
-      String keytab = verifySecureProperty(prop, PROXY_KEYTAB_LOCATION, log);
-      String proxyUser = verifySecureProperty(prop, PROXY_USER, log);
+      final String keytab = verifySecureProperty(prop, PROXY_KEYTAB_LOCATION, log);
+      final String proxyUser = verifySecureProperty(prop, PROXY_USER, log);
       UserGroupInformation.loginUserFromKeytab(proxyUser, keytab);
       loginUser = UserGroupInformation.getLoginUser();
       log.info("Logged in with user " + loginUser);
@@ -81,38 +82,36 @@ public class SecurityUtils {
    * Create a proxied user, taking all parameters, including which user to proxy
    * from provided Properties.
    */
-  public static UserGroupInformation getProxiedUser(Properties prop,
-      Logger log, Configuration conf) throws IOException {
-    String toProxy = verifySecureProperty(prop, TO_PROXY, log);
-    UserGroupInformation user = getProxiedUser(toProxy, prop, log, conf);
-    if (user == null)
+  public static UserGroupInformation getProxiedUser(final Properties prop,
+      final Logger log, final Configuration conf) throws IOException {
+    final String toProxy = verifySecureProperty(prop, TO_PROXY, log);
+    final UserGroupInformation user = getProxiedUser(toProxy, prop, log, conf);
+    if (user == null) {
       throw new IOException(
           "Proxy as any user in unsecured grid is not supported!"
               + prop.toString());
+    }
     log.info("created proxy user for " + user.getUserName() + user.toString());
     return user;
   }
 
-  public static String verifySecureProperty(Properties properties, String s,
-      Logger l) throws IOException {
-    String value = properties.getProperty(s);
+  public static String verifySecureProperty(final Properties properties, final String s,
+      final Logger l) throws IOException {
+    final String value = properties.getProperty(s);
 
-    if (value == null)
+    if (value == null) {
       throw new IOException(s
           + " not set in properties. Cannot use secure proxy");
+    }
     l.info("Secure proxy configuration: Property " + s + " = " + value);
     return value;
   }
 
-  public static boolean shouldProxy(Properties prop) {
-    String shouldProxy = prop.getProperty(ENABLE_PROXYING);
+  public static boolean shouldProxy(final Properties prop) {
+    final String shouldProxy = prop.getProperty(ENABLE_PROXYING);
 
     return shouldProxy != null && shouldProxy.equals("true");
   }
-
-  public static final String OBTAIN_BINARY_TOKEN = "obtain.binary.token";
-  public static final String MAPREDUCE_JOB_CREDENTIALS_BINARY =
-      "mapreduce.job.credentials.binary";
 
   public static synchronized void prefetchToken(final File tokenFile,
       final Props p, final Logger logger) throws InterruptedException,
@@ -130,24 +129,24 @@ public class SecurityUtils {
             return null;
           }
 
-          private void getToken(Props p) throws InterruptedException,
+          private void getToken(final Props p) throws InterruptedException,
               IOException {
-            String shouldPrefetch = p.getString(OBTAIN_BINARY_TOKEN);
+            final String shouldPrefetch = p.getString(OBTAIN_BINARY_TOKEN);
             if (shouldPrefetch != null && shouldPrefetch.equals("true")) {
               logger.info("Pre-fetching token");
 
               logger.info("Pre-fetching fs token");
-              FileSystem fs = FileSystem.get(conf);
-              Token<?> fsToken =
+              final FileSystem fs = FileSystem.get(conf);
+              final Token<?> fsToken =
                   fs.getDelegationToken(p.getString("user.to.proxy"));
               logger.info("Created token: " + fsToken.toString());
 
-              Job job =
+              final Job job =
                   new Job(conf, "totally phony, extremely fake, not real job");
-              JobConf jc = new JobConf(conf);
-              JobClient jobClient = new JobClient(jc);
+              final JobConf jc = new JobConf(conf);
+              final JobClient jobClient = new JobClient(jc);
               logger.info("Pre-fetching job token: Got new JobClient: " + jc);
-              Token<DelegationTokenIdentifier> mrdt =
+              final Token<DelegationTokenIdentifier> mrdt =
                   jobClient.getDelegationToken(new Text("hi"));
               logger.info("Created token: " + mrdt.toString());
 

@@ -16,6 +16,7 @@
 
 package azkaban.flow;
 
+import azkaban.executor.mail.DefaultMailCreator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,298 +25,65 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.executor.mail.DefaultMailCreator;
-
 public class Flow {
+
   private final String id;
+  private final HashMap<String, Node> nodes = new HashMap<>();
+  private final HashMap<String, Edge> edges = new HashMap<>();
+  private final HashMap<String, Set<Edge>> outEdges =
+      new HashMap<>();
+  private final HashMap<String, Set<Edge>> inEdges = new HashMap<>();
+  private final HashMap<String, FlowProps> flowProps =
+      new HashMap<>();
   private int projectId;
   private ArrayList<Node> startNodes = null;
   private ArrayList<Node> endNodes = null;
   private int numLevels = -1;
-
-  private HashMap<String, Node> nodes = new HashMap<String, Node>();
-
-  private HashMap<String, Edge> edges = new HashMap<String, Edge>();
-  private HashMap<String, Set<Edge>> outEdges =
-      new HashMap<String, Set<Edge>>();
-  private HashMap<String, Set<Edge>> inEdges = new HashMap<String, Set<Edge>>();
-  private HashMap<String, FlowProps> flowProps =
-      new HashMap<String, FlowProps>();
-
-  private List<String> failureEmail = new ArrayList<String>();
-  private List<String> successEmail = new ArrayList<String>();
+  private List<String> failureEmail = new ArrayList<>();
+  private List<String> successEmail = new ArrayList<>();
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private ArrayList<String> errors;
   private int version = -1;
-  private Map<String, Object> metadata = new HashMap<String, Object>();
+  private Map<String, Object> metadata = new HashMap<>();
 
   private boolean isLayedOut = false;
 
-  public Flow(String id) {
+  public Flow(final String id) {
     this.id = id;
   }
 
-  public void setVersion(int version) {
-    this.version = version;
-  }
+  public static Flow flowFromObject(final Object object) {
+    final Map<String, Object> flowObject = (Map<String, Object>) object;
 
-  public int getVersion() {
-    return version;
-  }
-
-  public void initialize() {
-    if (startNodes == null) {
-      startNodes = new ArrayList<Node>();
-      endNodes = new ArrayList<Node>();
-      for (Node node : nodes.values()) {
-        // If it doesn't have any incoming edges, its a start node
-        if (!inEdges.containsKey(node.getId())) {
-          startNodes.add(node);
-        }
-
-        // If it doesn't contain any outgoing edges, its an end node.
-        if (!outEdges.containsKey(node.getId())) {
-          endNodes.add(node);
-        }
-      }
-
-      for (Node node : startNodes) {
-        node.setLevel(0);
-        numLevels = 0;
-        recursiveSetLevels(node);
-      }
-    }
-  }
-
-  private void recursiveSetLevels(Node node) {
-    Set<Edge> edges = outEdges.get(node.getId());
-    if (edges != null) {
-      for (Edge edge : edges) {
-        Node nextNode = nodes.get(edge.getTargetId());
-        edge.setSource(node);
-        edge.setTarget(nextNode);
-
-        // We pick whichever is higher to get the max distance from root.
-        int level = Math.max(node.getLevel() + 1, nextNode.getLevel());
-        nextNode.setLevel(level);
-        numLevels = Math.max(level, numLevels);
-        recursiveSetLevels(nextNode);
-      }
-    }
-  }
-
-  public Node getNode(String nodeId) {
-    return nodes.get(nodeId);
-  }
-
-  public List<String> getSuccessEmails() {
-    return successEmail;
-  }
-
-  public String getMailCreator() {
-    return mailCreator;
-  }
-
-  public List<String> getFailureEmails() {
-    return failureEmail;
-  }
-
-  public void setMailCreator(String mailCreator) {
-    this.mailCreator = mailCreator;
-  }
-
-  public void addSuccessEmails(Collection<String> emails) {
-    successEmail.addAll(emails);
-  }
-
-  public void addFailureEmails(Collection<String> emails) {
-    failureEmail.addAll(emails);
-  }
-
-  public int getNumLevels() {
-    return numLevels;
-  }
-
-  public List<Node> getStartNodes() {
-    return startNodes;
-  }
-
-  public List<Node> getEndNodes() {
-    return endNodes;
-  }
-
-  public Set<Edge> getInEdges(String id) {
-    return inEdges.get(id);
-  }
-
-  public Set<Edge> getOutEdges(String id) {
-    return outEdges.get(id);
-  }
-
-  public void addAllNodes(Collection<Node> nodes) {
-    for (Node node : nodes) {
-      addNode(node);
-    }
-  }
-
-  public void addNode(Node node) {
-    nodes.put(node.getId(), node);
-  }
-
-  public void addAllFlowProperties(Collection<FlowProps> props) {
-    for (FlowProps prop : props) {
-      flowProps.put(prop.getSource(), prop);
-    }
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void addError(String error) {
-    if (errors == null) {
-      errors = new ArrayList<String>();
-    }
-
-    errors.add(error);
-  }
-
-  public List<String> getErrors() {
-    return errors;
-  }
-
-  public boolean hasErrors() {
-    return errors != null && !errors.isEmpty();
-  }
-
-  public Collection<Node> getNodes() {
-    return nodes.values();
-  }
-
-  public Collection<Edge> getEdges() {
-    return edges.values();
-  }
-
-  public void addAllEdges(Collection<Edge> edges) {
-    for (Edge edge : edges) {
-      addEdge(edge);
-    }
-  }
-
-  public void addEdge(Edge edge) {
-    String source = edge.getSourceId();
-    String target = edge.getTargetId();
-
-    if (edge.hasError()) {
-      addError("Error on " + edge.getId() + ". " + edge.getError());
-    }
-
-    Set<Edge> sourceSet = getEdgeSet(outEdges, source);
-    sourceSet.add(edge);
-
-    Set<Edge> targetSet = getEdgeSet(inEdges, target);
-    targetSet.add(edge);
-
-    edges.put(edge.getId(), edge);
-  }
-
-  private Set<Edge> getEdgeSet(HashMap<String, Set<Edge>> map, String id) {
-    Set<Edge> edges = map.get(id);
-    if (edges == null) {
-      edges = new HashSet<Edge>();
-      map.put(id, edges);
-    }
-
-    return edges;
-  }
-
-  public Map<String, Object> toObject() {
-    HashMap<String, Object> flowObj = new HashMap<String, Object>();
-    flowObj.put("type", "flow");
-    flowObj.put("id", getId());
-    flowObj.put("project.id", projectId);
-    flowObj.put("version", version);
-    flowObj.put("props", objectizeProperties());
-    flowObj.put("nodes", objectizeNodes());
-    flowObj.put("edges", objectizeEdges());
-    flowObj.put("failure.email", failureEmail);
-    flowObj.put("success.email", successEmail);
-    flowObj.put("mailCreator", mailCreator);
-    flowObj.put("layedout", isLayedOut);
-    if (errors != null) {
-      flowObj.put("errors", errors);
-    }
-
-    if (metadata != null) {
-      flowObj.put("metadata", metadata);
-    }
-
-    return flowObj;
-  }
-
-  private List<Object> objectizeProperties() {
-    ArrayList<Object> result = new ArrayList<Object>();
-    for (FlowProps props : flowProps.values()) {
-      Object objProps = props.toObject();
-      result.add(objProps);
-    }
-
-    return result;
-  }
-
-  private List<Object> objectizeNodes() {
-    ArrayList<Object> result = new ArrayList<Object>();
-    for (Node node : getNodes()) {
-      Object nodeObj = node.toObject();
-      result.add(nodeObj);
-    }
-
-    return result;
-  }
-
-  private List<Object> objectizeEdges() {
-    ArrayList<Object> result = new ArrayList<Object>();
-    for (Edge edge : getEdges()) {
-      Object edgeObj = edge.toObject();
-      result.add(edgeObj);
-    }
-
-    return result;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static Flow flowFromObject(Object object) {
-    Map<String, Object> flowObject = (Map<String, Object>) object;
-
-    String id = (String) flowObject.get("id");
-    Boolean layedout = (Boolean) flowObject.get("layedout");
-    Flow flow = new Flow(id);
+    final String id = (String) flowObject.get("id");
+    final Boolean layedout = (Boolean) flowObject.get("layedout");
+    final Flow flow = new Flow(id);
     if (layedout != null) {
       flow.setLayedOut(layedout);
     }
-    int projId = (Integer) flowObject.get("project.id");
+    final int projId = (Integer) flowObject.get("project.id");
     flow.setProjectId(projId);
 
-    int version = (Integer) flowObject.get("version");
+    final int version = (Integer) flowObject.get("version");
     flow.setVersion(version);
 
     // Loading projects
-    List<Object> propertiesList = (List<Object>) flowObject.get("props");
-    Map<String, FlowProps> properties =
+    final List<Object> propertiesList = (List<Object>) flowObject.get("props");
+    final Map<String, FlowProps> properties =
         loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
 
     // Loading nodes
-    List<Object> nodeList = (List<Object>) flowObject.get("nodes");
-    Map<String, Node> nodes = loadNodesFromObjects(nodeList);
+    final List<Object> nodeList = (List<Object>) flowObject.get("nodes");
+    final Map<String, Node> nodes = loadNodesFromObjects(nodeList);
     flow.addAllNodes(nodes.values());
 
     // Loading edges
-    List<Object> edgeList = (List<Object>) flowObject.get("edges");
-    List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
+    final List<Object> edgeList = (List<Object>) flowObject.get("edges");
+    final List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
     flow.addAllEdges(edges);
 
-    Map<String, Object> metadata =
+    final Map<String, Object> metadata =
         (Map<String, Object>) flowObject.get("metadata");
 
     if (metadata != null) {
@@ -330,23 +98,23 @@ public class Flow {
     return flow;
   }
 
-  private static Map<String, Node> loadNodesFromObjects(List<Object> nodeList) {
-    Map<String, Node> nodeMap = new HashMap<String, Node>();
+  private static Map<String, Node> loadNodesFromObjects(final List<Object> nodeList) {
+    final Map<String, Node> nodeMap = new HashMap<>();
 
-    for (Object obj : nodeList) {
-      Node node = Node.fromObject(obj);
+    for (final Object obj : nodeList) {
+      final Node node = Node.fromObject(obj);
       nodeMap.put(node.getId(), node);
     }
 
     return nodeMap;
   }
 
-  private static List<Edge> loadEdgeFromObjects(List<Object> edgeList,
-      Map<String, Node> nodes) {
-    List<Edge> edgeResult = new ArrayList<Edge>();
+  private static List<Edge> loadEdgeFromObjects(final List<Object> edgeList,
+      final Map<String, Node> nodes) {
+    final List<Edge> edgeResult = new ArrayList<>();
 
-    for (Object obj : edgeList) {
-      Edge edge = Edge.fromObject(obj);
+    for (final Object obj : edgeList) {
+      final Edge edge = Edge.fromObject(obj);
       edgeResult.add(edge);
     }
 
@@ -354,61 +122,289 @@ public class Flow {
   }
 
   private static Map<String, FlowProps> loadPropertiesFromObject(
-      List<Object> propertyObjectList) {
-    Map<String, FlowProps> properties = new HashMap<String, FlowProps>();
+      final List<Object> propertyObjectList) {
+    final Map<String, FlowProps> properties = new HashMap<>();
 
-    for (Object propObj : propertyObjectList) {
-      FlowProps prop = FlowProps.fromObject(propObj);
+    for (final Object propObj : propertyObjectList) {
+      final FlowProps prop = FlowProps.fromObject(propObj);
       properties.put(prop.getSource(), prop);
     }
 
     return properties;
   }
 
-  public boolean isLayedOut() {
-    return isLayedOut;
+  public int getVersion() {
+    return this.version;
   }
 
-  public Map<String, Object> getMetadata() {
-    if (metadata == null) {
-      metadata = new HashMap<String, Object>();
+  public void setVersion(final int version) {
+    this.version = version;
+  }
+
+  public void initialize() {
+    if (this.startNodes == null) {
+      this.startNodes = new ArrayList<>();
+      this.endNodes = new ArrayList<>();
+      for (final Node node : this.nodes.values()) {
+        // If it doesn't have any incoming edges, its a start node
+        if (!this.inEdges.containsKey(node.getId())) {
+          this.startNodes.add(node);
+        }
+
+        // If it doesn't contain any outgoing edges, its an end node.
+        if (!this.outEdges.containsKey(node.getId())) {
+          this.endNodes.add(node);
+        }
+      }
+
+      for (final Node node : this.startNodes) {
+        node.setLevel(0);
+        this.numLevels = 0;
+        recursiveSetLevels(node);
+      }
     }
-    return metadata;
   }
 
-  public void setMetadata(Map<String, Object> metadata) {
-    this.metadata = metadata;
+  private void recursiveSetLevels(final Node node) {
+    final Set<Edge> edges = this.outEdges.get(node.getId());
+    if (edges != null) {
+      for (final Edge edge : edges) {
+        final Node nextNode = this.nodes.get(edge.getTargetId());
+        edge.setSource(node);
+        edge.setTarget(nextNode);
+
+        // We pick whichever is higher to get the max distance from root.
+        final int level = Math.max(node.getLevel() + 1, nextNode.getLevel());
+        nextNode.setLevel(level);
+        this.numLevels = Math.max(level, this.numLevels);
+        recursiveSetLevels(nextNode);
+      }
+    }
   }
 
-  public void setLayedOut(boolean layedOut) {
+  public Node getNode(final String nodeId) {
+    return this.nodes.get(nodeId);
+  }
+
+  public List<String> getSuccessEmails() {
+    return this.successEmail;
+  }
+
+  public String getMailCreator() {
+    return this.mailCreator;
+  }
+
+  public void setMailCreator(final String mailCreator) {
+    this.mailCreator = mailCreator;
+  }
+
+  public List<String> getFailureEmails() {
+    return this.failureEmail;
+  }
+
+  public void addSuccessEmails(final Collection<String> emails) {
+    this.successEmail.addAll(emails);
+  }
+
+  public void addFailureEmails(final Collection<String> emails) {
+    this.failureEmail.addAll(emails);
+  }
+
+  public int getNumLevels() {
+    return this.numLevels;
+  }
+
+  public List<Node> getStartNodes() {
+    return this.startNodes;
+  }
+
+  public List<Node> getEndNodes() {
+    return this.endNodes;
+  }
+
+  public Set<Edge> getInEdges(final String id) {
+    return this.inEdges.get(id);
+  }
+
+  public Set<Edge> getOutEdges(final String id) {
+    return this.outEdges.get(id);
+  }
+
+  public void addAllNodes(final Collection<Node> nodes) {
+    for (final Node node : nodes) {
+      addNode(node);
+    }
+  }
+
+  public void addNode(final Node node) {
+    this.nodes.put(node.getId(), node);
+  }
+
+  public void addAllFlowProperties(final Collection<FlowProps> props) {
+    for (final FlowProps prop : props) {
+      this.flowProps.put(prop.getSource(), prop);
+    }
+  }
+
+  public String getId() {
+    return this.id;
+  }
+
+  public void addError(final String error) {
+    if (this.errors == null) {
+      this.errors = new ArrayList<>();
+    }
+
+    this.errors.add(error);
+  }
+
+  public List<String> getErrors() {
+    return this.errors;
+  }
+
+  public boolean hasErrors() {
+    return this.errors != null && !this.errors.isEmpty();
+  }
+
+  public Collection<Node> getNodes() {
+    return this.nodes.values();
+  }
+
+  public Collection<Edge> getEdges() {
+    return this.edges.values();
+  }
+
+  public void addAllEdges(final Collection<Edge> edges) {
+    for (final Edge edge : edges) {
+      addEdge(edge);
+    }
+  }
+
+  public void addEdge(final Edge edge) {
+    final String source = edge.getSourceId();
+    final String target = edge.getTargetId();
+
+    if (edge.hasError()) {
+      addError("Error on " + edge.getId() + ". " + edge.getError());
+    }
+
+    final Set<Edge> sourceSet = getEdgeSet(this.outEdges, source);
+    sourceSet.add(edge);
+
+    final Set<Edge> targetSet = getEdgeSet(this.inEdges, target);
+    targetSet.add(edge);
+
+    this.edges.put(edge.getId(), edge);
+  }
+
+  private Set<Edge> getEdgeSet(final HashMap<String, Set<Edge>> map, final String id) {
+    Set<Edge> edges = map.get(id);
+    if (edges == null) {
+      edges = new HashSet<>();
+      map.put(id, edges);
+    }
+
+    return edges;
+  }
+
+  public Map<String, Object> toObject() {
+    final HashMap<String, Object> flowObj = new HashMap<>();
+    flowObj.put("type", "flow");
+    flowObj.put("id", getId());
+    flowObj.put("project.id", this.projectId);
+    flowObj.put("version", this.version);
+    flowObj.put("props", objectizeProperties());
+    flowObj.put("nodes", objectizeNodes());
+    flowObj.put("edges", objectizeEdges());
+    flowObj.put("failure.email", this.failureEmail);
+    flowObj.put("success.email", this.successEmail);
+    flowObj.put("mailCreator", this.mailCreator);
+    flowObj.put("layedout", this.isLayedOut);
+    if (this.errors != null) {
+      flowObj.put("errors", this.errors);
+    }
+
+    if (this.metadata != null) {
+      flowObj.put("metadata", this.metadata);
+    }
+
+    return flowObj;
+  }
+
+  private List<Object> objectizeProperties() {
+    final ArrayList<Object> result = new ArrayList<>();
+    for (final FlowProps props : this.flowProps.values()) {
+      final Object objProps = props.toObject();
+      result.add(objProps);
+    }
+
+    return result;
+  }
+
+  private List<Object> objectizeNodes() {
+    final ArrayList<Object> result = new ArrayList<>();
+    for (final Node node : getNodes()) {
+      final Object nodeObj = node.toObject();
+      result.add(nodeObj);
+    }
+
+    return result;
+  }
+
+  private List<Object> objectizeEdges() {
+    final ArrayList<Object> result = new ArrayList<>();
+    for (final Edge edge : getEdges()) {
+      final Object edgeObj = edge.toObject();
+      result.add(edgeObj);
+    }
+
+    return result;
+  }
+
+  public boolean isLayedOut() {
+    return this.isLayedOut;
+  }
+
+  public void setLayedOut(final boolean layedOut) {
     this.isLayedOut = layedOut;
   }
 
+  public Map<String, Object> getMetadata() {
+    if (this.metadata == null) {
+      this.metadata = new HashMap<>();
+    }
+    return this.metadata;
+  }
+
+  public void setMetadata(final Map<String, Object> metadata) {
+    this.metadata = metadata;
+  }
+
   public Map<String, Node> getNodeMap() {
-    return nodes;
+    return this.nodes;
   }
 
   public Map<String, Set<Edge>> getOutEdgeMap() {
-    return outEdges;
+    return this.outEdges;
   }
 
   public Map<String, Set<Edge>> getInEdgeMap() {
-    return inEdges;
+    return this.inEdges;
   }
 
-  public FlowProps getFlowProps(String propSource) {
-    return flowProps.get(propSource);
+  public FlowProps getFlowProps(final String propSource) {
+    return this.flowProps.get(propSource);
   }
 
   public Map<String, FlowProps> getAllFlowProps() {
-    return flowProps;
+    return this.flowProps;
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
-  public void setProjectId(int projectId) {
+  public void setProjectId(final int projectId) {
     this.projectId = projectId;
   }
 }

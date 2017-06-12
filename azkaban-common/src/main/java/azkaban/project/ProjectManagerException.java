@@ -20,13 +20,14 @@ import azkaban.spi.AzkabanException;
 
 
 public class ProjectManagerException extends AzkabanException {
+
   private static final long serialVersionUID = 1L;
 
-  public ProjectManagerException(String message) {
+  public ProjectManagerException(final String message) {
     super(message);
   }
 
-  public ProjectManagerException(String message, Throwable cause) {
+  public ProjectManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

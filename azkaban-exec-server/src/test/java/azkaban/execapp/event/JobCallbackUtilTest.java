@@ -2,18 +2,20 @@ package azkaban.execapp.event;
 
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.HTTP_GET;
-import static azkaban.jobcallback.JobCallbackConstants.HTTP_POST;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_STATUS_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.HTTP_GET;
+import static azkaban.jobcallback.JobCallbackConstants.HTTP_POST;
 
+import azkaban.jobcallback.JobCallbackConstants;
+import azkaban.jobcallback.JobCallbackStatusEnum;
+import azkaban.utils.Props;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.http.Header;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -21,12 +23,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import azkaban.jobcallback.JobCallbackConstants;
-import azkaban.jobcallback.JobCallbackStatusEnum;
-import azkaban.utils.Props;
-
 public class JobCallbackUtilTest {
-  private static Map<String, String> contextInfo;
 
   private static final String SERVER_NAME = "localhost:9999";
   private static final String PROJECT_NAME = "PROJECTX";
@@ -35,10 +32,11 @@ public class JobCallbackUtilTest {
   private static final String EXECUTION_ID = "1234";
   private static final String JOB_STATUS_NAME = JobCallbackStatusEnum.STARTED
       .name();
+  private static Map<String, String> contextInfo;
 
   @BeforeClass
   public static void setup() {
-    contextInfo = new HashMap<String, String>();
+    contextInfo = new HashMap<>();
     contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
     contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NAME);
     contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NAME);
@@ -49,7 +47,7 @@ public class JobCallbackUtilTest {
 
   @Test
   public void noCallbackPropertiesTest() {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("abc", "def");
 
     Assert.assertFalse(JobCallbackUtil.isThereJobCallbackProperty(props,
@@ -67,8 +65,8 @@ public class JobCallbackUtilTest {
 
   @Test
   public void hasCallbackPropertiesTest() {
-    Props props = new Props();
-    for (JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
+    final Props props = new Props();
+    for (final JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
       props.put(
           "job.notification." + jobStatus.name().toLowerCase() + ".1.url",
           "def");
@@ -91,7 +89,7 @@ public class JobCallbackUtilTest {
 
   @Test
   public void multipleStatusWithNoJobCallbackTest() {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("abc", "def");
 
     Assert.assertFalse(JobCallbackUtil.isThereJobCallbackProperty(props,
@@ -112,7 +110,7 @@ public class JobCallbackUtilTest {
 
     props = new Props();
     props.put("job.notification."
-        + JobCallbackStatusEnum.COMPLETED.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.COMPLETED.name().toLowerCase() + ".1.url",
         "def");
     Assert.assertTrue(JobCallbackUtil.isThereJobCallbackProperty(props,
         JobCallbackStatusEnum.STARTED, JobCallbackStatusEnum.COMPLETED,
@@ -135,8 +133,8 @@ public class JobCallbackUtilTest {
 
   @Test
   public void hasCallbackPropertiesWithGapTest() {
-    Props props = new Props();
-    for (JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
+    final Props props = new Props();
+    for (final JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
       props.put(
           "job.notification." + jobStatus.name().toLowerCase() + ".2.url",
           "def");
@@ -159,8 +157,8 @@ public class JobCallbackUtilTest {
 
   @Test
   public void noTokenTest() {
-    String urlWithNoToken = "http://www.linkedin.com";
-    String result =
+    final String urlWithNoToken = "http://www.linkedin.com";
+    final String result =
         JobCallbackUtil.replaceTokens(urlWithNoToken, contextInfo, true);
     Assert.assertEquals(urlWithNoToken, result);
   }
@@ -168,10 +166,10 @@ public class JobCallbackUtilTest {
   @Test
   public void oneTokenTest() {
 
-    String urlWithOneToken =
+    final String urlWithOneToken =
         "http://www.linkedin.com?project=" + CONTEXT_PROJECT_TOKEN + "&another=yes";
 
-    String result =
+    final String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
     Assert.assertEquals("http://www.linkedin.com?project=" + PROJECT_NAME
         + "&another=yes", result);
@@ -180,11 +178,11 @@ public class JobCallbackUtilTest {
   @Test
   public void twoTokensTest() {
 
-    String urlWithOneToken =
+    final String urlWithOneToken =
         "http://www.linkedin.com?project=" + CONTEXT_PROJECT_TOKEN + "&flow="
             + CONTEXT_FLOW_TOKEN;
 
-    String result =
+    final String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
     Assert.assertEquals("http://www.linkedin.com?project=" + PROJECT_NAME
         + "&flow=" + FLOW_NAME, result);
@@ -193,16 +191,16 @@ public class JobCallbackUtilTest {
   @Test
   public void allTokensTest() {
 
-    String urlWithOneToken =
+    final String urlWithOneToken =
         "http://www.linkedin.com?server=" + SERVER_NAME + "&project="
             + CONTEXT_PROJECT_TOKEN + "&flow=" + CONTEXT_FLOW_TOKEN + "&executionId="
             + CONTEXT_EXECUTION_ID_TOKEN + "&job=" + CONTEXT_JOB_TOKEN + "&status="
             + CONTEXT_JOB_STATUS_TOKEN;
 
-    String result =
+    final String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
 
-    String expectedResult =
+    final String expectedResult =
         "http://www.linkedin.com?server=" + SERVER_NAME + "&project="
             + PROJECT_NAME + "&flow=" + FLOW_NAME + "&executionId="
             + EXECUTION_ID + "&job=" + JOB_NAME + "&status=" + JOB_STATUS_NAME;
@@ -212,11 +210,11 @@ public class JobCallbackUtilTest {
 
   @Test
   public void tokenWithEncoding() throws Exception {
-    String jobNameWithSpaces = "my job";
-    String encodedJobName = URLEncoder.encode(jobNameWithSpaces, "UTF-8");
+    final String jobNameWithSpaces = "my job";
+    final String encodedJobName = URLEncoder.encode(jobNameWithSpaces, "UTF-8");
 
-    Map<String, String> customContextInfo = new HashMap<String, String>();
-    customContextInfo = new HashMap<String, String>();
+    Map<String, String> customContextInfo = new HashMap<>();
+    customContextInfo = new HashMap<>();
     customContextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
     customContextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NAME);
     customContextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NAME);
@@ -224,10 +222,10 @@ public class JobCallbackUtilTest {
     customContextInfo.put(CONTEXT_JOB_TOKEN, jobNameWithSpaces);
     customContextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JOB_STATUS_NAME);
 
-    String urlWithOneToken =
+    final String urlWithOneToken =
         "http://www.linkedin.com?job=" + CONTEXT_JOB_TOKEN + "&flow=" + CONTEXT_FLOW_TOKEN;
 
-    String result =
+    final String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, customContextInfo, true);
     Assert.assertEquals("http://www.linkedin.com?job=" + encodedJobName
         + "&flow=" + FLOW_NAME, result);
@@ -235,11 +233,11 @@ public class JobCallbackUtilTest {
 
   @Test
   public void parseJobCallbackOneGetTest() {
-    Props props = new Props();
-    String url = "http://lva1-rpt07.corp.linkedin.com";
+    final Props props = new Props();
+    final String url = "http://lva1-rpt07.corp.linkedin.com";
     props.put("job.notification."
         + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
-    List<HttpRequestBase> result =
+    final List<HttpRequestBase> result =
         JobCallbackUtil.parseJobCallbackProperties(props,
             JobCallbackStatusEnum.STARTED, contextInfo, 3);
 
@@ -250,11 +248,11 @@ public class JobCallbackUtilTest {
 
   @Test
   public void parseJobCallbackWithInvalidURLTest() {
-    Props props = new Props();
-    String url = "linkedin.com";
+    final Props props = new Props();
+    final String url = "linkedin.com";
     props.put("job.notification."
         + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
-    List<HttpRequestBase> result =
+    final List<HttpRequestBase> result =
         JobCallbackUtil.parseJobCallbackProperties(props,
             JobCallbackStatusEnum.STARTED, contextInfo, 3);
 
@@ -265,17 +263,17 @@ public class JobCallbackUtilTest {
 
   @Test
   public void parseJobCallbackTwoGetsTest() {
-    Props props = new Props();
-    String[] urls =
-        { "http://lva1-rpt07.corp.linkedin.com",
-            "http://lva1-rpt06.corp.linkedin.com" };
+    final Props props = new Props();
+    final String[] urls =
+        {"http://lva1-rpt07.corp.linkedin.com",
+            "http://lva1-rpt06.corp.linkedin.com"};
     props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url",
         urls[0]);
     props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".2.url",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".2.url",
         urls[1]);
-    List<HttpRequestBase> result =
+    final List<HttpRequestBase> result =
         JobCallbackUtil.parseJobCallbackProperties(props,
             JobCallbackStatusEnum.STARTED, contextInfo, 3);
 
@@ -288,17 +286,17 @@ public class JobCallbackUtilTest {
 
   @Test
   public void parseJobCallbackWithGapTest() {
-    Props props = new Props();
-    String[] urls =
-        { "http://lva1-rpt07.corp.linkedin.com",
-            "http://lva1-rpt06.corp.linkedin.com" };
+    final Props props = new Props();
+    final String[] urls =
+        {"http://lva1-rpt07.corp.linkedin.com",
+            "http://lva1-rpt06.corp.linkedin.com"};
     props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url",
         urls[0]);
     props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".3.url",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".3.url",
         urls[1]);
-    List<HttpRequestBase> result =
+    final List<HttpRequestBase> result =
         JobCallbackUtil.parseJobCallbackProperties(props,
             JobCallbackStatusEnum.STARTED, contextInfo, 3);
 
@@ -309,26 +307,26 @@ public class JobCallbackUtilTest {
 
   @Test
   public void parseJobCallbackWithPostTest() {
-    Props props = new Props();
-    String url = "http://lva1-rpt07.corp.linkedin.com";
-    String bodyText = "{name:\"you\"}";
+    final Props props = new Props();
+    final String url = "http://lva1-rpt07.corp.linkedin.com";
+    final String bodyText = "{name:\"you\"}";
     props.put("job.notification."
         + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
     props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.method",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.method",
         HTTP_POST);
 
     props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.body",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.body",
         bodyText);
 
-    List<HttpRequestBase> result =
+    final List<HttpRequestBase> result =
         JobCallbackUtil.parseJobCallbackProperties(props,
             JobCallbackStatusEnum.STARTED, contextInfo, 3);
 
     Assert.assertEquals(1, result.size());
 
-    HttpPost httpPost = (HttpPost) result.get(0);
+    final HttpPost httpPost = (HttpPost) result.get(0);
 
     Assert.assertEquals(url, httpPost.getURI().toString());
     Assert.assertEquals(HTTP_POST, httpPost.getMethod());
@@ -340,7 +338,7 @@ public class JobCallbackUtilTest {
 
   @Test
   public void noHeaderElementTest() {
-    Header[] headerArr =
+    final Header[] headerArr =
         JobCallbackUtil.parseHttpHeaders("this is an amazing day");
 
     Assert.assertNotNull(headerArr);
@@ -349,9 +347,9 @@ public class JobCallbackUtilTest {
 
   @Test
   public void oneHeaderElementTest() {
-    String name = "Content-type";
-    String value = "application/json";
-    String headers =
+    final String name = "Content-type";
+    final String value = "application/json";
+    final String headers =
         name + JobCallbackConstants.HEADER_NAME_VALUE_DELIMITER + value;
     Header[] headerArr = JobCallbackUtil.parseHttpHeaders(headers);
 
@@ -360,7 +358,7 @@ public class JobCallbackUtilTest {
     Assert.assertEquals(name, headerArr[0].getName());
     Assert.assertEquals(value, headerArr[0].getValue());
 
-    String headersWithExtraDelimiter =
+    final String headersWithExtraDelimiter =
         name + JobCallbackConstants.HEADER_NAME_VALUE_DELIMITER + value
             + JobCallbackConstants.HEADER_ELEMENT_DELIMITER;
 
@@ -374,14 +372,14 @@ public class JobCallbackUtilTest {
 
   @Test
   public void multipleHeaderElementTest() {
-    String name1 = "Content-type";
-    String value1 = "application/json";
+    final String name1 = "Content-type";
+    final String value1 = "application/json";
 
-    String name2 = "Accept";
-    String value2 = "application/xml";
+    final String name2 = "Accept";
+    final String value2 = "application/xml";
 
-    String name3 = "User-Agent";
-    String value3 =
+    final String name3 = "User-Agent";
+    final String value3 =
         "Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/21.0";
 
     String headers = makeHeaderElement(name1, value1);
@@ -391,7 +389,7 @@ public class JobCallbackUtilTest {
     headers += makeHeaderElement(name3, value3);
 
     System.out.println("headers: " + headers);
-    Header[] headerArr = JobCallbackUtil.parseHttpHeaders(headers);
+    final Header[] headerArr = JobCallbackUtil.parseHttpHeaders(headers);
 
     Assert.assertNotNull(headerArr);
     Assert.assertEquals(3, headerArr.length);
@@ -405,14 +403,14 @@ public class JobCallbackUtilTest {
 
   @Test
   public void partialHeaderElementTest() {
-    String name1 = "Content-type";
-    String value1 = "application/json";
+    final String name1 = "Content-type";
+    final String value1 = "application/json";
 
-    String name2 = "Accept";
-    String value2 = "";
+    final String name2 = "Accept";
+    final String value2 = "";
 
-    String name3 = "User-Agent";
-    String value3 =
+    final String name3 = "User-Agent";
+    final String value3 =
         "Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/21.0";
 
     String headers = makeHeaderElement(name1, value1);
@@ -422,7 +420,7 @@ public class JobCallbackUtilTest {
     headers += makeHeaderElement(name3, value3);
 
     System.out.println("headers: " + headers);
-    Header[] headerArr = JobCallbackUtil.parseHttpHeaders(headers);
+    final Header[] headerArr = JobCallbackUtil.parseHttpHeaders(headers);
 
     Assert.assertNotNull(headerArr);
     Assert.assertEquals(3, headerArr.length);
@@ -434,7 +432,7 @@ public class JobCallbackUtilTest {
     Assert.assertEquals(value3, headerArr[2].getValue());
   }
 
-  private String makeHeaderElement(String name, String value) {
+  private String makeHeaderElement(final String name, final String value) {
     return name + JobCallbackConstants.HEADER_NAME_VALUE_DELIMITER + value;
   }
 

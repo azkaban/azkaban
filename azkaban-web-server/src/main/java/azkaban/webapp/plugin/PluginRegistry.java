@@ -31,40 +31,8 @@ public class PluginRegistry {
   public Map<String, TreeSet<ViewerPlugin>> jobTypeViewerPlugins;
 
   private PluginRegistry() {
-    viewerPlugins = new TreeSet<ViewerPlugin>(ViewerPlugin.COMPARATOR);
-    jobTypeViewerPlugins = new HashMap<String, TreeSet<ViewerPlugin>>();
-  }
-
-  public void register(ViewerPlugin plugin) {
-    viewerPlugins.add(plugin);
-    List<String> jobTypes = plugin.getJobTypes();
-    if (jobTypes == null) {
-      return;
-    }
-
-    for (String jobType : jobTypes) {
-      TreeSet<ViewerPlugin> plugins = null;
-      if (!jobTypeViewerPlugins.containsKey(jobType)) {
-        plugins = new TreeSet<ViewerPlugin>(ViewerPlugin.COMPARATOR);
-        plugins.add(plugin);
-        jobTypeViewerPlugins.put(jobType, plugins);
-      } else {
-        plugins = jobTypeViewerPlugins.get(jobType);
-        plugins.add(plugin);
-      }
-    }
-  }
-
-  public List<ViewerPlugin> getViewerPlugins() {
-    return new ArrayList<ViewerPlugin>(viewerPlugins);
-  }
-
-  public List<ViewerPlugin> getViewerPluginsForJobType(String jobType) {
-    TreeSet<ViewerPlugin> plugins = jobTypeViewerPlugins.get(jobType);
-    if (plugins == null) {
-      return null;
-    }
-    return new ArrayList<ViewerPlugin>(plugins);
+    this.viewerPlugins = new TreeSet<>(ViewerPlugin.COMPARATOR);
+    this.jobTypeViewerPlugins = new HashMap<>();
   }
 
   public static PluginRegistry getRegistry() {
@@ -72,5 +40,37 @@ public class PluginRegistry {
       registry = new PluginRegistry();
     }
     return registry;
+  }
+
+  public void register(final ViewerPlugin plugin) {
+    this.viewerPlugins.add(plugin);
+    final List<String> jobTypes = plugin.getJobTypes();
+    if (jobTypes == null) {
+      return;
+    }
+
+    for (final String jobType : jobTypes) {
+      TreeSet<ViewerPlugin> plugins = null;
+      if (!this.jobTypeViewerPlugins.containsKey(jobType)) {
+        plugins = new TreeSet<>(ViewerPlugin.COMPARATOR);
+        plugins.add(plugin);
+        this.jobTypeViewerPlugins.put(jobType, plugins);
+      } else {
+        plugins = this.jobTypeViewerPlugins.get(jobType);
+        plugins.add(plugin);
+      }
+    }
+  }
+
+  public List<ViewerPlugin> getViewerPlugins() {
+    return new ArrayList<>(this.viewerPlugins);
+  }
+
+  public List<ViewerPlugin> getViewerPluginsForJobType(final String jobType) {
+    final TreeSet<ViewerPlugin> plugins = this.jobTypeViewerPlugins.get(jobType);
+    if (plugins == null) {
+      return null;
+    }
+    return new ArrayList<>(plugins);
   }
 }

@@ -16,15 +16,15 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.webapp.AzkabanWebServer;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-
-import azkaban.webapp.AzkabanWebServer;
 
 /**
  * A ServletContextListener that loads the batch application
  */
 public class AzkabanServletContextListener implements ServletContextListener {
+
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
 
   private AzkabanWebServer app;
@@ -33,7 +33,7 @@ public class AzkabanServletContextListener implements ServletContextListener {
    * Delete the app
    */
   @Override
-  public void contextDestroyed(ServletContextEvent event) {
+  public void contextDestroyed(final ServletContextEvent event) {
     this.app = null;
   }
 
@@ -41,10 +41,10 @@ public class AzkabanServletContextListener implements ServletContextListener {
    * Load the app for use in non jetty containers.
    */
   @Override
-  public void contextInitialized(ServletContextEvent event) {
+  public void contextInitialized(final ServletContextEvent event) {
     try {
       this.app = new AzkabanWebServer();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }

@@ -16,19 +16,18 @@
 
 package azkaban.jobExecutor;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.log4j.Logger;
-
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.server.AzkabanServer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.log4j.Logger;
 
 public class JavaProcessJob extends ProcessJob {
+
   public static final String CLASSPATH = "classpath";
   public static final String GLOBAL_CLASSPATH = "global.classpaths";
   public static final String JAVA_CLASS = "java.class";
@@ -43,14 +42,14 @@ public class JavaProcessJob extends ProcessJob {
 
   public static String JAVA_COMMAND = "java";
 
-  public JavaProcessJob(String jobid, Props sysProps, Props jobProps,
-      Logger logger) {
+  public JavaProcessJob(final String jobid, final Props sysProps, final Props jobProps,
+      final Logger logger) {
     super(jobid, sysProps, jobProps, logger);
   }
 
   @Override
   protected List<String> getCommandList() {
-    ArrayList<String> list = new ArrayList<String>();
+    final ArrayList<String> list = new ArrayList<>();
     list.add(createCommandLine());
     return list;
   }
@@ -72,7 +71,7 @@ public class JavaProcessJob extends ProcessJob {
   }
 
   protected String getClassPathParam() {
-    List<String> classPath = getClassPaths();
+    final List<String> classPath = getClassPaths();
     if (classPath == null || classPath.size() == 0) {
       return "";
     }
@@ -82,27 +81,27 @@ public class JavaProcessJob extends ProcessJob {
 
   protected List<String> getClassPaths() {
 
-    List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
+    final List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
 
-    ArrayList<String> classpathList = new ArrayList<String>();
+    final ArrayList<String> classpathList = new ArrayList<>();
     // Adding global properties used system wide.
     if (getJobProps().containsKey(GLOBAL_CLASSPATH)) {
-      List<String> globalClasspath =
+      final List<String> globalClasspath =
           getJobProps().getStringList(GLOBAL_CLASSPATH);
-      for (String global : globalClasspath) {
+      for (final String global : globalClasspath) {
         getLog().info("Adding to global classpath:" + global);
         classpathList.add(global);
       }
     }
 
     if (classPaths == null) {
-      File path = new File(getPath());
+      final File path = new File(getPath());
       // File parent = path.getParentFile();
       getLog().info(
           "No classpath specified. Trying to load classes from " + path);
 
       if (path != null) {
-        for (File file : path.listFiles()) {
+        for (final File file : path.listFiles()) {
           if (file.getName().endsWith(".jar")) {
             // log.info("Adding to classpath:" + file.getName());
             classpathList.add(file.getName());
@@ -130,7 +129,7 @@ public class JavaProcessJob extends ProcessJob {
   }
 
   protected String getJVMArguments() {
-    String globalJVMArgs = getJobProps().getString(GLOBAL_JVM_PARAMS, null);
+    final String globalJVMArgs = getJobProps().getString(GLOBAL_JVM_PARAMS, null);
 
     if (globalJVMArgs == null) {
       return getJobProps().getString(JVM_PARAMS, "");
@@ -139,10 +138,10 @@ public class JavaProcessJob extends ProcessJob {
     return globalJVMArgs + " " + getJobProps().getString(JVM_PARAMS, "");
   }
 
-  protected String createArguments(List<String> arguments, String separator) {
+  protected String createArguments(final List<String> arguments, final String separator) {
     if (arguments != null && arguments.size() > 0) {
       String param = "";
-      for (String arg : arguments) {
+      for (final String arg : arguments) {
         param += arg + separator;
       }
 
@@ -154,29 +153,33 @@ public class JavaProcessJob extends ProcessJob {
 
   @Override
   protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
-    String strXms = getInitialMemorySize();
-    String strXmx = getMaxMemorySize();
-    long xms = Utils.parseMemString(strXms);
-    long xmx = Utils.parseMemString(strXmx);
+    final String strXms = getInitialMemorySize();
+    final String strXmx = getMaxMemorySize();
+    final long xms = Utils.parseMemString(strXms);
+    final long xmx = Utils.parseMemString(strXmx);
 
-    Props azkabanProperties = AzkabanServer.getAzkabanProperties();
+    final Props azkabanProperties = AzkabanServer.getAzkabanProperties();
     if (azkabanProperties != null) {
-      String maxXms = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
-      String maxXmx = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
-      long sizeMaxXms = Utils.parseMemString(maxXms);
-      long sizeMaxXmx = Utils.parseMemString(maxXmx);
+      final String maxXms = azkabanProperties
+          .getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
+      final String maxXmx = azkabanProperties
+          .getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
+      final long sizeMaxXms = Utils.parseMemString(maxXms);
+      final long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
       if (xms > sizeMaxXms) {
-        throw new Exception(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+        throw new Exception(
+            String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
                 getId(), maxXms));
       }
 
       if (xmx > sizeMaxXmx) {
-        throw new Exception(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+        throw new Exception(
+            String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
                 getId(), maxXmx));
       }
     }
 
-    return new Pair<Long, Long>(xms, xmx);
+    return new Pair<>(xms, xmx);
   }
 }

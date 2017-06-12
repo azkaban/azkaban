@@ -1,10 +1,9 @@
 package azkaban.project.validator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.junit.Test;
 
 /**
@@ -14,10 +13,10 @@ public class ValidationReportTest {
 
   @Test
   public void testAddWarnLevelInfoMsg() {
-    ValidationReport report = new ValidationReport();
-    String msg = "test warn level info message.";
+    final ValidationReport report = new ValidationReport();
+    final String msg = "test warn level info message.";
     report.addWarnLevelInfoMsg(msg);
-    for (String info : report.getInfoMsgs()) {
+    for (final String info : report.getInfoMsgs()) {
       assertEquals("Info message added through addWarnLevelInfoMsg should have level set to WARN",
           ValidationReport.getInfoMsgLevel(info), ValidationStatus.WARN);
       assertEquals("Retrieved info message does not match the original one.",
@@ -27,10 +26,10 @@ public class ValidationReportTest {
 
   @Test
   public void testAddErrorLevelInfoMsg() {
-    ValidationReport report = new ValidationReport();
-    String msg = "test error level error message.";
+    final ValidationReport report = new ValidationReport();
+    final String msg = "test error level error message.";
     report.addErrorLevelInfoMsg(msg);
-    for (String info : report.getInfoMsgs()) {
+    for (final String info : report.getInfoMsgs()) {
       assertEquals("Info message added through addErrorLevelInfoMsg should have level set to ERROR",
           ValidationReport.getInfoMsgLevel(info), ValidationStatus.ERROR);
       assertEquals("Retrieved info message does not match the original one.",
@@ -40,8 +39,8 @@ public class ValidationReportTest {
 
   @Test
   public void testAddMsgs() {
-    ValidationReport report = new ValidationReport();
-    Set<String> msgs = new HashSet<String>();
+    final ValidationReport report = new ValidationReport();
+    final Set<String> msgs = new HashSet<>();
     msgs.add("test msg 1.");
     msgs.add("test msg 2.");
     report.addWarningMsgs(msgs);

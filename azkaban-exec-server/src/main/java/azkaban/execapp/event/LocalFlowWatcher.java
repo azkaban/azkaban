@@ -25,48 +25,50 @@ import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
 
 public class LocalFlowWatcher extends FlowWatcher {
-  private LocalFlowWatcherListener watcherListener;
+
+  private final LocalFlowWatcherListener watcherListener;
   private FlowRunner runner;
   private boolean isShutdown = false;
 
-  public LocalFlowWatcher(FlowRunner runner) {
+  public LocalFlowWatcher(final FlowRunner runner) {
     super(runner.getExecutableFlow().getExecutionId());
     super.setFlow(runner.getExecutableFlow());
 
-    watcherListener = new LocalFlowWatcherListener();
+    this.watcherListener = new LocalFlowWatcherListener();
     this.runner = runner;
-    runner.addListener(watcherListener);
+    runner.addListener(this.watcherListener);
   }
 
   @Override
   public void stopWatcher() {
     // Just freeing stuff
-    if (isShutdown) {
+    if (this.isShutdown) {
       return;
     }
 
-    isShutdown = true;
-    runner.removeListener(watcherListener);
-    runner = null;
+    this.isShutdown = true;
+    this.runner.removeListener(this.watcherListener);
+    this.runner = null;
 
     getLogger().info("Stopping watcher, and unblocking pipeline");
     super.unblockAllWatches();
   }
 
   public class LocalFlowWatcherListener implements EventListener {
+
     @Override
-    public void handleEvent(Event event) {
+    public void handleEvent(final Event event) {
       if (event.getType() == Type.JOB_FINISHED) {
         if (event.getRunner() instanceof FlowRunner) {
           // The flow runner will finish a job without it running
-          EventData eventData = event.getData();
+          final EventData eventData = event.getData();
           if (eventData.getNestedId() != null) {
             handleJobStatusChange(eventData.getNestedId(), eventData.getStatus());
           }
         } else if (event.getRunner() instanceof JobRunner) {
           // A job runner is finished
-          JobRunner runner = (JobRunner) event.getRunner();
-          ExecutableNode node = runner.getNode();
+          final JobRunner runner = (JobRunner) event.getRunner();
+          final ExecutableNode node = runner.getNode();
           System.out.println(node + " looks like " + node.getStatus());
           handleJobStatusChange(node.getNestedId(), node.getStatus());
         }

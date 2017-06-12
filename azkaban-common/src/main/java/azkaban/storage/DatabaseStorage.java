@@ -29,29 +29,31 @@ import javax.inject.Inject;
 /**
  * DatabaseStorage
  *
- * This class helps in storing projects in the DB itself. This is intended to be the default since it is the current
- * behavior of Azkaban.
+ * This class helps in storing projects in the DB itself. This is intended to be the default since
+ * it is the current behavior of Azkaban.
  */
 public class DatabaseStorage implements Storage {
+
   private final ProjectLoader projectLoader;
 
   @Inject
-  public DatabaseStorage(ProjectLoader projectLoader) {
+  public DatabaseStorage(final ProjectLoader projectLoader) {
     this.projectLoader = projectLoader;
   }
 
   @Override
-  public InputStream get(String key) {
-    throw new UnsupportedOperationException("Not implemented yet. Use get(projectId, version) instead");
+  public InputStream get(final String key) {
+    throw new UnsupportedOperationException(
+        "Not implemented yet. Use get(projectId, version) instead");
   }
 
-  public ProjectFileHandler get(int projectId, int version) {
-    return projectLoader.getUploadedFile(projectId, version);
+  public ProjectFileHandler get(final int projectId, final int version) {
+    return this.projectLoader.getUploadedFile(projectId, version);
   }
 
   @Override
-  public String put(StorageMetadata metadata, File localFile) {
-    projectLoader.uploadProjectFile(
+  public String put(final StorageMetadata metadata, final File localFile) {
+    this.projectLoader.uploadProjectFile(
         metadata.getProjectId(),
         metadata.getVersion(),
         localFile, metadata.getUploader());
@@ -60,7 +62,7 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public boolean delete(String key) {
+  public boolean delete(final String key) {
     throw new UnsupportedOperationException("Delete is not supported");
   }
 }

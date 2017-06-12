@@ -58,7 +58,7 @@ public class UtilsTest {
   @Test
   public void testValidCronExpressionV() {
 
-    DateTimeZone timezone = DateTimeZone.getDefault();
+    final DateTimeZone timezone = DateTimeZone.getDefault();
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * *", timezone));
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2017", timezone));
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 * ? * *", timezone));
@@ -72,7 +72,7 @@ public class UtilsTest {
   @Test
   public void testInvalidCronExpression() {
 
-    DateTimeZone timezone = DateTimeZone.getDefault();
+    final DateTimeZone timezone = DateTimeZone.getDefault();
     Assert.assertFalse(Utils.isCronExpressionValid("0 0 3 * * *", timezone));
     Assert.assertFalse(Utils.isCronExpressionValid("0 66 * ? * *", timezone));
     Assert.assertFalse(Utils.isCronExpressionValid("0 * * ? * 8", timezone));

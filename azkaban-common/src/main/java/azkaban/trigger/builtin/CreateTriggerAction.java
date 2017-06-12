@@ -16,25 +16,38 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CreateTriggerAction implements TriggerAction {
 
   public static final String type = "CreateTriggerAction";
   private static TriggerManager triggerManager;
-  private Trigger trigger;
-  @SuppressWarnings("unused")
+  private final Trigger trigger;
+  private final String actionId;
   private Map<String, Object> context;
-  private String actionId;
 
-  public CreateTriggerAction(String actionId, Trigger trigger) {
+  public CreateTriggerAction(final String actionId, final Trigger trigger) {
     this.actionId = actionId;
     this.trigger = trigger;
+  }
+
+  public static void setTriggerManager(final TriggerManager trm) {
+    triggerManager = trm;
+  }
+
+  public static CreateTriggerAction createFromJson(final Object obj) throws Exception {
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create action of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    final String actionId = (String) jsonObj.get("actionId");
+    final Trigger trigger = Trigger.fromJson(jsonObj.get("trigger"));
+    return new CreateTriggerAction(actionId, trigger);
   }
 
   @Override
@@ -42,54 +55,38 @@ public class CreateTriggerAction implements TriggerAction {
     return type;
   }
 
-  public static void setTriggerManager(TriggerManager trm) {
-    triggerManager = trm;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static CreateTriggerAction createFromJson(Object obj) throws Exception {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create action of " + type + " from "
-          + jsonObj.get("type"));
-    }
-    String actionId = (String) jsonObj.get("actionId");
-    Trigger trigger = Trigger.fromJson(jsonObj.get("trigger"));
-    return new CreateTriggerAction(actionId, trigger);
-  }
-
   @Override
-  public CreateTriggerAction fromJson(Object obj) throws Exception {
+  public CreateTriggerAction fromJson(final Object obj) throws Exception {
     return createFromJson(obj);
   }
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
-    jsonObj.put("actionId", actionId);
+    final Map<String, Object> jsonObj = new HashMap<>();
+    jsonObj.put("actionId", this.actionId);
     jsonObj.put("type", type);
-    jsonObj.put("trigger", trigger.toJson());
+    jsonObj.put("trigger", this.trigger.toJson());
 
     return jsonObj;
   }
 
   @Override
   public void doAction() throws Exception {
-    triggerManager.insertTrigger(trigger);
+    triggerManager.insertTrigger(this.trigger);
   }
 
   @Override
   public String getDescription() {
-    return "create another: " + trigger.getDescription();
+    return "create another: " + this.trigger.getDescription();
   }
 
   @Override
   public String getId() {
-    return actionId;
+    return this.actionId;
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
     this.context = context;
   }
 

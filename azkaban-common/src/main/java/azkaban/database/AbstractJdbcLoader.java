@@ -18,15 +18,45 @@ package azkaban.database;
 
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
-
 import java.io.IOException;
 import java.sql.Connection;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 
 
 public abstract class AbstractJdbcLoader {
+
+  private final AzkabanDataSource dataSource;
+  private final CommonMetrics commonMetrics;
+
+  public AbstractJdbcLoader(final Props props, final CommonMetrics commonMetrics) {
+    this.dataSource = DataSourceUtils.getDataSource(props);
+    this.commonMetrics = commonMetrics;
+  }
+
+  protected Connection getDBConnection(final boolean autoCommit) throws IOException {
+    Connection connection = null;
+    this.commonMetrics.markDBConnection();
+    final long startMs = System.currentTimeMillis();
+    try {
+      connection = this.dataSource.getConnection();
+      connection.setAutoCommit(autoCommit);
+    } catch (final Exception e) {
+      DbUtils.closeQuietly(connection);
+      throw new IOException("Error getting DB connection.", e);
+    }
+    this.commonMetrics.setDBConnectionTime(System.currentTimeMillis() - startMs);
+    return connection;
+  }
+
+  protected QueryRunner createQueryRunner() {
+    return new QueryRunner(this.dataSource);
+  }
+
+  protected boolean allowsOnDuplicateKey() {
+    return this.dataSource.allowsOnDuplicateKey();
+  }
+
   /**
    * Used for when we store text data. Plain uses UTF8 encoding.
    */
@@ -35,52 +65,23 @@ public abstract class AbstractJdbcLoader {
 
     private final int numVal;
 
-    EncodingType(int numVal) {
+    EncodingType(final int numVal) {
       this.numVal = numVal;
     }
 
-    public int getNumVal() {
-      return numVal;
-    }
-
-    public static EncodingType fromInteger(int x) {
+    public static EncodingType fromInteger(final int x) {
       switch (x) {
-      case 1:
-        return PLAIN;
-      case 2:
-        return GZIP;
-      default:
-        return PLAIN;
+        case 1:
+          return PLAIN;
+        case 2:
+          return GZIP;
+        default:
+          return PLAIN;
       }
     }
-  }
 
-  private AzkabanDataSource dataSource;
-
-  public AbstractJdbcLoader(Props props) {
-    dataSource = DataSourceUtils.getDataSource(props);
-  }
-
-  protected Connection getDBConnection(boolean autoCommit) throws IOException {
-    Connection connection = null;
-    CommonMetrics.INSTANCE.markDBConnection();
-    long startMs = System.currentTimeMillis();
-    try {
-      connection = dataSource.getConnection();
-      connection.setAutoCommit(autoCommit);
-    } catch (Exception e) {
-      DbUtils.closeQuietly(connection);
-      throw new IOException("Error getting DB connection.", e);
+    public int getNumVal() {
+      return this.numVal;
     }
-    CommonMetrics.INSTANCE.setDBConnectionTime(System.currentTimeMillis() - startMs);
-    return connection;
-  }
-
-  protected QueryRunner createQueryRunner() {
-    return new QueryRunner(dataSource);
-  }
-
-  protected boolean allowsOnDuplicateKey() {
-    return dataSource.allowsOnDuplicateKey();
   }
 }

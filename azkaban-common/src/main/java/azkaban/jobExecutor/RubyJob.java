@@ -16,22 +16,20 @@
 
 package azkaban.jobExecutor;
 
-import org.apache.log4j.Logger;
-
 import azkaban.utils.Props;
-
 import com.google.common.collect.ImmutableSet;
+import org.apache.log4j.Logger;
 
 public class RubyJob extends LongArgJob {
 
   private static final String RUBY_BINARY_KEY = "ruby";
   private static final String SCRIPT_KEY = "script";
 
-  public RubyJob(String jobid, Props sysProps, Props jobProps, Logger log) {
+  public RubyJob(final String jobid, final Props sysProps, final Props jobProps, final Logger log) {
     super(jobid,
-        new String[] {
-          jobProps.getString(RUBY_BINARY_KEY, "ruby"),
-          jobProps.getString(SCRIPT_KEY)
+        new String[]{
+            jobProps.getString(RUBY_BINARY_KEY, "ruby"),
+            jobProps.getString(SCRIPT_KEY)
         },
         sysProps, jobProps, log,
         ImmutableSet.of(RUBY_BINARY_KEY, SCRIPT_KEY, JOB_TYPE));

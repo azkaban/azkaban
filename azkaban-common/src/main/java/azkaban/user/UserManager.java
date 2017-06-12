@@ -25,14 +25,11 @@ package azkaban.user;
  * instantiation may fail.
  */
 public interface UserManager {
+
   /**
    * Retrieves the user given the username and password to authenticate against.
    *
-   * @param username
-   * @param password
-   * @return
-   * @throws UserManagerException If the username/password combination doesn't
-   *           exist.
+   * @throws UserManagerException If the username/password combination doesn't exist.
    */
   public User getUser(String username, String password)
       throws UserManagerException;
@@ -40,26 +37,17 @@ public interface UserManager {
   /**
    * Returns true if the user is valid. This is used when adding permissions for
    * users
-   *
-   * @param username
-   * @return
    */
   public boolean validateUser(String username);
 
   /**
    * Returns true if the group is valid. This is used when adding permissions
    * for groups.
-   *
-   * @param group
-   * @return
    */
   public boolean validateGroup(String group);
 
   /**
    * Returns the user role. This may return null.
-   *
-   * @param roleName
-   * @return
    */
   public Role getRole(String roleName);
 

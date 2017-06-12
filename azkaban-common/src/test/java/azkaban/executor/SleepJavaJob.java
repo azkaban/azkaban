@@ -16,84 +16,86 @@
 
 package azkaban.executor;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 
 public class SleepJavaJob {
+
   private boolean fail;
   private String seconds;
   private int attempts;
   private int currentAttempt;
 
-  public SleepJavaJob(String id, Properties props) {
+  public SleepJavaJob(final String id, final Properties props) {
     setup(props);
   }
 
-  public SleepJavaJob(String id, Map<String, String> parameters) {
-    Properties properties = new Properties();
+  public SleepJavaJob(final String id, final Map<String, String> parameters) {
+    final Properties properties = new Properties();
     properties.putAll(parameters);
 
     setup(properties);
   }
 
-  private void setup(Properties props) {
-    String failStr = (String) props.get("fail");
+  public static void main(final String[] args) throws Exception {
+    final String propsFile = System.getenv("JOB_PROP_FILE");
+    final Properties prop = new Properties();
+    prop.load(Files.newBufferedReader(Paths.get(propsFile), StandardCharsets.UTF_8));
 
-    if (failStr == null || failStr.equals("false")) {
-      fail = false;
-    } else {
-      fail = true;
-    }
-
-    currentAttempt =
-        props.containsKey("azkaban.job.attempt") ? Integer
-            .parseInt((String) props.get("azkaban.job.attempt")) : 0;
-    String attemptString = (String) props.get("passRetry");
-    if (attemptString == null) {
-      attempts = -1;
-    } else {
-      attempts = Integer.valueOf(attemptString);
-    }
-    seconds = (String) props.get("seconds");
-
-    if (fail) {
-      System.out.println("Planning to fail after " + seconds
-          + " seconds. Attempts left " + currentAttempt + " of " + attempts);
-    } else {
-      System.out.println("Planning to succeed after " + seconds + " seconds.");
-    }
-  }
-
-  public static void main(String[] args) throws Exception {
-    String propsFile = System.getenv("JOB_PROP_FILE");
-    Properties prop = new Properties();
-    prop.load(new BufferedReader(new FileReader(propsFile)));
-
-    String jobName = System.getenv("JOB_NAME");
-    SleepJavaJob job = new SleepJavaJob(jobName, prop);
+    final String jobName = System.getenv("JOB_NAME");
+    final SleepJavaJob job = new SleepJavaJob(jobName, prop);
 
     job.run();
   }
 
+  private void setup(final Properties props) {
+    final String failStr = (String) props.get("fail");
+
+    if (failStr == null || failStr.equals("false")) {
+      this.fail = false;
+    } else {
+      this.fail = true;
+    }
+
+    this.currentAttempt =
+        props.containsKey("azkaban.job.attempt") ? Integer
+            .parseInt((String) props.get("azkaban.job.attempt")) : 0;
+    final String attemptString = (String) props.get("passRetry");
+    if (attemptString == null) {
+      this.attempts = -1;
+    } else {
+      this.attempts = Integer.valueOf(attemptString);
+    }
+    this.seconds = (String) props.get("seconds");
+
+    if (this.fail) {
+      System.out.println("Planning to fail after " + this.seconds
+          + " seconds. Attempts left " + this.currentAttempt + " of " + this.attempts);
+    } else {
+      System.out.println("Planning to succeed after " + this.seconds + " seconds.");
+    }
+  }
+
   public void run() throws Exception {
-    if (seconds == null) {
+    if (this.seconds == null) {
       throw new RuntimeException("Seconds not set");
     }
 
-    int sec = Integer.parseInt(seconds);
+    final int sec = Integer.parseInt(this.seconds);
     System.out.println("Sec " + sec);
     synchronized (this) {
       try {
         this.wait(sec * 1000);
-      } catch (InterruptedException e) {
-        System.out.println("Interrupted " + fail);
+      } catch (final InterruptedException e) {
+        System.out.println("Interrupted " + this.fail);
       }
     }
 
-    if (fail) {
-      if (attempts <= 0 || currentAttempt <= attempts) {
+    if (this.fail) {
+      if (this.attempts <= 0 || this.currentAttempt <= this.attempts) {
         throw new Exception("I failed because I had to.");
       }
     }
@@ -101,7 +103,7 @@ public class SleepJavaJob {
 
   public void cancel() throws Exception {
     System.out.println("Cancelled called on Sleep job");
-    fail = true;
+    this.fail = true;
     synchronized (this) {
       this.notifyAll();
     }

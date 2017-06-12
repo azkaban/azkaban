@@ -16,12 +16,11 @@
 
 package azkaban.webapp;
 
-import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
-
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -29,8 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * This singleton class WebMetrics is in charge of collecting varieties of metrics
  * from azkaban-web-server modules.
  */
-public enum WebMetrics {
-  INSTANCE;
+@Singleton
+public class WebMetrics {
 
   private final MetricRegistry registry;
 
@@ -40,11 +39,12 @@ public enum WebMetrics {
   // How long does user log fetch take when user call fetch-log api.
   private final AtomicLong logFetchLatency = new AtomicLong(0L);
 
-  WebMetrics() {
-    registry = MetricsManager.INSTANCE.getRegistry();
-    webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
-    webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
-    MetricsUtility.addGauge("fetchLogLatency", registry, logFetchLatency::get);
+  @Inject
+  WebMetrics(final MetricRegistry registry) {
+    this.registry = registry;
+    this.webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", this.registry);
+    this.webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", this.registry);
+    MetricsUtility.addGauge("fetchLogLatency", this.registry, this.logFetchLatency::get);
   }
 
   public void markWebGetCall() {
@@ -55,15 +55,15 @@ public enum WebMetrics {
      * 1). drop wizard metrics deals with concurrency internally;
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
-    webGetCall.mark();
+    this.webGetCall.mark();
   }
 
   public void markWebPostCall() {
 
-    webPostCall.mark();
+    this.webPostCall.mark();
   }
 
-  public void setFetchLogLatency(long milliseconds) {
-    logFetchLatency.set(milliseconds);
+  public void setFetchLogLatency(final long milliseconds) {
+    this.logFetchLatency.set(milliseconds);
   }
 }

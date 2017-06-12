@@ -1,6 +1,7 @@
 package azkaban.jobcallback;
 
 public interface JobCallbackConstants {
+
   public static final String STATUS_TOKEN = "status";
   public static final String SEQUENCE_TOKEN = "sequence";
   public static final String HTTP_GET = "GET";

@@ -1,5 +1,8 @@
 package azkaban.execapp.event;
 
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_SOCKET_TIMEOUT;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_STATUS_TOKEN;
@@ -7,6 +10,9 @@ import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
 
+import azkaban.jobcallback.JobCallbackConstants;
+import azkaban.jobcallback.JobCallbackStatusEnum;
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Writer;
@@ -14,12 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
@@ -28,10 +32,6 @@ import org.junit.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
-
-import azkaban.jobcallback.JobCallbackConstants;
-import azkaban.jobcallback.JobCallbackStatusEnum;
-import azkaban.utils.Props;
 
 public class JobCallbackRequestMakerTest {
 
@@ -57,29 +57,29 @@ public class JobCallbackRequestMakerTest {
 
   @BeforeClass
   public static void setup() throws Exception {
-    try {
-      JobCallbackRequestMaker.initialize(new Props());
-      jobCBMaker = JobCallbackRequestMaker.getInstance();
+    final Props props = new Props();
+    final int timeout = 50;
+    props.put(JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT, timeout);
+    props.put(JOBCALLBACK_CONNECTION_TIMEOUT, timeout);
+    props.put(JOBCALLBACK_SOCKET_TIMEOUT, timeout);
+    JobCallbackRequestMaker.initialize(props);
+    jobCBMaker = JobCallbackRequestMaker.getInstance();
 
-      contextInfo = new HashMap<String, String>();
-      contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
-      contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NANE);
-      contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NANE);
-      contextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
-      contextInfo.put(CONTEXT_JOB_TOKEN, JOB_NANE);
-      contextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
+    contextInfo = new HashMap<>();
+    contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
+    contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NANE);
+    contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NANE);
+    contextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
+    contextInfo.put(CONTEXT_JOB_TOKEN, JOB_NANE);
+    contextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
 
-      embeddedJettyServer = new Server(PORT_NUMBER);
+    embeddedJettyServer = new Server(PORT_NUMBER);
 
-      Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
-      context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
+    final Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
+    context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
 
-      System.out.println("Start server");
-      embeddedJettyServer.start();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
-    }
+    System.out.println("Start server");
+    embeddedJettyServer.start();
   }
 
   @AfterClass
@@ -91,42 +91,115 @@ public class JobCallbackRequestMakerTest {
     }
   }
 
+  private String buildUrlForDelay(final int delay) {
+    return "http://localhost:" + PORT_NUMBER + "/delay?" + SLEEP_DURATION_PARAM
+        + "=" + delay;
+  }
+
+  private String buildUrlForStatusCode(final int sc) {
+    return "http://localhost:" + PORT_NUMBER + "/delay?" + STATUS_CODE_PARAM
+        + "=" + sc;
+  }
+
+  @Test(timeout = 4000)
+  public void basicGetTest() {
+    final Props props = new Props();
+    final String url = buildUrlForDelay(1);
+
+    props.put("job.notification."
+        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
+
+    final List<HttpRequestBase> httpRequestList =
+        JobCallbackUtil.parseJobCallbackProperties(props,
+            JobCallbackStatusEnum.STARTED, contextInfo, 3);
+
+    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
+  }
+
+  @Test(timeout = 4000)
+  public void simulateNotOKStatusCodeTest() {
+    final Props props = new Props();
+    final String url = buildUrlForStatusCode(404);
+    props.put("job.notification."
+        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
+
+    final List<HttpRequestBase> httpRequestList =
+        JobCallbackUtil.parseJobCallbackProperties(props,
+            JobCallbackStatusEnum.STARTED, contextInfo, 3);
+
+    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
+  }
+
+  @Test(timeout = 4000)
+  public void unResponsiveGetTest() {
+    final Props props = new Props();
+    final String url = buildUrlForDelay(10);
+    props.put("job.notification."
+        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
+
+    final List<HttpRequestBase> httpRequestList =
+        JobCallbackUtil.parseJobCallbackProperties(props,
+            JobCallbackStatusEnum.STARTED, contextInfo, 3);
+
+    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
+  }
+
+  @Test(timeout = 4000)
+  public void basicPostTest() {
+    final Props props = new Props();
+    final String url = buildUrlForDelay(1);
+    props.put("job.notification."
+        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
+    props.put("job.notification."
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.method",
+        JobCallbackConstants.HTTP_POST);
+    props.put("job.notification."
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.body",
+        "This is it");
+
+    final List<HttpRequestBase> httpRequestList =
+        JobCallbackUtil.parseJobCallbackProperties(props,
+            JobCallbackStatusEnum.STARTED, contextInfo, 3);
+
+    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
+  }
+
   private static class DelayServlet extends HttpServlet {
 
     @Override
-    public void doGet(HttpServletRequest req, HttpServletResponse resp)
+    public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
         throws ServletException, IOException {
 
       logger.info("Get get request: " + req.getRequestURI());
       logger.info("Get get request params: " + req.getParameterMap());
 
-      long start = System.currentTimeMillis();
+      final long start = System.currentTimeMillis();
       String responseMessage = handleDelay(req);
       logger
           .info("handleDelay elapse: " + (System.currentTimeMillis() - start));
 
       responseMessage = handleSimulatedStatusCode(req, resp, responseMessage);
 
-      Writer writer = resp.getWriter();
+      final Writer writer = resp.getWriter();
       writer.write(responseMessage);
       writer.close();
     }
 
-    private String handleSimulatedStatusCode(HttpServletRequest req,
-        HttpServletResponse resp, String responseMessge) {
-      String returnedStatusCodeStr = req.getParameter(STATUS_CODE_PARAM);
+    private String handleSimulatedStatusCode(final HttpServletRequest req,
+        final HttpServletResponse resp, String responseMessge) {
+      final String returnedStatusCodeStr = req.getParameter(STATUS_CODE_PARAM);
       if (returnedStatusCodeStr != null) {
-        int statusCode = Integer.parseInt(returnedStatusCodeStr);
+        final int statusCode = Integer.parseInt(returnedStatusCodeStr);
         responseMessge = "Not good";
         resp.setStatus(statusCode);
       }
       return responseMessge;
     }
 
-    private String handleDelay(HttpServletRequest req) {
-      String sleepParamValue = req.getParameter(SLEEP_DURATION_PARAM);
+    private String handleDelay(final HttpServletRequest req) {
+      final String sleepParamValue = req.getParameter(SLEEP_DURATION_PARAM);
       if (sleepParamValue != null) {
-        long howLongMS =
+        final long howLongMS =
             TimeUnit.MILLISECONDS.convert(Integer.parseInt(sleepParamValue),
                 TimeUnit.SECONDS);
 
@@ -135,7 +208,7 @@ public class JobCallbackRequestMakerTest {
         try {
           Thread.sleep(howLongMS);
           return "Voila!!";
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           // don't care
           return e.getMessage();
         }
@@ -144,12 +217,12 @@ public class JobCallbackRequestMakerTest {
     }
 
     @Override
-    public void doPost(HttpServletRequest req, HttpServletResponse resp)
+    public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
         throws ServletException, IOException {
       logger.info("Get post request: " + req.getRequestURI());
       logger.info("Get post request params: " + req.getParameterMap());
 
-      BufferedReader reader = req.getReader();
+      final BufferedReader reader = req.getReader();
       String line = null;
       while ((line = reader.readLine()) != null) {
         logger.info("post body: " + line);
@@ -159,82 +232,9 @@ public class JobCallbackRequestMakerTest {
       String responseMessage = handleDelay(req);
       responseMessage = handleSimulatedStatusCode(req, resp, responseMessage);
 
-      Writer writer = resp.getWriter();
+      final Writer writer = resp.getWriter();
       writer.write(responseMessage);
       writer.close();
     }
-  }
-
-  private String buildUrlForDelay(int delay) {
-    return "http://localhost:" + PORT_NUMBER + "/delay?" + SLEEP_DURATION_PARAM
-        + "=" + delay;
-  }
-
-  private String buildUrlForStatusCode(int sc) {
-    return "http://localhost:" + PORT_NUMBER + "/delay?" + STATUS_CODE_PARAM
-        + "=" + sc;
-  }
-
-  @Test(timeout = 4000)
-  public void basicGetTest() {
-    Props props = new Props();
-    String url = buildUrlForDelay(1);
-
-    props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
-
-    List<HttpRequestBase> httpRequestList =
-        JobCallbackUtil.parseJobCallbackProperties(props,
-            JobCallbackStatusEnum.STARTED, contextInfo, 3);
-
-    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
-  }
-
-  @Test(timeout = 4000)
-  public void simulateNotOKStatusCodeTest() {
-    Props props = new Props();
-    String url = buildUrlForStatusCode(404);
-    props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
-
-    List<HttpRequestBase> httpRequestList =
-        JobCallbackUtil.parseJobCallbackProperties(props,
-            JobCallbackStatusEnum.STARTED, contextInfo, 3);
-
-    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
-  }
-
-  @Test(timeout = 4000)
-  public void unResponsiveGetTest() {
-    Props props = new Props();
-    String url = buildUrlForDelay(10);
-    props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
-
-    List<HttpRequestBase> httpRequestList =
-        JobCallbackUtil.parseJobCallbackProperties(props,
-            JobCallbackStatusEnum.STARTED, contextInfo, 3);
-
-    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
-  }
-
-  @Test(timeout = 4000)
-  public void basicPostTest() {
-    Props props = new Props();
-    String url = buildUrlForDelay(1);
-    props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url", url);
-    props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.method",
-        JobCallbackConstants.HTTP_POST);
-    props.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.body",
-        "This is it");
-
-    List<HttpRequestBase> httpRequestList =
-        JobCallbackUtil.parseJobCallbackProperties(props,
-            JobCallbackStatusEnum.STARTED, contextInfo, 3);
-
-    jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 }

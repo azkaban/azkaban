@@ -23,11 +23,12 @@ import java.io.InputStream;
 
 
 /**
- * The Azkaban Storage interface would facilitate getting and putting objects into a storage mechanism of choice.
- * By default, this is set to the MySQL database. However, users can have the ability to choose between multiple
- * storage types in future.
+ * The Azkaban Storage interface would facilitate getting and putting objects into a storage
+ * mechanism of choice. By default, this is set to the MySQL database. However, users can have the
+ * ability to choose between multiple storage types in future.
  *
- * This is different from storing Azkaban state in MySQL which would typically be maintained in a different database.
+ * This is different from storing Azkaban state in MySQL which would typically be maintained in a
+ * different database.
  *
  * Note: This is a synchronous interface.
  */
@@ -38,7 +39,6 @@ public interface Storage {
    *
    * @param key The key is a string pointing to the blob in Storage.
    * @return InputStream for fetching the blob. null if the key is not found.
-   *
    */
   InputStream get(String key) throws IOException;
 
@@ -47,7 +47,6 @@ public interface Storage {
    *
    * @param metadata Metadata related to the input stream
    * @param localFile Read data from a local file
-   *
    * @return Key associated with the current object on successful put
    */
   String put(StorageMetadata metadata, File localFile);

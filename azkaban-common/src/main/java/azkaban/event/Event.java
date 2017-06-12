@@ -19,42 +19,17 @@ package azkaban.event;
 import com.google.common.base.Preconditions;
 
 public class Event {
-  public enum Type {
-    FLOW_STARTED,
-    FLOW_FINISHED,
-    JOB_STARTED,
-    JOB_FINISHED,
-    JOB_STATUS_CHANGED,
-    EXTERNAL_FLOW_UPDATED,
-    EXTERNAL_JOB_UPDATED
-  }
 
   private final Object runner;
   private final Type type;
   private final EventData eventData;
   private final long time;
 
-  private Event(Object runner, Type type, EventData eventData) {
+  private Event(final Object runner, final Type type, final EventData eventData) {
     this.runner = runner;
     this.type = type;
     this.eventData = eventData;
     this.time = System.currentTimeMillis();
-  }
-
-  public Object getRunner() {
-    return runner;
-  }
-
-  public Type getType() {
-    return type;
-  }
-
-  public long getTime() {
-    return time;
-  }
-
-  public EventData getData() {
-    return eventData;
   }
 
   /**
@@ -66,9 +41,36 @@ public class Event {
    * @return New Event instance.
    * @throws NullPointerException if EventData is null.
    */
-  public static Event create(Object runner, Type type, EventData eventData) throws NullPointerException {
+  public static Event create(final Object runner, final Type type, final EventData eventData)
+      throws NullPointerException {
     Preconditions.checkNotNull(eventData, "EventData was null");
     return new Event(runner, type, eventData);
+  }
+
+  public Object getRunner() {
+    return this.runner;
+  }
+
+  public Type getType() {
+    return this.type;
+  }
+
+  public long getTime() {
+    return this.time;
+  }
+
+  public EventData getData() {
+    return this.eventData;
+  }
+
+  public enum Type {
+    FLOW_STARTED,
+    FLOW_FINISHED,
+    JOB_STARTED,
+    JOB_FINISHED,
+    JOB_STATUS_CHANGED,
+    EXTERNAL_FLOW_UPDATED,
+    EXTERNAL_JOB_UPDATED
   }
 
 }

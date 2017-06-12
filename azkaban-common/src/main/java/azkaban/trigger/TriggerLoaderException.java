@@ -17,17 +17,18 @@
 package azkaban.trigger;
 
 public class TriggerLoaderException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
-  public TriggerLoaderException(String message) {
+  public TriggerLoaderException(final String message) {
     super(message);
   }
 
-  public TriggerLoaderException(String message, Throwable cause) {
+  public TriggerLoaderException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public TriggerLoaderException(Throwable e) {
+  public TriggerLoaderException(final Throwable e) {
     super(e);
   }
 }

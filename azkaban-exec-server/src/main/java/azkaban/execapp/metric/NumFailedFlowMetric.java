@@ -28,26 +28,30 @@ import azkaban.metric.TimeBasedReportingMetric;
 /**
  * Metric to keep track of number of failed flows in between the tracking events
  */
-public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
+public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> implements
+    EventListener {
+
   public static final String NUM_FAILED_FLOW_METRIC_NAME = "NumFailedFlowMetric";
   private static final String NUM_FAILED_FLOW_METRIC_TYPE = "uint16";
 
-  public NumFailedFlowMetric(MetricReportManager manager, long interval) throws MetricException {
+  public NumFailedFlowMetric(final MetricReportManager manager, final long interval)
+      throws MetricException {
     super(NUM_FAILED_FLOW_METRIC_NAME, NUM_FAILED_FLOW_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumFailedJobMetric");
   }
 
   /**
-  * Listen for events to maintain correct value of number of failed flows
-  * {@inheritDoc}
-  * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
-  */
+   * Listen for events to maintain correct value of number of failed flows
+   * {@inheritDoc}
+   *
+   * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
+   */
   @Override
-  public synchronized void handleEvent(Event event) {
+  public synchronized void handleEvent(final Event event) {
     if (event.getType() == Type.FLOW_FINISHED) {
-      FlowRunner runner = (FlowRunner) event.getRunner();
+      final FlowRunner runner = (FlowRunner) event.getRunner();
       if (runner != null && runner.getExecutableFlow().getStatus().equals(Status.FAILED)) {
-        value = value + 1;
+        this.value = this.value + 1;
       }
     }
   }
@@ -59,7 +63,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
 
   @Override
   protected synchronized void postTrackingEventMethod() {
-    value = 0;
+    this.value = 0;
   }
 
 }

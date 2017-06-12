@@ -16,15 +16,15 @@
 
 package azkaban.jmx;
 
+import azkaban.executor.ExecutorManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import azkaban.executor.ExecutorManager;
-
 public class JmxExecutorManager implements JmxExecutorManagerMBean {
-  private ExecutorManager manager;
 
-  public JmxExecutorManager(ExecutorManager manager) {
+  private final ExecutorManager manager;
+
+  public JmxExecutorManager(final ExecutorManager manager) {
     this.manager = manager;
   }
 
@@ -35,62 +35,62 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 
   @Override
   public String getExecutorThreadState() {
-    return manager.getExecutorManagerThreadState().toString();
+    return this.manager.getExecutorManagerThreadState().toString();
   }
 
   @Override
   public String getExecutorThreadStage() {
-    return manager.getExecutorThreadStage();
+    return this.manager.getExecutorThreadStage();
   }
 
   @Override
   public boolean isThreadActive() {
-    return manager.isExecutorManagerThreadActive();
+    return this.manager.isExecutorManagerThreadActive();
   }
 
   @Override
   public Long getLastThreadCheckTime() {
-    return manager.getLastExecutorManagerThreadCheckTime();
+    return this.manager.getLastExecutorManagerThreadCheckTime();
   }
 
   @Override
   public List<String> getPrimaryExecutorHostPorts() {
-    return new ArrayList<String>(manager.getPrimaryServerHosts());
+    return new ArrayList<>(this.manager.getPrimaryServerHosts());
   }
 
   @Override
   public String getRunningFlows() {
-    return manager.getRunningFlowIds();
+    return this.manager.getRunningFlowIds();
   }
 
   @Override
   public boolean isQueueProcessorActive() {
-    return manager.isQueueProcessorThreadActive();
+    return this.manager.isQueueProcessorThreadActive();
   }
 
   @Override
   public String getQueuedFlows() {
-    return manager.getQueuedFlowIds();
+    return this.manager.getQueuedFlowIds();
   }
 
   @Override
   public String getQueueProcessorThreadState() {
-    return manager.getQueueProcessorThreadState().toString();
+    return this.manager.getQueueProcessorThreadState().toString();
   }
 
   @Override
   public List<String> getAvailableExecutorComparatorNames() {
-    return new ArrayList<String>(manager.getAvailableExecutorComparatorNames());
+    return new ArrayList<>(this.manager.getAvailableExecutorComparatorNames());
   }
 
   @Override
   public List<String> getAvailableExecutorFilterNames() {
-    return new ArrayList<String>(manager.getAvailableExecutorFilterNames());
+    return new ArrayList<>(this.manager.getAvailableExecutorFilterNames());
   }
 
   @Override
   public long getLastSuccessfulExecutorInfoRefresh() {
-    return manager.getLastSuccessfulExecutorInfoRefresh();
+    return this.manager.getLastSuccessfulExecutorInfoRefresh();
   }
 
 }

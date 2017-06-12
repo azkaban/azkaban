@@ -19,6 +19,7 @@ package azkaban.project;
 import java.io.File;
 
 public class ProjectFileHandler {
+
   private final int projectId;
   private final int version;
   private final long uploadTime;
@@ -32,15 +33,15 @@ public class ProjectFileHandler {
   private File localFile = null;
 
   public ProjectFileHandler(
-      int projectId,
-      int version,
-      long uploadTime,
-      String uploader,
-      String fileType,
-      String fileName,
-      int numChunks,
-      byte[] md5Hash,
-      String resourceId) {
+      final int projectId,
+      final int version,
+      final long uploadTime,
+      final String uploader,
+      final String fileType,
+      final String fileName,
+      final int numChunks,
+      final byte[] md5Hash,
+      final String resourceId) {
     this.projectId = projectId;
     this.version = version;
     this.uploadTime = uploadTime;
@@ -53,53 +54,53 @@ public class ProjectFileHandler {
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
   public int getVersion() {
-    return version;
+    return this.version;
   }
 
   public long getUploadTime() {
-    return uploadTime;
+    return this.uploadTime;
   }
 
   public String getFileType() {
-    return fileType;
+    return this.fileType;
   }
 
   public String getFileName() {
-    return fileName;
+    return this.fileName;
   }
 
   public byte[] getMd5Hash() {
-    return md5Hash;
+    return this.md5Hash;
   }
 
   public File getLocalFile() {
-    return localFile;
+    return this.localFile;
   }
 
-  public synchronized void setLocalFile(File localFile) {
+  public synchronized void setLocalFile(final File localFile) {
     this.localFile = localFile;
   }
 
   public synchronized void deleteLocalFile() {
-    if (localFile != null) {
-      localFile.delete();
-      localFile = null;
+    if (this.localFile != null) {
+      this.localFile.delete();
+      this.localFile = null;
     }
   }
 
   public String getUploader() {
-    return uploader;
+    return this.uploader;
   }
 
   public int getNumChunks() {
-    return numChunks;
+    return this.numChunks;
   }
 
   public String getResourceId() {
-    return resourceId;
+    return this.resourceId;
   }
 }

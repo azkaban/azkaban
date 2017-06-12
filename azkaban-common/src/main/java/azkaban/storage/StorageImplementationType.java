@@ -27,19 +27,19 @@ public enum StorageImplementationType {
 
   private final Class<? extends Storage> implementationClass;
 
-  StorageImplementationType(Class<? extends Storage> implementationClass) {
+  StorageImplementationType(final Class<? extends Storage> implementationClass) {
     this.implementationClass = implementationClass;
   }
 
-  public Class<? extends Storage> getImplementationClass() {
-    return implementationClass;
-  }
-
-  public static StorageImplementationType from(String name) {
+  public static StorageImplementationType from(final String name) {
     try {
       return valueOf(name);
-    } catch (NullPointerException e) {
+    } catch (final NullPointerException e) {
       return null;
     }
+  }
+
+  public Class<? extends Storage> getImplementationClass() {
+    return this.implementationClass;
   }
 }

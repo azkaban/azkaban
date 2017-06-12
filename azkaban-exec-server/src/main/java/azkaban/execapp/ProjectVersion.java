@@ -16,20 +16,19 @@
 
 package azkaban.execapp;
 
-import com.google.common.base.Preconditions;
-import java.io.File;
-import org.apache.log4j.Logger;
+import static com.google.common.base.Preconditions.checkArgument;
 
-import static com.google.common.base.Preconditions.*;
+import java.io.File;
 
 
 public class ProjectVersion implements Comparable<ProjectVersion> {
+
   private final int projectId;
   private final int version;
 
   private File installedDir;
 
-  public ProjectVersion(int projectId, int version) {
+  public ProjectVersion(final int projectId, final int version) {
     checkArgument(projectId > 0);
     checkArgument(version > 0);
 
@@ -37,39 +36,41 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
     this.version = version;
   }
 
-  public ProjectVersion(int projectId, int version, File installedDir) {
+  public ProjectVersion(final int projectId, final int version, final File installedDir) {
     this(projectId, version);
     this.installedDir = installedDir;
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
   public int getVersion() {
-    return version;
+    return this.version;
   }
 
   public File getInstalledDir() {
-    return installedDir;
+    return this.installedDir;
   }
 
-  public void setInstalledDir(File installedDir) {
+  public void setInstalledDir(final File installedDir) {
     this.installedDir = installedDir;
   }
 
   @Override
-  public int compareTo(ProjectVersion o) {
-    if (projectId == o.projectId) {
-      return version - o.version;
+  public int compareTo(final ProjectVersion o) {
+    if (this.projectId == o.projectId) {
+      return this.version - o.version;
     }
 
-    return projectId - o.projectId;
+    return this.projectId - o.projectId;
   }
 
   @Override
   public String toString() {
-    return "ProjectVersion{" + "projectId=" + projectId + ", version=" + version + ", installedDir=" + installedDir
+    return "ProjectVersion{" + "projectId=" + this.projectId + ", version=" + this.version
+        + ", installedDir="
+        + this.installedDir
         + '}';
   }
 }
