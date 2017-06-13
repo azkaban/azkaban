@@ -24,7 +24,6 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
@@ -43,7 +42,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Master;
@@ -51,8 +49,6 @@ import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.mapreduce.v2.api.HSClientProtocol;
-import org.apache.hadoop.mapreduce.v2.api.MRClientProtocol;
-import org.apache.hadoop.mapreduce.v2.api.protocolrecords.CancelDelegationTokenRequest;
 import org.apache.hadoop.mapreduce.v2.api.protocolrecords.GetDelegationTokenRequest;
 import org.apache.hadoop.mapreduce.v2.jobhistory.JHAdminConfig;
 import org.apache.hadoop.net.NetUtils;
@@ -65,7 +61,6 @@ import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
@@ -407,84 +402,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
   }
 
-  private void cancelNameNodeToken(final Token<? extends TokenIdentifier> t,
-      final String userToProxy) throws HadoopSecurityManagerException {
-    try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          cancelToken(t);
-          return null;
-        }
-
-        private void cancelToken(final Token<?> nt) throws IOException,
-            InterruptedException {
-          nt.cancel(HadoopSecurityManager_H_2_0.this.conf);
-        }
-      });
-    } catch (final Exception e) {
-      throw new HadoopSecurityManagerException("Failed to cancel token. "
-          + e.getMessage() + e.getCause(), e);
-    }
-  }
-
-  private void cancelMRJobTrackerToken(
-      final Token<? extends TokenIdentifier> t, final String userToProxy)
-      throws HadoopSecurityManagerException {
-    try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          cancelToken((Token<DelegationTokenIdentifier>) t);
-          return null;
-        }
-
-        private void cancelToken(final Token<DelegationTokenIdentifier> jt)
-            throws IOException, InterruptedException {
-          final JobConf jc = new JobConf(HadoopSecurityManager_H_2_0.this.conf);
-          final JobClient jobClient = new JobClient(jc);
-          jobClient.cancelDelegationToken(jt);
-        }
-      });
-    } catch (final Exception e) {
-      throw new HadoopSecurityManagerException("Failed to cancel token. "
-          + e.getMessage() + e.getCause(), e);
-    }
-  }
-
-  private void cancelJhsToken(final Token<? extends TokenIdentifier> t,
-      final String userToProxy) throws HadoopSecurityManagerException {
-    // it appears yarn would clean up this token after app finish, after a long
-    // while though.
-    final org.apache.hadoop.yarn.api.records.Token token =
-        org.apache.hadoop.yarn.api.records.Token.newInstance(t.getIdentifier(),
-            t.getKind().toString(), t.getPassword(), t.getService().toString());
-    final YarnRPC rpc = YarnRPC.create(this.conf);
-    final InetSocketAddress jhsAddress = SecurityUtil.getTokenServiceAddr(t);
-    MRClientProtocol jhsProxy = null;
-    try {
-      jhsProxy =
-          UserGroupInformation.getCurrentUser().doAs(
-              new PrivilegedAction<MRClientProtocol>() {
-                @Override
-                public MRClientProtocol run() {
-                  return (MRClientProtocol) rpc.getProxy(
-                      HSClientProtocol.class, jhsAddress, HadoopSecurityManager_H_2_0.this.conf);
-                }
-              });
-      final CancelDelegationTokenRequest request =
-          Records.newRecord(CancelDelegationTokenRequest.class);
-      request.setDelegationToken(token);
-      jhsProxy.cancelDelegationToken(request);
-    } catch (final Exception e) {
-      throw new HadoopSecurityManagerException("Failed to cancel token. "
-          + e.getMessage() + e.getCause(), e);
-    } finally {
-      RPC.stopProxy(jhsProxy);
-    }
-
-  }
-
   private void cancelHiveToken(final Token<? extends TokenIdentifier> t,
       final String userToProxy) throws HadoopSecurityManagerException {
     try {
@@ -515,14 +432,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           logger.info("Cancelling hive token.");
           cancelHiveToken(t, userToProxy);
         } else if (t.getKind().equals(new Text("RM_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling mr job tracker token.");
-          // cancelMRJobTrackerToken(t, userToProxy);
+          logger.info("Ignore cancelling mr job tracker token request.");
         } else if (t.getKind().equals(new Text("HDFS_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling namenode token.");
-          // cancelNameNodeToken(t, userToProxy);
+          logger.info("Ignore cancelling namenode token request.");
         } else if (t.getKind().equals(new Text("MR_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling jobhistoryserver mr token.");
-          // cancelJhsToken(t, userToProxy);
+          logger.info("Ignore cancelling jobhistoryserver mr token request.");
         } else {
           logger.info("unknown token type " + t.getKind());
         }
@@ -867,15 +781,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         hsProxy.getDelegationToken(request).getDelegationToken();
     return ConverterUtils.convertFromYarn(mrDelegationToken,
         hsProxy.getConnectAddress());
-  }
-
-  private void cancelDelegationTokenFromHS(
-      final org.apache.hadoop.yarn.api.records.Token t, final HSClientProtocol hsProxy)
-      throws IOException, InterruptedException {
-    final CancelDelegationTokenRequest request =
-        this.recordFactory.newRecordInstance(CancelDelegationTokenRequest.class);
-    request.setDelegationToken(t);
-    hsProxy.cancelDelegationToken(request);
   }
 
 }
