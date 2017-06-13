@@ -31,5 +31,10 @@ class AzDBTestUtility {
     public String getDBType() {
       return "h2-in-memory";
     }
+
+    @Override
+    public boolean allowsOnDuplicateKey() {
+      return false;
+    }
   }
 }

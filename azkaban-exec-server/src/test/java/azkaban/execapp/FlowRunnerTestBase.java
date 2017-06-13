@@ -118,7 +118,7 @@ public class FlowRunnerTestBase {
   }
 
   private void waitForStatus(ExecutableNode node, Status status) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       if (node.getStatus() == status) {
         break;
       }

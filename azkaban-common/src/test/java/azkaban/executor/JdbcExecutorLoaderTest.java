@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import azkaban.metrics.CommonMetrics;
+import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -53,7 +55,7 @@ public class JdbcExecutorLoaderTest {
   private static boolean testDBExists;
   /* Directory with serialized description of test flows */
   private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/azkaban/test/executions";
+    "../test/src/test/resources/azkaban/test/executions";
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
@@ -1055,7 +1057,7 @@ public class JdbcExecutorLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcExecutorLoader(props);
+    return new JdbcExecutorLoader(props, new CommonMetrics(new MetricRegistry()));
   }
 
   private boolean isTestSetup() {

@@ -25,6 +25,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -35,17 +37,19 @@ import org.apache.log4j.Logger;
  * this class. Also, web servers and executors can call {@link #startReporting(String, Props)} to
  * start reporting AZ metrics to remote metrics server.
  */
-public enum MetricsManager {
-  INSTANCE;
+@Singleton
+public class MetricsManager {
 
   private static final Logger logger = Logger.getLogger(MetricsManager.class);
-  private final MetricRegistry registry = new MetricRegistry();
+  private final MetricRegistry registry;
   private ConsoleReporter consoleReporter = null;
 
   /**
    * Constructor is eaagerly called when this class is loaded.
    */
-  private MetricsManager() {
+  @Inject
+  public MetricsManager(MetricRegistry registry) {
+    this.registry = registry;
     this.registry.register("MEMORY_Gauge", new MemoryUsageGaugeSet());
     this.registry.register("GC_Gauge", new GarbageCollectorMetricSet());
     this.registry.register("Thread_State_Gauge", new ThreadStatesGaugeSet());
