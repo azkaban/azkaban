@@ -43,29 +43,26 @@ apply plugin: 'lesscss'
 apply plugin: 'dustjs'
 apply plugin: 'distribution'
 
-ext.pegasusVersion = '1.15.7'
-
 configurations {
   generateRestli
 }
 
 dependencies {
   compile(project(':azkaban-common'))
-  compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
-  compile('org.apache.velocity:velocity-tools:2.0')
 
-  runtime('org.slf4j:slf4j-log4j12:1.7.18')
+  compile deps.restliServer
+  compile deps.velocityTools
 
   testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
-  testCompile('commons-collections:commons-collections:3.2.2')
+  testCompile deps.collections
 
   //AZ web module tests need to access classes defined in azkaban-common test module
   testCompile project(':azkaban-common').sourceSets.test.output
 
-  generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
-  generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
+  generateRestli deps.restliGenerator
+  generateRestli deps.restliTools
 
-  testRuntime "com.h2database:h2:1.4.193"
+  testRuntime deps.h2
 }
 
 sourceSets {

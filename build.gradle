@@ -21,6 +21,62 @@ allprojects {
     }
 }
 
+ext.versions = [
+        hadoop: '2.6.1',
+        hive  : '1.1.0',
+        restli: '1.15.7',
+        slf4j : '1.7.18',
+]
+
+ext.deps = [
+        // External dependencies
+        assertj             : 'org.assertj:assertj-core:3.8.0',
+        collections         : 'commons-collections:commons-collections:3.2.2',
+        commonsLang         : 'commons-lang:commons-lang:2.6',
+        dbcp2               : 'org.apache.commons:commons-dbcp2:2.1.1',
+        dbutils             : 'commons-dbutils:commons-dbutils:1.5',
+        fileupload          : 'commons-fileupload:commons-fileupload:1.2.1',
+        guava               : 'com.google.guava:guava:21.0',
+        guice               : 'com.google.inject:guice:4.1.0',
+        h2                  : 'com.h2database:h2:1.4.193',
+        hadoopAnnotations   : "org.apache.hadoop:hadoop-annotations:" + versions.hadoop,
+        hadoopAuth          : "org.apache.hadoop:hadoop-auth:" + versions.hadoop,
+        hadoopCommon        : "org.apache.hadoop:hadoop-common:" + versions.hadoop,
+        hadoopHdfs          : "org.apache.hadoop:hadoop-hdfs:" + versions.hadoop,
+        hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
+        hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
+        hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
+        httpclient          : 'org.apache.httpcomponents:httpclient:4.5.2',
+        httpcore            : 'org.apache.httpcomponents:httpcore:4.4.5',
+        io                  : 'commons-io:commons-io:2.4',
+        jacksonCoreAsl      : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
+        jacksonMapperAsl    : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
+        jetty               : 'org.mortbay.jetty:jetty:6.1.26',
+        jettyUtil           : 'org.mortbay.jetty:jetty-util:6.1.26',
+        jexl                : 'org.apache.commons:commons-jexl:2.1.1',
+        jodaTime            : 'joda-time:joda-time:2.0',
+        jopt                : 'net.sf.jopt-simple:jopt-simple:4.3',
+        jsonSimple          : 'com.googlecode.json-simple:json-simple:1.1.1',
+        junit               : 'junit:junit:4.12',
+        kafkaLog4jAppender  : 'org.apache.kafka:kafka-log4j-appender:0.10.0.0',
+        log4j               : 'log4j:log4j:1.2.16',
+        mail                : 'javax.mail:mail:1.4.5',
+        math3               : 'org.apache.commons:commons-math3:3.0',
+        metricsCore         : 'io.dropwizard.metrics:metrics-core:3.1.0',
+        metricsJvm          : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
+        mockito             : 'org.mockito:mockito-all:1.10.19',
+        mysqlConnector      : 'mysql:mysql-connector-java:5.1.28',
+        quartz              : 'org.quartz-scheduler:quartz:2.2.1',
+        restliGenerator     : 'com.linkedin.pegasus:generator:' + versions.restli,
+        restliServer        : 'com.linkedin.pegasus:restli-server:' + versions.restli,
+        restliTools         : 'com.linkedin.pegasus:restli-tools:' + versions.restli,
+        slf4j               : 'org.slf4j:slf4j-api:' + versions.slf4j,
+        slf4jLog4j          : 'org.slf4j:slf4j-log4j12:' + versions.slf4j,
+        snakeyaml           : 'org.yaml:snakeyaml:1.18',
+        velocity            : 'org.apache.velocity:velocity:1.7',
+        velocityTools       : 'org.apache.velocity:velocity-tools:2.0',
+]
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
@@ -55,9 +111,17 @@ subprojects {
         }
 
         dependencies {
-            testCompile('junit:junit:4.12')
-            testCompile('org.assertj:assertj-core:3.8.0')
-            testCompile('org.mockito:mockito-all:1.10.19')
+            compile deps.log4j
+            compile deps.guice
+            compile deps.slf4j
+
+            runtime deps.slf4jLog4j
+
+            testCompile deps.assertj
+            testCompile deps.junit
+            testCompile deps.mockito
+
+
         }
     }
 
