@@ -78,6 +78,7 @@ public class TriggerManager {
     return actions;
   }
 
+  @SuppressWarnings("FutureReturnValueIgnored")
   public void addTrigger(final int execId, final List<SlaOption> slaOptions) {
     for (final SlaOption sla : slaOptions) {
       final Condition triggerCond = createCondition(sla, execId, "slaFailChecker", "isSlaFailed()");
