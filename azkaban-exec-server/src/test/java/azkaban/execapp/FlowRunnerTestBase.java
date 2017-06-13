@@ -38,7 +38,7 @@ public class FlowRunnerTestBase {
   }
 
   public void waitFlowRunner(final Function<FlowRunner, Boolean> statusCheck) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       if (statusCheck.apply(this.runner)) {
         return;
       }
@@ -54,7 +54,7 @@ public class FlowRunnerTestBase {
 
   public void waitJobStatuses(final Function<Status, Boolean> statusCheck,
       final String... jobs) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       if (checkJobStatuses(statusCheck, jobs)) {
         return;
       }
@@ -74,7 +74,7 @@ public class FlowRunnerTestBase {
 
   protected void waitEventFired(final String nestedId, final Status status)
       throws InterruptedException {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       for (final Event event : this.eventCollector.getEventList()) {
         if (event.getData().getStatus() == status && event.getData().getNestedId()
             .equals(nestedId)) {
