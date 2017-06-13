@@ -147,7 +147,7 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public FileSystem createHadoopFileSystem(final Configuration hadoopConf, HdfsAuth hdfsAuth) {
+  public FileSystem createHadoopFileSystem(final Configuration hadoopConf, final HdfsAuth hdfsAuth) {
     return hdfsAuth.doAs(() -> FileSystem.get(hadoopConf));
   }
 
