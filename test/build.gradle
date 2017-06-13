@@ -1,0 +1,3 @@
+jar {
+    baseName = 'azkaban-test'
+}
