@@ -402,27 +402,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
   }
 
-  private void cancelNameNodeToken(final Token<? extends TokenIdentifier> t,
-      final String userToProxy) throws HadoopSecurityManagerException {
-    try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          cancelToken(t);
-          return null;
-        }
-
-        private void cancelToken(final Token<?> nt) throws IOException,
-            InterruptedException {
-          nt.cancel(HadoopSecurityManager_H_2_0.this.conf);
-        }
-      });
-    } catch (final Exception e) {
-      throw new HadoopSecurityManagerException("Failed to cancel token. "
-          + e.getMessage() + e.getCause(), e);
-    }
-  }
-
   private void cancelHiveToken(final Token<? extends TokenIdentifier> t,
       final String userToProxy) throws HadoopSecurityManagerException {
     try {
