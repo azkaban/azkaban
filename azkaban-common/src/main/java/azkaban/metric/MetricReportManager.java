@@ -97,6 +97,7 @@ public class MetricReportManager {
    * each element of metrics List is responsible to call this method and report metrics
    * @param metric
    */
+  @SuppressWarnings("FutureReturnValueIgnored")
   public void reportMetric(final IMetric<?> metric) {
     if (metric != null && isAvailable()) {
       try {

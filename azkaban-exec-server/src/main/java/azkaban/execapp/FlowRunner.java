@@ -706,6 +706,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     return props;
   }
 
+  @SuppressWarnings("FutureReturnValueIgnored")
   private void runExecutableNode(final ExecutableNode node) throws IOException {
     // Collect output props from the job's dependencies.
     prepareJobProperties(node);
