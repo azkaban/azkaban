@@ -52,13 +52,13 @@ public class HdfsStorageTest {
   }
 
   @Test
-  public void testGet() throws Exception {
-    this.hdfsStorage.get("1/1-hash.zip");
+  public void testGet0() throws Exception {
+    this.hdfsStorage.get0("1/1-hash.zip");
     verify(this.hdfs).open(new Path("hdfs://localhost:9000/path/to/foo/1/1-hash.zip"));
   }
 
   @Test
-  public void testPut() throws Exception {
+  public void testPut0() throws Exception {
     final File file = new File(
         getClass().getClassLoader().getResource("sample_flow_01.zip").getFile());
     final String hash = new String(Hex.encodeHex(Md5Hasher.md5Hash(file)));
@@ -66,7 +66,7 @@ public class HdfsStorageTest {
     when(this.hdfs.exists(any(Path.class))).thenReturn(false);
 
     final StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", Md5Hasher.md5Hash(file));
-    final String key = this.hdfsStorage.put(metadata, file);
+    final String key = this.hdfsStorage.put0(metadata, file);
 
     final String expectedName = String.format("1/1-%s.zip", hash);
     Assert.assertEquals(expectedName, key);
