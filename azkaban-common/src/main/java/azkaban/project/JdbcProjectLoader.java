@@ -1608,7 +1608,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     }
   }
   public List<Result> fetchProjectsForMigration() {
-    final String QUERY = "SELECT p.id, p.version, pv.md5, pv.resource_id "
+    final String QUERY = "SELECT DISTINCT p.id, p.version, pv.md5, pv.resource_id "
         + "FROM projects as p "
         + "INNER JOIN project_versions as pv "
         + "INNER JOIN project_files as pf "
