@@ -51,6 +51,8 @@ public class Migrator {
 
   final List<Result> failed = new ArrayList<>();
 
+  private static volatile boolean terminate = false;
+
   @Inject
   public Migrator(Props props, JdbcProjectLoader jdbcProjectLoader,
       DatabaseStorage databaseStorage,
@@ -70,6 +72,9 @@ public class Migrator {
         .fetchProjectsForMigration();
     System.out.println("fetched all migratable projects. #: " + allActiveProjects.size());
     for (int i = 0; i < allActiveProjects.size(); i++) {
+      if (terminate) {
+        break;
+      }
       Result r = allActiveProjects.get(i);
       System.out.println("--------------------------------------------------------------------");
       System.out.printf("Migrating (%d of %d) :: %s%n", i + 1, allActiveProjects.size(), r);
@@ -85,7 +90,7 @@ public class Migrator {
 
     printFailed();
     System.out.println("=====================================================");
-    System.out.println(" Migration complete.");
+    System.out.println(!terminate ? " Migration complete." : " Migration Aborted!!!");
     System.out.println("=====================================================");
   }
 
@@ -159,12 +164,22 @@ public class Migrator {
       System.out.println("**********************************************");
 
       final Injector injector = Guice.createInjector(new AzkabanCommonModule(props));
-      new Migrator(
+      final Migrator migrator = new Migrator(
           props,
           injector.getInstance(JdbcProjectLoader.class),
           injector.getInstance(DatabaseStorage.class),
           injector.getInstance(type.getImplementationClass())
-      ).migrate();
+      );
+      final Thread mainThread = Thread.currentThread();
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        terminate = true;
+        try {
+          mainThread.join();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }));
+      migrator.migrate();
     } catch (IOException e) {
       e.printStackTrace();
       throw new AzkabanException(e);
