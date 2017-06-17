@@ -19,6 +19,8 @@ allprojects {
         mavenCentral()
         mavenLocal()
     }
+
+    apply plugin: 'project-report'
 }
 
 ext.versions = [
