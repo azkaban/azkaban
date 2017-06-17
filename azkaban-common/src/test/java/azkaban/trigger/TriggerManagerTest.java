@@ -33,8 +33,11 @@ import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
+// todo HappyRay: fix these slow tests or delete them.
 public class TriggerManagerTest {
 
   private static TriggerLoader triggerLoader;
