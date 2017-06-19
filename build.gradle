@@ -120,8 +120,12 @@ subprojects {
             testCompile deps.assertj
             testCompile deps.junit
             testCompile deps.mockito
+        }
 
-
+        test {
+            // Set maxParallelForks to a large number and let gradle to force it to a the
+            // max-workers number when needed.
+            maxParallelForks =  12
         }
     }
 
