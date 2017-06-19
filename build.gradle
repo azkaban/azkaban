@@ -13,12 +13,15 @@ buildscript {
 
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
+apply plugin: 'build-dashboard'
 
 allprojects {
     repositories {
         mavenCentral()
         mavenLocal()
     }
+
+    apply plugin: 'project-report'
 }
 
 ext.versions = [
