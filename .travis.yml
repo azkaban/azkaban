@@ -3,7 +3,7 @@ languages: java
 jdk:
   - oraclejdk8
 sudo: false
-script: ./gradlew clean build
+script: ./gradlew check
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
 before_cache:
