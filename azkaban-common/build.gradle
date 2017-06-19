@@ -35,34 +35,34 @@ dependencies {
     compile project(':azkaban-spi')
     compile project(':azkaban-db')
 
-    compile deps.hadoopAuth
-    compile deps.hadoopAnnotations
-    compile deps.hadoopCommon
-    compile deps.hadoopHdfs
-    compile deps.guava
     compile deps.collections
+    compile deps.commonsLang
     compile deps.dbcp2
     compile deps.dbutils
     compile deps.fileupload
-    compile deps.io
-    compile deps.commonsLang
-    compile deps.mail
-    compile deps.jodaTime
-    compile deps.mysqlConnector
-    compile deps.jopt
-    compile deps.jexl
-    compile deps.math3
+    compile deps.guava
+    compile deps.hadoopAnnotations
+    compile deps.hadoopAuth
+    compile deps.hadoopCommon
+    compile deps.hadoopHdfs
     compile deps.httpclient
     compile deps.httpcore
-    compile deps.velocity
+    compile deps.io
     compile deps.jacksonCoreAsl
     compile deps.jacksonMapperAsl
     compile deps.jetty
     compile deps.jettyUtil
-    compile deps.quartz
-    compile deps.snakeyaml
+    compile deps.jexl
+    compile deps.jodaTime
+    compile deps.jopt
+    compile deps.mail
+    compile deps.math3
     compile deps.metricsCore
     compile deps.metricsJvm
+    compile deps.mysqlConnector
+    compile deps.quartz
+    compile deps.snakeyaml
+    compile deps.velocity
 
     testRuntime deps.h2
 
