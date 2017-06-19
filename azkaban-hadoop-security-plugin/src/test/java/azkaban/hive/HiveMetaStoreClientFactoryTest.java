@@ -17,6 +17,9 @@
 
 package azkaban.hive;
 
+import java.io.File;
+import java.io.IOException;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -26,8 +29,13 @@ import org.junit.Test;
 
 public class HiveMetaStoreClientFactoryTest {
 
+  public static final File METASTORE_DB_DIR = new File("metastore_db");
+  public static final File DERBY_LOG_FILE = new File("derby.log");
+
   @Test
-  public void testCreate() throws TException {
+  public void testCreate() throws TException, IOException {
+    cleanup();
+    
     final HiveConf hiveConf = new HiveConf();
     final HiveMetaStoreClientFactory factory = new HiveMetaStoreClientFactory(hiveConf);
     final IMetaStoreClient msc = factory.create();
@@ -43,5 +51,17 @@ public class HiveMetaStoreClientFactoryTest {
     Assert.assertEquals(db.getName(), dbName);
     Assert.assertEquals(db.getDescription(), description);
     Assert.assertEquals(db.getLocationUri(), location);
+
+    // Clean up if the test is successful
+    cleanup();
+  }
+
+  private void cleanup() throws IOException {
+    if (METASTORE_DB_DIR.exists()) {
+      FileUtils.deleteDirectory(METASTORE_DB_DIR);
+    }
+    if (DERBY_LOG_FILE.exists()) {
+      DERBY_LOG_FILE.delete();
+    }
   }
 }
