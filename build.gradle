@@ -13,6 +13,7 @@ buildscript {
 
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
+apply plugin: 'build-dashboard'
 
 apply plugin: 'compare-gradle-builds'
 
@@ -25,6 +26,8 @@ allprojects {
         mavenCentral()
         mavenLocal()
     }
+
+    apply plugin: 'project-report'
 }
 
 ext.versions = [
@@ -126,8 +129,12 @@ subprojects {
             testCompile deps.assertj
             testCompile deps.junit
             testCompile deps.mockito
+        }
 
-
+        test {
+            // Set maxParallelForks to a large number and let gradle to force it to a the
+            // max-workers number when needed.
+            maxParallelForks =  12
         }
     }
 

@@ -119,6 +119,21 @@ public class ExecutorInfo implements java.io.Serializable {
   }
 
   @Override
+  public int hashCode() {
+    int result;
+    long temp;
+    temp = Double.doubleToLongBits(this.remainingMemoryPercent);
+    result = (int) (temp ^ (temp >>> 32));
+    result = 31 * result + (int) (this.remainingMemoryInMB ^ (this.remainingMemoryInMB >>> 32));
+    result = 31 * result + this.remainingFlowCapacity;
+    result = 31 * result + this.numberOfAssignedFlows;
+    result = 31 * result + (int) (this.lastDispatchedTime ^ (this.lastDispatchedTime >>> 32));
+    temp = Double.doubleToLongBits(this.cpuUsage);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object obj) {
     if (obj instanceof ExecutorInfo) {
       boolean result = true;
