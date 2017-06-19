@@ -15,6 +15,12 @@ apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 apply plugin: 'build-dashboard'
 
+apply plugin: 'compare-gradle-builds'
+
+compareGradleBuilds {
+    targetBuild.gradleVersion = "4.0"
+}
+
 allprojects {
     repositories {
         mavenCentral()
