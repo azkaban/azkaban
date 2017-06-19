@@ -1,5 +1,9 @@
 apply plugin: 'distribution'
 
+configurations {
+    testCompile.extendsFrom compileOnly
+}
+
 dependencies {
     compile project(":azkaban-common")
 
@@ -7,6 +11,7 @@ dependencies {
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
     compileOnly deps.hiveMetastore
+    compileOnly deps.hiveExec
 }
 
 /**

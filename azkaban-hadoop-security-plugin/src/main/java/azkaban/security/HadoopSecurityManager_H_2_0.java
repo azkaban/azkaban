@@ -16,6 +16,7 @@
 
 package azkaban.security;
 
+import azkaban.hive.HiveMetaStoreClientFactory;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
@@ -39,8 +40,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
@@ -93,8 +93,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String RM_PRINCIPAL = "yarn.resourcemanager.principal";
   // "mapreduce.jobtracker.kerberos.principal";
   public static final String HADOOP_JOB_TRACKER = "mapred.job.tracker";
-  public static final String HADOOP_JOB_TRACKER_2 =
-      "mapreduce.jobtracker.address";
+  public static final String HADOOP_JOB_TRACKER_2 = "mapreduce.jobtracker.address";
   public static final String HADOOP_YARN_RM = "yarn.resourcemanager.address";
   /**
    * the key that will be used to set proper signature for each of the hcat
@@ -107,8 +106,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String CHMOD = "chmod";
   // The file permissions assigned to a Delegation token file on fetch
   public static final String TOKEN_FILE_PERMISSIONS = "460";
-  private static final String FS_HDFS_IMPL_DISABLE_CACHE =
-      "fs.hdfs.impl.disable.cache";
+  private final static Logger logger = Logger.getLogger(HadoopSecurityManager_H_2_0.class);
+  private static final String FS_HDFS_IMPL_DISABLE_CACHE = "fs.hdfs.impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
   /**
    * the settings to be defined by user indicating if there are hcat locations
@@ -119,16 +118,17 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
-  private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
-      "obtain.jobhistoryserver.token";
-  private final static Logger logger = Logger
-      .getLogger(HadoopSecurityManager_H_2_0.class);
+  private static final String OBTAIN_JOBHISTORYSERVER_TOKEN = "obtain.jobhistoryserver.token";
+
   private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
+
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
   private final ExecuteAsUser executeAsUser;
   private final Configuration conf;
   private final ConcurrentMap<String, UserGroupInformation> userUgiMap;
+  private final HiveMetaStoreClientFactory hiveMetaStoreClientFactory;
+
   private UserGroupInformation loginUser = null;
   private String keytabLocation;
   private String keytabPrincipal;
@@ -221,6 +221,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
 
     this.userUgiMap = new ConcurrentHashMap<>();
+    this.hiveMetaStoreClientFactory = new HiveMetaStoreClientFactory(new HiveConf());
 
     logger.info("Hadoop Security Manager initialized");
   }
@@ -402,11 +403,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
   }
 
-  private void cancelHiveToken(final Token<? extends TokenIdentifier> t,
-      final String userToProxy) throws HadoopSecurityManagerException {
+  private void cancelHiveToken(final Token<? extends TokenIdentifier> t)
+      throws HadoopSecurityManagerException {
     try {
-      final HiveConf hiveConf = new HiveConf();
-      final HiveMetaStoreClient hiveClient = new HiveMetaStoreClient(hiveConf);
+      final IMetaStoreClient hiveClient = this.hiveMetaStoreClientFactory.create();
       hiveClient.cancelDelegationToken(t.encodeToUrlString());
     } catch (final Exception e) {
       throw new HadoopSecurityManagerException("Failed to cancel Token. "
@@ -418,7 +418,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public void cancelTokens(final File tokenFile, final String userToProxy, final Logger logger)
       throws HadoopSecurityManagerException {
     // nntoken
-    Credentials cred = null;
+    final Credentials cred;
     try {
       cred =
           Credentials.readTokenStorageFile(new Path(tokenFile.toURI()),
@@ -430,7 +430,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
         if (t.getKind().equals(new Text("HIVE_DELEGATION_TOKEN"))) {
           logger.info("Cancelling hive token.");
-          cancelHiveToken(t, userToProxy);
+          cancelHiveToken(t);
         } else if (t.getKind().equals(new Text("RM_DELEGATION_TOKEN"))) {
           logger.info("Ignore cancelling mr job tracker token request.");
         } else if (t.getKind().equals(new Text("HDFS_DELEGATION_TOKEN"))) {
@@ -458,7 +458,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    */
   private Token<DelegationTokenIdentifier> fetchHcatToken(final String userToProxy,
       final HiveConf hiveConf, final String tokenSignatureOverwrite, final Logger logger)
-      throws IOException, MetaException, TException {
+      throws IOException, TException {
 
     logger.info(HiveConf.ConfVars.METASTOREURIS.varname + ": "
         + hiveConf.get(HiveConf.ConfVars.METASTOREURIS.varname));
@@ -469,7 +469,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ": "
         + hiveConf.get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname));
 
-    final HiveMetaStoreClient hiveClient = new HiveMetaStoreClient(hiveConf);
+    final IMetaStoreClient hiveClient = this.hiveMetaStoreClientFactory.create();
     final String hcatTokenStr =
         hiveClient.getDelegationToken(userToProxy, UserGroupInformation
             .getLoginUser().getShortUserName());
@@ -479,13 +479,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
     // overwrite the value of the service property of the token if the signature
     // override is specified.
-    if (tokenSignatureOverwrite != null
-        && tokenSignatureOverwrite.trim().length() > 0) {
-      hcatToken.setService(new Text(tokenSignatureOverwrite.trim()
-          .toLowerCase()));
-
-      logger.info(HIVE_TOKEN_SIGNATURE_KEY + ":"
-          + (tokenSignatureOverwrite == null ? "" : tokenSignatureOverwrite));
+    if (tokenSignatureOverwrite != null && tokenSignatureOverwrite.trim().length() > 0) {
+      hcatToken.setService(new Text(tokenSignatureOverwrite.trim().toLowerCase()));
+      logger.info(HIVE_TOKEN_SIGNATURE_KEY + ":" + tokenSignatureOverwrite);
     }
 
     logger.info("Created hive metastore token.");
