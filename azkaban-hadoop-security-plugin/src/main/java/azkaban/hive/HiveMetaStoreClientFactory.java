@@ -18,9 +18,10 @@
 package azkaban.hive;
 
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
-import com.google.common.base.Optional;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
@@ -47,24 +48,26 @@ public class HiveMetaStoreClientFactory extends BasePooledObjectFactory<IMetaSto
   private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreClientFactory.class);
   private final HiveConf hiveConf;
 
-  public HiveMetaStoreClientFactory(final Optional<String> hcatURI) {
-    this(getHiveConf(hcatURI));
+  public HiveMetaStoreClientFactory() {
+    this(new HiveConf());
+  }
+
+  public HiveMetaStoreClientFactory(final String hcatUri) {
+    this(getHiveConf(hcatUri));
   }
 
   public HiveMetaStoreClientFactory(final HiveConf hiveConf) {
     this.hiveConf = hiveConf;
   }
 
-  public HiveMetaStoreClientFactory() {
-    this(Optional.<String>absent());
-  }
+  private static HiveConf getHiveConf(final String hcatURI) {
+    requireNonNull(hcatURI);
+    checkArgument(StringUtils.isNotBlank(hcatURI));
 
-  private static HiveConf getHiveConf(final Optional<String> hcatURI) {
     final HiveConf hiveConf = new HiveConf();
-    if (hcatURI.isPresent() && StringUtils.isNotBlank(hcatURI.get())) {
-      hiveConf.setVar(HiveConf.ConfVars.METASTOREURIS, hcatURI.get());
-      hiveConf.set(HIVE_METASTORE_TOKEN_SIGNATURE, hcatURI.get());
-    }
+    hiveConf.setVar(HiveConf.ConfVars.METASTOREURIS, hcatURI);
+    hiveConf.set(HIVE_METASTORE_TOKEN_SIGNATURE, hcatURI);
+
     return hiveConf;
   }
 
@@ -107,5 +110,4 @@ public class HiveMetaStoreClientFactory extends BasePooledObjectFactory<IMetaSto
   public void destroyObject(final PooledObject<IMetaStoreClient> client) {
     client.getObject().close();
   }
-
 }
