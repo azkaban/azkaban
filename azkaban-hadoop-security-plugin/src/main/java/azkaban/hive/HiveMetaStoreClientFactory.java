@@ -18,11 +18,8 @@
 package azkaban.hive;
 
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -44,31 +41,11 @@ import org.slf4j.LoggerFactory;
  */
 public class HiveMetaStoreClientFactory extends BasePooledObjectFactory<IMetaStoreClient> {
 
-  public static final String HIVE_METASTORE_TOKEN_SIGNATURE = "hive.metastore.token.signature";
-  private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreClientFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(HiveMetaStoreClientFactory.class);
   private final HiveConf hiveConf;
-
-  public HiveMetaStoreClientFactory() {
-    this(new HiveConf());
-  }
-
-  public HiveMetaStoreClientFactory(final String hcatUri) {
-    this(getHiveConf(hcatUri));
-  }
 
   public HiveMetaStoreClientFactory(final HiveConf hiveConf) {
     this.hiveConf = hiveConf;
-  }
-
-  private static HiveConf getHiveConf(final String hcatURI) {
-    requireNonNull(hcatURI);
-    checkArgument(StringUtils.isNotBlank(hcatURI));
-
-    final HiveConf hiveConf = new HiveConf();
-    hiveConf.setVar(HiveConf.ConfVars.METASTOREURIS, hcatURI);
-    hiveConf.set(HIVE_METASTORE_TOKEN_SIGNATURE, hcatURI);
-
-    return hiveConf;
   }
 
   private IMetaStoreClient createMetaStoreClient() throws MetaException {
@@ -83,7 +60,7 @@ public class HiveMetaStoreClientFactory extends BasePooledObjectFactory<IMetaSto
                 tbl.getParameters().get(META_TABLE_STORAGE));
         return storageHandler == null ? null : storageHandler.getMetaHook();
       } catch (final HiveException e) {
-        LOG.error(e.toString());
+        log.error(e.getMessage(), e);
         throw new MetaException("Failed to get storage handler: " + e);
       }
     };

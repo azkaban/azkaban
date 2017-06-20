@@ -17,6 +17,8 @@
 
 package azkaban.hive;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import org.apache.commons.io.FileUtils;
@@ -24,7 +26,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.thrift.TException;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class HiveMetaStoreClientFactoryTest {
@@ -35,7 +36,7 @@ public class HiveMetaStoreClientFactoryTest {
   @Test
   public void testCreate() throws TException, IOException {
     cleanup();
-    
+
     final HiveConf hiveConf = new HiveConf();
     final HiveMetaStoreClientFactory factory = new HiveMetaStoreClientFactory(hiveConf);
     final IMetaStoreClient msc = factory.create();
@@ -48,9 +49,10 @@ public class HiveMetaStoreClientFactoryTest {
     msc.dropDatabase(dbName, true, true);
     msc.createDatabase(db);
     db = msc.getDatabase(dbName);
-    Assert.assertEquals(db.getName(), dbName);
-    Assert.assertEquals(db.getDescription(), description);
-    Assert.assertEquals(db.getLocationUri(), location);
+    
+    assertThat(db.getName()).isEqualTo(dbName);
+    assertThat(db.getDescription()).isEqualTo(description);
+    assertThat(db.getLocationUri()).isEqualTo(location);
 
     // Clean up if the test is successful
     cleanup();
