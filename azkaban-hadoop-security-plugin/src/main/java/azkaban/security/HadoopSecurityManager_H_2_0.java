@@ -74,7 +74,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * needs to be fixed as part of a plugin infrastructure implementation.
    */
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
-
   /**
    * TODO: This should be exposed as a configurable parameter
    *
@@ -106,7 +105,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String CHMOD = "chmod";
   // The file permissions assigned to a Delegation token file on fetch
   public static final String TOKEN_FILE_PERMISSIONS = "460";
-  private final static Logger logger = Logger.getLogger(HadoopSecurityManager_H_2_0.class);
+
+  private static final Logger log = Logger.getLogger(HadoopSecurityManager_H_2_0.class);
   private static final String FS_HDFS_IMPL_DISABLE_CACHE = "fs.hdfs.impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
   /**
@@ -155,14 +155,14 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     URL urlToHadoop = null;
     if (hadoopConfDir != null) {
       urlToHadoop = new File(hadoopConfDir).toURI().toURL();
-      logger.info("Using hadoop config found in " + urlToHadoop);
+      log.info("Using hadoop config found in " + urlToHadoop);
       resources.add(urlToHadoop);
     } else if (hadoopHome != null) {
       urlToHadoop = new File(hadoopHome, "conf").toURI().toURL();
-      logger.info("Using hadoop config found in " + urlToHadoop);
+      log.info("Using hadoop config found in " + urlToHadoop);
       resources.add(urlToHadoop);
     } else {
-      logger.info("HADOOP_HOME not set, using default hadoop config.");
+      log.info("HADOOP_HOME not set, using default hadoop config.");
     }
 
     ucl = new URLClassLoader(resources.toArray(new URL[resources.size()]));
@@ -171,24 +171,24 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.conf.setClassLoader(ucl);
 
     if (props.containsKey(FS_HDFS_IMPL_DISABLE_CACHE)) {
-      logger.info("Setting " + FS_HDFS_IMPL_DISABLE_CACHE + " to "
+      log.info("Setting " + FS_HDFS_IMPL_DISABLE_CACHE + " to "
           + props.get(FS_HDFS_IMPL_DISABLE_CACHE));
       this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE,
           Boolean.valueOf(props.get(FS_HDFS_IMPL_DISABLE_CACHE)));
     }
 
-    logger.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION + ": "
+    log.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION + ": "
         + this.conf.get(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION));
-    logger.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHORIZATION + ":  "
+    log.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHORIZATION + ":  "
         + this.conf.get(CommonConfigurationKeys.HADOOP_SECURITY_AUTHORIZATION));
-    logger.info(CommonConfigurationKeys.FS_DEFAULT_NAME_KEY + ": "
+    log.info(CommonConfigurationKeys.FS_DEFAULT_NAME_KEY + ": "
         + this.conf.get(CommonConfigurationKeys.FS_DEFAULT_NAME_KEY));
 
     UserGroupInformation.setConfiguration(this.conf);
 
     this.securityEnabled = UserGroupInformation.isSecurityEnabled();
     if (this.securityEnabled) {
-      logger.info("The Hadoop cluster has enabled security");
+      log.info("The Hadoop cluster has enabled security");
       this.shouldProxy = true;
       try {
 
@@ -201,15 +201,15 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       // try login
       try {
         if (this.loginUser == null) {
-          logger.info("No login user. Creating login user");
-          logger.info("Using principal from " + this.keytabPrincipal + " and "
+          log.info("No login user. Creating login user");
+          log.info("Using principal from " + this.keytabPrincipal + " and "
               + this.keytabLocation);
           UserGroupInformation.loginUserFromKeytab(this.keytabPrincipal,
               this.keytabLocation);
           this.loginUser = UserGroupInformation.getLoginUser();
-          logger.info("Logged in with user " + this.loginUser);
+          log.info("Logged in with user " + this.loginUser);
         } else {
-          logger.info("loginUser (" + this.loginUser
+          log.info("loginUser (" + this.loginUser
               + ") already created, refreshing tgt.");
           this.loginUser.checkTGTAndReloginFromKeytab();
         }
@@ -223,7 +223,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.userUgiMap = new ConcurrentHashMap<>();
     this.hiveMetaStoreClientFactory = new HiveMetaStoreClientFactory(new HiveConf());
 
-    logger.info("Hadoop Security Manager initialized");
+    log.info("Hadoop Security Manager initialized");
   }
 
   public static HadoopSecurityManager getInstance(final Props props)
@@ -231,13 +231,13 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     if (hsmInstance == null) {
       synchronized (HadoopSecurityManager_H_2_0.class) {
         if (hsmInstance == null) {
-          logger.info("getting new instance");
+          log.info("getting new instance");
           hsmInstance = new HadoopSecurityManager_H_2_0(props);
         }
       }
     }
 
-    logger.debug("Relogging in from keytab if necessary.");
+    log.debug("Relogging in from keytab if necessary.");
     hsmInstance.reloginFromKeytab();
 
     return hsmInstance;
@@ -257,7 +257,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
     UserGroupInformation ugi = this.userUgiMap.get(userToProxy);
     if (ugi == null) {
-      logger.info("proxy user " + userToProxy
+      log.info("proxy user " + userToProxy
           + " not exist. Creating new proxy user");
       if (this.shouldProxy) {
         try {
@@ -306,7 +306,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       throws HadoopSecurityManagerException {
     final FileSystem fs;
     try {
-      logger.info("Getting file system as " + user);
+      log.info("Getting file system as " + user);
       final UserGroupInformation ugi = getProxiedUser(user);
 
       if (ugi != null) {
