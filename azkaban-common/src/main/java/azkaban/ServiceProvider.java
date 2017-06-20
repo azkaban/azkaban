@@ -30,6 +30,7 @@ import com.google.inject.Injector;
  * scope so that Guice can automatically resolve dependencies and provide the required services
  * directly.
  */
+@SuppressWarnings("ImmutableEnumChecker")
 public enum ServiceProvider {
   SERVICE_PROVIDER;
 
