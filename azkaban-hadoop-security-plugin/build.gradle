@@ -11,7 +11,9 @@ dependencies {
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
     compileOnly deps.hiveMetastore
-    compileOnly deps.hiveExec
+    compileOnly(deps.hiveExec) {
+        exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
+    }
 }
 
 /**
