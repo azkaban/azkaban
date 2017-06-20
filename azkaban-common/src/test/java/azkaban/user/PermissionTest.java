@@ -16,7 +16,7 @@
 
 package azkaban.user;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.user.Permission.Type;
 import org.junit.After;
@@ -47,7 +47,7 @@ public class PermissionTest {
     final Permission perm2 = new Permission();
     perm2.addPermission(Type.READ);
     info("Compare " + perm1.toString() + " and " + perm2.toString());
-    assertTrue(perm1.equals(perm2));
+    assertThat(perm1.equals(perm2)).isTrue();
   }
 
   @Test
@@ -58,7 +58,7 @@ public class PermissionTest {
     final Permission perm2 = new Permission();
     perm2.addPermission(new Type[]{Type.EXECUTE, Type.READ});
     info("Compare " + perm1.toString() + " and " + perm2.toString());
-    assertTrue(perm1.equals(perm2));
+    assertThat(perm1.equals(perm2)).isTrue();
   }
 
   @Test
@@ -70,7 +70,7 @@ public class PermissionTest {
     final Permission perm2 = new Permission();
     perm2.addPermission(new Type[]{Type.READ, Type.WRITE});
     info("Compare " + perm1.toString() + " and " + perm2.toString());
-    assertTrue(perm1.equals(perm2));
+    assertThat(perm1.equals(perm2)).isTrue();
   }
 
   @Test
@@ -82,7 +82,7 @@ public class PermissionTest {
     final Permission perm2 = new Permission();
     perm2.addPermission(new Type[]{Type.READ, Type.WRITE});
     info("Compare " + perm1.toString() + " and " + perm2.toString());
-    assertTrue(perm1.equals(perm2));
+    assertThat(perm1.equals(perm2)).isTrue();
   }
 
   @Test
@@ -94,7 +94,7 @@ public class PermissionTest {
     final String[] array = permission.toStringArray();
     final Permission permission2 = new Permission();
     permission2.addPermissionsByName(array);
-    assertTrue(permission.equals(permission2));
+    assertThat(permission.equals(permission2)).isTrue();
   }
 
   @Test
@@ -105,10 +105,32 @@ public class PermissionTest {
     final int flags = permission.toFlags();
     final Permission permission2 = new Permission(flags);
 
-    assertTrue(permission2.isPermissionSet(Type.READ));
-    assertTrue(permission2.isPermissionSet(Type.WRITE));
+    assertThat(permission2.isPermissionSet(Type.READ)).isTrue();
+    assertThat(permission2.isPermissionSet(Type.WRITE)).isTrue();
 
-    assertTrue(permission.equals(permission2));
+    assertThat(permission.equals(permission2)).isTrue();
+  }
+
+  /**
+   * Verify that the binary bit for UPLOADPROJECTS is not turned on
+   * by setting the other permissions.
+   */
+  @Test
+  public void testUploadProjectFlag() throws Exception {
+    final Permission permission = new Permission();
+    permission.addPermission(new Type[]{Type.UPLOADPROJECTS});
+
+    final int flags = permission.toFlags();
+    final Permission permission2 = new Permission(flags);
+    assertThat(permission2.isPermissionSet(Type.UPLOADPROJECTS)).isTrue();
+    assertThat(permission.equals(permission2)).isTrue();
+
+    permission.removePermissions(new Type[]{Type.UPLOADPROJECTS});
+    final Type[] allPermissions = new Type[]{
+        Type.READ, Type.WRITE, Type.EXECUTE, Type.METRICS, Type.SCHEDULE, Type.CREATEPROJECTS
+    };
+    permission.addPermission(allPermissions);
+    assertThat(permission.isPermissionSet(Type.UPLOADPROJECTS)).isFalse();
   }
 
   /**
