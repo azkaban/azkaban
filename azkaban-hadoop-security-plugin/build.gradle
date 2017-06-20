@@ -13,6 +13,7 @@ dependencies {
     compileOnly deps.hiveMetastore
     compileOnly(deps.hiveExec) {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
+        exclude group: 'eigenbase', module: 'eigenbase-properties'
     }
 }
 
