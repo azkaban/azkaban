@@ -62,6 +62,9 @@ public class RemoteFlowWatcherTest {
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
     InteractiveTestJob.setQuickSuccess(true);
+    Utils.initServiceProvider();
+    JmxJobMBeanManager.getInstance().initialize(new Props());
+    InteractiveTestJob.setQuickSuccess(true);
   }
 
   @After
