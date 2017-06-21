@@ -20,8 +20,6 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
@@ -43,7 +41,6 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -137,12 +134,12 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
 
-    final Thread thread1 = runFlowRunnerInThread(previousRunner);
+    runFlowRunnerInThread(previousRunner);
     assertStatus(previousFlow, "joba", Status.RUNNING);
     assertStatus(previousFlow, "joba", Status.RUNNING);
     assertStatus(previousFlow, "joba1", Status.RUNNING);
 
-    final Thread thread2 = runFlowRunnerInThread(pipelineRunner);
+    runFlowRunnerInThread(pipelineRunner);
     assertStatus(pipelineFlow, "joba", Status.QUEUED);
     assertStatus(pipelineFlow, "joba1", Status.QUEUED);
 
@@ -206,7 +203,6 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(pipelineFlow, "jobb:innerJobC", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "jobb:innerFlow", Status.RUNNING);
 
-
     InteractiveTestJob.getTestJob("pipe:jobd:innerJobA").succeedJob();
     InteractiveTestJob.getTestJob("pipe:jobb:innerFlow").succeedJob();
     assertStatus(pipelineFlow, "jobb", Status.SUCCEEDED);
@@ -225,20 +221,19 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     InteractiveTestJob.getTestJob("pipe:jobe").succeedJob();
     InteractiveTestJob.getTestJob("prev:jobf").succeedJob();
-    pause(250);
     assertStatus(pipelineFlow, "jobe", Status.SUCCEEDED);
     assertStatus(previousFlow, "jobf", Status.SUCCEEDED);
-    Assert.assertEquals(Status.SUCCEEDED, previousFlow.getStatus());
+    assertFlowStatus(previousFlow, Status.SUCCEEDED);
 
     InteractiveTestJob.getTestJob("pipe:joba1").succeedJob();
     assertStatus(pipelineFlow, "joba1", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "jobf", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:jobf").succeedJob();
-    pause(250);
-    Assert.assertEquals(Status.SUCCEEDED, pipelineFlow.getStatus());
-    Assert.assertFalse(thread1.isAlive());
-    Assert.assertFalse(thread2.isAlive());
+
+    assertThreadShutDown(previousRunner);
+    assertThreadShutDown(pipelineRunner);
+    assertFlowStatus(pipelineFlow, Status.SUCCEEDED);
   }
 
   @Test
@@ -260,10 +255,10 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
 
-    final Thread thread1 = runFlowRunnerInThread(previousRunner);
+    runFlowRunnerInThread(previousRunner);
     assertStatus(previousFlow, "pipeline1", Status.RUNNING);
 
-    final Thread thread2 = runFlowRunnerInThread(pipelineRunner);
+    runFlowRunnerInThread(pipelineRunner);
     assertStatus(pipelineFlow, "pipeline1", Status.QUEUED);
 
     InteractiveTestJob.getTestJob("prev:pipeline1").succeedJob();
@@ -351,10 +346,9 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
         Status.RUNNING);
 
     InteractiveTestJob.getTestJob("prev:pipelineFlow").succeedJob();
-    pause(250);
     assertStatus(previousFlow, "pipelineFlow", Status.SUCCEEDED);
-    Assert.assertEquals(Status.SUCCEEDED, previousFlow.getStatus());
-    Assert.assertFalse(thread1.isAlive());
+    assertFlowStatus(previousFlow, Status.SUCCEEDED);
+    assertThreadShutDown(previousRunner);
 
     InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow3:innerFlow")
         .succeedJob();
@@ -364,15 +358,14 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(pipelineFlow, "pipeline4", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:pipeline4").succeedJob();
-    pause(250);
     assertStatus(pipelineFlow, "pipeline4", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "pipelineFlow", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:pipelineFlow").succeedJob();
-    pause(250);
     assertStatus(pipelineFlow, "pipelineFlow", Status.SUCCEEDED);
-    Assert.assertEquals(Status.SUCCEEDED, pipelineFlow.getStatus());
-    Assert.assertFalse(thread2.isAlive());
+    assertFlowStatus(pipelineFlow, Status.SUCCEEDED);
+    assertThreadShutDown(pipelineRunner);
+
   }
 
   @Test
@@ -394,11 +387,11 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
 
-    final Thread thread1 = runFlowRunnerInThread(previousRunner);
+    runFlowRunnerInThread(previousRunner);
     assertStatus(previousFlow, "pipeline1_1", Status.RUNNING);
     assertStatus(previousFlow, "pipeline1_1:innerJobA", Status.RUNNING);
 
-    final Thread thread2 = runFlowRunnerInThread(pipelineRunner);
+    runFlowRunnerInThread(pipelineRunner);
     assertStatus(pipelineFlow, "pipeline1_1", Status.RUNNING);
     assertStatus(pipelineFlow, "pipeline1_1:innerJobA", Status.QUEUED);
 
@@ -435,11 +428,10 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(pipelineFlow, "pipeline1_2:innerJobA", Status.QUEUED);
 
     InteractiveTestJob.getTestJob("prev:pipeline1_2:innerFlow2").succeedJob();
-    pause(250);
     assertStatus(previousFlow, "pipeline1_2:innerFlow2", Status.SUCCEEDED);
     assertStatus(previousFlow, "pipeline1_2", Status.SUCCEEDED);
-    Assert.assertEquals(Status.SUCCEEDED, previousFlow.getStatus());
-    Assert.assertFalse(thread1.isAlive());
+    assertFlowStatus(previousFlow, Status.SUCCEEDED);
+    assertThreadShutDown(previousRunner);
     assertStatus(pipelineFlow, "pipeline1_2:innerJobA", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:pipeline1_2:innerJobA").succeedJob();
@@ -447,24 +439,15 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(pipelineFlow, "pipeline1_2:innerFlow2", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:pipeline1_2:innerFlow2").succeedJob();
-    pause(250);
     assertStatus(pipelineFlow, "pipeline1_2", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "pipeline1_2:innerFlow2", Status.SUCCEEDED);
-    Assert.assertEquals(Status.SUCCEEDED, pipelineFlow.getStatus());
-    Assert.assertFalse(thread2.isAlive());
+    assertFlowStatus(pipelineFlow, Status.SUCCEEDED);
+    assertThreadShutDown(pipelineRunner);
   }
 
-  private Thread runFlowRunnerInThread(final FlowRunner runner) {
+  private void runFlowRunnerInThread(final FlowRunner runner) {
     final Thread thread = new Thread(runner);
     thread.start();
-    return thread;
-  }
-
-  private void pause(final long millisec) {
-    try {
-      Thread.sleep(millisec);
-    } catch (final InterruptedException e) {
-    }
   }
 
   private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
