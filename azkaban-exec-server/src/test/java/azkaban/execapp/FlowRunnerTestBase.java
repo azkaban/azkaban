@@ -108,13 +108,17 @@ public class FlowRunnerTestBase {
     assertEquals(status, flow.getStatus());
   }
 
-  protected void assertStatus(final String name, final Status status) {
-    final ExecutableFlow exFlow = this.runner.getExecutableFlow();
-    final ExecutableNode node = exFlow.getExecutableNodePath(name);
+  protected void assertStatus(final ExecutableFlow flow, final String name, final Status status) {
+    final ExecutableNode node = flow.getExecutableNodePath(name);
     assertNotNull(name + " wasn't found", node);
     StatusTestUtils.waitForStatus(node, status);
     printStatuses(status, node);
     assertEquals("Wrong status for [" + name + "]", status, node.getStatus());
+  }
+
+  protected void assertStatus(final String name, final Status status) {
+    final ExecutableFlow exFlow = this.runner.getExecutableFlow();
+    assertStatus(exFlow, name, status);
   }
 
   protected void printStatuses(final Status status, final ExecutableNode node) {
