@@ -30,6 +30,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
   private static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
       new ConcurrentHashMap<>();
+  private static volatile boolean quickSuccess = false;
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
   private boolean succeed = true;
@@ -69,6 +70,12 @@ public class InteractiveTestJob extends AbstractProcessJob {
     }
   }
 
+  public static void clearTestJobs(final String... names) {
+    for (String name : names) {
+      assertNotNull(testJobs.remove(name));
+    }
+  }
+
   @Override
   public void run() throws Exception {
     final String nestedFlowPath =
@@ -81,6 +88,9 @@ public class InteractiveTestJob extends AbstractProcessJob {
     testJobs.put(id, this);
     synchronized (testJobs) {
       testJobs.notifyAll();
+    }
+    if (quickSuccess) {
+      return;
     }
 
     if (this.jobProps.getBoolean("fail", false)) {

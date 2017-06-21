@@ -20,18 +20,20 @@ import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.EventCollectorListener;
 import azkaban.execapp.FlowRunner;
+import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.JavaJob;
+import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
@@ -41,7 +43,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class RemoteFlowWatcherTest {
@@ -53,16 +54,20 @@ public class RemoteFlowWatcherTest {
   public void setUp() throws Exception {
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
-    this.jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
+    this.jobtypeManager.getJobTypePluginSet().addPluginClass("test", InteractiveTestJob.class);
+    Utils.initServiceProvider();
+    JmxJobMBeanManager.getInstance().initialize(new Props());
+    InteractiveTestJob.setQuickSuccess(true);
   }
 
   @After
   public void tearDown() throws IOException {
+    InteractiveTestJob.resetQuickSuccess();
   }
 
   public File setupDirectory() throws IOException {
     System.out.println("Create temp dir");
-    final File workingDir = new File("_AzkabanTestDir_" + this.dirVal);
+    workingDir = new File("build/tmp/_AzkabanTestDir_" + this.dirVal);
     if (workingDir.exists()) {
       FileUtils.deleteDirectory(workingDir);
     }
@@ -72,7 +77,6 @@ public class RemoteFlowWatcherTest {
     return workingDir;
   }
 
-  @Ignore
   @Test
   public void testBasicRemoteFlowWatcher() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
@@ -104,7 +108,6 @@ public class RemoteFlowWatcherTest {
     testPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow());
   }
 
-  @Ignore
   @Test
   public void testLevel1RemoteFlowWatcher() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
@@ -134,7 +137,6 @@ public class RemoteFlowWatcherTest {
     testPipelineLevel1(runner1.getExecutableFlow(), runner2.getExecutableFlow());
   }
 
-  @Ignore
   @Test
   public void testLevel2DiffRemoteFlowWatcher() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
@@ -246,7 +248,7 @@ public class RemoteFlowWatcherTest {
       final EventCollectorListener eventCollector, final String flowName, final int execId,
       final FlowWatcher watcher, final Integer pipeline, final Props azkabanProps)
       throws Exception {
-    final File testDir = new File("unit/executions/exectest1");
+    final File testDir = new File("../test/src/test/resources/azkaban/test/executions/exectest1");
     final ExecutableFlow exFlow =
         prepareExecDir(workingDir, testDir, flowName, execId);
     final ExecutionOptions options = exFlow.getExecutionOptions();
