@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
+import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -34,6 +35,7 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +46,6 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -57,7 +58,7 @@ import org.junit.Test;
  *
  * @author rpark
  */
-public class FlowRunnerPipelineTest {
+public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   private static int id = 101;
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
@@ -73,7 +74,7 @@ public class FlowRunnerPipelineTest {
   @Before
   public void setUp() throws Exception {
     System.out.println("Create temp dir");
-    this.workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
+    this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
     if (this.workingDir.exists()) {
       FileUtils.deleteDirectory(this.workingDir);
     }
@@ -86,8 +87,10 @@ public class FlowRunnerPipelineTest {
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
+    Utils.initServiceProvider();
+    JmxJobMBeanManager.getInstance().initialize(new Props());
 
-    final File dir = new File("unit/executions/embedded2");
+    final File dir = new File("../test/src/test/resources/azkaban/test/executions/embedded2");
     this.flowMap = FlowRunnerTestUtil
         .prepareProject(this.project, dir, this.logger, this.workingDir);
 
@@ -103,7 +106,6 @@ public class FlowRunnerPipelineTest {
     }
   }
 
-  @Ignore
   @Test
   public void testBasicPipelineLevel1Run() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
@@ -277,7 +279,6 @@ public class FlowRunnerPipelineTest {
     Assert.assertFalse(thread2.isAlive());
   }
 
-  @Ignore
   @Test
   public void testBasicPipelineLevel2Run() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
@@ -471,7 +472,6 @@ public class FlowRunnerPipelineTest {
     Assert.assertFalse(thread2.isAlive());
   }
 
-  @Ignore
   @Test
   public void testBasicPipelineLevel2Run2() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
