@@ -39,6 +39,7 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -97,7 +98,49 @@ public class RemoteFlowWatcherTest {
 
     runner2Thread.join();
 
-    assertPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow());
+    assertPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow(), false);
+  }
+
+  @Test
+  public void testRemoteFlowWatcherBlockingJobsLeftInReadyState() throws Exception {
+    final MockExecutorLoader loader = new MockExecutorLoader();
+
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+
+    final File workingDir1 = setupDirectory();
+    final FlowRunner runner1 =
+        createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
+            null);
+    // this doesn't have real significance here, but the case where some jobs are eventually left
+    // with READY status (although flow has a finished status) is when some jobs have been disabled
+    // if a subflow is skipped entirely, the subflow job is set to SKIPPED but all jobs inside it
+    // remain in READY state - TODO prove that with a test case that has subflows
+    runner1.getExecutableFlow().getExecutableNodePath("job4").setStatus(Status.DISABLED);
+    final Thread runner1Thread = new Thread(runner1);
+
+    final File workingDir2 = setupDirectory();
+    final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
+    final FlowRunner runner2 =
+        createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2,
+            watcher, 2);
+    final Thread runner2Thread = new Thread(runner2);
+
+    printCurrentState("runner1 ", runner1.getExecutableFlow());
+    runner1Thread.start();
+    runner1Thread.join();
+    // simulate a real life scenario - this can happen for disabled jobs inside subflows:
+    // flow has finished otherwise but a "blocking" job has READY status
+    // the test gets stuck here without the fix in FlowWatcher.peekStatus
+    runner1.getExecutableFlow().getExecutableNodePath("job4").setStatus(Status.READY);
+    loader.updateExecutableFlow(runner1.getExecutableFlow());
+
+    runner2Thread.start();
+    runner2Thread.join();
+
+    FileUtils.deleteDirectory(workingDir1);
+    FileUtils.deleteDirectory(workingDir2);
+
+    testPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow(), true);
   }
 
   @Test
@@ -185,7 +228,8 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private void assertPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second) {
+  private void assertPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second,
+      final boolean job4Skipped) {
     for (final ExecutableNode node : second.getExecutableNodes()) {
       Assert.assertEquals(Status.SUCCEEDED, node.getStatus());
 
@@ -202,7 +246,7 @@ public class RemoteFlowWatcherTest {
         if (child == null) {
           continue;
         }
-        Assert.assertEquals(Status.SUCCEEDED, child.getStatus());
+        Assert.assertEquals(child.getStatus(), Status.SUCCEEDED);
         final long diff = node.getStartTime() - child.getEndTime();
         minDiff = Math.min(minDiff, diff);
         Assert.assertTrue(
