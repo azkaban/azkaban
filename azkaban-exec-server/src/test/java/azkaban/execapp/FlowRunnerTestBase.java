@@ -118,7 +118,7 @@ public class FlowRunnerTestBase {
 
   protected void assertFlowStatus(ExecutableFlow flow, final Status status) {
     waitForStatus(flow, status);
-    printStatuses(status, flow);
+    printStatuses(status, flow, flow);
     assertEquals(status, flow.getStatus());
   }
 
@@ -126,7 +126,7 @@ public class FlowRunnerTestBase {
     final ExecutableNode node = flow.getExecutableNodePath(name);
     assertNotNull(name + " wasn't found", node);
     waitForStatus(node, status);
-    printStatuses(status, node);
+    printStatuses(status, node, flow);
     assertEquals("Wrong status for [" + name + "]", status, node.getStatus());
   }
 
@@ -150,18 +150,19 @@ public class FlowRunnerTestBase {
     }
   }
 
-  protected void printStatuses(final Status status, final ExecutableNode node) {
+  protected void printStatuses(final Status status, final ExecutableNode node, ExecutableFlow flow) {
     if (status != node.getStatus()) {
-      printTestJobs();
-      printFlowJobs(this.runner.getExecutableFlow());
+      printTestJobs(flow);
+      printFlowJobs(flow);
     }
   }
 
-  private void printTestJobs() {
+  private void printTestJobs(ExecutableFlow flow) {
     for (final String testJob : InteractiveTestJob.getTestJobNames()) {
-      final ExecutableNode testNode = this.runner.getExecutableFlow()
-          .getExecutableNodePath(testJob);
-      System.err.println("testJob: " + testNode.getNestedId() + " " + testNode.getStatus());
+      final ExecutableNode testNode = flow.getExecutableNodePath(testJob);
+      if (testNode != null) {
+        System.err.println("testJob: " + testNode.getNestedId() + " " + testNode.getStatus());
+      }
     }
   }
 
