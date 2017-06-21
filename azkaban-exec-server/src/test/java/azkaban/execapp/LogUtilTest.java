@@ -26,14 +26,22 @@ public class LogUtilTest {
 
   @Test
   public void createLogPatternLayoutJsonObject() throws Exception {
-    final String jobId = "12";
-    final Props props = Props.of("azkaban.flow.projectname", "projectFoo", "azkaban.flow.flowid",
-        "flowId1", "azkaban.flow.submituser",
-        "submitUserFoo", "azkaban.flow.execid",
-        "execId1", "azkaban.flow.projectversion",
-        "projectV1");
-    final String expected = "{\"jobid\":\"12\",\"projectname\":\"projectFoo\",\"level\":\"%p\","
-        + "\"submituser\":\"submitUserFoo\",\"projectversion\":\"projectV1\",\"category\":\"%c{1}\",\"message\":\"%m\",\"logsource\":\"userJob\",\"flowid\":\"flowId1\",\"execid\":\"execId1\"}";
+    final String jobId = "jobId1";
+    final Props props = Props.of("azkaban.flow.projectname", "projectFoo",
+        "azkaban.flow.flowid", "flowId1",
+        "azkaban.flow.submituser", "submitUserFoo",
+        "azkaban.flow.execid", "execId1",
+        "azkaban.flow.projectversion", "projectV1");
+    final String expected = "{\"jobid\":\"jobId1\","
+        + "\"projectname\":\"projectFoo\","
+        + "\"level\":\"%p\","
+        + "\"submituser\":\"submitUserFoo\","
+        + "\"projectversion\":\"projectV1\","
+        + "\"category\":\"%c{1}\","
+        + "\"message\":\"%m\","
+        + "\"logsource\":\"userJob\","
+        + "\"flowid\":\"flowId1\","
+        + "\"execid\":\"execId1\"}";
     final String result = LogUtil.createLogPatternLayoutJsonString(props, jobId);
     assertThat(result).isEqualToIgnoringWhitespace(expected);
   }
