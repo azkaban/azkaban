@@ -546,7 +546,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   private void propagateStatus(final ExecutableFlowBase base, final Status status) {
-    if (!Status.isStatusFinished(base.getStatus())) {
+    if (!Status.isStatusFinished(base.getStatus()) && base.getStatus() != Status.KILLING) {
       this.logger.info("Setting " + base.getNestedId() + " to " + status);
       base.setStatus(status);
       if (base.getParentFlow() != null) {
@@ -597,10 +597,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     final long durationSec = (flow.getEndTime() - flow.getStartTime()) / 1000;
     switch (flow.getStatus()) {
       case FAILED_FINISHING:
-        final Status status = isKilled() ? Status.KILLED : Status.FAILED;
-        this.logger.info("Setting flow '" + id + "' status to " + status + " in "
+        this.logger.info("Setting flow '" + id + "' status to FAILED in "
             + durationSec + " seconds");
-        flow.setStatus(status);
+        flow.setStatus(Status.FAILED);
         break;
       case KILLING:
         this.logger

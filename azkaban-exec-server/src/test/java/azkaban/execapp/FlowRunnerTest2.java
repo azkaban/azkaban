@@ -579,7 +579,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobb:innerJobC", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("jobb:innerJobB").failJob();
-    assertStatus("jobb", Status.KILLED);
+    assertStatus("jobb", Status.FAILED);
     assertStatus("jobb:innerJobB", Status.FAILED);
     assertStatus("jobb:innerJobC", Status.KILLED);
     assertStatus("jobb:innerFlow", Status.CANCELLED);
@@ -771,7 +771,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     this.runner.kill("me");
 
-    assertStatus("jobb", Status.KILLED);
+    assertStatus("jobb", Status.FAILED);
     assertStatus("jobb:innerJobC", Status.KILLED);
     assertStatus("jobb:innerFlow", Status.CANCELLED);
     assertStatus("jobc", Status.KILLED);
@@ -1067,7 +1067,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
     assertStatus("jobd:innerJobA", Status.FAILED);
     assertStatus("jobd:innerFlow2", Status.CANCELLED);
-    assertStatus("jobd", Status.KILLED);
+    assertStatus("jobd", Status.FAILED);
     assertStatus("jobb:innerJobA", Status.KILLED);
     assertStatus("jobb:innerJobB", Status.CANCELLED);
     assertStatus("jobb:innerJobC", Status.CANCELLED);
