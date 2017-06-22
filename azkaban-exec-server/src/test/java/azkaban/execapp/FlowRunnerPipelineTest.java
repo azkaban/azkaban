@@ -116,7 +116,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
   }
 
   @Test
-  public void testBasicPipelineLevel1Run() throws Exception {
+  public void testBasicPipelineLevel1RunDisabledJobs() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final FlowRunner previousRunner =
         createFlowRunner(eventCollector, "jobf", "prev");
@@ -133,6 +133,8 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     // 1. START FLOW
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+    // disable the innerFlow (entire sub-flow)
+    previousFlow.getExecutableNodePath("jobb").setStatus(Status.DISABLED);
 
     runFlowRunnerInThread(previousRunner);
     assertStatus(previousFlow, "joba", Status.RUNNING);
@@ -145,17 +147,16 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     InteractiveTestJob.getTestJob("prev:joba").succeedJob();
     assertStatus(previousFlow, "joba", Status.SUCCEEDED);
-    assertStatus(previousFlow, "jobb", Status.RUNNING);
-    assertStatus(previousFlow, "jobb:innerJobA", Status.RUNNING);
+    assertStatus(previousFlow, "jobb", Status.SKIPPED);
+    assertStatus(previousFlow, "jobb:innerJobA", Status.READY);
     assertStatus(previousFlow, "jobd", Status.RUNNING);
     assertStatus(previousFlow, "jobc", Status.RUNNING);
     assertStatus(previousFlow, "jobd:innerJobA", Status.RUNNING);
     assertStatus(pipelineFlow, "joba", Status.RUNNING);
 
-    InteractiveTestJob.getTestJob("prev:jobb:innerJobA").succeedJob();
-    assertStatus(previousFlow, "jobb:innerJobA", Status.SUCCEEDED);
-    assertStatus(previousFlow, "jobb:innerJobB", Status.RUNNING);
-    assertStatus(previousFlow, "jobb:innerJobC", Status.RUNNING);
+    assertStatus(previousFlow, "jobb:innerJobA", Status.READY);
+    assertStatus(previousFlow, "jobb:innerJobB", Status.READY);
+    assertStatus(previousFlow, "jobb:innerJobC", Status.READY);
 
     InteractiveTestJob.getTestJob("pipe:joba").succeedJob();
     assertStatus(pipelineFlow, "joba", Status.SUCCEEDED);
@@ -175,23 +176,20 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(previousFlow, "jobd:innerFlow2", Status.SUCCEEDED);
     assertStatus(previousFlow, "jobd", Status.SUCCEEDED);
 
-    InteractiveTestJob.getTestJob("prev:jobb:innerJobB").succeedJob();
-    InteractiveTestJob.getTestJob("prev:jobb:innerJobC").succeedJob();
-    InteractiveTestJob.getTestJob("prev:jobc").succeedJob();
     InteractiveTestJob.getTestJob("pipe:jobb:innerJobA").succeedJob();
-    assertStatus(previousFlow, "jobb:innerJobB", Status.SUCCEEDED);
-    assertStatus(previousFlow, "jobb:innerJobC", Status.SUCCEEDED);
-    assertStatus(previousFlow, "jobb:innerFlow", Status.RUNNING);
+    InteractiveTestJob.getTestJob("prev:jobc").succeedJob();
+    assertStatus(previousFlow, "jobb:innerJobB", Status.READY);
+    assertStatus(previousFlow, "jobb:innerJobC", Status.READY);
+    assertStatus(previousFlow, "jobb:innerFlow", Status.READY);
     assertStatus(previousFlow, "jobc", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "jobb:innerJobA", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "jobc", Status.RUNNING);
     assertStatus(pipelineFlow, "jobb:innerJobB", Status.RUNNING);
     assertStatus(pipelineFlow, "jobb:innerJobC", Status.RUNNING);
 
-    InteractiveTestJob.getTestJob("prev:jobb:innerFlow").succeedJob();
     InteractiveTestJob.getTestJob("pipe:jobc").succeedJob();
-    assertStatus(previousFlow, "jobb:innerFlow", Status.SUCCEEDED);
-    assertStatus(previousFlow, "jobb", Status.SUCCEEDED);
+    assertStatus(previousFlow, "jobb:innerFlow", Status.READY);
+    assertStatus(previousFlow, "jobb", Status.SKIPPED);
     assertStatus(previousFlow, "jobe", Status.RUNNING);
     assertStatus(pipelineFlow, "jobc", Status.SUCCEEDED);
 
