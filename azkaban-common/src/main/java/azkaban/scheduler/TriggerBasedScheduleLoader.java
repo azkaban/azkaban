@@ -44,7 +44,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   private long lastUpdateTime = -1;
 
   public TriggerBasedScheduleLoader(final TriggerManager triggerManager,
-                                    final String triggerSource) {
+      final String triggerSource) {
     this.triggerManager = triggerManager;
     this.triggerSource = triggerSource;
   }
@@ -129,8 +129,9 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
   private Schedule triggerToSchedule(final Trigger t) throws ScheduleManagerException {
 
-    final BasicTimeChecker triggerTimeChecker = getBasicTimeChecker(t.getTriggerCondition().getCheckers());
-    final BasicTimeChecker endTimeChecker = getBasicTimeChecker(t.getExpireCondition().getCheckers());
+    final BasicTimeChecker triggerTimeChecker = getBasicTimeChecker(
+        t.getTriggerCondition().getCheckers());
+    final BasicTimeChecker endTimeChecker = getEndTimeChecker(t);
 
     final List<TriggerAction> actions = t.getActions();
     ExecuteFlowAction act = null;
@@ -147,7 +148,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           act.getFlowName(),
           t.getStatus().toString(),
           triggerTimeChecker.getFirstCheckTime(),
-          endTimeChecker == null? Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME: endTimeChecker.getNextCheckTime(),
+          endTimeChecker == null ? Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME
+              : endTimeChecker.getNextCheckTime(),
           triggerTimeChecker.getTimeZone(),
           triggerTimeChecker.getPeriod(),
           t.getLastModifyTime(),
@@ -173,6 +175,14 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     }
     return null;
   }
+
+  private BasicTimeChecker getEndTimeChecker(final Trigger t) {
+    if (t.getExpireCondition().getExpression().contains("EndTimeChecker")) {
+      return getBasicTimeChecker(t.getExpireCondition().getCheckers());
+    }
+    return null;
+  }
+
 
   @Override
   public void removeSchedule(final Schedule s) throws ScheduleManagerException {
