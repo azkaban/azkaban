@@ -90,7 +90,7 @@ public abstract class FlowWatcher {
     if (node != null) {
       ExecutableFlowBase parentFlow = node.getParentFlow();
       while (parentFlow != null) {
-        Status parentStatus = node.getParentFlow().getStatus();
+        Status parentStatus = parentFlow.getStatus();
         if (parentStatus == Status.SKIPPED || parentStatus == Status.DISABLED) {
           return Status.SKIPPED;
         }
