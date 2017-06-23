@@ -478,7 +478,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     return false;
   }
 
-  private boolean notReadyToRun(Status status) {
+  private boolean notReadyToRun(final Status status) {
     return Status.isStatusFinished(status)
         || Status.isStatusRunning(status)
         || Status.KILLING == status;

@@ -345,7 +345,7 @@ public class JobRunner extends EventHandler implements Runnable {
         this.azkabanProps
             .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
-    final JSONObject layout = LogUtil.createLogPatternLayoutJsonObject(props, jobId);
+    final JSONObject layout = LogUtil.createLogPatternLayoutJsonObject(this.props, this.jobId);
 
     kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
     kafkaProducer.activateOptions();
