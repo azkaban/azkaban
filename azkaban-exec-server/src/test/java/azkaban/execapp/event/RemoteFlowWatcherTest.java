@@ -105,7 +105,7 @@ public class RemoteFlowWatcherTest {
     FileUtils.deleteDirectory(workingDir1);
     FileUtils.deleteDirectory(workingDir2);
 
-    testPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow());
+    assertPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow());
   }
 
   @Test
@@ -199,7 +199,7 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private void testPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second) {
+  private void assertPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second) {
     for (final ExecutableNode node : second.getExecutableNodes()) {
       Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 
@@ -219,10 +219,10 @@ public class RemoteFlowWatcherTest {
         Assert.assertEquals(child.getStatus(), Status.SUCCEEDED);
         final long diff = node.getStartTime() - child.getEndTime();
         minDiff = Math.min(minDiff, diff);
-        System.out.println("Node " + node.getId() + " start: "
-            + node.getStartTime() + " dependent on " + watchedChild + " "
-            + child.getEndTime() + " diff: " + diff);
-        Assert.assertTrue(node.getStartTime() >= child.getEndTime());
+        Assert.assertTrue(
+            "Node " + node.getId() + " start: " + node.getStartTime() + " dependent on "
+                + watchedChild + " " + child.getEndTime() + " diff: " + diff,
+            node.getStartTime() >= child.getEndTime());
       }
 
       long minParentDiff = Long.MAX_VALUE;
@@ -231,9 +231,9 @@ public class RemoteFlowWatcherTest {
         final long diff = node.getStartTime() - parent.getEndTime();
         minParentDiff = Math.min(minParentDiff, diff);
       }
-      System.out.println("   minPipelineTimeDiff:" + minDiff
-          + " minDependencyTimeDiff:" + minParentDiff);
-      Assert.assertTrue(minParentDiff < 500 || minDiff < 500);
+      Assert.assertTrue("minPipelineTimeDiff:" + minDiff
+              + " minDependencyTimeDiff:" + minParentDiff,
+          minParentDiff < 5000 || minDiff < 5000);
     }
   }
 
