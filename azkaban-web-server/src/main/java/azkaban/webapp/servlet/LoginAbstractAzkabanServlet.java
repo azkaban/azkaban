@@ -103,7 +103,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     this.webMetrics.markWebGetCall();
     // Set session id
     final Session session = getSessionFromRequest(req);
-    logRequest(req, session);
+    logRequest(req, session, true);
     if (hasParam(req, "logout")) {
       resp.sendRedirect(req.getContextPath());
       if (session != null) {
@@ -136,7 +136,8 @@ public abstract class LoginAbstractAzkabanServlet extends
   /**
    * Log out request - the format should be close to Apache access log format
    */
-  private void logRequest(final HttpServletRequest req, final Session session) {
+  private void logRequest(final HttpServletRequest req, final Session session,
+      final Boolean allowedQueryString) {
     final StringBuilder buf = new StringBuilder();
     buf.append(getRealClientIpAddr(req)).append(" ");
     if (session != null && session.getUser() != null) {
@@ -148,7 +149,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     buf.append("\"");
     buf.append(req.getMethod()).append(" ");
     buf.append(req.getRequestURI()).append(" ");
-    if (req.getQueryString() != null) {
+    if (req.getQueryString() != null && allowedQueryString) {
       buf.append(req.getQueryString()).append(" ");
     } else {
       buf.append("-").append(" ");
@@ -276,7 +277,13 @@ public abstract class LoginAbstractAzkabanServlet extends
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
     this.webMetrics.markWebPostCall();
-    logRequest(req, session);
+    if (allowedPostRequest(req)) {
+      logRequest(req, session, true);
+    } else {
+      logRequest(req, session, false);
+      writeResponse(resp, "Login error. Must pass username and password in request body");
+      return;
+    }
 
     // Handle Multipart differently from other post messages
     if (ServletFileUpload.isMultipartContent(req)) {
@@ -342,6 +349,26 @@ public abstract class LoginAbstractAzkabanServlet extends
       }
     } else {
       handlePost(req, resp, session);
+    }
+  }
+
+  /**
+   * Disallows users from logging in by passing their
+   * username and password via the request header where it'd be logged.
+   *
+   * req.getQueryString() returns the string after the path in the URL.
+   * It is empty if data is passed in request body.
+   *
+   * Returns false if req.getQueryString() indicates an attempt to login.
+   * Otherwise returns true.
+   */
+  private boolean allowedPostRequest(final HttpServletRequest req) {
+    final String queryString = req.getQueryString();
+    if (queryString != null && queryString.contains("action=login")
+        && queryString.contains("username") && queryString.contains("password")) {
+      return false;
+    } else {
+      return true;
     }
   }
 
