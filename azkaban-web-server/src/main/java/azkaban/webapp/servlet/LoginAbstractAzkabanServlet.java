@@ -137,7 +137,7 @@ public abstract class LoginAbstractAzkabanServlet extends
    * Log out request - the format should be close to Apache access log format
    */
   private void logRequest(final HttpServletRequest req, final Session session,
-      final Boolean allowedQueryString) {
+      final boolean allowedQueryString) {
     final StringBuilder buf = new StringBuilder();
     buf.append(getRealClientIpAddr(req)).append(" ");
     if (session != null && session.getUser() != null) {
