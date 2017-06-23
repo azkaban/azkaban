@@ -70,10 +70,12 @@ public class InteractiveTestJob extends AbstractProcessJob {
     }
   }
 
-  public static void clearTestJobs(final String... names) {
-    for (String name : names) {
-      assertNotNull(testJobs.remove(name));
-    }
+  public static void setQuickSuccess(final boolean quickSuccess) {
+    InteractiveTestJob.quickSuccess = quickSuccess;
+  }
+
+  public static void resetQuickSuccess() {
+    InteractiveTestJob.quickSuccess = false;
   }
 
   @Override

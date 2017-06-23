@@ -67,14 +67,14 @@ public class RemoteFlowWatcherTest {
 
   public File setupDirectory() throws IOException {
     System.out.println("Create temp dir");
-    workingDir = new File("build/tmp/_AzkabanTestDir_" + this.dirVal);
-    if (workingDir.exists()) {
-      FileUtils.deleteDirectory(workingDir);
+    this.workingDir = new File("build/tmp/_AzkabanTestDir_" + this.dirVal);
+    if (this.workingDir.exists()) {
+      FileUtils.deleteDirectory(this.workingDir);
     }
-    workingDir.mkdirs();
+    this.workingDir.mkdirs();
     this.dirVal++;
 
-    return workingDir;
+    return this.workingDir;
   }
 
   @Test
