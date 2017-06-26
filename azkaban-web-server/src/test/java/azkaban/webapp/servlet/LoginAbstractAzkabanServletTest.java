@@ -27,6 +27,7 @@ import azkaban.fixture.MockLoginAzkabanServlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashMap;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -184,7 +185,7 @@ public class LoginAbstractAzkabanServletTest {
   }
 
   /**
-   * Simulates users passing username/password via query string
+   * Simulates users passing username/password via URI
    * where it would be logged by Azkaban Web Server
    */
   @Test
@@ -192,10 +193,17 @@ public class LoginAbstractAzkabanServletTest {
 
     final String clientIp = "127.0.0.1:10000";
     final String sessionId = "111";
+    final String[] mockCredentials = {"azkaban"};
+    final HashMap<String, String[]> mockParameterMap = new HashMap<String, String[]>() {
+      {
+        put("username", mockCredentials);
+        put("password", mockCredentials);
+      }
+    };
 
     final HttpServletRequest req = MockLoginAzkabanServlet
         .getRequestWithNoUpstream(clientIp, sessionId, "POST");
-    when(req.getQueryString()).thenReturn("action=login&username=azkaban&password=azkaban");
+    when(req.getParameterMap()).thenReturn(mockParameterMap);
     final StringWriter writer = new StringWriter();
     final HttpServletResponse resp = getResponse(writer);
 
