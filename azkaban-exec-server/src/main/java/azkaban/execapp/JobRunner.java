@@ -92,7 +92,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private int jobLogBackupIndex;
 
   private long delayStartMs = 0;
-  private boolean killed = false;
+  private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
