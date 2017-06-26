@@ -353,12 +353,18 @@ public abstract class LoginAbstractAzkabanServlet extends
    * Disallows users from logging in by passing their
    * username and password via the request header where it'd be logged.
    *
-   * Returns false if req.getParameterMap() indicates an attempt to login.
+   * Login attempt is expected if the query string contains the word password and there is a
+   * parameter named password.
+   *
+   * The query string will be empty if the password is passed incorrectly.
+   * The parameter map will contain a password for any login attempt.
+   *
+   * Returns false if req indicates an attempt to login.
    * Otherwise returns true.
    */
   private boolean allowedPostRequest(final HttpServletRequest req) {
-    return !(req.getParameterMap().containsKey("username") && req.getParameterMap()
-        .containsKey("password"));
+    return !(req.getParameterMap().containsKey("password") && req.getQueryString() != null &&
+        req.getQueryString().contains("password"));
   }
 
   private Session createSession(final HttpServletRequest req)

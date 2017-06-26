@@ -193,6 +193,7 @@ public class LoginAbstractAzkabanServletTest {
 
     final String clientIp = "127.0.0.1:10000";
     final String sessionId = "111";
+    final String queryString = "action=login&username=azkaban&password=azkaban";
     final String[] mockCredentials = {"azkaban"};
     final HashMap<String, String[]> mockParameterMap = new HashMap<String, String[]>() {
       {
@@ -204,6 +205,7 @@ public class LoginAbstractAzkabanServletTest {
     final HttpServletRequest req = MockLoginAzkabanServlet
         .getRequestWithNoUpstream(clientIp, sessionId, "POST");
     when(req.getParameterMap()).thenReturn(mockParameterMap);
+    when(req.getQueryString()).thenReturn(queryString);
     final StringWriter writer = new StringWriter();
     final HttpServletResponse resp = getResponse(writer);
 
