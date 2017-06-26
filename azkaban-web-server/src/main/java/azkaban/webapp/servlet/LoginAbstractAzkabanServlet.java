@@ -148,7 +148,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     buf.append("\"");
     buf.append(req.getMethod()).append(" ");
     buf.append(req.getRequestURI()).append(" ");
-    if (req.getQueryString() != null && allowedPostRequest(req)) {
+    if (req.getQueryString() != null && !isIllegalPostRequest(req)) {
       buf.append(req.getQueryString()).append(" ");
     } else {
       buf.append("-").append(" ");
@@ -277,7 +277,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     Session session = getSessionFromRequest(req);
     this.webMetrics.markWebPostCall();
     logRequest(req, session);
-    if (!allowedPostRequest(req)) {
+    if (isIllegalPostRequest(req)) {
       writeResponse(resp, "Login error. Must pass username and password in request body");
       return;
     }
@@ -362,8 +362,8 @@ public abstract class LoginAbstractAzkabanServlet extends
    * Returns false if req indicates an attempt to login.
    * Otherwise returns true.
    */
-  private boolean allowedPostRequest(final HttpServletRequest req) {
-    return !(req.getParameterMap().containsKey("password") && req.getQueryString() != null &&
+  private boolean isIllegalPostRequest(final HttpServletRequest req) {
+    return (req.getParameterMap().containsKey("password") && req.getQueryString() != null &&
         req.getQueryString().contains("password"));
   }
 
