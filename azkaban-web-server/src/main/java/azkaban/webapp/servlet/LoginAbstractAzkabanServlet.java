@@ -353,14 +353,17 @@ public abstract class LoginAbstractAzkabanServlet extends
    * Disallows users from logging in by passing their
    * username and password via the request header where it'd be logged.
    *
-   * Login attempt is expected if the query string contains the word password and there is a
-   * parameter named password.
+   * This returns true if:
    *
-   * The query string will be empty if the password is passed incorrectly.
-   * The parameter map will contain a password for any login attempt.
+   * 1. The parameter map contains a key called password which indicates a login attempt.
+   * AND
+   * 2. The query string contains the word password meaning they passed their sensitive information
+   * via the query string instead of in the request body.
    *
-   * Returns false if req indicates an attempt to login.
-   * Otherwise returns true.
+   * Otherwise returns false.
+   *
+   * Example of illegal post request:
+   * curl -X POST http://localhost:8081/?action=login\&username=azkaban\&password=azkaban
    */
   private boolean isIllegalPostRequest(final HttpServletRequest req) {
     return (req.getParameterMap().containsKey("password") && req.getQueryString() != null &&
