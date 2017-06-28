@@ -157,17 +157,17 @@ public class AzkabanWebServer extends AzkabanServer {
       final UserManager userManager,
       final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine) {
-    this.props = requireNonNull(props);
-    this.server = requireNonNull(server);
-    this.executorManager = requireNonNull(executorManager);
-    this.projectManager = requireNonNull(projectManager);
-    this.triggerManager = requireNonNull(triggerManager);
-    this.metricsManager = requireNonNull(metricsManager);
-    this.registry = requireNonNull(metricRegistry);
-    this.sessionCache = requireNonNull(sessionCache);
-    this.userManager = requireNonNull(userManager);
-    this.scheduleManager = requireNonNull(scheduleManager);
-    this.velocityEngine = requireNonNull(velocityEngine);
+    this.props = requireNonNull(props, "props is null.");
+    this.server = requireNonNull(server, "server is null.");
+    this.executorManager = requireNonNull(executorManager, "executorManager is null.");
+    this.projectManager = requireNonNull(projectManager, "projectManager is null.");
+    this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
+    this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
+    this.registry = requireNonNull(metricRegistry, "metricRegistry is null.");
+    this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
+    this.userManager = requireNonNull(userManager, "userManager is null.");
+    this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
+    this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
 
     loadBuiltinCheckersAndActions();
 
