@@ -24,35 +24,37 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
+import org.apache.hadoop.hive.metastore.RetryingMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.thrift.TException;
 import org.junit.Test;
 
-public class HiveMetaStoreClientFactoryTest {
+public class IMetaStoreClientFactoryTest {
 
-  public static final File METASTORE_DB_DIR = new File("metastore_db");
-  public static final File DERBY_LOG_FILE = new File("derby.log");
+  static final File METASTORE_DB_DIR = new File("metastore_db");
+  static final File DERBY_LOG_FILE = new File("derby.log");
 
   @Test
   public void testCreate() throws TException, IOException {
     cleanup();
 
-    final HiveConf hiveConf = new HiveConf();
-    final HiveMetaStoreClientFactory factory = new HiveMetaStoreClientFactory(hiveConf);
-    final IMetaStoreClient msc = factory.create();
+    final IMetaStoreClient msc = new IMetaStoreClientFactory(new HiveConf()).create();
 
-    final String dbName = "test_db";
-    final String description = "test database";
-    final String location = "file:/tmp/" + dbName;
-    Database db = new Database(dbName, description, location, null);
+    assertThat(msc instanceof RetryingMetaStoreClient);
 
-    msc.dropDatabase(dbName, true, true);
+    final String DB_NAME = "test_db";
+    final String DB_DESCRIPTION = "test database";
+    final String DB_LOCATION = "file:/tmp/" + DB_NAME;
+
+    Database db = new Database(DB_NAME, DB_DESCRIPTION, DB_LOCATION, null);
+
+    msc.dropDatabase(DB_NAME, true, true);
     msc.createDatabase(db);
-    db = msc.getDatabase(dbName);
-    
-    assertThat(db.getName()).isEqualTo(dbName);
-    assertThat(db.getDescription()).isEqualTo(description);
-    assertThat(db.getLocationUri()).isEqualTo(location);
+    db = msc.getDatabase(DB_NAME);
+
+    assertThat(db.getName()).isEqualTo(DB_NAME);
+    assertThat(db.getDescription()).isEqualTo(DB_DESCRIPTION);
+    assertThat(db.getLocationUri()).isEqualTo(DB_LOCATION);
 
     // Clean up if the test is successful
     cleanup();

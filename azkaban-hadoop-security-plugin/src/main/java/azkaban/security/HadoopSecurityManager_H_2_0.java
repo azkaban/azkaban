@@ -16,7 +16,7 @@
 
 package azkaban.security;
 
-import azkaban.hive.HiveMetaStoreClientFactory;
+import azkaban.hive.IMetaStoreClientFactory;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
@@ -127,7 +127,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private final ExecuteAsUser executeAsUser;
   private final Configuration conf;
   private final ConcurrentMap<String, UserGroupInformation> userUgiMap;
-  private final HiveMetaStoreClientFactory hiveMetaStoreClientFactory;
 
   private UserGroupInformation loginUser = null;
   private String keytabLocation;
@@ -221,8 +220,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
 
     this.userUgiMap = new ConcurrentHashMap<>();
-    this.hiveMetaStoreClientFactory = new HiveMetaStoreClientFactory(new HiveConf());
-
     log.info("Hadoop Security Manager initialized");
   }
 
@@ -406,7 +403,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private void cancelHiveToken(final Token<? extends TokenIdentifier> t)
       throws HadoopSecurityManagerException {
     try {
-      final IMetaStoreClient hiveClient = this.hiveMetaStoreClientFactory.create();
+      final IMetaStoreClient hiveClient = new IMetaStoreClientFactory(new HiveConf()).create();
       hiveClient.cancelDelegationToken(t.encodeToUrlString());
     } catch (final Exception e) {
       throw new HadoopSecurityManagerException("Failed to cancel Token. "
@@ -469,7 +466,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ": "
         + hiveConf.get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname));
 
-    final IMetaStoreClient hiveClient = this.hiveMetaStoreClientFactory.create();
+    final IMetaStoreClient hiveClient = new IMetaStoreClientFactory(hiveConf).create();
     final String hcatTokenStr =
         hiveClient.getDelegationToken(userToProxy, UserGroupInformation
             .getLoginUser().getShortUserName());
