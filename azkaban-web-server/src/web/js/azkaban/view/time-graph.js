@@ -93,6 +93,9 @@ azkaban.TimeGraphView = Backbone.View.extend({
       else if (status == 'PAUSED') {
         return '#c92123';
       }
+      else if (status == 'KILLING') {
+        return '#ff9999';
+      }
       else if (status == 'FAILED' ||
           status == 'FAILED_FINISHING' ||
           status == 'KILLED') {
