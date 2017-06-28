@@ -56,7 +56,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Inject
   @Singleton
   @Provides
-  public UserManager loadUserManager(final Props props) {
+  public UserManager createUserManager(final Props props) {
     final Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
     final UserManager manager;
     if (userManagerClass != null && userManagerClass.getConstructors().length > 0) {
@@ -77,7 +77,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Inject
   @Singleton
   @Provides
-  public VelocityEngine configureVelocityEngine(final Props props) {
+  public VelocityEngine createVelocityEngine(final Props props) {
     final boolean devMode = props.getBoolean(VELOCITY_DEV_MODE_PARAM, false);
 
     final VelocityEngine engine = new VelocityEngine();
