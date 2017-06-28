@@ -26,6 +26,7 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,10 +44,10 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
   private long lastUpdateTime = -1;
 
-  public TriggerBasedScheduleLoader(final TriggerManager triggerManager,
-      final String triggerSource) {
+  @Inject
+  public TriggerBasedScheduleLoader(final TriggerManager triggerManager) {
     this.triggerManager = triggerManager;
-    this.triggerSource = triggerSource;
+    this.triggerSource = ScheduleManager.SIMPLE_TIME_TRIGGER;
   }
 
   private Trigger scheduleToTrigger(final Schedule s) {
