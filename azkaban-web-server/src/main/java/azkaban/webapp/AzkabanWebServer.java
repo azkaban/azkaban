@@ -156,7 +156,7 @@ public class AzkabanWebServer extends AzkabanServer {
       final SessionCache sessionCache,
       final UserManager userManager,
       final ScheduleManager scheduleManager,
-      final VelocityEngine velocityEngine) throws Exception {
+      final VelocityEngine velocityEngine) {
     this.props = requireNonNull(props);
     this.server = requireNonNull(server);
     this.executorManager = requireNonNull(executorManager);
