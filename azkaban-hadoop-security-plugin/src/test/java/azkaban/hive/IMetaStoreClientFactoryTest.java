@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
-import org.apache.hadoop.hive.metastore.RetryingMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.thrift.TException;
 import org.junit.Test;
@@ -39,8 +39,7 @@ public class IMetaStoreClientFactoryTest {
     cleanup();
 
     final IMetaStoreClient msc = new IMetaStoreClientFactory(new HiveConf()).create();
-
-    assertThat(msc instanceof RetryingMetaStoreClient);
+    assertThat(msc).isInstanceOf(Proxy.class);
 
     final String DB_NAME = "test_db";
     final String DB_DESCRIPTION = "test database";
