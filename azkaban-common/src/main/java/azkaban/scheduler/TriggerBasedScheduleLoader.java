@@ -47,7 +47,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   @Inject
   public TriggerBasedScheduleLoader(final TriggerManager triggerManager) {
     this.triggerManager = triggerManager;
-    this.triggerSource = ScheduleManager.triggerSource;
+    this.triggerSource = ScheduleManager.SIMPLE_TIME_TRIGGER;
   }
 
   private Trigger scheduleToTrigger(final Schedule s) {
