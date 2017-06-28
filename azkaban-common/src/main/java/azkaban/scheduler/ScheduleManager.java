@@ -22,6 +22,7 @@ import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,6 +58,7 @@ public class ScheduleManager implements TriggerAgent {
    * schedule.
    *
    */
+  @Inject
   public ScheduleManager(final ScheduleLoader loader) {
     this.loader = loader;
   }

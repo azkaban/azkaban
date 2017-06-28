@@ -19,6 +19,7 @@ package azkaban.server.session;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,6 +41,7 @@ public class SessionCache {
   /**
    * Constructor taking global props.
    */
+  @Inject
   public SessionCache(final Props props) {
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))

@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
@@ -45,11 +47,6 @@ import org.joda.time.DateTime;
  */
 public abstract class AbstractAzkabanServlet extends HttpServlet {
 
-  public static final String DEFAULT_LOG_URL_PREFIX =
-      "predefined_log_url_prefix";
-  public static final String LOG_URL_PREFIX = "log_url_prefix";
-  public static final String HTML_TYPE = "text/html";
-  public static final String XML_MIME_TYPE = "application/xhtml+xml";
   public static final String JSON_MIME_TYPE = "application/json";
   public static final String jarVersion = AbstractAzkabanServlet.class.getPackage()
       .getImplementationVersion();
@@ -68,22 +65,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
-
-  /**
-   * Retrieve the Azkaban application
-   */
-  public static AzkabanWebServer getApp(final ServletConfig config) {
-    final AzkabanWebServer app =
-        (AzkabanWebServer) config.getServletContext().getAttribute(
-            AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
-
-    if (app == null) {
-      throw new IllegalStateException(
-          "No batch application is defined in the servlet context!");
-    } else {
-      return app;
-    }
-  }
 
   public static String createJsonResponse(final String status, final String message,
       final String action, final Map<String, Object> params) {
@@ -111,9 +92,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
-    this.application =
-        (AzkabanServer) config.getServletContext().getAttribute(
-            AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
+    this.application = SERVICE_PROVIDER.getInstance(AzkabanWebServer.class);
 
     if (this.application == null) {
       throw new IllegalStateException(
