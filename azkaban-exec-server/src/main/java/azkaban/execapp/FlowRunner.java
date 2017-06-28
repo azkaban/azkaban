@@ -112,13 +112,13 @@ public class FlowRunner extends EventHandler implements Runnable {
   private String jobLogFileSize = "5MB";
   private int jobLogNumFiles = 4;
 
-  private boolean flowPaused = false;
-  private boolean flowFailed = false;
-  private boolean flowFinished = false;
-  private boolean flowKilled = false;
+  private volatile boolean flowPaused = false;
+  private volatile boolean flowFailed = false;
+  private volatile boolean flowFinished = false;
+  private volatile boolean flowKilled = false;
 
   // The following is state that will trigger a retry of all failed jobs
-  private boolean retryFailedJobs = false;
+  private volatile boolean retryFailedJobs = false;
 
   /**
    * Constructor. This will create its own ExecutorService for thread pools
