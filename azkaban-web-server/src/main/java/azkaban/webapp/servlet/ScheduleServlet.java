@@ -103,6 +103,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ajaxSlaInfo(req, ret, session.getUser());
     } else if (ajaxName.equals("setSla")) {
       ajaxSetSla(req, ret, session.getUser());
+    } else if (ajaxName.equals("loadFlow")) {
+      ajaxLoadFlows(req, ret, session.getUser());
     } else if (ajaxName.equals("scheduleFlow")) {
       ajaxScheduleFlow(req, ret, session.getUser());
     } else if (ajaxName.equals("scheduleCronFlow")) {
@@ -114,6 +116,52 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     if (ret != null) {
       this.writeJSON(resp, ret);
     }
+  }
+
+  private void ajaxLoadFlows(final HttpServletRequest req,
+                             final HashMap<String, Object> ret, final User user) throws ServletException {
+    final List<Schedule> schedules;
+    try {
+      schedules = this.scheduleManager.getSchedules();
+    } catch (final ScheduleManagerException e) {
+      throw new ServletException(e);
+    }
+    // See if anything is scheduled
+    if (schedules.size() <= 0) {
+      return;
+    }
+
+    final List<HashMap<String, Object>> output =
+            new ArrayList<>();
+    ret.put("items", output);
+
+    for (final Schedule schedule : schedules) {
+      try {
+        writeScheduleData(output, schedule);
+      } catch (final ScheduleManagerException e) {
+        throw new ServletException(e);
+      }
+    }
+  }
+
+  private void writeScheduleData(final List<HashMap<String, Object>> output,
+                                 final Schedule schedule) throws ScheduleManagerException {
+
+    final HashMap<String, Object> data = new HashMap<>();
+    data.put("scheduleid", schedule.getScheduleId());
+    data.put("flowname", schedule.getFlowName());
+    data.put("projectname", schedule.getProjectName());
+    data.put("time", schedule.getFirstSchedTime());
+    data.put("cron", schedule.getCronExpression());
+
+    final DateTime time = DateTime.now();
+    long period = 0;
+    if (schedule.getPeriod() != null) {
+      period = time.plus(schedule.getPeriod()).getMillis() - time.getMillis();
+    }
+    data.put("period", period);
+    data.put("history", false);
+    output.add(data);
   }
 
   private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret,
