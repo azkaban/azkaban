@@ -26,12 +26,14 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
-import com.sun.xml.internal.fastinfoset.util.StringArray;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
@@ -47,7 +49,6 @@ public class ProcessJob extends AbstractProcessJob {
   public static final String EXECUTE_AS_USER = "execute.as.user";
   public static final String USER_TO_PROXY = "user.to.proxy";
   public static final String KRB5CCNAME = "KRB5CCNAME";
-  public static final String BLACK_LISTED_USERS = "users.to.blacklist";
   private static final Duration KILL_TIME = Duration.ofSeconds(30);
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
   private final CommonMetrics commonMetrics;
@@ -206,22 +207,25 @@ public class ProcessJob extends AbstractProcessJob {
     final boolean isExecuteAsUser = this.sysProps.getBoolean(EXECUTE_AS_USER, true);
 
     //Get list of users we never execute flows as. (ie: root, azkaban)
-    final String [] userBlackList = this.sysProps.getString(BLACK_LISTED_USERS, "root,azkaban").split(",");
+    final Set<String> blackListedUsers = new HashSet<String>(
+        Arrays.asList(
+            this.sysProps.getString(Constants.ConfigurationKeys.BLACK_LISTED_USERS,"root,azkaban").split(",")
+        )
+    );
 
     // nativeLibFolder specifies the path for execute-as-user file,
     // which will change user from Azkaban to effectiveUser
     if (isExecuteAsUser) {
       final String nativeLibFolder = this.sysProps.getString(NATIVE_LIB_FOLDER);
-      executeAsUserBinaryPath =
-          String.format("%s/%s", nativeLibFolder, "execute-as-user");
+      executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
       effectiveUser = getEffectiveUser(this.jobProps);
-      for (String blackListedUser : userBlackList) {
-        if (blackListedUser.equals(effectiveUser)) {
+        // Throw exception if Azkaban tries to run flow as a prohibited user
+        if (blackListedUsers.contains(effectiveUser)) {
           throw new RuntimeException(
-              String.format("Not permitted to proxy as %s through Azkaban", blackListedUser));
+              String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
+          );
         }
       }
-    }
 
     for (String command : commands) {
       AzkabanProcessBuilder builder = null;
