@@ -16,10 +16,16 @@
 
 package azkaban.jobExecutor;
 
+import static org.junit.Assert.assertEquals;
+
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
@@ -136,4 +142,55 @@ public class ProcessJobTest {
     Assert.assertArrayEquals(new String[]{"a", "e=b c"},
         ProcessJob.partitionCommandLine(test3));
   }
+
+  /**
+   * test cancellation of the job before associated process is constructed
+   * expect job will be cancelled successfully
+   */
+  @Test
+  public void testCancelDuringPreparation() throws InterruptedException, ExecutionException {
+    final Props jobProps = new Props();
+    jobProps.put("command", "echo hello");
+    jobProps.put("working.dir", "/tmp");
+    jobProps.put("user.to.proxy", "test");
+    jobProps.put("azkaban.flow.projectname", "test");
+    jobProps.put("azkaban.flow.flowid", "test");
+    jobProps.put("azkaban.job.id", "test");
+    jobProps.put("azkaban.flow.execid", "1");
+
+    final Props sysProps = new Props();
+    sysProps.put("execute.as.user", "false");
+    final SleepBeforeRunJob job = new SleepBeforeRunJob("test", sysProps, jobProps, this.log);
+
+    final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    final Future future = executorService.submit(job);
+    Thread.sleep(2000);
+    try {
+      this.job.cancel();
+    } catch (final Exception e) {
+      this.log.error(e.getMessage());
+    }
+    future.get();
+    assertEquals(this.job.getProgress(), 0.0, 0.001);
+  }
+
+  class SleepBeforeRunJob extends ProcessJob implements Runnable {
+
+    public SleepBeforeRunJob(final String jobId, final Props sysProps, final Props jobProps,
+        final Logger log) {
+      super(jobId, sysProps, jobProps, log);
+    }
+
+    @Override
+    public void run() {
+      try {
+        info("sleep for 5 seconds before actually running the job");
+        Thread.sleep(5 * 1000);
+        super.run();
+      } catch (final Exception ex) {
+        this.getLog().error(ex);
+      }
+    }
+  }
+
 }
