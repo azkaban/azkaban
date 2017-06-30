@@ -105,6 +105,38 @@ public class ProcessJobTest {
 
   }
 
+  /**
+   * this job should fail because it sets user.to.proxy = root which is black listed
+   */
+  @Test(expected = RuntimeException.class)
+  public void testOneUnixCommandWithRootUser() throws Exception {
+
+    // Initialize the Props
+    this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    this.props.put("user.to.proxy", "root");
+    this.props.put("execute.as.user", "true");
+    this.props.put(ProcessJob.COMMAND, "ls -al");
+
+    this.job.run();
+
+  }
+
+  /**
+   * this job should fail because it sets user.to.proxy = azkaban which is black listed
+   */
+  @Test(expected = RuntimeException.class)
+  public void testOneUnixCommandWithAzkabanUser() throws Exception {
+
+    // Initialize the Props
+    this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    this.props.put("user.to.proxy", "azkaban");
+    this.props.put("execute.as.user", "true");
+    this.props.put(ProcessJob.COMMAND, "ls -al");
+
+    this.job.run();
+
+  }
+
   @Test
   public void testFailedUnixCommand() throws Exception {
     // Initialize the Props
