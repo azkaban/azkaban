@@ -16,7 +16,8 @@
 
 package azkaban.jobExecutor;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
@@ -160,18 +161,15 @@ public class ProcessJobTest {
 
     final Props sysProps = new Props();
     sysProps.put("execute.as.user", "false");
-    final SleepBeforeRunJob job = new SleepBeforeRunJob("test", sysProps, jobProps, this.log);
+    final SleepBeforeRunJob sleepBeforeRunJob = new SleepBeforeRunJob("test", sysProps, jobProps,
+        this.log);
 
     final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    final Future future = executorService.submit(job);
-    Thread.sleep(2000);
-    try {
-      this.job.cancel();
-    } catch (final Exception e) {
-      this.log.error(e.getMessage());
-    }
+    final Future future = executorService.submit(sleepBeforeRunJob);
+    Thread.sleep(1000);
+    assertThatThrownBy(() -> sleepBeforeRunJob.cancel()).hasMessage("Not started.");
     future.get();
-    assertEquals(this.job.getProgress(), 0.0, 0.001);
+    assertThat(sleepBeforeRunJob.getProgress()).isEqualTo(0.0);
   }
 
   class SleepBeforeRunJob extends ProcessJob implements Runnable {
@@ -184,8 +182,8 @@ public class ProcessJobTest {
     @Override
     public void run() {
       try {
-        info("sleep for 5 seconds before actually running the job");
-        Thread.sleep(5 * 1000);
+        info("sleep for 3 seconds before actually running the job");
+        Thread.sleep(3 * 1000);
         super.run();
       } catch (final Exception ex) {
         this.getLog().error(ex);
