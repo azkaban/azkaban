@@ -258,8 +258,10 @@ public class ProcessJob extends AbstractProcessJob {
       this.process = builder.build();
 
       try {
-        this.process.run();
-        success = true;
+        if (!this.killed) {
+          this.process.run();
+          success = true;
+        }
       } catch (final Throwable e) {
         for (final File file : propFiles) {
           if (file != null && file.exists()) {
@@ -268,7 +270,6 @@ public class ProcessJob extends AbstractProcessJob {
         }
         throw new RuntimeException(e);
       } finally {
-        this.process = null;
         info("Process completed "
             + (success ? "successfully" : "unsuccessfully") + " in "
             + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
