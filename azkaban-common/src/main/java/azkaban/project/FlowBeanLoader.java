@@ -24,6 +24,8 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.yaml.snakeyaml.Yaml;
 
@@ -34,6 +36,25 @@ public class FlowBeanLoader {
     checkArgument(flowFile.getName().endsWith(".yml"));
 
     return new Yaml().loadAs(new FileInputStream(flowFile), FlowBean.class);
+  }
+
+  public boolean validate(final FlowBean flowBean) {
+    final Set<String> nodeNames = new HashSet<>();
+    for (final NodeBean n : flowBean.getNodes()) {
+      if (!nodeNames.add(n.getName())) {
+        // Duplicate jobs
+        return false;
+      }
+    }
+
+    for (final NodeBean n : flowBean.getNodes()) {
+      if (!nodeNames.containsAll(n.getDependsOn())) {
+        // Undefined reference to dependent job
+        return false;
+      }
+    }
+
+    return true;
   }
 
   public AzkabanFlow toAzkabanFlow(final String flowName, final FlowBean flowBean) {
