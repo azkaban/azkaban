@@ -16,10 +16,17 @@
 
 package azkaban.jobExecutor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
@@ -98,6 +105,38 @@ public class ProcessJobTest {
 
   }
 
+  /**
+   * this job should fail because it sets user.to.proxy = root which is black listed
+   */
+  @Test(expected = RuntimeException.class)
+  public void testOneUnixCommandWithRootUser() throws Exception {
+
+    // Initialize the Props
+    this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    this.props.put("user.to.proxy", "root");
+    this.props.put("execute.as.user", "true");
+    this.props.put(ProcessJob.COMMAND, "ls -al");
+
+    this.job.run();
+
+  }
+
+  /**
+   * this job should fail because it sets user.to.proxy = azkaban which is black listed
+   */
+  @Test(expected = RuntimeException.class)
+  public void testOneUnixCommandWithAzkabanUser() throws Exception {
+
+    // Initialize the Props
+    this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    this.props.put("user.to.proxy", "azkaban");
+    this.props.put("execute.as.user", "true");
+    this.props.put(ProcessJob.COMMAND, "ls -al");
+
+    this.job.run();
+
+  }
+
   @Test
   public void testFailedUnixCommand() throws Exception {
     // Initialize the Props
@@ -136,4 +175,52 @@ public class ProcessJobTest {
     Assert.assertArrayEquals(new String[]{"a", "e=b c"},
         ProcessJob.partitionCommandLine(test3));
   }
+
+  /**
+   * test cancellation of the job before associated process is constructed
+   * expect job will be cancelled successfully
+   */
+  @Test
+  public void testCancelDuringPreparation() throws InterruptedException, ExecutionException {
+    final Props jobProps = new Props();
+    jobProps.put("command", "echo hello");
+    jobProps.put("working.dir", "/tmp");
+    jobProps.put("user.to.proxy", "test");
+    jobProps.put("azkaban.flow.projectname", "test");
+    jobProps.put("azkaban.flow.flowid", "test");
+    jobProps.put("azkaban.job.id", "test");
+    jobProps.put("azkaban.flow.execid", "1");
+
+    final Props sysProps = new Props();
+    sysProps.put("execute.as.user", "false");
+    final SleepBeforeRunJob sleepBeforeRunJob = new SleepBeforeRunJob("test", sysProps, jobProps,
+        this.log);
+
+    final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    final Future future = executorService.submit(sleepBeforeRunJob);
+    Thread.sleep(1000);
+    assertThatThrownBy(() -> sleepBeforeRunJob.cancel()).hasMessage("Not started.");
+    future.get();
+    assertThat(sleepBeforeRunJob.getProgress()).isEqualTo(0.0);
+  }
+
+  class SleepBeforeRunJob extends ProcessJob implements Runnable {
+
+    public SleepBeforeRunJob(final String jobId, final Props sysProps, final Props jobProps,
+        final Logger log) {
+      super(jobId, sysProps, jobProps, log);
+    }
+
+    @Override
+    public void run() {
+      try {
+        info("sleep for 3 seconds before actually running the job");
+        Thread.sleep(3 * 1000);
+        super.run();
+      } catch (final Exception ex) {
+        this.getLog().error(ex);
+      }
+    }
+  }
+
 }
