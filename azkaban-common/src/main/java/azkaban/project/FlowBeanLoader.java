@@ -24,7 +24,6 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.List;
 import java.util.stream.Collectors;
 import org.yaml.snakeyaml.Yaml;
 
@@ -38,8 +37,6 @@ public class FlowBeanLoader {
   }
 
   public AzkabanFlow toAzkabanFlow(final String flowName, final FlowBean flowBean) {
-    final List<NodeBean> nodes = flowBean.getNodes();
-
     final AzkabanFlow flow = new AzkabanFlow.AzkabanFlowBuilder()
         .setName(flowName)
         .setProps(new Props(null, flowBean.getConfig()))
