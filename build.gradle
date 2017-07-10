@@ -145,14 +145,10 @@ subprojects {
     }
 
     /**
-     * Upgrading warnings to errors for common error prone warnings.
-     * Used to enforce building warning-free code.
+     * Terminate compilation if warnings occur.
      */
     tasks.withType(JavaCompile) {
-        options.compilerArgs += ["-Xep:DefaultCharset:ERROR",
-                                 "-Xep:EqualsHashCode:ERROR",
-                                 "-Xep:ImmutableEnumChecker:ERROR",
-                                 "-Xep:MissingOverride:ERROR"]
+        options.compilerArgs += ["-Werror"]
     }
 
     /**
