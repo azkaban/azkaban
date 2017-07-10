@@ -1,11 +1,12 @@
+description = 'A test server which runs the web server and an executor in one process.'
+
 apply plugin: 'distribution'
 
 dependencies {
     compile(project(':azkaban-web-server'))
     compile(project(':azkaban-exec-server'))
 
-    runtime('org.slf4j:slf4j-log4j12:1.7.18')
-    runtime('com.h2database:h2:1.4.193')
+    runtime deps.h2
 }
 
 installDist.dependsOn ':azkaban-web-server:installDist'

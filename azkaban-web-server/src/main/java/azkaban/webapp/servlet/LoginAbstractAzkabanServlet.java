@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.project.Project;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
@@ -74,10 +76,9 @@ public abstract class LoginAbstractAzkabanServlet extends
     contextType.put(".woff", "application/x-font-woff");
   }
 
+  private final WebMetrics webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   private File webResourceDirectory = null;
-
   private MultipartParser multipartParser;
-
   private boolean shouldLogRawUserAgent = false;
 
   @Override
@@ -99,7 +100,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
-    WebMetrics.INSTANCE.markWebGetCall();
+    this.webMetrics.markWebGetCall();
     // Set session id
     final Session session = getSessionFromRequest(req);
     logRequest(req, session);
@@ -147,7 +148,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     buf.append("\"");
     buf.append(req.getMethod()).append(" ");
     buf.append(req.getRequestURI()).append(" ");
-    if (req.getQueryString() != null) {
+    if (req.getQueryString() != null && !isIllegalPostRequest(req)) {
       buf.append(req.getQueryString()).append(" ");
     } else {
       buf.append("-").append(" ");
@@ -274,8 +275,12 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
-    WebMetrics.INSTANCE.markWebPostCall();
+    this.webMetrics.markWebPostCall();
     logRequest(req, session);
+    if (isIllegalPostRequest(req)) {
+      writeResponse(resp, "Login error. Must pass username and password in request body");
+      return;
+    }
 
     // Handle Multipart differently from other post messages
     if (ServletFileUpload.isMultipartContent(req)) {
@@ -342,6 +347,25 @@ public abstract class LoginAbstractAzkabanServlet extends
     } else {
       handlePost(req, resp, session);
     }
+  }
+
+  /**
+   * Disallows users from logging in by passing their username and password via the request header
+   * where it'd be logged.
+   *
+   * Example of illegal post request:
+   * curl -X POST http://localhost:8081/?action=login\&username=azkaban\&password=azkaban
+   *
+   * req.getParameterMap() or req.getParameterNames() cannot be used because they draw no
+   * distinction between the illegal request above and the following valid request:
+   * curl -X POST -d "action=login&username=azkaban&password=azkaban" http://localhost:8081/
+   *
+   * "password=" is searched for because it leverages the query syntax to determine that the user is
+   * passing the password as a parameter name. There is no other ajax call that has a parameter
+   * that includes the string "password" at the end which could throw false positives.
+   */
+  private boolean isIllegalPostRequest(final HttpServletRequest req) {
+    return (req.getQueryString() != null && req.getQueryString().contains("password="));
   }
 
   private Session createSession(final HttpServletRequest req)

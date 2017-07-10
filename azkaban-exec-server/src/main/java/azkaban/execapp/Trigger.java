@@ -79,6 +79,7 @@ public class Trigger implements Runnable {
     return this.expireCondition.isMet();
   }
 
+  @Override
   public String toString() {
     final StringBuilder actionsString = new StringBuilder();
     for (final TriggerAction act : this.actions) {

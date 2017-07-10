@@ -22,6 +22,7 @@ import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,7 +42,8 @@ import org.joda.time.format.DateTimeFormatter;
  * TODO kunkun-tang: When new AZ quartz Scheduler comes, we will remove this class.
  */
 public class ScheduleManager implements TriggerAgent {
-  public static final String triggerSource = "SimpleTimeTrigger";
+
+  public static final String SIMPLE_TIME_TRIGGER = "SimpleTimeTrigger";
   private static final Logger logger = Logger.getLogger(ScheduleManager.class);
   private final DateTimeFormatter _dateFormat = DateTimeFormat
       .forPattern("MM-dd-yyyy HH:mm:ss:SSS");
@@ -57,6 +59,7 @@ public class ScheduleManager implements TriggerAgent {
    * schedule.
    *
    */
+  @Inject
   public ScheduleManager(final ScheduleLoader loader) {
     this.loader = loader;
   }
@@ -241,6 +244,6 @@ public class ScheduleManager implements TriggerAgent {
 
   @Override
   public String getTriggerSource() {
-    return triggerSource;
+    return SIMPLE_TIME_TRIGGER;
   }
 }

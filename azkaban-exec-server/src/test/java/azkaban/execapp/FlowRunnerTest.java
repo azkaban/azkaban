@@ -53,7 +53,7 @@ import org.mockito.MockitoAnnotations;
 public class FlowRunnerTest extends FlowRunnerTestBase {
 
   private static final File TEST_DIR = new File(
-      "../azkaban-test/src/test/resources/azkaban/test/executions/exectest1");
+      "../test/src/test/resources/azkaban/test/executions/exectest1");
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
@@ -263,7 +263,12 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job2", Status.SUCCEEDED);
     waitJobsStarted(this.runner, "job3", "job4", "job6");
 
+    InteractiveTestJob.getTestJob("job3").ignoreCancel();
     this.runner.kill("me");
+    assertStatus("job3", Status.KILLING);
+    assertFlowStatus(Status.KILLING);
+    InteractiveTestJob.getTestJob("job3").failJob();
+
     Assert.assertTrue(this.runner.isKilled());
 
     assertStatus("job5", Status.CANCELLED);

@@ -15,6 +15,8 @@
  *
  */
 
+rootProject.name = 'azkaban'
+
 include 'azkaban-spi'
 include 'azkaban-db'
 include 'azkaban-common'
@@ -22,4 +24,4 @@ include 'azkaban-exec-server'
 include 'azkaban-hadoop-security-plugin'
 include 'azkaban-solo-server'
 include 'azkaban-web-server'
-include 'azkaban-test'
+include 'test'

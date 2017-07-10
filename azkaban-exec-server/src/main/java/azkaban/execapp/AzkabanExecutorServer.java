@@ -44,13 +44,11 @@ import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
-import com.google.common.base.Throwables;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -88,8 +86,10 @@ public class AzkabanExecutorServer {
 
   private static AzkabanExecutorServer app;
 
+  private final ExecMetrics execMetrics;
   private final ExecutorLoader executionLoader;
   private final FlowRunnerManager runnerManager;
+  private final MetricsManager metricsManager;
   private final Props props;
   private final Server server;
 
@@ -99,10 +99,13 @@ public class AzkabanExecutorServer {
   @Inject
   public AzkabanExecutorServer(final Props props,
       final ExecutorLoader executionLoader,
-      final FlowRunnerManager runnerManager) throws Exception {
+      final FlowRunnerManager runnerManager, final MetricsManager metricsManager,
+      final ExecMetrics execMetrics) throws Exception {
     this.props = props;
     this.executionLoader = executionLoader;
     this.runnerManager = runnerManager;
+    this.metricsManager = metricsManager;
+    this.execMetrics = execMetrics;
 
     this.server = createJettyServer(props);
 
@@ -273,13 +276,13 @@ public class AzkabanExecutorServer {
   }
 
   private void startExecMetrics() throws Exception {
-    ExecMetrics.INSTANCE.addFlowRunnerManagerMetrics(getFlowRunnerManager());
+    this.execMetrics.addFlowRunnerManagerMetrics(getFlowRunnerManager());
 
     logger.info("starting reporting Executor Metrics");
-    MetricsManager.INSTANCE.startReporting("AZ-EXEC", this.props);
+    this.metricsManager.startReporting("AZ-EXEC", this.props);
   }
 
-  private void insertExecutorEntryIntoDB() {
+  private void insertExecutorEntryIntoDB() throws ExecutorManagerException {
     try {
       final String host = requireNonNull(getHost());
       final int port = getPort();
@@ -291,19 +294,19 @@ public class AzkabanExecutorServer {
       // If executor already exists, ignore it
     } catch (final ExecutorManagerException e) {
       logger.error("Error inserting executor entry into DB", e);
-      Throwables.propagate(e);
+      throw e;
     }
   }
 
-  private void dumpPortToFile() {
+  private void dumpPortToFile() throws IOException {
     // By default this should write to the working directory
     try (BufferedWriter writer = Files
         .newBufferedWriter(Paths.get(AZKABAN_EXECUTOR_PORT_FILENAME), StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(getPort()));
       writer.write("\n");
     } catch (final IOException e) {
-      logger.error(e);
-      Throwables.propagate(e);
+      logger.error("Failed to write the port number to a file", e);
+      throw e;
     }
   }
 

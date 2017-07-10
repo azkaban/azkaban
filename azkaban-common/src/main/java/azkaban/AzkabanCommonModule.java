@@ -34,10 +34,12 @@ import azkaban.project.ProjectLoader;
 import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
+import azkaban.storage.HdfsAuth;
 import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
@@ -78,11 +80,13 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
     bind(Props.class).toInstance(this.config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
+    bind(HdfsAuth.class).in(Scopes.SINGLETON);
     bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class).in(Scopes.SINGLETON);
     bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorManager.class).in(Scopes.SINGLETON);
     bind(AlerterHolder.class).in(Scopes.SINGLETON);
+    bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -145,8 +149,9 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public FileSystem createHadoopFileSystem(final Configuration hadoopConf) {
+  public FileSystem createHadoopFileSystem(final Configuration hadoopConf, final HdfsAuth auth) {
     try {
+      auth.authorize();
       return FileSystem.get(hadoopConf);
     } catch (final IOException e) {
       log.error("Unable to initialize HDFS", e);

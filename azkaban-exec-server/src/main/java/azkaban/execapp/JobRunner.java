@@ -92,7 +92,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private int jobLogBackupIndex;
 
   private long delayStartMs = 0;
-  private boolean killed = false;
+  private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
@@ -345,20 +345,7 @@ public class JobRunner extends EventHandler implements Runnable {
         this.azkabanProps
             .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
-    final JSONObject layout = new JSONObject();
-    layout.put("category", "%c{1}");
-    layout.put("level", "%p");
-    layout.put("message", "%m");
-    layout.put("projectname",
-        this.props.getString(Constants.FlowProperties.AZKABAN_FLOW_PROJECT_NAME));
-    layout.put("flowid", this.props.getString(Constants.FlowProperties.AZKABAN_FLOW_FLOW_ID));
-    layout.put("jobid", this.jobId);
-    layout
-        .put("submituser", this.props.getString(Constants.FlowProperties.AZKABAN_FLOW_SUBMIT_USER));
-    layout.put("execid", this.props.getString(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID));
-    layout.put("projectversion",
-        this.props.getString(Constants.FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
-    layout.put("logsource", "userJob");
+    final JSONObject layout = LogUtil.createLogPatternLayoutJsonObject(this.props, this.jobId);
 
     kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
     kafkaProducer.activateOptions();
@@ -414,7 +401,7 @@ public class JobRunner extends EventHandler implements Runnable {
       nodeStatus = changeStatus(Status.SKIPPED, time);
       quickFinish = true;
     } else if (this.isKilled()) {
-      nodeStatus = changeStatus(Status.KILLED, time);
+      nodeStatus = changeStatus(Status.KILLING, time);
       quickFinish = true;
     }
 
@@ -584,9 +571,8 @@ public class JobRunner extends EventHandler implements Runnable {
     // Start the node.
     this.node.setStartTime(System.currentTimeMillis());
     Status finalStatus = this.node.getStatus();
-    if (!uploadExecutableNode()) {
-      finalStatus = changeStatus(Status.FAILED);
-    } else if (!errorFound && !isKilled()) {
+    uploadExecutableNode();
+    if (!errorFound && !isKilled()) {
       fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(this.node)));
 
       final Status prepareStatus = prepareJob();
@@ -623,13 +609,11 @@ public class JobRunner extends EventHandler implements Runnable {
     writeStatus();
   }
 
-  private boolean uploadExecutableNode() {
+  private void uploadExecutableNode() {
     try {
       this.loader.uploadExecutableNode(this.node, this.props);
-      return true;
     } catch (final ExecutorManagerException e) {
       this.logger.error("Error writing initial node properties", e);
-      return false;
     }
   }
 
@@ -753,9 +737,10 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private Status runJob() {
-    Status finalStatus = this.node.getStatus();
+    Status finalStatus;
     try {
       this.job.run();
+      finalStatus = this.node.getStatus();
     } catch (final Throwable e) {
       if (this.props.getBoolean("job.succeed.on.failure", false)) {
         finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
@@ -777,8 +762,8 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setOutputProps(this.job.getJobGeneratedProperties());
     }
 
-    // If the job is still running, set the status to Success.
-    if (!Status.isStatusFinished(finalStatus)) {
+    // If the job is still running (but not killed), set the status to Success.
+    if (!Status.isStatusFinished(finalStatus) && finalStatus != Status.KILLING) {
       finalStatus = changeStatus(Status.SUCCEEDED);
     }
     return finalStatus;
@@ -812,6 +797,7 @@ public class JobRunner extends EventHandler implements Runnable {
         return;
       }
       logError("Kill has been called.");
+      this.changeStatus(Status.KILLING);
       this.killed = true;
 
       final BlockingStatus status = this.currentBlockStatus;
@@ -837,7 +823,6 @@ public class JobRunner extends EventHandler implements Runnable {
             "Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
       }
 
-      this.changeStatus(Status.KILLED);
     }
   }
 
