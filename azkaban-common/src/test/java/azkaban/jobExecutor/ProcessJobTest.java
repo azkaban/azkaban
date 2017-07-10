@@ -204,7 +204,7 @@ public class ProcessJobTest {
     assertThat(sleepBeforeRunJob.getProgress()).isEqualTo(0.0);
   }
 
-  class SleepBeforeRunJob extends ProcessJob implements Runnable {
+  static class SleepBeforeRunJob extends ProcessJob implements Runnable {
 
     public SleepBeforeRunJob(final String jobId, final Props sysProps, final Props jobProps,
         final Logger log) {
