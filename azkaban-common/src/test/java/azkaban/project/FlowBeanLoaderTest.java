@@ -24,26 +24,62 @@ import org.junit.Test;
 
 public class FlowBeanLoaderTest {
 
+  public static final String TEST_FLOW_NAME = "sample_flow";
+  public static final String TEST_FLOW_YML_FILENAME = TEST_FLOW_NAME + ".yml";
+  public static final String SHELL_END = "shell_end";
+  public static final String SHELL_ECHO = "shell_echo";
+  public static final String SHELL_BASH = "shell_bash";
+  public static final String SHELL_PWD = "shell_pwd";
+  public static final String ECHO_COMMAND = "echo \"This is an echoed text.\"";
+
+  final File TEST_FLOW_YML_FILE =
+      new File(getClass().getClassLoader().getResource(TEST_FLOW_YML_FILENAME).getFile());
+
   @Test
-  public void testLoading() throws Exception {
-    final ClassLoader classLoader = getClass().getClassLoader();
-    final File file = new File(
-        classLoader.getResource("sample_flow.yml").getFile());
+  public void testLoad() throws Exception {
 
     final FlowBeanLoader loader = new FlowBeanLoader();
+    final FlowBean flowBean = loader.load(TEST_FLOW_YML_FILE);
 
-    final FlowBean flow = loader.load(file);
+    assertThat(flowBean.getConfig().get("flow-level-parameter")).isEqualTo("value");
+    assertThat(flowBean.getNodes().size()).isEqualTo(4);
 
-    assertThat(flow.getConfig().get("flow-level-parameter")).isEqualTo("value");
+    final NodeBean node0 = flowBean.getNodes().get(0);
+    assertThat(node0.getName()).isEqualTo(SHELL_END);
+    assertThat(node0.getType()).isEqualTo("noop");
+    assertThat(node0.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, SHELL_BASH);
+
+    final NodeBean node1 = flowBean.getNodes().get(1);
+    assertThat(node1.getName()).isEqualTo(SHELL_ECHO);
+    assertThat(node1.getConfig().get("command")).isEqualTo(ECHO_COMMAND);
+  }
+
+  @Test
+  public void testToAzkabanFlow() throws Exception {
+    final FlowBeanLoader loader = new FlowBeanLoader();
+    final FlowBean flowBean = loader.load(TEST_FLOW_YML_FILE);
+    final AzkabanFlow flow = loader
+        .toAzkabanFlow(loader.getFlowName(TEST_FLOW_YML_FILE), flowBean);
+
+    assertThat(flow.getName()).isEqualTo(TEST_FLOW_NAME);
+    assertThat(flow.getProps().get("flow-level-parameter")).isEqualTo("value");
     assertThat(flow.getNodes().size()).isEqualTo(4);
 
-    assertThat(flow.getNodes().get(0).getName()).isEqualTo("shell_end");
-    assertThat(flow.getNodes().get(0).getType()).isEqualTo("noop");
-    assertThat(flow.getNodes().get(0).getDependsOn())
-        .contains("shell_pwd", "shell_echo", "shell_bash");
+    final AzkabanJob shellEnd = flow.getJob(SHELL_END);
+    assertThat(shellEnd.getName()).isEqualTo(SHELL_END);
+    assertThat(shellEnd.getType()).isEqualTo("noop");
+    assertThat(shellEnd.getProps().size()).isEqualTo(0);
+    assertThat(shellEnd.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, SHELL_BASH);
 
-    assertThat(flow.getNodes().get(1).getName()).isEqualTo("shell_echo");
-    assertThat(flow.getNodes().get(1).getConfig().get("command"))
-        .isEqualTo("echo \"This is an echoed text.\"");
+    final AzkabanJob shellEcho = flow.getJob(SHELL_ECHO);
+    assertThat(shellEcho.getName()).isEqualTo(SHELL_ECHO);
+    assertThat(shellEcho.getType()).isEqualTo("command");
+    assertThat(shellEcho.getProps().size()).isEqualTo(1);
+    assertThat(shellEcho.getProps().get("command")).isEqualTo(ECHO_COMMAND);
+  }
+
+  @Test
+  public void testGetFlowName() throws Exception {
+    assertThat(new FlowBeanLoader().getFlowName(TEST_FLOW_YML_FILE)).isEqualTo(TEST_FLOW_NAME);
   }
 }
