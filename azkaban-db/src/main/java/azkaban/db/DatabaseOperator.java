@@ -53,7 +53,7 @@ public interface DatabaseOperator {
    * @throws SQLException
    */
   default <T> T transaction(final SQLTransaction<T> operations) throws SQLException {
-    return transaction(operations, true);
+    return transaction(operations, false);
   }
 
   /**
