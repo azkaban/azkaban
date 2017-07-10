@@ -27,6 +27,7 @@ import azkaban.fixture.MockLoginAzkabanServlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashMap;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -181,5 +182,40 @@ public class LoginAbstractAzkabanServletTest {
 
     // Assert that our response was written (we have a valid session)
     assertEquals("SUCCESS_MOCK_LOGIN_SERVLET", writer.toString());
+  }
+
+  /**
+   * Simulates users passing username/password via URI
+   * where it would be logged by Azkaban Web Server
+   */
+  @Test
+  public void testLoginRevealingCredentialsShouldThrowFailure() throws Exception {
+
+    final String clientIp = "127.0.0.1:10000";
+    final String sessionId = "111";
+    final String queryString = "action=login&username=azkaban&password=azkaban";
+    final String[] mockCredentials = {"azkaban"};
+    final HashMap<String, String[]> mockParameterMap = new HashMap<String, String[]>() {
+      {
+        put("username", mockCredentials);
+        put("password", mockCredentials);
+      }
+    };
+
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithNoUpstream(clientIp, sessionId, "POST");
+    when(req.getParameterMap()).thenReturn(mockParameterMap);
+    when(req.getQueryString()).thenReturn(queryString);
+    final StringWriter writer = new StringWriter();
+    final HttpServletResponse resp = getResponse(writer);
+
+    final MockLoginAzkabanServlet servlet = MockLoginAzkabanServlet.getServletWithSession(sessionId,
+        "user", "127.0.0.1");
+
+    servlet.doPost(req, resp);
+
+    // Assert that expected error message is returned
+    assertEquals("Login error. Must pass username and password in request body", writer.toString());
+
   }
 }
