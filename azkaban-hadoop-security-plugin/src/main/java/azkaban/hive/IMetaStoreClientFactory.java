@@ -20,9 +20,7 @@ package azkaban.hive;
 
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
-import org.apache.commons.pool2.BasePooledObjectFactory;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
+import azkaban.spi.AzkabanException;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaHookLoader;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
@@ -37,18 +35,18 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * An implementation of {@link BasePooledObjectFactory} for {@link IMetaStoreClient}.
+ * Factory for creating an {@link IMetaStoreClient} using the {@link RetryingMetaStoreClient}
  */
-public class HiveMetaStoreClientFactory extends BasePooledObjectFactory<IMetaStoreClient> {
+public class IMetaStoreClientFactory {
 
-  private static final Logger log = LoggerFactory.getLogger(HiveMetaStoreClientFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(IMetaStoreClientFactory.class);
   private final HiveConf hiveConf;
 
-  public HiveMetaStoreClientFactory(final HiveConf hiveConf) {
+  public IMetaStoreClientFactory(final HiveConf hiveConf) {
     this.hiveConf = hiveConf;
   }
 
-  private IMetaStoreClient createMetaStoreClient() throws MetaException {
+  public IMetaStoreClient create() {
     final HiveMetaHookLoader hookLoader = tbl -> {
       if (tbl == null) {
         return null;
@@ -56,35 +54,18 @@ public class HiveMetaStoreClientFactory extends BasePooledObjectFactory<IMetaSto
 
       try {
         final HiveStorageHandler storageHandler =
-            HiveUtils.getStorageHandler(HiveMetaStoreClientFactory.this.hiveConf,
-                tbl.getParameters().get(META_TABLE_STORAGE));
+            HiveUtils.getStorageHandler(this.hiveConf, tbl.getParameters().get(META_TABLE_STORAGE));
         return storageHandler == null ? null : storageHandler.getMetaHook();
       } catch (final HiveException e) {
         log.error(e.getMessage(), e);
         throw new MetaException("Failed to get storage handler: " + e);
       }
     };
-
-    return RetryingMetaStoreClient
-        .getProxy(this.hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
-  }
-
-  @Override
-  public IMetaStoreClient create() {
     try {
-      return createMetaStoreClient();
+      return RetryingMetaStoreClient
+          .getProxy(this.hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
     } catch (final MetaException e) {
-      throw new RuntimeException("Unable to create " + IMetaStoreClient.class.getSimpleName(), e);
+      throw new AzkabanException("Unable to create " + IMetaStoreClient.class.getSimpleName(), e);
     }
-  }
-
-  @Override
-  public PooledObject<IMetaStoreClient> wrap(final IMetaStoreClient client) {
-    return new DefaultPooledObject<>(client);
-  }
-
-  @Override
-  public void destroyObject(final PooledObject<IMetaStoreClient> client) {
-    client.getObject().close();
   }
 }
