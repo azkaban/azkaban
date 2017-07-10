@@ -132,7 +132,7 @@ subprojects {
         test {
             // Set maxParallelForks to a large number and let gradle to force it to a the
             // max-workers number when needed.
-            maxParallelForks =  12
+            maxParallelForks = 12
         }
     }
 
@@ -142,6 +142,13 @@ subprojects {
             compression = Compression.GZIP
             extension = 'tar.gz'
         }
+    }
+
+    /**
+     * Terminate compilation if warnings occur.
+     */
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-Werror"]
     }
 
     /**
