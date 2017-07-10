@@ -1,9 +1,5 @@
 apply plugin: 'distribution'
 
-configurations {
-    testCompile.extendsFrom compileOnly
-}
-
 dependencies {
     compile project(":azkaban-common")
 
@@ -11,10 +7,6 @@ dependencies {
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
     compileOnly deps.hiveMetastore
-    compileOnly(deps.hiveExecCore) {
-        exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
-        exclude group: 'eigenbase', module: 'eigenbase-properties'
-    }
 }
 
 /**
