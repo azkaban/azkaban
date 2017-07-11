@@ -102,6 +102,7 @@ public class Constants {
     public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
+    public static final String PROJECT_TEMP_DIR = "project.temp.dir";
   }
 
   public static class FlowProperties {

@@ -17,6 +17,7 @@
 
 package azkaban.project;
 
+import static azkaban.Constants.ConfigurationKeys.PROJECT_TEMP_DIR;
 import static java.util.Objects.requireNonNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,6 +35,8 @@ import org.junit.Test;
 
 public class AzkabanProjectLoaderTest {
 
+  static final String TEMP_DIR = "temp";
+
   final int ID = 107;
   final int VERSION = 10;
   final Project project = new Project(this.ID, "project1");
@@ -47,6 +50,8 @@ public class AzkabanProjectLoaderTest {
     tearDown();
 
     final Props props = new Props();
+    props.put(PROJECT_TEMP_DIR, TEMP_DIR);
+
     this.storageManager = mock(StorageManager.class);
     this.projectLoader = mock(ProjectLoader.class);
 
@@ -57,7 +62,7 @@ public class AzkabanProjectLoaderTest {
   @After
   public void tearDown() throws Exception {
     if (this.azkabanProjectLoader != null) {
-      FileUtils.deleteDirectory(this.azkabanProjectLoader.tempDir);
+      FileUtils.deleteDirectory(new File(TEMP_DIR));
     }
   }
 

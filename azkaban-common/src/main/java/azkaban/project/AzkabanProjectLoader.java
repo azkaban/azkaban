@@ -19,6 +19,7 @@ package azkaban.project;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
@@ -30,7 +31,6 @@ import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -50,12 +50,11 @@ class AzkabanProjectLoader {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
 
-  @VisibleForTesting
-  final File tempDir;
-
   private final Props props;
+
   private final ProjectLoader projectLoader;
   private final StorageManager storageManager;
+  private final File tempDir;
   private final int projectVersionRetention;
 
   @Inject
@@ -65,7 +64,7 @@ class AzkabanProjectLoader {
     this.projectLoader = requireNonNull(projectLoader, "project Loader is null");
     this.storageManager = requireNonNull(storageManager, "Storage Manager is null");
 
-    this.tempDir = new File(props.getString("project.temp.dir", "temp"));
+    this.tempDir = new File(props.getString(ConfigurationKeys.PROJECT_TEMP_DIR, "temp"));
     if (!this.tempDir.exists()) {
       log.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
       this.tempDir.mkdirs();
