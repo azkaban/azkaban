@@ -56,10 +56,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailSender = props.getString("mail.sender", "");
     this.tls = props.getString("mail.tls", "false");
 
-    final int mailTimeout = props.getInt("mail.timeout.millis", 10000);
+    final int mailTimeout = props.getInt("mail.timeout.millis", 30000);
     EmailMessage.setTimeout(mailTimeout);
     final int connectionTimeout =
-        props.getInt("mail.connection.timeout.millis", 10000);
+        props.getInt("mail.connection.timeout.millis", 30000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
@@ -102,7 +102,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         try {
           message.sendEmail();
         } catch (final MessagingException e) {
-          logger.error("Email message send failed", e);
+          logger.error("Failed to send SLA email message" + slaMessage, e);
         }
       }
     }
@@ -131,7 +131,8 @@ public class Emailer extends AbstractMailer implements Alerter {
       try {
         message.sendEmail();
       } catch (final MessagingException e) {
-        logger.error("Email message send failed", e);
+        logger.error(
+            "Failed to send first error email message for execution " + flow.getExecutionId(), e);
       }
     }
   }
@@ -158,7 +159,8 @@ public class Emailer extends AbstractMailer implements Alerter {
       try {
         message.sendEmail();
       } catch (final MessagingException e) {
-        logger.error("Email message send failed", e);
+        logger
+            .error("Failed to send error email message for execution " + flow.getExecutionId(), e);
       }
     }
   }
@@ -185,7 +187,8 @@ public class Emailer extends AbstractMailer implements Alerter {
       try {
         message.sendEmail();
       } catch (final MessagingException e) {
-        logger.error("Email message send failed", e);
+        logger.error("Failed to send success email message for execution " + flow.getExecutionId(),
+            e);
       }
     }
   }
