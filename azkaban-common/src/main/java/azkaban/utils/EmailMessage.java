@@ -230,39 +230,10 @@ public class EmailMessage {
       message.setContent(this._body.toString(), this._mimeType);
     }
 
-    // Transport transport = session.getTransport();
-
     final SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
 
-    int attempt;
-    for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
-      try {
-        connectToSMTPServer(t);
-        break;
-      } catch (final MessagingException ste) {
-        this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, ste);
-      }
-    }
-    if (attempt == MAX_EMAIL_RETRY_COUNT) {
-      t.close();
-      throw new MessagingException("Failed to connect to SMTP server after "
-          + attempt + " attempts.");
-    }
-
-    for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
-      try {
-        t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
-        break;
-      } catch (final MessagingException sme) {
-        this.logger.error("Sending email messages failed, attempt: " + attempt, sme);
-      }
-    }
-    if (attempt == MAX_EMAIL_RETRY_COUNT) {
-      t.close();
-      throw new MessagingException("Failed to send email messages after "
-          + attempt + " attempts.");
-    }
-
+    retryConnectToSMTPServer(t);
+    retrySendMessage(t, message);
     t.close();
   }
 
@@ -272,6 +243,37 @@ public class EmailMessage {
     } else {
       t.connect();
     }
+  }
+
+  private void retryConnectToSMTPServer(final SMTPTransport t) throws MessagingException {
+    int attempt;
+    for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
+      try {
+        connectToSMTPServer(t);
+        return;
+      } catch (final MessagingException ste) {
+        this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, ste);
+      }
+    }
+    t.close();
+    throw new MessagingException("Failed to connect to SMTP server after "
+        + attempt + " attempts.");
+  }
+
+  private void retrySendMessage(final SMTPTransport t, final Message message)
+      throws MessagingException {
+    int attempt;
+    for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
+      try {
+        t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
+        return;
+      } catch (final MessagingException sme) {
+        this.logger.error("Sending email messages failed, attempt: " + attempt, sme);
+      }
+    }
+    t.close();
+    throw new MessagingException("Failed to send email messages after "
+        + attempt + " attempts.");
   }
 
   public void setBody(final String body, final String mimeType) {
