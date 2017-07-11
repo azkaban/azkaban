@@ -603,8 +603,8 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   /**
-   * Todo kunkun-tang: the below implementation inactivate a project.
-   * We probably should remove one project.
+   * Todo kunkun-tang: the below implementation doesn't remove a project, but inactivate a project.
+   * We should rewrite the code to follow the literal meanings.
    */
   @Override
   public void removeProject(final Project project, final String user) throws ProjectManagerException {

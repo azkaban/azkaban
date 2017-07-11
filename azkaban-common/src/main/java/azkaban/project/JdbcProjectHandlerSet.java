@@ -52,41 +52,41 @@ class JdbcProjectHandlerSet {
         "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=? AND active=true";
 
     @Override
-    public List<Project> handle(ResultSet rs) throws SQLException {
+    public List<Project> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      ArrayList<Project> projects = new ArrayList<>();
+      final ArrayList<Project> projects = new ArrayList<>();
       do {
-        int id = rs.getInt(1);
-        String name = rs.getString(2);
-        boolean active = rs.getBoolean(3);
-        long modifiedTime = rs.getLong(4);
-        long createTime = rs.getLong(5);
-        int version = rs.getInt(6);
-        String lastModifiedBy = rs.getString(7);
-        String description = rs.getString(8);
-        int encodingType = rs.getInt(9);
-        byte[] data = rs.getBytes(10);
+        final int id = rs.getInt(1);
+        final String name = rs.getString(2);
+        final boolean active = rs.getBoolean(3);
+        final long modifiedTime = rs.getLong(4);
+        final long createTime = rs.getLong(5);
+        final int version = rs.getInt(6);
+        final String lastModifiedBy = rs.getString(7);
+        final String description = rs.getString(8);
+        final int encodingType = rs.getInt(9);
+        final byte[] data = rs.getBytes(10);
 
-        Project project;
+        final Project project;
         if (data != null) {
-          EncodingType encType = EncodingType.fromInteger(encodingType);
-          Object blobObj;
+          final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Object blobObj;
           try {
             // Convoluted way to inflate strings. Should find common package or
             // helper function.
             if (encType == EncodingType.GZIP) {
               // Decompress the sucker.
-              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
               blobObj = JSONUtils.parseJSONFromString(jsonString);
             } else {
-              String jsonString = new String(data, "UTF-8");
+              final String jsonString = new String(data, "UTF-8");
               blobObj = JSONUtils.parseJSONFromString(jsonString);
             }
             project = Project.projectFromObject(blobObj);
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new SQLException("Failed to get project.", e);
           }
         } else {
@@ -114,18 +114,18 @@ class JdbcProjectHandlerSet {
         "SELECT project_id, modified_time, name, permissions, isGroup FROM project_permissions WHERE project_id=?";
 
     @Override
-    public List<Triple<String, Boolean, Permission>> handle(ResultSet rs) throws SQLException {
+    public List<Triple<String, Boolean, Permission>> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      List<Triple<String, Boolean, Permission>> permissions = new ArrayList<>();
+      final List<Triple<String, Boolean, Permission>> permissions = new ArrayList<>();
       do {
-        String username = rs.getString(3);
-        int permissionFlag = rs.getInt(4);
-        boolean val = rs.getBoolean(5);
+        final String username = rs.getString(3);
+        final int permissionFlag = rs.getInt(4);
+        final boolean val = rs.getBoolean(5);
 
-        Permission perm = new Permission(permissionFlag);
+        final Permission perm = new Permission(permissionFlag);
         permissions.add(new Triple<>(username, val, perm));
       } while (rs.next());
 
@@ -141,22 +141,22 @@ class JdbcProjectHandlerSet {
         "SELECT project_id, version, flow_id, modified_time, encoding_type, json FROM project_flows WHERE project_id=? AND version=?";
 
     @Override
-    public List<Flow> handle(ResultSet rs) throws SQLException {
+    public List<Flow> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      ArrayList<Flow> flows = new ArrayList<>();
+      final ArrayList<Flow> flows = new ArrayList<>();
       do {
-        String flowId = rs.getString(3);
-        int encodingType = rs.getInt(5);
-        byte[] dataBytes = rs.getBytes(6);
+        final String flowId = rs.getString(3);
+        final int encodingType = rs.getInt(5);
+        final byte[] dataBytes = rs.getBytes(6);
 
         if (dataBytes == null) {
           continue;
         }
 
-        EncodingType encType = EncodingType.fromInteger(encodingType);
+        final EncodingType encType = EncodingType.fromInteger(encodingType);
 
         Object flowObj = null;
         try {
@@ -164,16 +164,16 @@ class JdbcProjectHandlerSet {
           // helper function.
           if (encType == EncodingType.GZIP) {
             // Decompress the sucker.
-            String jsonString = GZIPUtils.unGzipString(dataBytes, "UTF-8");
+            final String jsonString = GZIPUtils.unGzipString(dataBytes, "UTF-8");
             flowObj = JSONUtils.parseJSONFromString(jsonString);
           } else {
-            String jsonString = new String(dataBytes, "UTF-8");
+            final String jsonString = new String(dataBytes, "UTF-8");
             flowObj = JSONUtils.parseJSONFromString(jsonString);
           }
 
-          Flow flow = Flow.flowFromObject(flowObj);
+          final Flow flow = Flow.flowFromObject(flowObj);
           flows.add(flow);
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new SQLException("Error retrieving flow data " + flowId, e);
         }
       } while (rs.next());
@@ -190,18 +190,18 @@ class JdbcProjectHandlerSet {
         "SELECT project_id, version, name, modified_time, encoding_type, property FROM project_properties WHERE project_id=? AND version=?";
 
     @Override
-    public List<Pair<String, Props>> handle(ResultSet rs) throws SQLException {
+    public List<Pair<String, Props>> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      List<Pair<String, Props>> properties = new ArrayList<>();
+      final List<Pair<String, Props>> properties = new ArrayList<>();
       do {
-        String name = rs.getString(3);
-        int eventType = rs.getInt(5);
-        byte[] dataBytes = rs.getBytes(6);
+        final String name = rs.getString(3);
+        final int eventType = rs.getInt(5);
+        final byte[] dataBytes = rs.getBytes(6);
 
-        EncodingType encType = EncodingType.fromInteger(eventType);
+        final EncodingType encType = EncodingType.fromInteger(eventType);
         String propertyString = null;
 
         try {
@@ -212,10 +212,10 @@ class JdbcProjectHandlerSet {
             propertyString = new String(dataBytes, "UTF-8");
           }
 
-          Props props = PropsUtils.fromJSONString(propertyString);
+          final Props props = PropsUtils.fromJSONString(propertyString);
           props.setSource(name);
           properties.add(new Pair<>(name, props));
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new SQLException(e);
         }
       } while (rs.next());
@@ -229,20 +229,20 @@ class JdbcProjectHandlerSet {
         "SELECT project_id, event_type, event_time, username, message FROM project_events WHERE project_id=? ORDER BY event_time DESC LIMIT ? OFFSET ?";
 
     @Override
-    public List<ProjectLogEvent> handle(ResultSet rs) throws SQLException {
+    public List<ProjectLogEvent> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      ArrayList<ProjectLogEvent> events = new ArrayList<>();
+      final ArrayList<ProjectLogEvent> events = new ArrayList<>();
       do {
-        int projectId = rs.getInt(1);
-        int eventType = rs.getInt(2);
-        long eventTime = rs.getLong(3);
-        String username = rs.getString(4);
-        String message = rs.getString(5);
+        final int projectId = rs.getInt(1);
+        final int eventType = rs.getInt(2);
+        final long eventTime = rs.getLong(3);
+        final String username = rs.getString(4);
+        final String message = rs.getString(5);
 
-        ProjectLogEvent event =
+        final ProjectLogEvent event =
             new ProjectLogEvent(projectId, ProjectLogEvent.EventType.fromInteger(eventType), eventTime, username,
                 message);
         events.add(event);
@@ -257,14 +257,14 @@ class JdbcProjectHandlerSet {
         "SELECT project_id, version, chunk, size, file FROM project_files WHERE project_id=? AND version=? AND chunk >= ? AND chunk < ? ORDER BY chunk ASC";
 
     @Override
-    public List<byte[]> handle(ResultSet rs) throws SQLException {
+    public List<byte[]> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      ArrayList<byte[]> data = new ArrayList<>();
+      final ArrayList<byte[]> data = new ArrayList<>();
       do {
-        byte[] bytes = rs.getBytes(5);
+        final byte[] bytes = rs.getBytes(5);
 
         data.add(bytes);
       } while (rs.next());
@@ -279,24 +279,24 @@ class JdbcProjectHandlerSet {
             + "FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
-    public List<ProjectFileHandler> handle(ResultSet rs) throws SQLException {
+    public List<ProjectFileHandler> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return null;
       }
 
-      List<ProjectFileHandler> handlers = new ArrayList<>();
+      final List<ProjectFileHandler> handlers = new ArrayList<>();
       do {
-        int projectId = rs.getInt(1);
-        int version = rs.getInt(2);
-        long uploadTime = rs.getLong(3);
-        String uploader = rs.getString(4);
-        String fileType = rs.getString(5);
-        String fileName = rs.getString(6);
-        byte[] md5 = rs.getBytes(7);
-        int numChunks = rs.getInt(8);
-        String resourceId = rs.getString(9);
+        final int projectId = rs.getInt(1);
+        final int version = rs.getInt(2);
+        final long uploadTime = rs.getLong(3);
+        final String uploader = rs.getString(4);
+        final String fileType = rs.getString(5);
+        final String fileName = rs.getString(6);
+        final byte[] md5 = rs.getBytes(7);
+        final int numChunks = rs.getInt(8);
+        final String resourceId = rs.getString(9);
 
-        ProjectFileHandler handler =
+        final ProjectFileHandler handler =
             new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5,
                 resourceId);
 
@@ -311,7 +311,7 @@ class JdbcProjectHandlerSet {
     public static String SELECT_LATEST_VERSION = "SELECT MAX(version) FROM project_versions WHERE project_id=?";
 
     @Override
-    public Integer handle(ResultSet rs) throws SQLException {
+    public Integer handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return 0;
       }
