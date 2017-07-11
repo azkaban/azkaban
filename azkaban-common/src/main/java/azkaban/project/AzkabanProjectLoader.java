@@ -65,15 +65,15 @@ class AzkabanProjectLoader {
     this.projectLoader = requireNonNull(projectLoader, "project Loader is null");
     this.storageManager = requireNonNull(storageManager, "Storage Manager is null");
 
-    tempDir = new File(props.getString("project.temp.dir", "temp"));
-    if (!tempDir.exists()) {
-      log.info("Creating temp dir: " + tempDir.getAbsolutePath());
-      tempDir.mkdirs();
+    this.tempDir = new File(props.getString("project.temp.dir", "temp"));
+    if (!this.tempDir.exists()) {
+      log.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
+      this.tempDir.mkdirs();
     } else {
-      log.info("Using temp dir: " + tempDir.getAbsolutePath());
+      log.info("Using temp dir: " + this.tempDir.getAbsolutePath());
     }
-    projectVersionRetention = props.getInt("project.version.retention", 3);
-    log.info("Project version retention is set to " + projectVersionRetention);
+    this.projectVersionRetention = props.getInt("project.version.retention", 3);
+    log.info("Project version retention is set to " + this.projectVersionRetention);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
