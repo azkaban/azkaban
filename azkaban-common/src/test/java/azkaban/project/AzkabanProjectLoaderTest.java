@@ -28,18 +28,19 @@ import azkaban.user.User;
 import azkaban.utils.Props;
 import java.io.File;
 import java.net.URL;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class AzkabanProjectLoaderTest {
 
-  static final String TEMP_DIR = "temp";
+  @Rule
+  public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
 
-  final int ID = 107;
-  final int VERSION = 10;
-  final Project project = new Project(this.ID, "project1");
+  private final int ID = 107;
+  private final int VERSION = 10;
+  private final Project project = new Project(this.ID, "project1");
 
   private AzkabanProjectLoader azkabanProjectLoader;
   private StorageManager storageManager;
@@ -47,23 +48,14 @@ public class AzkabanProjectLoaderTest {
 
   @Before
   public void setUp() throws Exception {
-    tearDown();
-
     final Props props = new Props();
-    props.put(PROJECT_TEMP_DIR, TEMP_DIR);
+    props.put(PROJECT_TEMP_DIR, this.TEMP_DIR.getRoot().getAbsolutePath());
 
     this.storageManager = mock(StorageManager.class);
     this.projectLoader = mock(ProjectLoader.class);
 
     this.azkabanProjectLoader = new AzkabanProjectLoader(props, this.projectLoader,
         this.storageManager);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (this.azkabanProjectLoader != null) {
-      FileUtils.deleteDirectory(new File(TEMP_DIR));
-    }
   }
 
   @Test
