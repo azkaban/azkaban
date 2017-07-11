@@ -19,7 +19,6 @@ package azkaban.utils;
 import com.sun.mail.smtp.SMTPTransport;
 import java.io.File;
 import java.io.InputStream;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -41,6 +40,7 @@ import org.apache.log4j.Logger;
 public class EmailMessage {
 
   private static final String protocol = "smtp";
+  private static final int MAX_EMAIL_RETRY_COUNT = 3;
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
   private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
@@ -230,28 +230,10 @@ public class EmailMessage {
       message.setContent(this._body.toString(), this._mimeType);
     }
 
-    // Transport transport = session.getTransport();
-
     final SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
 
-    try {
-      connectToSMTPServer(t);
-    } catch (final MessagingException ste) {
-      if (ste.getCause() instanceof SocketTimeoutException) {
-        try {
-          // retry on SocketTimeoutException
-          connectToSMTPServer(t);
-          this.logger.info("Email retry on SocketTimeoutException succeeded");
-        } catch (final MessagingException me) {
-          this.logger.error("Email retry on SocketTimeoutException failed", me);
-          throw me;
-        }
-      } else {
-        this.logger.error("Encountered issue while connecting to email server", ste);
-        throw ste;
-      }
-    }
-    t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
+    retryConnectToSMTPServer(t);
+    retrySendMessage(t, message);
     t.close();
   }
 
@@ -261,6 +243,37 @@ public class EmailMessage {
     } else {
       t.connect();
     }
+  }
+
+  private void retryConnectToSMTPServer(final SMTPTransport t) throws MessagingException {
+    int attempt;
+    for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
+      try {
+        connectToSMTPServer(t);
+        return;
+      } catch (final MessagingException ste) {
+        this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, ste);
+      }
+    }
+    t.close();
+    throw new MessagingException("Failed to connect to SMTP server after "
+        + attempt + " attempts.");
+  }
+
+  private void retrySendMessage(final SMTPTransport t, final Message message)
+      throws MessagingException {
+    int attempt;
+    for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
+      try {
+        t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
+        return;
+      } catch (final MessagingException sme) {
+        this.logger.error("Sending email messages failed, attempt: " + attempt, sme);
+      }
+    }
+    t.close();
+    throw new MessagingException("Failed to send email messages after "
+        + attempt + " attempts.");
   }
 
   public void setBody(final String body, final String mimeType) {
