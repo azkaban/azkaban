@@ -67,10 +67,10 @@ class AzkabanProjectLoader {
 
     tempDir = new File(props.getString("project.temp.dir", "temp"));
     if (!tempDir.exists()) {
-      log.info("Using temp dir: " + tempDir.getAbsolutePath());
+      log.info("Creating temp dir: " + tempDir.getAbsolutePath());
       tempDir.mkdirs();
     } else {
-      log.info("Creating temp dir: " + tempDir.getAbsolutePath());
+      log.info("Using temp dir: " + tempDir.getAbsolutePath());
     }
     projectVersionRetention = props.getInt("project.version.retention", 3);
     log.info("Project version retention is set to " + projectVersionRetention);
