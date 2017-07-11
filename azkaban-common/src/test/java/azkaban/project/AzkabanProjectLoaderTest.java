@@ -36,7 +36,7 @@ public class AzkabanProjectLoaderTest {
 
   final int ID = 107;
   final int VERSION = 10;
-  final Project project = new Project(ID, "project1");
+  final Project project = new Project(this.ID, "project1");
 
   private AzkabanProjectLoader azkabanProjectLoader;
   private StorageManager storageManager;
@@ -47,42 +47,44 @@ public class AzkabanProjectLoaderTest {
     tearDown();
 
     final Props props = new Props();
-    storageManager = mock(StorageManager.class);
-    projectLoader = mock(ProjectLoader.class);
+    this.storageManager = mock(StorageManager.class);
+    this.projectLoader = mock(ProjectLoader.class);
 
-    azkabanProjectLoader = new AzkabanProjectLoader(props, projectLoader, storageManager);
+    this.azkabanProjectLoader = new AzkabanProjectLoader(props, this.projectLoader,
+        this.storageManager);
   }
 
   @After
   public void tearDown() throws Exception {
-    if (azkabanProjectLoader != null) {
-      FileUtils.deleteDirectory(azkabanProjectLoader.tempDir);
+    if (this.azkabanProjectLoader != null) {
+      FileUtils.deleteDirectory(this.azkabanProjectLoader.tempDir);
     }
   }
 
   @Test
   public void uploadProject() throws Exception {
-    when(projectLoader.getLatestProjectVersion(project)).thenReturn(VERSION);
+    when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
 
     final URL resource = requireNonNull(
         getClass().getClassLoader().getResource("sample_flow_01.zip"));
     final File projectZipFile = new File(resource.getPath());
     final User uploader = new User("test_user");
 
-    azkabanProjectLoader.uploadProject(project, projectZipFile, "zip", uploader, null);
+    this.azkabanProjectLoader.uploadProject(this.project, projectZipFile, "zip", uploader, null);
 
-    verify(storageManager).uploadProject(project, VERSION + 1, projectZipFile, uploader);
+    verify(this.storageManager)
+        .uploadProject(this.project, this.VERSION + 1, projectZipFile, uploader);
   }
 
   @Test
   public void getProjectFile() throws Exception {
-    when(projectLoader.getLatestProjectVersion(project)).thenReturn(VERSION);
+    when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
 
     // Run the code
-    azkabanProjectLoader.getProjectFile(project, -1);
+    this.azkabanProjectLoader.getProjectFile(this.project, -1);
 
-    verify(projectLoader).getLatestProjectVersion(project);
-    verify(storageManager).getProjectFile(ID, VERSION);
+    verify(this.projectLoader).getLatestProjectVersion(this.project);
+    verify(this.storageManager).getProjectFile(this.ID, this.VERSION);
   }
 
 }
