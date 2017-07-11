@@ -59,4 +59,9 @@ public interface DatabaseOperator {
    * @return The number of rows updated.
    */
   int update(String updateClause, Object... params) throws SQLException;
+
+   /**
+    * @return datasource wrapped in the database operator.
+    */
+   AzkabanDataSource getDataSource();
 }
