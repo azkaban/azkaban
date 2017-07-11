@@ -22,7 +22,7 @@ import org.json.simple.JSONObject;
 
 class LogUtil {
 
-  static JSONObject createLogPatternLayoutJsonObject(Props props, String jobId) {
+  static String createLogPatternLayoutJsonString(Props props, String jobId) {
     final JSONObject layout = new JSONObject();
     layout.put("category", "%c{1}");
     layout.put("level", "%p");
@@ -37,6 +37,6 @@ class LogUtil {
     layout.put("projectversion",
         props.getString(Constants.FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
     layout.put("logsource", "userJob");
-    return layout;
+    return layout.toString();
   }
 }
