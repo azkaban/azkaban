@@ -44,6 +44,7 @@ public class Project {
   private int version = -1;
   private long createTimestamp;
   private long lastModifiedTimestamp;
+  private String currentUploaderID;
   private String lastModifiedUser;
   private String source;
   private Map<String, Flow> flows = null;
@@ -330,6 +331,24 @@ public class Project {
 
   public void setLastModifiedUser(final String lastModifiedUser) {
     this.lastModifiedUser = lastModifiedUser;
+  }
+
+  /**
+   * Getter method for current uploader userId
+   *
+   * @return currentUploaderId
+   */
+  public String getCurrentUploaderID() {
+    return currentUploaderID;
+  }
+
+  /**
+   * Setter method for current Uploader userId
+   *
+   * @param currentUploaderID
+   */
+  public void setCurrentUploaderID(String currentUploaderID) {
+    this.currentUploaderID = currentUploaderID;
   }
 
   @Override
