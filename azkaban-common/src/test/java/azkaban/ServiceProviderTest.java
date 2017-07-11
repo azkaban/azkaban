@@ -21,7 +21,7 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.db.DatabaseOperator;
-import azkaban.project.JdbcProjectLoader;
+import azkaban.project.JdbcProjectImpl;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
 import azkaban.storage.LocalStorage;
@@ -58,7 +58,7 @@ public class ServiceProviderTest {
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
 
-    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectLoader.class));
+    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectImpl.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(StorageManager.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));

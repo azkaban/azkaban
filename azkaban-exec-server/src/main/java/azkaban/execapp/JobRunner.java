@@ -55,7 +55,6 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
-import org.json.simple.JSONObject;
 
 public class JobRunner extends EventHandler implements Runnable {
 
@@ -345,9 +344,9 @@ public class JobRunner extends EventHandler implements Runnable {
         this.azkabanProps
             .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
-    final JSONObject layout = LogUtil.createLogPatternLayoutJsonObject(this.props, this.jobId);
+    final String layoutString = LogUtil.createLogPatternLayoutJsonString(this.props, this.jobId);
 
-    kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
+    kafkaProducer.setLayout(new PatternLayoutEscaped(layoutString));
     kafkaProducer.activateOptions();
 
     this.flowLogger.info("Created kafka appender for " + this.jobId);
