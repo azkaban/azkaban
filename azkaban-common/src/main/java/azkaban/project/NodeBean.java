@@ -20,6 +20,9 @@ package azkaban.project;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The node bean is used by the YAML loader to deserialize DAG nodes
+ */
 public class NodeBean {
 
   private String name;

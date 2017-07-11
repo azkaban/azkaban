@@ -21,6 +21,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This is the top level class which is used by the YAML loader to deserialize a flow.yml file.
+ */
 public class FlowBean implements Serializable {
 
   private Map<String, String> config;
