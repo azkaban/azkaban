@@ -115,6 +115,7 @@ public class JdbcTriggerImpl implements TriggerLoader {
 
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(ADD_TRIGGER, DateTime.now().getMillis());
+      // This commit must be called in order to unlock trigger table and have last insert ID.
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
