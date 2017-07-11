@@ -307,7 +307,7 @@ class JdbcProjectHandlerSet {
     }
   }
 
-  public static class IntHander implements ResultSetHandler<Integer> {
+  public static class IntHandler implements ResultSetHandler<Integer> {
     public static String SELECT_LATEST_VERSION = "SELECT MAX(version) FROM project_versions WHERE project_id=?";
 
     @Override

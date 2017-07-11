@@ -15,7 +15,7 @@
  */
 package azkaban.project;
 
-import static azkaban.project.JdbcProjectHandlerSet.IntHander;
+import static azkaban.project.JdbcProjectHandlerSet.IntHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFileChunkResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFlowsResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectLogsResultHandler;
@@ -669,9 +669,9 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public int getLatestProjectVersion(final Project project) throws ProjectManagerException {
-    final IntHander handler = new IntHander();
+    final IntHandler handler = new IntHandler();
     try {
-      return this.dbOperator.query(IntHander.SELECT_LATEST_VERSION, handler, project.getId());
+      return this.dbOperator.query(IntHandler.SELECT_LATEST_VERSION, handler, project.getId());
     } catch (final SQLException e) {
       logger.error(e);
       throw new ProjectManagerException("Error marking project " + project.getName() + " as inactive", e);
