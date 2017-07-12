@@ -18,12 +18,14 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.utils.Props;
-import org.json.simple.JSONObject;
+import com.google.gson.Gson;
+import java.util.HashMap;
+import java.util.Map;
 
 class LogUtil {
 
-  static String createLogPatternLayoutJsonString(Props props, String jobId) {
-    final JSONObject layout = new JSONObject();
+  static String createLogPatternLayoutJsonString(final Props props, final String jobId) {
+    final Map<String, String> layout = new HashMap<>();
     layout.put("category", "%c{1}");
     layout.put("level", "%p");
     layout.put("message", "%m");
@@ -37,6 +39,9 @@ class LogUtil {
     layout.put("projectversion",
         props.getString(Constants.FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
     layout.put("logsource", "userJob");
-    return layout.toString();
+
+    final Gson gson = new Gson();
+
+    return gson.toJson(layout);
   }
 }
