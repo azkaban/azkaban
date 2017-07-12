@@ -30,6 +30,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class MetricsManager {
 
-  private static final org.slf4j.Logger log = LoggerFactory.getLogger(MetricsManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MetricsManager.class);
   private final MetricRegistry registry;
 
   @Inject
