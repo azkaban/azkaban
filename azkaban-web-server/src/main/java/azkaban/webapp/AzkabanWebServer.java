@@ -59,7 +59,6 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -150,7 +149,6 @@ public class AzkabanWebServer extends AzkabanServer {
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
       final MetricsManager metricsManager,
-      final MetricRegistry metricRegistry,
       final SessionCache sessionCache,
       final UserManager userManager,
       final ScheduleManager scheduleManager,
