@@ -22,6 +22,7 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
@@ -48,7 +49,7 @@ public class TriggerManagerDeadlockTest {
     props.put("executor.port", 12321);
     this.execLoader = new MockExecutorLoader();
     final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        new AlerterHolder(props), new CommonMetrics(new MetricRegistry()));
+        new AlerterHolder(props), new CommonMetrics(new MetricsManager(new MetricRegistry())));
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 
