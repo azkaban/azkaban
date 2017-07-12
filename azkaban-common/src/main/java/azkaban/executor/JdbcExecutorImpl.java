@@ -1,6 +1,5 @@
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.database.EncodingType;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
@@ -24,15 +23,19 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -40,6 +43,8 @@ public class JdbcExecutorImpl implements ExecutorLoader {
 
   private static final Logger logger = Logger.getLogger(JdbcExecutorImpl.class);
   private final DatabaseOperator dbOperator;
+
+  private final EncodingType defaultEncodingType = EncodingType.GZIP;
 
   public JdbcExecutorImpl(final DatabaseOperator databaseOperator) {
     this.dbOperator = databaseOperator;
@@ -76,15 +81,14 @@ public class JdbcExecutorImpl implements ExecutorLoader {
     final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
     try {
       final List<ExecutableFlow> properties = this.dbOperator
-          .query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW,
-              flowHandler, id);
+          .query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW, flowHandler, execId);
       if (properties.isEmpty()) {
         return null;
       } else {
         return properties.get(0);
       }
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching flow id " + id, e);
+      throw new ExecutorManagerException("Error fetching flow id " + execId, e);
     }
   }
 
@@ -172,11 +176,11 @@ public class JdbcExecutorImpl implements ExecutorLoader {
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain, final String flowContains,
                                                final String userNameContains, final int status,
-                                               final long startData,
-                                               final long endData, final int skip, final int num)
+                                               final long startTime, final long endTime,
+                                               final int skip, final int num)
       throws ExecutorManagerException {
     String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
-    final List<Object> params = new ArrayList<Object>();
+    final List<Object> params = new ArrayList<>();
 
     boolean first = true;
     if (projContain != null && !projContain.isEmpty()) {
@@ -259,7 +263,7 @@ public class JdbcExecutorImpl implements ExecutorLoader {
   public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
     try {
       return this.dbOperator
-          .query(FetchExecutableFlows.FETCH_ALL_EXECUTORS, new FetchExecutorHandler());
+          .query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, new FetchExecutorHandler());
     } catch (final Exception e) {
       throw new ExecutorManagerException("Error fetching executors", e);
     }
@@ -542,19 +546,74 @@ public class JdbcExecutorImpl implements ExecutorLoader {
 
   @Override
   public void uploadLogFile(final int execId, final String name, final int attempt,
-                            final File... files)
-      throws ExecutorManagerException {
+                            final File... files) throws ExecutorManagerException {
     final SQLTransaction<Integer> transaction = transOperator -> {
-      addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader, md5,
-          resourceId);
+      uploadLogFile(transOperator, execId, name, attempt, files, this.defaultEncodingType);
+      transOperator.getConnection().commit();
       return 1;
     };
+    try {
+      this.dbOperator.transaction(transaction);
+    } catch (final SQLException e) {
+      logger.error("uploadLogFile failed.", e);
+      throw new ExecutorManagerException("uploadLogFile failed.", e);
+    }
+  }
+
+  private void uploadLogFile(final DatabaseTransOperator transOperator, final int execId, final String name,
+                             final int attempt, final File[] files, final EncodingType encType)
+      throws SQLException {
+    // 50K buffer... if logs are greater than this, we chunk.
+    // However, we better prevent large log files from being uploaded somehow
+    final byte[] buffer = new byte[50 * 1024];
+    int pos = 0;
+    int length = buffer.length;
+    int startByte = 0;
+    try {
+      for (int i = 0; i < files.length; ++i) {
+        final File file = files[i];
+
+        final BufferedInputStream bufferedStream =
+            new BufferedInputStream(new FileInputStream(file));
+        try {
+          int size = bufferedStream.read(buffer, pos, length);
+          while (size >= 0) {
+            if (pos + size == buffer.length) {
+              // Flush here.
+              uploadLogPart(transOperator, execId, name, attempt, startByte,
+                  startByte + buffer.length, encType, buffer, buffer.length);
+
+              pos = 0;
+              length = buffer.length;
+              startByte += buffer.length;
+            } else {
+              // Usually end of file.
+              pos += size;
+              length = buffer.length - pos;
+            }
+            size = bufferedStream.read(buffer, pos, length);
+          }
+        } finally {
+          IOUtils.closeQuietly(bufferedStream);
+        }
+      }
+
+      // Final commit of buffer.
+      if (pos > 0) {
+        uploadLogPart(transOperator, execId, name, attempt, startByte, startByte
+            + pos, encType, buffer, pos);
+      }
+    } catch (final SQLException e) {
+      logger.error("Error writing log part.", e);
+    } catch (final IOException e) {
+      logger.error("Error chunking.", e);
+    }
   }
 
   private void uploadLogPart(final DatabaseTransOperator transOperator, final int execId,
                              final String name,
                              final int attempt, final int startByte, final int endByte,
-                             final AbstractJdbcLoader.EncodingType encType,
+                             final EncodingType encType,
                              final byte[] buffer, final int length)
       throws SQLException, IOException {
     final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs "
@@ -562,7 +621,7 @@ public class JdbcExecutorImpl implements ExecutorLoader {
         + "log, upload_time) VALUES (?,?,?,?,?,?,?,?)";
 
     byte[] buf = buffer;
-    if (encType == AbstractJdbcLoader.EncodingType.GZIP) {
+    if (encType == EncodingType.GZIP) {
       buf = GZIPUtils.gzipBytes(buf, 0, length);
     } else if (length < buf.length) {
       buf = Arrays.copyOf(buffer, length);
