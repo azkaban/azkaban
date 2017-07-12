@@ -27,7 +27,6 @@ import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsManager;
-import azkaban.metrics.MetricsUtility;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanServer;
@@ -60,7 +59,6 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -134,7 +132,6 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ExecutorManager executorManager;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private final MetricRegistry registry;
   private final MetricsManager metricsManager;
   private final Props props;
   private final SessionCache sessionCache;
@@ -152,7 +149,6 @@ public class AzkabanWebServer extends AzkabanServer {
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
       final MetricsManager metricsManager,
-      final MetricRegistry metricRegistry,
       final SessionCache sessionCache,
       final UserManager userManager,
       final ScheduleManager scheduleManager,
@@ -163,7 +159,6 @@ public class AzkabanWebServer extends AzkabanServer {
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
     this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
-    this.registry = requireNonNull(metricRegistry, "metricRegistry is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
@@ -699,30 +694,25 @@ public class AzkabanWebServer extends AzkabanServer {
   private void startWebMetrics() throws Exception {
 
     // The number of idle threads in Jetty thread pool
-    MetricsUtility
-        .addGauge("JETTY-NumIdleThreads", this.registry, this.queuedThreadPool::getIdleThreads);
+    this.metricsManager.addGauge("JETTY-NumIdleThreads", this.queuedThreadPool::getIdleThreads);
 
     // The number of threads in Jetty thread pool. The formula is:
     // threads = idleThreads + busyThreads
-    MetricsUtility
-        .addGauge("JETTY-NumTotalThreads", this.registry, this.queuedThreadPool::getThreads);
+    this.metricsManager.addGauge("JETTY-NumTotalThreads", this.queuedThreadPool::getThreads);
 
     // The number of requests queued in the Jetty thread pool.
-    MetricsUtility
-        .addGauge("JETTY-NumQueueSize", this.registry, this.queuedThreadPool::getQueueSize);
+    this.metricsManager.addGauge("JETTY-NumQueueSize", this.queuedThreadPool::getQueueSize);
 
-    MetricsUtility
-        .addGauge("WEB-NumQueuedFlows", this.registry, this.executorManager::getQueuedFlowSize);
-    /**
+    this.metricsManager.addGauge("WEB-NumQueuedFlows", this.executorManager::getQueuedFlowSize);
+    /*
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
      * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
      * in order to have the correct runnable flows.
      * However, both getRunningFlows and getQueuedFlowSize are not synchronized, such that we can not make
      * a thread safe subtraction. We need to fix this in the future.
      */
-    MetricsUtility
-        .addGauge("WEB-NumRunningFlows", this.registry,
-            () -> this.executorManager.getRunningFlows().size());
+    this.metricsManager
+        .addGauge("WEB-NumRunningFlows", () -> this.executorManager.getRunningFlows().size());
 
     logger.info("starting reporting Web Server Metrics");
     this.metricsManager.startReporting("AZ-WEB", this.props);

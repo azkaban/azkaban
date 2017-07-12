@@ -18,6 +18,7 @@ package azkaban.webapp;
 
 import static org.junit.Assert.assertEquals;
 
+import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsTestUtility;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
@@ -33,7 +34,7 @@ public class WebMetricsTest {
   public void setUp() {
     final MetricRegistry metricRegistry = new MetricRegistry();
     this.testUtil = new MetricsTestUtility(metricRegistry);
-    this.metrics = new WebMetrics(metricRegistry);
+    this.metrics = new WebMetrics(new MetricsManager(metricRegistry));
   }
 
   @Test

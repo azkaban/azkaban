@@ -32,7 +32,7 @@ public class CommonMetricsTest {
   public void setUp() {
     final MetricRegistry metricRegistry = new MetricRegistry();
     this.testUtil = new MetricsTestUtility(metricRegistry);
-    this.metrics = new CommonMetrics(metricRegistry);
+    this.metrics = new CommonMetrics(new MetricsManager(metricRegistry));
   }
 
   @Test
