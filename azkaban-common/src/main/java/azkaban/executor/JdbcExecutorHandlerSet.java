@@ -23,31 +23,26 @@ import java.util.Map;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
-public class JdbcExecutorHandlerSet {
+class JdbcExecutorHandlerSet {
 
-  private static final Logger logger = Logger.getLogger(JdbcExecutorImpl.class);
+  private static final Logger logger = Logger.getLogger(JdbcExecutorHandlerSet.class);
 
   public static class FetchExecutableFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
 
-    public static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
+    static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
-    public static String FETCH_EXECUTABLE_FLOW =
+    static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE exec_id=?";
-    // private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
-    // "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data "
-    // +
-    // "FROM execution_flows ex " +
-    // "INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
-    public static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
+    static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
-    public static String FETCH_EXECUTABLE_FLOW_HISTORY =
+    static String FETCH_EXECUTABLE_FLOW_HISTORY =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
-    public static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
+    static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? AND status=? "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
@@ -55,7 +50,7 @@ public class JdbcExecutorHandlerSet {
     @Override
     public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Collections.<ExecutableFlow> emptyList();
+        return Collections.emptyList();
       }
 
       final List<ExecutableFlow> execFlows = new ArrayList<>();
@@ -98,15 +93,15 @@ public class JdbcExecutorHandlerSet {
   public static class FetchExecutorHandler implements
       ResultSetHandler<List<Executor>> {
 
-    public static String FETCH_ALL_EXECUTORS =
+    static String FETCH_ALL_EXECUTORS =
         "SELECT id, host, port, active FROM executors";
-    public static String FETCH_ACTIVE_EXECUTORS =
+    static String FETCH_ACTIVE_EXECUTORS =
         "SELECT id, host, port, active FROM executors where active=true";
-    public static String FETCH_EXECUTOR_BY_ID =
+    static String FETCH_EXECUTOR_BY_ID =
         "SELECT id, host, port, active FROM executors where id=?";
-    public static String FETCH_EXECUTOR_BY_HOST_PORT =
+    static String FETCH_EXECUTOR_BY_HOST_PORT =
         "SELECT id, host, port, active FROM executors where host=? AND port=?";
-    public static String FETCH_EXECUTION_EXECUTOR =
+    static String FETCH_EXECUTION_EXECUTOR =
         "SELECT ex.id, ex.host, ex.port, ex.active FROM "
             + " executors ex INNER JOIN execution_flows ef "
             + "on ex.id = ef.executor_id  where exec_id=?";
@@ -114,7 +109,7 @@ public class JdbcExecutorHandlerSet {
     @Override
     public List<Executor> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Collections.<Executor> emptyList();
+        return Collections.emptyList();
       }
 
       final List<Executor> executors = new ArrayList<>();
@@ -137,14 +132,14 @@ public class JdbcExecutorHandlerSet {
   public static class ExecutorLogsResultHandler implements
       ResultSetHandler<List<ExecutorLogEvent>> {
 
-    public static String SELECT_EXECUTOR_EVENTS_ORDER =
+    static String SELECT_EXECUTOR_EVENTS_ORDER =
         "SELECT executor_id, event_type, event_time, username, message FROM executor_events "
             + " WHERE executor_id=? ORDER BY event_time LIMIT ? OFFSET ?";
 
     @Override
     public List<ExecutorLogEvent> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Collections.<ExecutorLogEvent> emptyList();
+        return Collections.emptyList();
       }
 
       final ArrayList<ExecutorLogEvent> events = new ArrayList<>();
@@ -167,7 +162,7 @@ public class JdbcExecutorHandlerSet {
 
   public static class FetchLogsHandler implements ResultSetHandler<LogData> {
 
-    public static String FETCH_LOGS =
+    static String FETCH_LOGS =
         "SELECT exec_id, name, attempt, enc_type, start_byte, end_byte, log "
             + "FROM execution_logs "
             + "WHERE exec_id=? AND name=? AND attempt=? AND end_byte > ? "
@@ -176,7 +171,7 @@ public class JdbcExecutorHandlerSet {
     private final int startByte;
     private final int endByte;
 
-    public FetchLogsHandler(final int startByte, final int endByte) {
+    FetchLogsHandler(final int startByte, final int endByte) {
       this.startByte = startByte;
       this.endByte = endByte;
     }
@@ -190,9 +185,6 @@ public class JdbcExecutorHandlerSet {
       final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
 
       do {
-        // int execId = rs.getInt(1);
-        // String name = rs.getString(2);
-        final int attempt = rs.getInt(3);
         final EncodingType encType = EncodingType.fromInteger(rs.getInt(4));
         final int startByte = rs.getInt(5);
         final int endByte = rs.getInt(6);
@@ -228,16 +220,16 @@ public class JdbcExecutorHandlerSet {
   public static class FetchExecutableJobHandler implements
       ResultSetHandler<List<ExecutableJobInfo>> {
 
-    public static String FETCH_EXECUTABLE_NODE =
+    static String FETCH_EXECUTABLE_NODE =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt "
             + "FROM execution_jobs WHERE exec_id=? "
             + "AND job_id=? AND attempt=?";
-    public static String FETCH_EXECUTABLE_NODE_ATTEMPTS =
+    static String FETCH_EXECUTABLE_NODE_ATTEMPTS =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt FROM execution_jobs "
             + "WHERE exec_id=? AND job_id=?";
-    public static String FETCH_PROJECT_EXECUTABLE_NODE =
+    static String FETCH_PROJECT_EXECUTABLE_NODE =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt FROM execution_jobs "
             + "WHERE project_id=? AND job_id=? "
@@ -246,7 +238,7 @@ public class JdbcExecutorHandlerSet {
     @Override
     public List<ExecutableJobInfo> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Collections.<ExecutableJobInfo> emptyList();
+        return Collections.emptyList();
       }
 
       final List<ExecutableJobInfo> execNodes = new ArrayList<>();
@@ -274,7 +266,7 @@ public class JdbcExecutorHandlerSet {
   public static class FetchExecutableJobAttachmentsHandler implements
       ResultSetHandler<String> {
 
-    public static String FETCH_ATTACHMENTS_EXECUTABLE_NODE =
+    static String FETCH_ATTACHMENTS_EXECUTABLE_NODE =
         "SELECT attachments FROM execution_jobs WHERE exec_id=? AND job_id=?";
 
     @Override
@@ -297,11 +289,11 @@ public class JdbcExecutorHandlerSet {
     public static class FetchExecutableJobPropsHandler implements
       ResultSetHandler<Pair<Props, Props>> {
 
-    public static String FETCH_OUTPUT_PARAM_EXECUTABLE_NODE =
+    static String FETCH_OUTPUT_PARAM_EXECUTABLE_NODE =
         "SELECT output_params FROM execution_jobs WHERE exec_id=? AND job_id=?";
-    public static String FETCH_INPUT_PARAM_EXECUTABLE_NODE =
+    static String FETCH_INPUT_PARAM_EXECUTABLE_NODE =
         "SELECT input_params FROM execution_jobs WHERE exec_id=? AND job_id=?";
-    public static String FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE =
+    static String FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE =
         "SELECT input_params, output_params "
             + "FROM execution_jobs WHERE exec_id=? AND job_id=?";
 
@@ -362,7 +354,7 @@ public class JdbcExecutorHandlerSet {
   public static class FetchQueuedExecutableFlows implements
       ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
     // Select queued unassigned flows
-    public static final String FETCH_QUEUED_EXECUTABLE_FLOW =
+    static final String FETCH_QUEUED_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows"
             + " Where executor_id is NULL AND status = "
             + Status.PREPARING.getNumVal();
@@ -415,7 +407,7 @@ public class JdbcExecutorHandlerSet {
   public static class FetchRecentlyFinishedFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
     // Execution_flows table is already indexed by end_time
-    public static String FETCH_RECENTLY_FINISHED_FLOW =
+    static String FETCH_RECENTLY_FINISHED_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE end_time > ? AND status IN (?, ?, ?)";
 
@@ -461,7 +453,7 @@ public class JdbcExecutorHandlerSet {
   public static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
     // Select running and executor assigned flows
-    public static String FETCH_ACTIVE_EXECUTABLE_FLOW =
+    static String FETCH_ACTIVE_EXECUTABLE_FLOW =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
             + "et.port port, et.id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
@@ -525,7 +517,7 @@ public class JdbcExecutorHandlerSet {
   public static class FetchActiveExecutableFlowByExecId implements
       ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
 
-    public static String FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID =
+    static String FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
             + "et.port port, et.id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
@@ -585,14 +577,12 @@ public class JdbcExecutorHandlerSet {
 
   public static class IntHandler implements ResultSetHandler<Integer> {
 
-    public static String NUM_EXECUTIONS =
+    static String NUM_EXECUTIONS =
         "SELECT COUNT(1) FROM execution_flows";
-    public static String NUM_FLOW_EXECUTIONS =
+    static String NUM_FLOW_EXECUTIONS =
         "SELECT COUNT(1) FROM execution_flows WHERE project_id=? AND flow_id=?";
-    public static String NUM_JOB_EXECUTIONS =
+    static String NUM_JOB_EXECUTIONS =
         "SELECT COUNT(1) FROM execution_jobs WHERE project_id=? AND job_id=?";
-    public static String FETCH_EXECUTOR_ID =
-        "SELECT executor_id FROM execution_flows WHERE exec_id=?";
 
     @Override
     public Integer handle(final ResultSet rs) throws SQLException {

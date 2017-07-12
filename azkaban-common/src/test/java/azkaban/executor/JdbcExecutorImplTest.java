@@ -60,7 +60,7 @@ public class JdbcExecutorImplTest {
     final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
     props.put("database.sql.scripts.dir", sqlScriptsDir);
 
-    // TODO kunkun-tang: Need to refactor AzkabanDatabaseSetup to accept datasource in azakaban-db
+    // TODO kunkun-tang: Need to refactor AzkabanDatabaseSetup to accept datasource in azkaban-db
     final azkaban.database.AzkabanDataSource dataSourceForSetupDB =
         new azkaban.database.AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
     final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSourceForSetupDB, props);
@@ -256,7 +256,7 @@ public class JdbcExecutorImplTest {
     // no execution flows at all i.e. no running, completed or queued flows
     Assert.assertTrue(queuedFlows.isEmpty());
 
-    final String host = "lcoalhost";
+    final String host = "localhost";
     final int port = 12345;
     final Executor executor = this.loader.addExecutor(host, port);
 
