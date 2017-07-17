@@ -60,6 +60,7 @@ public class XmlUserManager implements UserManager {
   private static final Logger logger = Logger.getLogger(XmlUserManager.class
       .getName());
   private final String xmlPath;
+  private final String passwordErrorMessage;
 
   private HashMap<String, User> users;
   private HashMap<String, String> userPassword;
@@ -72,7 +73,7 @@ public class XmlUserManager implements UserManager {
    */
   public XmlUserManager(final Props props) {
     this.xmlPath = props.getString(XML_FILE_PARAM);
-
+    this.passwordErrorMessage = props.getString("azkaban.error.password.message", "Username/password not found.");
     parseXMLFile();
   }
 
@@ -260,7 +261,7 @@ public class XmlUserManager implements UserManager {
     }
 
     if (foundPassword == null || !foundPassword.equals(password)) {
-      throw new UserManagerException("Username/Password not found.");
+      throw new UserManagerException(this.passwordErrorMessage);
     }
     // Once it gets to this point, no exception has been thrown. User
     // shoudn't be

@@ -264,6 +264,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp,
       final String errorMsg) throws ServletException, IOException {
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
+    page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
       page.add("errorMsg", errorMsg);
     }
