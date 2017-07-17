@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModuleConfig;
+import azkaban.metrics.HdfsMetrics;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
@@ -43,16 +44,20 @@ public class HdfsStorage implements Storage {
   private final HdfsAuth hdfsAuth;
   private final URI rootUri;
   private final FileSystem hdfs;
+  private final HdfsMetrics hdfsMetrics;
 
   @Inject
   public HdfsStorage(final HdfsAuth hdfsAuth, final FileSystem hdfs,
-      final AzkabanCommonModuleConfig config) {
+      final HdfsMetrics hdfsMetrics, final AzkabanCommonModuleConfig config) {
     this.hdfsAuth = requireNonNull(hdfsAuth);
     this.hdfs = requireNonNull(hdfs);
+    this.hdfsMetrics = requireNonNull(hdfsMetrics);
 
     this.rootUri = config.getHdfsRootUri();
     requireNonNull(this.rootUri.getAuthority(), "URI must have host:port mentioned.");
     checkArgument(HDFS_SCHEME.equals(this.rootUri.getScheme()));
+
+    hdfsMetrics.registerMetrics();
   }
 
   @Override

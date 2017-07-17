@@ -17,6 +17,8 @@
 
 package azkaban;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_METRICS_POLL_INTERVAL_MS;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_METRICS_ROOT_URI;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_ROOT_URI;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE;
@@ -26,6 +28,7 @@ import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
 import java.net.URI;
+import java.time.Duration;
 import org.apache.log4j.Logger;
 
 
@@ -35,6 +38,9 @@ public class AzkabanCommonModuleConfig {
 
   private final Props props;
   private final URI hdfsRootUri;
+  private final URI hdfsMetricsRootUri;
+  private final Duration hdfsMetricsPollInterval;
+
   /**
    * Storage Implementation This can be any of the {@link StorageImplementationType} values in which
    * case {@link StorageFactory} will create the appropriate storage instance. Or one can feed in a
@@ -54,6 +60,13 @@ public class AzkabanCommonModuleConfig {
         .getString(AZKABAN_STORAGE_LOCAL_BASEDIR, this.localStorageBaseDirPath);
     this.hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props
         .getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
+    this.hdfsMetricsRootUri = props.get(AZKABAN_STORAGE_HDFS_METRICS_ROOT_URI) != null ? props
+        .getUri(AZKABAN_STORAGE_HDFS_METRICS_ROOT_URI) : null;
+    this.hdfsMetricsPollInterval =
+        props.get(AZKABAN_STORAGE_HDFS_METRICS_POLL_INTERVAL_MS) != null
+            ? Duration.ofMillis(
+            Long.parseLong(props.getString(AZKABAN_STORAGE_HDFS_METRICS_POLL_INTERVAL_MS)))
+            : Duration.ofMinutes(1);
   }
 
   public Props getProps() {
@@ -70,5 +83,13 @@ public class AzkabanCommonModuleConfig {
 
   public URI getHdfsRootUri() {
     return this.hdfsRootUri;
+  }
+
+  public URI getHdfsMetricsRootUri() {
+    return this.hdfsMetricsRootUri;
+  }
+
+  public Duration getHdfsMetricsPollInterval() {
+    return this.hdfsMetricsPollInterval;
   }
 }

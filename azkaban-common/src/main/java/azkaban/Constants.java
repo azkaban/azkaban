@@ -103,6 +103,17 @@ public class Constants {
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";
+
+    /**
+     * Quota monitoring for HDFS dir
+     * Configure the root uri for monitoring the quota of an HDFS directory
+     */
+    public static final String AZKABAN_STORAGE_HDFS_METRICS_ROOT_URI =
+        "azkaban.storage.hdfs.metrics.root.uri";
+
+    // Poll Interval for query HDFS Metrics in millisec
+    public static final String AZKABAN_STORAGE_HDFS_METRICS_POLL_INTERVAL_MS =
+        "azkaban.storage.hdfs.metrics.poll.interval.ms";
   }
 
   public static class FlowProperties {

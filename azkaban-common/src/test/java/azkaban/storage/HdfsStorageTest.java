@@ -48,7 +48,7 @@ public class HdfsStorageTest {
     final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
     when(config.getHdfsRootUri()).thenReturn(URI.create("hdfs://localhost:9000/path/to/foo"));
 
-    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, config);
+    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, hdfsMetrics, config);
   }
 
   @Test
