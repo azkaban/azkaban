@@ -40,7 +40,7 @@
             <fieldset>
               <legend>Login</legend>
               <input type="text" class="form-control" name="username" id="username" placeholder="Username">
-              <input type="password" class="form-control" name="password" id="password" placeholder="Password">
+              <input type="password" class="form-control" name="password" id="password" placeholder="${passwordPlaceholder}">
               <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login</button>
             </fieldset>
           </form>
