@@ -105,7 +105,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.name = props.getString("azkaban.name", "");
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
-    this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "password");
+    this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
 
     if (this.application instanceof AzkabanWebServer) {
       final AzkabanWebServer server = (AzkabanWebServer) this.application;
