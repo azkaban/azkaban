@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.AzkabanCommonModuleConfig;
+import azkaban.metrics.HdfsMetrics;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.Md5Hasher;
 import java.io.File;
@@ -48,7 +49,7 @@ public class HdfsStorageTest {
     final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
     when(config.getHdfsRootUri()).thenReturn(URI.create("hdfs://localhost:9000/path/to/foo"));
 
-    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, hdfsMetrics, config);
+    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, mock(HdfsMetrics.class), config);
   }
 
   @Test

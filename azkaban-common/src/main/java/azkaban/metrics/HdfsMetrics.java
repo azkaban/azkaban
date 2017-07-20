@@ -17,6 +17,9 @@
 
 package azkaban.metrics;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_METRICS_ROOT_URI;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.AzkabanCommonModuleConfig;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -33,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class HdfsMetrics {
 
   private static final Logger log = LoggerFactory.getLogger(HdfsMetrics.class);
-  private static final String PREFIX = "HDFS-quota-";
+  private static final String PREFIX = "HDFS/quota-";
 
   private final MetricsManager metricsManager;
   private final FileSystem hdfs;
@@ -46,8 +49,13 @@ public class HdfsMetrics {
       final AzkabanCommonModuleConfig config) {
     this.metricsManager = metricsManager;
     this.hdfs = hdfs;
-    this.path = config.getHdfsMetricsRootUri().getPath();
+    this.path = requireNonNull(config.getHdfsMetricsRootUri(),
+        AZKABAN_STORAGE_HDFS_METRICS_ROOT_URI + " must be set.")
+        .getPath();
     this.interval = config.getHdfsMetricsPollInterval();
+
+    log.info(String.format("Initializing HdfsMetrics with path: %s interval: %d ms",
+        this.path, this.interval.toMillis()));
   }
 
   public void registerMetrics() {
@@ -66,14 +74,17 @@ public class HdfsMetrics {
    */
   private void startFetcherThread() {
     final Thread thread = new Thread(() -> {
-      try {
-        fetchHdfsMetrics();
-        Thread.sleep(this.interval.toMillis());
-      } catch (final Exception e) {
-        log.error("HDFS Fetcher Thread interrupted. Continuing", e);
+      while (true) {
+        try {
+          fetchHdfsMetrics();
+          Thread.sleep(this.interval.toMillis());
+        } catch (final Exception e) {
+          log.error("HDFS Fetcher Thread interrupted. Continuing", e);
+        }
       }
     });
     thread.setDaemon(true);
+    log.info("Starting HDFS metrics fetcher thread");
     thread.start();
   }
 
