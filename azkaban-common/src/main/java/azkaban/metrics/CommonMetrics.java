@@ -34,6 +34,8 @@ public class CommonMetrics {
   private final MetricsManager metricsManager;
   private Meter dbConnectionMeter;
   private Meter flowFailMeter;
+  private Meter dispatchFailMeter;
+  private Meter dispatchSuccessMeter;
 
   @Inject
   public CommonMetrics(final MetricsManager metricsManager) {
@@ -44,6 +46,8 @@ public class CommonMetrics {
   private void setupAllMetrics() {
     this.dbConnectionMeter = this.metricsManager.addMeter("DB-Connection-meter");
     this.flowFailMeter = this.metricsManager.addMeter("flow-fail-meter");
+    this.dispatchFailMeter = this.metricsManager.addMeter("dispatch-fail-meter");
+    this.dispatchSuccessMeter = this.metricsManager.addMeter("dispatch-success-meter");
     this.metricsManager.addGauge("OOM-waiting-job-count", this.OOMWaitingJobCount::get);
     this.metricsManager.addGauge("dbConnectionTime", this.dbConnectionTime::get);
   }
@@ -68,6 +72,20 @@ public class CommonMetrics {
    */
   public void markFlowFail() {
     this.flowFailMeter.mark();
+  }
+
+  /**
+   * Mark dispatchFailMeter when web server fails to dispatch a flow to executor.
+   */
+  public void markDispatchFail() {
+    this.dispatchFailMeter.mark();
+  }
+
+  /**
+   * Mark dispatchSuccessMeter when web server successfully dispatches a flow to executor.
+   */
+  public void markDispatchSuccess() {
+    this.dispatchSuccessMeter.mark();
   }
 
   public void setDBConnectionTime(final long milliseconds) {
