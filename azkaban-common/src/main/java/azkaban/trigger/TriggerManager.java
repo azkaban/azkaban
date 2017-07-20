@@ -26,6 +26,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.log4j.Logger;
 
+@Singleton
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
