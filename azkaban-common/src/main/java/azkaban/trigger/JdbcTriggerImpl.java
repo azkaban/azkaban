@@ -22,6 +22,7 @@ import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,6 +34,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 
+@Singleton
 public class JdbcTriggerImpl implements TriggerLoader {
 
   private static final String TRIGGER_TABLE_NAME = "triggers";
