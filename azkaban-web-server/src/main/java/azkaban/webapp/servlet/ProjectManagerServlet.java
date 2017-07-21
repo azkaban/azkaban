@@ -42,6 +42,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.user.UserUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -1077,6 +1078,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String projectName = getParam(req, "project");
 
     final User user = session.getUser();
+    PageUtils
+        .hideUploadButtonWhenNeeded(page, session, this.userManager, this.lockdownUploadProjects);
     Project project = null;
     try {
       project = this.projectManager.getProject(projectName);
@@ -1234,7 +1237,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             "azkaban/webapp/servlet/velocity/permissionspage.vm");
     final String projectName = getParam(req, "project");
     final User user = session.getUser();
-
+    PageUtils
+        .hideUploadButtonWhenNeeded(page, session, this.userManager, this.lockdownUploadProjects);
     Project project = null;
     try {
       project = this.projectManager.getProject(projectName);
@@ -1538,6 +1542,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String projectName = getParam(req, "project");
 
     final User user = session.getUser();
+    PageUtils
+        .hideUploadButtonWhenNeeded(page, session, this.userManager, this.lockdownUploadProjects);
     Project project = null;
     try {
       project = this.projectManager.getProject(projectName);
@@ -1606,7 +1612,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String message = null;
     HashMap<String, Object> params = null;
 
-    if (this.lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
+    if (this.lockdownCreateProjects &&
+        !UserUtils.hasPermissionforAction(this.userManager, user, Type.CREATEPROJECTS)) {
       message =
           "User " + user.getUserId()
               + " doesn't have permission to create projects.";
@@ -1655,8 +1662,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
     }
 
-    if (this.lockdownUploadProjects) {
-      registerError(ret, "Project uploading is locked out", resp, 400);
+    if (this.lockdownUploadProjects && !UserUtils
+        .hasPermissionforAction(this.userManager, user, Type.UPLOADPROJECTS)) {
+      final String message =
+          "Project uploading is locked out. Only admin users and users with special permissions can upload projects. "
+              + "User " + user.getUserId() + " doesn't have permission to upload project.";
+      logger.info(message);
+      registerError(ret, message, resp, 403);
     } else if (projectName == null || projectName.isEmpty()) {
       registerError(ret, "No project name found.", resp, 400);
     } else if (project == null) {
@@ -1794,19 +1806,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     return perm;
-  }
-
-  private boolean hasPermissionToCreateProject(final User user) {
-    for (final String roleName : user.getRoles()) {
-      final Role role = this.userManager.getRole(roleName);
-      final Permission perm = role.getPermission();
-      if (perm.isPermissionSet(Permission.Type.ADMIN)
-          || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   private void handleReloadProjectWhitelist(final HttpServletRequest req,

@@ -191,6 +191,9 @@ public class Permission {
     SCHEDULE(0x0000008),
     METRICS(0x0000010),
     CREATEPROJECTS(0x40000000), // Only used for roles
+    // Users with this permission can upload projects when the property "lockdown.upload.projects"
+    // is turned on
+    UPLOADPROJECTS(0x0008000),
     ADMIN(0x8000000);
 
     private final int numVal;

@@ -58,6 +58,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private static final String AZKABAN_FAILURE_MESSAGE =
       "azkaban.failure.message";
   private static final long serialVersionUID = -1;
+
+  protected String passwordPlaceholder;
   private AzkabanServer application;
   private String name;
   private String label;
@@ -103,6 +105,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.name = props.getString("azkaban.name", "");
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
+    this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
 
     if (this.application instanceof AzkabanWebServer) {
       final AzkabanWebServer server = (AzkabanWebServer) this.application;
