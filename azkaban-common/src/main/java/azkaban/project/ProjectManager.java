@@ -30,6 +30,7 @@ import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class ProjectManager {
 
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
@@ -442,13 +444,13 @@ public class ProjectManager {
    */
   public ProjectFileHandler getProjectFileHandler(final Project project, final int version)
       throws ProjectManagerException {
-    return azkabanProjectLoader.getProjectFile(project, version);
+    return this.azkabanProjectLoader.getProjectFile(project, version);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
       final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException {
-    return azkabanProjectLoader
+    return this.azkabanProjectLoader
         .uploadProject(project, archive, fileType, uploader, additionalProps);
   }
 
