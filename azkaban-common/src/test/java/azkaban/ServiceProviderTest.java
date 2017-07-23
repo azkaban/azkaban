@@ -18,7 +18,9 @@
 package azkaban;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectImpl;
@@ -38,6 +40,14 @@ import org.junit.Test;
 public class ServiceProviderTest {
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
+
+  // Test if one class is singletonly guiced. could be called by
+  // AZ Common, Web, or Exec Modules.
+  public static void assertSingletons(final Class azkabanClass, final Injector injector) {
+    final Object azkabanObj1 = requireNonNull(injector.getInstance(azkabanClass));
+    final Object azkabanObj2 = requireNonNull(injector.getInstance(azkabanClass));
+    assertTrue(azkabanObj1 == azkabanObj2);
+  }
 
   @After
   public void tearDown() throws Exception {

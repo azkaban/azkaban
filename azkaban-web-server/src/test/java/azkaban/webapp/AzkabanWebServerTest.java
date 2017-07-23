@@ -18,19 +18,22 @@
 package azkaban.webapp;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.ServiceProviderTest.assertSingletons;
 import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
+import azkaban.db.DatabaseOperator;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
+import azkaban.spi.Storage;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
 import azkaban.utils.Props;
@@ -118,24 +121,13 @@ public class AzkabanWebServerTest {
     assertNotNull(injector.getInstance(AzkabanWebServer.class));
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
-    final TriggerManager triggerManager1 = requireNonNull(injector.getInstance(TriggerManager.class));
-    final TriggerManager triggerManager2 = requireNonNull(injector.getInstance(TriggerManager.class));
-    assertTrue(triggerManager1 == triggerManager2);
-
-    //Test if TriggerLoader is singletonly guiced.
-    final TriggerLoader triggerLoader1= requireNonNull(injector.getInstance(TriggerLoader.class));
-    final TriggerLoader triggerLoader2 = requireNonNull(injector.getInstance(TriggerLoader.class));
-    assertTrue(triggerLoader1 == triggerLoader2);
-
-    //Test if ProjectLoader is singletonly guiced.
-    final ProjectLoader projectLoader1 = requireNonNull(injector.getInstance(ProjectLoader.class));
-    final ProjectLoader projectLoader2 = requireNonNull(injector.getInstance(ProjectLoader.class));
-    assertTrue(projectLoader1 == projectLoader2);
-
-    //Test if ExecutorManager is singletonly guiced.
-    final ExecutorManager executorManager1 = requireNonNull(injector.getInstance(ExecutorManager.class));
-    final ExecutorManager executorManager2 = requireNonNull(injector.getInstance(ExecutorManager.class));
-    assertTrue(executorManager1 == executorManager2);
+    assertSingletons(ExecutorManager.class, injector);
+    assertSingletons(ProjectLoader.class, injector);
+    assertSingletons(ProjectManager.class, injector);
+    assertSingletons(Storage.class, injector);
+    assertSingletons(DatabaseOperator.class, injector);
+    assertSingletons(TriggerLoader.class, injector);
+    assertSingletons(TriggerManager.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }
