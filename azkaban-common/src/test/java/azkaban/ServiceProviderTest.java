@@ -43,7 +43,7 @@ public class ServiceProviderTest {
 
   // Test if one class is singletonly guiced. could be called by
   // AZ Common, Web, or Exec Modules.
-  public static void assertSingletons(final Class azkabanClass, final Injector injector) {
+  public static void assertSingleton(final Class azkabanClass, final Injector injector) {
     final Object azkabanObj1 = requireNonNull(injector.getInstance(azkabanClass));
     final Object azkabanObj2 = requireNonNull(injector.getInstance(azkabanClass));
     assertTrue(azkabanObj1 == azkabanObj2);

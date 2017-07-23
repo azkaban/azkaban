@@ -18,7 +18,7 @@
 package azkaban.webapp;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static azkaban.ServiceProviderTest.assertSingletons;
+import static azkaban.ServiceProviderTest.assertSingleton;
 import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
@@ -121,13 +121,14 @@ public class AzkabanWebServerTest {
     assertNotNull(injector.getInstance(AzkabanWebServer.class));
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
-    assertSingletons(ExecutorManager.class, injector);
-    assertSingletons(ProjectLoader.class, injector);
-    assertSingletons(ProjectManager.class, injector);
-    assertSingletons(Storage.class, injector);
-    assertSingletons(DatabaseOperator.class, injector);
-    assertSingletons(TriggerLoader.class, injector);
-    assertSingletons(TriggerManager.class, injector);
+    assertSingleton(ExecutorLoader.class, injector);
+    assertSingleton(ExecutorManager.class, injector);
+    assertSingleton(ProjectLoader.class, injector);
+    assertSingleton(ProjectManager.class, injector);
+    assertSingleton(Storage.class, injector);
+    assertSingleton(DatabaseOperator.class, injector);
+    assertSingleton(TriggerLoader.class, injector);
+    assertSingleton(TriggerManager.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

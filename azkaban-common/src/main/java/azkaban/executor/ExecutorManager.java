@@ -21,6 +21,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FlowUtils;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -68,6 +69,7 @@ import azkaban.utils.Props;
  * Executor manager used to manage the client side job.
  *
  */
+@Singleton
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
   static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =

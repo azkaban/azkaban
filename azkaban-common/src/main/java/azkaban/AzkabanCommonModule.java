@@ -81,11 +81,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(DataSource.class).to(AzkabanDataSource.class);
-
-    // TODO kunkun-tang: refactor JdbcExecutorLoader and ExecutorManager class,
-    // then move singleton to annotations.
-    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
-    bind(ExecutorManager.class).in(Scopes.SINGLETON);
+    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
     bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 
