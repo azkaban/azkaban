@@ -36,6 +36,8 @@ public class CommonMetrics {
   private Meter flowFailMeter;
   private Meter dispatchFailMeter;
   private Meter dispatchSuccessMeter;
+  private Meter sendEmailFailMeter;
+  private Meter sendEmailSuccessMeter;
 
   @Inject
   public CommonMetrics(final MetricsManager metricsManager) {
@@ -48,6 +50,8 @@ public class CommonMetrics {
     this.flowFailMeter = this.metricsManager.addMeter("flow-fail-meter");
     this.dispatchFailMeter = this.metricsManager.addMeter("dispatch-fail-meter");
     this.dispatchSuccessMeter = this.metricsManager.addMeter("dispatch-success-meter");
+    this.sendEmailFailMeter = this.metricsManager.addMeter("send-email-fail-meter");
+    this.sendEmailSuccessMeter = this.metricsManager.addMeter("send-email-success-meter");
     this.metricsManager.addGauge("OOM-waiting-job-count", this.OOMWaitingJobCount::get);
     this.metricsManager.addGauge("dbConnectionTime", this.dbConnectionTime::get);
   }
@@ -86,6 +90,20 @@ public class CommonMetrics {
    */
   public void markDispatchSuccess() {
     this.dispatchSuccessMeter.mark();
+  }
+
+  /**
+   * Mark sendEmailFailMeter when an email fails to be sent out.
+   */
+  public void markSendEmailFail() {
+    this.sendEmailFailMeter.mark();
+  }
+
+  /**
+   * Mark sendEmailSuccessMeter when an email is sent out successfully.
+   */
+  public void markSendEmailSuccess() {
+    this.sendEmailSuccessMeter.mark();
   }
 
   public void setDBConnectionTime(final long milliseconds) {

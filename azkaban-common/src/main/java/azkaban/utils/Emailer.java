@@ -23,6 +23,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
+import azkaban.metrics.CommonMetrics;
 import azkaban.sla.SlaOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
   private static final Logger logger = Logger.getLogger(Emailer.class);
+  private final CommonMetrics commonMetrics;
   private final String scheme;
   private final String clientHostname;
   private final String clientPortNumber;
@@ -46,8 +48,9 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String tls;
   private boolean testMode = false;
 
-  public Emailer(final Props props) {
+  public Emailer(final Props props, final CommonMetrics commonMetrics) {
     super(props);
+    this.commonMetrics = commonMetrics;
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
     this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
@@ -101,8 +104,10 @@ public class Emailer extends AbstractMailer implements Alerter {
       if (!this.testMode) {
         try {
           message.sendEmail();
+          this.commonMetrics.markSendEmailSuccess();
         } catch (final MessagingException e) {
           logger.error("Failed to send SLA email message" + slaMessage, e);
+          this.commonMetrics.markSendEmailFail();
         }
       }
     }
@@ -130,9 +135,11 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated && !this.testMode) {
       try {
         message.sendEmail();
+        this.commonMetrics.markSendEmailSuccess();
       } catch (final MessagingException e) {
         logger.error(
             "Failed to send first error email message for execution " + flow.getExecutionId(), e);
+        this.commonMetrics.markSendEmailFail();
       }
     }
   }
@@ -158,9 +165,11 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated && !this.testMode) {
       try {
         message.sendEmail();
+        this.commonMetrics.markSendEmailSuccess();
       } catch (final MessagingException e) {
         logger
             .error("Failed to send error email message for execution " + flow.getExecutionId(), e);
+        this.commonMetrics.markSendEmailFail();
       }
     }
   }
@@ -186,9 +195,11 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated && !this.testMode) {
       try {
         message.sendEmail();
+        this.commonMetrics.markSendEmailSuccess();
       } catch (final MessagingException e) {
         logger.error("Failed to send success email message for execution " + flow.getExecutionId(),
             e);
+        this.commonMetrics.markSendEmailFail();
       }
     }
   }

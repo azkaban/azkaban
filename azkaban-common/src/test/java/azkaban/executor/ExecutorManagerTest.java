@@ -72,8 +72,9 @@ public class ExecutorManagerTest {
 
     loader.addExecutor("localhost", 12345);
     loader.addExecutor("localhost", 12346);
-    return new ExecutorManager(props, loader, new AlerterHolder(props),
-        new CommonMetrics(new MetricsManager(new MetricRegistry())));
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    return new ExecutorManager(props, loader, new AlerterHolder(props, commonMetrics),
+        commonMetrics);
   }
 
   /*
@@ -85,9 +86,10 @@ public class ExecutorManagerTest {
     final Props props = new Props();
     props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     final ExecutorLoader loader = new MockExecutorLoader();
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     @SuppressWarnings("unused") final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(props, loader, new AlerterHolder(props, commonMetrics),
+            commonMetrics);
   }
 
   /*
@@ -99,9 +101,9 @@ public class ExecutorManagerTest {
     props.put("executor.port", 12345);
 
     final ExecutorLoader loader = new MockExecutorLoader();
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(props, loader, new AlerterHolder(props, commonMetrics), commonMetrics);
     final Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
 
@@ -124,9 +126,9 @@ public class ExecutorManagerTest {
     final Executor executor1 = loader.addExecutor("localhost", 12345);
     final Executor executor2 = loader.addExecutor("localhost", 12346);
 
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(props, loader, new AlerterHolder(props, commonMetrics), commonMetrics);
     final Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
@@ -142,10 +144,9 @@ public class ExecutorManagerTest {
     props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     final ExecutorLoader loader = new MockExecutorLoader();
     final Executor executor1 = loader.addExecutor("localhost", 12345);
-
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(props, loader, new AlerterHolder(props, commonMetrics), commonMetrics);
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
       new Executor[] { executor1 });
 
@@ -171,9 +172,9 @@ public class ExecutorManagerTest {
     final ExecutorLoader loader = new MockExecutorLoader();
     final Executor executor1 = loader.addExecutor("localhost", 12345);
 
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(props, loader, new AlerterHolder(props, commonMetrics), commonMetrics);
     final Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(),
@@ -346,8 +347,9 @@ public class ExecutorManagerTest {
     executors.add(executor2);
 
     when(this.loader.fetchActiveExecutors()).thenReturn(executors);
-    this.manager = new ExecutorManager(this.props, this.loader, new AlerterHolder(this.props),
-        new CommonMetrics(new MetricsManager(new MetricRegistry())));
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    this.manager = new ExecutorManager(this.props, this.loader,
+        new AlerterHolder(this.props, commonMetrics), commonMetrics);
 
     this.flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     this.flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
