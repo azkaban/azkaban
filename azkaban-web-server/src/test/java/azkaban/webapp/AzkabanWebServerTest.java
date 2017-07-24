@@ -22,12 +22,14 @@ import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
+import azkaban.trigger.TriggerManager;
 import azkaban.utils.Props;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -111,6 +113,11 @@ public class AzkabanWebServerTest {
     executorLoader.updateExecutor(executor);
 
     assertNotNull(injector.getInstance(AzkabanWebServer.class));
+
+    //Test if triggermanager is singletonly guiced. If not, the below test will fail.
+    final TriggerManager triggerManager1 = requireNonNull(injector.getInstance(TriggerManager.class));
+    final TriggerManager triggerManager2 = requireNonNull(injector.getInstance(TriggerManager.class));
+    assertTrue(triggerManager1 == triggerManager2);
     SERVICE_PROVIDER.unsetInjector();
   }
 }
