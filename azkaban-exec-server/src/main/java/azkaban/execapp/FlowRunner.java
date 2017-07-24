@@ -45,6 +45,7 @@ import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1029,48 +1030,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private void interrupt() {
     this.flowRunnerThread.interrupt();
-  }
-
-  private class JobRunnerEventListener implements EventListener {
-    public JobRunnerEventListener() {
-    }
-
-    @Override
-    public synchronized void handleEvent(Event event) {
-      JobRunner runner = (JobRunner) event.getRunner();
-
-      if (event.getType() == Type.JOB_STATUS_CHANGED) {
-        updateFlow();
-      }
-      else if (event.getType() == Type.JOB_FINISHED) {
-        ExecutableNode node = runner.getNode();
-        EventData eventData = event.getData();
-        long seconds = (node.getEndTime() - node.getStartTime()) / 1000;
-        synchronized (mainSyncObj) {
-          logger.info("Job " + eventData.getNestedId() + " finished with status "
-              + eventData.getStatus() + " in " + seconds + " seconds");
-
-          // Cancellation is handled in the main thread, but if the flow is
-          // paused, the main thread is paused too.
-          // This unpauses the flow for cancellation.
-          if (flowPaused && eventData.getStatus() == Status.FAILED
-              && failureAction == FailureAction.CANCEL_ALL) {
-            flowPaused = false;
-          }
-
-          finishedNodes.add(node);
-          node.getParentFlow().setUpdateTime(System.currentTimeMillis());
-          activeJobRunners.remove(runner);
-          interrupt();
-          fireEventListeners(event);
-        }
-      }
-      else if (event.getType() == Type.JOB_STARTED) {
-        // add job level checker
-        TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerManager.class);
-        triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getJobLevelSLAOptions(flow));
-      }
-    }
   }
 
   public boolean isKilled() {
