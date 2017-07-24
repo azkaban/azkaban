@@ -59,6 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -221,6 +222,12 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.logger.info("Setting end time for flow " + this.execId + " to "
           + System.currentTimeMillis());
       closeLogger();
+      this.logger.info("Deleting execution directory " + this.execDir.toString());
+      try {
+        FileUtils.deleteDirectory(this.execDir);
+      } catch (final Exception IOException) {
+        this.logger.error("Failed to delete execution directory " + this.execDir.toString());
+      }
 
       updateFlow();
       this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED, new EventData(this.flow)));
