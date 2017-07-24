@@ -6,7 +6,7 @@ import org.apache.velocity.app.VelocityEngine;
 
 
 /**
- * Test utility to render a template.
+ * Test utility to render a template and other helper methods.
  */
 public class VelocityTemplateTestUtil {
 
@@ -19,12 +19,25 @@ public class VelocityTemplateTestUtil {
    * @param context the context
    * @return string
    */
-  public static String renderTemplate(String templateName, VelocityContext context) {
-    StringWriter stringWriter = new StringWriter();
-    VelocityEngine engine = new VelocityEngine();
+  public static String renderTemplate(final String templateName, final VelocityContext context) {
+    final StringWriter stringWriter = new StringWriter();
+    final VelocityEngine engine = new VelocityEngine();
     engine.init("src/test/resources/velocity.properties");
 
     engine.mergeTemplate(TEMPLATE_BASE_DIR + templateName + ".vm", "UTF-8", context, stringWriter);
     return stringWriter.getBuffer().toString();
   }
+
+  /**
+   *
+   * @param source the rendered template as a String
+   * @param target the String fragment within the template
+   * @return - boolean
+   */
+  public static boolean ignoreCaseContains(final String source, final String target) {
+    final String sourceNoSpace = source.replaceAll("\\s+", "");
+    final String targetNoSpace = target.replaceAll("\\s+", "");
+    return sourceNoSpace.contains(targetNoSpace);
+  }
+
 }

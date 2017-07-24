@@ -16,11 +16,14 @@
 
 package azkaban.execapp;
 
+import azkaban.Constants;
+import azkaban.executor.ConnectorParams;
+import azkaban.server.HttpRequestUtils;
+import azkaban.utils.JSONUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
@@ -29,61 +32,56 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.log4j.Logger;
 
-import azkaban.Constants;
-import azkaban.executor.ConnectorParams;
-import azkaban.server.HttpRequestUtils;
-import azkaban.utils.JSONUtils;
-
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
+
   private static final long serialVersionUID = -3085603824826446270L;
   private static final Logger logger = Logger.getLogger(JMXHttpServlet.class);
   private AzkabanExecutorServer server;
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
-    server =
+  public void init(final ServletConfig config) throws ServletException {
+    this.server =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
             Constants.AZKABAN_SERVLET_CONTEXT_KEY);
   }
 
-  public boolean hasParam(HttpServletRequest request, String param) {
+  public boolean hasParam(final HttpServletRequest request, final String param) {
     return HttpRequestUtils.hasParam(request, param);
   }
 
-  public String getParam(HttpServletRequest request, String name)
+  public String getParam(final HttpServletRequest request, final String name)
       throws ServletException {
     return HttpRequestUtils.getParam(request, name);
   }
 
   @Override
-  protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+  protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
-    Map<String, Object> ret = new HashMap<String, Object>();
+    final Map<String, Object> ret = new HashMap<>();
 
     if (hasParam(req, JMX_GET_MBEANS)) {
-      ret.put("mbeans", server.getMbeanNames());
+      ret.put("mbeans", this.server.getMbeanNames());
     } else if (hasParam(req, JMX_GET_ALL_MBEAN_ATTRIBUTES)) {
       if (!hasParam(req, JMX_MBEAN)) {
         ret.put("error", "Parameters 'mbean' must be set");
       } else {
-        String mbeanName = getParam(req, JMX_MBEAN);
+        final String mbeanName = getParam(req, JMX_MBEAN);
         try {
-          ObjectName name = new ObjectName(mbeanName);
-          MBeanInfo info = server.getMBeanInfo(name);
+          final ObjectName name = new ObjectName(mbeanName);
+          final MBeanInfo info = this.server.getMBeanInfo(name);
 
-          MBeanAttributeInfo[] mbeanAttrs = info.getAttributes();
-          Map<String, Object> attributes = new TreeMap<String, Object>();
+          final MBeanAttributeInfo[] mbeanAttrs = info.getAttributes();
+          final Map<String, Object> attributes = new TreeMap<>();
 
-          for (MBeanAttributeInfo attrInfo : mbeanAttrs) {
-            Object obj = server.getMBeanAttribute(name, attrInfo.getName());
+          for (final MBeanAttributeInfo attrInfo : mbeanAttrs) {
+            final Object obj = this.server.getMBeanAttribute(name, attrInfo.getName());
             attributes.put(attrInfo.getName(), obj);
           }
 
           ret.put("attributes", attributes);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error(e);
           ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
         }

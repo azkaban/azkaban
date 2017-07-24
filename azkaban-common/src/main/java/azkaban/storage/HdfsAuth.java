@@ -17,6 +17,10 @@
 
 package azkaban.storage;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_KEYTAB_PATH;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.spi.AzkabanException;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
@@ -25,14 +29,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
-import static azkaban.Constants.ConfigurationKeys.*;
-import static java.util.Objects.*;
-
 
 /**
- * This class helps in HDFS authorization and is a wrapper over Hadoop's {@link UserGroupInformation} class.
+ * This class helps in HDFS authorization and is a wrapper over Hadoop's {@link
+ * UserGroupInformation} class.
  */
 public class HdfsAuth {
+
   private static final Logger log = Logger.getLogger(HdfsAuth.class);
 
   private final boolean isSecurityEnabled;
@@ -42,13 +45,13 @@ public class HdfsAuth {
   private String keytabPrincipal = null;
 
   @Inject
-  public HdfsAuth(Props props, Configuration conf) {
+  public HdfsAuth(final Props props, final Configuration conf) {
     UserGroupInformation.setConfiguration(conf);
-    isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
-    if (isSecurityEnabled) {
+    this.isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
+    if (this.isSecurityEnabled) {
       log.info("The Hadoop cluster has enabled security");
-      keytabPath = requireNonNull(props.getString(AZKABAN_KEYTAB_PATH));
-      keytabPrincipal = requireNonNull(props.getString(AZKABAN_KERBEROS_PRINCIPAL));
+      this.keytabPath = requireNonNull(props.getString(AZKABAN_KEYTAB_PATH));
+      this.keytabPrincipal = requireNonNull(props.getString(AZKABAN_KERBEROS_PRINCIPAL));
     }
   }
 
@@ -58,27 +61,29 @@ public class HdfsAuth {
    * If the user is already logged in then it renews the TGT.
    */
   public void authorize() {
-    if (isSecurityEnabled) {
+    if (this.isSecurityEnabled) {
       try {
-        login(keytabPrincipal, keytabPath);
-      } catch (IOException e) {
+        login(this.keytabPrincipal, this.keytabPath);
+      } catch (final IOException e) {
         log.error(e);
         throw new AzkabanException(String.format(
-            "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
+            "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", this.keytabPrincipal,
+            this.keytabPath));
       }
     }
   }
 
-  private void login(String keytabPrincipal, String keytabPath) throws IOException {
-    if (loggedInUser == null) {
-      log.info(String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
+  private void login(final String keytabPrincipal, final String keytabPath) throws IOException {
+    if (this.loggedInUser == null) {
+      log.info(
+          String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
 
       UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
-      loggedInUser = UserGroupInformation.getLoginUser();
-      log.info(String.format("User %s logged in.", loggedInUser));
+      this.loggedInUser = UserGroupInformation.getLoginUser();
+      log.info(String.format("User %s logged in.", this.loggedInUser));
     } else {
-      log.info(String.format("User %s already logged in. Refreshing TGT", loggedInUser));
-      loggedInUser.checkTGTAndReloginFromKeytab();
+      log.info(String.format("User %s already logged in. Refreshing TGT", this.loggedInUser));
+      this.loggedInUser.checkTGTAndReloginFromKeytab();
     }
   }
 }

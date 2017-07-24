@@ -16,18 +16,6 @@
 
 package azkaban.execapp.event;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-
-import org.apache.commons.io.FileUtils;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import azkaban.execapp.EventCollectorListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.executor.ExecutableFlow;
@@ -40,13 +28,23 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.project.MockProjectLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class RemoteFlowWatcherTest {
+
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
@@ -54,10 +52,10 @@ public class RemoteFlowWatcherTest {
 
   @Before
   public void setUp() throws Exception {
-    jobtypeManager =
+    this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
-    jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
-    fakeProjectLoader = new MockProjectLoader(workingDir);
+    this.jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
+    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
   }
 
   @After
@@ -66,34 +64,35 @@ public class RemoteFlowWatcherTest {
 
   public File setupDirectory() throws IOException {
     System.out.println("Create temp dir");
-    File workingDir = new File("_AzkabanTestDir_" + dirVal);
+    final File workingDir = new File("_AzkabanTestDir_" + this.dirVal);
     if (workingDir.exists()) {
       FileUtils.deleteDirectory(workingDir);
     }
     workingDir.mkdirs();
-    dirVal++;
+    this.dirVal++;
 
     return workingDir;
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicRemoteFlowWatcher() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
+    final MockExecutorLoader loader = new MockExecutorLoader();
 
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
 
-    File workingDir1 = setupDirectory();
-    FlowRunner runner1 =
+    final File workingDir1 = setupDirectory();
+    final FlowRunner runner1 =
         createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
-    Thread runner1Thread = new Thread(runner1);
+    final Thread runner1Thread = new Thread(runner1);
 
-    File workingDir2 = setupDirectory();
-    RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
-    FlowRunner runner2 =
+    final File workingDir2 = setupDirectory();
+    final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
+    final FlowRunner runner2 =
         createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2,
             watcher, 2);
-    Thread runner2Thread = new Thread(runner2);
+    final Thread runner2Thread = new Thread(runner2);
 
     printCurrentState("runner1 ", runner1.getExecutableFlow());
     runner1Thread.start();
@@ -107,24 +106,25 @@ public class RemoteFlowWatcherTest {
     testPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testLevel1RemoteFlowWatcher() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
+    final MockExecutorLoader loader = new MockExecutorLoader();
 
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
 
-    File workingDir1 = setupDirectory();
-    FlowRunner runner1 =
+    final File workingDir1 = setupDirectory();
+    final FlowRunner runner1 =
         createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
-    Thread runner1Thread = new Thread(runner1);
+    final Thread runner1Thread = new Thread(runner1);
 
-    File workingDir2 = setupDirectory();
-    RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
-    FlowRunner runner2 =
+    final File workingDir2 = setupDirectory();
+    final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
+    final FlowRunner runner2 =
         createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2,
             watcher, 1);
-    Thread runner2Thread = new Thread(runner2);
+    final Thread runner2Thread = new Thread(runner2);
 
     runner1Thread.start();
     runner2Thread.start();
@@ -136,25 +136,26 @@ public class RemoteFlowWatcherTest {
     testPipelineLevel1(runner1.getExecutableFlow(), runner2.getExecutableFlow());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testLevel2DiffRemoteFlowWatcher() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
+    final MockExecutorLoader loader = new MockExecutorLoader();
 
-    EventCollectorListener eventCollector = new EventCollectorListener();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
 
-    File workingDir1 = setupDirectory();
-    FlowRunner runner1 =
+    final File workingDir1 = setupDirectory();
+    final FlowRunner runner1 =
         createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
-    Thread runner1Thread = new Thread(runner1);
+    final Thread runner1Thread = new Thread(runner1);
 
-    File workingDir2 = setupDirectory();
+    final File workingDir2 = setupDirectory();
 
-    RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
-    FlowRunner runner2 =
+    final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
+    final FlowRunner runner2 =
         createFlowRunner(workingDir2, loader, eventCollector, "exec1-mod", 2,
             watcher, 1);
-    Thread runner2Thread = new Thread(runner2);
+    final Thread runner2Thread = new Thread(runner2);
 
     runner1Thread.start();
     runner2Thread.start();
@@ -166,12 +167,12 @@ public class RemoteFlowWatcherTest {
     testPipelineLevel1(runner1.getExecutableFlow(), runner2.getExecutableFlow());
   }
 
-  private void testPipelineLevel1(ExecutableFlow first, ExecutableFlow second) {
-    for (ExecutableNode node : second.getExecutableNodes()) {
+  private void testPipelineLevel1(final ExecutableFlow first, final ExecutableFlow second) {
+    for (final ExecutableNode node : second.getExecutableNodes()) {
       Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 
       // check it's start time is after the first's children.
-      ExecutableNode watchedNode = first.getExecutableNode(node.getId());
+      final ExecutableNode watchedNode = first.getExecutableNode(node.getId());
       if (watchedNode == null) {
         continue;
       }
@@ -187,36 +188,36 @@ public class RemoteFlowWatcherTest {
       long minParentDiff = 0;
       if (node.getInNodes().size() > 0) {
         minParentDiff = Long.MAX_VALUE;
-        for (String dependency : node.getInNodes()) {
-          ExecutableNode parent = second.getExecutableNode(dependency);
-          long diff = node.getStartTime() - parent.getEndTime();
+        for (final String dependency : node.getInNodes()) {
+          final ExecutableNode parent = second.getExecutableNode(dependency);
+          final long diff = node.getStartTime() - parent.getEndTime();
           minParentDiff = Math.min(minParentDiff, diff);
         }
       }
-      long diff = node.getStartTime() - watchedNode.getEndTime();
+      final long diff = node.getStartTime() - watchedNode.getEndTime();
       Assert.assertTrue(minParentDiff < 500 || diff < 500);
     }
   }
 
-  private void testPipelineLevel2(ExecutableFlow first, ExecutableFlow second) {
-    for (ExecutableNode node : second.getExecutableNodes()) {
+  private void testPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second) {
+    for (final ExecutableNode node : second.getExecutableNodes()) {
       Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 
       // check it's start time is after the first's children.
-      ExecutableNode watchedNode = first.getExecutableNode(node.getId());
+      final ExecutableNode watchedNode = first.getExecutableNode(node.getId());
       if (watchedNode == null) {
         continue;
       }
       Assert.assertEquals(watchedNode.getStatus(), Status.SUCCEEDED);
 
       long minDiff = Long.MAX_VALUE;
-      for (String watchedChild : watchedNode.getOutNodes()) {
-        ExecutableNode child = first.getExecutableNode(watchedChild);
+      for (final String watchedChild : watchedNode.getOutNodes()) {
+        final ExecutableNode child = first.getExecutableNode(watchedChild);
         if (child == null) {
           continue;
         }
         Assert.assertEquals(child.getStatus(), Status.SUCCEEDED);
-        long diff = node.getStartTime() - child.getEndTime();
+        final long diff = node.getStartTime() - child.getEndTime();
         minDiff = Math.min(minDiff, diff);
         System.out.println("Node " + node.getId() + " start: "
             + node.getStartTime() + " dependent on " + watchedChild + " "
@@ -225,9 +226,9 @@ public class RemoteFlowWatcherTest {
       }
 
       long minParentDiff = Long.MAX_VALUE;
-      for (String dependency : node.getInNodes()) {
-        ExecutableNode parent = second.getExecutableNode(dependency);
-        long diff = node.getStartTime() - parent.getEndTime();
+      for (final String dependency : node.getInNodes()) {
+        final ExecutableNode parent = second.getExecutableNode(dependency);
+        final long diff = node.getStartTime() - parent.getEndTime();
         minParentDiff = Math.min(minParentDiff, diff);
       }
       System.out.println("   minPipelineTimeDiff:" + minDiff
@@ -236,19 +237,21 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private FlowRunner createFlowRunner(File workingDir, ExecutorLoader loader,
-      EventCollectorListener eventCollector, String flowName, int execId,
-      FlowWatcher watcher, Integer pipeline) throws Exception {
-    return createFlowRunner(workingDir, loader, eventCollector, flowName, execId, watcher, pipeline, new Props());
+  private FlowRunner createFlowRunner(final File workingDir, final ExecutorLoader loader,
+      final EventCollectorListener eventCollector, final String flowName, final int execId,
+      final FlowWatcher watcher, final Integer pipeline) throws Exception {
+    return createFlowRunner(workingDir, loader, eventCollector, flowName, execId, watcher, pipeline,
+        new Props());
   }
 
-  private FlowRunner createFlowRunner(File workingDir, ExecutorLoader loader,
-      EventCollectorListener eventCollector, String flowName, int execId,
-      FlowWatcher watcher, Integer pipeline, Props azkabanProps) throws Exception {
-    File testDir = new File("unit/executions/exectest1");
-    ExecutableFlow exFlow =
+  private FlowRunner createFlowRunner(final File workingDir, final ExecutorLoader loader,
+      final EventCollectorListener eventCollector, final String flowName, final int execId,
+      final FlowWatcher watcher, final Integer pipeline, final Props azkabanProps)
+      throws Exception {
+    final File testDir = new File("unit/executions/exectest1");
+    final ExecutableFlow exFlow =
         prepareExecDir(workingDir, testDir, flowName, execId);
-    ExecutionOptions options = exFlow.getExecutionOptions();
+    final ExecutionOptions options = exFlow.getExecutionOptions();
     if (watcher != null) {
       options.setPipelineLevel(pipeline);
       options.setPipelineExecutionId(watcher.getExecId());
@@ -257,16 +260,16 @@ public class RemoteFlowWatcherTest {
     // File(exFlow.getExecutionPath()));
 
     loader.uploadExecutableFlow(exFlow);
-    FlowRunner runner =
-        new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager, azkabanProps);
+    final FlowRunner runner =
+        new FlowRunner(exFlow, loader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
     runner.setFlowWatcher(watcher);
     runner.addListener(eventCollector);
 
     return runner;
   }
 
-  private void printCurrentState(String prefix, ExecutableFlowBase flow) {
-    for (ExecutableNode node : flow.getExecutableNodes()) {
+  private void printCurrentState(final String prefix, final ExecutableFlowBase flow) {
+    for (final ExecutableNode node : flow.getExecutableNodes()) {
 
       System.err.println(prefix + node.getNestedId() + "->"
           + node.getStatus().name());
@@ -276,18 +279,17 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private ExecutableFlow prepareExecDir(File workingDir, File execDir,
-      String flowName, int execId) throws IOException {
+  private ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
+      final String flowName, final int execId) throws IOException {
     FileUtils.copyDirectory(execDir, workingDir);
 
-    File jsonFlowFile = new File(workingDir, flowName + ".flow");
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
+    final File jsonFlowFile = new File(workingDir, flowName + ".flow");
+    final HashMap<String, Object> flowObj =
         (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 
-    Project project = new Project(1, "test");
-    Flow flow = Flow.flowFromObject(flowObj);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+    final Project project = new Project(1, "test");
+    final Flow flow = Flow.flowFromObject(flowObj);
+    final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
     execFlow.setExecutionId(execId);
     execFlow.setExecutionPath(workingDir.getPath());
     return execFlow;

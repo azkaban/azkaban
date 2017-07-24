@@ -19,11 +19,11 @@ package azkaban.jobExecutor;
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 
-class AllJobExecutorTests {
+public class AllJobExecutorTests {
 
-  static Props setUpCommonProps(){
+  public static Props setUpCommonProps() {
 
-    Props props = new Props();
+    final Props props = new Props();
     props.put("fullPath", ".");
     props.put(CommonJobProperties.PROJECT_NAME, "test_project");
     props.put(CommonJobProperties.FLOW_ID, "test_flow");

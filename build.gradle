@@ -1,105 +1,188 @@
 buildscript {
-  repositories {
-    mavenCentral()
-    maven {
-      url 'https://plugins.gradle.org/m2/'
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
     }
-  }
-  dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.3'
-    classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
-  }
+    dependencies {
+        classpath 'com.cinnober.gradle:semver-git:2.2.3'
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
+    }
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 
-allprojects {
-  repositories {
-    mavenCentral()
-    mavenLocal()
-  }
+apply plugin: 'compare-gradle-builds'
+
+compareGradleBuilds {
+    targetBuild.gradleVersion = "4.0"
 }
 
+allprojects {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
+ext.versions = [
+        hadoop: '2.6.1',
+        hive  : '1.1.0',
+        restli: '1.15.7',
+        slf4j : '1.7.18',
+]
+
+ext.deps = [
+        // External dependencies
+        assertj             : 'org.assertj:assertj-core:3.8.0',
+        collections         : 'commons-collections:commons-collections:3.2.2',
+        commonsLang         : 'commons-lang:commons-lang:2.6',
+        dbcp2               : 'org.apache.commons:commons-dbcp2:2.1.1',
+        dbutils             : 'commons-dbutils:commons-dbutils:1.5',
+        fileupload          : 'commons-fileupload:commons-fileupload:1.2.1',
+        gson                : 'com.google.code.gson:gson:2.8.1',
+        guava               : 'com.google.guava:guava:21.0',
+        guice               : 'com.google.inject:guice:4.1.0',
+        h2                  : 'com.h2database:h2:1.4.193',
+        hadoopAnnotations   : "org.apache.hadoop:hadoop-annotations:" + versions.hadoop,
+        hadoopAuth          : "org.apache.hadoop:hadoop-auth:" + versions.hadoop,
+        hadoopCommon        : "org.apache.hadoop:hadoop-common:" + versions.hadoop,
+        hadoopHdfs          : "org.apache.hadoop:hadoop-hdfs:" + versions.hadoop,
+        hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
+        hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
+        hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
+        httpclient          : 'org.apache.httpcomponents:httpclient:4.5.2',
+        httpcore            : 'org.apache.httpcomponents:httpcore:4.4.5',
+        io                  : 'commons-io:commons-io:2.4',
+        jacksonCoreAsl      : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
+        jacksonMapperAsl    : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
+        jetty               : 'org.mortbay.jetty:jetty:6.1.26',
+        jettyUtil           : 'org.mortbay.jetty:jetty-util:6.1.26',
+        jexl                : 'org.apache.commons:commons-jexl:2.1.1',
+        jodaTime            : 'joda-time:joda-time:2.0',
+        jopt                : 'net.sf.jopt-simple:jopt-simple:4.3',
+        junit               : 'junit:junit:4.12',
+        kafkaLog4jAppender  : 'org.apache.kafka:kafka-log4j-appender:0.10.0.0',
+        log4j               : 'log4j:log4j:1.2.16',
+        mail                : 'javax.mail:mail:1.4.5',
+        math3               : 'org.apache.commons:commons-math3:3.0',
+        metricsCore         : 'io.dropwizard.metrics:metrics-core:3.1.0',
+        metricsJvm          : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
+        mockito             : 'org.mockito:mockito-all:1.10.19',
+        mysqlConnector      : 'mysql:mysql-connector-java:5.1.28',
+        quartz              : 'org.quartz-scheduler:quartz:2.2.1',
+        restliGenerator     : 'com.linkedin.pegasus:generator:' + versions.restli,
+        restliServer        : 'com.linkedin.pegasus:restli-server:' + versions.restli,
+        restliTools         : 'com.linkedin.pegasus:restli-tools:' + versions.restli,
+        slf4j               : 'org.slf4j:slf4j-api:' + versions.slf4j,
+        slf4jLog4j          : 'org.slf4j:slf4j-log4j12:' + versions.slf4j,
+        snakeyaml           : 'org.yaml:snakeyaml:1.18',
+        velocity            : 'org.apache.velocity:velocity:1.7',
+        velocityTools       : 'org.apache.velocity:velocity-tools:2.0',
+]
+
 subprojects {
-  apply plugin: 'java'
-  apply plugin: 'idea'
-  apply plugin: 'eclipse'
-  apply plugin: 'net.ltgt.errorprone'
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'eclipse'
+    apply plugin: 'net.ltgt.errorprone'
 
-  // Set the same version for all sub-projects to root project version
-  version = rootProject.version
+    // Set the same version for all sub-projects to root project version
+    version = rootProject.version
 
-  plugins.withType(JavaPlugin) {
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    plugins.withType(JavaPlugin) {
+        sourceCompatibility = JavaVersion.VERSION_1_8
 
-    /*
-     TODO remove afterEvaluate block
-     After Evaluate block was added to do a lazy evaluation. This piece of code gets executed by gradle in the
-     configuration phase. However, for some reason the version field was not updated by the LinkedIn build
-     infrastructure. Thus, using afterEvaluate to do a lazy evaluation of this code block.
-     More specifically afterEvaluate kicks in after the rest of the project is configured
+        /*
+         TODO remove afterEvaluate block
+         After Evaluate block was added to do a lazy evaluation. This piece of code gets executed by gradle in the
+         configuration phase. However, for some reason the version field was not updated by the LinkedIn build
+         infrastructure. Thus, using afterEvaluate to do a lazy evaluation of this code block.
+         More specifically afterEvaluate kicks in after the rest of the project is configured
 
-     See: http://stackoverflow.com/questions/16218888/can-gradle-extensions-handle-lazy-evaluation-of-a-property
-     See: http://stackoverflow.com/questions/16070567/difference-between-gradles-terms-evaluation-and-execution
+         See: http://stackoverflow.com/questions/16218888/can-gradle-extensions-handle-lazy-evaluation-of-a-property
+         See: http://stackoverflow.com/questions/16070567/difference-between-gradles-terms-evaluation-and-execution
+         */
+        project.afterEvaluate {
+            // Set the Title and Version fields in the jar
+            jar {
+                manifest {
+                    attributes(
+                            'Implementation-Title': project.name,
+                            'Implementation-Version': project.version)
+                }
+            }
+        }
+
+        dependencies {
+            compile deps.log4j
+            compile deps.guice
+            compile deps.slf4j
+
+            runtime deps.slf4jLog4j
+
+            testCompile deps.assertj
+            testCompile deps.junit
+            testCompile deps.mockito
+        }
+
+        test {
+            // Set maxParallelForks to a large number and let gradle to force it to a the
+            // max-workers number when needed.
+            maxParallelForks = 12
+        }
+    }
+
+    // Common distribution plugin settings for sub-modules
+    plugins.withType(DistributionPlugin) {
+        distTar {
+            compression = Compression.GZIP
+            extension = 'tar.gz'
+        }
+    }
+
+    /**
+     * Terminate compilation if warnings occur.
      */
-    project.afterEvaluate {
-      // Set the Title and Version fields in the jar
-      jar {
-        manifest {
-          attributes(
-              'Implementation-Title': project.name,
-              'Implementation-Version': project.version)
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-Werror"]
+    }
+
+    /**
+     * Print test execution summary when informational logging is enabled.
+     */
+    test {
+        testLogging {
+            exceptionFormat = 'full'
+            afterSuite { desc, result ->
+                if (desc.getParent()) {
+                    logger.info desc.getName()
+                } else {
+                    logger.info "Overall"
+                }
+                logger.info "  ${result.resultType} (" +
+                        "${result.testCount} tests, " +
+                        "${result.successfulTestCount} passed, " +
+                        "${result.failedTestCount} failed, " +
+                        "${result.skippedTestCount} skipped)"
+            }
         }
-      }
     }
-
-    dependencies {
-      testCompile('junit:junit:4.12')
-    }
-  }
-
-  // Common distribution plugin settings for sub-modules
-  plugins.withType(DistributionPlugin) {
-    distTar {
-      compression = Compression.GZIP
-      extension = 'tar.gz'
-    }
-  }
-
-  /**
-   * Print test execution summary when informational logging is enabled.
-   */
-  test {
-    testLogging {
-      exceptionFormat = 'full'
-      afterSuite { desc, result ->
-        if (desc.getParent()) {
-          logger.info desc.getName()
-        } else {
-          logger.info "Overall"
-        }
-        logger.info "  ${result.resultType} (" +
-              "${result.testCount} tests, " +
-              "${result.successfulTestCount} passed, " +
-              "${result.failedTestCount} failed, " +
-              "${result.skippedTestCount} skipped)"
-      }
-    }
-  }
 }
 
 /**
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-  gradleVersion = '3.5'
-  distributionType('ALL')
+    gradleVersion = '3.5'
+    distributionType('ALL')
 }
 
 idea {
-  project {
-    languageLevel = '1.8'
-    vcs = 'Git'
-  }
+    project {
+        languageLevel = '1.8'
+        vcs = 'Git'
+    }
 }

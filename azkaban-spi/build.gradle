@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2017 LinkedIn Corp.
  *
@@ -17,7 +16,7 @@
  */
 
 dependencies {
-  /**
-   * The dependency list of the spi package should be NONE or VERY MINIMAL!! See @README.md of this package.
-   **/
+    /**
+     * The dependency list of the spi package should be NONE or VERY MINIMAL!! See @README.md of this package.
+     **/
 }

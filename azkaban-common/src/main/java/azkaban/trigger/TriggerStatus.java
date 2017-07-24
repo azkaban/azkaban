@@ -21,11 +21,11 @@ public enum TriggerStatus {
 
   private final int numVal;
 
-  TriggerStatus(int numVal) {
+  TriggerStatus(final int numVal) {
     this.numVal = numVal;
   }
 
   public int getNumVal() {
-    return numVal;
+    return this.numVal;
   }
 }

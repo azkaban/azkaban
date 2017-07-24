@@ -1,5 +1,10 @@
 package azkaban.executor.mail;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Status;
@@ -9,18 +14,13 @@ import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import java.io.InputStream;
+import java.util.TimeZone;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.InputStream;
-import java.util.TimeZone;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class DefaultMailCreatorTest {
 
@@ -46,82 +46,86 @@ public class DefaultMailCreatorTest {
 
   @Before
   public void setUp() throws Exception {
-    defaultTz = TimeZone.getDefault();
-    assertNotNull(defaultTz);
+    this.defaultTz = TimeZone.getDefault();
+    assertNotNull(this.defaultTz);
     // EEST
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/Helsinki"));
     DateTimeUtils.setCurrentMillisFixed(FIXED_CURRENT_TIME_MILLIS);
 
-    mailCreator = new DefaultMailCreator();
+    this.mailCreator = new DefaultMailCreator();
 
-    flow = new Flow("mail-creator-test");
-    project = new Project(1, "test-project");
-    options = new ExecutionOptions();
-    message = new EmailMessage();
+    this.flow = new Flow("mail-creator-test");
+    this.project = new Project(1, "test-project");
+    this.options = new ExecutionOptions();
+    this.message = new EmailMessage();
 
-    azkabanName = "unit-tests";
-    scheme = "http";
-    clientHostname = "localhost";
-    clientPortNumber = "8081";
+    this.azkabanName = "unit-tests";
+    this.scheme = "http";
+    this.clientHostname = "localhost";
+    this.clientPortNumber = "8081";
 
-    Node failedNode = new Node("test-job");
+    final Node failedNode = new Node("test-job");
     failedNode.setType("noop");
-    flow.addNode(failedNode);
+    this.flow.addNode(failedNode);
 
-    executableFlow = new ExecutableFlow(project, flow);
-    executableFlow.setExecutionOptions(options);
-    executableFlow.setStartTime(START_TIME_MILLIS);
+    this.executableFlow = new ExecutableFlow(this.project, this.flow);
+    this.executableFlow.setExecutionOptions(this.options);
+    this.executableFlow.setStartTime(START_TIME_MILLIS);
 
-    options.setFailureEmails(ImmutableList.of("test@example.com"));
-    options.setSuccessEmails(ImmutableList.of("test@example.com"));
+    this.options.setFailureEmails(ImmutableList.of("test@example.com"));
+    this.options.setSuccessEmails(ImmutableList.of("test@example.com"));
   }
 
   @After
   public void tearDown() throws Exception {
-    if (defaultTz != null) {
-      TimeZone.setDefault(defaultTz);
+    if (this.defaultTz != null) {
+      TimeZone.setDefault(this.defaultTz);
     }
     DateTimeUtils.setCurrentMillisSystem();
   }
 
-  private void setJobStatus(Status status) {
-    executableFlow.getExecutableNodes().get(0).setStatus(status);
+  private void setJobStatus(final Status status) {
+    this.executableFlow.getExecutableNodes().get(0).setStatus(status);
   }
 
   @Test
   public void createErrorEmail() throws Exception {
     setJobStatus(Status.FAILED);
-    executableFlow.setEndTime(END_TIME_MILLIS);
-    executableFlow.setStatus(Status.FAILED);
-    assertTrue(mailCreator.createErrorEmail(
-        executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' has failed on unit-tests", message.getSubject());
-    assertEquals(read("errorEmail.html"), message.getBody());
+    this.executableFlow.setEndTime(END_TIME_MILLIS);
+    this.executableFlow.setStatus(Status.FAILED);
+    assertTrue(this.mailCreator.createErrorEmail(
+        this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
+        this.clientPortNumber));
+    assertEquals("Flow 'mail-creator-test' has failed on unit-tests", this.message.getSubject());
+    assertThat(read("errorEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
   public void createFirstErrorMessage() throws Exception {
     setJobStatus(Status.FAILED);
-    executableFlow.setStatus(Status.FAILED_FINISHING);
-    assertTrue(mailCreator.createFirstErrorMessage(
-        executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests", message.getSubject());
-    assertEquals(read("firstErrorMessage.html"), message.getBody());
+    this.executableFlow.setStatus(Status.FAILED_FINISHING);
+    assertTrue(this.mailCreator.createFirstErrorMessage(
+        this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
+        this.clientPortNumber));
+    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests",
+        this.message.getSubject());
+    assertThat(read("firstErrorMessage.html")).isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
   public void createSuccessEmail() throws Exception {
     setJobStatus(Status.SUCCEEDED);
-    executableFlow.setEndTime(END_TIME_MILLIS);
-    executableFlow.setStatus(Status.SUCCEEDED);
-    assertTrue(mailCreator.createSuccessEmail(
-        executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", message.getSubject());
-    assertEquals(read("successEmail.html"), message.getBody());
+    this.executableFlow.setEndTime(END_TIME_MILLIS);
+    this.executableFlow.setStatus(Status.SUCCEEDED);
+    assertTrue(this.mailCreator.createSuccessEmail(
+        this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
+        this.clientPortNumber));
+    assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", this.message.getSubject());
+    assertThat(read("successEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
-  private String read(String file) throws Exception {
-    InputStream is = DefaultMailCreatorTest.class.getResourceAsStream(file);
+  private String read(final String file) throws Exception {
+    final InputStream is = DefaultMailCreatorTest.class.getResourceAsStream(file);
     return IOUtils.toString(is, Charsets.UTF_8).trim();
   }
 

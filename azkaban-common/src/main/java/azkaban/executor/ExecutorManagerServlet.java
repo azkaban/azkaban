@@ -16,50 +16,47 @@
 
 package azkaban.executor;
 
+import azkaban.server.AbstractServiceServlet;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.JSONUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.log4j.Logger;
 
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.JSONUtils;
-import azkaban.server.AbstractServiceServlet;
-
 public class ExecutorManagerServlet extends AbstractServiceServlet {
-  private final ExecutorManagerAdapter executorManager;
 
   public static final String URL = "executorManager";
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger
       .getLogger(ExecutorManagerServlet.class);
+  private final ExecutorManagerAdapter executorManager;
 
-  public ExecutorManagerServlet(ExecutorManagerAdapter executorManager) {
+  public ExecutorManagerServlet(final ExecutorManagerAdapter executorManager) {
     this.executorManager = executorManager;
   }
 
   @Override
-  public void doGet(HttpServletRequest req, HttpServletResponse resp)
+  public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
-    HashMap<String, Object> respMap = new HashMap<String, Object>();
+    final HashMap<String, Object> respMap = new HashMap<>();
     try {
       if (!hasParam(req, ExecutorManagerAdapter.INFO_ACTION)) {
         logger.error("Parameter action not set");
         respMap.put("error", "Parameter action not set");
       } else {
-        String action = getParam(req, ExecutorManagerAdapter.INFO_ACTION);
+        final String action = getParam(req, ExecutorManagerAdapter.INFO_ACTION);
         if (action.equals(ExecutorManagerAdapter.ACTION_UPDATE)) {
           handleAjaxUpdateRequest(req, respMap);
         } else {
-          int execid =
+          final int execid =
               Integer.parseInt(getParam(req,
                   ExecutorManagerAdapter.INFO_EXEC_ID));
-          String user =
+          final String user =
               getParam(req, ExecutorManagerAdapter.INFO_USER_ID, null);
 
           logger.info("User " + user + " has called action " + action + " on "
@@ -89,7 +86,7 @@ public class ExecutorManagerServlet extends AbstractServiceServlet {
           }
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e);
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e.getMessage());
     }
@@ -97,8 +94,8 @@ public class ExecutorManagerServlet extends AbstractServiceServlet {
     resp.flushBuffer();
   }
 
-  private void handleModifyExecution(HashMap<String, Object> respMap,
-      int execid, String user, HttpServletRequest req) {
+  private void handleModifyExecution(final HashMap<String, Object> respMap,
+      final int execid, final String user, final HttpServletRequest req) {
     if (!hasParam(req, ExecutorManagerAdapter.INFO_MODIFY_COMMAND)) {
       respMap.put(ExecutorManagerAdapter.INFO_ERROR,
           "Modification command not set.");
@@ -106,121 +103,120 @@ public class ExecutorManagerServlet extends AbstractServiceServlet {
     }
 
     try {
-      String modificationType =
+      final String modificationType =
           getParam(req, ExecutorManagerAdapter.INFO_MODIFY_COMMAND);
-      ExecutableFlow exflow = executorManager.getExecutableFlow(execid);
+      final ExecutableFlow exflow = this.executorManager.getExecutableFlow(execid);
       if (ExecutorManagerAdapter.COMMAND_MODIFY_RETRY_FAILURES
           .equals(modificationType)) {
-        executorManager.retryFailures(exflow, user);
+        this.executorManager.retryFailures(exflow, user);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
   }
 
-  private void handleAjaxResumeFlow(HashMap<String, Object> respMap,
-      int execid, String user) {
+  private void handleAjaxResumeFlow(final HashMap<String, Object> respMap,
+      final int execid, final String user) {
     try {
-      ExecutableFlow exFlow = executorManager.getExecutableFlow(execid);
-      executorManager.resumeFlow(exFlow, user);
-    } catch (Exception e) {
+      final ExecutableFlow exFlow = this.executorManager.getExecutableFlow(execid);
+      this.executorManager.resumeFlow(exFlow, user);
+    } catch (final Exception e) {
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
 
   }
 
-  private void handleAjaxPauseFlow(HashMap<String, Object> respMap, int execid,
-      String user) {
+  private void handleAjaxPauseFlow(final HashMap<String, Object> respMap, final int execid,
+      final String user) {
     try {
-      ExecutableFlow exFlow = executorManager.getExecutableFlow(execid);
-      executorManager.pauseFlow(exFlow, user);
-    } catch (Exception e) {
+      final ExecutableFlow exFlow = this.executorManager.getExecutableFlow(execid);
+      this.executorManager.pauseFlow(exFlow, user);
+    } catch (final Exception e) {
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
   }
 
-  private void handleAjaxCancelFlow(HashMap<String, Object> respMap,
-      int execid, String user) {
+  private void handleAjaxCancelFlow(final HashMap<String, Object> respMap,
+      final int execid, final String user) {
     try {
-      ExecutableFlow exFlow = executorManager.getExecutableFlow(execid);
-      executorManager.cancelFlow(exFlow, user);
-    } catch (Exception e) {
+      final ExecutableFlow exFlow = this.executorManager.getExecutableFlow(execid);
+      this.executorManager.cancelFlow(exFlow, user);
+    } catch (final Exception e) {
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
   }
 
-  private void handleAjaxSubmitFlow(HttpServletRequest req,
-      HashMap<String, Object> respMap, int execid) {
+  private void handleAjaxSubmitFlow(final HttpServletRequest req,
+      final HashMap<String, Object> respMap, final int execid) {
     try {
-      String execFlowJson =
+      final String execFlowJson =
           getParam(req, ExecutorManagerAdapter.INFO_EXEC_FLOW_JSON);
-      ExecutableFlow exflow =
+      final ExecutableFlow exflow =
           ExecutableFlow.createExecutableFlowFromObject(JSONUtils
               .parseJSONFromString(execFlowJson));
-      String user = getParam(req, ExecutorManagerAdapter.INFO_USER_ID);
-      executorManager.submitExecutableFlow(exflow, user);
+      final String user = getParam(req, ExecutorManagerAdapter.INFO_USER_ID);
+      this.executorManager.submitExecutableFlow(exflow, user);
       respMap.put(ExecutorManagerAdapter.INFO_EXEC_ID, exflow.getExecutionId());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
   }
 
-  private void handleFetchJobLogEvent(int execid, HttpServletRequest req,
-      HttpServletResponse resp, HashMap<String, Object> respMap) {
+  private void handleFetchJobLogEvent(final int execid, final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> respMap) {
     try {
-      ExecutableFlow exFlow = executorManager.getExecutableFlow(execid);
-      String jobId = getParam(req, ExecutorManagerAdapter.INFO_JOB_NAME);
-      int offset = getIntParam(req, ExecutorManagerAdapter.INFO_OFFSET);
-      int length = getIntParam(req, ExecutorManagerAdapter.INFO_LENGTH);
-      int attempt = getIntParam(req, ExecutorManagerAdapter.INFO_ATTEMPT);
-      LogData log =
-          executorManager.getExecutionJobLog(exFlow, jobId, offset, length,
+      final ExecutableFlow exFlow = this.executorManager.getExecutableFlow(execid);
+      final String jobId = getParam(req, ExecutorManagerAdapter.INFO_JOB_NAME);
+      final int offset = getIntParam(req, ExecutorManagerAdapter.INFO_OFFSET);
+      final int length = getIntParam(req, ExecutorManagerAdapter.INFO_LENGTH);
+      final int attempt = getIntParam(req, ExecutorManagerAdapter.INFO_ATTEMPT);
+      final LogData log =
+          this.executorManager.getExecutionJobLog(exFlow, jobId, offset, length,
               attempt);
       respMap.put(ExecutorManagerAdapter.INFO_LOG,
           JSONUtils.toJSON(log.toObject()));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
   }
 
-  private void handleFetchFlowLogEvent(int execid, HttpServletRequest req,
-      HttpServletResponse resp, HashMap<String, Object> respMap) {
+  private void handleFetchFlowLogEvent(final int execid, final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> respMap) {
     try {
-      ExecutableFlow exFlow = executorManager.getExecutableFlow(execid);
-      int offset = getIntParam(req, ExecutorManagerAdapter.INFO_OFFSET);
-      int length = getIntParam(req, ExecutorManagerAdapter.INFO_LENGTH);
-      LogData log =
-          executorManager.getExecutableFlowLog(exFlow, offset, length);
+      final ExecutableFlow exFlow = this.executorManager.getExecutableFlow(execid);
+      final int offset = getIntParam(req, ExecutorManagerAdapter.INFO_OFFSET);
+      final int length = getIntParam(req, ExecutorManagerAdapter.INFO_LENGTH);
+      final LogData log =
+          this.executorManager.getExecutableFlowLog(exFlow, offset, length);
       respMap.put(ExecutorManagerAdapter.INFO_LOG,
           JSONUtils.toJSON(log.toObject()));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }
 
   }
 
-  @SuppressWarnings("unchecked")
-  private void handleAjaxUpdateRequest(HttpServletRequest req,
-      HashMap<String, Object> respMap) {
+  private void handleAjaxUpdateRequest(final HttpServletRequest req,
+      final HashMap<String, Object> respMap) {
     try {
-      ArrayList<Object> updateTimesList =
+      final ArrayList<Object> updateTimesList =
           (ArrayList<Object>) JSONUtils.parseJSONFromString(getParam(req,
               ExecutorManagerAdapter.INFO_UPDATE_TIME_LIST));
-      ArrayList<Object> execIDList =
+      final ArrayList<Object> execIDList =
           (ArrayList<Object>) JSONUtils.parseJSONFromString(getParam(req,
               ExecutorManagerAdapter.INFO_EXEC_ID_LIST));
 
-      ArrayList<Object> updateList = new ArrayList<Object>();
+      final ArrayList<Object> updateList = new ArrayList<>();
       for (int i = 0; i < execIDList.size(); ++i) {
-        long updateTime = JSONUtils.getLongFromObject(updateTimesList.get(i));
-        int execId = (Integer) execIDList.get(i);
+        final long updateTime = JSONUtils.getLongFromObject(updateTimesList.get(i));
+        final int execId = (Integer) execIDList.get(i);
 
-        ExecutableFlow flow = executorManager.getExecutableFlow(execId);
+        final ExecutableFlow flow = this.executorManager.getExecutableFlow(execId);
         if (flow == null) {
-          Map<String, Object> errorResponse = new HashMap<String, Object>();
+          final Map<String, Object> errorResponse = new HashMap<>();
           errorResponse.put(ExecutorManagerAdapter.INFO_ERROR,
               "Flow does not exist");
           errorResponse.put(ExecutorManagerAdapter.INFO_EXEC_ID, execId);
@@ -234,7 +230,7 @@ public class ExecutorManagerServlet extends AbstractServiceServlet {
       }
 
       respMap.put(ExecutorManagerAdapter.INFO_UPDATES, updateList);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       respMap.put(ExecutorManagerAdapter.INFO_ERROR, e);
     }

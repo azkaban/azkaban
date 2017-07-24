@@ -16,56 +16,72 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.trigger.ConditionChecker;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExecutionChecker implements ConditionChecker {
 
   public static final String type = "ExecutionChecker";
   public static ExecutorManagerAdapter executorManager;
 
-  private String checkerId;
-  private int execId;
-  private String jobName;
-  private Status wantedStatus;
+  private final String checkerId;
+  private final int execId;
+  private final String jobName;
+  private final Status wantedStatus;
 
-  public ExecutionChecker(String checkerId, int execId, String jobName,
-      Status wantedStatus) {
+  public ExecutionChecker(final String checkerId, final int execId, final String jobName,
+      final Status wantedStatus) {
     this.checkerId = checkerId;
     this.execId = execId;
     this.jobName = jobName;
     this.wantedStatus = wantedStatus;
   }
 
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
+  public static void setExecutorManager(final ExecutorManagerAdapter em) {
     executorManager = em;
+  }
+
+  public static ExecutionChecker createFromJson(final HashMap<String, Object> jsonObj)
+      throws Exception {
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create checker of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    String jobName = null;
+    if (jsonObj.containsKey("jobName")) {
+      jobName = (String) jsonObj.get("jobName");
+    }
+    final String checkerId = (String) jsonObj.get("checkerId");
+    final Status wantedStatus = Status.valueOf((String) jsonObj.get("wantedStatus"));
+
+    return new ExecutionChecker(checkerId, execId, jobName, wantedStatus);
   }
 
   @Override
   public Object eval() {
-    ExecutableFlow exflow;
+    final ExecutableFlow exflow;
     try {
-      exflow = executorManager.getExecutableFlow(execId);
-    } catch (ExecutorManagerException e) {
+      exflow = executorManager.getExecutableFlow(this.execId);
+    } catch (final ExecutorManagerException e) {
       e.printStackTrace();
       return Boolean.FALSE;
     }
-    if (jobName != null) {
-      ExecutableNode job = exflow.getExecutableNode(jobName);
+    if (this.jobName != null) {
+      final ExecutableNode job = exflow.getExecutableNode(this.jobName);
       if (job != null) {
-        return job.getStatus().equals(wantedStatus);
+        return job.getStatus().equals(this.wantedStatus);
       } else {
         return Boolean.FALSE;
       }
     } else {
-      return exflow.getStatus().equals(wantedStatus);
+      return exflow.getStatus().equals(this.wantedStatus);
     }
 
   }
@@ -81,7 +97,7 @@ public class ExecutionChecker implements ConditionChecker {
 
   @Override
   public String getId() {
-    return checkerId;
+    return this.checkerId;
   }
 
   @Override
@@ -89,39 +105,21 @@ public class ExecutionChecker implements ConditionChecker {
     return type;
   }
 
-  public static ExecutionChecker createFromJson(HashMap<String, Object> jsonObj)
-      throws Exception {
-    if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create checker of " + type + " from "
-          + jsonObj.get("type"));
-    }
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    String jobName = null;
-    if (jsonObj.containsKey("jobName")) {
-      jobName = (String) jsonObj.get("jobName");
-    }
-    String checkerId = (String) jsonObj.get("checkerId");
-    Status wantedStatus = Status.valueOf((String) jsonObj.get("wantedStatus"));
-
-    return new ExecutionChecker(checkerId, execId, jobName, wantedStatus);
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
-  public ConditionChecker fromJson(Object obj) throws Exception {
+  public ConditionChecker fromJson(final Object obj) throws Exception {
     return createFromJson((HashMap<String, Object>) obj);
   }
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
+    final Map<String, Object> jsonObj = new HashMap<>();
     jsonObj.put("type", type);
-    jsonObj.put("execId", String.valueOf(execId));
-    if (jobName != null) {
-      jsonObj.put("jobName", jobName);
+    jsonObj.put("execId", String.valueOf(this.execId));
+    if (this.jobName != null) {
+      jsonObj.put("jobName", this.jobName);
     }
-    jsonObj.put("wantedStatus", wantedStatus.toString());
-    jsonObj.put("checkerId", checkerId);
+    jsonObj.put("wantedStatus", this.wantedStatus.toString());
+    jsonObj.put("checkerId", this.checkerId);
     return jsonObj;
   }
 
@@ -130,7 +128,7 @@ public class ExecutionChecker implements ConditionChecker {
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 
   @Override

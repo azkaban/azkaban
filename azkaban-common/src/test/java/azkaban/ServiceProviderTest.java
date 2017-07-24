@@ -17,8 +17,11 @@
 
 package azkaban;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static org.junit.Assert.assertNotNull;
+
 import azkaban.db.DatabaseOperator;
-import azkaban.project.JdbcProjectLoader;
+import azkaban.project.JdbcProjectImpl;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
 import azkaban.storage.LocalStorage;
@@ -30,9 +33,6 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
-
-import static azkaban.ServiceProvider.*;
-import static org.junit.Assert.*;
 
 
 public class ServiceProviderTest {
@@ -46,19 +46,19 @@ public class ServiceProviderTest {
 
   @Test
   public void testInjections() throws Exception {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
+    props
+        .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
-
-    Injector injector = Guice.createInjector(
+    final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
 
-    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectLoader.class));
+    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectImpl.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(StorageManager.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));

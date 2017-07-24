@@ -17,6 +17,12 @@
 
 package azkaban.soloserver;
 
+import static azkaban.ServiceProvider.*;
+import static azkaban.executor.ExecutorManager.*;
+import static java.util.Objects.*;
+import static org.apache.commons.io.FileUtils.*;
+import static org.junit.Assert.*;
+
 import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
@@ -35,17 +41,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
-import static azkaban.ServiceProvider.*;
-import static azkaban.executor.ExecutorManager.*;
-import static java.util.Objects.*;
-import static org.apache.commons.io.FileUtils.*;
-import static org.junit.Assert.*;
-
 
 public class AzkabanSingleServerTest {
-  private static final Logger log = Logger.getLogger(AzkabanSingleServerTest.class);
-  public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
 
+  public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
+  private static final Logger log = Logger.getLogger(AzkabanSingleServerTest.class);
   private static final Props props = new Props();
 
   private static String getConfPath() {
@@ -55,11 +55,20 @@ public class AzkabanSingleServerTest {
 
   private static String getSqlScriptsDir() throws IOException {
     // Dummy because any resource file works.
-    Path resources = Paths.get(getConfPath()).getParent();
-    Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
+    final Path resources = Paths.get(getConfPath()).getParent();
+    final Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
 
-    File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
+    final File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
     return sqlScriptDir.getCanonicalPath();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    deleteQuietly(new File("h2.mv.db"));
+    deleteQuietly(new File("h2.trace.db"));
+    deleteQuietly(new File("executor.port"));
+    deleteQuietly(new File("executions"));
+    deleteQuietly(new File("projects"));
   }
 
   @Before
@@ -79,19 +88,10 @@ public class AzkabanSingleServerTest {
     props.put("user.manager.xml.file", new File(confPath, "azkaban-users.xml").getPath());
     props.put("executor.port", "12321");
 
-    String sqlScriptsDir = getSqlScriptsDir();
+    final String sqlScriptsDir = getSqlScriptsDir();
     assertTrue(new File(sqlScriptsDir).isDirectory());
     props.put(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptsDir);
     AzkabanDatabaseUpdater.runDatabaseUpdater(props, sqlScriptsDir, true);
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-    deleteQuietly(new File("h2.mv.db"));
-    deleteQuietly(new File("h2.trace.db"));
-    deleteQuietly(new File("executor.port"));
-    deleteQuietly(new File("executions"));
-    deleteQuietly(new File("projects"));
   }
 
   @Test

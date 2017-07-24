@@ -16,13 +16,13 @@
  */
 package azkaban.db;
 
-class AzDBTestUtility {
+public class AzDBTestUtility {
 
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 
-    EmbeddedH2BasicDataSource() {
+    public EmbeddedH2BasicDataSource() {
       super();
-      String url = "jdbc:h2:mem:test";
+      final String url = "jdbc:h2:mem:test";
       setDriverClassName("org.h2.Driver");
       setUrl(url);
     }
@@ -30,6 +30,11 @@ class AzDBTestUtility {
     @Override
     public String getDBType() {
       return "h2-in-memory";
+    }
+
+    @Override
+    public boolean allowsOnDuplicateKey() {
+      return false;
     }
   }
 }

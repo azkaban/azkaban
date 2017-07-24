@@ -19,6 +19,7 @@ package azkaban.jmx;
 import java.util.List;
 
 public interface JmxExecutorManagerAdapterMBean {
+
   @DisplayName("OPERATION: getNumRunningFlows")
   public int getNumRunningFlows();
 

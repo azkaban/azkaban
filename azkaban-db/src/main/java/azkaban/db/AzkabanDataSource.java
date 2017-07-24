@@ -18,5 +18,8 @@ package azkaban.db;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 public abstract class AzkabanDataSource extends BasicDataSource {
+
   public abstract String getDBType();
+
+  public abstract boolean allowsOnDuplicateKey();
 }

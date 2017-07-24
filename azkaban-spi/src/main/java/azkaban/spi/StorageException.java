@@ -21,20 +21,21 @@ package azkaban.spi;
  * Super class to capture any exceptions related to {@link Storage}
  */
 public class StorageException extends AzkabanException {
-  public StorageException(String message) {
+
+  public StorageException(final String message) {
     this(message, null);
   }
 
-  public StorageException(Throwable throwable) {
+  public StorageException(final Throwable throwable) {
     this(null, throwable);
   }
 
-  public StorageException(String message, Throwable cause) {
+  public StorageException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public StorageException(String message, Throwable cause,
-      boolean enableSuppression, boolean writableStackTrace) {
+  public StorageException(final String message, final Throwable cause,
+      final boolean enableSuppression, final boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
   }
 

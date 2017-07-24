@@ -1,0 +1,367 @@
+/*
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package azkaban.project;
+
+import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.db.AzDBTestUtility;
+import azkaban.db.AzkabanDataSource;
+import azkaban.db.DatabaseOperator;
+import azkaban.db.DatabaseOperatorImpl;
+import azkaban.flow.Flow;
+import azkaban.user.Permission;
+import azkaban.user.User;
+import azkaban.utils.Md5Hasher;
+import azkaban.utils.Props;
+import azkaban.utils.Triple;
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.dbutils.QueryRunner;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+
+public class JdbcProjectImplTest {
+
+  private static final String SAMPLE_FILE = "sample_flow_01.zip";
+  private static final Props props = new Props();
+  private static DatabaseOperator dbOperator;
+  private ProjectLoader loader;
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+    final AzkabanDataSource dataSource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
+    dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
+
+    final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
+    props.put("database.sql.scripts.dir", sqlScriptsDir);
+
+    // TODO kunkun-tang: Need to refactor AzkabanDatabaseSetup to accept datasource in azakaban-db
+    final azkaban.database.AzkabanDataSource dataSourceForSetupDB =
+        new azkaban.database.AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
+    final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSourceForSetupDB, props);
+    setup.loadTableInfo();
+    setup.updateDatabase(true, false);
+  }
+
+  @AfterClass
+  public static void destroyDB() {
+    try {
+      dbOperator.update("DROP ALL OBJECTS");
+    } catch (final SQLException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Before
+  public void setup() {
+    this.loader = new JdbcProjectImpl(props, dbOperator);
+  }
+
+  private void createThreeProjects() {
+    final String projectName = "mytestProject";
+    final String projectDescription = "This is my new project";
+    final User user = new User("testUser1");
+    this.loader.createNewProject(projectName, projectDescription, user);
+    final String projectName2 = "mytestProject2";
+    final String projectDescription2 = "This is my new project2";
+    this.loader.createNewProject(projectName2, projectDescription2, user);
+    final String projectName3 = "mytestProject3";
+    final String projectDescription3 = "This is my new project3";
+    final User user2 = new User("testUser2");
+    this.loader.createNewProject(projectName3, projectDescription3, user2);
+  }
+
+  @Test
+  public void testCreateProject() throws Exception {
+    final String projectName = "mytestProject";
+    final String projectDescription = "This is my new project";
+    final User user = new User("testUser1");
+    final Project project = this.loader.createNewProject(projectName, projectDescription, user);
+    Assert.assertEquals(project.getName(), projectName);
+    Assert.assertEquals(project.getDescription(), projectDescription);
+    Assert.assertEquals(project.getLastModifiedUser(), "testUser1");
+  }
+
+  @Test
+  public void testFetchAllActiveProjects() throws Exception {
+    createThreeProjects();
+    final List<Project> projectList = this.loader.fetchAllActiveProjects();
+    Assert.assertEquals(projectList.size(), 3);
+  }
+
+  @Test
+  public void testFetchProjectByName() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(project.getName(), "mytestProject");
+    Assert.assertEquals(project.getDescription(), "This is my new project");
+    Assert.assertEquals(project.getLastModifiedUser(), "testUser1");
+  }
+
+  @Test
+  public void testFetchProjectById() throws Exception {
+    createThreeProjects();
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    final Project project2 = this.loader.fetchProjectById(project1.getId());
+    Assert.assertEquals(project1.getName(), project2.getName());
+    Assert.assertEquals(project1.getDescription(), project2.getDescription());
+    Assert.assertEquals(project1.getLastModifiedUser(), project2.getLastModifiedUser());
+  }
+
+  @Test
+  public void testUploadProjectFile() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+
+    final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
+    Assert.assertEquals(fileHandler.getFileName(), SAMPLE_FILE);
+    Assert.assertEquals(fileHandler.getUploader(), "uploadUser1");
+  }
+
+  @Test(expected = ProjectManagerException.class)
+  public void testDuplicateUploadProjectFile() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+  }
+
+  private byte[] computeHash(final File localFile) {
+    final byte[] md5;
+    try {
+      md5 = Md5Hasher.md5Hash(localFile);
+    } catch (final IOException e) {
+      throw new ProjectManagerException("Error getting md5 hash.", e);
+    }
+    return md5;
+  }
+
+  @Test
+  public void testAddProjectVersion() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1", computeHash(testFile), "resourceId1");
+    final int currVersion = this.loader.getLatestProjectVersion(project);
+    Assert.assertEquals(currVersion, newVersion);
+  }
+
+  @Test
+  public void testFetchProjectMetaData() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    final ProjectFileHandler pfh = this.loader.fetchProjectMetaData(project.getId(), newVersion);
+    Assert.assertEquals(pfh.getVersion(), newVersion);
+  }
+
+  @Test
+  public void testChangeProjectVersion() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 7;
+    this.loader.changeProjectVersion(project, newVersion, "uploadUser1");
+    final Project sameProject= this.loader.fetchProjectById(project.getId());
+    Assert.assertEquals(sameProject.getVersion(), newVersion);
+  }
+
+  @Test
+  public void testUpdatePermission() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.updatePermission(project, project.getLastModifiedUser(), new Permission(Permission.Type.ADMIN), false);
+
+    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader.getProjectPermissions(project);
+    Assert.assertEquals(permissionsTriple.size(), 1);
+    Assert.assertEquals(permissionsTriple.get(0).getFirst(), "testUser1");
+    Assert.assertEquals(permissionsTriple.get(0).getThird().toString(), "ADMIN");
+  }
+
+  @Test
+  public void testUpdateProjectSettings() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(project.getProxyUsers().size(), 0);
+    project.addProxyUser("ProxyUser");
+    this.loader.updateProjectSettings(project);
+    final Project sameProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(sameProject.getProxyUsers().size(), 1);
+  }
+
+  @Test
+  public void testRemovePermission() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.updatePermission(project, project.getLastModifiedUser(), new Permission(Permission.Type.ADMIN), false);
+    this.loader.removePermission(project, project.getLastModifiedUser(), false);
+    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader.getProjectPermissions(project);
+    Assert.assertEquals(permissionsTriple.size(), 0);
+  }
+
+  @Test
+  public void testRemoveProject() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(project.isActive(), true);
+    this.loader.removeProject(project, "testUser1");
+    final Project removedProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(removedProject.isActive(), false);
+  }
+
+  @Test
+  public void testPostAndGetEvent() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader
+        .postEvent(project, ProjectLogEvent.EventType.CREATED, "testUser1", "create a message bla");
+    final List<ProjectLogEvent> events = this.loader.getProjectEvents(project, 5, 0);
+    Assert.assertEquals(events.size(), 1);
+    Assert.assertEquals(events.get(0).getMessage(), "create a message bla");
+  }
+
+  @Test
+  public void testUpdateDescription() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.updateDescription(project, "new Description bla", "testUser1");
+    final Project sameProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(sameProject.getDescription(), "new Description bla");
+  }
+
+  @Test
+  public void testUploadAndFetchFlow() throws Exception {
+    final Flow flow1 = new Flow("flow1");
+    final Flow flow2 = new Flow("flow2");
+    final List<Flow> flowList = Arrays.asList(flow1, flow2);
+
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.uploadFlows(project, project.getVersion(), flowList);
+
+    final List<Flow> flowList2 = this.loader.fetchAllProjectFlows(project);
+    Assert.assertEquals(flowList2.size(), 2);
+  }
+
+  @Test
+  public void testUpdateFlow() throws Exception {
+    final Flow flow1 = new Flow("flow1");
+    final List<Flow> flowList = Collections.singletonList(flow1);
+
+    flow1.setLayedOut(false);
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.uploadFlows(project, project.getVersion(), flowList);
+
+    flow1.setLayedOut(true);
+    this.loader.updateFlow(project, project.getVersion(), flow1);
+    final List<Flow> flowList2 = this.loader.fetchAllProjectFlows(project);
+    Assert.assertEquals(flowList2.get(0).isLayedOut(), true);
+  }
+
+  @Test
+  public void testUploadOrUpdateProjectProperty() throws Exception {
+    final Props props = new Props();
+    props.setSource("source1");
+    props.put("key1", "value1");
+    props.put("key2", "value2");
+
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.uploadProjectProperty(project, props);
+
+    final Props sameProps = this.loader.fetchProjectProperty(project, props.getSource());
+    Assert.assertEquals(sameProps.get("key1"), "value1");
+    Assert.assertEquals(sameProps.get("key2"), "value2");
+
+    props.put("key2", "value9");
+    this.loader.updateProjectProperty(project, props);
+
+    final Props sameProps2 = this.loader.fetchProjectProperty(project, props.getSource());
+    Assert.assertEquals(sameProps2.get("key2"), "value9");
+  }
+
+  @Test
+  public void testFetchProjectProperties() throws Exception {
+    final Props props1 = new Props();
+    props1.setSource("source1");
+    props1.put("key1", "value1");
+    props1.put("key2", "value2");
+
+    final Props props2 = new Props();
+    props2.setSource("source2");
+    props2.put("keykey", "valuevalue1");
+    props2.put("keyaaa", "valueaaa");
+    final List<Props> list = Arrays.asList(props1, props2);
+
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    this.loader.uploadProjectProperties(project, list);
+
+    final Map<String, Props> propsMap = this.loader.fetchProjectProperties(project.getId(), project.getVersion());
+    Assert.assertEquals(propsMap.get("source1").get("key2"), "value2");
+    Assert.assertEquals(propsMap.get("source2").get("keyaaa"), "valueaaa");
+  }
+
+  @Test
+  public void cleanOlderProjectVersion() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+
+    final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
+    Assert.assertEquals(fileHandler.getNumChunks(), 1);
+
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion+1);
+
+    final ProjectFileHandler fileHandler2 = this.loader
+        .fetchProjectMetaData(project.getId(), newVersion);
+    Assert.assertEquals(fileHandler2.getNumChunks(), 0);
+  }
+
+  @After
+  public void clearDB() {
+    try {
+      dbOperator.update("DELETE FROM projects");
+      dbOperator.update("DELETE FROM project_versions");
+      dbOperator.update("DELETE FROM project_properties");
+      dbOperator.update("DELETE FROM project_permissions");
+      dbOperator.update("DELETE FROM project_flows");
+      dbOperator.update("DELETE FROM project_files");
+      dbOperator.update("DELETE FROM project_events");
+    } catch (final SQLException e) {
+      e.printStackTrace();
+    }
+  }
+}

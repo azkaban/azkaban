@@ -17,6 +17,7 @@
 package azkaban.jmx;
 
 public interface JmxJettyServerMBean {
+
   @DisplayName("OPERATION: isRunning")
   public boolean isRunning();
 

@@ -23,16 +23,13 @@ import org.apache.log4j.Logger;
 
 public class MySQLDataSource extends AzkabanDataSource {
 
-  private static Logger logger = Logger.getLogger(MySQLDataSource.class);
+  private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
 
-  private static volatile MySQLDataSource instance = null;
-
-  // TODO kunkun-tang: have guice inject working here
-  private MySQLDataSource(String host, int port, String dbName,
-      String user, String password, int numConnections) {
+  public MySQLDataSource(final String host, final int port, final String dbName,
+      final String user, final String password, final int numConnections) {
     super();
 
-    String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
+    final String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
     addConnectionProperty("useUnicode", "yes");
     addConnectionProperty("characterEncoding", "UTF-8");
     setDriverClassName("com.mysql.jdbc.Driver");
@@ -45,24 +42,7 @@ public class MySQLDataSource extends AzkabanDataSource {
   }
 
   /**
-   * Get a singleton object for MySQL BasicDataSource
-   */
-  public static MySQLDataSource getInstance(String host, int port, String dbName,
-      String user, String password, int numConnections) {
-    if (instance == null) {
-      synchronized (MySQLDataSource.class) {
-        if (instance == null) {
-          logger.info("Instantiating MetricReportManager");
-          instance = new MySQLDataSource(host, port, dbName, user, password, numConnections);
-        }
-      }
-    }
-    return instance;
-  }
-
-  /**
    * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
-   *
    */
   @Override
   public synchronized Connection getConnection() throws SQLException {
@@ -78,12 +58,15 @@ public class MySQLDataSource extends AzkabanDataSource {
          * Every Attempt generates a thread-hanging-time, about 75 seconds, which is hard coded, and can not be changed.
          */
         connection = createDataSource().getConnection();
-        if(connection != null)
+        if (connection != null) {
           return connection;
-      } catch (SQLException ex) {
-        logger.error("Failed to find DB connection. waits 1 minutes and retry. No.Attempt = " + retryAttempt, ex);
+        }
+      } catch (final SQLException ex) {
+        logger.error(
+            "Failed to find DB connection. waits 1 minutes and retry. No.Attempt = " + retryAttempt,
+            ex);
       } finally {
-        retryAttempt ++;
+        retryAttempt++;
       }
     }
     return null;
@@ -92,5 +75,10 @@ public class MySQLDataSource extends AzkabanDataSource {
   @Override
   public String getDBType() {
     return "mysql";
+  }
+
+  @Override
+  public boolean allowsOnDuplicateKey() {
+    return true;
   }
 }

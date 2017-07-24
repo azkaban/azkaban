@@ -17,20 +17,20 @@
 package azkaban.execapp;
 
 import azkaban.metrics.MetricsManager;
-import azkaban.metrics.MetricsUtility;
-
-import com.codahale.metrics.MetricRegistry;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * This class ExecMetrics is in charge of collecting metrics from executors.
  */
-public enum ExecMetrics {
-  INSTANCE;
+@Singleton
+public class ExecMetrics {
 
-  private final MetricRegistry registry;
+  private final MetricsManager metricsManager;
 
-  ExecMetrics() {
-    registry = MetricsManager.INSTANCE.getRegistry();
+  @Inject
+  ExecMetrics(final MetricsManager metricsManager) {
+    this.metricsManager = metricsManager;
     setupStaticMetrics();
   }
 
@@ -38,8 +38,10 @@ public enum ExecMetrics {
 
   }
 
-  public void addFlowRunnerManagerMetrics(FlowRunnerManager flowRunnerManager) {
-    MetricsUtility.addGauge("EXEC-NumRunningFlows", registry, flowRunnerManager::getNumRunningFlows);
-    MetricsUtility.addGauge("EXEC-NumQueuedFlows", registry, flowRunnerManager::getNumQueuedFlows);
+  public void addFlowRunnerManagerMetrics(final FlowRunnerManager flowRunnerManager) {
+    this.metricsManager
+        .addGauge("EXEC-NumRunningFlows", flowRunnerManager::getNumRunningFlows);
+    this.metricsManager
+        .addGauge("EXEC-NumQueuedFlows", flowRunnerManager::getNumQueuedFlows);
   }
 }

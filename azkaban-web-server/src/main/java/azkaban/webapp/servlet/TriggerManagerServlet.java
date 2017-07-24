@@ -16,41 +16,39 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.log4j.Logger;
-
 import azkaban.server.session.Session;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.log4j.Logger;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
+
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger
       .getLogger(TriggerManagerServlet.class);
   private TriggerManager triggerManager;
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    triggerManager = server.getTriggerManager();
+    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    this.triggerManager = server.getTriggerManager();
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
@@ -58,17 +56,17 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAJAXAction(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleAJAXAction(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    HashMap<String, Object> ret = new HashMap<String, Object>();
-    String ajaxName = getParam(req, "ajax");
+    final HashMap<String, Object> ret = new HashMap<>();
+    final String ajaxName = getParam(req, "ajax");
 
     try {
       if (ajaxName.equals("expireTrigger")) {
         ajaxExpireTrigger(req, ret, session.getUser());
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       ret.put("error", e.getMessage());
     }
 
@@ -77,39 +75,39 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleGetAllSchedules(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleGetAllSchedules(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/triggerspage.vm");
 
-    List<Trigger> triggers = triggerManager.getTriggers();
+    final List<Trigger> triggers = this.triggerManager.getTriggers();
     page.add("triggers", triggers);
     page.render();
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     }
   }
 
-  private void ajaxExpireTrigger(HttpServletRequest req,
-      Map<String, Object> ret, User user) throws ServletException,
+  private void ajaxExpireTrigger(final HttpServletRequest req,
+      final Map<String, Object> ret, final User user) throws ServletException,
       TriggerManagerException {
-    int triggerId = getIntParam(req, "triggerId");
-    Trigger t = triggerManager.getTrigger(triggerId);
+    final int triggerId = getIntParam(req, "triggerId");
+    final Trigger t = this.triggerManager.getTrigger(triggerId);
     if (t == null) {
       ret.put("message", "Trigger with ID " + triggerId + " does not exist");
       ret.put("status", "error");
       return;
     }
 
-    triggerManager.expireTrigger(triggerId);
+    this.triggerManager.expireTrigger(triggerId);
     logger.info("User '" + user.getUserId() + " has removed trigger "
         + t.getDescription());
 

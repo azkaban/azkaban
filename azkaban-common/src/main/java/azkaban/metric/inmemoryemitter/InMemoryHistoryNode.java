@@ -22,23 +22,23 @@ import java.util.Date;
  * A snapshot of metric's value
  */
 public class InMemoryHistoryNode {
-  private Object value;
-  private Date date;
+
+  private final Object value;
+  private final Date date;
 
   /**
    * Takes snapshot of the metric with a given value
-   * @param val
    */
   public InMemoryHistoryNode(final Object val) {
-    value = val;
-    date = new Date();
+    this.value = val;
+    this.date = new Date();
   }
 
   public Object getValue() {
-    return value;
+    return this.value;
   }
 
   public Date getTimestamp() {
-    return date;
+    return this.date;
   }
 }

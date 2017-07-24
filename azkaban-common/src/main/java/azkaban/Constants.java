@@ -22,13 +22,13 @@ package azkaban;
  *
  * Global place for storing constants.
  * Conventions:
- *  - All internal constants to be put in the root level ie. {@link Constants} class
- *  - All Configuration keys to be put in {@link ConfigurationKeys} class
- *  - Flow level Properties keys go to {@link FlowProperties}
- *  - Job  level Properties keys go to {@link JobProperties}
- *
+ * - All internal constants to be put in the root level ie. {@link Constants} class
+ * - All Configuration keys to be put in {@link ConfigurationKeys} class
+ * - Flow level Properties keys go to {@link FlowProperties}
+ * - Job  level Properties keys go to {@link JobProperties}
  */
 public class Constants {
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -48,6 +48,9 @@ public class Constants {
   public static final int DEFAULT_PORT_NUMBER = 8081;
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
+
+  // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
+  public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties
@@ -81,6 +84,9 @@ public class Constants {
     // Hostname for the host, if not specified, canonical hostname will be used
     public static final String AZKABAN_SERVER_HOST_NAME = "azkaban.server.hostname";
 
+    // List of users we prevent azkaban from running flows as. (ie: root, azkaban)
+    public static final String BLACK_LISTED_USERS = "azkaban.server.blacklist.users";
+
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
     // The property is used for the web server to get the host name of the executor when running in SOLO mode.
@@ -96,9 +102,11 @@ public class Constants {
     public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
+    public static final String PROJECT_TEMP_DIR = "project.temp.dir";
   }
 
   public static class FlowProperties {
+
     // Basic properties of flows as set by the executor server
     public static final String AZKABAN_FLOW_PROJECT_NAME = "azkaban.flow.projectname";
     public static final String AZKABAN_FLOW_FLOW_ID = "azkaban.flow.flowid";
@@ -108,7 +116,17 @@ public class Constants {
   }
 
   public static class JobProperties {
+
     // Job property that enables/disables using Kafka logging of user job logs
     public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
+  }
+
+  public static class JobCallbackProperties {
+
+    public static final String JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT = "jobcallback.connection.request.timeout";
+    public static final String JOBCALLBACK_CONNECTION_TIMEOUT = "jobcallback.connection.timeout";
+    public static final String JOBCALLBACK_SOCKET_TIMEOUT = "jobcallback.socket.timeout";
+    public static final String JOBCALLBACK_RESPONSE_WAIT_TIMEOUT = "jobcallback.response.wait.timeout";
+    public static final String JOBCALLBACK_THREAD_POOL_SIZE = "jobcallback.thread.pool.size";
   }
 }

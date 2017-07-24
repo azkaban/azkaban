@@ -17,11 +17,9 @@
 package azkaban.webapp;
 
 import azkaban.metrics.MetricsManager;
-import azkaban.metrics.MetricsUtility;
-
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -29,10 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * This singleton class WebMetrics is in charge of collecting varieties of metrics
  * from azkaban-web-server modules.
  */
-public enum WebMetrics {
-  INSTANCE;
-
-  private final MetricRegistry registry;
+@Singleton
+public class WebMetrics {
 
   private final Meter webGetCall;
   private final Meter webPostCall;
@@ -40,30 +36,31 @@ public enum WebMetrics {
   // How long does user log fetch take when user call fetch-log api.
   private final AtomicLong logFetchLatency = new AtomicLong(0L);
 
-  WebMetrics() {
-    registry = MetricsManager.INSTANCE.getRegistry();
-    webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
-    webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
-    MetricsUtility.addGauge("fetchLogLatency", registry, logFetchLatency::get);
+  @Inject
+  WebMetrics(final MetricsManager metricsManager) {
+    this.webGetCall = metricsManager.addMeter("Web-Get-Call-Meter");
+    this.webPostCall = metricsManager.addMeter("Web-Post-Call-Meter");
+
+    metricsManager.addGauge("fetchLogLatency", this.logFetchLatency::get);
   }
 
+  /**
+   * Mark the occurrence of a GET call
+   *
+   * This method should be Thread Safe.
+   * Two reasons that we don't make this function call synchronized:
+   * 1). drop wizard metrics deals with concurrency internally;
+   * 2). mark is basically a math addition operation, which should not cause race condition issue.
+   */
   public void markWebGetCall() {
-
-    /*
-     * This method should be Thread Safe.
-     * Two reasons that we don't make this function call synchronized:
-     * 1). drop wizard metrics deals with concurrency internally;
-     * 2). mark is basically a math addition operation, which should not cause race condition issue.
-     */
-    webGetCall.mark();
+    this.webGetCall.mark();
   }
 
   public void markWebPostCall() {
-
-    webPostCall.mark();
+    this.webPostCall.mark();
   }
 
-  public void setFetchLogLatency(long milliseconds) {
-    logFetchLatency.set(milliseconds);
+  public void setFetchLogLatency(final long milliseconds) {
+    this.logFetchLatency.set(milliseconds);
   }
 }

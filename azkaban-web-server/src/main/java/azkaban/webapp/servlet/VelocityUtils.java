@@ -21,21 +21,22 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 public class VelocityUtils {
-  public String formatDate(long timestamp) {
+
+  public String formatDate(final long timestamp) {
     return formatDate(timestamp, "yyyy-MM-dd HH:mm:ss");
   }
 
-  public String formatDate(DateTime date) {
+  public String formatDate(final DateTime date) {
     return formatDate(date, "yyyy-MM-dd HH:mm:ss");
   }
 
-  public String formatDate(long timestamp, String format) {
-    DateTimeFormatter f = DateTimeFormat.forPattern(format);
+  public String formatDate(final long timestamp, final String format) {
+    final DateTimeFormatter f = DateTimeFormat.forPattern(format);
     return f.print(timestamp);
   }
 
-  public String formatDate(DateTime date, String format) {
-    DateTimeFormatter f = DateTimeFormat.forPattern(format);
+  public String formatDate(final DateTime date, final String format) {
+    final DateTimeFormatter f = DateTimeFormat.forPattern(format);
     return f.print(date);
   }
 }

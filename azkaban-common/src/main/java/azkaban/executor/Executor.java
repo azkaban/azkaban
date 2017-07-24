@@ -16,8 +16,8 @@
 
 package azkaban.executor;
 
-import java.util.Date;
 import azkaban.utils.Utils;
+import java.util.Date;
 
 /**
  * Class to represent an AzkabanExecutorServer details for ExecutorManager
@@ -25,6 +25,7 @@ import azkaban.utils.Utils;
  * @author gaggarwa
  */
 public class Executor implements Comparable<Executor> {
+
   private final int id;
   private final String host;
   private final int port;
@@ -39,15 +40,11 @@ public class Executor implements Comparable<Executor> {
    * Note: port should be a within unsigned 2 byte
    * integer range
    * </pre>
-   *
-   * @param executor_id
-   * @param executor_host
-   * @param executor_port
    */
-  public Executor(int id, String host, int port, boolean isActive) {
+  public Executor(final int id, final String host, final int port, final boolean isActive) {
     if (!Utils.isValidPort(port)) {
       throw new IllegalArgumentException(String.format(
-        "Invalid port number %d for host %s, executor_id %d", port, host, id));
+          "Invalid port number %d for host %s, executor_id %d", port, host, id));
     }
 
     this.id = id;
@@ -60,83 +57,92 @@ public class Executor implements Comparable<Executor> {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (isActive ? 1231 : 1237);
-    result = prime * result + ((host == null) ? 0 : host.hashCode());
-    result = prime * result + id;
-    result = prime * result + port;
+    result = prime * result + (this.isActive ? 1231 : 1237);
+    result = prime * result + ((this.host == null) ? 0 : this.host.hashCode());
+    result = prime * result + this.id;
+    result = prime * result + this.port;
     return result;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (!(obj instanceof Executor))
+    }
+    if (!(obj instanceof Executor)) {
       return false;
-    Executor other = (Executor) obj;
-    if (isActive != other.isActive)
+    }
+    final Executor other = (Executor) obj;
+    if (this.isActive != other.isActive) {
       return false;
-    if (host == null) {
-      if (other.host != null)
+    }
+    if (this.host == null) {
+      if (other.host != null) {
         return false;
-    } else if (!host.equals(other.host))
+      }
+    } else if (!this.host.equals(other.host)) {
       return false;
-    if (id != other.id)
+    }
+    if (this.id != other.id) {
       return false;
-    if (port != other.port)
+    }
+    if (this.port != other.port) {
       return false;
+    }
     return true;
   }
 
   @Override
-  public String toString(){
+  public String toString() {
     return String.format("%s:%s (id: %s)",
-      null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
-      this.port, this.id);
+        null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
+        this.port, this.id);
   }
 
   public String getHost() {
-    return host;
+    return this.host;
   }
 
   public int getPort() {
-    return port;
+    return this.port;
   }
 
   public boolean isActive() {
-    return isActive;
+    return this.isActive;
+  }
+
+  public void setActive(final boolean isActive) {
+    this.isActive = isActive;
   }
 
   public int getId() {
-    return id;
+    return this.id;
   }
 
   public ExecutorInfo getExecutorInfo() {
     return this.cachedExecutorStats;
   }
 
-  public void setExecutorInfo(ExecutorInfo info) {
+  public void setExecutorInfo(final ExecutorInfo info) {
     this.cachedExecutorStats = info;
     this.lastStatsUpdatedTime = new Date();
   }
 
   /**
    * Gets the timestamp when the executor info is last updated.
-   * @return date object represents the timestamp, null if the executor info of this
-   *         specific executor is never refreshed.
-   * */
-  public Date getLastStatsUpdatedTime(){
+   *
+   * @return date object represents the timestamp, null if the executor info of this specific
+   * executor is never refreshed.
+   */
+  public Date getLastStatsUpdatedTime() {
     return this.lastStatsUpdatedTime;
   }
 
-  public void setActive(boolean isActive) {
-    this.isActive = isActive;
-  }
-
   @Override
-  public int compareTo(Executor o) {
+  public int compareTo(final Executor o) {
     return null == o ? 1 : this.hashCode() - o.hashCode();
   }
 }

@@ -16,48 +16,44 @@
 
 package azkaban.trigger;
 
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.log4j.Logger;
-
-import azkaban.utils.Props;
-import azkaban.utils.Utils;
 
 public class ActionTypeLoader {
 
-  private static Logger logger = Logger.getLogger(ActionTypeLoader.class);
-
   public static final String DEFAULT_TRIGGER_ACTION_PLUGIN_DIR =
       "plugins/triggeractions";
-
+  private static final Logger logger = Logger.getLogger(ActionTypeLoader.class);
   protected static Map<String, Class<? extends TriggerAction>> actionToClass =
-      new HashMap<String, Class<? extends TriggerAction>>();
+      new HashMap<>();
 
-  public void init(Props props) throws TriggerException {
+  public static void registerBuiltinActions(
+      final Map<String, Class<? extends TriggerAction>> builtinActions) {
+    actionToClass.putAll(builtinActions);
+    for (final String type : builtinActions.keySet()) {
+      logger.info("Loaded " + type + " action.");
+    }
   }
 
-  public synchronized void registerActionType(String type,
-      Class<? extends TriggerAction> actionClass) {
+  public void init(final Props props) throws TriggerException {
+  }
+
+  public synchronized void registerActionType(final String type,
+      final Class<? extends TriggerAction> actionClass) {
     logger.info("Registering action " + type);
     if (!actionToClass.containsKey(type)) {
       actionToClass.put(type, actionClass);
     }
   }
 
-  public static void registerBuiltinActions(
-      Map<String, Class<? extends TriggerAction>> builtinActions) {
-    actionToClass.putAll(builtinActions);
-    for (String type : builtinActions.keySet()) {
-      logger.info("Loaded " + type + " action.");
-    }
-  }
-
-  public TriggerAction createActionFromJson(String type, Object obj)
+  public TriggerAction createActionFromJson(final String type, final Object obj)
       throws Exception {
     TriggerAction action = null;
-    Class<? extends TriggerAction> actionClass = actionToClass.get(type);
+    final Class<? extends TriggerAction> actionClass = actionToClass.get(type);
     if (actionClass == null) {
       throw new Exception("Action Type " + type + " not supported!");
     }
@@ -68,9 +64,9 @@ public class ActionTypeLoader {
     return action;
   }
 
-  public TriggerAction createAction(String type, Object... args) {
+  public TriggerAction createAction(final String type, final Object... args) {
     TriggerAction action = null;
-    Class<? extends TriggerAction> actionClass = actionToClass.get(type);
+    final Class<? extends TriggerAction> actionClass = actionToClass.get(type);
     action = (TriggerAction) Utils.callConstructor(actionClass, args);
 
     return action;

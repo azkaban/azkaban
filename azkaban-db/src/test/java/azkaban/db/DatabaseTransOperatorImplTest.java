@@ -26,15 +26,18 @@ public class DatabaseTransOperatorImplTest {
 
   @Before
   public void setUp() throws Exception {
-    AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
-    DatabaseTransOperator operator = new DatabaseTransOperatorImpl(new QueryRunner(), datasource.getConnection());
+    final AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
+    final DatabaseTransOperator operator = new DatabaseTransOperatorImpl(new QueryRunner(),
+        datasource.getConnection());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testQuery() throws Exception {
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testUpdate() throws Exception {
   }
 }

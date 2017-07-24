@@ -16,43 +16,44 @@
 
 package azkaban.execapp;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import azkaban.event.EventListener;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventListener;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventCollectorListener implements EventListener {
-  private ArrayList<Event> eventList = new ArrayList<Event>();
-  private HashSet<Event.Type> filterOutTypes = new HashSet<Event.Type>();
 
-  public void setEventFilterOut(Event.Type... types) {
-    filterOutTypes.addAll(Arrays.asList(types));
+  public static final Object handleEvent = new Object();
+  // CopyOnWriteArrayList allows concurrent iteration and modification
+  private final List<Event> eventList = new CopyOnWriteArrayList<>();
+  private final HashSet<Event.Type> filterOutTypes = new HashSet<>();
+
+  public void setEventFilterOut(final Event.Type... types) {
+    this.filterOutTypes.addAll(Arrays.asList(types));
   }
 
   @Override
-  public void handleEvent(Event event) {
-    if (!filterOutTypes.contains(event.getType())) {
-      eventList.add(event);
+  public void handleEvent(final Event event) {
+    synchronized (handleEvent) {
+      handleEvent.notifyAll();
+    }
+    if (!this.filterOutTypes.contains(event.getType())) {
+      this.eventList.add(event);
     }
   }
 
-  public ArrayList<Event> getEventList() {
-    return eventList;
-  }
-
-  public void writeAllEvents() {
-    for (Event event : eventList) {
-      System.out.print(event.getType());
-      System.out.print(",");
-    }
+  public List<Event> getEventList() {
+    return this.eventList;
   }
 
   public boolean checkOrdering() {
-    long time = 0;
-    for (Event event : eventList) {
+    final long time = 0;
+    for (final Event event : this.eventList) {
       if (time > event.getTime()) {
         return false;
       }
@@ -61,27 +62,11 @@ public class EventCollectorListener implements EventListener {
     return true;
   }
 
-  public void checkEventExists(Type[] types) {
-    int index = 0;
-    for (Event event : eventList) {
-      if (event.getRunner() == null) {
-        continue;
-      }
-
-      if (index >= types.length) {
-        throw new RuntimeException("More events than expected. Got "
-            + event.getType());
-      }
-      Type type = types[index++];
-
-      if (type != event.getType()) {
-        throw new RuntimeException("Got " + event.getType() + ", expected "
-            + type + " index:" + index);
-      }
-    }
-
-    if (types.length != index) {
-      throw new RuntimeException("Not enough events.");
-    }
+  public void assertEvents(final Type... expected) {
+    final Object[] captured = this.eventList.stream()
+        .filter(event -> event.getRunner() != null)
+        .map(event -> event.getType())
+        .toArray();
+    assertThat(captured).isEqualTo(expected);
   }
 }

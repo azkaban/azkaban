@@ -17,67 +17,69 @@
 package azkaban.executor;
 
 public class ExecutionReference {
+
   private final int execId;
   private Executor executor;
+  //Todo jamiesjc: deprecate updateTime in ExecutionReference class gradually.
   private long updateTime;
   private long nextCheckTime = -1;
   private int numErrors = 0;
 
 
-  public ExecutionReference(int execId) {
+  public ExecutionReference(final int execId) {
     this.execId = execId;
   }
 
-  public ExecutionReference(int execId, Executor executor) {
+  public ExecutionReference(final int execId, final Executor executor) {
     if (executor == null) {
       throw new IllegalArgumentException(String.format(
-        "Executor cannot be null for exec id: %d ExecutionReference", execId));
+          "Executor cannot be null for exec id: %d ExecutionReference", execId));
     }
     this.execId = execId;
     this.executor = executor;
   }
 
-  public void setUpdateTime(long updateTime) {
+  public long getUpdateTime() {
+    return this.updateTime;
+  }
+
+  public void setUpdateTime(final long updateTime) {
     this.updateTime = updateTime;
   }
 
-  public void setNextCheckTime(long nextCheckTime) {
+  public long getNextCheckTime() {
+    return this.nextCheckTime;
+  }
+
+  public void setNextCheckTime(final long nextCheckTime) {
     this.nextCheckTime = nextCheckTime;
   }
 
-  public long getUpdateTime() {
-    return updateTime;
-  }
-
-  public long getNextCheckTime() {
-    return nextCheckTime;
-  }
-
   public int getExecId() {
-    return execId;
+    return this.execId;
   }
 
   public String getHost() {
-    return executor.getHost();
+    return this.executor.getHost();
   }
 
   public int getPort() {
-    return executor.getPort();
+    return this.executor.getPort();
   }
 
   public int getNumErrors() {
-    return numErrors;
+    return this.numErrors;
   }
 
-  public void setNumErrors(int numErrors) {
+  public void setNumErrors(final int numErrors) {
     this.numErrors = numErrors;
   }
 
-  public void setExecutor(Executor executor) {
-    this.executor = executor;
+  public Executor getExecutor() {
+    return this.executor;
   }
 
-  public Executor getExecutor() {
-    return executor;
+  public void setExecutor(final Executor executor) {
+    this.executor = executor;
   }
 }

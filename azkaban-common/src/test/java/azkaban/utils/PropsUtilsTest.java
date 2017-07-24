@@ -18,16 +18,16 @@ package azkaban.utils;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 public class PropsUtilsTest {
+
   @Test
   public void testGoodResolveProps() throws IOException {
-    Props propsGrandParent = new Props();
-    Props propsParent = new Props(propsGrandParent);
-    Props props = new Props(propsParent);
+    final Props propsGrandParent = new Props();
+    final Props propsParent = new Props(propsGrandParent);
+    final Props props = new Props(propsParent);
 
     // Testing props in general
     props.put("letter", "a");
@@ -53,7 +53,7 @@ public class PropsUtilsTest {
     propsGrandParent.put("res5", "${their}");
     propsParent.put("res6", " t ${your} ${your} ${their} ${res5}");
 
-    Props resolved = PropsUtils.resolveProps(props);
+    final Props resolved = PropsUtils.resolveProps(props);
     Assert.assertEquals("name", resolved.get("res1"));
     Assert.assertEquals("ears a", resolved.get("res2"));
     Assert.assertEquals("eyes ears a", resolved.get("res3"));
@@ -65,20 +65,20 @@ public class PropsUtilsTest {
 
   @Test
   public void testInvalidSyntax() throws Exception {
-    Props propsGrandParent = new Props();
-    Props propsParent = new Props(propsGrandParent);
-    Props props = new Props(propsParent);
+    final Props propsGrandParent = new Props();
+    final Props propsParent = new Props(propsGrandParent);
+    final Props props = new Props(propsParent);
 
     propsParent.put("my", "name");
     props.put("res1", "$(my)");
 
-    Props resolved = PropsUtils.resolveProps(props);
+    final Props resolved = PropsUtils.resolveProps(props);
     Assert.assertEquals("$(my)", resolved.get("res1"));
   }
 
   @Test
   public void testExpressionResolution() throws IOException {
-    Props props =
+    final Props props =
         Props.of("normkey", "normal", "num1", "1", "num2", "2", "num3", "3",
             "variablereplaced", "${num1}", "expression1", "$(1+10)",
             "expression2", "$(1+10)*2", "expression3",
@@ -88,7 +88,7 @@ public class PropsUtilsTest {
             "$(1 + ${normkey})", "expression7", "$(\"${normkey}\" + 1)",
             "expression8", "${expression1}", "expression9", "$((2+3) + 3)");
 
-    Props resolved = PropsUtils.resolveProps(props);
+    final Props resolved = PropsUtils.resolveProps(props);
     Assert.assertEquals("normal", resolved.get("normkey"));
     Assert.assertEquals("1", resolved.get("num1"));
     Assert.assertEquals("2", resolved.get("num2"));
@@ -131,53 +131,52 @@ public class PropsUtilsTest {
   public void testGetFlattenedProps() throws Exception {
 
     // for empty props empty flattened map is expected to be returned.
-    Props grandParentProps = new Props();
+    final Props grandParentProps = new Props();
     Assert.assertTrue(grandParentProps.getFlattened().isEmpty());
 
     // single level
-    grandParentProps.put("test1","value1");
-    grandParentProps.put("test2","value2");
-    Map<String,String> set = grandParentProps.getFlattened();
-    Assert.assertEquals(2,set.size());
+    grandParentProps.put("test1", "value1");
+    grandParentProps.put("test2", "value2");
+    Map<String, String> set = grandParentProps.getFlattened();
+    Assert.assertEquals(2, set.size());
     Assert.assertEquals("value1", set.get("test1"));
     Assert.assertEquals("value2", set.get("test2"));
 
     // multiple levels .
-    Props parentProps = new Props(grandParentProps);
-    parentProps.put("test3","value3");
-    parentProps.put("test4","value4");
+    final Props parentProps = new Props(grandParentProps);
+    parentProps.put("test3", "value3");
+    parentProps.put("test4", "value4");
     set = parentProps.getFlattened();
-    Assert.assertEquals(4,set.size());
+    Assert.assertEquals(4, set.size());
     Assert.assertEquals("value3", set.get("test3"));
     Assert.assertEquals("value1", set.get("test1"));
 
     // multiple levels with same keys  .
-    Props props = new Props(parentProps);
-    props.put("test5","value5");
-    props.put("test1","value1.1");
+    final Props props = new Props(parentProps);
+    props.put("test5", "value5");
+    props.put("test1", "value1.1");
     set = props.getFlattened();
-    Assert.assertEquals(5,set.size());
+    Assert.assertEquals(5, set.size());
     Assert.assertEquals("value5", set.get("test5"));
     Assert.assertEquals("value1.1", set.get("test1"));
 
     // verify when iterating the elements are sorted by the key value.
-    Props props2 = new Props();
-    props2.put("2","2");
-    props2.put("0","0");
-    props2.put("1","1");
+    final Props props2 = new Props();
+    props2.put("2", "2");
+    props2.put("0", "0");
+    props2.put("1", "1");
     set = props2.getFlattened();
-    int index = 0 ;
-    for (Map.Entry<String, String> item : set.entrySet())
-    {
-      Assert.assertEquals(item.getKey(),Integer.toString(index++));
+    int index = 0;
+    for (final Map.Entry<String, String> item : set.entrySet()) {
+      Assert.assertEquals(item.getKey(), Integer.toString(index++));
     }
   }
 
   @Test
   public void testCyclesResolveProps() throws IOException {
-    Props propsGrandParent = new Props();
-    Props propsParent = new Props(propsGrandParent);
-    Props props = new Props(propsParent);
+    final Props propsGrandParent = new Props();
+    final Props propsParent = new Props(propsGrandParent);
+    final Props props = new Props(propsParent);
 
     // Testing props in general
     props.put("a", "${a}");
@@ -210,42 +209,44 @@ public class PropsUtilsTest {
 
   @Test
   public void testGetPropertyDiff() throws IOException {
-    Props oldProps = new Props();
-    Props newProps1 = new Props();
+    final Props oldProps = new Props();
+    final Props newProps1 = new Props();
 
     oldProps.put("a", "a_value1");
     oldProps.put("b", "b_value1");
 
     newProps1.put("b", "b_value2");
 
-    String message1 = PropsUtils.getPropertyDiff(oldProps, newProps1);
-    Assert.assertEquals(message1, "Deleted Properties: [ a, a_value1], \nModified Properties: [ b, b_value1-->b_value2], ");
+    final String message1 = PropsUtils.getPropertyDiff(oldProps, newProps1);
+    Assert.assertEquals(message1,
+        "Deleted Properties: [ a, a_value1], \nModified Properties: [ b, b_value1-->b_value2], ");
 
-    Props newProps2 = new Props();
+    final Props newProps2 = new Props();
 
     newProps2.put("a", "a_value1");
     newProps2.put("b", "b_value1");
     newProps2.put("c", "c_value1");
 
-    String message2 = PropsUtils.getPropertyDiff(oldProps, newProps2);
+    final String message2 = PropsUtils.getPropertyDiff(oldProps, newProps2);
     Assert.assertEquals(message2, "Newly created Properties: [ c, c_value1], \n");
 
-    Props newProps3 = new Props();
+    final Props newProps3 = new Props();
 
     newProps3.put("b", "b_value1");
     newProps3.put("c", "a_value1");
 
-    String message3 = PropsUtils.getPropertyDiff(oldProps, newProps3);
-    Assert.assertEquals(message3, "Newly created Properties: [ c, a_value1], \nDeleted Properties: [ a, a_value1], \n");
+    final String message3 = PropsUtils.getPropertyDiff(oldProps, newProps3);
+    Assert.assertEquals(message3,
+        "Newly created Properties: [ c, a_value1], \nDeleted Properties: [ a, a_value1], \n");
   }
 
-  private void failIfNotException(Props props) {
+  private void failIfNotException(final Props props) {
     try {
       PropsUtils.resolveProps(props);
       Assert.fail();
-    } catch (UndefinedPropertyException e) {
+    } catch (final UndefinedPropertyException e) {
       e.printStackTrace();
-    } catch (IllegalArgumentException e) {
+    } catch (final IllegalArgumentException e) {
       e.printStackTrace();
     }
   }

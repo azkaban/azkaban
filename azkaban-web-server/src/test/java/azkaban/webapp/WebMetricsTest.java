@@ -16,12 +16,13 @@
 
 package azkaban.webapp;
 
+import static org.junit.Assert.assertEquals;
+
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsTestUtility;
+import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 
 public class WebMetricsTest {
@@ -31,14 +32,14 @@ public class WebMetricsTest {
 
   @Before
   public void setUp() {
-    // todo HappyRay: move MetricsManager, WebMetrics to use Juice.
-    testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
-    metrics = WebMetrics.INSTANCE;
+    final MetricRegistry metricRegistry = new MetricRegistry();
+    this.testUtil = new MetricsTestUtility(metricRegistry);
+    this.metrics = new WebMetrics(new MetricsManager(metricRegistry));
   }
 
   @Test
   public void testLogFetchLatencyMetrics() {
-    metrics.setFetchLogLatency(14);
-    assertEquals(14, testUtil.getGaugeValue("fetchLogLatency"));
+    this.metrics.setFetchLogLatency(14);
+    assertEquals(14, this.testUtil.getGaugeValue("fetchLogLatency"));
   }
 }

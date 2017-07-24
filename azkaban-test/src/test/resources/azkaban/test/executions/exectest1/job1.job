@@ -1,4 +1,0 @@
-type=java
-job.class=azkaban.test.executor.SleepJavaJob
-seconds=1
-fail=false

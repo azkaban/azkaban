@@ -17,6 +17,10 @@
 
 package azkaban.execapp;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
+import static org.junit.Assert.assertNotNull;
+
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -33,12 +37,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static java.util.Objects.*;
-import static org.apache.commons.io.FileUtils.*;
-import static org.junit.Assert.*;
-
 
 public class AzkabanExecutorServerTest {
+
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
 
@@ -46,18 +47,19 @@ public class AzkabanExecutorServerTest {
 
   private static String getSqlScriptsDir() throws IOException {
     // Dummy because any resource file works.
-    URL resource = AzkabanExecutorServerTest.class.getClassLoader().getResource("test.file");
+    final URL resource = AzkabanExecutorServerTest.class.getClassLoader().getResource("test.file");
     final String dummyResourcePath = requireNonNull(resource).getPath();
-    Path resources = Paths.get(dummyResourcePath).getParent();
-    Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
+    final Path resources = Paths.get(dummyResourcePath).getParent();
+    final Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
 
-    File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
-    return props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptDir.getCanonicalPath());
+    final File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
+    return props
+        .getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptDir.getCanonicalPath());
   }
 
   @BeforeClass
   public static void setUp() throws Exception {
-    String sqlScriptsDir = getSqlScriptsDir();
+    final String sqlScriptsDir = getSqlScriptsDir();
     props.put(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptsDir);
 
     props.put("database.type", "h2");
@@ -77,9 +79,10 @@ public class AzkabanExecutorServerTest {
 
   @Test
   public void testInjection() throws Exception {
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
+    props
+        .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
-    Injector injector = Guice.createInjector(
+    final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanExecServerModule()
     );

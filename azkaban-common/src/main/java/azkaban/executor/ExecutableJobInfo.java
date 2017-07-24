@@ -16,14 +16,14 @@
 
 package azkaban.executor;
 
+import azkaban.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import azkaban.utils.Pair;
-
 public class ExecutableJobInfo {
+
   private final int execId;
   private final int projectId;
   private final int version;
@@ -36,9 +36,10 @@ public class ExecutableJobInfo {
 
   private ArrayList<Pair<String, String>> jobPath;
 
-  public ExecutableJobInfo(int execId, int projectId, int version,
-      String flowId, String jobId, long startTime, long endTime, Status status,
-      int attempt) {
+  public ExecutableJobInfo(final int execId, final int projectId, final int version,
+      final String flowId, final String jobId, final long startTime, final long endTime,
+      final Status status,
+      final int attempt) {
     this.execId = execId;
     this.projectId = projectId;
     this.startTime = startTime;
@@ -53,98 +54,98 @@ public class ExecutableJobInfo {
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
   public int getExecId() {
-    return execId;
+    return this.execId;
   }
 
   public int getVersion() {
-    return version;
+    return this.version;
   }
 
   public String getFlowId() {
-    return flowId;
+    return this.flowId;
   }
 
   public String getImmediateFlowId() {
-    if (jobPath.size() == 1) {
-      return flowId;
+    if (this.jobPath.size() == 1) {
+      return this.flowId;
     }
-    Pair<String, String> pair = jobPath.get(jobPath.size() - 1);
+    final Pair<String, String> pair = this.jobPath.get(this.jobPath.size() - 1);
     return pair.getSecond();
   }
 
   public String getHeadFlowId() {
-    Pair<String, String> pair = jobPath.get(0);
+    final Pair<String, String> pair = this.jobPath.get(0);
 
     return pair.getFirst();
   }
 
   public String getJobId() {
-    return jobId;
+    return this.jobId;
   }
 
   public long getStartTime() {
-    return startTime;
+    return this.startTime;
   }
 
   public long getEndTime() {
-    return endTime;
+    return this.endTime;
   }
 
   public Status getStatus() {
-    return status;
+    return this.status;
   }
 
   public int getAttempt() {
-    return attempt;
+    return this.attempt;
   }
 
   public List<Pair<String, String>> getParsedFlowId() {
-    return jobPath;
+    return this.jobPath;
   }
 
   private void parseFlowId() {
-    jobPath = new ArrayList<Pair<String, String>>();
-    String[] flowPairs = flowId.split(",");
+    this.jobPath = new ArrayList<>();
+    final String[] flowPairs = this.flowId.split(",");
 
-    for (String flowPair : flowPairs) {
-      String[] pairSplit = flowPair.split(":");
-      Pair<String, String> pair;
+    for (final String flowPair : flowPairs) {
+      final String[] pairSplit = flowPair.split(":");
+      final Pair<String, String> pair;
       if (pairSplit.length == 1) {
-        pair = new Pair<String, String>(pairSplit[0], pairSplit[0]);
+        pair = new Pair<>(pairSplit[0], pairSplit[0]);
       } else {
-        pair = new Pair<String, String>(pairSplit[0], pairSplit[1]);
+        pair = new Pair<>(pairSplit[0], pairSplit[1]);
       }
 
-      jobPath.add(pair);
+      this.jobPath.add(pair);
     }
   }
 
   public String getJobIdPath() {
     // Skip the first one because it's always just the root.
     String path = "";
-    for (int i = 1; i < jobPath.size(); ++i) {
-      Pair<String, String> pair = jobPath.get(i);
+    for (int i = 1; i < this.jobPath.size(); ++i) {
+      final Pair<String, String> pair = this.jobPath.get(i);
       path += pair.getFirst() + ":";
     }
 
-    path += jobId;
+    path += this.jobId;
     return path;
   }
 
   public Map<String, Object> toObject() {
-    HashMap<String, Object> map = new HashMap<String, Object>();
-    map.put("execId", execId);
-    map.put("version", version);
-    map.put("flowId", flowId);
-    map.put("jobId", jobId);
-    map.put("startTime", startTime);
-    map.put("endTime", endTime);
-    map.put("status", status.toString());
-    map.put("attempt", attempt);
+    final HashMap<String, Object> map = new HashMap<>();
+    map.put("execId", this.execId);
+    map.put("version", this.version);
+    map.put("flowId", this.flowId);
+    map.put("jobId", this.jobId);
+    map.put("startTime", this.startTime);
+    map.put("endTime", this.endTime);
+    map.put("status", this.status.toString());
+    map.put("attempt", this.attempt);
 
     return map;
   }
