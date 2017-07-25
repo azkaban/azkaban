@@ -45,7 +45,7 @@ public class ServiceProviderTest {
     assertThat(injector.getInstance(azkabanClass)).isNotNull();
     final Object azkabanObj1 = injector.getInstance(azkabanClass);
     final Object azkabanObj2 = injector.getInstance(azkabanClass);
-    assertThat(azkabanObj1 == azkabanObj2).isTrue();
+    assertThat(azkabanObj1).isEqualTo(azkabanObj2);
   }
 
   @After
