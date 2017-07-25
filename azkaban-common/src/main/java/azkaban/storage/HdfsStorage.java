@@ -25,6 +25,7 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class HdfsStorage implements Storage {
 
   private static final Logger log = Logger.getLogger(HdfsStorage.class);

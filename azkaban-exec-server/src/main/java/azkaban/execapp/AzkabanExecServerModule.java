@@ -32,7 +32,7 @@ public class AzkabanExecServerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
+    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
     bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
     bind(TriggerManager.class).in(Scopes.SINGLETON);
     bind(FlowRunnerManager.class).in(Scopes.SINGLETON);

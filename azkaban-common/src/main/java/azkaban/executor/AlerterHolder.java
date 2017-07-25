@@ -23,6 +23,7 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -36,6 +37,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class AlerterHolder {
 
   private static final Logger logger = Logger.getLogger(AlerterHolder.class);
