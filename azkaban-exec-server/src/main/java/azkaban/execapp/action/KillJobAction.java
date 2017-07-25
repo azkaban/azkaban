@@ -19,10 +19,8 @@ package azkaban.execapp.action;
 import azkaban.ServiceProvider;
 import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.TriggerAction;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.log4j.Logger;
 
 
@@ -33,19 +31,32 @@ public class KillJobAction implements TriggerAction {
   private static final Logger logger = Logger
       .getLogger(KillJobAction.class);
 
-  private String actionId;
-  private int execId;
-  private String jobId;
+  private final String actionId;
+  private final int execId;
+  private final String jobId;
 
-  public KillJobAction(String actionId, int execId, String jobId) {
+  public KillJobAction(final String actionId, final int execId, final String jobId) {
     this.execId = execId;
     this.actionId = actionId;
     this.jobId = jobId;
   }
 
+  public static KillJobAction createFromJson(final HashMap<String, Object> obj) {
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    final String objType = (String) jsonObj.get("type");
+    if (!objType.equals(type)) {
+      throw new RuntimeException("Cannot create action of " + type + " from "
+          + objType);
+    }
+    final String actionId = (String) jsonObj.get("actionId");
+    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    final String jobId = (String) jsonObj.get("jobId");
+    return new KillJobAction(actionId, execId, jobId);
+  }
+
   @Override
   public String getId() {
-    return actionId;
+    return this.actionId;
   }
 
   @Override
@@ -54,53 +65,36 @@ public class KillJobAction implements TriggerAction {
   }
 
   @SuppressWarnings("unchecked")
-  public static KillJobAction createFromJson(Object obj) {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static KillJobAction createFromJson(HashMap<String, Object> obj) {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    String objType = (String) jsonObj.get("type");
-    if (!objType.equals(type)) {
-      throw new RuntimeException("Cannot create action of " + type + " from "
-          + objType);
-    }
-    String actionId = (String) jsonObj.get("actionId");
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    String jobId = (String) jsonObj.get("jobId");
-    return new KillJobAction(actionId, execId, jobId);
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
-  public KillJobAction fromJson(Object obj) throws Exception {
+  public KillJobAction fromJson(final Object obj) throws Exception {
     return createFromJson((HashMap<String, Object>) obj);
   }
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<>();
-    jsonObj.put("actionId", actionId);
+    final Map<String, Object> jsonObj = new HashMap<>();
+    jsonObj.put("actionId", this.actionId);
     jsonObj.put("type", type);
-    jsonObj.put("execId", String.valueOf(execId));
-    jsonObj.put("jobId", String.valueOf(jobId));
+    jsonObj.put("execId", String.valueOf(this.execId));
+    jsonObj.put("jobId", String.valueOf(this.jobId));
     return jsonObj;
   }
 
   @Override
   public void doAction() throws Exception {
     logger.info("ready to do action " + getDescription());
-    FlowRunnerManager flowRunnerManager = ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class);
-    flowRunnerManager.cancelJobBySLA(execId, jobId);
+    final FlowRunnerManager flowRunnerManager = ServiceProvider.SERVICE_PROVIDER
+        .getInstance(FlowRunnerManager.class);
+    flowRunnerManager.cancelJobBySLA(this.execId, this.jobId);
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 
   @Override
   public String getDescription() {
-    return type + " for execution " + execId + " jobId " + jobId;
+    return type + " for execution " + this.execId + " jobId " + this.jobId;
   }
 
 }
