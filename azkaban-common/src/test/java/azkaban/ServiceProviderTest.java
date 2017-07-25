@@ -18,9 +18,7 @@
 package azkaban;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static java.util.Objects.requireNonNull;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectImpl;
@@ -44,9 +42,10 @@ public class ServiceProviderTest {
   // Test if one class is singletonly guiced. could be called by
   // AZ Common, Web, or Exec Modules.
   public static void assertSingleton(final Class azkabanClass, final Injector injector) {
-    final Object azkabanObj1 = requireNonNull(injector.getInstance(azkabanClass));
-    final Object azkabanObj2 = requireNonNull(injector.getInstance(azkabanClass));
-    assertTrue(azkabanObj1 == azkabanObj2);
+    assertThat(injector.getInstance(azkabanClass)).isNotNull();
+    final Object azkabanObj1 = injector.getInstance(azkabanClass);
+    final Object azkabanObj2 = injector.getInstance(azkabanClass);
+    assertThat(azkabanObj1 == azkabanObj2).isTrue();
   }
 
   @After
@@ -68,11 +67,11 @@ public class ServiceProviderTest {
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
 
-    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectImpl.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(StorageManager.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(Storage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseOperator.class));
+    assertThat(injector.getInstance(JdbcProjectImpl.class)).isNotNull();
+    assertThat(injector.getInstance(StorageManager.class)).isNotNull();
+    assertThat(injector.getInstance(DatabaseStorage.class)).isNotNull();
+    assertThat(injector.getInstance(LocalStorage.class)).isNotNull();
+    assertThat(injector.getInstance(Storage.class)).isNotNull();
+    assertThat(injector.getInstance(DatabaseOperator.class)).isNotNull();
   }
 }
