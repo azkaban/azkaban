@@ -45,6 +45,7 @@ import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
@@ -418,9 +420,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       Set<String> outNodeIds = node.getOutNodes();
       ExecutableFlowBase parentFlow = node.getParentFlow();
 
-      // If a job is seen as failed, then we set the parent flow to
+      // If a job is seen as failed or killed due to failing SLA, then we set the parent flow to
       // FAILED_FINISHING
-      if (node.getStatus() == Status.FAILED) {
+      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node.isKilledBySLA())) {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
@@ -1143,5 +1145,9 @@ public class FlowRunner extends EventHandler implements Runnable {
                 FlowRunner.this.flow));
       }
     }
+  }
+
+  public Set<JobRunner> getActiveJobRunners() {
+    return ImmutableSet.copyOf(this.activeJobRunners);
   }
 }
