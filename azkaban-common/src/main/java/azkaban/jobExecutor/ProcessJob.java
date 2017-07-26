@@ -374,6 +374,10 @@ public class ProcessJob extends AbstractProcessJob {
     if (this.process == null) {
       throw new IllegalStateException("Not started.");
     }
+
+    info("Wait for process to start.");
+    this.process.awaitStartup();
+
     final boolean processkilled = this.process
         .softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
     if (!processkilled) {
