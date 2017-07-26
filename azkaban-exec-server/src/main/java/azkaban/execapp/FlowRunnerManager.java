@@ -162,6 +162,11 @@ public class FlowRunnerManager implements EventListener,
     this.executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
     if (!this.executionDirectory.exists()) {
       this.executionDirectory.mkdirs();
+      // setting sticky bit on this.executionDirectory to allow cleanup thread to delete all
+      // user-generated files/directories
+      logger.info("Creating subprocess to run shell command: chmod g+s "
+          + this.executionDirectory.toString());
+      Runtime.getRuntime().exec("chmod g+s " + this.executionDirectory.toString());
     }
     this.projectDirectory = new File(props.getString("azkaban.project.dir", "projects"));
     if (!this.projectDirectory.exists()) {
