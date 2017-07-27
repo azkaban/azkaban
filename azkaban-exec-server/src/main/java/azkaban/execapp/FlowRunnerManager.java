@@ -162,11 +162,7 @@ public class FlowRunnerManager implements EventListener,
     this.executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
     if (!this.executionDirectory.exists()) {
       this.executionDirectory.mkdirs();
-      // setting sticky bit on this.executionDirectory to allow cleanup thread to delete all
-      // user-generated files/directories
-      logger.info("Creating subprocess to run shell command: chmod g+s "
-          + this.executionDirectory.toString());
-      Runtime.getRuntime().exec("chmod g+s " + this.executionDirectory.toString());
+      setgidPermissionOnExecutionDirectory();
     }
     this.projectDirectory = new File(props.getString("azkaban.project.dir", "projects"));
     if (!this.projectDirectory.exists()) {
@@ -207,6 +203,23 @@ public class FlowRunnerManager implements EventListener,
             AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), this.globalProps,
             getClass().getClassLoader());
+  }
+
+  /**
+   * Setting the gid bit on the execution directory forces all files/directories created within
+   * the directory to be a part of the azkaban group. Then, when users create their own files,
+   * the azkaban cleanup thread can properly remove them.
+   *
+   * Java does not provide a standard library api for setting the gid bit because the gid bit
+   * is system dependent, so the only way to set this bit is to start a new process and run
+   * the shell command "chmod g+s " + execution directory name.
+   *
+   * Note that this will only work on unix systems.
+   */
+  private void setgidPermissionOnExecutionDirectory() throws IOException {
+    logger.info("Creating subprocess to run shell command: chmod g+s "
+        + this.executionDirectory.toString());
+    Runtime.getRuntime().exec("chmod g+s " + this.executionDirectory.toString());
   }
 
   private TrackingThreadPool createExecutorService(final int nThreads) {
@@ -396,16 +409,16 @@ public class FlowRunnerManager implements EventListener,
   }
 
 
-  public void cancelJobBySLA(int execId, String jobId)
+  public void cancelJobBySLA(final int execId, final String jobId)
       throws ExecutorManagerException {
-    FlowRunner flowRunner = runningFlows.get(execId);
+    final FlowRunner flowRunner = this.runningFlows.get(execId);
 
     if (flowRunner == null) {
       throw new ExecutorManagerException("Execution " + execId
           + " is not running.");
     }
 
-    for (JobRunner jobRunner : flowRunner.getActiveJobRunners()) {
+    for (final JobRunner jobRunner : flowRunner.getActiveJobRunners()) {
       if (jobRunner.getJobId().equals(jobId)) {
         logger.info("Killing job " + jobId + " in execution " + execId + " by SLA");
         jobRunner.killBySLA();
