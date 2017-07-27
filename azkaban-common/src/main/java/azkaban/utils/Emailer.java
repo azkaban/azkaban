@@ -16,6 +16,8 @@
 
 package azkaban.utils;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -27,9 +29,12 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.sla.SlaOption;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.mail.MessagingException;
 import org.apache.log4j.Logger;
 
+@Singleton
 public class Emailer extends AbstractMailer implements Alerter {
 
   private static final String HTTPS = "https";
@@ -48,9 +53,10 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String tls;
   private boolean testMode = false;
 
+  @Inject
   public Emailer(final Props props, final CommonMetrics commonMetrics) {
     super(props);
-    this.commonMetrics = commonMetrics;
+    this.commonMetrics = requireNonNull(commonMetrics, "commonMetrics is null.");
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
     this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);

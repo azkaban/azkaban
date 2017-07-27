@@ -45,19 +45,18 @@ public class AlerterHolder {
   private Map<String, Alerter> alerters;
 
   @Inject
-  public AlerterHolder(final Props props, final CommonMetrics commonMetrics) {
+  public AlerterHolder(final Props props, final Emailer mailAlerter) {
     try {
-      this.alerters = loadAlerters(props, commonMetrics);
+      this.alerters = loadAlerters(props, mailAlerter);
     } catch (final Exception ex) {
       logger.error(ex);
       this.alerters = new HashMap<>();
     }
   }
 
-  private Map<String, Alerter> loadAlerters(final Props props, final CommonMetrics commonMetrics) {
+  private Map<String, Alerter> loadAlerters(final Props props, final Emailer mailAlerter) {
     final Map<String, Alerter> allAlerters = new HashMap<>();
     // load built-in alerters
-    final Emailer mailAlerter = new Emailer(props, commonMetrics);
     allAlerters.put("email", mailAlerter);
     // load all plugin alerters
     final String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
