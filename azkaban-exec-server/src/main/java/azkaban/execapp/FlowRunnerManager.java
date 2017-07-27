@@ -390,6 +390,25 @@ public class FlowRunnerManager implements EventListener,
 
   }
 
+
+  public void cancelJobBySLA(int execId, String jobId)
+      throws ExecutorManagerException {
+    FlowRunner flowRunner = runningFlows.get(execId);
+
+    if (flowRunner == null) {
+      throw new ExecutorManagerException("Execution " + execId
+          + " is not running.");
+    }
+
+    for (JobRunner jobRunner : flowRunner.getActiveJobRunners()) {
+      if (jobRunner.getJobId().equals(jobId)) {
+        logger.info("Killing job " + jobId + " in execution " + execId + " by SLA");
+        jobRunner.killBySLA();
+        break;
+      }
+    }
+  }
+
   public void cancelFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner runner = this.runningFlows.get(execId);

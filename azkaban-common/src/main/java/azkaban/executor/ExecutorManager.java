@@ -21,6 +21,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FlowUtils;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -68,6 +69,7 @@ import azkaban.utils.Props;
  * Executor manager used to manage the client side job.
  *
  */
+@Singleton
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
   static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
@@ -1035,11 +1037,13 @@ public class ExecutorManager extends EventHandler implements
           executorLoader.addActiveExecutableReference(reference);
           try {
             dispatch(reference, exflow, choosenExecutor);
+            this.commonMetrics.markDispatchSuccess();
           } catch (ExecutorManagerException e) {
             // When flow dispatch fails, should update the flow status
             // to FAILED in execution_flows DB table as well. Currently
             // this logic is only implemented in multiExecutorMode but
             // missed in single executor case.
+            this.commonMetrics.markDispatchFail();
             finalizeFlows(exflow);
             throw e;
           }
@@ -1852,7 +1856,9 @@ public class ExecutorManager extends EventHandler implements
         if (selectedExecutor != null) {
           try {
             dispatch(reference, exflow, selectedExecutor);
+            commonMetrics.markDispatchSuccess();
           } catch (ExecutorManagerException e) {
+            commonMetrics.markDispatchFail();
             logger.warn(String.format(
               "Executor %s responded with exception for exec: %d",
               selectedExecutor, exflow.getExecutionId()), e);
@@ -1860,6 +1866,7 @@ public class ExecutorManager extends EventHandler implements
               availableExecutors);
           }
         } else {
+          commonMetrics.markDispatchFail();
           handleNoExecutorSelectedCase(reference, exflow);
         }
       }
