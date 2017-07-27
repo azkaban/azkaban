@@ -28,6 +28,7 @@ import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
@@ -36,6 +37,7 @@ import azkaban.project.ProjectManager;
 import azkaban.spi.Storage;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
+import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -129,6 +131,8 @@ public class AzkabanWebServerTest {
     assertSingleton(DatabaseOperator.class, injector);
     assertSingleton(TriggerLoader.class, injector);
     assertSingleton(TriggerManager.class, injector);
+    assertSingleton(AlerterHolder.class, injector);
+    assertSingleton(Emailer.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

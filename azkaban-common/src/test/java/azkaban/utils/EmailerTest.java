@@ -17,9 +17,12 @@ package azkaban.utils;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.TestExecutions;
+import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -74,14 +77,16 @@ public class EmailerTest {
     Assert.assertNotNull(flow);
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    final Emailer emailer = new Emailer(this.props);
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final Emailer emailer = new Emailer(this.props, commonMetrics);
     emailer.sendErrorEmail(exFlow);
 
   }
 
   @Test
   public void testCreateEmailMessage() {
-    final Emailer emailer = new Emailer(this.props);
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final Emailer emailer = new Emailer(this.props, commonMetrics);
     final EmailMessage em = emailer
         .createEmailMessage("subject", "text/html", this.receiveAddrList);
     assert em.getMailPort() == this.mailPort;
