@@ -1,0 +1,44 @@
+
+
+/**
+ * Helper that calls a command and returns the output.
+ */
+def cmdCaller = { commandln ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine commandln
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+
+allprojects {
+    // Note: to make this function to work on TeamCity set 'VCS checkout mode' to 'Automatically on Agent'
+    //noinspection GroovyAssignabilityCheck
+    task createGitProperties() << {
+        String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
+        String gitRepo = cmdCaller(['git', 'config', '--get', 'remote.origin.url']);
+        String gitBranch = cmdCaller(['git', 'rev-parse', '--abbrev-ref', 'HEAD']);
+        String gitDate = cmdCaller(['git', 'log', '-1', '--format=%cd', 'HEAD']);
+        def formattedDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
+
+        String propsStr = 'version=' + version + '\n' +
+                'build.time=' + formattedDate + '\n' +
+                'git.commit.id=' + gitCommitHash + '\n' +
+                'git.repo=' + gitRepo + '\n' +
+                'git.branch=' + gitBranch + '\n' +
+                'git.commit.time=' + gitDate + '\n'
+
+        rootProject.subprojects.forEach {
+            String commitHash = cmdCaller(['git', 'log', '-1', '--format=%h', '--', it.projectDir.name])
+            propsStr += 'component.' + it.projectDir.name + '=' + commitHash + '\n'
+        }
+        propsStr += 'component.polaris=' + gitCommitHash.take(7) + '\n'
+
+
+        File versionFile = file('build/resources/main/git.properties')
+        versionFile.parentFile.mkdirs()
+        versionFile.write(propsStr)
+    }
+}
