@@ -28,12 +28,12 @@ import java.util.concurrent.TimeUnit;
  * The following global azkaban properties can be used: max.num.sessions - used
  * to determine the number of live sessions that azkaban will handle. Default is
  * 10000 session.time.to.live -Number of seconds before session expires. Default
- * set to 1 days.
+ * set to 7 days.
  */
 public class SessionCache {
 
   private static final int MAX_NUM_SESSIONS = 10000;
-  private static final long SESSION_TIME_TO_LIVE = 24 * 60 * 60 * 1000L;
+  private static final long SESSION_TIME_TO_LIVE = 7 * 24 * 60 * 60 * 1000L;
 
   // private CacheManager manager = CacheManager.create();
   private final Cache<String, Session> cache;
