@@ -16,8 +16,6 @@
 package azkaban.server.session;
 
 import azkaban.user.User;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Container for the session, mapping session id to user in map
@@ -27,7 +25,6 @@ public class Session {
   private final User user;
   private final String sessionId;
   private final String ip;
-  private final Map<String, Object> sessionData = new HashMap<>();
 
   /**
    * Constructor for the session
@@ -56,11 +53,4 @@ public class Session {
     return this.ip;
   }
 
-  public void setSessionData(final String key, final Object value) {
-    this.sessionData.put(key, value);
-  }
-
-  public Object getSessionData(final String key) {
-    return this.sessionData.get(key);
-  }
 }
