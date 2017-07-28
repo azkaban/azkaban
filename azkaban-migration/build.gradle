@@ -15,26 +15,3 @@ dependencies {
     compile('joda-time:joda-time:2.0')
     compile('log4j:log4j:1.2.16')
 }
-
-task copyLibs(type: Copy, dependsOn: 'build') {
-    from('build/libs')
-    into('build/package/lib')
-}
-
-task copyDeps(type: Copy, dependsOn: 'build') {
-    from(project(':azkaban-common').configurations.compile)
-    from(configurations.compile)
-    into('build/package/lib')
-}
-
-task copyPackage(type: Copy) {
-    from('src/package')
-    into('build/package')
-}
-
-task copy(dependsOn: [
-//        'createVersionFile',
-        'copyLibs',
-        'copyDeps',
-        'copyPackage']) {
-}
