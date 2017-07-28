@@ -240,7 +240,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         slaInfo.put(SlaOption.ALERT_TYPE, "email");
       }
       if (killAction.equals("true")) {
-        slaActions.add(SlaOption.ACTION_CANCEL_FLOW);
+        String killActionType = id.equals("") ? SlaOption.ACTION_CANCEL_FLOW : SlaOption.ACTION_KILL_JOB;
+        slaActions.add(killActionType);
       }
       if (id.equals("")) {
         if (rule.equals("SUCCESS")) {

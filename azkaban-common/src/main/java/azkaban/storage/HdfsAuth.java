@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.spi.AzkabanException;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -34,6 +35,7 @@ import org.apache.log4j.Logger;
  * This class helps in HDFS authorization and is a wrapper over Hadoop's {@link
  * UserGroupInformation} class.
  */
+@Singleton
 public class HdfsAuth {
 
   private static final Logger log = Logger.getLogger(HdfsAuth.class);

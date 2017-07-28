@@ -53,6 +53,8 @@ public class ExecutableNode {
   private long startTime = -1;
   private long endTime = -1;
   private long updateTime = -1;
+  private volatile boolean killedBySLA = false;
+
   // Path to Job File
   private String jobSource;
   // Path to top level props file
@@ -155,6 +157,14 @@ public class ExecutableNode {
     this.updateTime = updateTime;
   }
 
+  public void setKilledBySLA(boolean killedBySLA) {
+    this.killedBySLA = killedBySLA;
+  }
+
+  public boolean isKilledBySLA() {
+    return this.killedBySLA;
+  }
+
   public void addOutNode(final String exNode) {
     this.outNodes.add(exNode);
   }
@@ -239,6 +249,7 @@ public class ExecutableNode {
     this.setEndTime(-1);
     this.setUpdateTime(System.currentTimeMillis());
     this.setStatus(Status.READY);
+    this.setKilledBySLA(false);
   }
 
   public List<Object> getAttemptObjects() {

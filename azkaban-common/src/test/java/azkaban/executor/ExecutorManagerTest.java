@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
+import azkaban.utils.AbstractMailerTest;
+import azkaban.utils.Emailer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -47,12 +50,21 @@ import org.junit.Test;
 public class ExecutorManagerTest {
 
   private final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
+  private final CommonMetrics commonMetrics = new CommonMetrics(
+      new MetricsManager(new MetricRegistry()));
   private ExecutorManager manager;
   private ExecutorLoader loader;
   private Props props;
   private User user;
   private ExecutableFlow flow1;
   private ExecutableFlow flow2;
+  private AlerterHolder alertHolder;
+
+  @Before
+  public void setup() {
+    this.props = AbstractMailerTest.createMailProperties();
+    this.alertHolder = new AlerterHolder(this.props, new Emailer(this.props, this.commonMetrics));
+  }
 
   /* Helper method to create a ExecutorManager Instance */
   private ExecutorManager createMultiExecutorManagerInstance()
@@ -66,14 +78,11 @@ public class ExecutorManagerTest {
    */
   private ExecutorManager createMultiExecutorManagerInstance(
       final ExecutorLoader loader) throws ExecutorManagerException {
-    final Props props = new Props();
-    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-    props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "false");
-
+    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "false");
     loader.addExecutor("localhost", 12345);
     loader.addExecutor("localhost", 12346);
-    return new ExecutorManager(props, loader, new AlerterHolder(props),
-        new CommonMetrics(new MetricsManager(new MetricRegistry())));
+    return new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
   }
 
   /*
@@ -82,12 +91,10 @@ public class ExecutorManagerTest {
    */
   @Test(expected = ExecutorManagerException.class)
   public void testNoExecutorScenario() throws ExecutorManagerException {
-    final Props props = new Props();
-    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     final ExecutorLoader loader = new MockExecutorLoader();
     @SuppressWarnings("unused") final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
   }
 
   /*
@@ -95,13 +102,10 @@ public class ExecutorManagerTest {
    */
   @Test
   public void testLocalExecutorScenario() throws ExecutorManagerException {
-    final Props props = new Props();
-    props.put("executor.port", 12345);
-
+    this.props.put("executor.port", 12345);
     final ExecutorLoader loader = new MockExecutorLoader();
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     final Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
 
@@ -118,15 +122,13 @@ public class ExecutorManagerTest {
    */
   @Test
   public void testMultipleExecutorScenario() throws ExecutorManagerException {
-    final Props props = new Props();
-    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     final ExecutorLoader loader = new MockExecutorLoader();
     final Executor executor1 = loader.addExecutor("localhost", 12345);
     final Executor executor2 = loader.addExecutor("localhost", 12346);
 
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     final Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
@@ -138,14 +140,11 @@ public class ExecutorManagerTest {
    */
   @Test
   public void testSetupExecutorsSucess() throws ExecutorManagerException {
-    final Props props = new Props();
-    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     final ExecutorLoader loader = new MockExecutorLoader();
     final Executor executor1 = loader.addExecutor("localhost", 12345);
-
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
       new Executor[] { executor1 });
 
@@ -166,14 +165,11 @@ public class ExecutorManagerTest {
    */
   @Test(expected = ExecutorManagerException.class)
   public void testSetupExecutorsException() throws ExecutorManagerException {
-    final Props props = new Props();
-    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     final ExecutorLoader loader = new MockExecutorLoader();
     final Executor executor1 = loader.addExecutor("localhost", 12345);
-
     final ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder(props),
-          new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     final Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(),
@@ -333,7 +329,6 @@ public class ExecutorManagerTest {
       throws ExecutorManagerException, IOException {
     this.loader = mock(ExecutorLoader.class);
     this.user = TestUtils.getTestUser();
-    this.props = new Props();
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     //To test runningFlows, AZKABAN_QUEUEPROCESSING_ENABLED should be set to true
     //so that flows will be dispatched to executors.
@@ -346,8 +341,8 @@ public class ExecutorManagerTest {
     executors.add(executor2);
 
     when(this.loader.fetchActiveExecutors()).thenReturn(executors);
-    this.manager = new ExecutorManager(this.props, this.loader, new AlerterHolder(this.props),
-        new CommonMetrics(new MetricsManager(new MetricRegistry())));
+    this.manager = new ExecutorManager(this.props, this.loader, this.alertHolder,
+        this.commonMetrics);
 
     this.flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     this.flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");

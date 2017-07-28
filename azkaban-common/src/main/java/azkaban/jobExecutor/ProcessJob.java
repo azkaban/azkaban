@@ -256,7 +256,6 @@ public class ProcessJob extends AbstractProcessJob {
 
       boolean success = false;
       this.process = builder.build();
-
       try {
         if (!this.killed) {
           this.process.run();

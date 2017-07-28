@@ -41,6 +41,7 @@ import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -62,6 +63,7 @@ import org.apache.log4j.Logger;
  * TODO kunkun-tang: This class is too long. In future, we should split {@link ProjectLoader} interface
  * and have multiple short class implementations.
  */
+@Singleton
 public class JdbcProjectImpl implements ProjectLoader {
   private static final Logger logger = Logger.getLogger(JdbcProjectImpl.class);
 

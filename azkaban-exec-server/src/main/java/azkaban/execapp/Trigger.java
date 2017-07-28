@@ -56,7 +56,6 @@ public class Trigger implements Runnable {
     }
 
     final boolean isTriggerConditionMet = this.triggerCondition.isMet();
-
     if (isTriggerConditionMet) {
       logger.info("Condition " + this.triggerCondition.getExpression() + " met");
       for (final TriggerAction action : this.actions) {

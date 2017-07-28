@@ -246,6 +246,10 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.node;
   }
 
+  public String getJobId() {
+    return node.getId();
+  }
+
   public String getLogFilePath() {
     return this.logFile == null ? null : this.logFile.getPath();
   }
@@ -788,6 +792,11 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setUpdateTime(System.currentTimeMillis());
     }
     this.fireEventListeners(event);
+  }
+
+  public void killBySLA() {
+    kill();
+    this.getNode().setKilledBySLA(true);
   }
 
   public void kill() {

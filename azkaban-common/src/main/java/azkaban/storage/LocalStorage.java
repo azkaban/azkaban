@@ -25,6 +25,7 @@ import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class LocalStorage implements Storage {
 
   private static final Logger log = Logger.getLogger(LocalStorage.class);
