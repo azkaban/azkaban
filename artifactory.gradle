@@ -1,3 +1,4 @@
+
 artifactory_contextUrl = 'https://repo.sfiqautomation.com/artifactory'
 
 def artifactoryCredentials = {

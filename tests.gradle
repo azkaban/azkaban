@@ -1,0 +1,56 @@
+import org.gradle.logging.StyledTextOutputFactory
+
+import static org.gradle.logging.StyledTextOutput.Style
+//noinspection GroovyAssignabilityCheck
+test {
+    def out = services.get(StyledTextOutputFactory).create("colored-test-output")
+    out.style(Style.Normal)
+
+    def elapsed = { r -> if (r.endTime - r.startTime >= 1000) "${(r.endTime - r.startTime)/1000} secs" else "${r.endTime - r.startTime} ms" }
+
+    testLogging {
+        exceptionFormat "full"
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        showStandardStreams true
+    }
+    maxParallelForks = 1
+    reports {
+        junitXml.enabled = true
+        html.enabled = false
+    }
+
+    beforeSuite { suite ->
+        // Commenting out until we can prove it speeds up the build
+        // /**
+        //   * Create a new database in the local postgres for this test only. Use the hash of suite.name
+        // */
+        if (suite.name.startsWith("Gradle Test Run") || suite.name.startsWith("Gradle Test Executor")) return
+        out.withStyle(Style.UserInput).println("\n[$suite.name]")
+    }
+
+    afterTest { descriptor, result ->
+        def style
+        def res
+        if (result.failedTestCount > 0) { res = "  [-]"; style = Style.Failure }
+        else if (result.skippedTestCount > 0) { res = "  [ ]"; style = Style.ProgressStatus }
+        else { res = "  [+]"; style = Style.Identifier }
+
+        out.text("$res ").withStyle(style).println("$descriptor.name [${elapsed(result)}]")
+    }
+    afterSuite { suite, res ->
+
+        if (suite.name.startsWith("Gradle Test Executor")) return
+        def style
+        def text
+        if (suite.name.startsWith("Gradle Test Run")) text = "\nFinal Results [${suite.name.substring(16)}]: " else text = "Results: "
+        if (res.failedTestCount > 0) style = Style.Failure
+        else if (res.skippedTestCount > 0) style = Style.ProgressStatus
+        else style = Style.Identifier
+
+        out.style(Style.UserInput)
+        out.text(text).withStyle(style).println("$res.testCount tests total, $res.successfulTestCount succeeded, $res.failedTestCount failed, $res.skippedTestCount skipped [${elapsed(res)}]")
+        out.style(Style.Normal)
+    }
+}
