@@ -214,7 +214,7 @@ public class FlowRunnerManager implements EventListener,
    * is system dependent, so the only way to set this bit is to start a new process and run
    * the shell command "chmod g+s " + execution directory name.
    *
-   * Note that this will only work on unix systems.
+   * Note that this should work on most Linux distributions and MacOS, but will not work on Windows.
    */
   private void setgidPermissionOnExecutionDirectory() throws IOException {
     logger.info("Creating subprocess to run shell command: chmod g+s "
