@@ -207,8 +207,8 @@ public class FlowRunnerManager implements EventListener,
 
   /**
    * Setting the gid bit on the execution directory forces all files/directories created within
-   * the directory to be a part of the azkaban group. Then, when users create their own files,
-   * the azkaban cleanup thread can properly remove them.
+   * the directory to be a part of the group associated with the azkaban process. Then, when users
+   * create their own files, the azkaban cleanup thread can properly remove them.
    *
    * Java does not provide a standard library api for setting the gid bit because the gid bit
    * is system dependent, so the only way to set this bit is to start a new process and run
