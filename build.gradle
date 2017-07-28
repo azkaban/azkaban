@@ -43,7 +43,7 @@ artifactoryPublish {
 subprojects {
     apply from: '../tests.gradle'
 
-    jar.baseName = "$rootProject.name-$project.name"
+    jar.baseName = "$project.name"
 
     publishing {
         publications {
