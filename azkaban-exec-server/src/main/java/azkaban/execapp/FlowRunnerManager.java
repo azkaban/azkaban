@@ -739,7 +739,6 @@ public class FlowRunnerManager implements EventListener,
         logger.error(e);
       }
     }
-    deleteExecutionDirectory();
     logger.warn("Shutdown FlowRunnerManager complete.");
   }
 
@@ -751,14 +750,13 @@ public class FlowRunnerManager implements EventListener,
     logger.warn("Shutting down FlowRunnerManager now...");
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
-    deleteExecutionDirectory();
   }
 
   /**
    * Deleting old execution directory to free disk space.
    */
-  private void deleteExecutionDirectory() {
-    logger.warn("Deleting execution dir: " + this.executionDirectory.toString());
+  public void deleteExecutionDirectory() {
+    logger.warn("Deleting execution dir: " + this.executionDirectory.getAbsolutePath());
     try {
       FileUtils.deleteDirectory(this.executionDirectory);
     } catch (final IOException e) {
