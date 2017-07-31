@@ -196,6 +196,7 @@ public class AzkabanExecutorServer {
         logger.warn("Shutting down executor...");
         try {
           app.shutdownNow();
+          app.getFlowRunnerManager().deleteExecutionDirectory();
         } catch (final Exception e) {
           logger.error("Error while shutting down http server.", e);
         }

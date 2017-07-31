@@ -752,6 +752,18 @@ public class FlowRunnerManager implements EventListener,
     this.triggerManager.shutdown();
   }
 
+  /**
+   * Deleting old execution directory to free disk space.
+   */
+  public void deleteExecutionDirectory() {
+    logger.warn("Deleting execution dir: " + this.executionDirectory.getAbsolutePath());
+    try {
+      FileUtils.deleteDirectory(this.executionDirectory);
+    } catch (final IOException e) {
+      logger.error(e);
+    }
+  }
+
   private class CleanerThread extends Thread {
 
     // Every hour, clean execution dir.
