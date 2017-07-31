@@ -1645,8 +1645,7 @@ public class ExecutorManager extends EventHandler implements
     // log file retention is 1 month.
 
     // check every day
-    private static final long CLEANER_THREAD_WAIT_INTERVAL_MS =
-        24 * 60 * 60 * 1000;
+    private static final long CLEANER_THREAD_WAIT_INTERVAL_MS = 60 * 60 * 1000;
 
     private final long executionLogsRetentionMs;
 
