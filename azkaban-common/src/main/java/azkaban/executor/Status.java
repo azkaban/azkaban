@@ -34,7 +34,7 @@ public enum Status {
   QUEUED(110),
   FAILED_SUCCEEDED(120),
   CANCELLED(125);
-  // status is TINYINT and in H2 DB the possible values are: -128 to 127
+  // status is TINYINT in DB and the value ranges from -128 to 127
 
   private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
       .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
