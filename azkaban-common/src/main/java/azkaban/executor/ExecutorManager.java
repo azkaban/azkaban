@@ -1639,12 +1639,12 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /*
-   * cleaner thread to clean up execution_logs, etc in DB. Runs every day.
+   * cleaner thread to clean up execution_logs, etc in DB. Runs every hour.
    */
   private class CleanerThread extends Thread {
     // log file retention is 1 month.
 
-    // check every day
+    // check every hour
     private static final long CLEANER_THREAD_WAIT_INTERVAL_MS = 60 * 60 * 1000;
 
     private final long executionLogsRetentionMs;
