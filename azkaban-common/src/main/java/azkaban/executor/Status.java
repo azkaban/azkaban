@@ -25,7 +25,6 @@ public enum Status {
   RUNNING(30),
   PAUSED(40),
   SUCCEEDED(50),
-  KILLING(55),
   KILLED(60),
   FAILED(70),
   FAILED_FINISHING(80),

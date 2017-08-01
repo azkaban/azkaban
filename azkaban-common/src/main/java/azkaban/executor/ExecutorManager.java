@@ -1483,7 +1483,7 @@ public class ExecutorManager extends EventHandler implements
         continue;
         // case UNKNOWN:
       case READY:
-        node.setStatus(Status.KILLING);
+        node.setStatus(Status.KILLED);
         break;
       default:
         node.setStatus(Status.FAILED);
