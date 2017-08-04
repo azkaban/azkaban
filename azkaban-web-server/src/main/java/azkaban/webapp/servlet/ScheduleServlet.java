@@ -17,10 +17,7 @@
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
-import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
@@ -36,18 +33,9 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.SplitterOutputStream;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -57,7 +45,6 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -96,7 +83,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private void handleAJAXAction(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    HashMap<String, Object> ret = new HashMap<>();
+    final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
     if (ajaxName.equals("slaInfo")) {
@@ -111,6 +98,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ajaxScheduleCronFlow(req, ret, session.getUser());
     } else if (ajaxName.equals("fetchSchedule")) {
       ajaxFetchSchedule(req, ret, session.getUser());
+    } else if (ajaxName.equals("setScheduleSubmitter")) {
+      ajaxSetScheduleSubmitter(req, ret, session.getUser());
     }
 
     if (ret != null) {
@@ -119,7 +108,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxLoadFlows(final HttpServletRequest req,
-                             final HashMap<String, Object> ret, final User user) throws ServletException {
+      final HashMap<String, Object> ret, final User user) throws ServletException {
     final List<Schedule> schedules;
     try {
       schedules = this.scheduleManager.getSchedules();
@@ -132,7 +121,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     final List<HashMap<String, Object>> output =
-            new ArrayList<>();
+        new ArrayList<>();
     ret.put("items", output);
 
     for (final Schedule schedule : schedules) {
@@ -145,7 +134,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void writeScheduleData(final List<HashMap<String, Object>> output,
-                                 final Schedule schedule) throws ScheduleManagerException {
+      final Schedule schedule) throws ScheduleManagerException {
 
     final HashMap<String, Object> data = new HashMap<>();
     data.put("scheduleid", schedule.getScheduleId());
@@ -240,7 +229,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         slaInfo.put(SlaOption.ALERT_TYPE, "email");
       }
       if (killAction.equals("true")) {
-        String killActionType = id.equals("") ? SlaOption.ACTION_CANCEL_FLOW : SlaOption.ACTION_KILL_JOB;
+        final String killActionType =
+            id.equals("") ? SlaOption.ACTION_CANCEL_FLOW : SlaOption.ACTION_KILL_JOB;
         slaActions.add(killActionType);
       }
       if (id.equals("")) {
@@ -279,6 +269,38 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final int hour = Integer.parseInt(duration.split(":")[0]);
     final int min = Integer.parseInt(duration.split(":")[1]);
     return Minutes.minutes(min + hour * 60).toPeriod();
+  }
+
+  private void ajaxSetScheduleSubmitter(final HttpServletRequest req,
+      final HashMap<String, Object> ret, final User user) throws ServletException {
+    try {
+      final int scheduleId = getIntParam(req, "scheduleId");
+      final String submitter = getParam(req, "submitter");
+      final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
+      if (sched == null) {
+        ret.put("error",
+            "Error loading schedule. Schedule " + scheduleId
+                + " doesn't exist");
+        return;
+      }
+
+      final Project project = this.projectManager.getProject(sched.getProjectId());
+      if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
+        ret.put("error", "User " + user
+            + " does not have permission to change user for this flow.");
+        return;
+      }
+      sched.setSubmitUser(submitter);
+      this.scheduleManager.insertSchedule(sched);
+      ret.put("status", "success");
+
+    } catch (final ServletException e) {
+      ret.put("error", e.getMessage());
+    } catch (final ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
+      ret.put("error", e.getMessage());
+    }
+
   }
 
   private void ajaxFetchSchedule(final HttpServletRequest req,
