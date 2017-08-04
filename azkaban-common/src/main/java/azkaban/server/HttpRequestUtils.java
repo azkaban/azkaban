@@ -87,16 +87,17 @@ public class HttpRequestUtils {
     String concurrentOption = "skip";
     if (hasParam(req, "concurrentOption")) {
       concurrentOption = getParam(req, "concurrentOption");
-      execOptions.setConcurrentOption(concurrentOption);
-      if (concurrentOption.equals("pipeline")) {
-        final int pipelineLevel = getIntParam(req, "pipelineLevel");
-        execOptions.setPipelineLevel(pipelineLevel);
-      } else if (concurrentOption.equals("queue")) {
-        // Not yet implemented
-        final int queueLevel = getIntParam(req, "queueLevel", 1);
-        execOptions.setPipelineLevel(queueLevel);
-      }
     }
+    execOptions.setConcurrentOption(concurrentOption);
+    if (concurrentOption.equals("pipeline")) {
+      final int pipelineLevel = getIntParam(req, "pipelineLevel");
+      execOptions.setPipelineLevel(pipelineLevel);
+    } else if (concurrentOption.equals("queue")) {
+      // Not yet implemented
+      final int queueLevel = getIntParam(req, "queueLevel", 1);
+      execOptions.setPipelineLevel(queueLevel);
+    }
+
     String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
     if (hasParam(req, "mailCreator")) {
       mailCreator = getParam(req, "mailCreator");
