@@ -84,6 +84,9 @@ public class Constants {
     // Hostname for the host, if not specified, canonical hostname will be used
     public static final String AZKABAN_SERVER_HOST_NAME = "azkaban.server.hostname";
 
+    // List of users we prevent azkaban from running flows as. (ie: root, azkaban)
+    public static final String BLACK_LISTED_USERS = "azkaban.server.blacklist.users";
+
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
     // The property is used for the web server to get the host name of the executor when running in SOLO mode.
@@ -99,6 +102,7 @@ public class Constants {
     public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
+    public static final String PROJECT_TEMP_DIR = "project.temp.dir";
   }
 
   public static class FlowProperties {

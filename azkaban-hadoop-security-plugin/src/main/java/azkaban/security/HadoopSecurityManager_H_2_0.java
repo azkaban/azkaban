@@ -123,7 +123,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       "obtain.jobhistoryserver.token";
   private final static Logger logger = Logger
       .getLogger(HadoopSecurityManager_H_2_0.class);
-  private static HadoopSecurityManager hsmInstance = null;
+  private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
   private final ExecuteAsUser executeAsUser;

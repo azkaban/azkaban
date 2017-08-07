@@ -27,11 +27,8 @@ import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsManager;
-import azkaban.metrics.MetricsUtility;
 import azkaban.project.ProjectManager;
-import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
-import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.server.AzkabanServer;
 import azkaban.server.session.SessionCache;
 import azkaban.trigger.TriggerManager;
@@ -44,7 +41,6 @@ import azkaban.trigger.builtin.KillExecutionAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.user.UserManager;
-import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -63,7 +59,6 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -91,9 +86,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.log.Log4JLogChute;
-import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
-import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -130,8 +122,6 @@ public class AzkabanWebServer extends AzkabanServer {
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-  private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
-  private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String DEFAULT_STATIC_DIR = "";
   private static AzkabanWebServer app;
   private final VelocityEngine velocityEngine;
@@ -142,52 +132,46 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ExecutorManager executorManager;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private final ClassLoader baseClassLoader;
-  private final MetricRegistry registry;
   private final MetricsManager metricsManager;
   private final Props props;
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
+
   //queuedThreadPool is mainly used to monitor jetty threadpool.
   private QueuedThreadPool queuedThreadPool;
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
 
-  /**
-   * Constructor usually called by tomcat AzkabanServletContext to create the
-   * initial server
-   */
-  public AzkabanWebServer() throws Exception {
-    this(null, loadConfigurationFromAzkabanHome());
-  }
-
   @Inject
-  public AzkabanWebServer(final Server server, final Props props) throws Exception {
-    this.props = requireNonNull(props);
-    this.server = server;
-
-    this.velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
-    this.sessionCache = new SessionCache(props);
-    this.userManager = loadUserManager(props);
-
-    // TODO remove hack. Move injection to constructor
-    this.executorManager = SERVICE_PROVIDER.getInstance(ExecutorManager.class);
-    this.projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
-    this.triggerManager = SERVICE_PROVIDER.getInstance(TriggerManager.class);
-    this.metricsManager = SERVICE_PROVIDER.getInstance(MetricsManager.class);
-    this.registry = SERVICE_PROVIDER.getInstance(MetricRegistry.class);
+  public AzkabanWebServer(final Props props,
+      final Server server,
+      final ExecutorManager executorManager,
+      final ProjectManager projectManager,
+      final TriggerManager triggerManager,
+      final MetricsManager metricsManager,
+      final SessionCache sessionCache,
+      final UserManager userManager,
+      final ScheduleManager scheduleManager,
+      final VelocityEngine velocityEngine) {
+    this.props = requireNonNull(props, "props is null.");
+    this.server = requireNonNull(server, "server is null.");
+    this.executorManager = requireNonNull(executorManager, "executorManager is null.");
+    this.projectManager = requireNonNull(projectManager, "projectManager is null.");
+    this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
+    this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
+    this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
+    this.userManager = requireNonNull(userManager, "userManager is null.");
+    this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
+    this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
 
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
-    this.scheduleManager = loadScheduleManager(this.triggerManager);
 
     final String triggerPluginDir =
         props.getString("trigger.plugin.dir", "plugins/triggers");
 
     loadPluginCheckersAndActions(triggerPluginDir);
-
-    this.baseClassLoader = this.getClassLoader();
 
     // Setup time zone
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
@@ -710,59 +694,28 @@ public class AzkabanWebServer extends AzkabanServer {
   private void startWebMetrics() throws Exception {
 
     // The number of idle threads in Jetty thread pool
-    MetricsUtility
-        .addGauge("JETTY-NumIdleThreads", this.registry, this.queuedThreadPool::getIdleThreads);
+    this.metricsManager.addGauge("JETTY-NumIdleThreads", this.queuedThreadPool::getIdleThreads);
 
     // The number of threads in Jetty thread pool. The formula is:
     // threads = idleThreads + busyThreads
-    MetricsUtility
-        .addGauge("JETTY-NumTotalThreads", this.registry, this.queuedThreadPool::getThreads);
+    this.metricsManager.addGauge("JETTY-NumTotalThreads", this.queuedThreadPool::getThreads);
 
     // The number of requests queued in the Jetty thread pool.
-    MetricsUtility
-        .addGauge("JETTY-NumQueueSize", this.registry, this.queuedThreadPool::getQueueSize);
+    this.metricsManager.addGauge("JETTY-NumQueueSize", this.queuedThreadPool::getQueueSize);
 
-    MetricsUtility
-        .addGauge("WEB-NumQueuedFlows", this.registry, this.executorManager::getQueuedFlowSize);
-    /**
+    this.metricsManager.addGauge("WEB-NumQueuedFlows", this.executorManager::getQueuedFlowSize);
+    /*
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
      * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
      * in order to have the correct runnable flows.
      * However, both getRunningFlows and getQueuedFlowSize are not synchronized, such that we can not make
      * a thread safe subtraction. We need to fix this in the future.
      */
-    MetricsUtility
-        .addGauge("WEB-NumRunningFlows", this.registry,
-            () -> this.executorManager.getRunningFlows().size());
+    this.metricsManager
+        .addGauge("WEB-NumRunningFlows", () -> this.executorManager.getRunningFlows().size());
 
     logger.info("starting reporting Web Server Metrics");
     this.metricsManager.startReporting("AZ-WEB", this.props);
-  }
-
-  private UserManager loadUserManager(final Props props) {
-    final Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
-    final UserManager manager;
-    if (userManagerClass != null && userManagerClass.getConstructors().length > 0) {
-      logger.info("Loading user manager class " + userManagerClass.getName());
-      try {
-        final Constructor<?> userManagerConstructor = userManagerClass.getConstructor(Props.class);
-        manager = (UserManager) userManagerConstructor.newInstance(props);
-      } catch (final Exception e) {
-        logger.error("Could not instantiate UserManager " + userManagerClass.getName());
-        throw new RuntimeException(e);
-      }
-    } else {
-      manager = new XmlUserManager(props);
-    }
-    return manager;
-  }
-
-  private ScheduleManager loadScheduleManager(final TriggerManager tm)
-      throws Exception {
-    logger.info("Loading trigger based scheduler");
-    final ScheduleLoader loader =
-        new TriggerBasedScheduleLoader(tm, ScheduleManager.triggerSource);
-    return new ScheduleManager(loader);
   }
 
   private void loadBuiltinCheckersAndActions() {
@@ -791,7 +744,7 @@ public class AzkabanWebServer extends AzkabanServer {
       return;
     }
 
-    final ClassLoader parentLoader = this.getClassLoader();
+    final ClassLoader parentLoader = getClass().getClassLoader();
     final File[] pluginDirs = triggerPluginPath.listFiles();
     final ArrayList<String> jarPaths = new ArrayList<>();
     for (final File pluginDir : pluginDirs) {
@@ -941,44 +894,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
   public TriggerManager getTriggerManager() {
     return this.triggerManager;
-  }
-
-  /**
-   * Creates and configures the velocity engine.
-   */
-  private VelocityEngine configureVelocityEngine(final boolean devMode) {
-    final VelocityEngine engine = new VelocityEngine();
-    engine.setProperty("resource.loader", "classpath, jar");
-    engine.setProperty("classpath.resource.loader.class",
-        ClasspathResourceLoader.class.getName());
-    engine.setProperty("classpath.resource.loader.cache", !devMode);
-    engine.setProperty("classpath.resource.loader.modificationCheckInterval",
-        5L);
-    engine.setProperty("jar.resource.loader.class",
-        JarResourceLoader.class.getName());
-    engine.setProperty("jar.resource.loader.cache", !devMode);
-    engine.setProperty("resource.manager.logwhenfound", false);
-    engine.setProperty("input.encoding", "UTF-8");
-    engine.setProperty("output.encoding", "UTF-8");
-    engine.setProperty("directive.set.null.allowed", true);
-    engine.setProperty("resource.manager.logwhenfound", false);
-    engine.setProperty("velocimacro.permissions.allow.inline", true);
-    engine.setProperty("velocimacro.library.autoreload", devMode);
-    engine.setProperty("velocimacro.library",
-        "/azkaban/webapp/servlet/velocity/macros.vm");
-    engine.setProperty(
-        "velocimacro.permissions.allow.inline.to.replace.global", true);
-    engine.setProperty("velocimacro.arguments.strict", true);
-    engine.setProperty("runtime.log.invalid.references", devMode);
-    engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
-    engine.setProperty("runtime.log.logsystem.log4j.logger",
-        Logger.getLogger("org.apache.velocity.Logger"));
-    engine.setProperty("parser.pool.size", 3);
-    return engine;
-  }
-
-  public ClassLoader getClassLoader() {
-    return this.baseClassLoader;
   }
 
   /**

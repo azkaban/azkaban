@@ -14,6 +14,12 @@ buildscript {
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 
+apply plugin: 'compare-gradle-builds'
+
+compareGradleBuilds {
+    targetBuild.gradleVersion = "4.0"
+}
+
 allprojects {
     repositories {
         mavenCentral()
@@ -36,6 +42,7 @@ ext.deps = [
         dbcp2               : 'org.apache.commons:commons-dbcp2:2.1.1',
         dbutils             : 'commons-dbutils:commons-dbutils:1.5',
         fileupload          : 'commons-fileupload:commons-fileupload:1.2.1',
+        gson                : 'com.google.code.gson:gson:2.8.1',
         guava               : 'com.google.guava:guava:21.0',
         guice               : 'com.google.inject:guice:4.1.0',
         h2                  : 'com.h2database:h2:1.4.193',
@@ -46,8 +53,7 @@ ext.deps = [
         hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
         hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
         hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
-        httpclient          : 'org.apache.httpcomponents:httpclient:4.5.2',
-        httpcore            : 'org.apache.httpcomponents:httpcore:4.4.5',
+        httpclient          : 'org.apache.httpcomponents:httpclient:4.5.3',
         io                  : 'commons-io:commons-io:2.4',
         jacksonCoreAsl      : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
         jacksonMapperAsl    : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
@@ -56,7 +62,6 @@ ext.deps = [
         jexl                : 'org.apache.commons:commons-jexl:2.1.1',
         jodaTime            : 'joda-time:joda-time:2.0',
         jopt                : 'net.sf.jopt-simple:jopt-simple:4.3',
-        jsonSimple          : 'com.googlecode.json-simple:json-simple:1.1.1',
         junit               : 'junit:junit:4.12',
         kafkaLog4jAppender  : 'org.apache.kafka:kafka-log4j-appender:0.10.0.0',
         log4j               : 'log4j:log4j:1.2.16',
@@ -120,8 +125,12 @@ subprojects {
             testCompile deps.assertj
             testCompile deps.junit
             testCompile deps.mockito
+        }
 
-
+        test {
+            // Set maxParallelForks to a large number and let gradle to force it to a the
+            // max-workers number when needed.
+            maxParallelForks = 12
         }
     }
 
@@ -131,6 +140,13 @@ subprojects {
             compression = Compression.GZIP
             extension = 'tar.gz'
         }
+    }
+
+    /**
+     * Terminate compilation if warnings occur.
+     */
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-Werror"]
     }
 
     /**

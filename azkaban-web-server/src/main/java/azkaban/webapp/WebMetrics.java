@@ -16,9 +16,8 @@
 
 package azkaban.webapp;
 
-import azkaban.metrics.MetricsUtility;
+import azkaban.metrics.MetricsManager;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,8 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @Singleton
 public class WebMetrics {
 
-  private final MetricRegistry registry;
-
   private final Meter webGetCall;
   private final Meter webPostCall;
 
@@ -40,26 +37,26 @@ public class WebMetrics {
   private final AtomicLong logFetchLatency = new AtomicLong(0L);
 
   @Inject
-  WebMetrics(final MetricRegistry registry) {
-    this.registry = registry;
-    this.webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", this.registry);
-    this.webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", this.registry);
-    MetricsUtility.addGauge("fetchLogLatency", this.registry, this.logFetchLatency::get);
+  WebMetrics(final MetricsManager metricsManager) {
+    this.webGetCall = metricsManager.addMeter("Web-Get-Call-Meter");
+    this.webPostCall = metricsManager.addMeter("Web-Post-Call-Meter");
+
+    metricsManager.addGauge("fetchLogLatency", this.logFetchLatency::get);
   }
 
+  /**
+   * Mark the occurrence of a GET call
+   *
+   * This method should be Thread Safe.
+   * Two reasons that we don't make this function call synchronized:
+   * 1). drop wizard metrics deals with concurrency internally;
+   * 2). mark is basically a math addition operation, which should not cause race condition issue.
+   */
   public void markWebGetCall() {
-
-    /*
-     * This method should be Thread Safe.
-     * Two reasons that we don't make this function call synchronized:
-     * 1). drop wizard metrics deals with concurrency internally;
-     * 2). mark is basically a math addition operation, which should not cause race condition issue.
-     */
     this.webGetCall.mark();
   }
 
   public void markWebPostCall() {
-
     this.webPostCall.mark();
   }
 

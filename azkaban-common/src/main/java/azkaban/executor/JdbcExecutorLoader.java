@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import azkaban.metrics.CommonMetrics;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -54,6 +55,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 
+@Singleton
 public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ExecutorLoader {
   private static final Logger logger = Logger

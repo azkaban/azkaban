@@ -17,7 +17,6 @@
 package azkaban.metrics;
 
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,21 +31,29 @@ public class CommonMetrics {
 
   private final AtomicLong dbConnectionTime = new AtomicLong(0L);
   private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
-  private final MetricRegistry registry;
+  private final MetricsManager metricsManager;
   private Meter dbConnectionMeter;
   private Meter flowFailMeter;
+  private Meter dispatchFailMeter;
+  private Meter dispatchSuccessMeter;
+  private Meter sendEmailFailMeter;
+  private Meter sendEmailSuccessMeter;
 
   @Inject
-  public CommonMetrics(final MetricRegistry metricsRegistry) {
-    this.registry = metricsRegistry;
+  public CommonMetrics(final MetricsManager metricsManager) {
+    this.metricsManager = metricsManager;
     setupAllMetrics();
   }
 
   private void setupAllMetrics() {
-    this.dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", this.registry);
-    this.flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", this.registry);
-    MetricsUtility.addGauge("OOM-waiting-job-count", this.registry, this.OOMWaitingJobCount::get);
-    MetricsUtility.addGauge("dbConnectionTime", this.registry, this.dbConnectionTime::get);
+    this.dbConnectionMeter = this.metricsManager.addMeter("DB-Connection-meter");
+    this.flowFailMeter = this.metricsManager.addMeter("flow-fail-meter");
+    this.dispatchFailMeter = this.metricsManager.addMeter("dispatch-fail-meter");
+    this.dispatchSuccessMeter = this.metricsManager.addMeter("dispatch-success-meter");
+    this.sendEmailFailMeter = this.metricsManager.addMeter("send-email-fail-meter");
+    this.sendEmailSuccessMeter = this.metricsManager.addMeter("send-email-success-meter");
+    this.metricsManager.addGauge("OOM-waiting-job-count", this.OOMWaitingJobCount::get);
+    this.metricsManager.addGauge("dbConnectionTime", this.dbConnectionTime::get);
   }
 
   /**
@@ -69,6 +76,34 @@ public class CommonMetrics {
    */
   public void markFlowFail() {
     this.flowFailMeter.mark();
+  }
+
+  /**
+   * Mark dispatchFailMeter when web server fails to dispatch a flow to executor.
+   */
+  public void markDispatchFail() {
+    this.dispatchFailMeter.mark();
+  }
+
+  /**
+   * Mark dispatchSuccessMeter when web server successfully dispatches a flow to executor.
+   */
+  public void markDispatchSuccess() {
+    this.dispatchSuccessMeter.mark();
+  }
+
+  /**
+   * Mark sendEmailFailMeter when an email fails to be sent out.
+   */
+  public void markSendEmailFail() {
+    this.sendEmailFailMeter.mark();
+  }
+
+  /**
+   * Mark sendEmailSuccessMeter when an email is sent out successfully.
+   */
+  public void markSendEmailSuccess() {
+    this.sendEmailSuccessMeter.mark();
   }
 
   public void setDBConnectionTime(final long milliseconds) {

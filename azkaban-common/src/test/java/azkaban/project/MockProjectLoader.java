@@ -231,7 +231,7 @@ public class MockProjectLoader implements ProjectLoader {
 
   @Override
   public List<Triple<String, Boolean, Permission>> getProjectPermissions(
-      final int projectId) throws ProjectManagerException {
+      final Project project) throws ProjectManagerException {
     // TODO Auto-generated method stub
     return null;
   }

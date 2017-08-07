@@ -21,6 +21,7 @@ import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.InputStream;
 import javax.inject.Inject;
@@ -32,6 +33,7 @@ import javax.inject.Inject;
  * This class helps in storing projects in the DB itself. This is intended to be the default since
  * it is the current behavior of Azkaban.
  */
+@Singleton
 public class DatabaseStorage implements Storage {
 
   private final ProjectLoader projectLoader;

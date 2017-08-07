@@ -200,7 +200,7 @@ public interface ProjectLoader {
   Props fetchProjectProperty(int projectId, int projectVer, String propsName)
       throws ProjectManagerException;
 
-  List<Triple<String, Boolean, Permission>> getProjectPermissions(int projectId)
+  List<Triple<String, Boolean, Permission>> getProjectPermissions(Project project)
       throws ProjectManagerException;
 
   void updateProjectSettings(Project project) throws ProjectManagerException;

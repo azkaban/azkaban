@@ -22,9 +22,6 @@ public class AbstractMailer {
 
   public static final int DEFAULT_SMTP_PORT = 25;
   private static final int MB_IN_BYTES = 1048576;
-  private final String clientHostname;
-  private final int clientPort;
-  private final boolean usesSSL;
   private final boolean usesAuth;
 
   private final String mailHost;
@@ -34,8 +31,6 @@ public class AbstractMailer {
   private final String mailSender;
   private final String azkabanName;
   private final String tls;
-
-  private final String referenceURL;
 
   private final long attachmentMazSizeInByte;
 
@@ -53,24 +48,6 @@ public class AbstractMailer {
 
     this.mailSender = props.getString("mail.sender", "");
     this.usesAuth = props.getBoolean("mail.useAuth", true);
-
-    this.clientHostname = props.get("server.hostname");
-    this.clientPort = props.getInt("server.port");
-    this.usesSSL = props.getBoolean("server.useSSL");
-
-    if (this.usesSSL) {
-      this.referenceURL =
-          "https://" + this.clientHostname
-              + (this.clientPort == 443 ? "/" : ":" + this.clientPort + "/");
-    } else {
-      this.referenceURL =
-          "http://" + this.clientHostname
-              + (this.clientPort == 80 ? "/" : ":" + this.clientPort + "/");
-    }
-  }
-
-  public String getReferenceURL() {
-    return this.referenceURL;
   }
 
   protected EmailMessage createEmailMessage(final String subject, final String mimetype,

@@ -4,9 +4,7 @@ dependencies {
     compile(project(':azkaban-common'))
 
     compile deps.kafkaLog4jAppender
-    compile(deps.jsonSimple) {
-        exclude group: 'junit', module: 'junit'
-    }
+    compile(deps.gson)
 
     runtime(project(':azkaban-hadoop-security-plugin'))
 

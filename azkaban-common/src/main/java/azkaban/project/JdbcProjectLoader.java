@@ -30,7 +30,6 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
 import com.google.common.io.Files;
-import com.google.inject.Inject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -64,7 +63,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
-  @Inject
+  // TODO kunkun-tang: This class is going to be removed soon, as we are migrating to JdbcProjectImpl.
   public JdbcProjectLoader(final Props props, final CommonMetrics commonMetrics) {
     super(props, commonMetrics);
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
@@ -785,7 +784,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   @Override
   public List<Triple<String, Boolean, Permission>> getProjectPermissions(
-      final int projectId) throws ProjectManagerException {
+      final Project project) throws ProjectManagerException {
     final ProjectPermissionsResultHandler permHander =
         new ProjectPermissionsResultHandler();
     final QueryRunner runner = createQueryRunner();
@@ -794,10 +793,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       permissions =
           runner.query(
               ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION,
-              permHander, projectId);
+              permHander, project.getId());
     } catch (final SQLException e) {
       throw new ProjectManagerException("Query for permissions for "
-          + projectId + " failed.", e);
+          + project.getId() + " failed.", e);
     }
 
     return permissions;
