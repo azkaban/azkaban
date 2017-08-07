@@ -17,6 +17,7 @@
 package azkaban.user;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +27,7 @@ public class User {
   private final String userid;
   private final Set<String> roles = new HashSet<>();
   private final Set<String> groups = new HashSet<>();
+  private final HashMap<String, String> properties = new HashMap<>();
   private String email = "";
   private UserPermissions userPermissions;
 
@@ -86,6 +88,10 @@ public class User {
 
   public boolean hasRole(final String role) {
     return this.roles.contains(role);
+  }
+
+  public String getProperty(final String name) {
+    return this.properties.get(name);
   }
 
   @Override

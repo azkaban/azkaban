@@ -46,7 +46,6 @@ dependencies {
     compile deps.hadoopCommon
     compile deps.hadoopHdfs
     compile deps.httpclient
-    compile deps.httpcore
     compile deps.io
     compile deps.jacksonCoreAsl
     compile deps.jacksonMapperAsl

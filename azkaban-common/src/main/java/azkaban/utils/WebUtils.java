@@ -97,8 +97,6 @@ public class WebUtils {
         return "Paused";
       case SKIPPED:
         return "Skipped";
-      case KILLING:
-        return "Killing";
       default:
     }
     return "Unknown";

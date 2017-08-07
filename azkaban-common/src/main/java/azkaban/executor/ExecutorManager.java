@@ -1483,7 +1483,7 @@ public class ExecutorManager extends EventHandler implements
         continue;
         // case UNKNOWN:
       case READY:
-        node.setStatus(Status.KILLING);
+        node.setStatus(Status.KILLED);
         break;
       default:
         node.setStatus(Status.FAILED);
@@ -1639,14 +1639,13 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /*
-   * cleaner thread to clean up execution_logs, etc in DB. Runs every day.
+   * cleaner thread to clean up execution_logs, etc in DB. Runs every hour.
    */
   private class CleanerThread extends Thread {
     // log file retention is 1 month.
 
-    // check every day
-    private static final long CLEANER_THREAD_WAIT_INTERVAL_MS =
-        24 * 60 * 60 * 1000;
+    // check every hour
+    private static final long CLEANER_THREAD_WAIT_INTERVAL_MS = 60 * 60 * 1000;
 
     private final long executionLogsRetentionMs;
 

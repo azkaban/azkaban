@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -77,10 +78,12 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
-      this.clientPortNumber = props.getString("jetty.ssl.port");
+      this.clientPortNumber = Integer.toString(props.getInt("jetty.ssl.port",
+          Constants.DEFAULT_SSL_PORT_NUMBER));
     } else {
       this.scheme = HTTP;
-      this.clientPortNumber = props.getString("jetty.port");
+      this.clientPortNumber = Integer.toString(props.getInt("jetty.port",
+          Constants.DEFAULT_PORT_NUMBER));
     }
 
     this.testMode = props.getBoolean("test.mode", false);
