@@ -84,10 +84,7 @@ public class HttpRequestUtils {
           "notifyFailureLast")));
     }
 
-    String concurrentOption = "skip";
-    if (hasParam(req, "concurrentOption")) {
-      concurrentOption = getParam(req, "concurrentOption");
-    }
+    String concurrentOption = getParam(req, "concurrentOption", "skip");
     execOptions.setConcurrentOption(concurrentOption);
     if (concurrentOption.equals("pipeline")) {
       final int pipelineLevel = getIntParam(req, "pipelineLevel");
