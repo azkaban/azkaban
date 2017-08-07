@@ -260,7 +260,7 @@ public class ProcessJob extends AbstractProcessJob {
       this.logJobProperties();
 
       synchronized (this) {
-        // Make sure that checking if the process job is killed and creating an AzakabanProcess
+        // Make sure that checking if the process job is killed and creating an AzkabanProcess
         // object are atomic. The cancel method relies on this to make sure that if this.process is
         // not null, this block of code which includes checking if the job is killed has not been
         // executed yet.
