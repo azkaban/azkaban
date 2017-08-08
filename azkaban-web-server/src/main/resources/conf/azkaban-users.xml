@@ -1,0 +1,8 @@
+<azkaban-users>
+  <user groups="azkaban" password="azkaban" roles="admin" username="azkaban"/>
+  <user password="metrics" roles="metrics" username="metrics"/>
+
+  <role name="admin" permissions="ADMIN"/>
+  <role name="metrics" permissions="METRICS"/>
+  <!-- permissions (azkaban.user.Permission.Type) : READ, WRITE, EXECUTE, SCHEDULE, METRICS, CREATEPROJECTS, UPLOADPROJECTS, ADMIN -->
+</azkaban-users>

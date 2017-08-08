@@ -183,6 +183,9 @@ distributions {
       from (movingJsTojsToPackage) {
         into 'web/js'
       }
+      from('src/main/resources/conf') {
+        into 'conf'
+      }
     }
   }
 }

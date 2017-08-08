@@ -31,6 +31,9 @@ distributions {
             from(jar) {
                 into 'lib'
             }
+            from('src/main/resources/conf') {
+                into 'conf'
+            }
         }
     }
 }
