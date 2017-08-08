@@ -228,7 +228,6 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   private Session getSessionFromRequest(final HttpServletRequest req)
       throws ServletException {
-    final String remoteIp = getRealClientIpAddr(req);
     final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
     String sessionId = null;
 
@@ -239,21 +238,15 @@ public abstract class LoginAbstractAzkabanServlet extends
     if (sessionId == null && hasParam(req, "session.id")) {
       sessionId = getParam(req, "session.id");
     }
-    return getSessionFromSessionId(sessionId, remoteIp);
+    return getSessionFromSessionId(sessionId);
   }
 
-  private Session getSessionFromSessionId(final String sessionId, final String remoteIp) {
+  private Session getSessionFromSessionId(final String sessionId) {
     if (sessionId == null) {
       return null;
     }
 
-    final Session session = getApplication().getSessionCache().getSession(sessionId);
-    // Check if the IP's are equal. If not, we invalidate the sesson.
-    if (session == null || !remoteIp.equals(session.getIp())) {
-      return null;
-    }
-
-    return session;
+    return getApplication().getSessionCache().getSession(sessionId);
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp)
@@ -290,9 +283,8 @@ public abstract class LoginAbstractAzkabanServlet extends
         // See if the session id is properly set.
         if (params.containsKey("session.id")) {
           final String sessionId = (String) params.get("session.id");
-          final String ip = getRealClientIpAddr(req);
 
-          session = getSessionFromSessionId(sessionId, ip);
+          session = getSessionFromSessionId(sessionId);
           if (session != null) {
             handleMultiformPost(req, resp, params, session);
             return;
