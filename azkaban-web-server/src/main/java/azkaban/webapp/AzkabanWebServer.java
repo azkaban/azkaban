@@ -75,7 +75,6 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -344,159 +343,14 @@ public class AzkabanWebServer extends AzkabanServer {
     loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());
 
     // triggerplugin
-    final String triggerPluginDir =
-        azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
     final Map<String, TriggerPlugin> triggerPlugins =
-        loadTriggerPlugins(root, triggerPluginDir, app);
+        new TriggerPluginLoader(azkabanSettings).loadTriggerPlugins(root);
     app.setTriggerPlugins(triggerPlugins);
     // always have basic time trigger
     // TODO: find something else to do the job
     app.getTriggerManager().start();
 
     root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, app);
-  }
-
-  private static Map<String, TriggerPlugin> loadTriggerPlugins(final Context root,
-      final String pluginPath, final AzkabanWebServer azkabanWebApp) {
-    final File triggerPluginPath = new File(pluginPath);
-    if (!triggerPluginPath.exists()) {
-      return new HashMap<>();
-    }
-
-    final Map<String, TriggerPlugin> installedTriggerPlugins =
-        new HashMap<>();
-    final ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
-    final File[] pluginDirs = triggerPluginPath.listFiles();
-    final ArrayList<String> jarPaths = new ArrayList<>();
-    for (final File pluginDir : pluginDirs) {
-      if (!pluginDir.exists()) {
-        logger.error("Error! Trigger plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
-        continue;
-      }
-
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      final File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        final File propertiesFile = new File(propertiesDir, "plugin.properties");
-        final File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      final String pluginName = pluginProps.getString("trigger.name");
-      final List<String> extLibClasspath =
-          pluginProps.getStringList("trigger.external.classpaths",
-              (List<String>) null);
-
-      final String pluginClass = pluginProps.getString("trigger.class");
-      if (pluginClass == null) {
-        logger.error("Trigger class is not set.");
-      } else {
-        logger.error("Plugin class " + pluginClass);
-      }
-
-      URLClassLoader urlClassLoader = null;
-      final File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        final File[] files = libDir.listFiles();
-
-        final ArrayList<URL> urls = new ArrayList<>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            final URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (final MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-        if (extLibClasspath != null) {
-          for (final String extLib : extLibClasspath) {
-            try {
-              final File file = new File(pluginDir, extLib);
-              final URL url = file.toURI().toURL();
-              urls.add(url);
-            } catch (final MalformedURLException e) {
-              logger.error(e);
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger.error("Library path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      Class<?> triggerClass = null;
-      try {
-        triggerClass = urlClassLoader.loadClass(pluginClass);
-      } catch (final ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
-        continue;
-      }
-
-      final String source = FileIOUtils.getSourcePathFromClass(triggerClass);
-      logger.info("Source jar " + source);
-      jarPaths.add("jar:file:" + source);
-
-      Constructor<?> constructor = null;
-      try {
-        constructor =
-            triggerClass.getConstructor(String.class, Props.class,
-                Context.class, AzkabanWebServer.class);
-      } catch (final NoSuchMethodException e) {
-        logger.error("Constructor not found in " + pluginClass);
-        continue;
-      }
-
-      Object obj = null;
-      try {
-        obj =
-            constructor.newInstance(pluginName, pluginProps, root,
-                azkabanWebApp);
-      } catch (final Exception e) {
-        logger.error(e);
-      }
-
-      if (!(obj instanceof TriggerPlugin)) {
-        logger.error("The object is not an TriggerPlugin");
-        continue;
-      }
-
-      final TriggerPlugin plugin = (TriggerPlugin) obj;
-      installedTriggerPlugins.put(pluginName, plugin);
-    }
-
-    // Velocity needs the jar resource paths to be set.
-    final String jarResourcePath = StringUtils.join(jarPaths, ", ");
-    logger.info("Setting jar resource path " + jarResourcePath);
-    final VelocityEngine ve = azkabanWebApp.getVelocityEngine();
-    ve.addProperty("jar.resource.loader.path", jarResourcePath);
-
-    return installedTriggerPlugins;
   }
 
   private static void loadViewerPlugins(final Context root, final String pluginPath,
