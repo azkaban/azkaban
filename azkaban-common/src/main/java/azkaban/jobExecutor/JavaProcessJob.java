@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3URI;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -60,9 +63,16 @@ public class JavaProcessJob extends ProcessJob {
 
   public static String JAVA_COMMAND = "java";
   // jar directory
-  public static String JAR_DIR = "/solo/jars";
+  public static String JAR_DIR = "/tmp/jars/";
+
 
   protected Configuration conf = new Configuration();
+//
+//  public static final String HADOOP_CONF_DIR_PROP = "hadoop.conf.dir"; // hadoop dir with xml conf files. from azkaban private.props
+//  public static final String HADOOP_USER_NAME_PROP = "user.to.proxy"; // user to proxy for hadoop fs rights
+//  public static final String HADOOP_INJECT_MASTER_IP = "hadoop-inject." + "hadoop.master.ip";
+//
+
 
   public JavaProcessJob(String jobid, Props sysProps, Props jobProps,
       Logger logger) {
@@ -118,40 +128,67 @@ public class JavaProcessJob extends ProcessJob {
    * @return
    */
   protected List<String> getFromLocalOrS3Concurrent(List<String> paths) {
+    File directory = new File(JAR_DIR);
+    if (! directory.exists()){
+      directory.mkdir();
+      // If you require it to make the entire directory path including parents,
+      // use directory.mkdirs(); here instead.
+    }
+
+    File solo_dir = new File("/solo/executions");
+    if (! solo_dir.exists()){
+      solo_dir.mkdir();
+      // If you require it to make the entire directory path including parents,
+      // use directory.mkdirs(); here instead.
+    }
+
+
+    getLog().info("dir exists? " + directory.exists());
+    AmazonS3Client s3client = getAWSClient();
+
     ConcurrentMap<String, String> classpathMap = new ConcurrentHashMap<>();
     for (String path: paths) {
       File file = new File(path);
       String fileName = file.getName();
-      getLog().info("filename:" + file.getPath());
+      // getLog().info("filename:" + file.getPath());
 
       if (file.exists()) {
-        classpathMap.put(fileName, path);
+        classpathMap.put(path, path);
       } else {
         try {
-          URI s3path = new URI(path);
-          String bucket = s3path.getHost();
-          String key = s3path.getPath(); // baseUrl.substring(index, lastIndex);
+          URI input_path = new URI(path);
+          String bucket = input_path.getHost();
+          String key = input_path.getPath(); // baseUrl.substring(index, lastIndex);
           String localPath = JAR_DIR + key;
-          getLog().info("test path: " + fileName);
-          getLog().info("test scheme: " + s3path.getScheme());
           // if it's a s3 path
-          if (s3path.getScheme() != null && s3path.getScheme().startsWith("s3")) {
-            getLog().info("s3 address: " + s3path);
-            getLog().info("bucket name: " + bucket);
-            getLog().info("key name: " + key);
-            S3Object obj = getAWSClient().getObject(new GetObjectRequest(bucket, key));
-            // write the file to JAR_DIR
-            InputStream objectData = obj.getObjectContent();
-            Files.copy(objectData, new File(localPath).toPath());
-            objectData.close();
+          if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
 
-            // alternative s3path method
-//            Path downloadPath = new Path(path);
-//            FileSystem s3Fs = downloadPath.getFileSystem(conf);
-//            s3Fs.copyToLocalFile(downloadPath, new Path(localPath));
+            AmazonS3URI s3_path = new AmazonS3URI(path);
+            bucket = s3_path.getBucket();
+            key = s3_path.getKey();
+            if (key.startsWith("/")) {
+              key = key.substring(1);
+            }
+            localPath = JAR_DIR + key;
 
-            // write the file to JAR_DIR
+            // case 0: if the file exists
+
+            // case 1: the file exists in the bucket
+
+            // case 2: the file doesn't!
+
+            File localFile = new File(localPath);
+
+            if (! localFile.exists()) {
+              getLog().info("here: " + path);
+              s3client.getObject(new GetObjectRequest(bucket, key), localFile);
+
+              // write the file to JAR_DI
+
+              getLog().info(localFile.exists() && localFile.canRead());
+            }
             classpathMap.put(localPath, path);
+
           } else {
             if (new File(localPath).exists()) {
               classpathMap.put(localPath, path);
@@ -159,8 +196,6 @@ public class JavaProcessJob extends ProcessJob {
           }
         } catch (URISyntaxException e2) {
           getLog().error("URI syntax exception");
-        } catch (IOException e2) {
-          getLog().error("IO exception");
         }
 
       }
@@ -179,49 +214,85 @@ public class JavaProcessJob extends ProcessJob {
    * @param paths
    */
   protected List<String> getFromLocalOrS3(List<String> paths) {
+    File directory = new File(JAR_DIR);
+    if (! directory.exists()){
+      directory.mkdir();
+      // If you require it to make the entire directory path including parents,
+      // use directory.mkdirs(); here instead.
+    }
+
+    getLog().info("dir exists? " + directory.exists());
+
     ArrayList<String> classPaths = new ArrayList<>();
 
-    for (String path : paths) {
+    for (String path: paths) {
       File file = new File(path);
       String fileName = file.getName();
-      getLog().info("filename:" + file.getPath());
+      // getLog().info("filename:" + file.getPath());
 
       if (file.exists()) {
-        classPaths.add(fileName);
+        classPaths.add(path);
       } else {
         try {
-          URI s3path = new URI(path);
-          String bucket = s3path.getHost();
-          String key = s3path.getPath(); // baseUrl.substring(index, lastIndex);
-          if (key.startsWith("/")) {
-            key = key.substring(1);
-          }
-          getLog().info("test path: " + fileName);
-          getLog().info("test scheme: " + s3path.getScheme());
+          URI input_path = new URI(path);
+          String bucket = input_path.getHost();
+          String key = input_path.getPath(); // baseUrl.substring(index, lastIndex);
+          String localPath = JAR_DIR + key;
           // if it's a s3 path
-          if (s3path.getScheme() != null && s3path.getScheme().startsWith("s3")) {
-            getLog().info("s3 address: " + s3path);
-            getLog().info("bucket name: " + bucket);
-            getLog().info("key name: " + key);
-            S3Object obj = getAWSClient().getObject(new GetObjectRequest(bucket, key));
-            // write the file to JAR_DI
-            InputStream objectData = obj.getObjectContent();
-            Files.copy(objectData, new File(JAR_DIR + fileName).toPath());
-            objectData.close();
-            // write the file to JAR_DIR
-            classPaths.add(JAR_DIR + key);
+          if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
+
+            // case 1: the file exists in the bucket
+
+            // case 2: the file doesn't!
+
+            AmazonS3URI s3_path = new AmazonS3URI(path);
+            bucket = s3_path.getBucket();
+            key = s3_path.getKey();
+            if (key.startsWith("/")) {
+              key = key.substring(1);
+            }
+            localPath = JAR_DIR + key;
+
+            File localFile = new File(localPath);
+            if (localFile.exists()) {
+              getLog().info("found");
+            } else {
+              getAWSClient().getObject(new GetObjectRequest(bucket, key), localFile);
+              // write the file to JAR_DI
+              getLog().info(localFile.exists() && localFile.canRead());
+            }
+
+            classPaths.add(localPath);
+
+
+//            // alternative s3path method
+//            Path downloadPath = new Path(path);
+//            FileSystem s3Fs = downloadPath.getFileSystem(conf);
+//            getLog().info("downloadpath: "+ downloadPath);
+//            getLog().info("inputpath: "+ input_path);
+//            if (s3Fs.exists(downloadPath) || s3Fs.exists(new Path(input_path.getPath()))) {
+//              System.out.println("here: " + downloadPath);
+//              getLog().info("local path: " + localPath);
+//
+//              s3Fs.copyToLocalFile(downloadPath, new Path(localPath));
+//              // write the file to JAR_DIR
+//              classPaths.add(localPath);
+//            }
+//            else {
+//              getLog().error("the path doesn't exist on s3!!! " + path);
+//            }
+
           } else {
-            if (new File(JAR_DIR + key).exists()) {
-              classPaths.add(JAR_DIR + key);
+            if (new File(localPath).exists()) {
+              classPaths.add(localPath);
             }
           }
         } catch (URISyntaxException e2) {
           getLog().error("URI syntax exception");
-        } catch (IOException e2) {
-          getLog().error("IO exception");
         }
 
       }
+
     }
 
     if (classPaths.isEmpty()) {
@@ -236,35 +307,47 @@ public class JavaProcessJob extends ProcessJob {
     List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
 
     ArrayList<String> classpathList = new ArrayList<>();
+
     // Adding global properties used system wide.
     if (getJobProps().containsKey(GLOBAL_CLASSPATH)) {
       List<String> globalClasspath =
           getJobProps().getStringList(GLOBAL_CLASSPATH);
       for (String global : globalClasspath) {
         getLog().info("Adding to global classpath:" + global);
-        classpathList.add(global);
-      }
-    }
+        // classpathList.add(global);
 
-    if (classPaths == null) {
-      File path = new File(getPath());
-      // File parent = path.getParentFile();
-      getLog().info(
-          "No classpath specified. Trying to load classes from " + path);
-
-      if (path != null) {
-        for (File file : path.listFiles()) {
+        for (File file : new File(global).listFiles()) {
           if (file.getName().endsWith(".jar")) {
             // log.info("Adding to classpath:" + file.getName());
-            classpathList.add(file.getName());
+            // getLog().info("TESTING: GET GLOBAL PATH: " + file.getName());
+            classpathList.add(file.getAbsolutePath());
           }
         }
       }
-    } else {
-      // TODO: WIP: convert s3 path to local path & cache new jars
+    }
+
+
+    File path = new File(getPath());
+//    // File parent = path.getParentFile();
+//    getLog().info(
+//        "No classpath specified. Trying to load classes from " + path);
+
+    if (path != null) {
+      for (File file : path.listFiles()) {
+        if (file.getName().endsWith(".jar")) {
+          // log.info("Adding to classpath:" + file.getName());
+          getLog().info("TESTING: GET NAME: " + file.getName());
+          getLog().info("TESTING: GET PATH: " + file.getPath());
+          classpathList.add(file.getAbsolutePath());
+        }
+      }
+    }
+
+    if (classPaths != null) {
       List<String> pathList = getFromLocalOrS3Concurrent(classPaths);
-      getLog().info("TESTING: " + pathList);
-      classpathList.addAll(getFromLocalOrS3(pathList));
+      classpathList.addAll(pathList);
+      getLog().info("TESTING classpath output: " + classpathList);
+
     }
 
     return classpathList;
