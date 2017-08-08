@@ -47,14 +47,12 @@ public class ResourceUtils {
     return false;
   }
 
-  public static User getUserFromSessionId(final String sessionId, final String ip)
+  public static User getUserFromSessionId(final String sessionId)
       throws UserManagerException {
     final Session session =
         AzkabanWebServer.getInstance().getSessionCache().getSession(sessionId);
     if (session == null) {
       throw new UserManagerException("Invalid session. Login required");
-    } else if (!session.getIp().equals(ip)) {
-      throw new UserManagerException("Invalid session. Session expired.");
     }
 
     return session.getUser();
