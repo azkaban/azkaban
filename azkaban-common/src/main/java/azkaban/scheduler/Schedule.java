@@ -47,11 +47,11 @@ public class Schedule {
   private final DateTimeZone timezone;
   private final long lastModifyTime;
   private final ReadablePeriod period;
-  private final String submitUser;
   private final String status;
   private final long submitTime;
   private final String cronExpression;
   private final boolean skipPastOccurrences = true;
+  private String submitUser;
   private int scheduleId;
   private long nextExecTime;
   private ExecutionOptions executionOptions;
@@ -242,6 +242,10 @@ public class Schedule {
 
   public String getSubmitUser() {
     return this.submitUser;
+  }
+
+  public void setSubmitUser(String submitUser) {
+    this.submitUser = submitUser;
   }
 
   public String getStatus() {
