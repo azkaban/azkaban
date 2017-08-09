@@ -75,7 +75,6 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -123,6 +122,8 @@ public class AzkabanWebServer extends AzkabanServer {
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final String DEFAULT_STATIC_DIR = "";
+
+  @Deprecated
   private static AzkabanWebServer app;
   private final VelocityEngine velocityEngine;
 
@@ -137,8 +138,6 @@ public class AzkabanWebServer extends AzkabanServer {
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
 
-  //queuedThreadPool is mainly used to monitor jetty threadpool.
-  private QueuedThreadPool queuedThreadPool;
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
 
@@ -171,7 +170,7 @@ public class AzkabanWebServer extends AzkabanServer {
     final String triggerPluginDir =
         props.getString("trigger.plugin.dir", "plugins/triggers");
 
-    loadPluginCheckersAndActions(triggerPluginDir);
+    new PluginCheckerAndActionsLoader().load(triggerPluginDir);
 
     // Setup time zone
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
@@ -185,13 +184,11 @@ public class AzkabanWebServer extends AzkabanServer {
     configureMBeanServer();
   }
 
+  @Deprecated
   public static AzkabanWebServer getInstance() {
     return app;
   }
 
-  /**
-   * Azkaban using Jetty
-   */
   public static void main(final String[] args) throws Exception {
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
@@ -217,7 +214,7 @@ public class AzkabanWebServer extends AzkabanServer {
     app = webServer;
 
     // TODO refactor code into ServerProvider
-    prepareAndStartServer(webServer.getServerProps(), app.server);
+    webServer.prepareAndStartServer();
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -231,14 +228,14 @@ public class AzkabanWebServer extends AzkabanServer {
 
         logger.info("Shutting down http server...");
         try {
-          app.close();
+          webServer.close();
         } catch (final Exception e) {
           logger.error("Error while shutting down http server.", e);
         }
         logger.info("kk thx bye.");
       }
 
-      public void logTopMemoryConsumers() throws Exception, IOException {
+      public void logTopMemoryConsumers() throws Exception {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
           logger.info("logging top memeory consumer");
@@ -260,243 +257,6 @@ public class AzkabanWebServer extends AzkabanServer {
         }
       }
     });
-  }
-
-  private static void prepareAndStartServer(final Props azkabanSettings, final Server server)
-      throws Exception {
-    validateDatabaseVersion(azkabanSettings);
-    configureRoutes(server, azkabanSettings);
-
-    if (azkabanSettings.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
-      app.startWebMetrics();
-    }
-    try {
-      server.start();
-      logger.info("Server started");
-    } catch (final Exception e) {
-      logger.warn(e);
-      Utils.croak(e.getMessage(), 1);
-    }
-  }
-
-  private static void validateDatabaseVersion(final Props azkabanSettings)
-      throws IOException, SQLException {
-    final boolean checkDB = azkabanSettings
-        .getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
-    if (checkDB) {
-      final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(azkabanSettings);
-      setup.loadTableInfo();
-      if (setup.needsUpdating()) {
-        logger.error("Database is out of date.");
-        setup.printUpgradePlan();
-
-        logger.error("Exiting with error.");
-        System.exit(-1);
-      }
-    }
-  }
-
-  private static void configureRoutes(final Server server, final Props azkabanSettings)
-      throws TriggerManagerException {
-    final int maxThreads = azkabanSettings
-        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
-
-    final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
-    app.setThreadPool(httpThreadPool);
-    server.setThreadPool(httpThreadPool);
-
-    final String staticDir =
-        azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
-    logger.info("Setting up web resource dir " + staticDir);
-    final Context root = new Context(server, "/", Context.SESSIONS);
-    root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
-
-    final String defaultServletPath =
-        azkabanSettings.getString("azkaban.default.servlet.path", "/index");
-    root.setResourceBase(staticDir);
-    final ServletHolder indexRedirect =
-        new ServletHolder(new IndexRedirectServlet(defaultServletPath));
-    root.addServlet(indexRedirect, "/");
-    final ServletHolder index = new ServletHolder(new ProjectServlet());
-    root.addServlet(index, "/index");
-
-    final ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
-    root.addServlet(staticServlet, "/css/*");
-    root.addServlet(staticServlet, "/js/*");
-    root.addServlet(staticServlet, "/images/*");
-    root.addServlet(staticServlet, "/fonts/*");
-    root.addServlet(staticServlet, "/favicon.ico");
-
-    root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
-    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
-    root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
-    root.addServlet(new ServletHolder(new ScheduleServlet()), "/schedule");
-    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
-    root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
-    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
-
-    final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
-    restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
-    root.addServlet(restliHolder, "/restli/*");
-
-    final String viewerPluginDir =
-        azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
-    loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());
-
-    // triggerplugin
-    final String triggerPluginDir =
-        azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
-    final Map<String, TriggerPlugin> triggerPlugins =
-        loadTriggerPlugins(root, triggerPluginDir, app);
-    app.setTriggerPlugins(triggerPlugins);
-    // always have basic time trigger
-    // TODO: find something else to do the job
-    app.getTriggerManager().start();
-
-    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, app);
-  }
-
-  private static Map<String, TriggerPlugin> loadTriggerPlugins(final Context root,
-      final String pluginPath, final AzkabanWebServer azkabanWebApp) {
-    final File triggerPluginPath = new File(pluginPath);
-    if (!triggerPluginPath.exists()) {
-      return new HashMap<>();
-    }
-
-    final Map<String, TriggerPlugin> installedTriggerPlugins =
-        new HashMap<>();
-    final ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
-    final File[] pluginDirs = triggerPluginPath.listFiles();
-    final ArrayList<String> jarPaths = new ArrayList<>();
-    for (final File pluginDir : pluginDirs) {
-      if (!pluginDir.exists()) {
-        logger.error("Error! Trigger plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
-        continue;
-      }
-
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      final File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        final File propertiesFile = new File(propertiesDir, "plugin.properties");
-        final File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      final String pluginName = pluginProps.getString("trigger.name");
-      final List<String> extLibClasspath =
-          pluginProps.getStringList("trigger.external.classpaths",
-              (List<String>) null);
-
-      final String pluginClass = pluginProps.getString("trigger.class");
-      if (pluginClass == null) {
-        logger.error("Trigger class is not set.");
-      } else {
-        logger.error("Plugin class " + pluginClass);
-      }
-
-      URLClassLoader urlClassLoader = null;
-      final File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        final File[] files = libDir.listFiles();
-
-        final ArrayList<URL> urls = new ArrayList<>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            final URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (final MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-        if (extLibClasspath != null) {
-          for (final String extLib : extLibClasspath) {
-            try {
-              final File file = new File(pluginDir, extLib);
-              final URL url = file.toURI().toURL();
-              urls.add(url);
-            } catch (final MalformedURLException e) {
-              logger.error(e);
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger.error("Library path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      Class<?> triggerClass = null;
-      try {
-        triggerClass = urlClassLoader.loadClass(pluginClass);
-      } catch (final ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
-        continue;
-      }
-
-      final String source = FileIOUtils.getSourcePathFromClass(triggerClass);
-      logger.info("Source jar " + source);
-      jarPaths.add("jar:file:" + source);
-
-      Constructor<?> constructor = null;
-      try {
-        constructor =
-            triggerClass.getConstructor(String.class, Props.class,
-                Context.class, AzkabanWebServer.class);
-      } catch (final NoSuchMethodException e) {
-        logger.error("Constructor not found in " + pluginClass);
-        continue;
-      }
-
-      Object obj = null;
-      try {
-        obj =
-            constructor.newInstance(pluginName, pluginProps, root,
-                azkabanWebApp);
-      } catch (final Exception e) {
-        logger.error(e);
-      }
-
-      if (!(obj instanceof TriggerPlugin)) {
-        logger.error("The object is not an TriggerPlugin");
-        continue;
-      }
-
-      final TriggerPlugin plugin = (TriggerPlugin) obj;
-      installedTriggerPlugins.put(pluginName, plugin);
-    }
-
-    // Velocity needs the jar resource paths to be set.
-    final String jarResourcePath = StringUtils.join(jarPaths, ", ");
-    logger.info("Setting jar resource path " + jarResourcePath);
-    final VelocityEngine ve = azkabanWebApp.getVelocityEngine();
-    ve.addProperty("jar.resource.loader.path", jarResourcePath);
-
-    return installedTriggerPlugins;
   }
 
   private static void loadViewerPlugins(final Context root, final String pluginPath,
@@ -664,45 +424,115 @@ public class AzkabanWebServer extends AzkabanServer {
     ve.addProperty("jar.resource.loader.path", jarResourcePath);
   }
 
-  /**
-   * Loads the Azkaban property file from the AZKABAN_HOME conf directory
-   */
-  private static Props loadConfigurationFromAzkabanHome() {
-    final String azkabanHome = System.getenv("AZKABAN_HOME");
+  private void validateDatabaseVersion()
+      throws IOException, SQLException {
+    final boolean checkDB = this.props
+        .getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
+    if (checkDB) {
+      final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(this.props);
+      setup.loadTableInfo();
+      if (setup.needsUpdating()) {
+        logger.error("Database is out of date.");
+        setup.printUpgradePlan();
 
-    if (azkabanHome == null) {
-      logger.error("AZKABAN_HOME not set. Will try default.");
-      return null;
+        logger.error("Exiting with error.");
+        System.exit(-1);
+      }
     }
-
-    if (!new File(azkabanHome).isDirectory()
-        || !new File(azkabanHome).canRead()) {
-      logger.error(azkabanHome + " is not a readable directory.");
-      return null;
-    }
-
-    final File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
-    if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
-      logger
-          .error(azkabanHome + " does not contain a readable conf directory.");
-      return null;
-    }
-
-    return loadAzkabanConfigurationFromDirectory(confPath);
   }
 
-  private void startWebMetrics() throws Exception {
+  private void configureRoutes() throws TriggerManagerException {
+    final String staticDir =
+        this.props.getString("web.resource.dir", DEFAULT_STATIC_DIR);
+    logger.info("Setting up web resource dir " + staticDir);
+    final Context root = new Context(this.server, "/", Context.SESSIONS);
+    root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
+    final String defaultServletPath =
+        this.props.getString("azkaban.default.servlet.path", "/index");
+    root.setResourceBase(staticDir);
+    final ServletHolder indexRedirect =
+        new ServletHolder(new IndexRedirectServlet(defaultServletPath));
+    root.addServlet(indexRedirect, "/");
+    final ServletHolder index = new ServletHolder(new ProjectServlet());
+    root.addServlet(index, "/index");
+
+    final ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
+    root.addServlet(staticServlet, "/css/*");
+    root.addServlet(staticServlet, "/js/*");
+    root.addServlet(staticServlet, "/images/*");
+    root.addServlet(staticServlet, "/fonts/*");
+    root.addServlet(staticServlet, "/favicon.ico");
+
+    root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
+    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
+    root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
+    root.addServlet(new ServletHolder(new ScheduleServlet()), "/schedule");
+    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
+    root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
+    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
+
+    final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
+    restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
+    root.addServlet(restliHolder, "/restli/*");
+
+    final String viewerPluginDir =
+        this.props.getString("viewer.plugin.dir", "plugins/viewer");
+    loadViewerPlugins(root, viewerPluginDir, getVelocityEngine());
+
+    // Trigger Plugin Loader
+    final TriggerPluginLoader triggerPluginLoader = new TriggerPluginLoader(this.props);
+
+    final Map<String, TriggerPlugin> triggerPlugins = triggerPluginLoader.loadTriggerPlugins(root);
+    setTriggerPlugins(triggerPlugins);
+    // always have basic time trigger
+    // TODO: find something else to do the job
+    getTriggerManager().start();
+
+    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
+  }
+
+  private void prepareAndStartServer()
+      throws Exception {
+    validateDatabaseVersion();
+    createThreadPool();
+    configureRoutes();
+
+    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
+      startWebMetrics();
+    }
+    try {
+      this.server.start();
+      logger.info("Server started");
+    } catch (final Exception e) {
+      logger.warn(e);
+      Utils.croak(e.getMessage(), 1);
+    }
+  }
+
+  private void createThreadPool() {
+    final int maxThreads = this.props
+        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
+
+    final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
+    this.server.setThreadPool(httpThreadPool);
+    addThreadPoolGauges(httpThreadPool);
+  }
+
+  private void addThreadPoolGauges(final QueuedThreadPool threadPool) {
     // The number of idle threads in Jetty thread pool
-    this.metricsManager.addGauge("JETTY-NumIdleThreads", this.queuedThreadPool::getIdleThreads);
+    this.metricsManager.addGauge("JETTY-NumIdleThreads", threadPool::getIdleThreads);
 
     // The number of threads in Jetty thread pool. The formula is:
     // threads = idleThreads + busyThreads
-    this.metricsManager.addGauge("JETTY-NumTotalThreads", this.queuedThreadPool::getThreads);
+    this.metricsManager.addGauge("JETTY-NumTotalThreads", threadPool::getThreads);
 
     // The number of requests queued in the Jetty thread pool.
-    this.metricsManager.addGauge("JETTY-NumQueueSize", this.queuedThreadPool::getQueueSize);
+    this.metricsManager.addGauge("JETTY-NumQueueSize", threadPool::getQueueSize);
+  }
 
+
+  private void startWebMetrics() throws Exception {
     this.metricsManager.addGauge("WEB-NumQueuedFlows", this.executorManager::getQueuedFlowSize);
     /*
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
@@ -734,129 +564,6 @@ public class AzkabanWebServer extends AzkabanServer {
     this.triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
     this.triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
     this.triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
-  }
-
-  private void loadPluginCheckersAndActions(final String pluginPath) {
-    logger.info("Loading plug-in checker and action types");
-    final File triggerPluginPath = new File(pluginPath);
-    if (!triggerPluginPath.exists()) {
-      logger.error("plugin path " + pluginPath + " doesn't exist!");
-      return;
-    }
-
-    final ClassLoader parentLoader = getClass().getClassLoader();
-    final File[] pluginDirs = triggerPluginPath.listFiles();
-    final ArrayList<String> jarPaths = new ArrayList<>();
-    for (final File pluginDir : pluginDirs) {
-      if (!pluginDir.exists()) {
-        logger.error("Error! Trigger plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
-        continue;
-      }
-
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      final File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        final File propertiesFile = new File(propertiesDir, "plugin.properties");
-        final File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      final List<String> extLibClasspath =
-          pluginProps.getStringList("trigger.external.classpaths",
-              (List<String>) null);
-
-      final String pluginClass = pluginProps.getString("trigger.class");
-      if (pluginClass == null) {
-        logger.error("Trigger class is not set.");
-      } else {
-        logger.error("Plugin class " + pluginClass);
-      }
-
-      URLClassLoader urlClassLoader = null;
-      final File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        final File[] files = libDir.listFiles();
-
-        final ArrayList<URL> urls = new ArrayList<>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            final URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (final MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-        if (extLibClasspath != null) {
-          for (final String extLib : extLibClasspath) {
-            try {
-              final File file = new File(pluginDir, extLib);
-              final URL url = file.toURI().toURL();
-              urls.add(url);
-            } catch (final MalformedURLException e) {
-              logger.error(e);
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger.error("Library path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      Class<?> triggerClass = null;
-      try {
-        triggerClass = urlClassLoader.loadClass(pluginClass);
-      } catch (final ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
-        continue;
-      }
-
-      final String source = FileIOUtils.getSourcePathFromClass(triggerClass);
-      logger.info("Source jar " + source);
-      jarPaths.add("jar:file:" + source);
-
-      try {
-        Utils.invokeStaticMethod(urlClassLoader, pluginClass,
-            "initiateCheckerTypes", pluginProps, app);
-      } catch (final Exception e) {
-        logger.error("Unable to initiate checker types for " + pluginClass);
-        continue;
-      }
-
-      try {
-        Utils.invokeStaticMethod(urlClassLoader, pluginClass,
-            "initiateActionTypes", pluginProps, app);
-      } catch (final Exception e) {
-        logger.error("Unable to initiate action types for " + pluginClass);
-        continue;
-      }
-
-    }
   }
 
   /**
@@ -918,9 +625,8 @@ public class AzkabanWebServer extends AzkabanServer {
 
     registerMbean("jetty", new JmxJettyServer(this.server));
     registerMbean("triggerManager", new JmxTriggerManager(this.triggerManager));
-    if (this.executorManager instanceof ExecutorManager) {
-      registerMbean("executorManager", new JmxExecutorManager(
-          (ExecutorManager) this.executorManager));
+    if (this.executorManager != null) {
+      registerMbean("executorManager", new JmxExecutorManager(this.executorManager));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
@@ -995,9 +701,5 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error(e);
       return null;
     }
-  }
-
-  private void setThreadPool(final QueuedThreadPool queuedThreadPool) {
-    this.queuedThreadPool = queuedThreadPool;
   }
 }

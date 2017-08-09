@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,6 +26,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -54,6 +55,9 @@ public class ProcessJob extends AbstractProcessJob {
   private final CommonMetrics commonMetrics;
   private volatile AzkabanProcess process;
   private volatile boolean killed = false;
+
+  // For testing only. True if the job process exits successfully.
+  private volatile boolean success;
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
@@ -255,13 +259,20 @@ public class ProcessJob extends AbstractProcessJob {
       // print out the Job properties to the job log.
       this.logJobProperties();
 
-      boolean success = false;
-      this.process = builder.build();
-      try {
-        if (!this.killed) {
-          this.process.run();
-          success = true;
+      synchronized (this) {
+        // Make sure that checking if the process job is killed and creating an AzkabanProcess
+        // object are atomic. The cancel method relies on this to make sure that if this.process is
+        // not null, this block of code which includes checking if the job is killed has not been
+        // executed yet.
+        if (this.killed) {
+          info("The job is killed. Abort. No job process created.");
+          return;
         }
+        this.process = builder.build();
+      }
+      try {
+          this.process.run();
+          this.success = true;
       } catch (final Throwable e) {
         for (final File file : propFiles) {
           if (file != null && file.exists()) {
@@ -271,7 +282,7 @@ public class ProcessJob extends AbstractProcessJob {
         throw new RuntimeException(e);
       } finally {
         info("Process completed "
-            + (success ? "successfully" : "unsuccessfully") + " in "
+            + (this.success ? "successfully" : "unsuccessfully") + " in "
             + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
       }
     }
@@ -369,11 +380,14 @@ public class ProcessJob extends AbstractProcessJob {
     synchronized (this) {
       this.killed = true;
       this.notify();
+      if (this.process == null) {
+        // The job thread has not checked if the job is killed yet.
+        // setting the killed flag should be enough to abort the job.
+        // There is no job process to kill.
+        return;
+      }
     }
-
-    if (this.process == null) {
-      throw new IllegalStateException("Not started.");
-    }
+    this.process.awaitStartup();
     final boolean processkilled = this.process
         .softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
     if (!processkilled) {
@@ -389,6 +403,16 @@ public class ProcessJob extends AbstractProcessJob {
 
   public int getProcessId() {
     return this.process.getProcessId();
+  }
+
+  @VisibleForTesting
+  boolean isSuccess() {
+    return this.success;
+  }
+
+  @VisibleForTesting
+  AzkabanProcess getProcess() {
+    return this.process;
   }
 
   public String getPath() {

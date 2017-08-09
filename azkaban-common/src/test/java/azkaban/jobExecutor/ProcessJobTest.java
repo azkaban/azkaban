@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,6 @@
 package azkaban.jobExecutor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
@@ -177,8 +176,8 @@ public class ProcessJobTest {
   }
 
   /**
-   * test cancellation of the job before associated process is constructed
-   * expect job will be cancelled successfully
+   * test cancellation of the job before associated process is constructed expect job will be
+   * cancelled successfully
    */
   @Test
   public void testCancelDuringPreparation() throws InterruptedException, ExecutionException {
@@ -198,10 +197,34 @@ public class ProcessJobTest {
 
     final ExecutorService executorService = Executors.newSingleThreadExecutor();
     final Future future = executorService.submit(sleepBeforeRunJob);
-    Thread.sleep(1000);
-    assertThatThrownBy(() -> sleepBeforeRunJob.cancel()).hasMessage("Not started.");
+    sleepBeforeRunJob.cancel();
     future.get();
     assertThat(sleepBeforeRunJob.getProgress()).isEqualTo(0.0);
+  }
+
+  @Test
+  public void testCancelAfterJobProcessCreation() throws InterruptedException, ExecutionException {
+    this.props.put(ProcessJob.COMMAND, "sleep 1");
+
+    final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    final Future future = executorService.submit(() -> {
+      try {
+        this.job.run();
+      } catch (final Exception e) {
+        e.printStackTrace();
+      }
+    });
+
+    // Wait for the AzkabanProcess object to be created before calling job.cancel so that the job
+    // process is created.
+    while (this.job.getProcess() == null) {
+      Thread.sleep(1);
+    }
+
+    this.job.cancel();
+    // Wait for the job to finish before testing its state.
+    future.get();
+    assertThat(this.job.isSuccess()).isFalse();
   }
 
   static class SleepBeforeRunJob extends ProcessJob implements Runnable {
@@ -214,13 +237,12 @@ public class ProcessJobTest {
     @Override
     public void run() {
       try {
-        info("sleep for 3 seconds before actually running the job");
-        Thread.sleep(3 * 1000);
+        info("sleep for some time before actually running the job");
+        Thread.sleep(10);
         super.run();
       } catch (final Exception ex) {
         this.getLog().error(ex);
       }
     }
   }
-
 }
