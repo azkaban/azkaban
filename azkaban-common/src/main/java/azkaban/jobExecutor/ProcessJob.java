@@ -224,13 +224,13 @@ public class ProcessJob extends AbstractProcessJob {
       final String nativeLibFolder = this.sysProps.getString(NATIVE_LIB_FOLDER);
       executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
       effectiveUser = getEffectiveUser(this.jobProps);
-        // Throw exception if Azkaban tries to run flow as a prohibited user
-        if (blackListedUsers.contains(effectiveUser)) {
-          throw new RuntimeException(
-              String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
-          );
-        }
+      // Throw exception if Azkaban tries to run flow as a prohibited user
+      if (blackListedUsers.contains(effectiveUser)) {
+        throw new RuntimeException(
+            String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
+        );
       }
+    }
 
     for (String command : commands) {
       AzkabanProcessBuilder builder = null;
