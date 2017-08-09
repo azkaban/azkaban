@@ -65,7 +65,8 @@ public class WebServerProvider implements Provider<Server> {
     // setting stats configuration for connectors
     setStatsOnConnectors(server);
 
-    logger.info(String.format("Starting %sserver on port: %d", useSsl ? "SSL " : "", port));
+    logger.info(String.format(
+        "Starting %sserver on port: %d # Max threads: %d", useSsl ? "SSL " : "", port, maxThreads));
     return server;
   }
 
