@@ -53,9 +53,6 @@ public class WebServerProvider implements Provider<Server> {
       final int sslPortNumber = this.props
           .getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
       port = sslPortNumber;
-      logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
-          + " and numThreads:" + maxThreads);
-
       server.addConnector(getSslSocketConnector(sslPortNumber));
     } else {
       port = this.props.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
