@@ -14,11 +14,58 @@
  * the License.
 *#
 
+<style type="text/css">
+  #banner {
+    width: 100%;
+    background: orange;
+    height: 70px;
+    position: float;
+    top: 0;
+    display: none;
+    left: 0;
+    text-align: center;
+    line-height: 70px;
+    font-weight: bold;
+  }
+</style>
 <script type="text/javascript">
-      function navMenuClick(url) {
-        window.location.href = url;
-      }
+  function navMenuClick(url) {
+    window.location.href = url;
+  }
+
+  $(function(){
+
+    if( $("#banner").data("id").indexOf('$') == -1  && $('#banner').is(':empty') == false) {
+
+      $('#banner').attr('Target', '_blank');
+      $("#banner").on("click", function(){
+        window.open($("#banner").data("url"));
+      });
+
+      $("#banner").slideDown(function()  {
+        if($("#banner").data("id") == "Warning") {
+          $('#bannerText').append('<img ' + 'src=' + '"images/caution.png"' + ' width="50" height="50" ' + ' style=' + '"display:inline;" >' + ' </img>');
+          $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("message") + '</span>');
+        } else if ($("#banner").data("id") == "Action Required") {
+          $('#bannerText').append('<img ' + 'src=' + '"images/action.png"' + ' width="50" height="50" ' + ' style=' + '"display:inline;" >' + ' </img>');
+          $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("id") + ":    " + '</span>');
+          $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("message") + '</span>');
+        }
+
+        // The banner will side up after 30 seconds
+        setTimeout(function() {
+          $("#banner").slideUp();
+        }, 30000);
+      });
+    }
+  });
 </script>
+
+<div id='banner' data-id="$note_type" data-message="$note_message" data-url="$note_url" >
+    <div id="bannerText">
+    </div>
+</div>
+
 <div class="navbar navbar-inverse navbar-static-top">
     <div class="container-full">
         <div class="navbar-header">

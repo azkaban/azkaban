@@ -81,9 +81,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
       IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
-
     try {
-      logger.info("access handle AJAX Action.");
       if (ajaxName.equals("addNote")) {
         ajaxAddNotes(req, ret, session.getUser());
       } else {
