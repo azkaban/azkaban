@@ -634,7 +634,7 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       if (this.node.getAttempt() > 0) {
-        logInfo("Starting job " + this.jobId + " attempt " + this.node.getAttempt()
+        logInfo("Starting job " + this.jobId + " retry " + this.node.getAttempt()
             + " at " + this.node.getStartTime());
       } else {
         logInfo("Starting job " + this.jobId + " at " + this.node.getStartTime());
