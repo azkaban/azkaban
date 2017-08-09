@@ -29,11 +29,11 @@ import azkaban.utils.SystemMemoryInfo;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
@@ -207,9 +207,10 @@ public class ProcessJob extends AbstractProcessJob {
     final boolean isExecuteAsUser = this.sysProps.getBoolean(EXECUTE_AS_USER, true);
 
     //Get list of users we never execute flows as. (ie: root, azkaban)
-    final Set<String> blackListedUsers = new HashSet<String>(
+    final Set<String> blackListedUsers = new HashSet<>(
         Arrays.asList(
-            this.sysProps.getString(Constants.ConfigurationKeys.BLACK_LISTED_USERS,"root,azkaban").split(",")
+            this.sysProps.getString(Constants.ConfigurationKeys.BLACK_LISTED_USERS, "root,azkaban")
+                .split(",")
         )
     );
 
@@ -219,13 +220,13 @@ public class ProcessJob extends AbstractProcessJob {
       final String nativeLibFolder = this.sysProps.getString(NATIVE_LIB_FOLDER);
       executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
       effectiveUser = getEffectiveUser(this.jobProps);
-        // Throw exception if Azkaban tries to run flow as a prohibited user
-        if (blackListedUsers.contains(effectiveUser)) {
-          throw new RuntimeException(
-              String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
-          );
-        }
+      // Throw exception if Azkaban tries to run flow as a prohibited user
+      if (blackListedUsers.contains(effectiveUser)) {
+        throw new RuntimeException(
+            String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
+        );
       }
+    }
 
     for (String command : commands) {
       AzkabanProcessBuilder builder = null;
