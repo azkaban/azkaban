@@ -285,6 +285,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
+    page.add("note_type", NoteServlet.type);
+    page.add("note_message", NoteServlet.message);
+    page.add("note_url", NoteServlet.url);
     page.add("utils", utils);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
@@ -331,6 +334,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
+    page.add("note_type", NoteServlet.type);
+    page.add("note_message", NoteServlet.message);
+    page.add("note_url", NoteServlet.url);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("context", req.getContextPath());
