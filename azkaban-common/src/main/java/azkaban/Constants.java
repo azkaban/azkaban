@@ -54,6 +54,7 @@ public class Constants {
 
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties
+    public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";
 
     // Defines a list of external links, each referred to as a topic
     public static final String AZKABAN_SERVER_EXTERNAL_TOPICS = "azkaban.server.external.topics";
