@@ -41,6 +41,7 @@ dependencies {
     compile deps.dbutils
     compile deps.fileupload
     compile deps.guava
+    compile deps.gson
     compile deps.hadoopAnnotations
     compile deps.hadoopAuth
     compile deps.hadoopCommon
