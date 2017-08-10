@@ -159,13 +159,13 @@ public class JavaProcessJob extends ProcessJob {
                         FileSystem s3Fs = s3Path.getFileSystem(conf);
 
                         if (!localFile.exists()) {
-                            s3Fs.copyToLocalFile(s3Path, new Path(path));
+                            s3Fs.copyToLocalFile(s3Path, new Path(localPath));
                         } else {
                             // Check the length of file
                             // TODO: (ideally this should be MD5 value, need to check how much time it needs to use)
                             if (s3Fs.getContentSummary(s3Path).getLength() != localFile.length()) {
                                 getLog().info("Updated file: " + key);
-                                s3Fs.copyToLocalFile(s3Path, new Path(path));
+                                s3Fs.copyToLocalFile(s3Path, new Path(localPath));
                             }
                         }
 
