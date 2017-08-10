@@ -16,8 +16,11 @@
 
 package azkaban.security;
 
+import static azkaban.Constants.NATIVE_LIB_FOLDER;
+
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
+import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
 import java.io.DataOutputStream;
@@ -65,15 +68,6 @@ import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
 public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
-
-  /**
-   * TODO Remove duplicated constants from plugins.
-   *
-   * Azkaban plugins don't depend on a common submodule from which they both can inherit code. Thus,
-   * constants are copied around and any changes to the constant values will break Azkaban. This
-   * needs to be fixed as part of a plugin infrastructure implementation.
-   */
-  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
 
   /**
    * TODO: This should be exposed as a configurable parameter

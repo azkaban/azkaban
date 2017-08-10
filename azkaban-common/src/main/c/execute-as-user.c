@@ -39,18 +39,23 @@ int INVALID_INPUT = 30;
 
 /*
  *  Change the real and effective user and group from super user to the specified user
- *  
+ *
  *  Adopted from:
  *  ./hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/native/container-executor/impl/container-executor.c
- *  
+ *
  */
 
-int change_user(uid_t user, gid_t group) {
+int change_user(char *username, uid_t user, gid_t group) {
     if (user == getuid() && user == geteuid() &&
             group == getgid() && group == getegid()) {
         return 0;
     }
 
+    if (initgroups(username, group) != 0) {
+        fprintf(LOGFILE, "Error setting supplementary groups for user %s: %s\n",
+            user, strerror(errno));
+        return SETUID_OPER_FAILED;
+    }
     if (seteuid(0) != 0) {
         fprintf(LOGFILE, "unable to reacquire root - %s\n", strerror(errno));
         fprintf(LOGFILE, "Real: %d:%d; Effective: %d:%d\n",
@@ -100,7 +105,7 @@ int main(int argc, char **argv){
 
     // try to change user
     fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, user_info->pw_uid, user_info->pw_gid);
-    int retval = change_user(user_info->pw_uid, user_info->pw_gid);
+    int retval = change_user(uid, user_info->pw_uid, user_info->pw_gid);
     if (retval != 0){
         fprintf(LOGFILE, "Error changing user to %s\n", uid);
         return SETUID_OPER_FAILED;
