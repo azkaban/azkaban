@@ -107,10 +107,6 @@ public class JavaProcessJob extends ProcessJob {
 
         conf = new Configuration();
 
-        // TODO: Remove the next two lines after local test
-        String path = "hdfs://" + jobProps.getString(HADOOP_INJECT_MASTER_IP) + ":8020";
-        conf.set("fs.defaultFS", path);
-
         if (jobProps.containsKey(HADOOP_INJECT_MASTER_IP)) {
             conf.set("hadoop.master.ip", jobProps.getString(HADOOP_INJECT_MASTER_IP));
         }
