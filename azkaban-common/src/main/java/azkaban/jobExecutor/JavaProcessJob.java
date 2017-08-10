@@ -125,8 +125,6 @@ public class JavaProcessJob extends ProcessJob {
         // case 2: the file exists locally but it's different from S3
 
         try {
-            // set up the hadoop configs for hadoop file system
-            setHadoopConfigs();
 
             for (String path : paths) {
                 File file = new File(path);
@@ -142,6 +140,8 @@ public class JavaProcessJob extends ProcessJob {
                     String localPath = JAR_DIR + key;
                     // if it's a s3 path
                     if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
+                        // set up the hadoop configs for hadoop file system
+                        setHadoopConfigs();
 
                         AmazonS3URI s3_path = new AmazonS3URI(path);
                         key = s3_path.getKey();
