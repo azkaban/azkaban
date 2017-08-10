@@ -38,11 +38,12 @@ import org.apache.log4j.Logger;
 @Singleton
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
+
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
   private static final Logger logger = Logger.getLogger(TriggerManager.class);
   private static final Map<Integer, Trigger> triggerIdMap =
       new ConcurrentHashMap<>();
-  
+
   private final TriggerScannerThread runnerThread;
   private final Object syncObj = new Object();
   private final CheckerTypeLoader checkerTypeLoader;
@@ -55,7 +56,7 @@ public class TriggerManager extends EventHandler implements
 
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
-                        final ExecutorManager executorManager) throws TriggerManagerException {
+      final ExecutorManager executorManager) throws TriggerManagerException {
 
     requireNonNull(props);
     requireNonNull(executorManager);
@@ -185,7 +186,7 @@ public class TriggerManager extends EventHandler implements
 
   @Override
   public List<Trigger> getTriggerUpdates(final String triggerSource,
-                                         final long lastUpdateTime) throws TriggerManagerException {
+      final long lastUpdateTime) throws TriggerManagerException {
     final List<Trigger> triggers = new ArrayList<>();
     for (final Trigger t : triggerIdMap.values()) {
       if (t.getSource().equals(triggerSource)
@@ -237,17 +238,18 @@ public class TriggerManager extends EventHandler implements
 
   @Override
   public void registerCheckerType(final String name,
-                                  final Class<? extends ConditionChecker> checker) {
+      final Class<? extends ConditionChecker> checker) {
     this.checkerTypeLoader.registerCheckerType(name, checker);
   }
 
   @Override
   public void registerActionType(final String name,
-                                 final Class<? extends TriggerAction> action) {
+      final Class<? extends TriggerAction> action) {
     this.actionTypeLoader.registerActionType(name, action);
   }
 
   private class TriggerScannerThread extends Thread {
+
     private final long scannerInterval;
     private final BlockingQueue<Trigger> triggers;
     private boolean shutdown = false;
@@ -329,7 +331,8 @@ public class TriggerManager extends EventHandler implements
              * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
              * the previous ExpireCondition and this commit's ExpireCondition.
              */
-            if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.expireConditionMet()) {
+            if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t
+                .expireConditionMet()) {
               onTriggerPause(t);
             } else if (t.triggerConditionMet()) {
               onTriggerTrigger(t);
@@ -376,7 +379,7 @@ public class TriggerManager extends EventHandler implements
       final List<TriggerAction> expireActions = t.getExpireActions();
       for (final TriggerAction action : expireActions) {
         try {
-          logger.info("Doing expire actions for "+ action.getDescription() + " for " + t);
+          logger.info("Doing expire actions for " + action.getDescription() + " for " + t);
           action.doAction();
         } catch (final Exception e) {
           logger.error("Failed to do expire action " + action.getDescription() + " for " + t, e);
@@ -394,6 +397,7 @@ public class TriggerManager extends EventHandler implements
     }
 
     private class TriggerComparator implements Comparator<Trigger> {
+
       @Override
       public int compare(final Trigger arg0, final Trigger arg1) {
         final long first = arg1.getNextCheckTime();
