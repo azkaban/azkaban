@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
  */
 public class EmrUtils {
 
+    private transient static org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(EmrUtils.class);
+
     private static final List<String> allowedInstanceTypes = Arrays.asList("m3.xlarge", "m3.2xlarge", "c3.xlarge", "c3.2xlarge",
             "c3.4xlarge", "c3.8xlarge", "g2.2xlarge", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "i2.xlarge",
             "i2.2xlarge", "i2.4xlarge", "i2.8xlarge");
@@ -52,6 +54,9 @@ public class EmrUtils {
 
     public static final String EMR_CONF_CLUSTER_SECURITYGROUP = "cluster.emr.securitygroup";
 
+    // http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/elasticmapreduce/model/JobFlowInstancesConfig.html#setServiceAccessSecurityGroup-java.lang.String-
+    public static final String EMR_CONF_CLUSTER_SERVICE_ACCESS_SECURITYGROUP = "cluster.emr.service.access.securitygroup";
+
     public static final String EMR_CONF_EC2_SSH_KEY_NAME = "cluster.emr.ec2.key";
 
     public static final String EMR_CONF_LOG_PATH = "cluster.emr.log.path";
@@ -70,7 +75,6 @@ public class EmrUtils {
     public static final String EMR_CONF_SERVICE_ROLE = "cluster.emr.service.role";
 
 
-
     private static final int MAX_CORE_INSTANCES = 15;
     private static final int MAX_TASK_INSTANCES = 150;
 
@@ -86,6 +90,7 @@ public class EmrUtils {
         A, B, C;
 
         private static EC2Zone[] vals = values();
+
         public EC2Zone next() {
             return vals[(ordinal() + 1) % vals.length];
         }
@@ -167,7 +172,6 @@ public class EmrUtils {
     }
 
 
-
     private static boolean validateInstanceTypes(String... instanceTypes) {
         for (String instanceType : instanceTypes) {
             if (!allowedInstanceTypes.contains(instanceType)) {
@@ -246,6 +250,24 @@ public class EmrUtils {
         instancesConfig.setEc2SubnetId(ec2SubnetId);
         instancesConfig.setEmrManagedMasterSecurityGroup(securityGroup);
         instancesConfig.setEmrManagedSlaveSecurityGroup(securityGroup);
+
+
+        // To allow clusters in private subnets (https://jira.salesforceiq.com/browse/INFRA-7770)
+        String serviceAccessSecurityGroup = props.get(EMR_CONF_CLUSTER_SERVICE_ACCESS_SECURITYGROUP);
+
+        logger.info("** Azkaban Properties ** ");
+        Set<String> keySet = props.getKeySet();
+        for (String key : keySet) {
+            String value = props.get(key);
+            logger.info(key + ": " + value);
+        }
+
+        logger.info("Service Access Security Group: " + serviceAccessSecurityGroup);
+
+        if (serviceAccessSecurityGroup != null && serviceAccessSecurityGroup.length() > 0 && !"n/a".equalsIgnoreCase(serviceAccessSecurityGroup)) {
+            instancesConfig.setServiceAccessSecurityGroup(serviceAccessSecurityGroup);
+        }
+
         return instancesConfig;
     }
 
@@ -274,7 +296,7 @@ public class EmrUtils {
     }
 
     public static RunJobFlowRequest createRunJobFlowRequest(Props jobProps, String clusterName, JobFlowInstancesConfig instancesConfig,
-                                                             Collection<Configuration> clusterJSONConfiguration) {
+                                                            Collection<Configuration> clusterJSONConfiguration) {
         RunJobFlowRequest request = new RunJobFlowRequest(clusterName, instancesConfig);
         request.setLogUri(jobProps.getString(EMR_CONF_LOG_PATH, EMR_DEFAULT_LOG_PATH));
         request.setServiceRole(jobProps.getString(EMR_CONF_SERVICE_ROLE, "EMR_DefaultRole"));

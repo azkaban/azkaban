@@ -1,208 +1,82 @@
 buildscript {
     repositories {
-        mavenCentral()
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+        maven { url "https://oss.sonatype.org/content/repositories/releases" }
+        maven { url 'http://repo.spring.io/plugins-release' }
     }
     dependencies {
         classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
         classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
-        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.8'
     }
 }
+
 plugins {
     id "com.jfrog.artifactory" version "3.1.1"
 }
 
-apply plugin: 'distribution'
 apply from: 'artifactory.gradle'
 
 allprojects {
-    apply plugin: 'maven-publish'
-
-}
-
-artifactoryPublish.skip = true
-
-
-/**
- * Helper that calls a command and returns the output.
- */
-def cmdCaller = { commandln ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine commandln
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
-
-subprojects {
-    apply plugin: 'java'
     apply plugin: 'maven'
-    apply plugin: 'eclipse'
-    apply plugin: 'net.ltgt.errorprone'
-    apply plugin: "com.jfrog.artifactory"
-
-
-    configurations.errorprone {
-        resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.5'
-    }
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-
-                artifact sourcesJar {
-                    classifier "sources"
-                }
-            }
-        }
-    }
-
-    artifactoryPublish {
-        doLast {
-            println "Overriding repository based on project version (snapshot/release)"
-            clientConfig.publisher.repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshot' : 'release'}-local"
-        }
-    }
-
-    jar {
-        manifest {
-            attributes("Implementation-Title": "Azkaban", "Implementation-Version": version)
-        }
-        if (!(project.name == "azkaban-soloserver")) exclude 'log4j.properties'
-    }
-
-    /**
-     * Gets the version name from the latest Git tag
-     */
-    task createVersionFile() << {
-        String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
-        String gitRepo = cmdCaller(['git', 'config', '--get', 'remote.origin.url']);
-        def date = new Date()
-        def formattedDate = date.format('yyyy-MM-dd hh:mm zzz')
-
-        String versionStr = version + '\n' +
-                gitCommitHash + '\n' +
-                gitRepo + '\n' +
-                formattedDate + '\n'
-
-        File versionFile = file('build/package/azkaban.version')
-        versionFile.parentFile.mkdirs()
-        versionFile.write(versionStr)
-    }
-
-    /*
-     * Print test execution summary when informational logging is enabled.
-     */
-    test {
-        testLogging {
-            afterSuite { desc, result ->
-                if (desc.getParent()) {
-                    logger.info desc.getName()
-                } else {
-                    logger.info "Overall"
-                }
-                logger.info "  ${result.resultType} (" +
-                        "${result.testCount} tests, " +
-                        "${result.successfulTestCount} passed, " +
-                        "${result.failedTestCount} failed, " +
-                        "${result.skippedTestCount} skipped)"
-            }
-        }
-    }
+    apply plugin: 'maven-publish'
+    apply plugin: 'com.jfrog.artifactory'
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
 }
-
-
-
-distributions {
-    migration {
-        baseName = 'azkaban-migration'
-        contents {
-            from { project(':azkaban-migration').file('build/package') }
-        }
-    }
-
-    webserver {
-        baseName = 'azkaban-web-server'
-        contents {
-            from { project(':azkaban-webserver').file('build/package') }
-        }
-    }
-
-    execserver {
-        baseName = 'azkaban-exec-server'
-        contents {
-            from { project(':azkaban-execserver').file('build/package') }
-        }
-    }
-
-    soloserver {
-        baseName = 'azkaban-solo-server'
-        contents {
-            from { project(':azkaban-soloserver').files('build/package') }
-        }
-    }
-
-    sql {
-        baseName = 'azkaban-sql'
-        contents {
-            from { project(':azkaban-sql').file('src/sql') }
-            from { project(':azkaban-sql').file('build/sql') }
-        }
-    }
-}
-
-// Set up dependencies for distribution tasks.
-//
-// N.B. The extension for the Tar tasks is set since the Gradle Distribution
-//      plugin uses the .tar file extension for GZipped Tar files by default.
-//
-// N.B. When the distribution tasks are run, azkaban-execserver,
-//      azkaban-webserver, azkaban-migration, and azkaban-soloserver only
-//      have a dependency on the azkaban-common build artifacts. As a result,
-//      the full :azkaban-common:build task is not run, meaning that the
-//      tests are skipped. Thus, the dependency on :azkaban-common:build
-//      is set here so that the azkaban-common unit tests are run when running
-//      the dist tasks.
-
-migrationDistTar.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
-migrationDistTar.compression = Compression.GZIP
-migrationDistTar.extension = 'tar.gz'
-migrationDistZip.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
-
-webserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
-webserverDistTar.compression = Compression.GZIP
-webserverDistTar.extension = 'tar.gz'
-webserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
-
-execserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-execserver:copy'
-execserverDistTar.compression = Compression.GZIP
-execserverDistTar.extension = 'tar.gz'
-execserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-execserver:copy'
-
-soloserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
-soloserverDistTar.compression = Compression.GZIP
-soloserverDistTar.extension = 'tar.gz'
-soloserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
-
-sqlDistTar.dependsOn ':azkaban-sql:concat'
-sqlDistTar.compression = Compression.GZIP
-sqlDistTar.extension = 'tar.gz'
-sqlDistZip.dependsOn ':azkaban-sql:concat'
-
-distTar.dependsOn migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
-distZip.dependsOn migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
 
 /**
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.7'
+    gradleVersion = '2.13'
 }
+
+artifactoryPublish {
+    doFirst {
+        println "Overriding repository based on project version (snapshot/release) version=${project.version}"
+        clientConfig.publisher.repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshot' : 'release'}-local"
+        println("Publishing to ${clientConfig.publisher.repoKey}")
+    }
+}
+
+subprojects {
+    apply from: '../tests.gradle'
+
+    jar.baseName = "$project.name"
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifactId "$jar.baseName"
+                from components.java
+                artifact sourcesJar { classifier "sources" }
+            }
+            all {
+                pom.withXml {
+                    asNode().dependencies.'*'.findAll() {
+                        it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+                            dep.name == it.artifactId.text()
+                        }
+                    }.each { it.scope*.value = 'compile' }
+                }
+            }
+        }
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+    sourcesJar.baseName = jar.baseName
+
+    artifacts {
+        archives sourcesJar
+    }
+
+    artifactoryPublish.dependsOn(jar, sourcesJar)
+
+}
+
+// Skip publishing the root project
+artifactoryPublish.skip = true
