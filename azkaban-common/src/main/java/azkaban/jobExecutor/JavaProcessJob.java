@@ -21,7 +21,6 @@ import azkaban.server.AzkabanServer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import com.amazonaws.services.s3.AmazonS3URI;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -142,9 +141,6 @@ public class JavaProcessJob extends ProcessJob {
                     if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
                         // set up the hadoop configs for hadoop file system
                         setHadoopConfigs();
-
-                        AmazonS3URI s3_path = new AmazonS3URI(path);
-                        key = s3_path.getKey();
 
                         // remove the first letter if it starts with /
                         if (key.startsWith("/")) {

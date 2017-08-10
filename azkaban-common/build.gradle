@@ -54,7 +54,6 @@ dependencies {
     compile('org.mortbay.jetty:jetty:6.1.26')
     compile('org.mortbay.jetty:jetty-util:6.1.26')
     compile('org.slf4j:slf4j-api:1.6.1')
-    compile('com.amazonaws:aws-java-sdk-s3:1.11.167')
 
     compile('com.relateiq.statsd:statsd-release:1.0.1')
 
