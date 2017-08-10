@@ -24,6 +24,7 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -33,6 +34,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Singleton
 public class StatusService {
 
   private static final Logger log = LoggerFactory.getLogger(StatusService.class);
