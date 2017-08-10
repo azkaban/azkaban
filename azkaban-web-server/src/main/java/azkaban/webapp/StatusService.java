@@ -24,6 +24,8 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import com.google.inject.Inject;
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,8 @@ import org.slf4j.LoggerFactory;
 public class StatusService {
 
   private static final Logger log = LoggerFactory.getLogger(StatusService.class);
+  private static final File PACKAGE_JAR = new File(
+      StatusService.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
   private final ExecutorLoader executorLoader;
   private final DatabaseOperator dbOperator;
@@ -44,6 +48,15 @@ public class StatusService {
     this.dbOperator = dbOperator;
   }
 
+  private static String getInstallationPath() {
+    try {
+      return PACKAGE_JAR.getCanonicalPath();
+    } catch (final IOException e) {
+      log.error("Unable to obtain canonical path. Reporting absolute path instead", e);
+      return PACKAGE_JAR.getAbsolutePath();
+    }
+  }
+
   public Status getStatus() {
     final String version = jarVersion == null ? "unknown" : jarVersion;
     final Runtime runtime = Runtime.getRuntime();
@@ -51,6 +64,7 @@ public class StatusService {
 
     // Build the status object
     return new Status(version,
+        getInstallationPath(),
         usedMemory,
         runtime.maxMemory(),
         getDbStatus(),

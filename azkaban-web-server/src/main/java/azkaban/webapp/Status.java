@@ -29,13 +29,19 @@ import java.util.Map;
 public class Status {
 
   private final String version;
+  private final String installationPath;
   private final long usedMemory, xmx;
   private final boolean isDatabaseUp;
   private final Map<Integer, Executor> executorStatusMap;
 
-  Status(final String version, final long usedMemory, final long xmx, final boolean isDatabaseUp,
+  Status(final String version,
+      final String installationPath,
+      final long usedMemory,
+      final long xmx,
+      final boolean isDatabaseUp,
       final Map<Integer, Executor> executorStatusMap) {
     this.version = version;
+    this.installationPath = installationPath;
     this.usedMemory = usedMemory;
     this.xmx = xmx;
     this.isDatabaseUp = isDatabaseUp;
