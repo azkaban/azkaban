@@ -601,14 +601,18 @@ public class JobRunner extends EventHandler implements Runnable {
       finalStatus = changeStatus(Status.KILLED);
     }
 
-    final int attemptNo = this.node.getAttempt();
-    logInfo("Finishing job " + this.jobId + (this.node.getAttempt() > 0 ? (" retry: " + attemptNo) : "") + " at "
-        + this.node.getEndTime() + " with status " + this.node.getStatus());
+    logInfo(
+        "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
+            + " with status " + this.node.getStatus());
     fireEvent(Event.create(this, Type.JOB_FINISHED,
         new EventData(finalStatus, this.node.getNestedId())), false);
-    finalizeLogFile(attemptNo);
+    finalizeLogFile(this.node.getAttempt());
     finalizeAttachmentFile();
     writeStatus();
+  }
+
+  private String getNodeRetryLog() {
+    return this.node.getAttempt() > 0 ? (" retry: " + this.node.getAttempt()) : "";
   }
 
   private void uploadExecutableNode() {
@@ -632,8 +636,8 @@ public class JobRunner extends EventHandler implements Runnable {
         return null;
       }
 
-      logInfo("Starting job " + this.jobId + (this.node.getAttempt() > 0 ? (" retry: " + this.node.getAttempt()) : "") + " at "
-          + this.node.getStartTime());
+      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node
+          .getStartTime());
 
       // If it's an embedded flow, we'll add the nested flow info to the job
       // conf
