@@ -58,6 +58,7 @@ import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
+import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -125,8 +126,9 @@ public class AzkabanWebServer extends AzkabanServer {
 
   @Deprecated
   private static AzkabanWebServer app;
+  
   private final VelocityEngine velocityEngine;
-
+  private final StatusService statusService;
   private final Server server;
   private final UserManager userManager;
   private final ProjectManager projectManager;
@@ -151,7 +153,8 @@ public class AzkabanWebServer extends AzkabanServer {
       final SessionCache sessionCache,
       final UserManager userManager,
       final ScheduleManager scheduleManager,
-      final VelocityEngine velocityEngine) {
+      final VelocityEngine velocityEngine,
+      final StatusService statusService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManager = requireNonNull(executorManager, "executorManager is null.");
@@ -162,6 +165,7 @@ public class AzkabanWebServer extends AzkabanServer {
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
+    this.statusService = statusService;
 
     loadBuiltinCheckersAndActions();
 
@@ -471,6 +475,7 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
     root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
+    root.addServlet(new ServletHolder(new StatusServlet(this.statusService)), "/status");
 
     final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
