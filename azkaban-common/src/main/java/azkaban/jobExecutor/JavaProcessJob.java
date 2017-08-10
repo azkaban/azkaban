@@ -16,403 +16,298 @@
 
 package azkaban.jobExecutor;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3URI;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import org.apache.log4j.Logger;
-
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.server.AzkabanServer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.AmazonS3URI;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class JavaProcessJob extends ProcessJob {
-  public static final String CLASSPATH = "classpath";
-  public static final String GLOBAL_CLASSPATH = "global.classpaths";
-  public static final String JAVA_CLASS = "java.class";
-  public static final String INITIAL_MEMORY_SIZE = "Xms";
-  public static final String MAX_MEMORY_SIZE = "Xmx";
-  public static final String MAIN_ARGS = "main.args";
-  public static final String JVM_PARAMS = "jvm.args";
-  public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
+    public static final String CLASSPATH = "classpath";
+    public static final String GLOBAL_CLASSPATH = "global.classpaths";
+    public static final String JAVA_CLASS = "java.class";
+    public static final String INITIAL_MEMORY_SIZE = "Xms";
+    public static final String MAX_MEMORY_SIZE = "Xmx";
+    public static final String MAIN_ARGS = "main.args";
+    public static final String JVM_PARAMS = "jvm.args";
+    public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
 
-  public static final String DEFAULT_INITIAL_MEMORY_SIZE = "64M";
-  public static final String DEFAULT_MAX_MEMORY_SIZE = "256M";
+    public static final String DEFAULT_INITIAL_MEMORY_SIZE = "64M";
+    public static final String DEFAULT_MAX_MEMORY_SIZE = "256M";
 
-  public static String JAVA_COMMAND = "java";
-  // jar directory
-  public static String JAR_DIR = "/tmp/jars/";
-
-
-  protected Configuration conf = new Configuration();
-//
-//  public static final String HADOOP_CONF_DIR_PROP = "hadoop.conf.dir"; // hadoop dir with xml conf files. from azkaban private.props
-//  public static final String HADOOP_USER_NAME_PROP = "user.to.proxy"; // user to proxy for hadoop fs rights
-//  public static final String HADOOP_INJECT_MASTER_IP = "hadoop-inject." + "hadoop.master.ip";
-//
+    public static String JAVA_COMMAND = "java";
+    // jar directory
+    public static String JAR_DIR = "/tmp/jars/";
 
 
-  public JavaProcessJob(String jobid, Props sysProps, Props jobProps,
-      Logger logger) {
-    super(jobid, sysProps, jobProps, logger);
-  }
+    protected Configuration conf = new Configuration();
 
-  @Override
-  protected List<String> getCommandList() {
-    ArrayList<String> list = new ArrayList<String>();
-    list.add(createCommandLine());
-    return list;
-  }
+    public static final String HADOOP_CONF_DIR_PROP = "hadoop.conf.dir"; // hadoop dir with xml conf files. from azkaban private.props
+    public static final String HADOOP_INJECT_MASTER_IP = "hadoop-inject." + "hadoop.master.ip";
 
-  protected String createCommandLine() {
-    String command = JAVA_COMMAND + " ";
-    command += getJVMArguments() + " ";
-    command += "-Xms" + getInitialMemorySize() + " ";
-    command += "-Xmx" + getMaxMemorySize() + " ";
-    command += "-cp " + createArguments(getClassPaths(), ":") + " ";
-    command += getJavaClass() + " ";
-    command += getMainArguments();
 
-    return command;
-  }
-
-  protected String getJavaClass() {
-    return getJobProps().getString(JAVA_CLASS);
-  }
-
-  protected String getClassPathParam() {
-    List<String> classPath = getClassPaths();
-    if (classPath == null || classPath.size() == 0) {
-      return "";
+    public JavaProcessJob(String jobid, Props sysProps, Props jobProps,
+                          Logger logger) {
+        super(jobid, sysProps, jobProps, logger);
     }
 
-    return "-cp " + createArguments(classPath, ":") + " ";
-  }
-
-
-  protected AmazonS3Client getAWSClient() {
-    return new AmazonS3Client(getAWSCredentials()).withRegion(Regions.US_WEST_2);
-  }
-
-  protected AWSCredentials getAWSCredentials() {
-    DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
-    return providerChain.getCredentials();
-  }
-
-  /**
-   * Concurrent map version implementation
-   *
-   * @param paths
-   * @return
-   */
-  protected List<String> getFromLocalOrS3Concurrent(List<String> paths) {
-    File directory = new File(JAR_DIR);
-    if (! directory.exists()){
-      directory.mkdir();
-      // If you require it to make the entire directory path including parents,
-      // use directory.mkdirs(); here instead.
+    @Override
+    protected List<String> getCommandList() {
+        ArrayList<String> list = new ArrayList<String>();
+        list.add(createCommandLine());
+        return list;
     }
 
-    File solo_dir = new File("/solo/executions");
-    if (! solo_dir.exists()){
-      solo_dir.mkdir();
-      // If you require it to make the entire directory path including parents,
-      // use directory.mkdirs(); here instead.
+    protected String createCommandLine() {
+        String command = JAVA_COMMAND + " ";
+        command += getJVMArguments() + " ";
+        command += "-Xms" + getInitialMemorySize() + " ";
+        command += "-Xmx" + getMaxMemorySize() + " ";
+        command += "-cp " + createArguments(getClassPaths(), ":") + " ";
+        command += getJavaClass() + " ";
+        command += getMainArguments();
+
+        return command;
     }
 
+    protected String getJavaClass() {
+        return getJobProps().getString(JAVA_CLASS);
+    }
 
-    getLog().info("dir exists? " + directory.exists());
-    AmazonS3Client s3client = getAWSClient();
+    protected String getClassPathParam() {
+        List<String> classPath = getClassPaths();
+        if (classPath == null || classPath.size() == 0) {
+            return "";
+        }
 
-    ConcurrentMap<String, String> classpathMap = new ConcurrentHashMap<>();
-    for (String path: paths) {
-      File file = new File(path);
-      String fileName = file.getName();
-      // getLog().info("filename:" + file.getPath());
+        return "-cp " + createArguments(classPath, ":") + " ";
+    }
 
-      if (file.exists()) {
-        classpathMap.put(path, path);
-      } else {
+    /**
+     * Set up hadoop configs for hadoopclient
+     */
+    protected void setHadoopConfigs() throws IOException {
+        ArrayList<URL> resources = new ArrayList<>();
+        resources.add((new File(getSysProps().get(HADOOP_CONF_DIR_PROP))).toURI().toURL());
+
+        conf = new Configuration();
+
+        // TODO: Remove the next two lines after local test
+        String path = "hdfs://" + jobProps.getString(HADOOP_INJECT_MASTER_IP) + ":8020";
+        conf.set("fs.defaultFS", path);
+
+        if (jobProps.containsKey(HADOOP_INJECT_MASTER_IP)) {
+            conf.set("hadoop.master.ip", jobProps.getString(HADOOP_INJECT_MASTER_IP));
+        }
+    }
+
+    /**
+     * Utility function for loading files from S3/local
+     *
+     * @param paths
+     * @return
+     */
+    protected List<String> getFromLocalOrS3Concurrent(List<String> paths) throws RuntimeException {
+        ConcurrentMap<String, String> classpathMap = new ConcurrentHashMap<>();
+        // Download the file from S3 URL when
+        // case 1: if the file doesn't exist locally
+        // case 2: the file exists locally but it's different from S3
+
         try {
-          URI input_path = new URI(path);
-          String bucket = input_path.getHost();
-          String key = input_path.getPath(); // baseUrl.substring(index, lastIndex);
-          String localPath = JAR_DIR + key;
-          // if it's a s3 path
-          if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
+            // set up the hadoop configs for hadoop file system
+            setHadoopConfigs();
 
-            AmazonS3URI s3_path = new AmazonS3URI(path);
-            bucket = s3_path.getBucket();
-            key = s3_path.getKey();
-            if (key.startsWith("/")) {
-              key = key.substring(1);
+            for (String path : paths) {
+                File file = new File(path);
+
+                // check if the path is a local url)
+                if (file.exists()) {
+                    classpathMap.put(path, path);
+                } else {
+                    URI input_path = new URI(path);
+                    // get file path as key
+                    String key = input_path.getPath();
+
+                    String localPath = JAR_DIR + key;
+                    // if it's a s3 path
+                    if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
+
+                        AmazonS3URI s3_path = new AmazonS3URI(path);
+                        key = s3_path.getKey();
+
+                        // remove the first letter if it starts with /
+                        if (key.startsWith("/")) {
+                            key = key.substring(1);
+                        }
+
+                        localPath = JAR_DIR + key;
+
+                        File localFile = new File(localPath);
+                        // getLog().info("path is: s3a://" + input_path.getHost() + input_path.getPath());
+                        Path s3Path = new Path("s3a://" + input_path.getHost() + input_path.getPath());
+                        FileSystem s3Fs = s3Path.getFileSystem(conf);
+
+                        if (!localFile.exists()) {
+                            s3Fs.copyToLocalFile(s3Path, new Path(path));
+                        } else {
+                            // Check the length of file
+                            // TODO: (ideally this should be MD5 value, need to check how much time it needs to use)
+                            if (s3Fs.getContentSummary(s3Path).getLength() != localFile.length()) {
+                                getLog().info("Updated file: " + key);
+                                s3Fs.copyToLocalFile(s3Path, new Path(path));
+                            }
+                        }
+
+                        classpathMap.put(localPath, path);
+
+                    } else {
+                        if (new File(localPath).exists()) {
+                            classpathMap.put(localPath, path);
+                        }
+                    }
+                }
             }
-            localPath = JAR_DIR + key;
 
-            // case 0: if the file exists
-
-            // case 1: the file exists in the bucket
-
-            // case 2: the file doesn't!
-
-            File localFile = new File(localPath);
-
-            if (! localFile.exists()) {
-              getLog().info("here: " + path);
-              s3client.getObject(new GetObjectRequest(bucket, key), localFile);
-
-              // write the file to JAR_DI
-
-              getLog().info(localFile.exists() && localFile.canRead());
-            }
-            classpathMap.put(localPath, path);
-
-          } else {
-            if (new File(localPath).exists()) {
-              classpathMap.put(localPath, path);
-            }
-          }
-        } catch (URISyntaxException e2) {
-          getLog().error("URI syntax exception");
+        } catch (URISyntaxException e1) {
+            getLog().error("URI syntax exception");
+        } catch (IOException e2) {
+            getLog().error("IO exception");
         }
 
-      }
-
-    }
-    if (classpathMap.isEmpty()) {
-      return paths;
-    } else {
-      return new ArrayList<>(classpathMap.keySet());
-    }
-  }
-
-  /**
-   * helper function to download stuff from S3 & return the valid class paths
-   *
-   * @param paths
-   */
-  protected List<String> getFromLocalOrS3(List<String> paths) {
-    File directory = new File(JAR_DIR);
-    if (! directory.exists()){
-      directory.mkdir();
-      // If you require it to make the entire directory path including parents,
-      // use directory.mkdirs(); here instead.
+        // if nothing is added, return the input paths
+        if (classpathMap.isEmpty()) {
+            return paths;
+        } else {
+            return new ArrayList<>(classpathMap.keySet());
+        }
     }
 
-    getLog().info("dir exists? " + directory.exists());
+    protected List<String> getClassPaths() {
+        List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
 
-    ArrayList<String> classPaths = new ArrayList<>();
+        ArrayList<String> classpathList = new ArrayList<>();
 
-    for (String path: paths) {
-      File file = new File(path);
-      String fileName = file.getName();
-      // getLog().info("filename:" + file.getPath());
-
-      if (file.exists()) {
-        classPaths.add(path);
-      } else {
-        try {
-          URI input_path = new URI(path);
-          String bucket = input_path.getHost();
-          String key = input_path.getPath(); // baseUrl.substring(index, lastIndex);
-          String localPath = JAR_DIR + key;
-          // if it's a s3 path
-          if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
-
-            // case 1: the file exists in the bucket
-
-            // case 2: the file doesn't!
-
-            AmazonS3URI s3_path = new AmazonS3URI(path);
-            bucket = s3_path.getBucket();
-            key = s3_path.getKey();
-            if (key.startsWith("/")) {
-              key = key.substring(1);
+        // Adding global properties used system wide.
+        if (getJobProps().containsKey(GLOBAL_CLASSPATH)) {
+            List<String> globalClasspath = getJobProps().getStringList(GLOBAL_CLASSPATH);
+            for (String global : globalClasspath) {
+                getLog().info("Adding to global classpath:" + global);
+                // the original way
+                if (classPaths.isEmpty()) {
+                    classpathList.add(global);
+                } else {
+                    // if the class paths are defined, need to add individual jars to the path
+                    // TODO: double check this on non-local env
+                    File[] files = new File(global).listFiles();
+                    for (File file : files) {
+                        if (file.getName().endsWith(".jar")) {
+                            classpathList.add(file.getAbsolutePath());
+                        }
+                    }
+                }
             }
-            localPath = JAR_DIR + key;
-
-            File localFile = new File(localPath);
-            if (localFile.exists()) {
-              getLog().info("found");
-            } else {
-              getAWSClient().getObject(new GetObjectRequest(bucket, key), localFile);
-              // write the file to JAR_DI
-              getLog().info(localFile.exists() && localFile.canRead());
-            }
-
-            classPaths.add(localPath);
-
-
-//            // alternative s3path method
-//            Path downloadPath = new Path(path);
-//            FileSystem s3Fs = downloadPath.getFileSystem(conf);
-//            getLog().info("downloadpath: "+ downloadPath);
-//            getLog().info("inputpath: "+ input_path);
-//            if (s3Fs.exists(downloadPath) || s3Fs.exists(new Path(input_path.getPath()))) {
-//              System.out.println("here: " + downloadPath);
-//              getLog().info("local path: " + localPath);
-//
-//              s3Fs.copyToLocalFile(downloadPath, new Path(localPath));
-//              // write the file to JAR_DIR
-//              classPaths.add(localPath);
-//            }
-//            else {
-//              getLog().error("the path doesn't exist on s3!!! " + path);
-//            }
-
-          } else {
-            if (new File(localPath).exists()) {
-              classPaths.add(localPath);
-            }
-          }
-        } catch (URISyntaxException e2) {
-          getLog().error("URI syntax exception");
         }
 
-      }
-
-    }
-
-    if (classPaths.isEmpty()) {
-      return paths;
-    } else
-      return classPaths;
-
-  }
-
-  protected List<String> getClassPaths() {
-
-    List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
-
-    ArrayList<String> classpathList = new ArrayList<>();
-
-    // Adding global properties used system wide.
-    if (getJobProps().containsKey(GLOBAL_CLASSPATH)) {
-      List<String> globalClasspath =
-          getJobProps().getStringList(GLOBAL_CLASSPATH);
-      for (String global : globalClasspath) {
-        getLog().info("Adding to global classpath:" + global);
-        // classpathList.add(global);
-
-        for (File file : new File(global).listFiles()) {
-          if (file.getName().endsWith(".jar")) {
-            // log.info("Adding to classpath:" + file.getName());
-            // getLog().info("TESTING: GET GLOBAL PATH: " + file.getName());
-            classpathList.add(file.getAbsolutePath());
-          }
-        }
-      }
-    }
-
-
-    File path = new File(getPath());
+        File path = new File(getPath());
 //    // File parent = path.getParentFile();
-//    getLog().info(
-//        "No classpath specified. Trying to load classes from " + path);
 
-    if (path != null) {
-      for (File file : path.listFiles()) {
-        if (file.getName().endsWith(".jar")) {
-          // log.info("Adding to classpath:" + file.getName());
-          getLog().info("TESTING: GET NAME: " + file.getName());
-          getLog().info("TESTING: GET PATH: " + file.getPath());
-          classpathList.add(file.getAbsolutePath());
+        // This is where external class paths (e.g. on s3) specified in properties/job files to get loaded to Azkaban
+        if (classPaths != null) {
+            getLog().info("Found additional class paths. Loading class paths from S3 to azkaban");
+            List<String> pathList = getFromLocalOrS3Concurrent(classPaths);
+            classpathList.addAll(pathList);
+            getLog().info("classpath output: " + classpathList);
+        } else {
+            getLog().info("No classpath specified. Trying to load classes from " + path);
         }
-      }
+
+        if (path.exists()) {
+            for (File file : path.listFiles()) {
+                if (file.getName().endsWith(".jar")) {
+                    // log.info("Adding to classpath:" + file.getName());
+                    classpathList.add(file.getAbsolutePath());
+                }
+            }
+        }
+
+        return classpathList;
     }
 
-    if (classPaths != null) {
-      List<String> pathList = getFromLocalOrS3Concurrent(classPaths);
-      classpathList.addAll(pathList);
-      getLog().info("TESTING classpath output: " + classpathList);
-
+    protected String getInitialMemorySize() {
+        return getJobProps().getString(INITIAL_MEMORY_SIZE,
+                DEFAULT_INITIAL_MEMORY_SIZE);
     }
 
-    return classpathList;
-  }
-
-  protected String getInitialMemorySize() {
-    return getJobProps().getString(INITIAL_MEMORY_SIZE,
-        DEFAULT_INITIAL_MEMORY_SIZE);
-  }
-
-  protected String getMaxMemorySize() {
-    return getJobProps().getString(MAX_MEMORY_SIZE, DEFAULT_MAX_MEMORY_SIZE);
-  }
-
-  protected String getMainArguments() {
-    return getJobProps().getString(MAIN_ARGS, "");
-  }
-
-  protected String getJVMArguments() {
-    String globalJVMArgs = getJobProps().getString(GLOBAL_JVM_PARAMS, null);
-
-    if (globalJVMArgs == null) {
-      return getJobProps().getString(JVM_PARAMS, "");
+    protected String getMaxMemorySize() {
+        return getJobProps().getString(MAX_MEMORY_SIZE, DEFAULT_MAX_MEMORY_SIZE);
     }
 
-    return globalJVMArgs + " " + getJobProps().getString(JVM_PARAMS, "");
-  }
-
-  protected String createArguments(List<String> arguments, String separator) {
-    if (arguments != null && arguments.size() > 0) {
-      String param = "";
-      for (String arg : arguments) {
-        param += arg + separator;
-      }
-
-      return param.substring(0, param.length() - 1);
+    protected String getMainArguments() {
+        return getJobProps().getString(MAIN_ARGS, "");
     }
 
-    return "";
-  }
+    protected String getJVMArguments() {
+        String globalJVMArgs = getJobProps().getString(GLOBAL_JVM_PARAMS, null);
 
-  protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
-    String strXms = getInitialMemorySize();
-    String strXmx = getMaxMemorySize();
-    long xms = Utils.parseMemString(strXms);
-    long xmx = Utils.parseMemString(strXmx);
+        if (globalJVMArgs == null) {
+            return getJobProps().getString(JVM_PARAMS, "");
+        }
 
-    Props azkabanProperties = AzkabanServer.getAzkabanProperties();
-    if (azkabanProperties != null) {
-      String maxXms = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
-      String maxXmx = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
-      long sizeMaxXms = Utils.parseMemString(maxXms);
-      long sizeMaxXmx = Utils.parseMemString(maxXmx);
-
-      if (xms > sizeMaxXms) {
-        throw new Exception(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
-                getId(), maxXms));
-      }
-
-      if (xmx > sizeMaxXmx) {
-        throw new Exception(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-                getId(), maxXmx));
-      }
+        return globalJVMArgs + " " + getJobProps().getString(JVM_PARAMS, "");
     }
 
-    return new Pair<Long, Long>(xms, xmx);
-  }
+    protected String createArguments(List<String> arguments, String separator) {
+        if (arguments != null && arguments.size() > 0) {
+            String param = "";
+            for (String arg : arguments) {
+                param += arg + separator;
+            }
+
+            return param.substring(0, param.length() - 1);
+        }
+
+        return "";
+    }
+
+    protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
+        String strXms = getInitialMemorySize();
+        String strXmx = getMaxMemorySize();
+        long xms = Utils.parseMemString(strXms);
+        long xmx = Utils.parseMemString(strXmx);
+
+        Props azkabanProperties = AzkabanServer.getAzkabanProperties();
+        if (azkabanProperties != null) {
+            String maxXms = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
+            String maxXmx = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
+            long sizeMaxXms = Utils.parseMemString(maxXms);
+            long sizeMaxXmx = Utils.parseMemString(maxXmx);
+
+            if (xms > sizeMaxXms) {
+                throw new Exception(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+                        getId(), maxXms));
+            }
+
+            if (xmx > sizeMaxXmx) {
+                throw new Exception(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+                        getId(), maxXmx));
+            }
+        }
+
+        return new Pair<Long, Long>(xms, xmx);
+    }
 }
