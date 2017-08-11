@@ -1668,7 +1668,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     private static String FETCH_ALL_EXECUTORS =
       "SELECT id, host, port, active FROM executors";
     private static String FETCH_ACTIVE_EXECUTORS =
-      "SELECT id, host, port, active FROM executors wherje active=true";
+      "SELECT id, host, port, active FROM executors where active=true";
     private static String FETCH_EXECUTOR_BY_ID =
       "SELECT id, host, port, active FROM executors where id=?";
     private static String FETCH_EXECUTOR_BY_HOST_PORT =
