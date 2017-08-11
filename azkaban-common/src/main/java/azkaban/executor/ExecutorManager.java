@@ -1687,10 +1687,10 @@ public class ExecutorManager extends EventHandler implements
 
     private void cleanExecutionLogs() {
       logger.info("Cleaning old logs from execution_logs");
-      long cutoff = DateTime.now().getMillis() - executionLogsRetentionMs;
+      long cutoff = System.currentTimeMillis() - executionLogsRetentionMs;
       logger.info("Cleaning old log files before "
           + new DateTime(cutoff).toString());
-      cleanOldExecutionLogs(DateTime.now().getMillis()
+      cleanOldExecutionLogs(System.currentTimeMillis()
           - executionLogsRetentionMs);
     }
   }

@@ -137,6 +137,11 @@ public class TriggerManager extends EventHandler implements
       this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
       this.runnerThread.addTrigger(t);
       triggerIdMap.put(t.getTriggerId(), t);
+      try {
+        this.triggerLoader.updateTrigger(t);
+      } catch (final TriggerLoaderException e) {
+        throw new TriggerManagerException(e);
+      }
     }
   }
 
