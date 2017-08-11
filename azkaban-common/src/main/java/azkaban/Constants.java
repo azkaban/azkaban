@@ -37,9 +37,6 @@ public class Constants {
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
 
-  // Path name of execute-as-user executable
-  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
-
   // Internal username used to perform SLA action
   public static final String AZKABAN_SLA_CHECKER_USERNAME = "azkaban_sla";
 
@@ -89,6 +86,12 @@ public class Constants {
 
     // List of users we prevent azkaban from running flows as. (ie: root, azkaban)
     public static final String BLACK_LISTED_USERS = "azkaban.server.blacklist.users";
+
+    // Path name of execute-as-user executable
+    public static final String AZKABAN_SERVER_NATIVE_LIB_FOLDER = "azkaban.native.lib";
+
+    // Name of *nix group associated with the process running Azkaban
+    public static final String AZKABAN_SERVER_GROUP_NAME = "azkaban.group.name";
 
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 

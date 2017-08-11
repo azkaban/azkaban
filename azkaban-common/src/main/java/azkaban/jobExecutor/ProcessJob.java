@@ -16,7 +16,8 @@
 
 package azkaban.jobExecutor;
 
-import static azkaban.Constants.NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants;
@@ -49,6 +50,8 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
+  @Deprecated
+  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   public static final String EXECUTE_AS_USER = "execute.as.user";
   public static final String USER_TO_PROXY = "user.to.proxy";
   public static final String KRB5CCNAME = "KRB5CCNAME";
@@ -56,7 +59,6 @@ public class ProcessJob extends AbstractProcessJob {
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
   private static final String CHOWN = "chown";
   private static final String CREATE_FILE = "touch";
-  private static final String GROUP_NAME = "azkaban";
   private static final int SUCCESSFUL_EXECUTION = 0;
   private static final String TEMP_FILE_NAME = "user_can_write";
   private final CommonMetrics commonMetrics;
@@ -368,7 +370,7 @@ public class ProcessJob extends AbstractProcessJob {
   private boolean canWriteInCurrentWorkingDirectory(final String effectiveUser)
       throws IOException {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
-        this.sysProps.getString(NATIVE_LIB_FOLDER));
+        this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
     final List<String> checkIfUserCanWriteCommand = Arrays
         .asList(CREATE_FILE, getWorkingDirectory() + "/" + TEMP_FILE_NAME);
     final int result = executeAsUser.execute(effectiveUser, checkIfUserCanWriteCommand);
@@ -385,10 +387,11 @@ public class ProcessJob extends AbstractProcessJob {
    */
   private void assignUserDirOwnership(final String effectiveUser) throws IOException {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
-        this.sysProps.getString(NATIVE_LIB_FOLDER));
+        this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+    final String groupName = this.sysProps.getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
     final List<String> changeOwnershipCommand = Arrays
-        .asList(CHOWN, effectiveUser + ":" + GROUP_NAME, getWorkingDirectory());
-    info("Change current working directory ownership to " + effectiveUser + ":" + GROUP_NAME + ".");
+        .asList(CHOWN, effectiveUser + ":" + groupName, getWorkingDirectory());
+    info("Change current working directory ownership to " + effectiveUser + ":" + groupName + ".");
     final int result = executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {
       error("Failed to change current working directory ownership. Error code: " + Integer
