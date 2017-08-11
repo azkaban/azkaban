@@ -200,7 +200,7 @@ public class JavaProcessJob extends ProcessJob {
             for (String global : globalClasspath) {
                 getLog().info("Adding to global classpath:" + global);
                 // the original way
-                if (classPaths.isEmpty()) {
+                if (classPaths != null && ! classPaths.isEmpty()) {
                     classpathList.add(global);
                 } else {
                     // if the class paths are defined, need to add individual jars to the path
