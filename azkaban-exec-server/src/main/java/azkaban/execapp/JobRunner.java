@@ -604,6 +604,7 @@ public class JobRunner extends EventHandler implements Runnable {
     logInfo(
         "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
             + " with status " + this.node.getStatus());
+
     fireEvent(Event.create(this, Type.JOB_FINISHED,
         new EventData(finalStatus, this.node.getNestedId())), false);
     finalizeLogFile(this.node.getAttempt());
@@ -636,8 +637,7 @@ public class JobRunner extends EventHandler implements Runnable {
         return null;
       }
 
-      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node
-          .getStartTime());
+      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node.getStartTime());
 
       // If it's an embedded flow, we'll add the nested flow info to the job
       // conf
