@@ -53,7 +53,7 @@ int change_user(char *username, uid_t user, gid_t group) {
 
     if (initgroups(username, group) != 0) {
         fprintf(LOGFILE, "Error setting supplementary groups for user %s: %s\n",
-            user, strerror(errno));
+            username, strerror(errno));
         return SETUID_OPER_FAILED;
     }
     if (seteuid(0) != 0) {
