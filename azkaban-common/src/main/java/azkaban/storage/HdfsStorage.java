@@ -60,7 +60,7 @@ public class HdfsStorage implements Storage {
   @Override
   public InputStream get(final String key) throws IOException {
     this.hdfsAuth.authorize();
-    return this.hdfs.open(new Path(this.rootUri.toString(), key));
+    return this.hdfs.open(fullPath(key));
   }
 
   @Override
@@ -102,6 +102,17 @@ public class HdfsStorage implements Storage {
 
   @Override
   public boolean delete(final String key) {
-    throw new UnsupportedOperationException("Method not implemented");
+    this.hdfsAuth.authorize();
+    final Path path = fullPath(key);
+    try {
+      return this.hdfs.delete(path, false);
+    } catch (final IOException e) {
+      log.error("HDFS delete failed on " + path, e);
+      return false;
+    }
+  }
+
+  private Path fullPath(final String key) {
+    return new Path(this.rootUri.toString(), key);
   }
 }
