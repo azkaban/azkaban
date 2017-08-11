@@ -90,24 +90,24 @@ int main(int argc, char **argv){
     }
 
     if (argc < 3) {
-        fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user uid command [args]");
+        fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user username command [args]");
         return INVALID_INPUT;
     }
 
-    char *uid = argv[1];
+    char *username = argv[1];
 
     // gather information about user
-    struct passwd *user_info = getpwnam(uid);
+    struct passwd *user_info = getpwnam(username);
     if (user_info == NULL){
-        fprintf(LOGFILE, "user does not exist: %s", uid);
+        fprintf(LOGFILE, "user does not exist: %s", username);
         return USER_NOT_FOUND;
     }
 
     // try to change user
-    fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, user_info->pw_uid, user_info->pw_gid);
-    int retval = change_user(uid, user_info->pw_uid, user_info->pw_gid);
+    fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", username, user_info->pw_uid, user_info->pw_gid);
+    int retval = change_user(username, user_info->pw_uid, user_info->pw_gid);
     if (retval != 0){
-        fprintf(LOGFILE, "Error changing user to %s\n", uid);
+        fprintf(LOGFILE, "Error changing user to %s\n", username);
         return SETUID_OPER_FAILED;
     }
 

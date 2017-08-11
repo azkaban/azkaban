@@ -50,6 +50,7 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
+  // Use AZKABAN_SERVER_NATIVE_LIB_FOLDER Configuration Key instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   public static final String EXECUTE_AS_USER = "execute.as.user";
@@ -230,7 +231,7 @@ public class ProcessJob extends AbstractProcessJob {
     // nativeLibFolder specifies the path for execute-as-user file,
     // which will change user from Azkaban to effectiveUser
     if (isExecuteAsUser) {
-      final String nativeLibFolder = this.sysProps.getString(NATIVE_LIB_FOLDER);
+      final String nativeLibFolder = this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER);
       executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
       effectiveUser = getEffectiveUser(this.jobProps);
       // Throw exception if Azkaban tries to run flow as a prohibited user
