@@ -207,9 +207,9 @@ public class JavaProcessJob extends ProcessJob {
                 } else {
                     // if the class paths are defined, need to add individual jars to the path
                     global = global.substring(0, global.lastIndexOf("/"));
-                    File globalFile = new File(global);
-                    if (globalFile.exists()) {
-                        File[] files = globalFile.listFiles();
+                    File globalDir = new File(global);
+                    if (globalDir.exists() && globalDir.isDirectory()) {
+                        File[] files = globalDir.listFiles();
                         if (files != null && files.length > 0) {
                             for (File file : files) {
                                 if (file.isFile() && file.getName().endsWith(".jar")) {
