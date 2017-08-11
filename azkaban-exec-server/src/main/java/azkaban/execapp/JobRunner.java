@@ -592,13 +592,22 @@ public class JobRunner extends EventHandler implements Runnable {
     }
     this.node.setEndTime(System.currentTimeMillis());
 
+    if (getJobId().equals("job1")) {
+      System.err.println("isKilled() = " + isKilled());
+    }
     if (isKilled()) {
+      if (getJobId().equals("job1")) {
+        System.err.println("Setting to Status.KILLED");
+      }
       // even if it's killed, there is a chance that the job failed is marked as
       // failure,
       // So we set it to KILLED to make sure we know that we forced kill it
       // rather than
       // it being a legitimate failure.
       finalStatus = changeStatus(Status.KILLED);
+    }
+    if (getJobId().equals("job1")) {
+      System.err.println("finalStatus = " + finalStatus);
     }
 
     logInfo(
@@ -763,8 +772,23 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setOutputProps(this.job.getJobGeneratedProperties());
     }
 
+    if (getJobId().equals("job1")) {
+      System.err.println("Sleeping before marking as SUCCEEDED");
+    }
+    try {
+      Thread.sleep(1000L);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+
+    if (getJobId().equals("job1")) {
+      System.err.println("!Status.isStatusFinished(finalStatus) = " + !Status.isStatusFinished(finalStatus));
+    }
     // If the job is still running, set the status to Success.
     if (!Status.isStatusFinished(finalStatus)) {
+      if (getJobId().equals("job1")) {
+        System.err.println("changeStatus(Status.SUCCEEDED)!!");
+      }
       finalStatus = changeStatus(Status.SUCCEEDED);
     }
     return finalStatus;
@@ -798,11 +822,25 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public void kill() {
+    if (getJobId().equals("job1")) {
+      System.err.println("kill() called..");
+    }
     synchronized (this.syncObject) {
       if (Status.isStatusFinished(this.node.getStatus())) {
+        if (getJobId().equals("job1")) {
+          System.err.println("kill() returns because status is finished: " + this.node.getStatus());
+        }
         return;
       }
       logError("Kill has been called.");
+      try {
+        Thread.sleep(2000L);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      if (getJobId().equals("job1")) {
+        System.err.println("setting killed=true");
+      }
       this.killed = true;
 
       final BlockingStatus status = this.currentBlockStatus;
@@ -826,6 +864,14 @@ public class JobRunner extends EventHandler implements Runnable {
         logError(e.getMessage());
         logError(
             "Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
+      }
+      try {
+        Thread.sleep(2000L);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      if (getJobId().equals("job1")) {
+        System.err.println("setting Status.KILLED");
       }
 
       this.changeStatus(Status.KILLED);
