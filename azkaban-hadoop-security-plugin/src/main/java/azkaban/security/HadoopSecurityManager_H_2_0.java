@@ -69,7 +69,7 @@ import org.apache.thrift.TException;
 
 public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
-  // Use AZKABAN_SERVER_NATIVE_LIB_FOLDER Configuration Key instead
+  // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   /**

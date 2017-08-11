@@ -50,7 +50,7 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
-  // Use AZKABAN_SERVER_NATIVE_LIB_FOLDER Configuration Key instead
+  // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   public static final String EXECUTE_AS_USER = "execute.as.user";
