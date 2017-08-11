@@ -74,4 +74,10 @@ public class HdfsStorageTest {
     final String expectedPath = "/path/to/foo/" + expectedName;
     verify(this.hdfs).copyFromLocalFile(new Path(file.getAbsolutePath()), new Path(expectedPath));
   }
+
+  @Test
+  public void testDelete() throws Exception {
+    this.hdfsStorage.delete("1/1-hash.zip");
+    verify(this.hdfs).delete(new Path("hdfs://localhost:9000/path/to/foo/1/1-hash.zip"), false);
+  }
 }
