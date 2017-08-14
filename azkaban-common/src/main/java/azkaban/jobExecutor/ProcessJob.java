@@ -386,7 +386,7 @@ public class ProcessJob extends AbstractProcessJob {
    *
    * @param effectiveUser user/proxy user running the job
    */
-  private void assignUserDirOwnership(final String effectiveUser) throws IOException {
+  private void assignUserDirOwnership(final String effectiveUser) throws Exception {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
         this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
     final String groupName = this.sysProps.getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
@@ -395,8 +395,8 @@ public class ProcessJob extends AbstractProcessJob {
     info("Change current working directory ownership to " + effectiveUser + ":" + groupName + ".");
     final int result = executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {
-      error("Failed to change current working directory ownership. Error code: " + Integer
-          .toString(result));
+      handleError("Failed to change current working directory ownership. Error code: " + Integer
+          .toString(result), null);
     }
   }
 
