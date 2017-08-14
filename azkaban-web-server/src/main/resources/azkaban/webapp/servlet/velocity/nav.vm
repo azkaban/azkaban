@@ -44,14 +44,13 @@
 
       $("#banner").slideDown(function()  {
         if($("#banner").data("id") == "Warning") {
-          $('#bannerText').append('<img ' + 'src=' + '"images/caution.png"' + ' width="50" height="50" ' + ' style=' + '"display:inline;" >' + ' </img>');
+          $('#bannerText').append('<img ' + 'src=' + '"images/warning.png"' + ' width="50" height="50" ' + ' style=' + '"display:inline;" >' + ' </img>');
           $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("message") + '</span>');
         } else if ($("#banner").data("id") == "Action Required") {
-          $('#bannerText').append('<img ' + 'src=' + '"images/action.png"' + ' width="50" height="50" ' + ' style=' + '"display:inline;" >' + ' </img>');
+          $('#bannerText').append('<img ' + 'src=' + '"images/warning.png"' + ' width="50" height="50" ' + ' style=' + '"display:inline;" >' + ' </img>');
           $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("id") + ":    " + '</span>');
           $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("message") + '</span>');
         }
-
         // The banner will side up after 30 seconds
         setTimeout(function() {
           $("#banner").slideUp();
