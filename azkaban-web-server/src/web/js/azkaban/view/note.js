@@ -13,57 +13,36 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-$.namespace('azkaban');
-
 $(function() {
 
-  $('.show-and-hide-content').click(function () {
-    if ($('input.select-yes:checked').prop('checked')) {
-      $('.show-and-hide-true').show('slideToggle');
-    }
-    else{
-      $('.show-and-hide-true').hide('slideToggle');
-    }
-  });
-
-
-  $("#buttonid").click(function(){
-    var radioValue = $("input[name='foo']:checked").val();
+  $("#submit-button").click(function(){
+    console.log("======create note=====")
+    var radioValue = $("input[name='note-type']:checked").val();
     var message = $('#message').val();
     var url = $('#url').val();
 
-    if(radioValue == "Countdown")
-      message =  $('#firstName').val();
-
-    var type = radioValue;
-    var triggerURL = contextURL + "/notes";
-    var redirectURL = contextURL + "/notes";
-    var requestData = {"ajax": "addNote", "type": type, "message": message, "url": url};
+    var triggerURL = "/notes";
+    var redirectURL = "/notes";
+    var requestData = {"ajax": "addNote", "type": radioValue, "message": message, "url": url};
     var successHandler = function(data) {
       if (data.error) {
-        alert(data.error);
         $('#errorMsg').text(data.error);
       }
       else {
         window.location = redirectURL;
       }
     };
-    console.log("===== triggerURL :" + triggerURL);
-    console.log("===== requestData: " + requestData);
-
     $.post(triggerURL, requestData, successHandler, "json");
-
   });
 
-  $("#buttonid2").click(function(){
+  $("#clear-button").click(function(){
 
-    console.log("form clear")
+    console.log("======form clear=====")
     var requestData = {"ajax": "removeNote"};
-    var triggerURL = contextURL + "/notes";
-    var redirectURL = contextURL + "/notes";
+    var triggerURL = "/notes";
+    var redirectURL = "/notes";
     var successHandler = function(data) {
       if (data.error) {
-        //alert(data.error)
         $('#errorMsg').text(data.error);
       }
       else {
@@ -71,7 +50,5 @@ $(function() {
       }
     };
     $.post(triggerURL, requestData, successHandler, "json");
-
   });
-  console.log("===== before adsfasdfasdf =======");
 });

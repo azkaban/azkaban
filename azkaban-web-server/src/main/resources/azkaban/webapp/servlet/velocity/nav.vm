@@ -36,7 +36,6 @@
   $(function(){
 
     if( $("#banner").data("id").indexOf('$') == -1  && $('#banner').is(':empty') == false) {
-
       $('#banner').attr('Target', '_blank');
       $("#banner").on("click", function(){
         window.open($("#banner").data("url"));
