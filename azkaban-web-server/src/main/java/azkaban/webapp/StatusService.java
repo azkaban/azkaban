@@ -19,14 +19,18 @@ package azkaban.webapp;
 
 import static azkaban.webapp.servlet.AbstractAzkabanServlet.jarVersion;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.utils.Props;
+import com.google.common.io.Files;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -40,14 +44,16 @@ public class StatusService {
   private static final Logger log = LoggerFactory.getLogger(StatusService.class);
   private static final File PACKAGE_JAR = new File(
       StatusService.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-
   private final ExecutorLoader executorLoader;
   private final DatabaseOperator dbOperator;
+  private final String pidFilename;
 
   @Inject
-  public StatusService(final ExecutorLoader executorLoader, final DatabaseOperator dbOperator) {
+  public StatusService(final Props props, final ExecutorLoader executorLoader,
+      final DatabaseOperator dbOperator) {
     this.executorLoader = executorLoader;
     this.dbOperator = dbOperator;
+    this.pidFilename = props.getString(ConfigurationKeys.AZKABAN_PID_FILENAME, "currentpid");
   }
 
   private static String getInstallationPath() {
@@ -66,11 +72,24 @@ public class StatusService {
 
     // Build the status object
     return new Status(version,
+        getPid(),
         getInstallationPath(),
         usedMemory,
         runtime.maxMemory(),
         getDbStatus(),
         getActiveExecutors());
+  }
+
+  private String getPid() {
+    final File libDir = PACKAGE_JAR.getParentFile();
+    final File installDir = libDir.getParentFile();
+    final File pidFile = new File(installDir, this.pidFilename);
+    try {
+      return Files.readFirstLine(pidFile, StandardCharsets.UTF_8).trim();
+    } catch (final IOException e) {
+      log.error("Unable to obtain PID", e);
+      return "unknown";
+    }
   }
 
   private Map<Integer, Executor> getActiveExecutors() {
