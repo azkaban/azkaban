@@ -30,11 +30,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class JavaProcessJob extends ProcessJob {
     public static final String CLASSPATH = "classpath";
@@ -189,46 +186,29 @@ public class JavaProcessJob extends ProcessJob {
             List<String> globalClasspath = getJobProps().getStringList(GLOBAL_CLASSPATH);
             for (String global : globalClasspath) {
                 getLog().info("Adding to global classpath:" + global);
-                // the original way
-                if (classPaths == null) {
-                    classpathList.add(global);
-                } else {
-                    // if the class paths are defined in the properties, need to add individual jars to the path
-                    File globalDir = new File(global).getParentFile();
-                    if (globalDir.exists() && globalDir.isDirectory()) {
-                        File[] files = globalDir.listFiles();
-                        if (files != null && files.length > 0) {
-                            for (File file : files) {
-                                if (file.isFile() && file.getName().endsWith(".jar")) {
-                                    classpathList.add(file.getAbsolutePath());
-                                }
-                            }
-                        }
+                classpathList.add(global);
+            }
+        }
+
+        if (classPaths == null) {
+            File path = new File(getPath());
+            // File parent = path.getParentFile();
+            getLog().info(
+                    "No classpath specified. Trying to load classes from " + path);
+
+            if (path.exists() && path.listFiles() != null) {
+                for (File file : path.listFiles()) {
+                    if (file.getName().endsWith(".jar")) {
+                        // log.info("Adding to classpath:" + file.getName());
+                        classpathList.add(file.getName());
                     }
                 }
             }
-        }
-
-        File path = new File(getPath());
-//    // File parent = path.getParentFile();
-
-        // This is where external class paths (e.g. on s3) specified in properties/job files to get loaded to Azkaban
-        if (classPaths != null) {
-            getLog().info("Found additional class paths. Loading class paths from S3 to azkaban");
+        } else {
+            getLog().info("Found additional class paths. Loading class paths from local or S3 to azkaban");
             List<String> pathList = getFromLocalOrS3Concurrent(classPaths);
             classpathList.addAll(pathList);
             getLog().info("classpath output: " + classpathList);
-        } else {
-            getLog().info("No classpath specified. Trying to load classes from " + path);
-        }
-
-        if (path.exists()) {
-            for (File file : path.listFiles()) {
-                if (file.getName().endsWith(".jar")) {
-                    // log.info("Adding to classpath:" + file.getName());
-                    classpathList.add(file.getAbsolutePath());
-                }
-            }
         }
 
         return classpathList;
