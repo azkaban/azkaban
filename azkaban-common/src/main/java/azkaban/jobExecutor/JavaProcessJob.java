@@ -111,8 +111,6 @@ public class JavaProcessJob extends ProcessJob {
         }
     }
 
-
-
     /**
      * Utility function for loading files from S3/local
      *
@@ -120,10 +118,13 @@ public class JavaProcessJob extends ProcessJob {
      * @return
      */
     protected List<String> getFromLocalOrS3Concurrent(List<String> paths) throws RuntimeException {
-        ConcurrentMap<String, String> classpathMap = new ConcurrentHashMap<>();
+        ArrayList<String> classpaths = new ArrayList<>();
         // Download the file from S3 URL when
         // case 1: if the file doesn't exist locally
         // case 2: the file exists locally but it's different from S3
+
+        File dir = new File(JAR_DIR);
+        dir.mkdirs();
 
         try {
 
@@ -132,24 +133,17 @@ public class JavaProcessJob extends ProcessJob {
 
                 // check if the path is a local url)
                 if (file.exists()) {
-                    classpathMap.put(path, path);
+                    classpaths.add(path);
                 } else {
                     URI input_path = new URI(path);
                     // get file path as key
                     String key = input_path.getPath();
 
-                    String localPath = JAR_DIR + key;
+                    String localPath = dir.getAbsolutePath() + key;
                     // if it's a s3 path
                     if (input_path.getScheme() != null && input_path.getScheme().startsWith("s3")) {
                         // set up the hadoop configs for hadoop file system
                         setHadoopConfigs();
-
-                        // remove the first letter if it starts with /
-                        if (key.startsWith("/")) {
-                            key = key.substring(1);
-                        }
-
-                        localPath = JAR_DIR + key;
 
                         File localFile = new File(localPath);
                         // getLog().info("path is: s3a://" + input_path.getHost() + input_path.getPath());
@@ -158,20 +152,17 @@ public class JavaProcessJob extends ProcessJob {
 
                         if (!localFile.exists()) {
                             s3Fs.copyToLocalFile(s3Path, new Path(localPath));
-                        } else {
-                            // Check the length of file
-                            // TODO: (ideally this should be MD5 value, need to check how much time it needs to use)
-                            if (s3Fs.getContentSummary(s3Path).getLength() != localFile.length()) {
-                                getLog().info("Updated file: " + key);
-                                s3Fs.copyToLocalFile(s3Path, new Path(localPath));
-                            }
+                        }  // TODO: (ideally this should be MD5 value, need to check how much time it needs to use)
+                        else if (localPath.toLowerCase().contains("snapshot")) {
+                            getLog().info("Updated file: " + key);
+                            s3Fs.copyToLocalFile(s3Path, new Path(localPath));
                         }
-
-                        classpathMap.put(localPath, path);
+                        getLog().info("local path: " + localPath);
+                        classpaths.add(localPath);
 
                     } else {
                         if (new File(localPath).exists()) {
-                            classpathMap.put(localPath, path);
+                            classpaths.add(localPath);
                         }
                     }
                 }
@@ -184,10 +175,10 @@ public class JavaProcessJob extends ProcessJob {
         }
 
         // if nothing is added, return the input paths
-        if (classpathMap.isEmpty()) {
+        if (classpaths.isEmpty()) {
             return paths;
         } else {
-            return new ArrayList<>(classpathMap.keySet());
+            return classpaths;
         }
     }
 
@@ -205,9 +196,8 @@ public class JavaProcessJob extends ProcessJob {
                 if (classPaths == null) {
                     classpathList.add(global);
                 } else {
-                    // if the class paths are defined, need to add individual jars to the path
-                    global = global.substring(0, global.lastIndexOf("/"));
-                    File globalDir = new File(global);
+                    // if the class paths are defined in the properties, need to add individual jars to the path
+                    File globalDir = new File(global).getParentFile();
                     if (globalDir.exists() && globalDir.isDirectory()) {
                         File[] files = globalDir.listFiles();
                         if (files != null && files.length > 0) {
