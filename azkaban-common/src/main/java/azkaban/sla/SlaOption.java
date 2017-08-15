@@ -49,7 +49,7 @@ public class SlaOption {
   public static final String ACTION_KILL_JOB = "SlaKillJob";
   private static final DateTimeFormatter fmt = DateTimeFormat
       .forPattern("MM/dd, YYYY HH:mm");
-  
+
   private String type;
   private Map<String, Object> info;
   private List<String> actions;
@@ -60,12 +60,15 @@ public class SlaOption {
     this.actions = actions;
   }
 
-  public static List<SlaOption> getJobLevelSLAOptions(final ExecutableFlow flow) {
+  public static List<SlaOption> getJobLevelSLAOptions(final ExecutableFlow flow,
+      final String targetJobId) {
     final Set<String> jobLevelSLAs = new HashSet<>(
         Arrays.asList(SlaOption.TYPE_JOB_FINISH, SlaOption.TYPE_JOB_SUCCEED));
-    return flow.getSlaOptions().stream()
-        .filter(slaOption -> jobLevelSLAs.contains(slaOption.getType()))
-        .collect(Collectors.toList());
+    final List<SlaOption> desirableSlaOptions = flow.getSlaOptions().stream().filter(
+        slaOption -> jobLevelSLAs.contains(slaOption.getType()) && ((String) slaOption.getInfo()
+            .get(SlaOption.INFO_JOB_NAME)).equals(targetJobId)).collect(Collectors.toList());
+
+    return desirableSlaOptions;
   }
 
   public static List<SlaOption> getFlowLevelSLAOptions(final ExecutableFlow flow) {

@@ -422,7 +422,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 
       // If a job is seen as failed or killed due to failing SLA, then we set the parent flow to
       // FAILED_FINISHING
-      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node.isKilledBySLA())) {
+      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node
+          .isKilledBySLA())) {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
@@ -1091,6 +1092,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     return this.execId;
   }
 
+  public Set<JobRunner> getActiveJobRunners() {
+    return ImmutableSet.copyOf(this.activeJobRunners);
+  }
+
   private class JobRunnerEventListener implements EventListener {
 
     public JobRunnerEventListener() {
@@ -1119,23 +1124,20 @@ public class FlowRunner extends EventHandler implements Runnable {
           }
 
           FlowRunner.this.finishedNodes.add(node);
-          activeJobRunners.remove(runner);
+          FlowRunner.this.activeJobRunners.remove(runner);
           node.getParentFlow().setUpdateTime(System.currentTimeMillis());
           interrupt();
           fireEventListeners(event);
         }
       } else if (event.getType() == Type.JOB_STARTED) {
         // add job level checker
+        final String eventJobId = ((JobRunner) event.getRunner()).getNode().getId();
         final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
             .getInstance(TriggerManager.class);
         triggerManager
             .addTrigger(FlowRunner.this.flow.getExecutionId(), SlaOption.getJobLevelSLAOptions(
-                FlowRunner.this.flow));
+                FlowRunner.this.flow, eventJobId));
       }
     }
-  }
-
-  public Set<JobRunner> getActiveJobRunners() {
-    return ImmutableSet.copyOf(this.activeJobRunners);
   }
 }
