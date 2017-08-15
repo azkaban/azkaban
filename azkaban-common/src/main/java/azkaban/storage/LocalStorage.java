@@ -30,7 +30,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -82,7 +82,7 @@ public class LocalStorage implements Storage {
 
     final File targetFile = new File(projectDir, String.format("%s-%s.zip",
         String.valueOf(metadata.getProjectId()),
-        new String(metadata.getHash(), StandardCharsets.UTF_8)));
+        new String(Hex.encodeHex(metadata.getHash()))));
 
     if (targetFile.exists()) {
       log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
