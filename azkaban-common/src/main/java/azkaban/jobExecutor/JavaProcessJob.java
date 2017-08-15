@@ -101,9 +101,6 @@ public class JavaProcessJob extends ProcessJob {
      * Set up hadoop configs for hadoopclient
      */
     protected void setHadoopConfigs() throws IOException {
-        ArrayList<URL> resources = new ArrayList<>();
-        resources.add((new File(getSysProps().get(HADOOP_CONF_DIR_PROP))).toURI().toURL());
-
         conf = new Configuration();
 
         if (jobProps.containsKey(HADOOP_INJECT_MASTER_IP)) {
