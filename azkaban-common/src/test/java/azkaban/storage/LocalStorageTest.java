@@ -27,7 +27,7 @@ import azkaban.spi.StorageMetadata;
 import azkaban.utils.Md5Hasher;
 import java.io.File;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -73,7 +73,7 @@ public class LocalStorageTest {
         .append(File.separator)
         .append(metadata.getProjectId())
         .append("-")
-        .append(new String(metadata.getHash(), StandardCharsets.UTF_8))
+        .append(new String(Hex.encodeHex(metadata.getHash())))
         .append(".zip")
         .toString()
     );
