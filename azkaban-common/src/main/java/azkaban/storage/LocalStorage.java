@@ -65,12 +65,16 @@ public class LocalStorage implements Storage {
     return baseDirectory;
   }
 
+  private File getFile(final String key) {
+    return new File(this.rootDirectory, key);
+  }
+
   /**
    * @param key Relative path of the file from the baseDirectory
    */
   @Override
   public InputStream get(final String key) throws IOException {
-    return new FileInputStream(new File(this.rootDirectory, key));
+    return new FileInputStream(getFile(key));
   }
 
   @Override
@@ -106,6 +110,13 @@ public class LocalStorage implements Storage {
 
   @Override
   public boolean delete(final String key) {
-    throw new UnsupportedOperationException("delete has not been implemented.");
+    final File file = getFile(key);
+    final boolean result = file.exists() && file.delete();
+    if (result) {
+      log.warn("Deleted file: " + file.getAbsolutePath());
+    } else {
+      log.warn("Unable to delete file: " + file.getAbsolutePath());
+    }
+    return result;
   }
 }
