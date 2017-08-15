@@ -28,6 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1644,7 +1646,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
     QueryRunner runner = createQueryRunner();
     int updateNum = 0;
+    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssXX:XX");
+    Date dateobj  = new Date(millis);
     try {
+      logger.info("Purging execution logs older then: " + dateobj.toString() + " from database");
       updateNum = runner.update(DELETE_BY_TIME, millis);
     } catch (SQLException e) {
       e.printStackTrace();
