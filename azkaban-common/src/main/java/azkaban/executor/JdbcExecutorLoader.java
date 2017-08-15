@@ -58,12 +58,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ExecutorLoader {
   private static final Logger logger = Logger
       .getLogger(JdbcExecutorLoader.class);
-
+  private final ExecutorFlowDBManager executorFlowDBManager;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics) {
+  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics, final ExecutorFlowDBManager executorFlowDBManager) {
     super(props, commonMetrics);
+    this.executorFlowDBManager = executorFlowDBManager;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -77,91 +78,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public synchronized void uploadExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    final Connection connection = getConnection();
-    try {
-      uploadExecutableFlow(connection, flow, this.defaultEncodingType);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException("Error uploading flow", e);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-  }
-
-  private synchronized void uploadExecutableFlow(final Connection connection,
-                                                 final ExecutableFlow flow, final EncodingType encType)
-      throws ExecutorManagerException, IOException {
-    final String INSERT_EXECUTABLE_FLOW =
-        "INSERT INTO execution_flows "
-            + "(project_id, flow_id, version, status, submit_time, submit_user, update_time) "
-            + "values (?,?,?,?,?,?,?)";
-    final QueryRunner runner = new QueryRunner();
-    final long submitTime = System.currentTimeMillis();
-
-    final long id;
-    try {
-      flow.setStatus(Status.PREPARING);
-      runner.update(connection, INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
-          flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime);
-      connection.commit();
-      id =
-          runner.query(connection, LastInsertID.LAST_INSERT_ID,
-              new LastInsertID());
-
-      if (id == -1L) {
-        throw new ExecutorManagerException(
-            "Execution id is not properly created.");
-      }
-      logger.info("Flow given " + flow.getFlowId() + " given id " + id);
-      flow.setExecutionId((int) id);
-
-      updateExecutableFlow(connection, flow, encType);
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error creating execution.", e);
-    }
+    this.executorFlowDBManager.uploadExecutableFlow(flow);
   }
 
   @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    final Connection connection = this.getConnection();
-
-    try {
-      updateExecutableFlow(connection, flow, this.defaultEncodingType);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-  }
-
-  private void updateExecutableFlow(final Connection connection, final ExecutableFlow flow,
-                                    final EncodingType encType) throws ExecutorManagerException {
-    final String UPDATE_EXECUTABLE_FLOW_DATA =
-        "UPDATE execution_flows "
-            + "SET status=?,update_time=?,start_time=?,end_time=?,enc_type=?,flow_data=? "
-            + "WHERE exec_id=?";
-    final QueryRunner runner = new QueryRunner();
-
-    final String json = JSONUtils.toJSON(flow.toObject());
-    byte[] data = null;
-    try {
-      final byte[] stringData = json.getBytes("UTF-8");
-      data = stringData;
-
-      if (encType == EncodingType.GZIP) {
-        data = GZIPUtils.gzipBytes(stringData);
-      }
-    } catch (final IOException e) {
-      throw new ExecutorManagerException("Error encoding the execution flow.");
-    }
-
-    try {
-      runner.update(connection, UPDATE_EXECUTABLE_FLOW_DATA, flow.getStatus()
-          .getNumVal(), flow.getUpdateTime(), flow.getStartTime(), flow
-          .getEndTime(), encType.getNumVal(), data, flow.getExecutionId());
-      connection.commit();
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error updating flow.", e);
-    }
+    this.executorFlowDBManager.updateExecutableFlow(flow);
   }
 
   @Override
@@ -311,138 +234,27 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_HISTORY,
-              flowHandler, projectId, flowId, skip, num);
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executorFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num, final Status status) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_STATUS,
-              flowHandler, projectId, flowId, status.getNumVal(), skip, num);
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executorFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num, status);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_ALL_EXECUTABLE_FLOW_HISTORY,
-              flowHandler, skip, num);
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executorFlowDBManager.fetchFlowHistory(skip,num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain,
                                                final String flowContains, final String userNameContains, final int status, final long startTime,
                                                final long endTime, final int skip, final int num) throws ExecutorManagerException {
-    String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
-    final ArrayList<Object> params = new ArrayList<>();
-
-    boolean first = true;
-    if (projContain != null && !projContain.isEmpty()) {
-      query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
-      params.add('%' + projContain + '%');
-      first = false;
-    }
-
-    if (flowContains != null && !flowContains.isEmpty()) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-
-      query += " flow_id LIKE ?";
-      params.add('%' + flowContains + '%');
-    }
-
-    if (userNameContains != null && !userNameContains.isEmpty()) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " submit_user LIKE ?";
-      params.add('%' + userNameContains + '%');
-    }
-
-    if (status != 0) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " status = ?";
-      params.add(status);
-    }
-
-    if (startTime > 0) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " start_time > ?";
-      params.add(startTime);
-    }
-
-    if (endTime > 0) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " end_time < ?";
-      params.add(endTime);
-    }
-
-    if (skip > -1 && num > 0) {
-      query += "  ORDER BY exec_id DESC LIMIT ?, ?";
-      params.add(skip);
-      params.add(num);
-    }
-
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(query, flowHandler, params.toArray());
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executorFlowDBManager.fetchFlowHistory(projContain, flowContains,
+        userNameContains, status, startTime, endTime, skip, num);
   }
 
   @Override

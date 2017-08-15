@@ -135,6 +135,7 @@ public class AzkabanWebServerTest {
     assertSingleton(TriggerManager.class, injector);
     assertSingleton(AlerterHolder.class, injector);
     assertSingleton(Emailer.class, injector);
+    assertSingleton(ExecutorFlowDBManager.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

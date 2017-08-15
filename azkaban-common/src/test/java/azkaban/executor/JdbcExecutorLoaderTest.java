@@ -1006,7 +1006,6 @@ public class JdbcExecutorLoaderTest {
         logsResult6.getLength(), 185493);
   }
 
-  @SuppressWarnings("static-access")
   @Ignore @Test
   public void testRemoveExecutionLogsByTime() throws ExecutorManagerException,
       IOException, InterruptedException {
@@ -1055,8 +1054,9 @@ public class JdbcExecutorLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
+    //TODO kunkun-tang: temporary work-around here. This Test is to be deprecated.
     return new JdbcExecutorLoader(props,
-        new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new CommonMetrics(new MetricsManager(new MetricRegistry())), null);
   }
 
   private boolean isTestSetup() {
