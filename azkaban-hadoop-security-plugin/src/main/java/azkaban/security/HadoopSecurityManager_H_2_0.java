@@ -16,8 +16,11 @@
 
 package azkaban.security;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
+import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
 import java.io.DataOutputStream;
@@ -66,15 +69,9 @@ import org.apache.thrift.TException;
 
 public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
-  /**
-   * TODO Remove duplicated constants from plugins.
-   *
-   * Azkaban plugins don't depend on a common submodule from which they both can inherit code. Thus,
-   * constants are copied around and any changes to the constant values will break Azkaban. This
-   * needs to be fixed as part of a plugin infrastructure implementation.
-   */
+  // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
+  @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
-
   /**
    * TODO: This should be exposed as a configurable parameter
    *
@@ -137,7 +134,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private HadoopSecurityManager_H_2_0(final Props props)
       throws HadoopSecurityManagerException, IOException {
-    this.executeAsUser = new ExecuteAsUser(props.getString(NATIVE_LIB_FOLDER));
+    this.executeAsUser = new ExecuteAsUser(props.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
 
     // for now, assume the same/compatible native library, the same/compatible
     // hadoop-core jar
