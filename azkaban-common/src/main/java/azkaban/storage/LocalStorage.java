@@ -111,6 +111,12 @@ public class LocalStorage implements Storage {
   @Override
   public boolean delete(final String key) {
     final File file = getFile(key);
-    return file.exists() && file.delete();
+    final boolean result = file.exists() && file.delete();
+    if (result) {
+      log.warn("Deleted file: " + file.getAbsolutePath());
+    } else {
+      log.warn("Unable to delete file: " + file.getAbsolutePath());
+    }
+    return result;
   }
 }
