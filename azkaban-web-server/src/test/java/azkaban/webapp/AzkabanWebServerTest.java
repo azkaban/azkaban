@@ -30,6 +30,7 @@ import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.Executor;
+import azkaban.executor.ExecutorFlowDBManager;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.project.ProjectLoader;
@@ -121,6 +122,7 @@ public class AzkabanWebServerTest {
     executorLoader.updateExecutor(executor);
 
     assertNotNull(injector.getInstance(AzkabanWebServer.class));
+    assertNotNull(injector.getInstance(ExecutorFlowDBManager.class));
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
     assertSingleton(ExecutorLoader.class, injector);
