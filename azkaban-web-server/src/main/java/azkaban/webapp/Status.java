@@ -29,18 +29,21 @@ import java.util.Map;
 public class Status {
 
   private final String version;
+  private final String pid;
   private final String installationPath;
   private final long usedMemory, xmx;
   private final boolean isDatabaseUp;
   private final Map<Integer, Executor> executorStatusMap;
 
   Status(final String version,
+      final String pid,
       final String installationPath,
       final long usedMemory,
       final long xmx,
       final boolean isDatabaseUp,
       final Map<Integer, Executor> executorStatusMap) {
     this.version = version;
+    this.pid = pid;
     this.installationPath = installationPath;
     this.usedMemory = usedMemory;
     this.xmx = xmx;

@@ -26,8 +26,9 @@ import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.Md5Hasher;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -58,7 +59,7 @@ public class LocalStorageTest {
   }
 
   @Test
-  public void testPutGet() throws Exception {
+  public void testPutGetDelete() throws Exception {
     final ClassLoader classLoader = getClass().getClassLoader();
     final File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
@@ -73,7 +74,7 @@ public class LocalStorageTest {
         .append(File.separator)
         .append(metadata.getProjectId())
         .append("-")
-        .append(new String(metadata.getHash(), StandardCharsets.UTF_8))
+        .append(new String(Hex.encodeHex(metadata.getHash())))
         .append(".zip")
         .toString()
     );
@@ -86,6 +87,17 @@ public class LocalStorageTest {
     final File getFile = new File("tmp.get");
     FileUtils.copyInputStreamToFile(getIs, getFile);
     assertTrue(FileUtils.contentEquals(testFile, getFile));
+
+    // Cleanup temp file
     getFile.delete();
+
+    assertTrue(this.localStorage.delete(key));
+    boolean exceptionThrown = false;
+    try {
+      this.localStorage.get(key);
+    } catch (final FileNotFoundException e) {
+      exceptionThrown = true;
+    }
+    assertTrue(exceptionThrown);
   }
 }
