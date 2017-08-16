@@ -16,10 +16,9 @@
  */
 package azkaban.webapp.servlet;
 
+import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
-import azkaban.trigger.TriggerManagerException;
-import azkaban.user.Permission;
-import azkaban.user.Role;
+import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -52,7 +51,15 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
       final Session session) throws ServletException, IOException {
     if(isAdmin(session.getUser())) {
       handleNotePageLoad(req, resp, session);
+    } else  {
+      warningNonAdminUsers(resp, "The requested user doesn't have admin permission");
     }
+  }
+
+  private void warningNonAdminUsers(final HttpServletResponse resp, final String message) throws IOException {
+    final HashMap<String, Object> ret = new HashMap<>();
+    ret.put("error", message);
+    this.writeJSON(resp, ret);
   }
 
   private void handleNotePageLoad(final HttpServletRequest req,
@@ -73,6 +80,9 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
                             final Session session) throws ServletException, IOException {
     if (isAdmin(session.getUser()) && hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
+    } else {
+      warningNonAdminUsers(resp, "The requested user doesn't have admin permission, "
+          + "Or the HTTP request doesn't include ajax.");
     }
   }
 
@@ -83,9 +93,11 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
     final String ajaxName = getParam(req, "ajax");
     try {
       if (ajaxName.equals("addNote")) {
-        ajaxAddNotes(req, ret, session.getUser());
+        ajaxAddNotes(req, ret);
+      } else if (ajaxName.equals("removeNote")){
+        ajaxRemoveNotes(ret);
       } else {
-        ajaxRemoveNotes(req, ret, session.getUser());
+        ret.put("error", "Can not find the ajax operation");
       }
     } catch (final Exception e) {
       ret.put("error", e.getMessage());
@@ -94,8 +106,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxAddNotes(final HttpServletRequest req,
-                            final Map<String, Object> ret, final User user) throws ServletException,
-      TriggerManagerException {
+                            final Map<String, Object> ret) throws ServletException {
     type = getParam(req, "type");
     message= getParam(req, "message");
     url = getParam(req, "url");
@@ -103,9 +114,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
     ret.put("status", "success");
   }
 
-  private void ajaxRemoveNotes(final HttpServletRequest req,
-                               final Map<String, Object> ret, final User user) throws ServletException,
-      TriggerManagerException {
+  private void ajaxRemoveNotes(final Map<String, Object> ret) throws ServletException {
     type = null;
     message= null;
     url = null;
@@ -114,12 +123,6 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private boolean isAdmin(final User user) {
-    for (final String roleName : user.getRoles()) {
-      final Role role = this.server.getUserManager().getRole(roleName);
-      if ( role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
-      }
-    }
-    return false;
+    return HttpRequestUtils.hasPermission(this.server.getUserManager(), user, Type.ADMIN);
   }
 }

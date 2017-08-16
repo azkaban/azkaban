@@ -27,6 +27,11 @@
     line-height: 70px;
     font-weight: bold;
   }
+
+  #banner span:hover {
+    color: red;
+    cursor: pointer;
+  }
 </style>
 <script type="text/javascript">
   function navMenuClick(url) {
