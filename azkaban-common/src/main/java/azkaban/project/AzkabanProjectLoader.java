@@ -189,6 +189,9 @@ class AzkabanProjectLoader {
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
         project.getVersion() - this.projectVersionRetention);
 
+    // Clean up storage
+    this.storageManager.cleanupProjectArtifacts(project.getId());
+
     return reports;
   }
 
