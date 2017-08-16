@@ -33,13 +33,13 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
 @Singleton
-public class ExecutorFlowDBManager {
+public class ExecutionFlowDBManager {
 
-  private static final Logger logger = Logger.getLogger(ExecutorFlowDBManager.class);
+  private static final Logger logger = Logger.getLogger(ExecutionFlowDBManager.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public ExecutorFlowDBManager(final DatabaseOperator dbOperator) {
+  public ExecutionFlowDBManager(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
@@ -49,7 +49,14 @@ public class ExecutorFlowDBManager {
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time) "
         + "values (?,?,?,?,?,?,?)";
     final long submitTime = System.currentTimeMillis();
+    flow.setStatus(Status.PREPARING);
 
+    /**
+     * Why we need a transaction to get last insert ID?
+     * Because "SELECT LAST_INSERT_ID()" needs to have the same connection
+     * as inserting the new entry.
+     * See https://dev.mysql.com/doc/refman/5.7/en/information-functions.html#function_last-insert-id
+     */
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),

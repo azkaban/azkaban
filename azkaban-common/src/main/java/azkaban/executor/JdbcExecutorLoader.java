@@ -58,13 +58,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ExecutorLoader {
   private static final Logger logger = Logger
       .getLogger(JdbcExecutorLoader.class);
-  private final ExecutorFlowDBManager executorFlowDBManager;
+  private final ExecutionFlowDBManager executionFlowDBManager;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics, final ExecutorFlowDBManager executorFlowDBManager) {
+  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics, final ExecutionFlowDBManager executionFlowDBManager) {
     super(props, commonMetrics);
-    this.executorFlowDBManager = executorFlowDBManager;
+    this.executionFlowDBManager = executionFlowDBManager;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -78,13 +78,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public synchronized void uploadExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    this.executorFlowDBManager.uploadExecutableFlow(flow);
+    this.executionFlowDBManager.uploadExecutableFlow(flow);
   }
 
   @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    this.executorFlowDBManager.updateExecutableFlow(flow);
+    this.executionFlowDBManager.updateExecutableFlow(flow);
   }
 
   @Override
@@ -234,26 +234,26 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num) throws ExecutorManagerException {
-    return this.executorFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num);
+    return this.executionFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num, final Status status) throws ExecutorManagerException {
-    return this.executorFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num, status);
+    return this.executionFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num, status);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
-    return this.executorFlowDBManager.fetchFlowHistory(skip,num);
+    return this.executionFlowDBManager.fetchFlowHistory(skip,num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain,
                                                final String flowContains, final String userNameContains, final int status, final long startTime,
                                                final long endTime, final int skip, final int num) throws ExecutorManagerException {
-    return this.executorFlowDBManager.fetchFlowHistory(projContain, flowContains,
+    return this.executionFlowDBManager.fetchFlowHistory(projContain, flowContains,
         userNameContains, status, startTime, endTime, skip, num);
   }
 

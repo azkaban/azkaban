@@ -36,11 +36,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ExecutorFlowDBManagerTest {
+public class ExecutionFlowDBManagerTest {
 
   private static final Props props = new Props();
   private static DatabaseOperator dbOperator;
-  private ExecutorFlowDBManager executorFlowDBManager;
+  private ExecutionFlowDBManager executionFlowDBManager;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -69,7 +69,7 @@ public class ExecutorFlowDBManagerTest {
 
   @Before
   public void setup() {
-    this.executorFlowDBManager = new ExecutorFlowDBManager(dbOperator);
+    this.executionFlowDBManager = new ExecutionFlowDBManager(dbOperator);
   }
 
   @After
@@ -89,10 +89,10 @@ public class ExecutorFlowDBManagerTest {
   public void testUploadAndFetchExecutionFlows() throws Exception {
 
     final ExecutableFlow flow = createTestFlow();
-    this.executorFlowDBManager.uploadExecutableFlow(flow);
+    this.executionFlowDBManager.uploadExecutableFlow(flow);
 
     final ExecutableFlow fetchFlow =
-        this.executorFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
+        this.executionFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
 
     assertThat(flow).isNotSameAs(fetchFlow);
     assertTwoFlowSame(flow, fetchFlow);
@@ -102,16 +102,16 @@ public class ExecutorFlowDBManagerTest {
   @Test
   public void testUpdateExecutableFlow() throws Exception {
     final ExecutableFlow flow = createTestFlow();
-    this.executorFlowDBManager.uploadExecutableFlow(flow);
+    this.executionFlowDBManager.uploadExecutableFlow(flow);
 
     final ExecutableFlow fetchFlow =
-        this.executorFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
+        this.executionFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
 
     fetchFlow.setEndTime(System.currentTimeMillis());
     fetchFlow.setStatus(Status.SUCCEEDED);
-    this.executorFlowDBManager.updateExecutableFlow(fetchFlow);
+    this.executionFlowDBManager.updateExecutableFlow(fetchFlow);
     final ExecutableFlow fetchFlow2 =
-        this.executorFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
+        this.executionFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
 
     assertTwoFlowSame(fetchFlow, fetchFlow2);
   }
@@ -119,15 +119,16 @@ public class ExecutorFlowDBManagerTest {
   @Test
   public void fetchFlowHistory() throws Exception {
     final ExecutableFlow flow = createTestFlow();
-    this.executorFlowDBManager.uploadExecutableFlow(flow);
-    final List<ExecutableFlow> flowList1 = this.executorFlowDBManager.fetchFlowHistory(0,2 );
+    this.executionFlowDBManager.uploadExecutableFlow(flow);
+    final List<ExecutableFlow> flowList1 = this.executionFlowDBManager.fetchFlowHistory(0,2 );
     assertThat(flowList1.size()).isEqualTo(1);
 
-    final List<ExecutableFlow> flowList2 = this.executorFlowDBManager.fetchFlowHistory(flow.getProjectId(), flow.getId(),0,2 );
+    final List<ExecutableFlow> flowList2 = this.executionFlowDBManager
+        .fetchFlowHistory(flow.getProjectId(), flow.getId(),0,2 );
     assertThat(flowList2.size()).isEqualTo(1);
 
     final ExecutableFlow fetchFlow =
-        this.executorFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
+        this.executionFlowDBManager.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), flowList2.get(0));
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
   }
