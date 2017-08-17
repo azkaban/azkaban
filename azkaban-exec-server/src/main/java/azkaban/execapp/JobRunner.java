@@ -769,7 +769,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
     synchronized (this.syncObject) {
       // If the job is still running, set the status to Success.
-      if (!Status.isStatusFinished(finalStatus) && !this.killed) {
+      if (!Status.isStatusFinished(finalStatus) && !isKilled()) {
         finalStatus = changeStatus(Status.SUCCEEDED);
       }
     }
