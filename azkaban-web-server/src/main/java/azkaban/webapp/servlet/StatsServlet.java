@@ -181,11 +181,6 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       final Session session)
       throws ServletException {
     final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/statsPage.vm");
-    if (!hasPermission(session.getUser(), Permission.Type.METRICS)) {
-      page.add("errorMsg", "User " + session.getUser().getUserId() + " has no permission.");
-      page.render();
-      return;
-    }
 
     try {
       final Collection<Executor> executors = this.execManager.getAllActiveExecutors();
@@ -214,17 +209,6 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       final Session session)
       throws ServletException,
       IOException {
-  }
-
-  protected boolean hasPermission(final User user, final Permission.Type type) {
-    for (final String roleName : user.getRoles()) {
-      final Role role = this.userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type) || role.getPermission()
-          .isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /**
