@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
@@ -32,7 +33,6 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
@@ -101,7 +101,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
-  private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
   private Project project;
   private Map<String, Flow> flowMap;
@@ -121,7 +120,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
     pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
     Utils.initServiceProvider();
@@ -1118,7 +1116,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     final FlowRunner runner = new FlowRunner(
         this.fakeExecutorLoader.fetchExecutableFlow(exId), this.fakeExecutorLoader,
-        this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
+        mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

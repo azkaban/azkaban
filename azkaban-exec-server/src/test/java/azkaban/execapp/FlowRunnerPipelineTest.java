@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static org.mockito.Mockito.mock;
+
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.executor.ExecutableFlow;
@@ -30,7 +32,6 @@ import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.Props;
@@ -73,7 +74,6 @@ public class FlowRunnerPipelineTest {
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
-  private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
   private Project project;
   private Map<String, Flow> flowMap;
@@ -95,7 +95,6 @@ public class FlowRunnerPipelineTest {
 
     pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
 
@@ -689,7 +688,7 @@ public class FlowRunnerPipelineTest {
 
     final FlowRunner runner =
         new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
-            this.fakeExecutorLoader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
+            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 
