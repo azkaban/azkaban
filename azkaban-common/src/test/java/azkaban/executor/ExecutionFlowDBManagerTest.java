@@ -16,20 +16,14 @@
 
 package azkaban.executor;
 
-import static azkaban.db.AzDBTestUtility.EmbeddedH2BasicDataSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
-import azkaban.db.DatabaseOperatorImpl;
-import azkaban.utils.Props;
+import azkaban.test.Utils;
 import azkaban.utils.TestUtils;
-import java.io.File;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
-import org.apache.commons.dbutils.QueryRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -38,24 +32,12 @@ import org.junit.Test;
 
 public class ExecutionFlowDBManagerTest {
 
-  private static final Props props = new Props();
   private static DatabaseOperator dbOperator;
   private ExecutionFlowDBManager executionFlowDBManager;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    final AzkabanDataSource dataSource = new EmbeddedH2BasicDataSource();
-    dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
-
-    final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
-    props.put("database.sql.scripts.dir", sqlScriptsDir);
-
-    // TODO kunkun-tang: Need to refactor AzkabanDatabaseSetup to accept datasource in azkaban-db
-    final azkaban.database.AzkabanDataSource dataSourceForSetupDB =
-        new azkaban.database.AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
-    final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSourceForSetupDB, props);
-    setup.loadTableInfo();
-    setup.updateDatabase(true, false);
+    dbOperator = Utils.initTestDB();
   }
 
   @AfterClass
