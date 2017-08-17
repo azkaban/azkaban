@@ -29,7 +29,7 @@ import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.AlerterHolder;
-import azkaban.executor.ExecutionFlowDBManager;
+import azkaban.executor.ExecutionFlowDao;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
@@ -122,7 +122,7 @@ public class AzkabanWebServerTest {
     executorLoader.updateExecutor(executor);
 
     assertNotNull(injector.getInstance(AzkabanWebServer.class));
-    assertNotNull(injector.getInstance(ExecutionFlowDBManager.class));
+    assertNotNull(injector.getInstance(ExecutionFlowDao.class));
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
     assertSingleton(ExecutorLoader.class, injector);
@@ -135,7 +135,7 @@ public class AzkabanWebServerTest {
     assertSingleton(TriggerManager.class, injector);
     assertSingleton(AlerterHolder.class, injector);
     assertSingleton(Emailer.class, injector);
-    assertSingleton(ExecutionFlowDBManager.class, injector);
+    assertSingleton(ExecutionFlowDao.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

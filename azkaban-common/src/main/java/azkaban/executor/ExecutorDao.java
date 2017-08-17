@@ -20,7 +20,6 @@ import azkaban.database.AbstractJdbcLoader;
 import azkaban.db.DatabaseOperator;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
-import com.google.inject.Singleton;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,15 +30,15 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
-@Singleton
-public class ExecutorDBManager extends AbstractJdbcLoader {
+@javax.inject.Singleton
+public class ExecutorDao extends AbstractJdbcLoader {
 
-  private static final Logger logger = Logger.getLogger(ExecutorDBManager.class);
+  private static final Logger logger = Logger.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public ExecutorDBManager(final Props props, final CommonMetrics commonMetrics,
-                           final DatabaseOperator dbOperator) {
+  public ExecutorDao(final Props props, final CommonMetrics commonMetrics,
+                     final DatabaseOperator dbOperator) {
     super(props, commonMetrics);
     this.dbOperator = dbOperator;
   }

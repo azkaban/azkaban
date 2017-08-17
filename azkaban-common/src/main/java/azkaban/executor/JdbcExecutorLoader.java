@@ -58,17 +58,17 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ExecutorLoader {
   private static final Logger logger = Logger
       .getLogger(JdbcExecutorLoader.class);
-  private final ExecutionFlowDBManager executionFlowDBManager;
-  private final ExecutorDBManager executorDBManager;
+  private final ExecutionFlowDao executionFlowDao;
+  private final ExecutorDao executorDao;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
   public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics,
-                            final ExecutionFlowDBManager executionFlowDBManager,
-                            final ExecutorDBManager executorDBManager) {
+                            final ExecutionFlowDao executionFlowDao,
+                            final ExecutorDao executorDao) {
     super(props, commonMetrics);
-    this.executionFlowDBManager = executionFlowDBManager;
-    this.executorDBManager = executorDBManager;
+    this.executionFlowDao = executionFlowDao;
+    this.executorDao = executorDao;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -82,19 +82,19 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public synchronized void uploadExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    this.executionFlowDBManager.uploadExecutableFlow(flow);
+    this.executionFlowDao.uploadExecutableFlow(flow);
   }
 
   @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    this.executionFlowDBManager.updateExecutableFlow(flow);
+    this.executionFlowDao.updateExecutableFlow(flow);
   }
 
   @Override
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
-    return this.executionFlowDBManager.fetchExecutableFlow(id);
+    return this.executionFlowDao.fetchExecutableFlow(id);
   }
 
   /**
@@ -224,26 +224,26 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num) throws ExecutorManagerException {
-    return this.executionFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num);
+    return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num, final Status status) throws ExecutorManagerException {
-    return this.executionFlowDBManager.fetchFlowHistory(projectId, flowId, skip, num, status);
+    return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num, status);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
-    return this.executionFlowDBManager.fetchFlowHistory(skip,num);
+    return this.executionFlowDao.fetchFlowHistory(skip,num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain,
                                                final String flowContains, final String userNameContains, final int status, final long startTime,
                                                final long endTime, final int skip, final int num) throws ExecutorManagerException {
-    return this.executionFlowDBManager.fetchFlowHistory(projContain, flowContains,
+    return this.executionFlowDao.fetchFlowHistory(projContain, flowContains,
         userNameContains, status, startTime, endTime, skip, num);
   }
 
@@ -652,7 +652,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
-    return this.executorDBManager.fetchAllExecutors();
+    return this.executorDao.fetchAllExecutors();
   }
 
   /**
@@ -663,7 +663,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
-    return this.executorDBManager.fetchActiveExecutors();
+    return this.executorDao.fetchActiveExecutors();
   }
 
   /**
@@ -674,7 +674,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public Executor fetchExecutor(final String host, final int port)
     throws ExecutorManagerException {
-    return this.executorDBManager.fetchExecutor(host, port);
+    return this.executorDao.fetchExecutor(host, port);
   }
 
   /**
@@ -684,7 +684,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
-    return this.executorDBManager.fetchExecutor(executorId);
+    return this.executorDao.fetchExecutor(executorId);
   }
 
   /**
@@ -719,7 +719,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public Executor addExecutor(final String host, final int port)
     throws ExecutorManagerException {
-    return this.executorDBManager.addExecutor(host, port);
+    return this.executorDao.addExecutor(host, port);
   }
 
 
@@ -730,7 +730,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public void removeExecutor(final String host, final int port) throws ExecutorManagerException {
-    this.executorDBManager.removeExecutor(host, port);
+    this.executorDao.removeExecutor(host, port);
   }
 
   /**
@@ -823,7 +823,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public Executor fetchExecutorByExecutionId(final int executionId)
     throws ExecutorManagerException {
-    return this.executorDBManager.fetchExecutorByExecutionId(executionId);
+    return this.executorDao.fetchExecutorByExecutionId(executionId);
   }
 
   @Override

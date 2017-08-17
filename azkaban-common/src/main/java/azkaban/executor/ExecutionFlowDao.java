@@ -21,7 +21,6 @@ import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
-import com.google.inject.Singleton;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,14 +31,14 @@ import javax.inject.Inject;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
-@Singleton
-public class ExecutionFlowDBManager {
+@javax.inject.Singleton
+public class ExecutionFlowDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutionFlowDBManager.class);
+  private static final Logger logger = Logger.getLogger(ExecutionFlowDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public ExecutionFlowDBManager(final DatabaseOperator dbOperator) {
+  public ExecutionFlowDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
