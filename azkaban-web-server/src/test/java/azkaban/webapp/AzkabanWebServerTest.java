@@ -31,6 +31,7 @@ import azkaban.db.DatabaseOperator;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionFlowDao;
 import azkaban.executor.Executor;
+import azkaban.executor.ExecutorDao;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.project.ProjectLoader;
@@ -136,6 +137,7 @@ public class AzkabanWebServerTest {
     assertSingleton(AlerterHolder.class, injector);
     assertSingleton(Emailer.class, injector);
     assertSingleton(ExecutionFlowDao.class, injector);
+    assertSingleton(ExecutorDao.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

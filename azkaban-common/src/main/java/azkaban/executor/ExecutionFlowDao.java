@@ -28,10 +28,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
-@javax.inject.Singleton
+@Singleton
 public class ExecutionFlowDao {
 
   private static final Logger logger = Logger.getLogger(ExecutionFlowDao.class);
