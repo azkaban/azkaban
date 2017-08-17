@@ -54,6 +54,7 @@ import azkaban.webapp.servlet.ExecutorServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexRedirectServlet;
 import azkaban.webapp.servlet.JMXHttpServlet;
+import azkaban.webapp.servlet.NoteServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
@@ -126,7 +127,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   @Deprecated
   private static AzkabanWebServer app;
-  
+
   private final VelocityEngine velocityEngine;
   private final StatusService statusService;
   private final Server server;
@@ -476,6 +477,7 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
     root.addServlet(new ServletHolder(new StatusServlet(this.statusService)), "/status");
+    root.addServlet(new ServletHolder(new NoteServlet()), "/notes");
 
     final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");

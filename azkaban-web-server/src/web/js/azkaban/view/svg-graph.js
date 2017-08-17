@@ -652,7 +652,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
     // position.
     // Rather do this than to traverse backwards through the scene graph.
     var ctm = node.gNode.getCTM();
-    var transform = node.gNode.getTransformToElement();
     var globalCTM = this.mainG.getCTM().inverse();
     var otherTransform = globalCTM.multiply(ctm);
     // Also a beauty of affine transformation. The translate is always the
