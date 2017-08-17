@@ -90,21 +90,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW, flowHandler,
-              id);
-      if (properties.isEmpty()) {
-        return null;
-      } else {
-        return properties.get(0);
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching flow id " + id, e);
-    }
+    return this.executionFlowDBManager.fetchExecutableFlow(id);
   }
 
   /**
@@ -749,7 +735,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   /**
    * {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorLoader#updateExecutor(int)
    */
   @Override
   public void updateExecutor(final Executor executor) throws ExecutorManagerException {
@@ -1392,70 +1377,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
             final Executor executor = new Executor(executorId, host, port, executorStatus);
             final ExecutionReference ref = new ExecutionReference(id, executor);
             execFlows.add(new Pair<>(ref, exFlow));
-          } catch (final IOException e) {
-            throw new SQLException("Error retrieving flow data " + id, e);
-          }
-        }
-      } while (rs.next());
-
-      return execFlows;
-    }
-  }
-
-  private static class FetchExecutableFlows implements
-      ResultSetHandler<List<ExecutableFlow>> {
-    private static final String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
-    private static final String FETCH_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE exec_id=?";
-    // private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
-    // "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data "
-    // +
-    // "FROM execution_flows ex " +
-    // "INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
-    private static final String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    private static final String FETCH_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    private static final String FETCH_EXECUTABLE_FLOW_BY_STATUS =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? AND status=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-
-    @Override
-    public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return Collections.<ExecutableFlow> emptyList();
-      }
-
-      final List<ExecutableFlow> execFlows = new ArrayList<>();
-      do {
-        final int id = rs.getInt(1);
-        final int encodingType = rs.getInt(2);
-        final byte[] data = rs.getBytes(3);
-
-        if (data != null) {
-          final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
-          try {
-            // Convoluted way to inflate strings. Should find common package
-            // or helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
-            final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
-            execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
           }
