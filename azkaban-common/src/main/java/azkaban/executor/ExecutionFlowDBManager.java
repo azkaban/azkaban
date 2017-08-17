@@ -275,6 +275,11 @@ public class ExecutionFlowDBManager {
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
           final Object flowObj;
+
+          /**
+           * The below code is a duplicate against many places, like azkaban.database.EncodingType
+           * TODO kunkun-tang: Extract these duplicates to a single static method.
+           */
           try {
             // Convoluted way to inflate strings. Should find common package
             // or helper function.

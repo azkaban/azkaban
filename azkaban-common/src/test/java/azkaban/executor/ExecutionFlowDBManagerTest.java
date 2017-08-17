@@ -135,6 +135,7 @@ public class ExecutionFlowDBManagerTest {
 
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {
     assertThat(flow1.getExecutionId()).isEqualTo(flow2.getExecutionId());
+    assertThat(flow1.getStatus()).isEqualTo(flow2.getStatus());
     assertThat(flow1.getEndTime()).isEqualTo(flow2.getEndTime());
     assertThat(flow1.getStartTime()).isEqualTo(flow2.getStartTime());
     assertThat(flow1.getSubmitTime()).isEqualTo(flow2.getStartTime());
