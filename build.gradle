@@ -28,7 +28,6 @@ buildscript {
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
-apply plugin: 'idea'
 
 apply plugin: 'compare-gradle-builds'
 
@@ -100,7 +99,6 @@ ext.deps = [
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply plugin: 'net.ltgt.errorprone'
 
@@ -194,11 +192,4 @@ subprojects {
 task wrapper(type: Wrapper) {
     gradleVersion = '4.0.2'
     distributionType('ALL')
-}
-
-idea {
-    project {
-        languageLevel = '1.8'
-        vcs = 'Git'
-    }
 }
