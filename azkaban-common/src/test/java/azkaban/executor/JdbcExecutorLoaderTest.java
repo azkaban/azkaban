@@ -1056,7 +1056,7 @@ public class JdbcExecutorLoaderTest {
 
     //TODO kunkun-tang: temporary work-around here. This Test is to be deprecated.
     return new JdbcExecutorLoader(props,
-        new CommonMetrics(new MetricsManager(new MetricRegistry())), null);
+        new CommonMetrics(new MetricsManager(new MetricRegistry())), null, null);
   }
 
   private boolean isTestSetup() {
