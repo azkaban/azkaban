@@ -33,7 +33,6 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
@@ -56,7 +55,10 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
       "../test/src/test/resources/azkaban/test/executions/exectest1");
   private File workingDir;
   private JobTypeManager jobtypeManager;
+
+  @Mock
   private ProjectLoader fakeProjectLoader;
+  
   @Mock
   private ExecutorLoader loader;
 
@@ -75,7 +77,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
     pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 

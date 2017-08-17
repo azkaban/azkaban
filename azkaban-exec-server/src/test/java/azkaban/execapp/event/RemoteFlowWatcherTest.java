@@ -16,6 +16,8 @@
 
 package azkaban.execapp.event;
 
+import static org.mockito.Mockito.mock;
+
 import azkaban.execapp.EventCollectorListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.executor.ExecutableFlow;
@@ -28,7 +30,6 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.JSONUtils;
@@ -45,9 +46,7 @@ import org.junit.Test;
 
 public class RemoteFlowWatcherTest {
 
-  private File workingDir;
   private JobTypeManager jobtypeManager;
-  private ProjectLoader fakeProjectLoader;
   private int dirVal = 0;
 
   @Before
@@ -55,7 +54,6 @@ public class RemoteFlowWatcherTest {
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     this.jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
-    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
   }
 
   @After
@@ -256,12 +254,10 @@ public class RemoteFlowWatcherTest {
       options.setPipelineLevel(pipeline);
       options.setPipelineExecutionId(watcher.getExecId());
     }
-    // MockProjectLoader projectLoader = new MockProjectLoader(new
-    // File(exFlow.getExecutionPath()));
 
     loader.uploadExecutableFlow(exFlow);
-    final FlowRunner runner =
-        new FlowRunner(exFlow, loader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
+    final FlowRunner runner = new FlowRunner(exFlow, loader, mock(ProjectLoader.class),
+        this.jobtypeManager, azkabanProps);
     runner.setFlowWatcher(watcher);
     runner.addListener(eventCollector);
 
