@@ -40,7 +40,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
   }
 
   public static InteractiveTestJob getTestJob(final String name) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       if (testJobs.containsKey(name)) {
         return testJobs.get(name);
       }
@@ -48,6 +48,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
         try {
           InteractiveTestJob.testJobs.wait(10L);
         } catch (final InterruptedException e) {
+          i--;
         }
       }
     }
