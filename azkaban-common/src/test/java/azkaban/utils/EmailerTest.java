@@ -17,9 +17,12 @@ package azkaban.utils;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
-import azkaban.test.executions.TestExecutions;
+import azkaban.test.executions.ExecutionsTestUtil;
+import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -52,7 +55,7 @@ public class EmailerTest {
 
     this.props = createMailProperties();
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props, logger);
-    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
     this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);
@@ -74,14 +77,16 @@ public class EmailerTest {
     Assert.assertNotNull(flow);
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    final Emailer emailer = new Emailer(this.props);
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final Emailer emailer = new Emailer(this.props, commonMetrics);
     emailer.sendErrorEmail(exFlow);
 
   }
 
   @Test
   public void testCreateEmailMessage() {
-    final Emailer emailer = new Emailer(this.props);
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final Emailer emailer = new Emailer(this.props, commonMetrics);
     final EmailMessage em = emailer
         .createEmailMessage("subject", "text/html", this.receiveAddrList);
     assert em.getMailPort() == this.mailPort;

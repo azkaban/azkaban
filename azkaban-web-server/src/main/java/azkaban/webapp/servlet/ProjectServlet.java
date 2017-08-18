@@ -20,9 +20,9 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
-import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.user.UserUtils;
 import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -160,7 +160,8 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 
-    if (this.lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
+    if (this.lockdownCreateProjects &&
+        !UserUtils.hasPermissionforAction(this.userManager, user, Permission.Type.CREATEPROJECTS)) {
       page.add("hideCreateProject", true);
     }
 
@@ -218,19 +219,6 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
     // TODO Auto-generated method stub
-  }
-
-  private boolean hasPermissionToCreateProject(final User user) {
-    for (final String roleName : user.getRoles()) {
-      final Role role = this.userManager.getRole(roleName);
-      final Permission perm = role.getPermission();
-      if (perm.isPermissionSet(Permission.Type.ADMIN)
-          || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   /**

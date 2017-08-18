@@ -25,15 +25,17 @@ import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class LocalStorage implements Storage {
 
   private static final Logger log = Logger.getLogger(LocalStorage.class);
@@ -63,12 +65,16 @@ public class LocalStorage implements Storage {
     return baseDirectory;
   }
 
+  private File getFile(final String key) {
+    return new File(this.rootDirectory, key);
+  }
+
   /**
    * @param key Relative path of the file from the baseDirectory
    */
   @Override
   public InputStream get(final String key) throws IOException {
-    return new FileInputStream(new File(this.rootDirectory, key));
+    return new FileInputStream(getFile(key));
   }
 
   @Override
@@ -80,7 +86,7 @@ public class LocalStorage implements Storage {
 
     final File targetFile = new File(projectDir, String.format("%s-%s.zip",
         String.valueOf(metadata.getProjectId()),
-        new String(metadata.getHash(), StandardCharsets.UTF_8)));
+        new String(Hex.encodeHex(metadata.getHash()))));
 
     if (targetFile.exists()) {
       log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
@@ -104,6 +110,13 @@ public class LocalStorage implements Storage {
 
   @Override
   public boolean delete(final String key) {
-    throw new UnsupportedOperationException("delete has not been implemented.");
+    final File file = getFile(key);
+    final boolean result = file.exists() && file.delete();
+    if (result) {
+      log.warn("Deleted file: " + file.getAbsolutePath());
+    } else {
+      log.warn("Unable to delete file: " + file.getAbsolutePath());
+    }
+    return result;
   }
 }

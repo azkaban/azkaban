@@ -65,17 +65,15 @@ public abstract class AbstractProcessJob extends AbstractJob {
     this.log = log;
   }
 
-  public static File createOutputPropsFile(final String id,
-      final String workingDir) {
-    System.err.println("cwd=" + workingDir);
+  public File createOutputPropsFile(final String id, final String workingDir) {
+    this.info("cwd=" + workingDir);
 
     final File directory = new File(workingDir);
     File tempFile = null;
     try {
       tempFile = File.createTempFile(id + "_output_", "_tmp", directory);
     } catch (final IOException e) {
-      System.err.println("Failed to create temp output property file :\n");
-      e.printStackTrace(System.err);
+      this.error("Failed to create temp output property file :", e);
       throw new RuntimeException("Failed to create temp output property file ",
           e);
     }
@@ -141,7 +139,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
     this.jobProps.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
     this.jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
 
-    files[1] = createOutputPropsFile(getId(), this._cwd);
+    files[1] = this.createOutputPropsFile(getId(), this._cwd);
     this.jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
     return files;
   }
@@ -169,8 +167,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
   public Props loadOutputFileProps(final File outputPropertiesFile) {
     InputStream reader = null;
     try {
-      System.err.println("output properties file="
-          + outputPropertiesFile.getAbsolutePath());
+      this.info("output properties file=" + outputPropertiesFile.getAbsolutePath());
       reader =
           new BufferedInputStream(new FileInputStream(outputPropertiesFile));
 

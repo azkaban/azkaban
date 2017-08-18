@@ -25,6 +25,7 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class HdfsStorage implements Storage {
 
   private static final Logger log = Logger.getLogger(HdfsStorage.class);
@@ -58,7 +60,7 @@ public class HdfsStorage implements Storage {
   @Override
   public InputStream get(final String key) throws IOException {
     this.hdfsAuth.authorize();
-    return this.hdfs.open(new Path(this.rootUri.toString(), key));
+    return this.hdfs.open(fullPath(key));
   }
 
   @Override
@@ -100,6 +102,17 @@ public class HdfsStorage implements Storage {
 
   @Override
   public boolean delete(final String key) {
-    throw new UnsupportedOperationException("Method not implemented");
+    this.hdfsAuth.authorize();
+    final Path path = fullPath(key);
+    try {
+      return this.hdfs.delete(path, false);
+    } catch (final IOException e) {
+      log.error("HDFS delete failed on " + path, e);
+      return false;
+    }
+  }
+
+  private Path fullPath(final String key) {
+    return new Path(this.rootUri.toString(), key);
   }
 }

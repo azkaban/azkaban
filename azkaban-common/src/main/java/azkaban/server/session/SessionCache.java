@@ -19,6 +19,7 @@ package azkaban.server.session;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,12 +28,12 @@ import java.util.concurrent.TimeUnit;
  * The following global azkaban properties can be used: max.num.sessions - used
  * to determine the number of live sessions that azkaban will handle. Default is
  * 10000 session.time.to.live -Number of seconds before session expires. Default
- * set to 1 days.
+ * set to 10 hours.
  */
 public class SessionCache {
 
   private static final int MAX_NUM_SESSIONS = 10000;
-  private static final long SESSION_TIME_TO_LIVE = 24 * 60 * 60 * 1000L;
+  private static final long SESSION_TIME_TO_LIVE = 10 * 60 * 60 * 1000L;
 
   // private CacheManager manager = CacheManager.create();
   private final Cache<String, Session> cache;
@@ -40,6 +41,7 @@ public class SessionCache {
   /**
    * Constructor taking global props.
    */
+  @Inject
   public SessionCache(final Props props) {
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))

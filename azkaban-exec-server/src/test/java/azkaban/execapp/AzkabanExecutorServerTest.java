@@ -25,6 +25,8 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
+import azkaban.executor.AlerterHolder;
+import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -88,5 +90,7 @@ public class AzkabanExecutorServerTest {
     );
 
     assertNotNull(injector.getInstance(AzkabanExecutorServer.class));
+    assertNotNull(injector.getInstance(Emailer.class));
+    assertNotNull(injector.getInstance(AlerterHolder.class));
   }
 }

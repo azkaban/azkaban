@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 buildscript {
     repositories {
         mavenCentral()
@@ -12,7 +28,6 @@ buildscript {
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
-apply plugin: 'idea'
 
 apply plugin: 'compare-gradle-builds'
 
@@ -42,6 +57,7 @@ ext.deps = [
         dbcp2               : 'org.apache.commons:commons-dbcp2:2.1.1',
         dbutils             : 'commons-dbutils:commons-dbutils:1.5',
         fileupload          : 'commons-fileupload:commons-fileupload:1.2.1',
+        gson                : 'com.google.code.gson:gson:2.8.1',
         guava               : 'com.google.guava:guava:21.0',
         guice               : 'com.google.inject:guice:4.1.0',
         h2                  : 'com.h2database:h2:1.4.193',
@@ -51,10 +67,8 @@ ext.deps = [
         hadoopHdfs          : "org.apache.hadoop:hadoop-hdfs:" + versions.hadoop,
         hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
         hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
-        hiveExecCore        : "org.apache.hive:hive-exec:" + versions.hive + ":core",
         hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
-        httpclient          : 'org.apache.httpcomponents:httpclient:4.5.2',
-        httpcore            : 'org.apache.httpcomponents:httpcore:4.4.5',
+        httpclient          : 'org.apache.httpcomponents:httpclient:4.5.3',
         io                  : 'commons-io:commons-io:2.4',
         jacksonCoreAsl      : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
         jacksonMapperAsl    : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
@@ -63,7 +77,6 @@ ext.deps = [
         jexl                : 'org.apache.commons:commons-jexl:2.1.1',
         jodaTime            : 'joda-time:joda-time:2.0',
         jopt                : 'net.sf.jopt-simple:jopt-simple:4.3',
-        jsonSimple          : 'com.googlecode.json-simple:json-simple:1.1.1',
         junit               : 'junit:junit:4.12',
         kafkaLog4jAppender  : 'org.apache.kafka:kafka-log4j-appender:0.10.0.0',
         log4j               : 'log4j:log4j:1.2.16',
@@ -86,7 +99,6 @@ ext.deps = [
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply plugin: 'net.ltgt.errorprone'
 
@@ -132,7 +144,7 @@ subprojects {
         test {
             // Set maxParallelForks to a large number and let gradle to force it to a the
             // max-workers number when needed.
-            maxParallelForks =  12
+            maxParallelForks = 12
         }
     }
 
@@ -142,6 +154,13 @@ subprojects {
             compression = Compression.GZIP
             extension = 'tar.gz'
         }
+    }
+
+    /**
+     * Terminate compilation if warnings occur.
+     */
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-Werror"]
     }
 
     /**
@@ -166,17 +185,11 @@ subprojects {
     }
 }
 
+
 /**
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.5'
+    gradleVersion = '4.0.2'
     distributionType('ALL')
-}
-
-idea {
-    project {
-        languageLevel = '1.8'
-        vcs = 'Git'
-    }
 }

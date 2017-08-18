@@ -148,7 +148,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     buf.append("\"");
     buf.append(req.getMethod()).append(" ");
     buf.append(req.getRequestURI()).append(" ");
-    if (req.getQueryString() != null) {
+    if (req.getQueryString() != null && !isIllegalPostRequest(req)) {
       buf.append(req.getQueryString()).append(" ");
     } else {
       buf.append("-").append(" ");
@@ -228,7 +228,6 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   private Session getSessionFromRequest(final HttpServletRequest req)
       throws ServletException {
-    final String remoteIp = getRealClientIpAddr(req);
     final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
     String sessionId = null;
 
@@ -239,21 +238,15 @@ public abstract class LoginAbstractAzkabanServlet extends
     if (sessionId == null && hasParam(req, "session.id")) {
       sessionId = getParam(req, "session.id");
     }
-    return getSessionFromSessionId(sessionId, remoteIp);
+    return getSessionFromSessionId(sessionId);
   }
 
-  private Session getSessionFromSessionId(final String sessionId, final String remoteIp) {
+  private Session getSessionFromSessionId(final String sessionId) {
     if (sessionId == null) {
       return null;
     }
 
-    final Session session = getApplication().getSessionCache().getSession(sessionId);
-    // Check if the IP's are equal. If not, we invalidate the sesson.
-    if (session == null || !remoteIp.equals(session.getIp())) {
-      return null;
-    }
-
-    return session;
+    return getApplication().getSessionCache().getSession(sessionId);
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp)
@@ -264,6 +257,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp,
       final String errorMsg) throws ServletException, IOException {
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
+    page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
       page.add("errorMsg", errorMsg);
     }
@@ -277,6 +271,10 @@ public abstract class LoginAbstractAzkabanServlet extends
     Session session = getSessionFromRequest(req);
     this.webMetrics.markWebPostCall();
     logRequest(req, session);
+    if (isIllegalPostRequest(req)) {
+      writeResponse(resp, "Login error. Must pass username and password in request body");
+      return;
+    }
 
     // Handle Multipart differently from other post messages
     if (ServletFileUpload.isMultipartContent(req)) {
@@ -285,9 +283,8 @@ public abstract class LoginAbstractAzkabanServlet extends
         // See if the session id is properly set.
         if (params.containsKey("session.id")) {
           final String sessionId = (String) params.get("session.id");
-          final String ip = getRealClientIpAddr(req);
 
-          session = getSessionFromSessionId(sessionId, ip);
+          session = getSessionFromSessionId(sessionId);
           if (session != null) {
             handleMultiformPost(req, resp, params, session);
             return;
@@ -343,6 +340,25 @@ public abstract class LoginAbstractAzkabanServlet extends
     } else {
       handlePost(req, resp, session);
     }
+  }
+
+  /**
+   * Disallows users from logging in by passing their username and password via the request header
+   * where it'd be logged.
+   *
+   * Example of illegal post request:
+   * curl -X POST http://localhost:8081/?action=login\&username=azkaban\&password=azkaban
+   *
+   * req.getParameterMap() or req.getParameterNames() cannot be used because they draw no
+   * distinction between the illegal request above and the following valid request:
+   * curl -X POST -d "action=login&username=azkaban&password=azkaban" http://localhost:8081/
+   *
+   * "password=" is searched for because it leverages the query syntax to determine that the user is
+   * passing the password as a parameter name. There is no other ajax call that has a parameter
+   * that includes the string "password" at the end which could throw false positives.
+   */
+  private boolean isIllegalPostRequest(final HttpServletRequest req) {
+    return (req.getQueryString() != null && req.getQueryString().contains("password="));
   }
 
   private Session createSession(final HttpServletRequest req)

@@ -20,7 +20,8 @@ import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CLASS_
 import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
 
 import azkaban.utils.Props;
-import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
@@ -28,9 +29,9 @@ import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.lang.reflect.Constructor;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.log4j.Logger;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The singleton class, MetricsManager, is the place to have MetricRegistry and ConsoleReporter in
@@ -40,28 +41,41 @@ import org.apache.log4j.Logger;
 @Singleton
 public class MetricsManager {
 
-  private static final Logger logger = Logger.getLogger(MetricsManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MetricsManager.class);
   private final MetricRegistry registry;
-  private ConsoleReporter consoleReporter = null;
 
-  /**
-   * Constructor is eaagerly called when this class is loaded.
-   */
   @Inject
-  public MetricsManager(MetricRegistry registry) {
+  public MetricsManager(final MetricRegistry registry) {
     this.registry = registry;
+    registerJvmMetrics();
+  }
+
+  private void registerJvmMetrics() {
     this.registry.register("MEMORY_Gauge", new MemoryUsageGaugeSet());
     this.registry.register("GC_Gauge", new GarbageCollectorMetricSet());
     this.registry.register("Thread_State_Gauge", new ThreadStatesGaugeSet());
   }
 
   /**
-   * Return the Metrics registry.
-   *
-   * @return the single {@code MetricRegistry} used for all of Az Metrics monitoring
+   * A {@link Meter} measures the rate of events over time (e.g., “requests per second”).
+   * Here we track 1-minute moving averages.
    */
-  public MetricRegistry getRegistry() {
-    return this.registry;
+  public Meter addMeter(final String name) {
+    final Meter curr = this.registry.meter(name);
+    this.registry.register(name + "-gauge", (Gauge<Double>) curr::getFifteenMinuteRate);
+    return curr;
+  }
+
+  /**
+   * A {@link Gauge} is an instantaneous reading of a particular value. This method leverages
+   * Supplier, a Functional Interface, to get Generics metrics values. With this support, no matter
+   * what our interesting metrics is a Double or a Long, we could pass it to Metrics Parser.
+   *
+   * E.g., in {@link CommonMetrics#setupAllMetrics()}, we construct a supplier lambda by having a
+   * AtomicLong object and its get method, in order to collect dbConnection metric.
+   */
+  public <T> void addGauge(final String name, final Supplier<T> gaugeFunc) {
+    this.registry.register(name, (Gauge<T>) gaugeFunc::get);
   }
 
   /**
@@ -74,51 +88,21 @@ public class MetricsManager {
     final String metricsServerURL = props.get(METRICS_SERVER_URL);
     if (metricsReporterClassName != null && metricsServerURL != null) {
       try {
-        logger.info("metricsReporterClassName: " + metricsReporterClassName);
+        log.info("metricsReporterClassName: " + metricsReporterClassName);
         final Class metricsClass = Class.forName(metricsReporterClassName);
 
-        final Constructor[] constructors =
-            metricsClass.getConstructors();
+        final Constructor[] constructors = metricsClass.getConstructors();
         constructors[0].newInstance(reporterName, this.registry, metricsServerURL);
 
       } catch (final Exception e) {
-        logger.error("Encountered error while loading and instantiating "
+        log.error("Encountered error while loading and instantiating "
             + metricsReporterClassName, e);
-        throw new IllegalStateException(
-            "Encountered error while loading and instantiating "
+        throw new IllegalStateException("Encountered error while loading and instantiating "
                 + metricsReporterClassName, e);
       }
     } else {
-      logger.error("No value for property: "
-          + CUSTOM_METRICS_REPORTER_CLASS_NAME
-          + "or" + METRICS_SERVER_URL + " was found");
+      log.error(String.format("No value for property: %s or %s was found",
+          CUSTOM_METRICS_REPORTER_CLASS_NAME, METRICS_SERVER_URL));
     }
-
-  }
-
-  /**
-   * Create a ConsoleReporter to the AZ Metrics registry.
-   *
-   * @param reportInterval time to wait between dumping metrics to the console
-   */
-  public synchronized void addConsoleReporter(final Duration reportInterval) {
-    if (null != this.consoleReporter) {
-      return;
-    }
-
-    this.consoleReporter = ConsoleReporter.forRegistry(getRegistry()).build();
-    this.consoleReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
-  }
-
-  /**
-   * Stop ConsoldeReporter previously created by a call to
-   * {@link #addConsoleReporter(Duration)} and release it for GC.
-   */
-  public synchronized void removeConsoleReporter() {
-    if (null != this.consoleReporter) {
-      this.consoleReporter.stop();
-    }
-
-    this.consoleReporter = null;
   }
 }

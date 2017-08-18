@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,8 @@
 
 package azkaban.jobExecutor;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants;
@@ -23,14 +25,20 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.metrics.CommonMetrics;
+import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
@@ -42,15 +50,24 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
+  // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
+  @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   public static final String EXECUTE_AS_USER = "execute.as.user";
   public static final String USER_TO_PROXY = "user.to.proxy";
   public static final String KRB5CCNAME = "KRB5CCNAME";
   private static final Duration KILL_TIME = Duration.ofSeconds(30);
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
+  private static final String CHOWN = "chown";
+  private static final String CREATE_FILE = "touch";
+  private static final int SUCCESSFUL_EXECUTION = 0;
+  private static final String TEMP_FILE_NAME = "user_can_write";
   private final CommonMetrics commonMetrics;
   private volatile AzkabanProcess process;
   private volatile boolean killed = false;
+
+  // For testing only. True if the job process exits successfully.
+  private volatile boolean success;
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
@@ -203,16 +220,30 @@ public class ProcessJob extends AbstractProcessJob {
     String effectiveUser = null;
     final boolean isExecuteAsUser = this.sysProps.getBoolean(EXECUTE_AS_USER, true);
 
+    //Get list of users we never execute flows as. (ie: root, azkaban)
+    final Set<String> blackListedUsers = new HashSet<>(
+        Arrays.asList(
+            this.sysProps.getString(Constants.ConfigurationKeys.BLACK_LISTED_USERS, "root,azkaban")
+                .split(",")
+        )
+    );
+
     // nativeLibFolder specifies the path for execute-as-user file,
     // which will change user from Azkaban to effectiveUser
     if (isExecuteAsUser) {
-      final String nativeLibFolder = this.sysProps.getString(NATIVE_LIB_FOLDER);
-      executeAsUserBinaryPath =
-          String.format("%s/%s", nativeLibFolder, "execute-as-user");
+      final String nativeLibFolder = this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER);
+      executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
       effectiveUser = getEffectiveUser(this.jobProps);
-      if ("root".equals(effectiveUser)) {
+      // Throw exception if Azkaban tries to run flow as a prohibited user
+      if (blackListedUsers.contains(effectiveUser)) {
         throw new RuntimeException(
-            "Not permitted to proxy as root through Azkaban");
+            String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
+        );
+      }
+      // Set parent directory permissions to <uid>:azkaban so user can write in their execution directory
+      // if the directory is not permissioned correctly already (should happen once per execution)
+      if (!canWriteInCurrentWorkingDirectory(effectiveUser)) {
+        assignUserDirOwnership(effectiveUser);
       }
     }
 
@@ -243,12 +274,20 @@ public class ProcessJob extends AbstractProcessJob {
       // print out the Job properties to the job log.
       this.logJobProperties();
 
-      boolean success = false;
-      this.process = builder.build();
-
+      synchronized (this) {
+        // Make sure that checking if the process job is killed and creating an AzkabanProcess
+        // object are atomic. The cancel method relies on this to make sure that if this.process is
+        // not null, this block of code which includes checking if the job is killed has not been
+        // executed yet.
+        if (this.killed) {
+          info("The job is killed. Abort. No job process created.");
+          return;
+        }
+        this.process = builder.build();
+      }
       try {
         this.process.run();
-        success = true;
+        this.success = true;
       } catch (final Throwable e) {
         for (final File file : propFiles) {
           if (file != null && file.exists()) {
@@ -257,9 +296,8 @@ public class ProcessJob extends AbstractProcessJob {
         }
         throw new RuntimeException(e);
       } finally {
-        this.process = null;
         info("Process completed "
-            + (success ? "successfully" : "unsuccessfully") + " in "
+            + (this.success ? "successfully" : "unsuccessfully") + " in "
             + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
       }
     }
@@ -322,6 +360,47 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
+   * Checks to see if user has write access to current working directory which many users
+   * need for their jobs to store temporary data/jars on the executor.
+   *
+   * Accomplishes this by using execute-as-user to try to create an empty file in the cwd.
+   *
+   * @param effectiveUser user/proxy user running the job
+   * @return true if user has write permissions in current working directory otherwise false
+   */
+  private boolean canWriteInCurrentWorkingDirectory(final String effectiveUser)
+      throws IOException {
+    final ExecuteAsUser executeAsUser = new ExecuteAsUser(
+        this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+    final List<String> checkIfUserCanWriteCommand = Arrays
+        .asList(CREATE_FILE, getWorkingDirectory() + "/" + TEMP_FILE_NAME);
+    final int result = executeAsUser.execute(effectiveUser, checkIfUserCanWriteCommand);
+    return result == SUCCESSFUL_EXECUTION;
+  }
+
+  /**
+   * Changes permission on current working directory so that the directory is owned by the user
+   * and the group remains azkaban.
+   *
+   * Leverages execute-as-user with "root" as the user to run the command.
+   *
+   * @param effectiveUser user/proxy user running the job
+   */
+  private void assignUserDirOwnership(final String effectiveUser) throws Exception {
+    final ExecuteAsUser executeAsUser = new ExecuteAsUser(
+        this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+    final String groupName = this.sysProps.getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
+    final List<String> changeOwnershipCommand = Arrays
+        .asList(CHOWN, effectiveUser + ":" + groupName, getWorkingDirectory());
+    info("Change current working directory ownership to " + effectiveUser + ":" + groupName + ".");
+    final int result = executeAsUser.execute("root", changeOwnershipCommand);
+    if (result != 0) {
+      handleError("Failed to change current working directory ownership. Error code: " + Integer
+          .toString(result), null);
+    }
+  }
+
+  /**
    * This is used to get the min/max memory size requirement by processes.
    * SystemMemoryInfo can use the info to determine if the memory request can be
    * fulfilled. For Java process, this should be Xms/Xmx setting.
@@ -357,11 +436,14 @@ public class ProcessJob extends AbstractProcessJob {
     synchronized (this) {
       this.killed = true;
       this.notify();
+      if (this.process == null) {
+        // The job thread has not checked if the job is killed yet.
+        // setting the killed flag should be enough to abort the job.
+        // There is no job process to kill.
+        return;
+      }
     }
-
-    if (this.process == null) {
-      throw new IllegalStateException("Not started.");
-    }
+    this.process.awaitStartup();
     final boolean processkilled = this.process
         .softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
     if (!processkilled) {
@@ -377,6 +459,16 @@ public class ProcessJob extends AbstractProcessJob {
 
   public int getProcessId() {
     return this.process.getProcessId();
+  }
+
+  @VisibleForTesting
+  boolean isSuccess() {
+    return this.success;
+  }
+
+  @VisibleForTesting
+  AzkabanProcess getProcess() {
+    return this.process;
   }
 
   public String getPath() {

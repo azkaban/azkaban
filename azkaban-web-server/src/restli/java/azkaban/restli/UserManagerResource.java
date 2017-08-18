@@ -55,8 +55,7 @@ public class UserManagerResource extends ResourceContextHolder {
 
   @Action(name = "getUserFromSessionId")
   public User getUserFromSessionId(@ActionParam("sessionId") final String sessionId) {
-    final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
-    final Session session = getSessionFromSessionId(sessionId, ip);
+    final Session session = getSessionFromSessionId(sessionId);
     final azkaban.user.User azUser = session.getUser();
 
     // Fill out the restli object with properties from the Azkaban user
@@ -78,17 +77,11 @@ public class UserManagerResource extends ResourceContextHolder {
     return session;
   }
 
-  private Session getSessionFromSessionId(final String sessionId, final String remoteIp) {
+  private Session getSessionFromSessionId(final String sessionId) {
     if (sessionId == null) {
       return null;
     }
 
-    final Session session = getAzkaban().getSessionCache().getSession(sessionId);
-    // Check if the IP's are equal. If not, we invalidate the sesson.
-    if (session == null || !remoteIp.equals(session.getIp())) {
-      return null;
-    }
-
-    return session;
+    return getAzkaban().getSessionCache().getSession(sessionId);
   }
 }

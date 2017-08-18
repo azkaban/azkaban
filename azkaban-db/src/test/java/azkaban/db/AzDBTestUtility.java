@@ -16,11 +16,11 @@
  */
 package azkaban.db;
 
-class AzDBTestUtility {
+public class AzDBTestUtility {
 
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 
-    EmbeddedH2BasicDataSource() {
+    public EmbeddedH2BasicDataSource() {
       super();
       final String url = "jdbc:h2:mem:test";
       setDriverClassName("org.h2.Driver");

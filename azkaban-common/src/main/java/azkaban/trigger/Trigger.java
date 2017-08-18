@@ -150,7 +150,7 @@ public class Trigger {
         action.setContext(context);
       }
 
-      trigger = new Trigger.TriggerBuilder("azkaban",
+      trigger = new Trigger.TriggerBuilder(submitUser,
           source,
           triggerCond,
           expireCond,

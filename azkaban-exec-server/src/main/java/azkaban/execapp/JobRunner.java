@@ -55,7 +55,6 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
-import org.json.simple.JSONObject;
 
 public class JobRunner extends EventHandler implements Runnable {
 
@@ -92,7 +91,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private int jobLogBackupIndex;
 
   private long delayStartMs = 0;
-  private boolean killed = false;
+  private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
@@ -247,6 +246,10 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.node;
   }
 
+  public String getJobId() {
+    return this.node.getId();
+  }
+
   public String getLogFilePath() {
     return this.logFile == null ? null : this.logFile.getPath();
   }
@@ -345,9 +348,9 @@ public class JobRunner extends EventHandler implements Runnable {
         this.azkabanProps
             .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
-    final JSONObject layout = LogUtil.createLogPatternLayoutJsonObject(props, jobId);
+    final String layoutString = LogUtil.createLogPatternLayoutJsonString(this.props, this.jobId);
 
-    kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
+    kafkaProducer.setLayout(new PatternLayoutEscaped(layoutString));
     kafkaProducer.activateOptions();
 
     this.flowLogger.info("Created kafka appender for " + this.jobId);
@@ -391,32 +394,34 @@ public class JobRunner extends EventHandler implements Runnable {
    * anything.
    */
   private boolean handleNonReadyStatus() {
-    Status nodeStatus = this.node.getStatus();
-    boolean quickFinish = false;
-    final long time = System.currentTimeMillis();
+    synchronized (this.syncObject) {
+      Status nodeStatus = this.node.getStatus();
+      boolean quickFinish = false;
+      final long time = System.currentTimeMillis();
 
-    if (Status.isStatusFinished(nodeStatus)) {
-      quickFinish = true;
-    } else if (nodeStatus == Status.DISABLED) {
-      nodeStatus = changeStatus(Status.SKIPPED, time);
-      quickFinish = true;
-    } else if (this.isKilled()) {
-      nodeStatus = changeStatus(Status.KILLED, time);
-      quickFinish = true;
+      if (Status.isStatusFinished(nodeStatus)) {
+        quickFinish = true;
+      } else if (nodeStatus == Status.DISABLED) {
+        nodeStatus = changeStatus(Status.SKIPPED, time);
+        quickFinish = true;
+      } else if (this.isKilled()) {
+        nodeStatus = changeStatus(Status.KILLED, time);
+        quickFinish = true;
+      }
+
+      if (quickFinish) {
+        this.node.setStartTime(time);
+        fireEvent(
+            Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus, this.node.getNestedId())));
+        this.node.setEndTime(time);
+        fireEvent(
+            Event
+                .create(this, Type.JOB_FINISHED, new EventData(nodeStatus, this.node.getNestedId())));
+        return true;
+      }
+
+      return false;
     }
-
-    if (quickFinish) {
-      this.node.setStartTime(time);
-      fireEvent(
-          Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus, this.node.getNestedId())));
-      this.node.setEndTime(time);
-      fireEvent(
-          Event
-              .create(this, Type.JOB_FINISHED, new EventData(nodeStatus, this.node.getNestedId())));
-      return true;
-    }
-
-    return false;
   }
 
   /**
@@ -598,15 +603,19 @@ public class JobRunner extends EventHandler implements Runnable {
       finalStatus = changeStatus(Status.KILLED);
     }
 
-    final int attemptNo = this.node.getAttempt();
-    logInfo("Finishing job " + this.jobId + " attempt: " + attemptNo + " at "
-        + this.node.getEndTime() + " with status " + this.node.getStatus());
+    logInfo(
+        "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
+            + " with status " + this.node.getStatus());
 
     fireEvent(Event.create(this, Type.JOB_FINISHED,
         new EventData(finalStatus, this.node.getNestedId())), false);
-    finalizeLogFile(attemptNo);
+    finalizeLogFile(this.node.getAttempt());
     finalizeAttachmentFile();
     writeStatus();
+  }
+
+  private String getNodeRetryLog() {
+    return this.node.getAttempt() > 0 ? (" retry: " + this.node.getAttempt()) : "";
   }
 
   private void uploadExecutableNode() {
@@ -630,12 +639,7 @@ public class JobRunner extends EventHandler implements Runnable {
         return null;
       }
 
-      if (this.node.getAttempt() > 0) {
-        logInfo("Starting job " + this.jobId + " attempt " + this.node.getAttempt()
-            + " at " + this.node.getStartTime());
-      } else {
-        logInfo("Starting job " + this.jobId + " at " + this.node.getStartTime());
-      }
+      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node.getStartTime());
 
       // If it's an embedded flow, we'll add the nested flow info to the job
       // conf
@@ -741,19 +745,21 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       this.job.run();
     } catch (final Throwable e) {
-      if (this.props.getBoolean("job.succeed.on.failure", false)) {
-        finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
-        logError("Job run failed, but will treat it like success.");
-        logError(e.getMessage() + " cause: " + e.getCause(), e);
-      } else {
-        if (isKilled() || this.node.getStatus() == Status.KILLED) {
-          finalStatus = Status.KILLED;
-          logError("Job run killed!", e);
+      synchronized (this.syncObject) {
+        if (this.props.getBoolean("job.succeed.on.failure", false)) {
+          finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
+          logError("Job run failed, but will treat it like success.");
+          logError(e.getMessage() + " cause: " + e.getCause(), e);
         } else {
-          finalStatus = changeStatus(Status.FAILED);
-          logError("Job run failed!", e);
+          if (isKilled() || this.node.getStatus() == Status.KILLED) {
+            finalStatus = Status.KILLED;
+            logError("Job run killed!", e);
+          } else {
+            finalStatus = changeStatus(Status.FAILED);
+            logError("Job run failed!", e);
+          }
+          logError(e.getMessage() + " cause: " + e.getCause());
         }
-        logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
 
@@ -761,9 +767,11 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setOutputProps(this.job.getJobGeneratedProperties());
     }
 
-    // If the job is still running, set the status to Success.
-    if (!Status.isStatusFinished(finalStatus)) {
-      finalStatus = changeStatus(Status.SUCCEEDED);
+    synchronized (this.syncObject) {
+      // If the job is still running, set the status to Success.
+      if (!Status.isStatusFinished(finalStatus) && !isKilled()) {
+        finalStatus = changeStatus(Status.SUCCEEDED);
+      }
     }
     return finalStatus;
   }
@@ -788,6 +796,11 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setUpdateTime(System.currentTimeMillis());
     }
     this.fireEventListeners(event);
+  }
+
+  public void killBySLA() {
+    kill();
+    this.getNode().setKilledBySLA(true);
   }
 
   public void kill() {

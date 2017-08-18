@@ -18,6 +18,7 @@
 package azkaban.webapp;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.ServiceProviderTest.assertSingleton;
 import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
@@ -26,8 +27,19 @@ import static org.junit.Assert.assertNotNull;
 import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
+import azkaban.db.DatabaseOperator;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutionFlowDao;
 import azkaban.executor.Executor;
+import azkaban.executor.ExecutorDao;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManager;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
+import azkaban.spi.Storage;
+import azkaban.trigger.TriggerLoader;
+import azkaban.trigger.TriggerManager;
+import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -111,6 +123,22 @@ public class AzkabanWebServerTest {
     executorLoader.updateExecutor(executor);
 
     assertNotNull(injector.getInstance(AzkabanWebServer.class));
+    assertNotNull(injector.getInstance(ExecutionFlowDao.class));
+
+    //Test if triggermanager is singletonly guiced. If not, the below test will fail.
+    assertSingleton(ExecutorLoader.class, injector);
+    assertSingleton(ExecutorManager.class, injector);
+    assertSingleton(ProjectLoader.class, injector);
+    assertSingleton(ProjectManager.class, injector);
+    assertSingleton(Storage.class, injector);
+    assertSingleton(DatabaseOperator.class, injector);
+    assertSingleton(TriggerLoader.class, injector);
+    assertSingleton(TriggerManager.class, injector);
+    assertSingleton(AlerterHolder.class, injector);
+    assertSingleton(Emailer.class, injector);
+    assertSingleton(ExecutionFlowDao.class, injector);
+    assertSingleton(ExecutorDao.class, injector);
+
     SERVICE_PROVIDER.unsetInjector();
   }
 }

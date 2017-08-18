@@ -16,7 +16,16 @@
 
 package azkaban.executor;
 
+import azkaban.database.DataSourceUtils;
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
+import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.user.User;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -26,12 +35,9 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -43,19 +49,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import azkaban.database.DataSourceUtils;
-import azkaban.executor.ExecutorLogEvent.EventType;
-import azkaban.user.User;
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
-
 public class JdbcExecutorLoaderTest {
-  private static boolean testDBExists;
-  /* Directory with serialized description of test flows */
-  private static final String UNIT_BASE_DIR =
-    "../test/src/test/resources/azkaban/test/executions";
+
+  private static final String LOG_TEST_DIR_NAME = "logtest";
+
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
@@ -65,10 +62,11 @@ public class JdbcExecutorLoaderTest {
   private static final int numConnections = 10;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
   private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
+  private static boolean testDBExists;
 
   @BeforeClass
   public static void setupDB() {
-    DataSource dataSource =
+    final DataSource dataSource =
         DataSourceUtils.getMySQLDataSource(host, port, database, user,
             password, numConnections);
     testDBExists = true;
@@ -76,19 +74,19 @@ public class JdbcExecutorLoaderTest {
     Connection connection = null;
     try {
       connection = dataSource.getConnection();
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
       return;
     }
 
-    CountHandler countHandler = new CountHandler();
-    QueryRunner runner = new QueryRunner();
+    final CountHandler countHandler = new CountHandler();
+    final QueryRunner runner = new QueryRunner();
     try {
       runner.query(connection, "SELECT COUNT(1) FROM active_executing_flows",
           countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -98,7 +96,7 @@ public class JdbcExecutorLoaderTest {
     try {
       runner.query(connection, "SELECT COUNT(1) FROM execution_flows",
           countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -108,7 +106,7 @@ public class JdbcExecutorLoaderTest {
     try {
       runner.query(connection, "SELECT COUNT(1) FROM execution_jobs",
           countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -118,7 +116,7 @@ public class JdbcExecutorLoaderTest {
     try {
       runner.query(connection, "SELECT COUNT(1) FROM execution_logs",
           countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -128,7 +126,7 @@ public class JdbcExecutorLoaderTest {
     try {
       runner.query(connection, "SELECT COUNT(1) FROM executors",
           countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -138,7 +136,7 @@ public class JdbcExecutorLoaderTest {
     try {
       runner.query(connection, "SELECT COUNT(1) FROM executor_events",
           countHandler);
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -154,24 +152,24 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    DataSource dataSource =
+    final DataSource dataSource =
         DataSourceUtils.getMySQLDataSource(host, port, database, user,
             password, numConnections);
     Connection connection = null;
     try {
       connection = dataSource.getConnection();
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
       return;
     }
 
-    QueryRunner runner = new QueryRunner();
+    final QueryRunner runner = new QueryRunner();
     try {
       runner.update(connection, "DELETE FROM active_executing_flows");
 
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -180,7 +178,7 @@ public class JdbcExecutorLoaderTest {
 
     try {
       runner.update(connection, "DELETE FROM execution_flows");
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -189,7 +187,7 @@ public class JdbcExecutorLoaderTest {
 
     try {
       runner.update(connection, "DELETE FROM execution_jobs");
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -198,7 +196,7 @@ public class JdbcExecutorLoaderTest {
 
     try {
       runner.update(connection, "DELETE FROM execution_logs");
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -207,7 +205,7 @@ public class JdbcExecutorLoaderTest {
 
     try {
       runner.update(connection, "DELETE FROM executors");
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -216,7 +214,7 @@ public class JdbcExecutorLoaderTest {
 
     try {
       runner.update(connection, "DELETE FROM executor_events");
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       e.printStackTrace();
       testDBExists = false;
       DbUtils.closeQuietly(connection);
@@ -231,12 +229,12 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
 
     loader.uploadExecutableFlow(flow);
 
-    ExecutableFlow fetchFlow =
+    final ExecutableFlow fetchFlow =
         loader.fetchExecutableFlow(flow.getExecutionId());
 
     // Shouldn't be the same object.
@@ -250,8 +248,8 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(flow.getVersion(), fetchFlow.getVersion());
     Assert.assertEquals(flow.getExecutionOptions().getFailureAction(),
         fetchFlow.getExecutionOptions().getFailureAction());
-    Assert.assertEquals(new HashSet<String>(flow.getEndNodes()),
-        new HashSet<String>(fetchFlow.getEndNodes()));
+    Assert.assertEquals(new HashSet<>(flow.getEndNodes()),
+        new HashSet<>(fetchFlow.getEndNodes()));
   }
 
   @Test
@@ -260,18 +258,18 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
 
     loader.uploadExecutableFlow(flow);
 
-    ExecutableFlow fetchFlow2 =
+    final ExecutableFlow fetchFlow2 =
         loader.fetchExecutableFlow(flow.getExecutionId());
 
     fetchFlow2.setEndTime(System.currentTimeMillis());
     fetchFlow2.setStatus(Status.SUCCEEDED);
     loader.updateExecutableFlow(fetchFlow2);
-    ExecutableFlow fetchFlow =
+    final ExecutableFlow fetchFlow =
         loader.fetchExecutableFlow(flow.getExecutionId());
 
     // Shouldn't be the same object.
@@ -286,8 +284,8 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(flow.getVersion(), fetchFlow.getVersion());
     Assert.assertEquals(flow.getExecutionOptions().getFailureAction(),
         fetchFlow.getExecutionOptions().getFailureAction());
-    Assert.assertEquals(new HashSet<String>(flow.getEndNodes()),
-        new HashSet<String>(fetchFlow.getEndNodes()));
+    Assert.assertEquals(new HashSet<>(flow.getEndNodes()),
+        new HashSet<>(fetchFlow.getEndNodes()));
   }
 
   @Test
@@ -296,18 +294,18 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow(10, "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow = createExecutableFlow(10, "exec1");
     flow.setExecutionId(10);
 
-    File jobFile = new File(UNIT_BASE_DIR + "/exectest1", "job10.job");
-    Props props = new Props(null, jobFile);
+    final File jobFile = ExecutionsTestUtil.getFlowFile("exectest1", "job10.job");
+    final Props props = new Props(null, jobFile);
     props.put("test", "test2");
-    ExecutableNode oldNode = flow.getExecutableNode("job10");
+    final ExecutableNode oldNode = flow.getExecutableNode("job10");
     oldNode.setStartTime(System.currentTimeMillis());
     loader.uploadExecutableNode(oldNode, props);
 
-    ExecutableJobInfo info = loader.fetchJobInfo(10, "job10", 0);
+    final ExecutableJobInfo info = loader.fetchJobInfo(10, "job10", 0);
     Assert.assertEquals(flow.getExecutionId(), info.getExecId());
     Assert.assertEquals(flow.getProjectId(), info.getProjectId());
     Assert.assertEquals(flow.getVersion(), info.getVersion());
@@ -316,19 +314,19 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(oldNode.getStatus(), info.getStatus());
     Assert.assertEquals(oldNode.getStartTime(), info.getStartTime());
     Assert.assertEquals("endTime = " + oldNode.getEndTime()
-        + " info endTime = " + info.getEndTime(), oldNode.getEndTime(),
+            + " info endTime = " + info.getEndTime(), oldNode.getEndTime(),
         info.getEndTime());
 
     // Fetch props
-    Props outputProps = new Props();
+    final Props outputProps = new Props();
     outputProps.put("hello", "output");
     oldNode.setOutputProps(outputProps);
     oldNode.setEndTime(System.currentTimeMillis());
     loader.updateExecutableNode(oldNode);
 
-    Props fInputProps = loader.fetchExecutionJobInputProps(10, "job10");
-    Props fOutputProps = loader.fetchExecutionJobOutputProps(10, "job10");
-    Pair<Props, Props> inOutProps = loader.fetchExecutionJobProps(10, "job10");
+    final Props fInputProps = loader.fetchExecutionJobInputProps(10, "job10");
+    final Props fOutputProps = loader.fetchExecutionJobOutputProps(10, "job10");
+    final Pair<Props, Props> inOutProps = loader.fetchExecutionJobProps(10, "job10");
 
     Assert.assertEquals(fInputProps.get("test"), "test2");
     Assert.assertEquals(fOutputProps.get("hello"), "output");
@@ -340,15 +338,15 @@ public class JdbcExecutorLoaderTest {
   /* Test exception when unassigning an missing execution */
   @Test
   public void testUnassignExecutorException() throws ExecutorManagerException,
-    IOException {
+      IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
     try {
       loader.unassignExecutor(2);
       Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
+    } catch (final ExecutorManagerException ex) {
       System.out.println("Test true");
     }
   }
@@ -356,38 +354,38 @@ public class JdbcExecutorLoaderTest {
   /* Test happy case when unassigning executor for a flow execution */
   @Test
   public void testUnassignExecutor() throws ExecutorManagerException,
-    IOException {
+      IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    String host = "localhost";
-    int port = 12345;
-    Executor executor = loader.addExecutor(host, port);
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = loader.addExecutor(host, port);
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     Assert.assertEquals(
-      loader.fetchExecutorByExecutionId(flow.getExecutionId()), executor);
+        loader.fetchExecutorByExecutionId(flow.getExecutionId()), executor);
     loader.unassignExecutor(flow.getExecutionId());
     Assert.assertEquals(
-      loader.fetchExecutorByExecutionId(flow.getExecutionId()), null);
+        loader.fetchExecutorByExecutionId(flow.getExecutionId()), null);
   }
 
   /* Test exception when assigning a non-existent executor to a flow */
   @Test
   public void testAssignExecutorInvalidExecutor()
-    throws ExecutorManagerException, IOException {
+      throws ExecutorManagerException, IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     try {
       loader.assignExecutor(flow.getExecutionId(), 1);
       Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
+    } catch (final ExecutorManagerException ex) {
       System.out.println("Test true");
     }
   }
@@ -395,18 +393,18 @@ public class JdbcExecutorLoaderTest {
   /* Test exception when assigning an executor to a non-existent flow execution */
   @Test
   public void testAssignExecutorInvalidExecution()
-    throws ExecutorManagerException, IOException {
+      throws ExecutorManagerException, IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    String host = "localhost";
-    int port = 12345;
-    Executor executor = loader.addExecutor(host, port);
+    final ExecutorLoader loader = createLoader();
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = loader.addExecutor(host, port);
     try {
       loader.assignExecutor(2, executor.getId());
       Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
+    } catch (final ExecutorManagerException ex) {
       System.out.println("Test true");
     }
   }
@@ -414,73 +412,73 @@ public class JdbcExecutorLoaderTest {
   /* Test null return when an invalid execution flows */
   @Test
   public void testFetchMissingExecutorByExecution()
-    throws ExecutorManagerException, IOException {
+      throws ExecutorManagerException, IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
     Assert.assertEquals(loader.fetchExecutorByExecutionId(1), null);
   }
 
   /* Test null return when for a non-dispatched execution */
   @Test
   public void testFetchExecutorByQueuedExecution()
-    throws ExecutorManagerException, IOException {
+      throws ExecutorManagerException, IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
-      null);
+        null);
   }
 
   /* Test happy case when assigning and fetching an executor to a flow execution */
   @Test
   public void testAssignAndFetchExecutor() throws ExecutorManagerException,
-    IOException {
+      IOException {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    String host = "localhost";
-    int port = 12345;
-    Executor executor = loader.addExecutor(host, port);
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = loader.addExecutor(host, port);
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
-      executor);
+        executor);
   }
 
   /* Test fetchQueuedFlows when there are no queued flows */
   @Test
   public void testFetchNoQueuedFlows() throws ExecutorManagerException,
-    IOException {
+      IOException {
     if (!isTestSetup()) {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
-      loader.fetchQueuedFlows();
+    final ExecutorLoader loader = createLoader();
+    final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+        loader.fetchQueuedFlows();
 
     // no execution flows at all i.e. no running, completed or queued flows
     Assert.assertTrue(queuedFlows.isEmpty());
 
-    String host = "lcoalhost";
-    int port = 12345;
-    Executor executor = loader.addExecutor(host, port);
+    final String host = "lcoalhost";
+    final int port = 12345;
+    final Executor executor = loader.addExecutor(host, port);
 
     // When a flow is assigned an executor, it is no longer in queued state
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     Assert.assertTrue(queuedFlows.isEmpty());
 
     // When flow status is finished, it is no longer in queued state
-    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow2);
     flow2.setStatus(Status.SUCCEEDED);
     loader.updateExecutableFlow(flow2);
@@ -490,22 +488,23 @@ public class JdbcExecutorLoaderTest {
   /* Test fetchQueuedFlows happy case */
   @Test
   public void testFetchQueuedFlows() throws ExecutorManagerException,
-    IOException {
+      IOException {
     if (!isTestSetup()) {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
 
-    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
-    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow2);
 
-    List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = loader.fetchQueuedFlows();
+    final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = loader
+        .fetchQueuedFlows();
     Assert.assertEquals(2, fetchedQueuedFlows.size());
-    Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
-    Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
+    final Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
+    final Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
 
     Assert.assertEquals(flow.getExecutionId(), fetchedFlow1.getSecond().getExecutionId());
     Assert.assertEquals(flow.getFlowId(), fetchedFlow1.getSecond().getFlowId());
@@ -521,8 +520,8 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    List<Executor> executors = loader.fetchAllExecutors();
+    final ExecutorLoader loader = createLoader();
+    final List<Executor> executors = loader.fetchAllExecutors();
     Assert.assertEquals(executors.size(), 0);
   }
 
@@ -532,8 +531,8 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    List<Executor> executors = loader.fetchActiveExecutors();
+    final ExecutorLoader loader = createLoader();
+    final List<Executor> executors = loader.fetchActiveExecutors();
     Assert.assertEquals(executors.size(), 0);
   }
 
@@ -543,8 +542,8 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    Executor executor = loader.fetchExecutor(0);
+    final ExecutorLoader loader = createLoader();
+    final Executor executor = loader.fetchExecutor(0);
     Assert.assertEquals(executor, null);
   }
 
@@ -554,8 +553,8 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    Executor executor = loader.fetchExecutor("localhost", 12345);
+    final ExecutorLoader loader = createLoader();
+    final Executor executor = loader.fetchExecutor("localhost", 12345);
     Assert.assertEquals(executor, null);
   }
 
@@ -565,10 +564,10 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    Executor executor = new Executor(1, "localhost", 12345, true);
-    List<ExecutorLogEvent> executorEvents =
-      loader.getExecutorEvents(executor, 5, 0);
+    final ExecutorLoader loader = createLoader();
+    final Executor executor = new Executor(1, "localhost", 12345, true);
+    final List<ExecutorLogEvent> executorEvents =
+        loader.getExecutorEvents(executor, 5, 0);
     Assert.assertEquals(executorEvents.size(), 0);
   }
 
@@ -578,30 +577,30 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    int skip = 1;
-    User user = new User("testUser");
-    Executor executor = new Executor(1, "localhost", 12345, true);
-    String message = "My message ";
-    EventType[] events =
-      { EventType.CREATED, EventType.HOST_UPDATE, EventType.INACTIVATION };
+    final ExecutorLoader loader = createLoader();
+    final int skip = 1;
+    final User user = new User("testUser");
+    final Executor executor = new Executor(1, "localhost", 12345, true);
+    final String message = "My message ";
+    final EventType[] events =
+        {EventType.CREATED, EventType.HOST_UPDATE, EventType.INACTIVATION};
 
-    for (EventType event : events) {
+    for (final EventType event : events) {
       loader.postExecutorEvent(executor, event, user.getUserId(),
-        message + event.getNumVal());
+          message + event.getNumVal());
     }
 
-    List<ExecutorLogEvent> eventLogs =
-      loader.getExecutorEvents(executor, 10, skip);
+    final List<ExecutorLogEvent> eventLogs =
+        loader.getExecutorEvents(executor, 10, skip);
     Assert.assertTrue(eventLogs.size() == 2);
 
     for (int index = 0; index < eventLogs.size(); ++index) {
-      ExecutorLogEvent eventLog = eventLogs.get(index);
+      final ExecutorLogEvent eventLog = eventLogs.get(index);
       Assert.assertEquals(eventLog.getExecutorId(), executor.getId());
       Assert.assertEquals(eventLog.getUser(), user.getUserId());
       Assert.assertEquals(eventLog.getType(), events[index + skip]);
       Assert.assertEquals(eventLog.getMessage(),
-        message + events[index + skip].getNumVal());
+          message + events[index + skip].getNumVal());
     }
   }
 
@@ -611,14 +610,14 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
     try {
-      String host = "localhost";
-      int port = 12345;
+      final String host = "localhost";
+      final int port = 12345;
       loader.addExecutor(host, port);
       loader.addExecutor(host, port);
       Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
+    } catch (final ExecutorManagerException ex) {
       System.out.println("Test true");
     }
   }
@@ -629,12 +628,12 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
     try {
-      Executor executor = new Executor(1, "localhost", 1234, true);
+      final Executor executor = new Executor(1, "localhost", 1234, true);
       loader.updateExecutor(executor);
       Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
+    } catch (final ExecutorManagerException ex) {
       System.out.println("Test true");
     }
     clearDB();
@@ -646,10 +645,10 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    List<Executor> executors = addTestExecutors(loader);
-    for (Executor executor : executors) {
-      Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+    final ExecutorLoader loader = createLoader();
+    final List<Executor> executors = addTestExecutors(loader);
+    for (final Executor executor : executors) {
+      final Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
       Assert.assertEquals(executor, fetchedExecutor);
     }
   }
@@ -660,13 +659,13 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    List<Executor> executors = addTestExecutors(loader);
+    final ExecutorLoader loader = createLoader();
+    final List<Executor> executors = addTestExecutors(loader);
 
     executors.get(0).setActive(false);
     loader.updateExecutor(executors.get(0));
 
-    List<Executor> fetchedExecutors = loader.fetchAllExecutors();
+    final List<Executor> fetchedExecutors = loader.fetchAllExecutors();
     Assert.assertEquals(executors.size(), fetchedExecutors.size());
 
     Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
@@ -678,13 +677,13 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    List<Executor> executors = addTestExecutors(loader);
+    final ExecutorLoader loader = createLoader();
+    final List<Executor> executors = addTestExecutors(loader);
 
     executors.get(0).setActive(false);
     loader.updateExecutor(executors.get(0));
 
-    List<Executor> fetchedExecutors = loader.fetchActiveExecutors();
+    final List<Executor> fetchedExecutors = loader.fetchActiveExecutors();
     Assert.assertEquals(executors.size(), fetchedExecutors.size() + 1);
     executors.remove(0);
 
@@ -697,19 +696,19 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    ExecutorLoader loader = createLoader();
-    List<Executor> executors = addTestExecutors(loader);
-    for (Executor executor : executors) {
-      Executor fetchedExecutor =
-        loader.fetchExecutor(executor.getHost(), executor.getPort());
+    final ExecutorLoader loader = createLoader();
+    final List<Executor> executors = addTestExecutors(loader);
+    for (final Executor executor : executors) {
+      final Executor fetchedExecutor =
+          loader.fetchExecutor(executor.getHost(), executor.getPort());
       Assert.assertEquals(executor, fetchedExecutor);
     }
   }
 
   /* Helper method used in methods testing jdbc interface for executors table */
-  private List<Executor> addTestExecutors(ExecutorLoader loader)
-    throws ExecutorManagerException {
-    List<Executor> executors = new ArrayList<Executor>();
+  private List<Executor> addTestExecutors(final ExecutorLoader loader)
+      throws ExecutorManagerException {
+    final List<Executor> executors = new ArrayList<>();
     executors.add(loader.addExecutor("localhost1", 12345));
     executors.add(loader.addExecutor("localhost2", 12346));
     executors.add(loader.addExecutor("localhost1", 12347));
@@ -723,14 +722,14 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    Executor executor = loader.addExecutor("localhost1", 12345);
+    final ExecutorLoader loader = createLoader();
+    final Executor executor = loader.addExecutor("localhost1", 12345);
     Assert.assertTrue(executor.isActive());
 
     executor.setActive(false);
     loader.updateExecutor(executor);
 
-    Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+    final Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
 
     Assert.assertEquals(executor.getHost(), fetchedExecutor.getHost());
     Assert.assertEquals(executor.getId(), fetchedExecutor.getId());
@@ -745,11 +744,11 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    Executor executor = loader.addExecutor("localhost1", 12345);
+    final ExecutorLoader loader = createLoader();
+    final Executor executor = loader.addExecutor("localhost1", 12345);
     Assert.assertNotNull(executor);
     loader.removeExecutor("localhost1", 12345);
-    Executor fetchedExecutor = loader.fetchExecutor("localhost1", 12345);
+    final Executor fetchedExecutor = loader.fetchExecutor("localhost1", 12345);
     Assert.assertNull(fetchedExecutor);
   }
 
@@ -760,8 +759,8 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    Executor executor = loader.addExecutor("localhost1", 12345);
+    final ExecutorLoader loader = createLoader();
+    final Executor executor = loader.addExecutor("localhost1", 12345);
     Assert.assertTrue(executor.isActive());
 
     executor.setActive(false);
@@ -783,23 +782,23 @@ public class JdbcExecutorLoaderTest {
     }
 
     // Upload flow1, executor assigned
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
-    Executor executor = loader.addExecutor("test", 1);
+    final Executor executor = loader.addExecutor("test", 1);
     loader.assignExecutor(executor.getId(), flow1.getExecutionId());
 
     // Upload flow2, executor not assigned
-    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow2);
 
-    Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
         loader.fetchActiveFlows();
 
     Assert.assertTrue(activeFlows1.containsKey(flow1.getExecutionId()));
     Assert.assertFalse(activeFlows1.containsKey(flow2.getExecutionId()));
 
-    ExecutableFlow flow1Result =
+    final ExecutableFlow flow1Result =
         activeFlows1.get(flow1.getExecutionId()).getSecond();
     Assert.assertNotNull(flow1Result);
     Assert.assertTrue(flow1 != flow1Result);
@@ -820,11 +819,11 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     // Flow status is PREPARING when uploaded, should be in active flows
     loader.uploadExecutableFlow(flow1);
-    Executor executor = loader.addExecutor("test", 1);
+    final Executor executor = loader.addExecutor("test", 1);
     loader.assignExecutor(executor.getId(), flow1.getExecutionId());
 
     Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
@@ -854,16 +853,16 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
-    Executor executor = loader.addExecutor("test", 1);
+    final Executor executor = loader.addExecutor("test", 1);
     loader.assignExecutor(executor.getId(), flow1.getExecutionId());
-    ExecutionReference ref1 =
+    final ExecutionReference ref1 =
         new ExecutionReference(flow1.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref1);
 
-    Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
         loader.fetchActiveFlows();
     Assert.assertTrue(activeFlows1.containsKey(flow1.getExecutionId()));
 
@@ -878,17 +877,17 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
-    Executor executor = loader.addExecutor("test", 1);
+    final Executor executor = loader.addExecutor("test", 1);
     loader.assignExecutor(executor.getId(), flow1.getExecutionId());
 
-    Pair<ExecutionReference, ExecutableFlow> activeFlow1 =
+    final Pair<ExecutionReference, ExecutableFlow> activeFlow1 =
         loader.fetchActiveFlowByExecId(flow1.getExecutionId());
 
-    ExecutionReference execRef1 = activeFlow1.getFirst();
-    ExecutableFlow execFlow1 = activeFlow1.getSecond();
+    final ExecutionReference execRef1 = activeFlow1.getFirst();
+    final ExecutableFlow execFlow1 = activeFlow1.getSecond();
     Assert.assertNotNull(execRef1);
     Assert.assertNotNull(execFlow1);
     Assert.assertEquals(flow1.getExecutionId(), execFlow1.getExecutionId());
@@ -903,14 +902,14 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
     flow1.setStatus(Status.SUCCEEDED);
     flow1.setEndTime(DateTimeUtils.currentTimeMillis());
     loader.updateExecutableFlow(flow1);
     //Flow just finished. Fetch recently finished flows immediately. Should get it.
-    List<ExecutableFlow> flows = loader.fetchRecentlyFinishedFlows(
+    final List<ExecutableFlow> flows = loader.fetchRecentlyFinishedFlows(
         RECENTLY_FINISHED_LIFETIME);
     Assert.assertEquals(1, flows.size());
     Assert.assertEquals(flow1.getExecutionId(), flows.get(0).getExecutionId());
@@ -925,8 +924,8 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutorLoader loader = createLoader();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
     flow1.setStatus(Status.SUCCEEDED);
     flow1.setEndTime(DateTimeUtils.currentTimeMillis());
@@ -937,29 +936,30 @@ public class JdbcExecutorLoaderTest {
     flow1.setEndTime(DateTimeUtils.currentTimeMillis());
     loader.updateExecutableFlow(flow1);
     //Fetch recently finished flows within 1 min. Should be empty.
-    List<ExecutableFlow> flows = loader
+    final List<ExecutableFlow> flows = loader
         .fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME);
     Assert.assertTrue(flows.isEmpty());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testSmallUploadLog() throws ExecutorManagerException {
-    File logDir = new File(UNIT_BASE_DIR + "logtest");
-    File[] smalllog =
-        { new File(logDir, "log1.log"), new File(logDir, "log2.log"),
-            new File(logDir, "log3.log") };
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
+    final File[] smalllog =
+        {new File(logDir, "log1.log"), new File(logDir, "log2.log"),
+            new File(logDir, "log3.log")};
 
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
     loader.uploadLogFile(1, "smallFiles", 0, smalllog);
 
-    LogData data = loader.fetchLogs(1, "smallFiles", 0, 0, 50000);
+    final LogData data = loader.fetchLogs(1, "smallFiles", 0, 0, 50000);
     Assert.assertNotNull(data);
     Assert.assertEquals("Logs length is " + data.getLength(), data.getLength(),
         53);
 
     System.out.println(data.toString());
 
-    LogData data2 = loader.fetchLogs(1, "smallFiles", 0, 10, 20);
+    final LogData data2 = loader.fetchLogs(1, "smallFiles", 0, 10, 20);
     System.out.println(data2.toString());
     Assert.assertNotNull(data2);
     Assert.assertEquals("Logs length is " + data2.getLength(),
@@ -967,70 +967,71 @@ public class JdbcExecutorLoaderTest {
 
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testLargeUploadLog() throws ExecutorManagerException {
-    File logDir = new File(UNIT_BASE_DIR + "logtest");
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
 
     // Multiple of 255 for Henry the Eigth
-    File[] largelog =
-        { new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"),
-            new File(logDir, "largeLog3.log") };
+    final File[] largelog =
+        {new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"),
+            new File(logDir, "largeLog3.log")};
 
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
     loader.uploadLogFile(1, "largeFiles", 0, largelog);
 
-    LogData logsResult = loader.fetchLogs(1, "largeFiles", 0, 0, 64000);
+    final LogData logsResult = loader.fetchLogs(1, "largeFiles", 0, 0, 64000);
     Assert.assertNotNull(logsResult);
     Assert.assertEquals("Logs length is " + logsResult.getLength(),
         logsResult.getLength(), 64000);
 
-    LogData logsResult2 = loader.fetchLogs(1, "largeFiles", 0, 1000, 64000);
+    final LogData logsResult2 = loader.fetchLogs(1, "largeFiles", 0, 1000, 64000);
     Assert.assertNotNull(logsResult2);
     Assert.assertEquals("Logs length is " + logsResult2.getLength(),
         logsResult2.getLength(), 64000);
 
-    LogData logsResult3 = loader.fetchLogs(1, "largeFiles", 0, 330000, 400000);
+    final LogData logsResult3 = loader.fetchLogs(1, "largeFiles", 0, 330000, 400000);
     Assert.assertNotNull(logsResult3);
     Assert.assertEquals("Logs length is " + logsResult3.getLength(),
         logsResult3.getLength(), 5493);
 
-    LogData logsResult4 = loader.fetchLogs(1, "largeFiles", 0, 340000, 400000);
+    final LogData logsResult4 = loader.fetchLogs(1, "largeFiles", 0, 340000, 400000);
     Assert.assertNull(logsResult4);
 
-    LogData logsResult5 = loader.fetchLogs(1, "largeFiles", 0, 153600, 204800);
+    final LogData logsResult5 = loader.fetchLogs(1, "largeFiles", 0, 153600, 204800);
     Assert.assertNotNull(logsResult5);
     Assert.assertEquals("Logs length is " + logsResult5.getLength(),
         logsResult5.getLength(), 181893);
 
-    LogData logsResult6 = loader.fetchLogs(1, "largeFiles", 0, 150000, 250000);
+    final LogData logsResult6 = loader.fetchLogs(1, "largeFiles", 0, 150000, 250000);
     Assert.assertNotNull(logsResult6);
     Assert.assertEquals("Logs length is " + logsResult6.getLength(),
         logsResult6.getLength(), 185493);
   }
 
-  @SuppressWarnings("static-access")
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testRemoveExecutionLogsByTime() throws ExecutorManagerException,
       IOException, InterruptedException {
 
-    ExecutorLoader loader = createLoader();
+    final ExecutorLoader loader = createLoader();
 
-    File logDir = new File(UNIT_BASE_DIR + "logtest");
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
 
     // Multiple of 255 for Henry the Eigth
-    File[] largelog =
-        { new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"),
-            new File(logDir, "largeLog3.log") };
+    final File[] largelog =
+        {new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"),
+            new File(logDir, "largeLog3.log")};
 
-    DateTime time1 = DateTime.now();
+    final DateTime time1 = DateTime.now();
     loader.uploadLogFile(1, "oldlog", 0, largelog);
     // sleep for 5 seconds
     Thread.currentThread().sleep(5000);
     loader.uploadLogFile(2, "newlog", 0, largelog);
 
-    DateTime time2 = time1.plusMillis(2500);
+    final DateTime time2 = time1.plusMillis(2500);
 
-    int count = loader.removeExecutionLogsByTime(time2.getMillis());
+    final int count = loader.removeExecutionLogsByTime(time2.getMillis());
     System.out.print("Removed " + count + " records");
     LogData logs = loader.fetchLogs(1, "oldlog", 0, 0, 22222);
     Assert.assertTrue(logs == null);
@@ -1038,16 +1039,16 @@ public class JdbcExecutorLoaderTest {
     Assert.assertFalse(logs == null);
   }
 
-  private ExecutableFlow createExecutableFlow(int executionId, String flowName)
-    throws IOException {
-    ExecutableFlow execFlow =
-      TestUtils.createExecutableFlow("exectest1", flowName);
+  private ExecutableFlow createExecutableFlow(final int executionId, final String flowName)
+      throws IOException {
+    final ExecutableFlow execFlow =
+        TestUtils.createExecutableFlow("exectest1", flowName);
     execFlow.setExecutionId(executionId);
     return execFlow;
   }
 
   private ExecutorLoader createLoader() {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("database.type", "mysql");
 
     props.put("mysql.host", host);
@@ -1057,7 +1058,9 @@ public class JdbcExecutorLoaderTest {
     props.put("mysql.password", password);
     props.put("mysql.numconnections", numConnections);
 
-    return new JdbcExecutorLoader(props, new CommonMetrics(new MetricRegistry()));
+    //TODO kunkun-tang: temporary work-around here. This Test is to be deprecated.
+    return new JdbcExecutorLoader(props,
+        new CommonMetrics(new MetricsManager(new MetricRegistry())), null, null);
   }
 
   private boolean isTestSetup() {
@@ -1071,8 +1074,9 @@ public class JdbcExecutorLoaderTest {
   }
 
   public static class CountHandler implements ResultSetHandler<Integer> {
+
     @Override
-    public Integer handle(ResultSet rs) throws SQLException {
+    public Integer handle(final ResultSet rs) throws SQLException {
       int val = 0;
       while (rs.next()) {
         val++;
