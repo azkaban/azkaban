@@ -36,6 +36,7 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
@@ -51,8 +52,7 @@ import org.mockito.MockitoAnnotations;
 
 public class FlowRunnerTest extends FlowRunnerTestBase {
 
-  private static final File TEST_DIR = new File(
-      "../test/src/test/resources/azkaban/test/executions/exectest1");
+  private static final File TEST_DIR = ExecutionsTestUtil.getFlowDir("exectest1");
   private File workingDir;
   private JobTypeManager jobtypeManager;
 

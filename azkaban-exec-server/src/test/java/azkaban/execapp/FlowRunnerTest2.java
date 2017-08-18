@@ -36,6 +36,7 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -95,8 +96,6 @@ import org.junit.Test;
  */
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
-  private static final File TEST_DIR = new File(
-      "../test/src/test/resources/azkaban/test/executions/embedded2");
   private static int id = 101;
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
@@ -126,7 +125,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, TEST_DIR, this.logger, this.workingDir);
+        .prepareProject(this.project, ExecutionsTestUtil.getFlowDir("embedded2"), this.logger,
+            this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
