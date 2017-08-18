@@ -20,6 +20,7 @@ import azkaban.database.DataSourceUtils;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -50,9 +51,8 @@ import org.junit.Test;
 
 public class JdbcExecutorLoaderTest {
 
-  /* Directory with serialized description of test flows */
-  private static final String UNIT_BASE_DIR =
-      "../test/src/test/resources/azkaban/test/executions";
+  private static final String LOG_TEST_DIR_NAME = "logtest";
+
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
@@ -298,7 +298,7 @@ public class JdbcExecutorLoaderTest {
     final ExecutableFlow flow = createExecutableFlow(10, "exec1");
     flow.setExecutionId(10);
 
-    final File jobFile = new File(UNIT_BASE_DIR + "/exectest1", "job10.job");
+    final File jobFile = ExecutionsTestUtil.getFlowFile("exectest1", "job10.job");
     final Props props = new Props(null, jobFile);
     props.put("test", "test2");
     final ExecutableNode oldNode = flow.getExecutableNode("job10");
@@ -944,7 +944,7 @@ public class JdbcExecutorLoaderTest {
   @Ignore
   @Test
   public void testSmallUploadLog() throws ExecutorManagerException {
-    final File logDir = new File(UNIT_BASE_DIR + "logtest");
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
     final File[] smalllog =
         {new File(logDir, "log1.log"), new File(logDir, "log2.log"),
             new File(logDir, "log3.log")};
@@ -970,7 +970,7 @@ public class JdbcExecutorLoaderTest {
   @Ignore
   @Test
   public void testLargeUploadLog() throws ExecutorManagerException {
-    final File logDir = new File(UNIT_BASE_DIR + "logtest");
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
 
     // Multiple of 255 for Henry the Eigth
     final File[] largelog =
@@ -1016,7 +1016,7 @@ public class JdbcExecutorLoaderTest {
 
     final ExecutorLoader loader = createLoader();
 
-    final File logDir = new File(UNIT_BASE_DIR + "logtest");
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
 
     // Multiple of 255 for Henry the Eigth
     final File[] largelog =

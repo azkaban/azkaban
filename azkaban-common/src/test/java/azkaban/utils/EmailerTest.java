@@ -21,7 +21,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
-import azkaban.test.executions.TestExecutions;
+import azkaban.test.executions.ExecutionsTestUtil;
 import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +55,7 @@ public class EmailerTest {
 
     this.props = createMailProperties();
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props, logger);
-    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
     this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);
