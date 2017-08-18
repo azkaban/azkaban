@@ -299,8 +299,8 @@ public class JobRunnerTest {
         node.getStatus() == Status.KILLED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 1000);
-    Assert.assertTrue(node.getStartTime() - startTime >= 0);
-    Assert.assertTrue(node.getStartTime() - startTime <= 3000);
+    Assert.assertTrue(node.getStartTime() - startTime >= 1000);
+    Assert.assertTrue(node.getStartTime() - startTime <= 4000);
     Assert.assertTrue(runner.isKilled());
 
     final File logFile = new File(runner.getLogFilePath());
