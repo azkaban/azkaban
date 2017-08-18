@@ -286,9 +286,11 @@ public class JobRunnerTest {
     final Thread thread = new Thread(runner);
     thread.start();
 
-    Thread.sleep(2000);
+    waitForStatus(node, Status.READY);
+    // sleep so that job has time to get into delayExecution() -> wait()
+    Thread.sleep(1000L);
     runner.kill();
-    Thread.sleep(500);
+    waitForStatus(node, Status.KILLED);
 
     eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node)));
 
@@ -297,8 +299,8 @@ public class JobRunnerTest {
         node.getStatus() == Status.KILLED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 1000);
-    Assert.assertTrue(node.getStartTime() - startTime >= 2000);
-    Assert.assertTrue(node.getStartTime() - startTime <= 5000);
+    Assert.assertTrue(node.getStartTime() - startTime >= 0);
+    Assert.assertTrue(node.getStartTime() - startTime <= 3000);
     Assert.assertTrue(runner.isKilled());
 
     final File logFile = new File(runner.getLogFilePath());
@@ -306,7 +308,9 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(logFile.exists());
 
-    Assert.assertEquals(2L, (long) loader.getNodeUpdateCount("testJob"));
+    // sleep so that there's time to make the "DB update" for KILLED status
+    Thread.sleep(1000L);
+    Assert.assertEquals(2L, loader.getNodeUpdateCount("testJob").longValue());
     eventCollector.assertEvents(Type.JOB_FINISHED);
   }
 
@@ -346,6 +350,21 @@ public class JobRunnerTest {
 
     runner.addListener(listener);
     return runner;
+  }
+
+  private void waitForStatus(ExecutableNode node, Status status) {
+    for (int i = 0; i < 1000; i++) {
+      if (node.getStatus() == status) {
+        break;
+      }
+      synchronized (EventCollectorListener.handleEvent) {
+        try {
+          EventCollectorListener.handleEvent.wait(10L);
+        } catch (final InterruptedException e) {
+          i--;
+        }
+      }
+    }
   }
 
 }
