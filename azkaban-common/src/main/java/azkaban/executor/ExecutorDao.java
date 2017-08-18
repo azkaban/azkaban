@@ -132,6 +132,22 @@ public class ExecutorDao {
     }
   }
 
+  public void updateExecutor(final Executor executor) throws ExecutorManagerException {
+    final String UPDATE =
+        "UPDATE executors SET host=?, port=?, active=? where id=?";
+
+    try {
+      final int rows = this.dbOperator.update(UPDATE, executor.getHost(), executor.getPort(),
+          executor.isActive(), executor.getId());
+      if (rows == 0) {
+        throw new ExecutorManagerException("No executor with id :" + executor.getId());
+      }
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error inactivating executor "
+          + executor.getId(), e);
+    }
+  }
+
   void removeExecutor(final String host, final int port) throws ExecutorManagerException {
     final String DELETE = "DELETE FROM executors WHERE host=? AND port=?";
     try {
