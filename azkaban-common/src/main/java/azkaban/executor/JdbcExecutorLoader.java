@@ -58,12 +58,17 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ExecutorLoader {
   private static final Logger logger = Logger
       .getLogger(JdbcExecutorLoader.class);
-
+  private final ExecutionFlowDao executionFlowDao;
+  private final ExecutorDao executorDao;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics) {
+  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics,
+                            final ExecutionFlowDao executionFlowDao,
+                            final ExecutorDao executorDao) {
     super(props, commonMetrics);
+    this.executionFlowDao = executionFlowDao;
+    this.executorDao = executorDao;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -77,111 +82,19 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public synchronized void uploadExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    final Connection connection = getConnection();
-    try {
-      uploadExecutableFlow(connection, flow, this.defaultEncodingType);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException("Error uploading flow", e);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-  }
-
-  private synchronized void uploadExecutableFlow(final Connection connection,
-                                                 final ExecutableFlow flow, final EncodingType encType)
-      throws ExecutorManagerException, IOException {
-    final String INSERT_EXECUTABLE_FLOW =
-        "INSERT INTO execution_flows "
-            + "(project_id, flow_id, version, status, submit_time, submit_user, update_time) "
-            + "values (?,?,?,?,?,?,?)";
-    final QueryRunner runner = new QueryRunner();
-    final long submitTime = System.currentTimeMillis();
-
-    final long id;
-    try {
-      flow.setStatus(Status.PREPARING);
-      runner.update(connection, INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
-          flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime);
-      connection.commit();
-      id =
-          runner.query(connection, LastInsertID.LAST_INSERT_ID,
-              new LastInsertID());
-
-      if (id == -1L) {
-        throw new ExecutorManagerException(
-            "Execution id is not properly created.");
-      }
-      logger.info("Flow given " + flow.getFlowId() + " given id " + id);
-      flow.setExecutionId((int) id);
-
-      updateExecutableFlow(connection, flow, encType);
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error creating execution.", e);
-    }
+    this.executionFlowDao.uploadExecutableFlow(flow);
   }
 
   @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
-    final Connection connection = this.getConnection();
-
-    try {
-      updateExecutableFlow(connection, flow, this.defaultEncodingType);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-  }
-
-  private void updateExecutableFlow(final Connection connection, final ExecutableFlow flow,
-                                    final EncodingType encType) throws ExecutorManagerException {
-    final String UPDATE_EXECUTABLE_FLOW_DATA =
-        "UPDATE execution_flows "
-            + "SET status=?,update_time=?,start_time=?,end_time=?,enc_type=?,flow_data=? "
-            + "WHERE exec_id=?";
-    final QueryRunner runner = new QueryRunner();
-
-    final String json = JSONUtils.toJSON(flow.toObject());
-    byte[] data = null;
-    try {
-      final byte[] stringData = json.getBytes("UTF-8");
-      data = stringData;
-
-      if (encType == EncodingType.GZIP) {
-        data = GZIPUtils.gzipBytes(stringData);
-      }
-    } catch (final IOException e) {
-      throw new ExecutorManagerException("Error encoding the execution flow.");
-    }
-
-    try {
-      runner.update(connection, UPDATE_EXECUTABLE_FLOW_DATA, flow.getStatus()
-          .getNumVal(), flow.getUpdateTime(), flow.getStartTime(), flow
-          .getEndTime(), encType.getNumVal(), data, flow.getExecutionId());
-      connection.commit();
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error updating flow.", e);
-    }
+    this.executionFlowDao.updateExecutableFlow(flow);
   }
 
   @Override
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW, flowHandler,
-              id);
-      if (properties.isEmpty()) {
-        return null;
-      } else {
-        return properties.get(0);
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching flow id " + id, e);
-    }
+    return this.executionFlowDao.fetchExecutableFlow(id);
   }
 
   /**
@@ -311,138 +224,27 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_HISTORY,
-              flowHandler, projectId, flowId, skip, num);
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                                final int skip, final int num, final Status status) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_STATUS,
-              flowHandler, projectId, flowId, status.getNumVal(), skip, num);
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num, status);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(FetchExecutableFlows.FETCH_ALL_EXECUTABLE_FLOW_HISTORY,
-              flowHandler, skip, num);
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executionFlowDao.fetchFlowHistory(skip,num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain,
                                                final String flowContains, final String userNameContains, final int status, final long startTime,
                                                final long endTime, final int skip, final int num) throws ExecutorManagerException {
-    String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
-    final ArrayList<Object> params = new ArrayList<>();
-
-    boolean first = true;
-    if (projContain != null && !projContain.isEmpty()) {
-      query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
-      params.add('%' + projContain + '%');
-      first = false;
-    }
-
-    if (flowContains != null && !flowContains.isEmpty()) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-
-      query += " flow_id LIKE ?";
-      params.add('%' + flowContains + '%');
-    }
-
-    if (userNameContains != null && !userNameContains.isEmpty()) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " submit_user LIKE ?";
-      params.add('%' + userNameContains + '%');
-    }
-
-    if (status != 0) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " status = ?";
-      params.add(status);
-    }
-
-    if (startTime > 0) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " start_time > ?";
-      params.add(startTime);
-    }
-
-    if (endTime > 0) {
-      if (first) {
-        query += " WHERE ";
-        first = false;
-      } else {
-        query += " AND ";
-      }
-      query += " end_time < ?";
-      params.add(endTime);
-    }
-
-    if (skip > -1 && num > 0) {
-      query += "  ORDER BY exec_id DESC LIMIT ?, ?";
-      params.add(skip);
-      params.add(num);
-    }
-
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
-
-    try {
-      final List<ExecutableFlow> properties =
-          runner.query(query, flowHandler, params.toArray());
-      return properties;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executionFlowDao.fetchFlowHistory(projContain, flowContains,
+        userNameContains, status, startTime, endTime, skip, num);
   }
 
   @Override
@@ -850,16 +652,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
-    try {
-      final List<Executor> executors =
-        runner.query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, executorHandler);
-      return executors;
-    } catch (final Exception e) {
-      throw new ExecutorManagerException("Error fetching executors", e);
-    }
+    return this.executorDao.fetchAllExecutors();
   }
 
   /**
@@ -870,17 +663,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
-    try {
-      final List<Executor> executors =
-        runner.query(FetchExecutorHandler.FETCH_ACTIVE_EXECUTORS,
-          executorHandler);
-      return executors;
-    } catch (final Exception e) {
-      throw new ExecutorManagerException("Error fetching active executors", e);
-    }
+    return this.executorDao.fetchActiveExecutors();
   }
 
   /**
@@ -891,22 +674,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public Executor fetchExecutor(final String host, final int port)
     throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
-    try {
-      final List<Executor> executors =
-        runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_HOST_PORT,
-          executorHandler, host, port);
-      if (executors.isEmpty()) {
-        return null;
-      } else {
-        return executors.get(0);
-      }
-    } catch (final Exception e) {
-      throw new ExecutorManagerException(String.format(
-        "Error fetching executor %s:%d", host, port), e);
-    }
+    return this.executorDao.fetchExecutor(host, port);
   }
 
   /**
@@ -916,28 +684,12 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
-    try {
-      final List<Executor> executors =
-        runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_ID,
-          executorHandler, executorId);
-      if (executors.isEmpty()) {
-        return null;
-      } else {
-        return executors.get(0);
-      }
-    } catch (final Exception e) {
-      throw new ExecutorManagerException(String.format(
-        "Error fetching executor with id: %d", executorId), e);
-    }
+    return this.executorDao.fetchExecutor(executorId);
   }
 
   /**
    * {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorLoader#updateExecutor(int)
    */
   @Override
   public void updateExecutor(final Executor executor) throws ExecutorManagerException {
@@ -967,30 +719,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public Executor addExecutor(final String host, final int port)
     throws ExecutorManagerException {
-    // verify, if executor already exists
-    Executor executor = fetchExecutor(host, port);
-    if (executor != null) {
-      throw new ExecutorManagerException(String.format(
-        "Executor %s:%d already exist", host, port));
-    }
-    // add new executor
-    addExecutorHelper(host, port);
-    // fetch newly added executor
-    executor = fetchExecutor(host, port);
-
-    return executor;
-  }
-
-  private void addExecutorHelper(final String host, final int port)
-    throws ExecutorManagerException {
-    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
-    final QueryRunner runner = createQueryRunner();
-    try {
-      runner.update(INSERT, host, port);
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException(String.format("Error adding %s:%d ",
-        host, port), e);
-    }
+    return this.executorDao.addExecutor(host, port);
   }
 
 
@@ -1001,18 +730,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public void removeExecutor(final String host, final int port) throws ExecutorManagerException {
-    final String DELETE = "DELETE FROM executors WHERE host=? AND port=?";
-    final QueryRunner runner = createQueryRunner();
-    try {
-      final int rows = runner.update(DELETE, host, port);
-      if (rows == 0) {
-        throw new ExecutorManagerException("No executor with host, port :"
-            + "(" + host + "," + port + ")");
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error removing executor with host, port : "
-          + "(" + host + "," + port + ")", e);
-    }
+    this.executorDao.removeExecutor(host, port);
   }
 
   /**
@@ -1105,21 +823,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public Executor fetchExecutorByExecutionId(final int executionId)
     throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-    Executor executor = null;
-    try {
-      final List<Executor> executors =
-        runner.query(FetchExecutorHandler.FETCH_EXECUTION_EXECUTOR,
-          executorHandler, executionId);
-      if (executors.size() > 0) {
-        executor = executors.get(0);
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException(
-        "Error fetching executor for exec_id : " + executionId, e);
-    }
-    return executor;
+    return this.executorDao.fetchExecutorByExecutionId(executionId);
   }
 
   @Override
@@ -1590,70 +1294,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
-  private static class FetchExecutableFlows implements
-      ResultSetHandler<List<ExecutableFlow>> {
-    private static final String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
-    private static final String FETCH_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE exec_id=?";
-    // private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
-    // "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data "
-    // +
-    // "FROM execution_flows ex " +
-    // "INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
-    private static final String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    private static final String FETCH_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    private static final String FETCH_EXECUTABLE_FLOW_BY_STATUS =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? AND status=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-
-    @Override
-    public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return Collections.<ExecutableFlow> emptyList();
-      }
-
-      final List<ExecutableFlow> execFlows = new ArrayList<>();
-      do {
-        final int id = rs.getInt(1);
-        final int encodingType = rs.getInt(2);
-        final byte[] data = rs.getBytes(3);
-
-        if (data != null) {
-          final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
-          try {
-            // Convoluted way to inflate strings. Should find common package
-            // or helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
-            final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
-            execFlows.add(exFlow);
-          } catch (final IOException e) {
-            throw new SQLException("Error retrieving flow data " + id, e);
-          }
-        }
-      } while (rs.next());
-
-      return execFlows;
-    }
-  }
-
   private static class IntHandler implements ResultSetHandler<Integer> {
     private static final String NUM_EXECUTIONS =
         "SELECT COUNT(1) FROM execution_flows";
@@ -1673,45 +1313,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
-  /**
-   * JDBC ResultSetHandler to fetch records from executors table
-   */
-  private static class FetchExecutorHandler implements
-    ResultSetHandler<List<Executor>> {
-    private static final String FETCH_ALL_EXECUTORS =
-      "SELECT id, host, port, active FROM executors";
-    private static final String FETCH_ACTIVE_EXECUTORS =
-      "SELECT id, host, port, active FROM executors where active=true";
-    private static final String FETCH_EXECUTOR_BY_ID =
-      "SELECT id, host, port, active FROM executors where id=?";
-    private static final String FETCH_EXECUTOR_BY_HOST_PORT =
-      "SELECT id, host, port, active FROM executors where host=? AND port=?";
-    private static final String FETCH_EXECUTION_EXECUTOR =
-      "SELECT ex.id, ex.host, ex.port, ex.active FROM "
-        + " executors ex INNER JOIN execution_flows ef "
-        + "on ex.id = ef.executor_id  where exec_id=?";
-
-    @Override
-    public List<Executor> handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return Collections.<Executor> emptyList();
-      }
-
-      final List<Executor> executors = new ArrayList<>();
-      do {
-        final int id = rs.getInt(1);
-        final String host = rs.getString(2);
-        final int port = rs.getInt(3);
-        final boolean active = rs.getBoolean(4);
-        final Executor executor = new Executor(id, host, port, active);
-        executors.add(executor);
-      } while (rs.next());
-
-      return executors;
-    }
-  }
-
-  /**
+ /**
    * JDBC ResultSetHandler to fetch records from executor_events table
    */
   private static class ExecutorLogsResultHandler implements

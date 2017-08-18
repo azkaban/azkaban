@@ -15,12 +15,9 @@
  */
 package azkaban.project;
 
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.db.AzDBTestUtility;
-import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
-import azkaban.db.DatabaseOperatorImpl;
 import azkaban.flow.Flow;
+import azkaban.test.Utils;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Md5Hasher;
@@ -33,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.dbutils.QueryRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -51,18 +47,7 @@ public class JdbcProjectImplTest {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    final AzkabanDataSource dataSource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
-    dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
-
-    final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
-    props.put("database.sql.scripts.dir", sqlScriptsDir);
-
-    // TODO kunkun-tang: Need to refactor AzkabanDatabaseSetup to accept datasource in azakaban-db
-    final azkaban.database.AzkabanDataSource dataSourceForSetupDB =
-        new azkaban.database.AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
-    final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSourceForSetupDB, props);
-    setup.loadTableInfo();
-    setup.updateDatabase(true, false);
+    dbOperator = Utils.initTestDB();
   }
 
   @AfterClass
