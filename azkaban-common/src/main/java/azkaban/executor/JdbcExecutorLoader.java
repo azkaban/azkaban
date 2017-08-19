@@ -52,6 +52,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private final ExecutionJobDao executionJobDao;
   private final ExecutionLogsDao executionLogsDao;
   private final ExecutorEventsDao executorEventsDao;
+  private final ActiveExecutingFlowsDao activeExecutingFlowsDao;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
@@ -60,13 +61,15 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
                             final ExecutorDao executorDao,
                             final ExecutionJobDao executionJobDao,
                             final ExecutionLogsDao executionLogsDao,
-                            final ExecutorEventsDao executorEventsDao) {
+                            final ExecutorEventsDao executorEventsDao,
+                            final ActiveExecutingFlowsDao activeExecutingFlowsDao) {
     super(props, commonMetrics);
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
     this.executionLogsDao= executionLogsDao;
     this.executorEventsDao = executorEventsDao;
+    this.activeExecutingFlowsDao = activeExecutingFlowsDao;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -248,50 +251,23 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public void addActiveExecutableReference(final ExecutionReference reference)
       throws ExecutorManagerException {
-    final String INSERT =
-        "INSERT INTO active_executing_flows "
-            + "(exec_id, update_time) values (?,?)";
-    final QueryRunner runner = createQueryRunner();
 
-    try {
-      runner.update(INSERT, reference.getExecId(), reference.getUpdateTime());
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException(
-          "Error updating active flow reference " + reference.getExecId(), e);
-    }
+    this.activeExecutingFlowsDao.addActiveExecutableReference(reference);
   }
 
   @Override
   public void removeActiveExecutableReference(final int execid)
       throws ExecutorManagerException {
-    final String DELETE = "DELETE FROM active_executing_flows WHERE exec_id=?";
 
-    final QueryRunner runner = createQueryRunner();
-    try {
-      runner.update(DELETE, execid);
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException(
-          "Error deleting active flow reference " + execid, e);
-    }
+    this.activeExecutingFlowsDao.removeActiveExecutableReference(execid);
   }
 
   @Override
   public boolean updateExecutableReference(final int execId, final long updateTime)
       throws ExecutorManagerException {
-    final String DELETE =
-        "UPDATE active_executing_flows set update_time=? WHERE exec_id=?";
-
-    final QueryRunner runner = createQueryRunner();
-    int updateNum = 0;
-    try {
-      updateNum = runner.update(DELETE, updateTime, execId);
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException(
-          "Error deleting active flow reference " + execId, e);
-    }
 
     // Should be 1.
-    return updateNum > 0;
+    return this.activeExecutingFlowsDao.updateExecutableReference(execId, updateTime);
   }
 
   @Override
