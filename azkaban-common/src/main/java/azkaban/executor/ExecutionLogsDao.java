@@ -27,7 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 @Singleton
-class ExecutionLogsDao extends AbstractJdbcLoader{
+public class ExecutionLogsDao extends AbstractJdbcLoader{
 
   private final DatabaseOperator dbOperator;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;

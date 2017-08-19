@@ -26,7 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 @Singleton
-class ExecutionJobDao extends AbstractJdbcLoader{
+public class ExecutionJobDao extends AbstractJdbcLoader{
 
   private static final Logger logger = Logger.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;

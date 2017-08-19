@@ -10,7 +10,7 @@ import javax.inject.Singleton;
 import org.apache.commons.dbutils.QueryRunner;
 
 @Singleton
-class ActiveExecutingFlowsDao extends AbstractJdbcLoader{
+public class ActiveExecutingFlowsDao extends AbstractJdbcLoader{
 
   private final DatabaseOperator dbOperator;
 
