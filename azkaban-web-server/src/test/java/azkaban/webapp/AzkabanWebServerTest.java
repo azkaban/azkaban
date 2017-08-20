@@ -28,12 +28,17 @@ import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
+import azkaban.executor.ActiveExecutingFlowsDao;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionFlowDao;
+import azkaban.executor.ExecutionJobDao;
+import azkaban.executor.ExecutionLogsDao;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorDao;
+import azkaban.executor.ExecutorEventsDao;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.FetchActiveFlowDao;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.spi.Storage;
@@ -138,6 +143,11 @@ public class AzkabanWebServerTest {
     assertSingleton(Emailer.class, injector);
     assertSingleton(ExecutionFlowDao.class, injector);
     assertSingleton(ExecutorDao.class, injector);
+    assertSingleton(ExecutionJobDao.class, injector);
+    assertSingleton(ExecutionLogsDao.class, injector);
+    assertSingleton(ExecutorEventsDao.class, injector);
+    assertSingleton(ActiveExecutingFlowsDao.class, injector);
+    assertSingleton(FetchActiveFlowDao.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

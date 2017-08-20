@@ -17,15 +17,23 @@
 package azkaban.test.executions;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
-import org.junit.Assert;
 
-public class TestExecutions {
+public class ExecutionsTestUtil {
 
-  public static File getFlowDir(final String path) throws URISyntaxException {
-    final URL url = TestExecutions.class.getResource(path);
-    Assert.assertNotNull(url);
-    return new File(url.toURI());
+  private static final String DATA_ROOT_PATH = "../test/execution-test-data/";
+
+  public static String getDataRootDir() {
+    // Assume that the working directory of a test is always the sub-module directory.
+    // It is the case when running gradle tests from the project root directory.
+    return DATA_ROOT_PATH;
+  }
+
+
+  public static File getFlowDir(final String flowName) {
+    return new File(DATA_ROOT_PATH + "/" + flowName);
+  }
+
+  public static File getFlowFile(final String flowName, final String fileName) {
+    return new File(DATA_ROOT_PATH + "/" + flowName + "/" + fileName);
   }
 }

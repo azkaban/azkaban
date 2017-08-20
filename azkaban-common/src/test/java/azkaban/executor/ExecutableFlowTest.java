@@ -20,7 +20,7 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
-import azkaban.test.executions.TestExecutions;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.util.Arrays;
@@ -212,7 +212,7 @@ public class ExecutableFlowTest {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
 
     this.project.setFlows(loader.getFlowMap());
