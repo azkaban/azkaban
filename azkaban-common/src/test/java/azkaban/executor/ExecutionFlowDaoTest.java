@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.test.Utils;
@@ -40,6 +41,8 @@ public class ExecutionFlowDaoTest {
 
   private static DatabaseOperator dbOperator;
   private ExecutionFlowDao executionFlowDao;
+  private ExecutorDao executorDao;
+  private AssignExecutorDao assignExecutor;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -59,12 +62,15 @@ public class ExecutionFlowDaoTest {
   @Before
   public void setup() {
     this.executionFlowDao = new ExecutionFlowDao(dbOperator);
+    this.executorDao= new ExecutorDao(dbOperator);
+    this.assignExecutor= new AssignExecutorDao(dbOperator, this.executorDao);
   }
 
   @After
   public void clearDB() {
     try {
       dbOperator.update("DELETE FROM execution_flows");
+      dbOperator.update("DELETE FROM executors");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -174,6 +180,47 @@ public class ExecutionFlowDaoTest {
 
     assertTwoFlowSame(flow, fetchedFlow1.getSecond());
     assertTwoFlowSame(flow2, fetchedFlow2.getSecond());
+  }
+
+  @Test
+  public void testAssignAndUnassignExecutor() throws Exception {
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = this.executorDao.addExecutor(host, port);
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
+
+    final Executor fetchExecutor = this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId());
+    assertThat(fetchExecutor).isEqualTo(executor);
+
+    this.assignExecutor.unassignExecutor(flow.getExecutionId());
+    assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isNull();
+  }
+
+  /* Test exception when assigning a non-existent executor to a flow */
+  @Test
+  public void testAssignExecutorInvalidExecutor() throws Exception {
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    this.executionFlowDao.uploadExecutableFlow(flow);
+
+    assertThatThrownBy(
+        () -> this.assignExecutor.assignExecutor(flow.getExecutionId(), 1))
+            .isInstanceOf(ExecutorManagerException.class)
+            .hasMessageContaining("non-existent executor");
+  }
+
+  /* Test exception when assigning an executor to a non-existent flow execution */
+  @Test
+  public void testAssignExecutorInvalidExecution() throws Exception{
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = this.executorDao.addExecutor(host, port);
+
+    assertThatThrownBy(
+        () -> this.assignExecutor.assignExecutor(2, executor.getId()))
+        .isInstanceOf(ExecutorManagerException.class)
+        .hasMessageContaining("non-existent execution");
   }
 
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {

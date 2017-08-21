@@ -47,6 +47,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private final ExecutorEventsDao executorEventsDao;
   private final ActiveExecutingFlowsDao activeExecutingFlowsDao;
   private final FetchActiveFlowDao fetchActiveFlowDao;
+  private final AssignExecutorDao assignExecutorDao;
   private final NumExecutionsDao numExecutionsDao;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
@@ -59,6 +60,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
                             final ExecutorEventsDao executorEventsDao,
                             final ActiveExecutingFlowsDao activeExecutingFlowsDao,
                             final FetchActiveFlowDao fetchActiveFlowDao,
+                            final AssignExecutorDao assignExecutorDao,
                             final NumExecutionsDao numExecutionsDao) {
     super(props, commonMetrics);
     this.executionFlowDao = executionFlowDao;
@@ -69,6 +71,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     this.activeExecutingFlowsDao = activeExecutingFlowsDao;
     this.fetchActiveFlowDao = fetchActiveFlowDao;
     this.numExecutionsDao = numExecutionsDao;
+    this.assignExecutorDao = assignExecutorDao;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -128,6 +131,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   @Override
   public int fetchNumExecutableFlows() throws ExecutorManagerException {
+    final QueryRunner runner = createQueryRunner();
 
     return this.numExecutionsDao.fetchNumExecutableFlows();
   }
@@ -135,6 +139,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public int fetchNumExecutableFlows(final int projectId, final String flowId)
       throws ExecutorManagerException {
+    final QueryRunner runner = createQueryRunner();
 
     return this.numExecutionsDao.fetchNumExecutableFlows(projectId, flowId);
   }
@@ -142,6 +147,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public int fetchNumExecutableNodes(final int projectId, final String jobId)
       throws ExecutorManagerException {
+    final QueryRunner runner = createQueryRunner();
 
     return this.numExecutionsDao.fetchNumExecutableNodes(projectId, jobId);
   }
@@ -339,35 +345,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
                                                   final int offset) throws ExecutorManagerException {
-
     return this.executorEventsDao.getExecutorEvents(executor, num, offset);
   }
 
   @Override
   public void assignExecutor(final int executorId, final int executionId)
     throws ExecutorManagerException {
-    final String UPDATE =
-      "UPDATE execution_flows SET executor_id=? where exec_id=?";
-
-    final QueryRunner runner = createQueryRunner();
-    try {
-      final Executor executor = fetchExecutor(executorId);
-      if (executor == null) {
-        throw new ExecutorManagerException(String.format(
-          "Failed to assign non-existent executor Id: %d to execution : %d  ",
-          executorId, executionId));
-      }
-
-      final int rows = runner.update(UPDATE, executorId, executionId);
-      if (rows == 0) {
-        throw new ExecutorManagerException(String.format(
-          "Failed to assign executor Id: %d to non-existent execution : %d  ",
-          executorId, executionId));
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error updating executor id "
-        + executorId, e);
-    }
+    this.assignExecutorDao.assignExecutor(executorId, executionId);
   }
 
   @Override
@@ -385,20 +369,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
-    final String UPDATE =
-      "UPDATE execution_flows SET executor_id=NULL where exec_id=?";
 
-    final QueryRunner runner = createQueryRunner();
-    try {
-      final int rows = runner.update(UPDATE, executionId);
-      if (rows == 0) {
-        throw new ExecutorManagerException(String.format(
-          "Failed to unassign executor for execution : %d  ", executionId));
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error updating execution id "
-        + executionId, e);
-    }
+    this.assignExecutorDao.unassignExecutor(executionId);
   }
 
 }
