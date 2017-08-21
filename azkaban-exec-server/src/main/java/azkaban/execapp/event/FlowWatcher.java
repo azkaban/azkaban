@@ -17,6 +17,7 @@
 package azkaban.execapp.event;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 import java.util.Map;
@@ -82,8 +83,19 @@ public abstract class FlowWatcher {
   }
 
   public Status peekStatus(final String jobId) {
+    if (Status.isStatusFinished(this.flow.getStatus())) {
+      return null;
+    }
     final ExecutableNode node = this.flow.getExecutableNodePath(jobId);
     if (node != null) {
+      ExecutableFlowBase parentFlow = node.getParentFlow();
+      while (parentFlow != null) {
+        Status parentStatus = parentFlow.getStatus();
+        if (parentStatus == Status.SKIPPED || parentStatus == Status.DISABLED) {
+          return Status.SKIPPED;
+        }
+        parentFlow = parentFlow.getParentFlow();
+      }
       return node.getStatus();
     }
 
