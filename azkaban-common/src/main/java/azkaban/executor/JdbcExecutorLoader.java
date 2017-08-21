@@ -20,8 +20,6 @@ import azkaban.database.AbstractJdbcLoader;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
@@ -32,8 +30,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.dbutils.DbUtils;
@@ -100,25 +96,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return this.executionFlowDao.fetchExecutableFlow(id);
   }
 
-  /**
-   *
-   * {@inheritDoc}
-   * @see azkaban.executor.ExecutorLoader#fetchQueuedFlows()
-   */
-  @Override
+ @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
     throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchQueuedExecutableFlows flowHandler = new FetchQueuedExecutableFlows();
-
-    try {
-      final List<Pair<ExecutionReference, ExecutableFlow>> flows =
-        runner.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
-          flowHandler);
-      return flows;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching active flows", e);
-    }
+    return this.executionFlowDao.fetchQueuedFlows();
   }
 
   /**
@@ -127,19 +108,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public List<ExecutableFlow> fetchRecentlyFinishedFlows(final Duration maxAge)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchRecentlyFinishedFlows flowHandler = new FetchRecentlyFinishedFlows();
-
-    try {
-      final List<ExecutableFlow> flows =
-          runner.query(FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_FLOW,
-              flowHandler, System.currentTimeMillis() - maxAge.toMillis(),
-              Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
-              Status.FAILED.getNumVal());
-      return flows;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching recently finished flows", e);
-    }
+    return this.executionFlowDao.fetchRecentlyFinishedFlows(maxAge);
   }
 
   @Override
@@ -347,88 +316,43 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return connection;
   }
 
-
-  /**
-   *
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
-   */
-  @Override
+ @Override
   public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
     return this.executorDao.fetchAllExecutors();
   }
 
-  /**
-   *
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
-   */
-  @Override
+ @Override
   public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
     return this.executorDao.fetchActiveExecutors();
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#fetchExecutor(java.lang.String, int)
-   */
-  @Override
+ @Override
   public Executor fetchExecutor(final String host, final int port)
     throws ExecutorManagerException {
     return this.executorDao.fetchExecutor(host, port);
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#fetchExecutor(int)
-   */
-  @Override
+ @Override
   public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
     return this.executorDao.fetchExecutor(executorId);
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   */
-  @Override
+ @Override
   public void updateExecutor(final Executor executor) throws ExecutorManagerException {
     this.executorDao.updateExecutor(executor);
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#addExecutor(java.lang.String, int)
-   */
   @Override
   public Executor addExecutor(final String host, final int port)
     throws ExecutorManagerException {
     return this.executorDao.addExecutor(host, port);
   }
 
-
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#removeExecutor(String, int)
-   */
-  @Override
+ @Override
   public void removeExecutor(final String host, final int port) throws ExecutorManagerException {
     this.executorDao.removeExecutor(host, port);
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#postExecutorEvent(azkaban.executor.Executor,
-   *      azkaban.executor.ExecutorLogEvent.EventType, java.lang.String,
-   *      java.lang.String)
-   */
   @Override
   public void postExecutorEvent(final Executor executor, final EventType type, final String user,
                                 final String message) throws ExecutorManagerException{
@@ -436,12 +360,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     this.executorEventsDao.postExecutorEvent(executor, type, user, message);
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#getExecutorEvents(azkaban.executor.Executor,
-   *      int, int)
-   */
   @Override
   public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
                                                   final int offset) throws ExecutorManagerException {
@@ -449,12 +367,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return this.executorEventsDao.getExecutorEvents(executor, num, offset);
   }
 
-  /**
-   *
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#assignExecutor(int, int)
-   */
   @Override
   public void assignExecutor(final int executorId, final int executionId)
     throws ExecutorManagerException {
@@ -482,12 +394,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
-  /**
-   *
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#fetchExecutorByExecutionId(int)
-   */
   @Override
   public Executor fetchExecutorByExecutionId(final int executionId)
     throws ExecutorManagerException {
@@ -501,11 +407,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return this.executionLogsDao.removeExecutionLogsByTime(millis);
   }
 
-  /**
-   *
-   * {@inheritDoc}
-   * @see azkaban.executor.ExecutorLoader#unassignExecutor(int)
-   */
   @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
     final String UPDATE =
@@ -521,121 +422,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error updating execution id "
         + executionId, e);
-    }
-  }
-
-  private static class LastInsertID implements ResultSetHandler<Long> {
-    private static final String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
-
-    @Override
-    public Long handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return -1L;
-      }
-      final long id = rs.getLong(1);
-      return id;
-    }
-  }
-
-  /**
-   * JDBC ResultSetHandler to fetch queued executions
-   */
-  private static class FetchQueuedExecutableFlows implements
-    ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
-    // Select queued unassigned flows
-    private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows"
-            + " Where executor_id is NULL AND status = "
-            + Status.PREPARING.getNumVal();
-
-    @Override
-    public List<Pair<ExecutionReference, ExecutableFlow>> handle(final ResultSet rs)
-      throws SQLException {
-      if (!rs.next()) {
-        return Collections.emptyList();
-      }
-
-      final List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
-        new ArrayList<>();
-      do {
-        final int id = rs.getInt(1);
-        final int encodingType = rs.getInt(2);
-        final byte[] data = rs.getBytes(3);
-
-        if (data == null) {
-          logger.error("Found a flow with empty data blob exec_id: " + id);
-        } else {
-          final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
-          try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
-            final ExecutableFlow exFlow =
-              ExecutableFlow.createExecutableFlowFromObject(flowObj);
-            final ExecutionReference ref = new ExecutionReference(id);
-            execFlows.add(new Pair<>(ref, exFlow));
-          } catch (final IOException e) {
-            throw new SQLException("Error retrieving flow data " + id, e);
-          }
-        }
-      } while (rs.next());
-
-      return execFlows;
-    }
-  }
-
-  private static class FetchRecentlyFinishedFlows implements
-    ResultSetHandler<List<ExecutableFlow>> {
-    // Execution_flows table is already indexed by end_time
-    private static final String FETCH_RECENTLY_FINISHED_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE end_time > ? AND status IN (?, ?, ?)";
-
-    @Override
-    public List<ExecutableFlow> handle(
-        final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return Collections.emptyList();
-      }
-
-      final List<ExecutableFlow> execFlows = new ArrayList<>();
-      do {
-        final int id = rs.getInt(1);
-        final int encodingType = rs.getInt(2);
-        final byte[] data = rs.getBytes(3);
-
-        if (data != null) {
-          final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
-          try {
-            if (encType == EncodingType.GZIP) {
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
-            final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
-
-            execFlows.add(exFlow);
-          } catch (final IOException e) {
-            throw new SQLException("Error retrieving flow data " + id, e);
-          }
-        }
-      } while (rs.next());
-
-      return execFlows;
     }
   }
 

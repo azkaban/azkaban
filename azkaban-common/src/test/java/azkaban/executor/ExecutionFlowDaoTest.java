@@ -20,10 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.test.Utils;
+import azkaban.utils.Pair;
 import azkaban.utils.TestUtils;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -31,6 +34,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ExecutionFlowDaoTest {
+
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
+  private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
 
   private static DatabaseOperator dbOperator;
   private ExecutionFlowDao executionFlowDao;
@@ -114,6 +120,60 @@ public class ExecutionFlowDaoTest {
         this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), flowList2.get(0));
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
+  }
+
+  @Test
+  public void testFetchRecentlyFinishedFlows() throws Exception {
+    final ExecutableFlow flow1 = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow1);
+    flow1.setStatus(Status.SUCCEEDED);
+    flow1.setEndTime(System.currentTimeMillis());
+    this.executionFlowDao.updateExecutableFlow(flow1);
+
+    //Flow just finished. Fetch recently finished flows immediately. Should get it.
+    final List<ExecutableFlow> flows = this.executionFlowDao.fetchRecentlyFinishedFlows(
+        RECENTLY_FINISHED_LIFETIME);
+    assertThat(flows.size()).isEqualTo(1);
+    assertTwoFlowSame(flow1, flows.get(0));
+  }
+
+  @Test
+  public void testFetchEmptyRecentlyFinishedFlows() throws Exception {
+    final ExecutableFlow flow1 = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow1);
+    flow1.setStatus(Status.SUCCEEDED);
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    this.executionFlowDao.updateExecutableFlow(flow1);
+    //Todo jamiesjc: use java8.java.time api instead of jodatime
+
+    //Mock flow finished time to be 2 min ago.
+    DateTimeUtils.setCurrentMillisOffset(-FLOW_FINISHED_TIME.toMillis());
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    this.executionFlowDao.updateExecutableFlow(flow1);
+
+    //Fetch recently finished flows within 1 min. Should be empty.
+    final List<ExecutableFlow> flows = this.executionFlowDao
+        .fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME);
+    assertThat(flows.size()).isEqualTo(0);
+  }
+
+  @Test
+  public void testFetchQueuedFlows() throws Exception {
+
+    final ExecutableFlow flow = createTestFlow();
+    flow.setStatus(Status.PREPARING);
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    flow2.setStatus(Status.PREPARING);
+    this.executionFlowDao.uploadExecutableFlow(flow2);
+
+    final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = this.executionFlowDao.fetchQueuedFlows();
+    assertThat(fetchedQueuedFlows.size()).isEqualTo(2);
+    final Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
+    final Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
+
+    assertTwoFlowSame(flow, fetchedFlow1.getSecond());
+    assertTwoFlowSame(flow2, fetchedFlow2.getSecond());
   }
 
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {
