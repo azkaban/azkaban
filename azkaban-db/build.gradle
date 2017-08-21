@@ -18,6 +18,9 @@ apply plugin: 'distribution'
 
 dependencies {
 
+    compile project(':azkaban-db-api')
+    compile project(':azkaban-db-test')
+
     // todo kunkun-tang: consolidate dependencies in azkaban-common and azkaban-db
     compile deps.dbutils
     compile deps.dbcp2

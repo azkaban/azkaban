@@ -34,6 +34,7 @@ model {
 dependencies {
     compile project(':azkaban-spi')
     compile project(':azkaban-db')
+    compile project(':azkaban-db-test')
 
     compile deps.collections
     compile deps.commonsLang
@@ -67,7 +68,6 @@ dependencies {
     testRuntime deps.h2
 
     testCompile project(':test')
-    testCompile project(':azkaban-db').sourceSets.test.output
 }
 
 tasks.withType(JavaCompile) {
