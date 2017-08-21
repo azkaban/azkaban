@@ -412,11 +412,13 @@ public class JobRunner extends EventHandler implements Runnable {
       if (quickFinish) {
         this.node.setStartTime(time);
         fireEvent(
-            Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus, this.node.getNestedId())));
+            Event.create(this, Type.JOB_STARTED,
+                new EventData(nodeStatus, this.node.getNestedId())));
         this.node.setEndTime(time);
         fireEvent(
             Event
-                .create(this, Type.JOB_FINISHED, new EventData(nodeStatus, this.node.getNestedId())));
+                .create(this, Type.JOB_FINISHED,
+                    new EventData(nodeStatus, this.node.getNestedId())));
         return true;
       }
 
@@ -468,15 +470,15 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private boolean delayExecution() {
-    if (this.isKilled()) {
-      return true;
-    }
+    synchronized (this) {
+      if (this.isKilled()) {
+        return true;
+      }
 
-    final long currentTime = System.currentTimeMillis();
-    if (this.delayStartMs > 0) {
-      this.logger.info("Delaying start of execution for " + this.delayStartMs
-          + " milliseconds.");
-      synchronized (this) {
+      final long currentTime = System.currentTimeMillis();
+      if (this.delayStartMs > 0) {
+        this.logger.info("Delaying start of execution for " + this.delayStartMs
+            + " milliseconds.");
         try {
           this.wait(this.delayStartMs);
           this.logger.info("Execution has been delayed for " + this.delayStartMs
@@ -486,11 +488,11 @@ public class JobRunner extends EventHandler implements Runnable {
               + this.delayStartMs + ". Interrupted after "
               + (System.currentTimeMillis() - currentTime));
         }
-      }
 
-      if (this.isKilled()) {
-        this.logger.info("Job was killed while in delay. Quiting.");
-        return true;
+        if (this.isKilled()) {
+          this.logger.info("Job was killed while in delay. Quiting.");
+          return true;
+        }
       }
     }
 
