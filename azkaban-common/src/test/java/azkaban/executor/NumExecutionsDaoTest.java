@@ -85,6 +85,7 @@ public class NumExecutionsDaoTest {
     final int flow2Count = this.numExecutionsDao.fetchNumExecutableFlows(1, "derived-member-data-2");
     assertThat(flow2Count).isEqualTo(2);
   }
+
   @Test
   public void testFetchNumExecutableNodes() throws Exception {
     // This test will be filled up after execution_jobs test completes.
