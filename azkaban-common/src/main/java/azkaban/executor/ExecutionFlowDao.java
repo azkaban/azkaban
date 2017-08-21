@@ -21,9 +21,11 @@ import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Pair;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -96,6 +98,16 @@ public class ExecutionFlowDao {
     }
   }
 
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+      throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
+          new FetchQueuedExecutableFlows());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows", e);
+    }
+  }
+
   List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
                                         final int skip, final int num,
                                         final Status status)
@@ -105,6 +117,18 @@ public class ExecutionFlowDao {
           new FetchExecutableFlows(), projectId, flowId, status.getNumVal(), skip, num);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
+    }
+  }
+
+  List<ExecutableFlow> fetchRecentlyFinishedFlows(final Duration maxAge)
+      throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_FLOW,
+          new FetchRecentlyFinishedFlows(), System.currentTimeMillis() - maxAge.toMillis(),
+          Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
+          Status.FAILED.getNumVal());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching recently finished flows", e);
     }
   }
 
@@ -301,6 +325,107 @@ public class ExecutionFlowDao {
         }
       } while (rs.next());
 
+      return execFlows;
+    }
+  }
+
+  /**
+   * JDBC ResultSetHandler to fetch queued executions
+   */
+  private static class FetchQueuedExecutableFlows implements
+      ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
+    // Select queued unassigned flows
+    private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
+        "SELECT exec_id, enc_type, flow_data FROM execution_flows"
+            + " Where executor_id is NULL AND status = "
+            + Status.PREPARING.getNumVal();
+
+    @Override
+    public List<Pair<ExecutionReference, ExecutableFlow>> handle(final ResultSet rs)
+        throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      final List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
+          new ArrayList<>();
+      do {
+        final int id = rs.getInt(1);
+        final int encodingType = rs.getInt(2);
+        final byte[] data = rs.getBytes(3);
+
+        if (data == null) {
+          logger.error("Found a flow with empty data blob exec_id: " + id);
+        } else {
+          final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Object flowObj;
+          try {
+            // Convoluted way to inflate strings. Should find common package or
+            // helper function.
+            if (encType == EncodingType.GZIP) {
+              // Decompress the sucker.
+              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              final String jsonString = new String(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+
+            final ExecutableFlow exFlow =
+                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+            final ExecutionReference ref = new ExecutionReference(id);
+            execFlows.add(new Pair<>(ref, exFlow));
+          } catch (final IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
+
+      return execFlows;
+    }
+  }
+
+  private static class FetchRecentlyFinishedFlows implements
+      ResultSetHandler<List<ExecutableFlow>> {
+    // Execution_flows table is already indexed by end_time
+    private static final String FETCH_RECENTLY_FINISHED_FLOW =
+        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+            + "WHERE end_time > ? AND status IN (?, ?, ?)";
+
+    @Override
+    public List<ExecutableFlow> handle(
+        final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      final List<ExecutableFlow> execFlows = new ArrayList<>();
+      do {
+        final int id = rs.getInt(1);
+        final int encodingType = rs.getInt(2);
+        final byte[] data = rs.getBytes(3);
+
+        if (data != null) {
+          final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Object flowObj;
+          try {
+            if (encType == EncodingType.GZIP) {
+              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              final String jsonString = new String(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+
+            final ExecutableFlow exFlow =
+                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+
+            execFlows.add(exFlow);
+          } catch (final IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
       return execFlows;
     }
   }
