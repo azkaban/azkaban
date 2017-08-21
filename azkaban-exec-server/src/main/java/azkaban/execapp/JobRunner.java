@@ -468,15 +468,15 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private boolean delayExecution() {
-    if (this.isKilled()) {
-      return true;
-    }
+    synchronized (this) {
+      if (this.isKilled()) {
+        return true;
+      }
 
-    final long currentTime = System.currentTimeMillis();
-    if (this.delayStartMs > 0) {
-      this.logger.info("Delaying start of execution for " + this.delayStartMs
-          + " milliseconds.");
-      synchronized (this) {
+      final long currentTime = System.currentTimeMillis();
+      if (this.delayStartMs > 0) {
+        this.logger.info("Delaying start of execution for " + this.delayStartMs
+            + " milliseconds.");
         try {
           this.wait(this.delayStartMs);
           this.logger.info("Execution has been delayed for " + this.delayStartMs
@@ -486,15 +486,14 @@ public class JobRunner extends EventHandler implements Runnable {
               + this.delayStartMs + ". Interrupted after "
               + (System.currentTimeMillis() - currentTime));
         }
-      }
 
-      if (this.isKilled()) {
-        this.logger.info("Job was killed while in delay. Quiting.");
-        return true;
+        if (this.isKilled()) {
+          this.logger.info("Job was killed while in delay. Quiting.");
+          return true;
+        }
       }
+      return false;
     }
-
-    return false;
   }
 
   private void finalizeLogFile(final int attemptNo) {
