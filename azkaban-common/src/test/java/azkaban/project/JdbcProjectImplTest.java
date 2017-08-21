@@ -54,6 +54,7 @@ public class JdbcProjectImplTest {
   public static void destroyDB() {
     try {
       dbOperator.update("DROP ALL OBJECTS");
+      dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
       e.printStackTrace();
     }

@@ -50,6 +50,7 @@ public class ExecutionFlowDaoTest {
   public static void destroyDB() throws Exception {
     try {
       dbOperator.update("DROP ALL OBJECTS");
+      dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
       e.printStackTrace();
     }

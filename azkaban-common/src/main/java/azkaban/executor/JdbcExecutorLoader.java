@@ -339,22 +339,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
  @Override
   public void updateExecutor(final Executor executor) throws ExecutorManagerException {
-    final String UPDATE =
-      "UPDATE executors SET host=?, port=?, active=? where id=?";
-
-    final QueryRunner runner = createQueryRunner();
-    try {
-      final int rows =
-        runner.update(UPDATE, executor.getHost(), executor.getPort(),
-          executor.isActive(), executor.getId());
-      if (rows == 0) {
-        throw new ExecutorManagerException("No executor with id :"
-          + executor.getId());
-      }
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error inactivating executor "
-        + executor.getId(), e);
-    }
+    this.executorDao.updateExecutor(executor);
   }
 
   @Override
