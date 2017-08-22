@@ -204,8 +204,9 @@ public class ExecutionFlowDaoTest {
     final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow);
 
+    // Since we haven't inserted any executors, 1 should be non-existent executor id.
     assertThatThrownBy(
-        () -> this.assignExecutor.assignExecutor(flow.getExecutionId(), 1))
+        () -> this.assignExecutor.assignExecutor(1, flow.getExecutionId()))
             .isInstanceOf(ExecutorManagerException.class)
             .hasMessageContaining("non-existent executor");
   }
@@ -217,8 +218,9 @@ public class ExecutionFlowDaoTest {
     final int port = 12345;
     final Executor executor = this.executorDao.addExecutor(host, port);
 
+    // Make 99 a random non-existent execution id.
     assertThatThrownBy(
-        () -> this.assignExecutor.assignExecutor(2, executor.getId()))
+        () -> this.assignExecutor.assignExecutor(executor.getId(), 99))
         .isInstanceOf(ExecutorManagerException.class)
         .hasMessageContaining("non-existent execution");
   }
