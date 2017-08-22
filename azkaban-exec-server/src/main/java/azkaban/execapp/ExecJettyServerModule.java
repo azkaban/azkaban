@@ -15,13 +15,13 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-public class JettyServerModule extends AbstractModule {
+public class ExecJettyServerModule extends AbstractModule {
 
   private static final int DEFAULT_THREAD_NUMBER = 50;
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
-  private static final Logger logger = Logger.getLogger(JettyServerModule.class);
+  private static final Logger logger = Logger.getLogger(ExecJettyServerModule.class);
 
   @Override
   protected void configure() {

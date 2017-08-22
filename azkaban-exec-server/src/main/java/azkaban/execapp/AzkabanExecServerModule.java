@@ -31,7 +31,7 @@ public class AzkabanExecServerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    install(new JettyServerModule());
+    install(new ExecJettyServerModule());
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
     bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
     bind(TriggerManager.class).in(Scopes.SINGLETON);
