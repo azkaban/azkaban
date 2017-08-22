@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
+import org.junit.Assert;
 
 /**
  * Test response to deploy with either warn or error reports.
@@ -59,6 +60,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -82,6 +84,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -102,6 +105,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
