@@ -27,19 +27,15 @@ import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
 
 @Singleton
 public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     ExecutorLoader {
-  private static final Logger logger = Logger
-      .getLogger(JdbcExecutorLoader.class);
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;
   private final ExecutionJobDao executionJobDao;
@@ -131,24 +127,18 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   @Override
   public int fetchNumExecutableFlows() throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     return this.numExecutionsDao.fetchNumExecutableFlows();
   }
 
   @Override
   public int fetchNumExecutableFlows(final int projectId, final String flowId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     return this.numExecutionsDao.fetchNumExecutableFlows(projectId, flowId);
   }
 
   @Override
   public int fetchNumExecutableNodes(final int projectId, final String jobId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     return this.numExecutionsDao.fetchNumExecutableNodes(projectId, jobId);
   }
 
@@ -363,14 +353,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   @Override
   public int removeExecutionLogsByTime(final long millis)
       throws ExecutorManagerException {
-
     return this.executionLogsDao.removeExecutionLogsByTime(millis);
   }
 
   @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
-
     this.assignExecutorDao.unassignExecutor(executionId);
   }
-
 }
