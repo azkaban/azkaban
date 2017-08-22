@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
+import org.junit.Assert;
 
 /**
  * Test response to deploy with either warn or error reports.
@@ -49,7 +50,6 @@ public class DeployProjectTest {
   }
 
   @Test
-  @SuppressWarnings("MissingFail")
   public void testErrorDeploy() {
     final ProjectManagerResource resource = new ProjectManagerResource();
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
@@ -60,6 +60,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -67,7 +68,6 @@ public class DeployProjectTest {
   }
 
   @Test
-  @SuppressWarnings("MissingFail")
   public void testWarnErrorDeploy() {
     final ProjectManagerResource resource = new ProjectManagerResource();
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
@@ -84,6 +84,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -94,7 +95,6 @@ public class DeployProjectTest {
    * Test that an error message is attached to the exception on an error
    */
   @Test
-  @SuppressWarnings("MissingFail")
   public void testErrorMessageDeploy() {
     final ProjectManagerResource resource = new ProjectManagerResource();
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
@@ -105,6 +105,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
