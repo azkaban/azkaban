@@ -1,8 +1,5 @@
 package azkaban.execapp;
 
-import static azkaban.execapp.GuiceConstants.EXEC_JETTY_SERVER;
-import static azkaban.execapp.GuiceConstants.EXEC_ROOT_CONTEXT;
-
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -16,6 +13,9 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 public class ExecJettyServerModule extends AbstractModule {
+
+  public static final String EXEC_JETTY_SERVER = "ExecServer";
+  public static final String EXEC_ROOT_CONTEXT = "root";
 
   private static final int DEFAULT_THREAD_NUMBER = 50;
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;

@@ -19,8 +19,8 @@ package azkaban.execapp;
 import static azkaban.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static azkaban.Constants.ConfigurationKeys;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static azkaban.execapp.GuiceConstants.EXEC_JETTY_SERVER;
-import static azkaban.execapp.GuiceConstants.EXEC_ROOT_CONTEXT;
+import static azkaban.execapp.ExecJettyServerModule.EXEC_JETTY_SERVER;
+import static azkaban.execapp.ExecJettyServerModule.EXEC_ROOT_CONTEXT;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
