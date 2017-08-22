@@ -66,8 +66,8 @@ dependencies {
 
     testRuntime deps.h2
 
+    testCompile project(':azkaban-db-test')
     testCompile project(':test')
-    testCompile project(':azkaban-db').sourceSets.test.output
 }
 
 tasks.withType(JavaCompile) {

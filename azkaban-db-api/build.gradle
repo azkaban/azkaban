@@ -14,16 +14,7 @@
  * the License.
  *
  */
+dependencies {
 
-rootProject.name = 'azkaban'
-
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'test'
-include 'azkaban-db-api'
-include 'azkaban-db-test'
+    compile deps.dbcp2
+}
