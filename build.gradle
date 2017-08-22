@@ -92,6 +92,12 @@ subprojects {
     // Set the same version for all sub-projects to root project version
     version = rootProject.version
 
+    configurations.errorprone {
+        dependencies {
+            errorprone 'com.google.errorprone:error_prone_core:2.0.15'
+        }
+    }
+
     plugins.withType(JavaPlugin) {
         sourceCompatibility = JavaVersion.VERSION_1_8
 
