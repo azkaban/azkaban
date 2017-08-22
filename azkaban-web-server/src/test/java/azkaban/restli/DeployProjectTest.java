@@ -49,6 +49,7 @@ public class DeployProjectTest {
   }
 
   @Test
+  @SuppressWarnings("MissingFail")
   public void testErrorDeploy() {
     final ProjectManagerResource resource = new ProjectManagerResource();
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
@@ -66,6 +67,7 @@ public class DeployProjectTest {
   }
 
   @Test
+  @SuppressWarnings("MissingFail")
   public void testWarnErrorDeploy() {
     final ProjectManagerResource resource = new ProjectManagerResource();
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
@@ -92,6 +94,7 @@ public class DeployProjectTest {
    * Test that an error message is attached to the exception on an error
    */
   @Test
+  @SuppressWarnings("MissingFail")
   public void testErrorMessageDeploy() {
     final ProjectManagerResource resource = new ProjectManagerResource();
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
