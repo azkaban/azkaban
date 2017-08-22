@@ -27,14 +27,12 @@ import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -49,6 +47,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private final ExecutorEventsDao executorEventsDao;
   private final ActiveExecutingFlowsDao activeExecutingFlowsDao;
   private final FetchActiveFlowDao fetchActiveFlowDao;
+  private final NumExecutionsDao numExecutionsDao;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
@@ -59,7 +58,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
                             final ExecutionLogsDao executionLogsDao,
                             final ExecutorEventsDao executorEventsDao,
                             final ActiveExecutingFlowsDao activeExecutingFlowsDao,
-                            final FetchActiveFlowDao fetchActiveFlowDao) {
+                            final FetchActiveFlowDao fetchActiveFlowDao,
+                            final NumExecutionsDao numExecutionsDao) {
     super(props, commonMetrics);
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
@@ -68,6 +68,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     this.executorEventsDao = executorEventsDao;
     this.activeExecutingFlowsDao = activeExecutingFlowsDao;
     this.fetchActiveFlowDao = fetchActiveFlowDao;
+    this.numExecutionsDao = numExecutionsDao;
   }
 
   public EncodingType getDefaultEncodingType() {
@@ -127,47 +128,22 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   @Override
   public int fetchNumExecutableFlows() throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
 
-    final IntHandler intHandler = new IntHandler();
-    try {
-      final int count = runner.query(IntHandler.NUM_EXECUTIONS, intHandler);
-      return count;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching num executions", e);
-    }
+    return this.numExecutionsDao.fetchNumExecutableFlows();
   }
 
   @Override
   public int fetchNumExecutableFlows(final int projectId, final String flowId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
 
-    final IntHandler intHandler = new IntHandler();
-    try {
-      final int count =
-          runner.query(IntHandler.NUM_FLOW_EXECUTIONS, intHandler, projectId,
-              flowId);
-      return count;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching num executions", e);
-    }
+    return this.numExecutionsDao.fetchNumExecutableFlows(projectId, flowId);
   }
 
   @Override
   public int fetchNumExecutableNodes(final int projectId, final String jobId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
 
-    final IntHandler intHandler = new IntHandler();
-    try {
-      final int count =
-          runner.query(IntHandler.NUM_JOB_EXECUTIONS, intHandler, projectId,
-              jobId);
-      return count;
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching num executions", e);
-    }
+    return this.numExecutionsDao.fetchNumExecutableNodes(projectId, jobId);
   }
 
   @Override
@@ -422,25 +398,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error updating execution id "
         + executionId, e);
-    }
-  }
-
-  private static class IntHandler implements ResultSetHandler<Integer> {
-    private static final String NUM_EXECUTIONS =
-        "SELECT COUNT(1) FROM execution_flows";
-    private static final String NUM_FLOW_EXECUTIONS =
-        "SELECT COUNT(1) FROM execution_flows WHERE project_id=? AND flow_id=?";
-    private static final String NUM_JOB_EXECUTIONS =
-        "SELECT COUNT(1) FROM execution_jobs WHERE project_id=? AND job_id=?";
-    private static final String FETCH_EXECUTOR_ID =
-        "SELECT executor_id FROM execution_flows WHERE exec_id=?";
-
-    @Override
-    public Integer handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return 0;
-      }
-      return rs.getInt(1);
     }
   }
 

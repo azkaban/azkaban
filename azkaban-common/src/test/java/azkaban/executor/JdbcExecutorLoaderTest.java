@@ -1062,7 +1062,7 @@ public class JdbcExecutorLoaderTest {
     return new JdbcExecutorLoader(props,
         new CommonMetrics(new MetricsManager(new MetricRegistry())), null
         , null, null, null, null,
-        null, null);
+        null, null, null);
   }
 
   private boolean isTestSetup() {
