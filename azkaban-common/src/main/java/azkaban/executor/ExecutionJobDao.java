@@ -16,9 +16,7 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.db.DatabaseOperator;
-import azkaban.metrics.CommonMetrics;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -26,7 +24,6 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -35,32 +32,26 @@ import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 @Singleton
-public class ExecutionJobDao extends AbstractJdbcLoader{
+public class ExecutionJobDao {
 
   private static final Logger logger = Logger.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;
-  private final EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  ExecutionJobDao(final Props props, final CommonMetrics commonMetrics,
-                  final DatabaseOperator databaseOperator) {
-    super(props, commonMetrics);
+  ExecutionJobDao(final DatabaseOperator databaseOperator) {
     this.dbOperator = databaseOperator;
   }
 
-  void uploadExecutableNode(final ExecutableNode node, final Props inputProps)
+  public void uploadExecutableNode(final ExecutableNode node, final Props inputProps)
       throws ExecutorManagerException {
-    final String INSERT_EXECUTION_NODE =
-        "INSERT INTO execution_jobs "
-            + "(exec_id, project_id, version, flow_id, job_id, start_time, "
-            + "end_time, status, input_params, attempt) VALUES (?,?,?,?,?,?,?,?,?,?)";
+    final String INSERT_EXECUTION_NODE = "INSERT INTO execution_jobs "
+        + "(exec_id, project_id, version, flow_id, job_id, start_time, "
+        + "end_time, status, input_params, attempt) VALUES (?,?,?,?,?,?,?,?,?,?)";
 
     byte[] inputParam = null;
     if (inputProps != null) {
@@ -75,10 +66,9 @@ public class ExecutionJobDao extends AbstractJdbcLoader{
 
     final ExecutableFlow flow = node.getExecutableFlow();
     final String flowId = node.getParentFlow().getFlowPath();
-    System.out.println("Uploading flowId " + flowId);
-    final QueryRunner runner = createQueryRunner();
+    logger.info("Uploading flowId " + flowId);
     try {
-      runner.update(INSERT_EXECUTION_NODE, flow.getExecutionId(),
+      this.dbOperator.update(INSERT_EXECUTION_NODE, flow.getExecutionId(),
           flow.getProjectId(), flow.getVersion(), flowId, node.getId(),
           node.getStartTime(), node.getEndTime(), node.getStatus().getNumVal(),
           inputParam, node.getAttempt());
@@ -87,12 +77,10 @@ public class ExecutionJobDao extends AbstractJdbcLoader{
     }
   }
 
-  void updateExecutableNode(final ExecutableNode node)
-      throws ExecutorManagerException {
-    final String UPSERT_EXECUTION_NODE =
-        "UPDATE execution_jobs "
-            + "SET start_time=?, end_time=?, status=?, output_params=? "
-            + "WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
+  public void updateExecutableNode(final ExecutableNode node) throws ExecutorManagerException {
+    final String UPSERT_EXECUTION_NODE = "UPDATE execution_jobs "
+        + "SET start_time=?, end_time=?, status=?, output_params=? "
+        + "WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
 
     byte[] outputParam = null;
     final Props outputProps = node.getOutputProps();
@@ -105,62 +93,54 @@ public class ExecutionJobDao extends AbstractJdbcLoader{
         throw new ExecutorManagerException("Error encoding input params");
       }
     }
-
-    final QueryRunner runner = createQueryRunner();
     try {
-      runner.update(UPSERT_EXECUTION_NODE, node.getStartTime(), node
+      this.dbOperator.update(UPSERT_EXECUTION_NODE, node.getStartTime(), node
           .getEndTime(), node.getStatus().getNumVal(), outputParam, node
           .getExecutableFlow().getExecutionId(), node.getParentFlow()
           .getFlowPath(), node.getId(), node.getAttempt());
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error updating job " + node.getId(),
-          e);
+      throw new ExecutorManagerException("Error updating job " + node.getId(), e);
     }
   }
 
-  List<ExecutableJobInfo> fetchJobInfoAttempts(final int execId, final String jobId)
+  public List<ExecutableJobInfo> fetchJobInfoAttempts(final int execId, final String jobId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     try {
-      final List<ExecutableJobInfo> info =
-          runner.query(
-              FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE_ATTEMPTS,
-              new FetchExecutableJobHandler(), execId, jobId);
+      final List<ExecutableJobInfo> info = this.dbOperator.query(
+          FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE_ATTEMPTS,
+          new FetchExecutableJobHandler(), execId, jobId);
       if (info == null || info.isEmpty()) {
         return null;
+      } else {
+        return info;
       }
-      return info;
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error querying job info " + jobId, e);
     }
   }
 
-  ExecutableJobInfo fetchJobInfo(final int execId, final String jobId, final int attempts)
+  public ExecutableJobInfo fetchJobInfo(final int execId, final String jobId, final int attempts)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     try {
       final List<ExecutableJobInfo> info =
-          runner.query(FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE,
+          this.dbOperator.query(FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE,
               new FetchExecutableJobHandler(), execId, jobId, attempts);
       if (info == null || info.isEmpty()) {
         return null;
+      } else {
+        return info.get(0);
       }
-      return info.get(0);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error querying job info " + jobId, e);
     }
   }
 
-  Props fetchExecutionJobInputProps(final int execId, final String jobId)
+  public Props fetchExecutionJobInputProps(final int execId, final String jobId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
     try {
-      final Pair<Props, Props> props =
-          runner.query(
-              FetchExecutableJobPropsHandler.FETCH_INPUT_PARAM_EXECUTABLE_NODE,
-              new FetchExecutableJobPropsHandler(), execId, jobId);
+      final Pair<Props, Props> props = this.dbOperator.query(
+          FetchExecutableJobPropsHandler.FETCH_INPUT_PARAM_EXECUTABLE_NODE,
+          new FetchExecutableJobPropsHandler(), execId, jobId);
       return props.getFirst();
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error querying job params " + execId
@@ -168,15 +148,12 @@ public class ExecutionJobDao extends AbstractJdbcLoader{
     }
   }
 
-  Props fetchExecutionJobOutputProps(final int execId, final String jobId)
+  public Props fetchExecutionJobOutputProps(final int execId, final String jobId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
     try {
-      final Pair<Props, Props> props =
-          runner
-              .query(
-                  FetchExecutableJobPropsHandler.FETCH_OUTPUT_PARAM_EXECUTABLE_NODE,
-                  new FetchExecutableJobPropsHandler(), execId, jobId);
+      final Pair<Props, Props> props = this.dbOperator.query(
+          FetchExecutableJobPropsHandler.FETCH_OUTPUT_PARAM_EXECUTABLE_NODE,
+          new FetchExecutableJobPropsHandler(), execId, jobId);
       return props.getFirst();
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error querying job params " + execId
@@ -184,56 +161,47 @@ public class ExecutionJobDao extends AbstractJdbcLoader{
     }
   }
 
-  Pair<Props, Props> fetchExecutionJobProps(final int execId, final String jobId)
+  public Pair<Props, Props> fetchExecutionJobProps(final int execId, final String jobId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
     try {
-      final Pair<Props, Props> props = runner .query(
-                  FetchExecutableJobPropsHandler.FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE,
-                  new FetchExecutableJobPropsHandler(), execId, jobId);
-      return props;
+      return this.dbOperator.query(
+          FetchExecutableJobPropsHandler.FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE,
+          new FetchExecutableJobPropsHandler(), execId, jobId);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error querying job params " + execId
           + " " + jobId, e);
     }
   }
 
-  List<ExecutableJobInfo> fetchJobHistory(final int projectId, final String jobId,
-                                          final int skip, final int size)
-      throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
+  public List<ExecutableJobInfo> fetchJobHistory(final int projectId,
+                                                 final String jobId,
+                                                 final int skip,
+                                                 final int size) throws ExecutorManagerException {
     try {
       final List<ExecutableJobInfo> info =
-          runner.query(FetchExecutableJobHandler.FETCH_PROJECT_EXECUTABLE_NODE,
+          this.dbOperator.query(FetchExecutableJobHandler.FETCH_PROJECT_EXECUTABLE_NODE,
               new FetchExecutableJobHandler(), projectId, jobId, skip, size);
       if (info == null || info.isEmpty()) {
         return null;
+      } else {
+        return info;
       }
-      return info;
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error querying job info " + jobId, e);
     }
   }
 
-  List<Object> fetchAttachments(final int execId, final String jobId, final int attempt)
+  public List<Object> fetchAttachments(final int execId, final String jobId, final int attempt)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     try {
-      final String attachments =
-          runner
-              .query(
-                  FetchExecutableJobAttachmentsHandler.FETCH_ATTACHMENTS_EXECUTABLE_NODE,
-                  new FetchExecutableJobAttachmentsHandler(), execId, jobId);
+      final String attachments = this.dbOperator.query(
+          FetchExecutableJobAttachmentsHandler.FETCH_ATTACHMENTS_EXECUTABLE_NODE,
+          new FetchExecutableJobAttachmentsHandler(), execId, jobId);
       if (attachments == null) {
         return null;
+      } else {
+        return (List<Object>) JSONUtils.parseJSONFromString(attachments);
       }
-
-      final List<Object> attachmentList =
-          (List<Object>) JSONUtils.parseJSONFromString(attachments);
-
-      return attachmentList;
     } catch (final IOException e) {
       throw new ExecutorManagerException(
           "Error converting job attachments to JSON " + jobId, e);
@@ -243,49 +211,20 @@ public class ExecutionJobDao extends AbstractJdbcLoader{
     }
   }
 
-  void uploadAttachmentFile(final ExecutableNode node, final File file)
-      throws  ExecutorManagerException {
-    final Connection connection = getConnection();
-    try {
-      uploadAttachmentFile(connection, node, file, this.defaultEncodingType);
-      connection.commit();
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error committing attachments ", e);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException("Error uploading attachments ", e);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-  }
-
-  private void uploadAttachmentFile(final Connection connection, final ExecutableNode node,
-                                    final File file, final EncodingType encType) throws SQLException, IOException {
-
-    final String jsonString = FileUtils.readFileToString(file);
-    final byte[] attachments = GZIPUtils.gzipString(jsonString, "UTF-8");
-
+  public void uploadAttachmentFile(final ExecutableNode node, final File file)
+      throws ExecutorManagerException {
     final String UPDATE_EXECUTION_NODE_ATTACHMENTS =
         "UPDATE execution_jobs " + "SET attachments=? "
             + "WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
-
-    final QueryRunner runner = new QueryRunner();
-    runner.update(connection, UPDATE_EXECUTION_NODE_ATTACHMENTS, attachments,
-        node.getExecutableFlow().getExecutionId(), node.getParentFlow()
-            .getNestedId(), node.getId(), node.getAttempt());
-  }
-
-  /**
-   * TODO kunkun-tang: Will be removed during the next refactor.
-   */
-  private Connection getConnection() throws ExecutorManagerException {
-    Connection connection = null;
     try {
-      connection = super.getDBConnection(false);
-    } catch (final Exception e) {
-      DbUtils.closeQuietly(connection);
-      throw new ExecutorManagerException("Error getting DB connection.", e);
+      final String jsonString = FileUtils.readFileToString(file);
+      final byte[] attachments = GZIPUtils.gzipString(jsonString, "UTF-8");
+      this.dbOperator.update(UPDATE_EXECUTION_NODE_ATTACHMENTS, attachments,
+          node.getExecutableFlow().getExecutionId(), node.getParentFlow()
+              .getNestedId(), node.getId(), node.getAttempt());
+    } catch (final IOException | SQLException e) {
+      throw new ExecutorManagerException("Error uploading attachments.", e);
     }
-    return connection;
   }
 
   private static class FetchExecutableJobHandler implements
