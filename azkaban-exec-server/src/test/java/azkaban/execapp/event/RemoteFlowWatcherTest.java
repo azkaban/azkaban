@@ -16,8 +16,6 @@
 
 package azkaban.execapp.event;
 
-import static org.mockito.Mockito.mock;
-
 import azkaban.execapp.EventCollectorListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -34,15 +32,19 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+
+import static org.mockito.Mockito.mock;
 
 public class RemoteFlowWatcherTest {
 
@@ -218,7 +220,7 @@ public class RemoteFlowWatcherTest {
       final EventCollectorListener eventCollector, final String flowName, final int execId,
       final FlowWatcher watcher, final Integer pipeline, final Props azkabanProps)
       throws Exception {
-    final File testDir = new File("../test/execution-test-data/exectest1");
+    final File testDir = ExecutionsTestUtil.getFlowDir("exectest1");
     final ExecutableFlow exFlow = prepareExecDir(testDir, flowName, execId);
     final ExecutionOptions options = exFlow.getExecutionOptions();
     if (watcher != null) {
