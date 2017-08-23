@@ -1080,54 +1080,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertThreadShutDown();
   }
 
-  /**
-   * Tests the case when a job is killed by SLA and causing a flow to fail. The flow should be in
-   * "killed" status.
-   */
-  @Test
-  public void testFlowKilledByJobLevelSLA() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
-        FailureAction.FINISH_CURRENTLY_RUNNING);
-
-    // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
-    this.runner.
-        // After it starts up, only joba should be running
-            assertStatus("joba", Status.RUNNING);
-    assertStatus("joba1", Status.RUNNING);
-
-    // 2. JOB A COMPLETES SUCCESSFULLY
-    InteractiveTestJob.getTestJob("joba").succeedJob();
-    assertStatus("joba", Status.SUCCEEDED);
-    assertStatus("joba1", Status.RUNNING);
-    assertStatus("jobb", Status.RUNNING);
-    assertStatus("jobc", Status.RUNNING);
-    assertStatus("jobd", Status.RUNNING);
-    assertStatus("jobd:innerJobA", Status.RUNNING);
-    assertStatus("jobb:innerJobA", Status.RUNNING);
-
-    this.runner.pause("me");
-    assertFlowStatus(Status.PAUSED);
-    InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
-    assertStatus("jobd:innerJobA", Status.FAILED);
-    assertStatus("jobd:innerFlow2", Status.CANCELLED);
-    assertStatus("jobd", Status.FAILED);
-    assertStatus("jobb:innerJobA", Status.KILLED);
-    assertStatus("jobb:innerJobB", Status.CANCELLED);
-    assertStatus("jobb:innerJobC", Status.CANCELLED);
-    assertStatus("jobb:innerFlow", Status.CANCELLED);
-    assertStatus("jobb", Status.KILLED);
-    assertStatus("jobc", Status.KILLED);
-    assertStatus("jobe", Status.CANCELLED);
-    assertStatus("jobf", Status.CANCELLED);
-    assertStatus("joba1", Status.KILLED);
-
-    assertFlowStatus(Status.KILLED);
-    assertThreadShutDown();
-  }
-
-
   private void runFlowRunnerInThread(final FlowRunner runner) {
     final Thread thread = new Thread(runner);
     thread.start();

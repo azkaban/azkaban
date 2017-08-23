@@ -310,46 +310,6 @@ public class JobRunnerTest {
     eventCollector.assertEvents(Type.JOB_FINISHED);
   }
 
-  @Test
-  public void testJobKilledBySLA() throws InterruptedException {
-    final MockExecutorLoader loader = new MockExecutorLoader();
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    final JobRunner runner =
-        createJobRunner(1, "testJob", 1, false, loader, eventCollector);
-    runner.setDelayStart(5000);
-    final long startTime = System.currentTimeMillis();
-    final ExecutableNode node = runner.getNode();
-
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED, new EventData(node)));
-    Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED);
-
-    final Thread thread = new Thread(runner);
-    thread.start();
-
-    Thread.sleep(2000);
-    runner.killBySLA();
-    Thread.sleep(500);
-
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node)));
-
-    Assert.assertTrue(runner.getStatus() == node.getStatus());
-    Assert.assertTrue("Node status is " + node.getStatus(),
-        node.getStatus() == Status.KILLED);
-    Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
-    Assert.assertTrue(node.getEndTime() - node.getStartTime() < 1000);
-    Assert.assertTrue(node.getStartTime() - startTime >= 2000);
-    Assert.assertTrue(node.getStartTime() - startTime <= 5000);
-    Assert.assertTrue(runner.isKilled());
-
-    final File logFile = new File(runner.getLogFilePath());
-    final Props outputProps = runner.getNode().getOutputProps();
-    Assert.assertTrue(outputProps == null);
-    Assert.assertTrue(logFile.exists());
-
-    Assert.assertEquals(2L, (long) loader.getNodeUpdateCount("testJob"));
-    eventCollector.assertEvents(Type.JOB_FINISHED);
-  }
-
   private Props createProps(final int sleepSec, final boolean fail) {
     final Props props = new Props();
     props.put("type", "java");
