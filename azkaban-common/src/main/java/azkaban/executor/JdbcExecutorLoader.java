@@ -25,7 +25,6 @@ import azkaban.utils.Props;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.time.Duration;
 import java.util.List;
@@ -261,14 +260,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   public void uploadLogFile(final int execId, final String name, final int attempt, final File... files)
       throws ExecutorManagerException {
     this.executionLogsDao.uploadLogFile(execId, name, attempt, files);
-  }
-
-  private void uploadLogFile(final Connection connection, final int execId, final String name,
-                             final int attempt, final File[] files, final EncodingType encType)
-      throws ExecutorManagerException, IOException {
-    // 50K buffer... if logs are greater than this, we chunk.
-    // However, we better prevent large log files from being uploaded somehow
-    this.executionLogsDao.uploadLogFile(connection, execId, name, attempt, files, encType);
   }
 
   @Override

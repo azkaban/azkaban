@@ -16,80 +16,75 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
+import azkaban.database.EncodingType;
 import azkaban.db.DatabaseOperator;
-import azkaban.metrics.CommonMetrics;
+import azkaban.db.DatabaseTransOperator;
+import azkaban.db.SQLTransaction;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.Pair;
-import azkaban.utils.Props;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
-@Singleton
-public class ExecutionLogsDao extends AbstractJdbcLoader{
 
+@Singleton
+public class ExecutionLogsDao {
+
+  private static final Logger logger = Logger.getLogger(ExecutionLogsDao.class);
   private final DatabaseOperator dbOperator;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  ExecutionLogsDao(final Props props, final CommonMetrics commonMetrics,
-                   final DatabaseOperator dbOperator) {
-    super(props, commonMetrics);
+  ExecutionLogsDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
+  // TODO kunkun-tang: the interface's parameter is called endByte, but actually is length.
   LogData fetchLogs(final int execId, final String name, final int attempt,
                     final int startByte,
                     final int length) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
     final FetchLogsHandler handler = new FetchLogsHandler(startByte, length + startByte);
     try {
-      final LogData result =
-          runner.query(FetchLogsHandler.FETCH_LOGS, handler, execId, name,
-              attempt, startByte, startByte + length);
-      return result;
+      return this.dbOperator.query(FetchLogsHandler.FETCH_LOGS, handler,
+          execId, name, attempt, startByte, startByte + length);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching logs " + execId
           + " : " + name, e);
     }
   }
 
-  void uploadLogFile(final int execId, final String name, final int attempt,
-                     final File... files)
-      throws ExecutorManagerException {
-    final Connection connection = getConnection();
+  public void uploadLogFile(final int execId, final String name, final int attempt,
+                            final File... files) throws ExecutorManagerException {
+    final SQLTransaction<Integer> transaction = transOperator -> {
+      uploadLogFile(transOperator, execId, name, attempt, files, this.defaultEncodingType);
+      transOperator.getConnection().commit();
+      return 1;
+    };
     try {
-      uploadLogFile(connection, execId, name, attempt, files,
-          getDefaultEncodingType());
-      connection.commit();
-    } catch (final SQLException | IOException e) {
-      throw new ExecutorManagerException("Error committing log", e);
-    } finally {
-      DbUtils.closeQuietly(connection);
+      this.dbOperator.transaction(transaction);
+    } catch (final SQLException e) {
+      logger.error("uploadLogFile failed.", e);
+      throw new ExecutorManagerException("uploadLogFile failed.", e);
     }
   }
 
-  void uploadLogFile(final Connection connection, final int execId, final String name,
-                     final int attempt, final File[] files, final EncodingType encType)
-      throws ExecutorManagerException, IOException {
+  private void uploadLogFile(final DatabaseTransOperator transOperator, final int execId, final String name,
+                             final int attempt, final File[] files, final EncodingType encType)
+      throws SQLException {
     // 50K buffer... if logs are greater than this, we chunk.
     // However, we better prevent large log files from being uploaded somehow
     final byte[] buffer = new byte[50 * 1024];
@@ -107,7 +102,7 @@ public class ExecutionLogsDao extends AbstractJdbcLoader{
           while (size >= 0) {
             if (pos + size == buffer.length) {
               // Flush here.
-              uploadLogPart(connection, execId, name, attempt, startByte,
+              uploadLogPart(transOperator, execId, name, attempt, startByte,
                   startByte + buffer.length, encType, buffer, buffer.length);
 
               pos = 0;
@@ -127,13 +122,15 @@ public class ExecutionLogsDao extends AbstractJdbcLoader{
 
       // Final commit of buffer.
       if (pos > 0) {
-            uploadLogPart(connection, execId, name, attempt, startByte, startByte
+        uploadLogPart(transOperator, execId, name, attempt, startByte, startByte
             + pos, encType, buffer, pos);
       }
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error writing log part.", e);
+      logger.error("Error writing log part.", e);
+      throw new SQLException("Error writing log part", e);
     } catch (final IOException e) {
-      throw new ExecutorManagerException("Error chunking", e);
+      logger.error("Error chunking.", e);
+      throw new SQLException("Error chunking", e);
     }
   }
 
@@ -141,35 +138,25 @@ public class ExecutionLogsDao extends AbstractJdbcLoader{
       throws ExecutorManagerException {
     final String DELETE_BY_TIME =
         "DELETE FROM execution_logs WHERE upload_time < ?";
-
-    final QueryRunner runner = this.createQueryRunner();
-    int updateNum = 0;
     try {
-      updateNum = runner.update(DELETE_BY_TIME, millis);
+      return this.dbOperator.update(DELETE_BY_TIME, millis);
     } catch (final SQLException e) {
-      e.printStackTrace();
+      logger.error("delete execution logs failed", e);
       throw new ExecutorManagerException(
           "Error deleting old execution_logs before " + millis, e);
     }
-
-    return updateNum;
   }
 
-  // TODO kunkun-tang: Will be removed in the future refactor.
-  private EncodingType getDefaultEncodingType() {
-    return this.defaultEncodingType;
-  }
-
-  private void uploadLogPart(final Connection connection, final int execId, final String name,
+  private void uploadLogPart(final DatabaseTransOperator transOperator, final int execId,
+                             final String name,
                              final int attempt, final int startByte, final int endByte,
                              final EncodingType encType,
-                             final byte[] buffer, final int length) throws SQLException, IOException {
-    final String INSERT_EXECUTION_LOGS =
-        "INSERT INTO execution_logs "
-            + "(exec_id, name, attempt, enc_type, start_byte, end_byte, "
-            + "log, upload_time) VALUES (?,?,?,?,?,?,?,?)";
+                             final byte[] buffer, final int length)
+      throws SQLException, IOException {
+    final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs "
+        + "(exec_id, name, attempt, enc_type, start_byte, end_byte, "
+        + "log, upload_time) VALUES (?,?,?,?,?,?,?,?)";
 
-    final QueryRunner runner = new QueryRunner();
     byte[] buf = buffer;
     if (encType == EncodingType.GZIP) {
       buf = GZIPUtils.gzipBytes(buf, 0, length);
@@ -177,21 +164,9 @@ public class ExecutionLogsDao extends AbstractJdbcLoader{
       buf = Arrays.copyOf(buffer, length);
     }
 
-    runner.update(connection, INSERT_EXECUTION_LOGS, execId, name, attempt,
+    transOperator.update(INSERT_EXECUTION_LOGS, execId, name, attempt,
         encType.getNumVal(), startByte, startByte + length, buf, DateTime.now()
             .getMillis());
-  }
-
-  // TODO kunkun-tang: should be removed in future refactor.
-  private Connection getConnection() throws ExecutorManagerException {
-    Connection connection = null;
-    try {
-      connection = super.getDBConnection(false);
-    } catch (final Exception e) {
-      DbUtils.closeQuietly(connection);
-      throw new ExecutorManagerException("Error getting DB connection.", e);
-    }
-    return connection;
   }
 
   private static class FetchLogsHandler implements ResultSetHandler<LogData> {

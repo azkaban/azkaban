@@ -16,52 +16,44 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.db.DatabaseOperator;
-import azkaban.metrics.CommonMetrics;
-import azkaban.utils.Props;
 import java.sql.SQLException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.QueryRunner;
 
+//TODO jamiesjc: This class is deprecated as we don't fetch active_execution_flow table any longer.
+// So this class should be removed onwards.
+@Deprecated
 @Singleton
-public class ActiveExecutingFlowsDao extends AbstractJdbcLoader{
+public class ActiveExecutingFlowsDao {
 
   private final DatabaseOperator dbOperator;
 
   @Inject
-  ActiveExecutingFlowsDao(final Props props, final CommonMetrics commonMetrics,
-                          final DatabaseOperator dbOperator) {
-    super(props, commonMetrics);
+  ActiveExecutingFlowsDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
   void addActiveExecutableReference(final ExecutionReference reference)
       throws ExecutorManagerException {
-    final String INSERT =
-        "INSERT INTO active_executing_flows "
-            + "(exec_id, update_time) values (?,?)";
-    final QueryRunner runner = createQueryRunner();
-
+    final String INSERT = "INSERT INTO active_executing_flows "
+        + "(exec_id, update_time) values (?,?)";
     try {
-      runner.update(INSERT, reference.getExecId(), reference.getUpdateTime());
+      this.dbOperator.update(INSERT, reference.getExecId(), reference.getUpdateTime());
     } catch (final SQLException e) {
       throw new ExecutorManagerException(
           "Error updating active flow reference " + reference.getExecId(), e);
     }
   }
 
-  void removeActiveExecutableReference(final int execid)
+  void removeActiveExecutableReference(final int execId)
       throws ExecutorManagerException {
     final String DELETE = "DELETE FROM active_executing_flows WHERE exec_id=?";
-
-    final QueryRunner runner = createQueryRunner();
     try {
-      runner.update(DELETE, execid);
+      this.dbOperator.update(DELETE, execId);
     } catch (final SQLException e) {
       throw new ExecutorManagerException(
-          "Error deleting active flow reference " + execid, e);
+          "Error deleting active flow reference " + execId, e);
     }
   }
 
@@ -70,16 +62,12 @@ public class ActiveExecutingFlowsDao extends AbstractJdbcLoader{
     final String DELETE =
         "UPDATE active_executing_flows set update_time=? WHERE exec_id=?";
 
-    final QueryRunner runner = createQueryRunner();
-    int updateNum = 0;
     try {
-      updateNum = runner.update(DELETE, updateTime, execId);
+      // Should be 1.
+      return this.dbOperator.update(DELETE, updateTime, execId) > 0;
     } catch (final SQLException e) {
       throw new ExecutorManagerException(
           "Error deleting active flow reference " + execId, e);
     }
-
-    // Should be 1.
-    return updateNum > 0;
   }
 }
