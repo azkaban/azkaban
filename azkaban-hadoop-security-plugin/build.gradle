@@ -6,8 +6,8 @@ dependencies {
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
-    compileOnly deps.hiveMetaCore
-    compileOnly (deps.hiveExecstore) {
+    compileOnly deps.hiveMetastore
+    compileOnly (deps.hiveExecCore) {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
         exclude group: 'eigenbase', module: 'eigenbase-properties'
     }
