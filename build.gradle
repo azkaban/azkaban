@@ -23,7 +23,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.cinnober.gradle:semver-git:2.2.3'
-        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.11'
     }
 }
 
@@ -105,6 +105,12 @@ subprojects {
     // Set the same version for all sub-projects to root project version
     version = rootProject.version
 
+    configurations.errorprone {
+        dependencies {
+            errorprone 'com.google.errorprone:error_prone_core:2.0.15'
+        }
+    }
+
     plugins.withType(JavaPlugin) {
         sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -184,7 +190,6 @@ subprojects {
         }
     }
 }
-
 
 /**
  * Gradle wrapper task.

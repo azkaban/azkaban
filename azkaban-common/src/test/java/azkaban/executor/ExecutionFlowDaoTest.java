@@ -17,13 +17,17 @@
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.test.Utils;
+import azkaban.utils.Pair;
 import azkaban.utils.TestUtils;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -32,8 +36,13 @@ import org.junit.Test;
 
 public class ExecutionFlowDaoTest {
 
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
+  private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
+
   private static DatabaseOperator dbOperator;
   private ExecutionFlowDao executionFlowDao;
+  private ExecutorDao executorDao;
+  private AssignExecutorDao assignExecutor;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -44,6 +53,7 @@ public class ExecutionFlowDaoTest {
   public static void destroyDB() throws Exception {
     try {
       dbOperator.update("DROP ALL OBJECTS");
+      dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -52,12 +62,15 @@ public class ExecutionFlowDaoTest {
   @Before
   public void setup() {
     this.executionFlowDao = new ExecutionFlowDao(dbOperator);
+    this.executorDao= new ExecutorDao(dbOperator);
+    this.assignExecutor= new AssignExecutorDao(dbOperator, this.executorDao);
   }
 
   @After
   public void clearDB() {
     try {
       dbOperator.update("DELETE FROM execution_flows");
+      dbOperator.update("DELETE FROM executors");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -113,6 +126,103 @@ public class ExecutionFlowDaoTest {
         this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), flowList2.get(0));
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
+  }
+
+  @Test
+  public void testFetchRecentlyFinishedFlows() throws Exception {
+    final ExecutableFlow flow1 = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow1);
+    flow1.setStatus(Status.SUCCEEDED);
+    flow1.setEndTime(System.currentTimeMillis());
+    this.executionFlowDao.updateExecutableFlow(flow1);
+
+    //Flow just finished. Fetch recently finished flows immediately. Should get it.
+    final List<ExecutableFlow> flows = this.executionFlowDao.fetchRecentlyFinishedFlows(
+        RECENTLY_FINISHED_LIFETIME);
+    assertThat(flows.size()).isEqualTo(1);
+    assertTwoFlowSame(flow1, flows.get(0));
+  }
+
+  @Test
+  public void testFetchEmptyRecentlyFinishedFlows() throws Exception {
+    final ExecutableFlow flow1 = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow1);
+    flow1.setStatus(Status.SUCCEEDED);
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    this.executionFlowDao.updateExecutableFlow(flow1);
+    //Todo jamiesjc: use java8.java.time api instead of jodatime
+
+    //Mock flow finished time to be 2 min ago.
+    DateTimeUtils.setCurrentMillisOffset(-FLOW_FINISHED_TIME.toMillis());
+    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    this.executionFlowDao.updateExecutableFlow(flow1);
+
+    //Fetch recently finished flows within 1 min. Should be empty.
+    final List<ExecutableFlow> flows = this.executionFlowDao
+        .fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME);
+    assertThat(flows.size()).isEqualTo(0);
+  }
+
+  @Test
+  public void testFetchQueuedFlows() throws Exception {
+
+    final ExecutableFlow flow = createTestFlow();
+    flow.setStatus(Status.PREPARING);
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    flow2.setStatus(Status.PREPARING);
+    this.executionFlowDao.uploadExecutableFlow(flow2);
+
+    final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = this.executionFlowDao.fetchQueuedFlows();
+    assertThat(fetchedQueuedFlows.size()).isEqualTo(2);
+    final Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
+    final Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
+
+    assertTwoFlowSame(flow, fetchedFlow1.getSecond());
+    assertTwoFlowSame(flow2, fetchedFlow2.getSecond());
+  }
+
+  @Test
+  public void testAssignAndUnassignExecutor() throws Exception {
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = this.executorDao.addExecutor(host, port);
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
+
+    final Executor fetchExecutor = this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId());
+    assertThat(fetchExecutor).isEqualTo(executor);
+
+    this.assignExecutor.unassignExecutor(flow.getExecutionId());
+    assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isNull();
+  }
+
+  /* Test exception when assigning a non-existent executor to a flow */
+  @Test
+  public void testAssignExecutorInvalidExecutor() throws Exception {
+    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    this.executionFlowDao.uploadExecutableFlow(flow);
+
+    // Since we haven't inserted any executors, 1 should be non-existent executor id.
+    assertThatThrownBy(
+        () -> this.assignExecutor.assignExecutor(1, flow.getExecutionId()))
+            .isInstanceOf(ExecutorManagerException.class)
+            .hasMessageContaining("non-existent executor");
+  }
+
+  /* Test exception when assigning an executor to a non-existent flow execution */
+  @Test
+  public void testAssignExecutorInvalidExecution() throws Exception{
+    final String host = "localhost";
+    final int port = 12345;
+    final Executor executor = this.executorDao.addExecutor(host, port);
+
+    // Make 99 a random non-existent execution id.
+    assertThatThrownBy(
+        () -> this.assignExecutor.assignExecutor(executor.getId(), 99))
+        .isInstanceOf(ExecutorManagerException.class)
+        .hasMessageContaining("non-existent execution");
   }
 
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {

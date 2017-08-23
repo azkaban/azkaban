@@ -204,14 +204,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
+      if (slaOptions.isEmpty()) {
+        throw new ScheduleManagerException(
+            String.format("SLA for schedule %s must have at least one action", scheduleId));
+      }
+
       sched.setSlaOptions(slaOptions);
       this.scheduleManager.insertSchedule(sched);
-
-      if (slaOptions != null) {
-        this.projectManager.postProjectEvent(project, EventType.SLA,
-            user.getUserId(), "SLA for flow " + sched.getFlowName()
-                + " has been added/changed.");
-      }
+      this.projectManager.postProjectEvent(project, EventType.SLA,
+          user.getUserId(), "SLA for flow " + sched.getFlowName()
+              + " has been added/changed.");
 
     } catch (final ServletException e) {
       ret.put("error", e.getMessage());

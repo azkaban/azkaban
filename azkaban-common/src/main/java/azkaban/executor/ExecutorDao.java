@@ -16,10 +16,7 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.db.DatabaseOperator;
-import azkaban.metrics.CommonMetrics;
-import azkaban.utils.Props;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -27,78 +24,60 @@ import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
 @Singleton
-public class ExecutorDao extends AbstractJdbcLoader {
+public class ExecutorDao {
 
   private static final Logger logger = Logger.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public ExecutorDao(final Props props, final CommonMetrics commonMetrics,
-                     final DatabaseOperator dbOperator) {
-    super(props, commonMetrics);
+  public ExecutorDao (final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
-  public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
+  List<Executor> fetchAllExecutors() throws ExecutorManagerException {
     try {
-      final List<Executor> executors =
-          runner.query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, executorHandler);
-      return executors;
+      return this.dbOperator
+          .query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, new FetchExecutorHandler());
     } catch (final Exception e) {
       throw new ExecutorManagerException("Error fetching executors", e);
     }
   }
 
-  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
+  List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
     try {
-      final List<Executor> executors =
-          runner.query(FetchExecutorHandler.FETCH_ACTIVE_EXECUTORS,
-              executorHandler);
-      return executors;
-    } catch (final Exception e) {
+      return this.dbOperator
+          .query(FetchExecutorHandler.FETCH_ACTIVE_EXECUTORS, new FetchExecutorHandler());
+    } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active executors", e);
     }
   }
 
   public Executor fetchExecutor(final String host, final int port)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
     try {
       final List<Executor> executors =
-          runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_HOST_PORT,
-              executorHandler, host, port);
+          this.dbOperator.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_HOST_PORT,
+              new FetchExecutorHandler(), host, port);
       if (executors.isEmpty()) {
         return null;
       } else {
         return executors.get(0);
       }
-    } catch (final Exception e) {
+    } catch (final SQLException e) {
       throw new ExecutorManagerException(String.format(
           "Error fetching executor %s:%d", host, port), e);
     }
   }
 
   public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-
     try {
-      final List<Executor> executors =
-          runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_ID,
-              executorHandler, executorId);
+      final List<Executor> executors = this.dbOperator
+          .query(FetchExecutorHandler.FETCH_EXECUTOR_BY_ID,
+              new FetchExecutorHandler(), executorId);
       if (executors.isEmpty()) {
         return null;
       } else {
@@ -110,58 +89,69 @@ public class ExecutorDao extends AbstractJdbcLoader {
     }
   }
 
-  public Executor fetchExecutorByExecutionId(final int executionId)
+  Executor fetchExecutorByExecutionId(final int executionId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
     final FetchExecutorHandler executorHandler = new FetchExecutorHandler();
-    Executor executor = null;
     try {
-      final List<Executor> executors =
-          runner.query(FetchExecutorHandler.FETCH_EXECUTION_EXECUTOR,
+      final List<Executor> executors = this.dbOperator
+          .query(FetchExecutorHandler.FETCH_EXECUTION_EXECUTOR,
               executorHandler, executionId);
       if (executors.size() > 0) {
-        executor = executors.get(0);
+        return executors.get(0);
+      } else {
+        return null;
       }
     } catch (final SQLException e) {
       throw new ExecutorManagerException(
           "Error fetching executor for exec_id : " + executionId, e);
     }
-    return executor;
   }
 
-  public Executor addExecutor(final String host, final int port)
+  Executor addExecutor(final String host, final int port)
       throws ExecutorManagerException {
     // verify, if executor already exists
-    Executor executor = fetchExecutor(host, port);
-    if (executor != null) {
+    if (fetchExecutor(host, port) != null) {
       throw new ExecutorManagerException(String.format(
           "Executor %s:%d already exist", host, port));
     }
     // add new executor
     addExecutorHelper(host, port);
-    // fetch newly added executor
-    executor = fetchExecutor(host, port);
 
-    return executor;
+    // fetch newly added executor
+    return fetchExecutor(host, port);
   }
 
   private void addExecutorHelper(final String host, final int port)
       throws ExecutorManagerException {
     final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
-    final QueryRunner runner = createQueryRunner();
     try {
-      runner.update(INSERT, host, port);
+      this.dbOperator.update(INSERT, host, port);
     } catch (final SQLException e) {
       throw new ExecutorManagerException(String.format("Error adding %s:%d ",
           host, port), e);
     }
   }
 
-  public void removeExecutor(final String host, final int port) throws ExecutorManagerException {
-    final String DELETE = "DELETE FROM executors WHERE host=? AND port=?";
-    final QueryRunner runner = createQueryRunner();
+  public void updateExecutor(final Executor executor) throws ExecutorManagerException {
+    final String UPDATE =
+        "UPDATE executors SET host=?, port=?, active=? where id=?";
+
     try {
-      final int rows = runner.update(DELETE, host, port);
+      final int rows = this.dbOperator.update(UPDATE, executor.getHost(), executor.getPort(),
+          executor.isActive(), executor.getId());
+      if (rows == 0) {
+        throw new ExecutorManagerException("No executor with id :" + executor.getId());
+      }
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error inactivating executor "
+          + executor.getId(), e);
+    }
+  }
+
+  void removeExecutor(final String host, final int port) throws ExecutorManagerException {
+    final String DELETE = "DELETE FROM executors WHERE host=? AND port=?";
+    try {
+      final int rows = this.dbOperator.update(DELETE, host, port);
       if (rows == 0) {
         throw new ExecutorManagerException("No executor with host, port :"
             + "(" + host + "," + port + ")");
