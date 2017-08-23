@@ -1044,10 +1044,10 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     this.runner = createFlowRunner(eventCollector,
         FailureAction.CANCEL_ALL);
 
-    // 1. START FLOW
     runFlowRunnerInThread(this.runner);
     assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
+
     for (final JobRunner jobRunner : this.runner.getActiveJobRunners()) {
       if (jobRunner.getJobId().equals("joba")) {
         jobRunner.killBySLA();
