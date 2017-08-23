@@ -21,8 +21,9 @@ import java.sql.SQLException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-//TODO jamiesjc: This class is deprecated as we don't fetch active_execution_flow table any long.
-// So this clas should be removed onwards.
+//TODO jamiesjc: This class is deprecated as we don't fetch active_execution_flow table any longer.
+// So this class should be removed onwards.
+@Deprecated
 @Singleton
 public class ActiveExecutingFlowsDao {
 
