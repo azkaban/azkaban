@@ -412,7 +412,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final String userToProxy) throws HadoopSecurityManagerException {
     try {
       final HiveConf hiveConf = new HiveConf();
-      final IMetaStoreClient hiveClient = createMetaStoreClient(hiveConf);
+      final IMetaStoreClient hiveClient = createRetryingMetaStoreClient(hiveConf);
       hiveClient.cancelDelegationToken(t.encodeToUrlString());
     } catch (final Exception e) {
       throw new HadoopSecurityManagerException("Failed to cancel Token. "
@@ -475,7 +475,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ": "
         + hiveConf.get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname));
 
-    final IMetaStoreClient hiveClient = createMetaStoreClient(hiveConf);
+    final IMetaStoreClient hiveClient = createRetryingMetaStoreClient(hiveConf);
     final String hcatTokenStr =
         hiveClient.getDelegationToken(userToProxy, UserGroupInformation
             .getLoginUser().getShortUserName());
@@ -789,9 +789,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         hsProxy.getConnectAddress());
   }
 
-  // we use this function to create retrying metastore client
-  private IMetaStoreClient createMetaStoreClient(HiveConf hiveConf) throws MetaException {
-    // the hookLoader object is not used in this function, but we will keep it for potential storage handler settings.
+  /**
+   * Method to create a metastore client that retries on failures
+   */
+  private IMetaStoreClient createRetryingMetaStoreClient(HiveConf hiveConf) throws MetaException {
+    // Custom hook-loader to return a HiveMetaHook if the table is configured with a custom storage handler
     HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
       @Override
       public HiveMetaHook getHook(Table tbl) throws MetaException {
