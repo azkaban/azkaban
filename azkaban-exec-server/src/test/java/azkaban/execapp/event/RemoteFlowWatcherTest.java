@@ -35,10 +35,13 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +51,8 @@ import static org.mockito.Mockito.mock;
 
 public class RemoteFlowWatcherTest {
 
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private JobTypeManager jobtypeManager;
 
   @Before
@@ -71,14 +76,16 @@ public class RemoteFlowWatcherTest {
 
     final EventCollectorListener eventCollector = new EventCollectorListener();
 
+    final File workingDir1 = this.temporaryFolder.newFolder();
     final FlowRunner runner1 =
-        createFlowRunner(loader, eventCollector, "exec1", 1, null,
+        createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
     final Thread runner1Thread = new Thread(runner1);
 
+    final File workingDir2 = this.temporaryFolder.newFolder();
     final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
     final FlowRunner runner2 =
-        createFlowRunner(loader, eventCollector, "exec1", 2,
+        createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2,
             watcher, 2);
     final Thread runner2Thread = new Thread(runner2);
 
@@ -97,14 +104,16 @@ public class RemoteFlowWatcherTest {
 
     final EventCollectorListener eventCollector = new EventCollectorListener();
 
+    final File workingDir1 = this.temporaryFolder.newFolder();
     final FlowRunner runner1 =
-        createFlowRunner(loader, eventCollector, "exec1", 1, null,
+        createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
     final Thread runner1Thread = new Thread(runner1);
 
+    final File workingDir2 = this.temporaryFolder.newFolder();
     final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
     final FlowRunner runner2 =
-        createFlowRunner(loader, eventCollector, "exec1", 2,
+        createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2,
             watcher, 1);
     final Thread runner2Thread = new Thread(runner2);
 
@@ -121,14 +130,17 @@ public class RemoteFlowWatcherTest {
 
     final EventCollectorListener eventCollector = new EventCollectorListener();
 
+    final File workingDir1 = this.temporaryFolder.newFolder();
     final FlowRunner runner1 =
-        createFlowRunner(loader, eventCollector, "exec1", 1, null,
+        createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
     final Thread runner1Thread = new Thread(runner1);
 
+    final File workingDir2 = this.temporaryFolder.newFolder();
+
     final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
     final FlowRunner runner2 =
-        createFlowRunner(loader, eventCollector, "exec1-mod", 2,
+        createFlowRunner(workingDir2, loader, eventCollector, "exec1-mod", 2,
             watcher, 1);
     final Thread runner2Thread = new Thread(runner2);
 
@@ -209,19 +221,20 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private FlowRunner createFlowRunner(final ExecutorLoader loader,
+  private FlowRunner createFlowRunner(final File workingDir, final ExecutorLoader loader,
       final EventCollectorListener eventCollector, final String flowName, final int execId,
       final FlowWatcher watcher, final Integer pipeline) throws Exception {
-    return createFlowRunner(loader, eventCollector, flowName, execId, watcher, pipeline,
+    return createFlowRunner(workingDir, loader, eventCollector, flowName, execId, watcher, pipeline,
         new Props());
   }
 
-  private FlowRunner createFlowRunner(final ExecutorLoader loader,
+  private FlowRunner createFlowRunner(final File workingDir, final ExecutorLoader loader,
       final EventCollectorListener eventCollector, final String flowName, final int execId,
       final FlowWatcher watcher, final Integer pipeline, final Props azkabanProps)
       throws Exception {
     final File testDir = ExecutionsTestUtil.getFlowDir("exectest1");
-    final ExecutableFlow exFlow = prepareExecDir(testDir, flowName, execId);
+    final ExecutableFlow exFlow =
+        prepareExecDir(workingDir, testDir, flowName, execId);
     final ExecutionOptions options = exFlow.getExecutionOptions();
     if (watcher != null) {
       options.setPipelineLevel(pipeline);
@@ -248,9 +261,11 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private ExecutableFlow prepareExecDir(final File execDir,
+  private ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
       final String flowName, final int execId) throws IOException {
-    final File jsonFlowFile = new File(execDir, flowName + ".flow");
+    FileUtils.copyDirectory(execDir, workingDir);
+
+    final File jsonFlowFile = new File(workingDir, flowName + ".flow");
     final HashMap<String, Object> flowObj =
         (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 
@@ -258,7 +273,7 @@ public class RemoteFlowWatcherTest {
     final Flow flow = Flow.flowFromObject(flowObj);
     final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
     execFlow.setExecutionId(execId);
-    execFlow.setExecutionPath(execDir.getPath());
+    execFlow.setExecutionPath(workingDir.getPath());
     return execFlow;
   }
 }
