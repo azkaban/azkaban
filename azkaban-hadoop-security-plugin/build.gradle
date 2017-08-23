@@ -6,6 +6,7 @@ dependencies {
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
+    compileOnly deps.hiveExecCore
     compileOnly deps.hiveMetastore
 }
 
