@@ -34,6 +34,7 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   @Before
   public void setUp() throws Exception {
-    this.workingDir = temporaryFolder.newFolder();
+    this.workingDir = this.temporaryFolder.newFolder();
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
@@ -83,7 +84,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
-    final File dir = new File("../test/execution-test-data/embedded2");
+    final File dir = ExecutionsTestUtil.getFlowDir("embedded2");
     this.flowMap = FlowRunnerTestUtil
         .prepareProject(this.project, dir, this.logger, this.workingDir);
 
