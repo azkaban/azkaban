@@ -103,6 +103,23 @@ public class Constants {
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";
+
+    /*
+     * The max number of artifacts retained per project.
+     * Accepted Values:
+     * - 0 : Save all artifacts. No clean up is done on storage.
+     * - 1, 2, 3, ... (any +ve integer 'n') : Maintain 'n' latest versions in storage
+     *
+     * Note: Having an unacceptable value results in an exception and the service would REFUSE
+     * to start.
+     *
+     * Example:
+     * a) azkaban.storage.artifact.max.retention=all
+     *    implies save all artifacts
+     * b) azkaban.storage.artifact.max.retention=3
+     *    implies save latest 3 versions saved in storage.
+     **/
+    public static final String AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION = "azkaban.storage.artifact.max.retention";
   }
 
   public static class FlowProperties {
