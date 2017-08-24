@@ -19,7 +19,6 @@ package azkaban.executor;
 import azkaban.database.EncodingType;
 import azkaban.db.DatabaseOperator;
 import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -109,21 +108,11 @@ public class FetchActiveFlowDao {
           execFlows.put(id, null);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
           try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
+
             final Executor executor = new Executor(executorId, host, port, executorStatus);
             final ExecutionReference ref = new ExecutionReference(id, executor);
             execFlows.put(id, new Pair<>(ref, exFlow));
@@ -173,18 +162,11 @@ public class FetchActiveFlowDao {
           logger.error("Found a flow with empty data blob exec_id: " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
           try {
-            if (encType == EncodingType.GZIP) {
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
+
             final Executor executor = new Executor(executorId, host, port, executorStatus);
             final ExecutionReference ref = new ExecutionReference(id, executor);
             execFlows.add(new Pair<>(ref, exFlow));
