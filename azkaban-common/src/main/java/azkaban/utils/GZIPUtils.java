@@ -67,15 +67,13 @@ public class GZIPUtils {
 
   public static Object transformBytesToObject(final byte[] data, final EncodingType encType)
       throws IOException {
-    final Object flowObj;
     if (encType == EncodingType.GZIP) {
       final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-      flowObj = JSONUtils.parseJSONFromString(jsonString);
+      return JSONUtils.parseJSONFromString(jsonString);
     } else {
       final String jsonString = new String(data, "UTF-8");
-      flowObj = JSONUtils.parseJSONFromString(jsonString);
+      return JSONUtils.parseJSONFromString(jsonString);
     }
-    return flowObj;
   }
 
 }
