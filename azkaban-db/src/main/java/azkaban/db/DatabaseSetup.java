@@ -74,6 +74,7 @@ public class DatabaseSetup {
     findMissingTables();
     createNewTables();
   }
+
   private void findMissingTables() {
     final File directory = new File(this.scriptPath);
     final File[] createScripts =
@@ -88,6 +89,7 @@ public class DatabaseSetup {
       }
     }
   }
+
   private void createNewTables() throws SQLException, IOException {
     final Connection conn = this.dataSource.getConnection();
     conn.setAutoCommit(false);

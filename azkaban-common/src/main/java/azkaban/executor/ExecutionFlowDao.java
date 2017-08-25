@@ -298,26 +298,10 @@ public class ExecutionFlowDao {
 
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
-
-          /**
-           * The below code is a duplicate against many places, like azkaban.database.EncodingType
-           * TODO kunkun-tang: Extract these duplicates to a single static method.
-           */
           try {
-            // Convoluted way to inflate strings. Should find common package
-            // or helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
             execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
@@ -358,21 +342,10 @@ public class ExecutionFlowDao {
           logger.error("Found a flow with empty data blob exec_id: " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
           try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
             final ExecutionReference ref = new ExecutionReference(id);
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
@@ -407,19 +380,10 @@ public class ExecutionFlowDao {
 
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
           try {
-            if (encType == EncodingType.GZIP) {
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
-
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
             execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);

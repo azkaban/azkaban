@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import azkaban.database.EncodingType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -63,4 +64,16 @@ public class GZIPUtils {
     final byte[] response = unGzipBytes(bytes);
     return new String(response, encType);
   }
+
+  public static Object transformBytesToObject(final byte[] data, final EncodingType encType)
+      throws IOException {
+    if (encType == EncodingType.GZIP) {
+      final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+      return JSONUtils.parseJSONFromString(jsonString);
+    } else {
+      final String jsonString = new String(data, "UTF-8");
+      return JSONUtils.parseJSONFromString(jsonString);
+    }
+  }
+
 }

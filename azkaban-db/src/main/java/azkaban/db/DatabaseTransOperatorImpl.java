@@ -38,12 +38,12 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
   }
 
   /**
-   * The ID that was generated is maintained in Mysql server on a per-connection basis.
-   * This means that the value returned by the function to a given client is
-   * the first AUTO_INCREMENT value generated for most recent statement
+   * The ID that was generated is maintained in Mysql server on a per-connection basis. This means
+   * that the value returned by the function to a given client is the first AUTO_INCREMENT value
+   * generated for most recent statement
    *
-   * This value cannot be affected by other callers, even if they generate
-   * AUTO_INCREMENT values of their own.
+   * This value cannot be affected by other callers, even if they generate AUTO_INCREMENT values of
+   * their own.
    *
    * @return last insertion ID
    */
