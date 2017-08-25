@@ -22,10 +22,11 @@ package azkaban;
  *
  * Global place for storing constants.
  * Conventions:
- * - All internal constants to be put in the root level ie. {@link Constants} class
- * - All Configuration keys to be put in {@link ConfigurationKeys} class
- * - Flow level Properties keys go to {@link FlowProperties}
- * - Job  level Properties keys go to {@link JobProperties}
+ * <p>
+ * - All internal constants to be put in the root level ie. {@link Constants} class <p>
+ * - All Configuration keys to be put in {@link ConfigurationKeys} class <p>
+ * - Flow level Properties keys go to {@link FlowProperties} <p>
+ * - Job  level Properties keys go to {@link JobProperties} <p>
  */
 public class Constants {
 
