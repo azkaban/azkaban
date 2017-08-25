@@ -17,6 +17,7 @@
 package azkaban.security;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
@@ -42,8 +43,16 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.HiveMetaHook;
+import org.apache.hadoop.hive.metastore.HiveMetaHookLoader;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.IMetaStoreClient;
+import org.apache.hadoop.hive.metastore.RetryingMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.metadata.HiveStorageHandler;
+import org.apache.hadoop.hive.ql.metadata.HiveUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
@@ -403,7 +412,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final String userToProxy) throws HadoopSecurityManagerException {
     try {
       final HiveConf hiveConf = new HiveConf();
-      final HiveMetaStoreClient hiveClient = new HiveMetaStoreClient(hiveConf);
+      final IMetaStoreClient hiveClient = createRetryingMetaStoreClient(hiveConf);
       hiveClient.cancelDelegationToken(t.encodeToUrlString());
     } catch (final Exception e) {
       throw new HadoopSecurityManagerException("Failed to cancel Token. "
@@ -466,7 +475,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ": "
         + hiveConf.get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname));
 
-    final HiveMetaStoreClient hiveClient = new HiveMetaStoreClient(hiveConf);
+    final IMetaStoreClient hiveClient = createRetryingMetaStoreClient(hiveConf);
     final String hcatTokenStr =
         hiveClient.getDelegationToken(userToProxy, UserGroupInformation
             .getLoginUser().getShortUserName());
@@ -780,4 +789,29 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         hsProxy.getConnectAddress());
   }
 
+  /**
+   * Method to create a metastore client that retries on failures
+   */
+  private IMetaStoreClient createRetryingMetaStoreClient(HiveConf hiveConf) throws MetaException {
+    // Custom hook-loader to return a HiveMetaHook if the table is configured with a custom storage handler
+    HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
+      @Override
+      public HiveMetaHook getHook(Table tbl) throws MetaException {
+        if (tbl == null) {
+          return null;
+        }
+
+        try {
+          HiveStorageHandler storageHandler =
+              HiveUtils.getStorageHandler(hiveConf, tbl.getParameters().get(META_TABLE_STORAGE));
+          return storageHandler == null ? null : storageHandler.getMetaHook();
+        } catch (HiveException e) {
+          logger.error(e.toString());
+          throw new MetaException("Failed to get storage handler: " + e);
+        }
+      }
+    };
+
+    return RetryingMetaStoreClient.getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
+  }
 }
