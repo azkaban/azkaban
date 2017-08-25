@@ -22,7 +22,7 @@ task testJar(type: Jar, dependsOn: testClasses) {
 }
 
 configurations {
-    testOutput.extendsFrom (testCompile)
+    testOutput.extendsFrom(testCompile)
 }
 
 artifacts {
