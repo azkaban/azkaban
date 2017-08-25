@@ -23,10 +23,10 @@ azkaban.JMXTableView = Backbone.View.extend({
     "click .collapse-btn": "collapseRow"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
   },
 
-  formatValue: function(value) {
+  formatValue: function (value) {
     if (String(value).length != TIMESTAMP_LENGTH) {
       return value;
     }
@@ -40,7 +40,7 @@ azkaban.JMXTableView = Backbone.View.extend({
     return value + " (" + date.toISOString() + ")";
   },
 
-  queryJMX: function(evt) {
+  queryJMX: function (evt) {
     var target = evt.currentTarget;
     var id = target.id;
 
@@ -48,7 +48,8 @@ azkaban.JMXTableView = Backbone.View.extend({
     var tbody = id + "-tbody";
 
     var requestURL = contextURL + "/jmx";
-    var canonicalName=$(target).attr("domain") + ":name=" + $(target).attr("name");
+    var canonicalName = $(target).attr("domain") + ":name=" + $(target).attr(
+        "name");
 
     var data = {
       "ajax": "getAllMBeanAttributes",
@@ -59,7 +60,7 @@ azkaban.JMXTableView = Backbone.View.extend({
       data.hostPort = $(target).attr("hostPort");
     }
     var view = this;
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       var table = $('#' + tbody);
       $(table).empty();
 
@@ -88,7 +89,7 @@ azkaban.JMXTableView = Backbone.View.extend({
     $.get(requestURL, data, successHandler);
   },
 
-  queryRemote: function(evt) {
+  queryRemote: function (evt) {
     var target = evt.currentTarget;
     var id = target.id;
 
@@ -96,7 +97,8 @@ azkaban.JMXTableView = Backbone.View.extend({
     var tbody = id + "-tbody";
 
     var requestURL = contextURL + "/jmx";
-    var canonicalName = $(target).attr("domain") + ":name=" + $(target).attr("name");
+    var canonicalName = $(target).attr("domain") + ":name=" + $(target).attr(
+        "name");
     var hostPort = $(target).attr("hostport");
     var requestData = {
       "ajax": "getAllExecutorAttributes",
@@ -104,7 +106,7 @@ azkaban.JMXTableView = Backbone.View.extend({
       "hostPort": hostPort
     };
     var view = this;
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       var table = $('#' + tbody);
       $(table).empty();
 
@@ -128,25 +130,25 @@ azkaban.JMXTableView = Backbone.View.extend({
       }
 
       var child = $("#" + childID);
-        $(child).fadeIn();
+      $(child).fadeIn();
     };
     $.get(requestURL, requestData, successHandler);
   },
 
-  collapseRow: function(evt) {
+  collapseRow: function (evt) {
     $(evt.currentTarget).parent().parent().fadeOut();
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
 var remoteTables = new Array();
-$(function() {
-  jmxTableView = new azkaban.JMXTableView({el:$('#all-jmx')});
+$(function () {
+  jmxTableView = new azkaban.JMXTableView({el: $('#all-jmx')});
 
-  $(".remoteJMX").each(function(item) {
-    var newTableView = new azkaban.JMXTableView({el:$(this)});
+  $(".remoteJMX").each(function (item) {
+    var newTableView = new azkaban.JMXTableView({el: $(this)});
     remoteTables.push(newTableView);
   });
 });

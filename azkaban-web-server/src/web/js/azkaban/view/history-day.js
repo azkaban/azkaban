@@ -21,18 +21,17 @@ azkaban.DayDataModel = Backbone.Model.extend({});
 
 var dayByDayView;
 azkaban.DayByDayView = Backbone.View.extend({
-  events: {
-  },
-  initialize: function(settings) {
+  events: {},
+  initialize: function (settings) {
     this.svgns = "http://www.w3.org/2000/svg";
     this.svg = $(this.el).find('svg')[0];
     this.columnDayWidth = 100;
     this.columnHourHeight = 50;
-    this.columnHeight = 50*24;
+    this.columnHeight = 50 * 24;
 
     this.render(this);
   },
-  prepareData: function(self) {
+  prepareData: function (self) {
     var response = model.get("data");
     var start = data.start;
     var end = data.end;
@@ -52,7 +51,7 @@ azkaban.DayByDayView = Backbone.View.extend({
 
     }
   },
-  render: function(self) {
+  render: function (self) {
     var svg = self.svg;
     var svgns = self.svgns;
     var width = $(svg).width();
@@ -63,7 +62,7 @@ azkaban.DayByDayView = Backbone.View.extend({
   }
 });
 
-var showDialog = function(title, message) {
+var showDialog = function (title, message) {
   $('#messageTitle').text(title);
   $('#messageBox').text(message);
 
@@ -80,8 +79,7 @@ var showDialog = function(title, message) {
   });
 }
 
-
-$(function() {
+$(function () {
   var requestURL = contextURL + "/history";
 
   var start = new Date();
@@ -98,13 +96,14 @@ $(function() {
   console.log(end.getTime());
 
   dayDataModel = new azkaban.DayDataModel();
-  dayByDayView = new azkaban.DayByDayView({el:$('#dayByDayPanel'), model: dayDataModel});
+  dayByDayView = new azkaban.DayByDayView(
+      {el: $('#dayByDayPanel'), model: dayDataModel});
 
   $.get(
-    requestURL,
-    {"ajax":"fetch", "start": start.getTime(), "end": end.getTime()},
-    function(data) {
-      dayDataModel.set({data:data});
-    },
-    "json");
+      requestURL,
+      {"ajax": "fetch", "start": start.getTime(), "end": end.getTime()},
+      function (data) {
+        dayDataModel.set({data: data});
+      },
+      "json");
 });

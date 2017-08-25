@@ -13,9 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-$(function() {
+$(function () {
 
-  $("#submit-button").click(function(){
+  $("#submit-button").click(function () {
     console.log("======create note=====")
     var radioValue = $("input[name='note-type']:checked").val();
     var message = $('#message').val();
@@ -23,8 +23,13 @@ $(function() {
 
     var triggerURL = "/notes";
     var redirectURL = "/notes";
-    var requestData = {"ajax": "addNote", "type": radioValue, "message": message, "url": url};
-    var successHandler = function(data) {
+    var requestData = {
+      "ajax": "addNote",
+      "type": radioValue,
+      "message": message,
+      "url": url
+    };
+    var successHandler = function (data) {
       if (data.error) {
         $('#errorMsg').text(data.error);
       }
@@ -35,13 +40,13 @@ $(function() {
     $.post(triggerURL, requestData, successHandler, "json");
   });
 
-  $("#clear-button").click(function(){
+  $("#clear-button").click(function () {
 
     console.log("======form clear=====")
     var requestData = {"ajax": "removeNote"};
     var triggerURL = "/notes";
     var redirectURL = "/notes";
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       if (data.error) {
         $('#errorMsg').text(data.error);
       }

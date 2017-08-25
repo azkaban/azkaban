@@ -16,7 +16,7 @@
 
 var TIMESTAMP_LENGTH = 13;
 
-var getDuration = function(startMs, endMs) {
+var getDuration = function (startMs, endMs) {
   if (startMs) {
     if (startMs == -1) {
       return "-";
@@ -32,7 +32,7 @@ var getDuration = function(startMs, endMs) {
   return "-";
 }
 
-var formatDuration = function(duration, millisecSig) {
+var formatDuration = function (duration, millisecSig) {
   var diff = duration;
   var seconds = Math.floor(diff / 1000);
 
@@ -63,7 +63,7 @@ var formatDuration = function(duration, millisecSig) {
   return days + "d " + hours + "h " + mins + "m";
 }
 
-var getDateFormat = function(date) {
+var getDateFormat = function (date) {
   var year = date.getFullYear();
   var month = getTwoDigitStr(date.getMonth() + 1);
   var day = getTwoDigitStr(date.getDate());
@@ -77,7 +77,7 @@ var getDateFormat = function(date) {
   return datestring;
 }
 
-var getHourMinSec = function(date) {
+var getHourMinSec = function (date) {
   var hours = getTwoDigitStr(date.getHours());
   var minutes = getTwoDigitStr(date.getMinutes());
   var second = getTwoDigitStr(date.getSeconds());
@@ -86,7 +86,7 @@ var getHourMinSec = function(date) {
   return timestring;
 }
 
-var getTwoDigitStr = function(value) {
+var getTwoDigitStr = function (value) {
   if (value < 10) {
     return "0" + value;
   }
@@ -95,16 +95,20 @@ var getTwoDigitStr = function(value) {
 }
 
 // Verify if a cron String meets the requirement of Quartz Cron Expression.
-var validateQuartzStr = function (str){
-  var res = str.split(" "), len=res.length;
+var validateQuartzStr = function (str) {
+  var res = str.split(" "), len = res.length;
 
   // A valid Quartz Cron Expression should have 6 or 7 fields.
-  if(len<6 || len>=8) return "NUM_FIELDS_ERROR";
+  if (len < 6 || len >= 8) {
+    return "NUM_FIELDS_ERROR";
+  }
 
   // Quartz currently doesn't support specifying both a day-of-week and a day-of-month value
   // (you must currently use the ‘?’ character in one of these fields).
   // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html#notes
-  if(res[3] != '?' && res[5] != '?') return "DOW_DOM_STAR_ERROR";
+  if (res[3] != '?' && res[5] != '?') {
+    return "DOW_DOM_STAR_ERROR";
+  }
 
   //valid string
   return "VALID";
@@ -112,11 +116,11 @@ var validateQuartzStr = function (str){
 
 // Users enter values 1-7 for day of week, but UnixCronSyntax requires
 // day of week to be values 0-6. However, when using "#" syntax, we
-// do not want to apply the modulo operation to the number following "#" 
-var modifyStrToUnixCronSyntax = function (str){
+// do not want to apply the modulo operation to the number following "#"
+var modifyStrToUnixCronSyntax = function (str) {
   var res = str.split("#");
   res[0] = res[0].replace(/[0-7]/g, function upperToHyphenLower(match) {
-    return (parseInt(match)+6)%7;
+    return (parseInt(match) + 6) % 7;
   });
   return res.join("#");
 }
@@ -124,15 +128,16 @@ var modifyStrToUnixCronSyntax = function (str){
 // Unix Cron use 0-6 as Sun--Sat, but Quartz use 1-7. Due to later.js only supporting Unix Cron, we have to make this transition.
 // The detailed Unix Cron Syntax: https://en.wikipedia.org/wiki/Cron
 // The input is a 5 field string (without year) or 6 field String (with year).
-var transformFromQuartzToUnixCron = function (str){
+var transformFromQuartzToUnixCron = function (str) {
   var res = str.split(" ");
 
   // If the cron doesn't include year field
-  if(res.length == 5)
-    res[res.length -1] = modifyStrToUnixCronSyntax(res[res.length - 1]);
-  // If the cron Str does include year field
-  else if(res.length == 6)
+  if (res.length == 5) {
+    res[res.length - 1] = modifyStrToUnixCronSyntax(res[res.length - 1]);
+  }// If the cron Str does include year field
+  else if (res.length == 6) {
     res[res.length - 2] = modifyStrToUnixCronSyntax(res[res.length - 2]);
+  }
 
   return res.join(" ");
 }
