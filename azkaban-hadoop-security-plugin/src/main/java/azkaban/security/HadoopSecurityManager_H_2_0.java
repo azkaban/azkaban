@@ -103,8 +103,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       "mapreduce.jobtracker.address";
   public static final String HADOOP_YARN_RM = "yarn.resourcemanager.address";
   /**
-   * the key that will be used to set proper signature for each of the hcat
-   * token when multiple hcat tokens are required to be fetched.
+   * the key that will be used to set proper signature for each of the hcat token when multiple hcat
+   * tokens are required to be fetched.
    */
   public static final String HIVE_TOKEN_SIGNATURE_KEY =
       "hive.metastore.token.signature";
@@ -117,10 +117,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       "fs.hdfs.impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
   /**
-   * the settings to be defined by user indicating if there are hcat locations
-   * other than the default one the system should pre-fetch hcat token from.
-   * Note: Multiple thrift uris are supported, use comma to separate the values,
-   * values are case insensitive.
+   * the settings to be defined by user indicating if there are hcat locations other than the
+   * default one the system should pre-fetch hcat token from. Note: Multiple thrift uris are
+   * supported, use comma to separate the values, values are case insensitive.
    */
   private static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
@@ -249,8 +248,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   /**
-   * Create a proxied user based on the explicit user name, taking other
-   * parameters necessary from properties file.
+   * Create a proxied user based on the explicit user name, taking other parameters necessary from
+   * properties file.
    */
   @Override
   public synchronized UserGroupInformation getProxiedUser(final String userToProxy)
@@ -282,8 +281,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   /**
-   * Create a proxied user, taking all parameters, including which user to proxy
-   * from provided Properties.
+   * Create a proxied user, taking all parameters, including which user to proxy from provided
+   * Properties.
    */
   @Override
   public UserGroupInformation getProxiedUser(final Props userProp)
@@ -455,8 +454,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   /**
-   * function to fetch hcat token as per the specified hive configuration and
-   * then store the token in to the credential store specified .
+   * function to fetch hcat token as per the specified hive configuration and then store the token
+   * in to the credential store specified .
    *
    * @param userToProxy String value indicating the name of the user the token will be fetched for.
    * @param hiveConf the configuration based off which the hive client will be initialized.
@@ -673,8 +672,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   /**
-   * Prepare token file.
-   * Writes credentials to a token file and sets appropriate permissions to keep the file secure
+   * Prepare token file. Writes credentials to a token file and sets appropriate permissions to keep
+   * the file secure
    *
    * @param user user to be proxied
    * @param credentials Credentials to be written to file
@@ -812,6 +811,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       }
     };
 
-    return RetryingMetaStoreClient.getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
+    return RetryingMetaStoreClient
+        .getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
   }
 }
