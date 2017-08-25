@@ -29,7 +29,6 @@ public class VelocityTemplateTestUtil {
   }
 
   /**
-   *
    * @param source the rendered template as a String
    * @param target the String fragment within the template
    * @return - boolean

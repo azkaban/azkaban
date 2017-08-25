@@ -18,7 +18,8 @@ public final class PageUtils {
    * "lockdown.upload.projects" is set. The button is displayed for admin users and users with
    * upload permissions.
    */
-  public static void hideUploadButtonWhenNeeded(final Page page, final Session session, final UserManager userManager,
+  public static void hideUploadButtonWhenNeeded(final Page page, final Session session,
+      final UserManager userManager,
       final Boolean lockdownUploadProjects) {
     final User user = session.getUser();
 

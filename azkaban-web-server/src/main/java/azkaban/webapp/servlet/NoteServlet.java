@@ -33,11 +33,11 @@ import org.apache.log4j.Logger;
 public class NoteServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger .getLogger(NoteServlet.class);
+  private static final Logger logger = Logger.getLogger(NoteServlet.class);
 
   public static String type = null;
   public static String message = null;
-  public static String url= null;
+  public static String url = null;
   private AzkabanWebServer server;
 
   @Override
@@ -49,25 +49,26 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
-    if(isAdmin(session.getUser())) {
+    if (isAdmin(session.getUser())) {
       handleNotePageLoad(req, resp, session);
-    } else  {
+    } else {
       warningNonAdminUsers(resp, "The requested user doesn't have admin permission");
     }
   }
 
-  private void warningNonAdminUsers(final HttpServletResponse resp, final String message) throws IOException {
+  private void warningNonAdminUsers(final HttpServletResponse resp, final String message)
+      throws IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     ret.put("error", message);
     this.writeJSON(resp, ret);
   }
 
   private void handleNotePageLoad(final HttpServletRequest req,
-                                     final HttpServletResponse resp, final Session session) throws ServletException,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
     final Page page = newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/notepage.vm");
+        "azkaban/webapp/servlet/velocity/notepage.vm");
 
     page.add("note_type", type);
     page.add("note_message", message);
@@ -77,7 +78,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
 
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
-                            final Session session) throws ServletException, IOException {
+      final Session session) throws ServletException, IOException {
     if (isAdmin(session.getUser()) && hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
@@ -94,7 +95,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
     try {
       if (ajaxName.equals("addNote")) {
         ajaxAddNotes(req, ret);
-      } else if (ajaxName.equals("removeNote")){
+      } else if (ajaxName.equals("removeNote")) {
         ajaxRemoveNotes(ret);
       } else {
         ret.put("error", "Can not find the ajax operation");
@@ -106,9 +107,9 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxAddNotes(final HttpServletRequest req,
-                            final Map<String, Object> ret) throws ServletException {
+      final Map<String, Object> ret) throws ServletException {
     type = getParam(req, "type");
-    message= getParam(req, "message");
+    message = getParam(req, "message");
     url = getParam(req, "url");
     logger.info("receive note message. Type: " + type + " message: " + message + " url: " + url);
     ret.put("status", "success");
@@ -116,7 +117,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
 
   private void ajaxRemoveNotes(final Map<String, Object> ret) throws ServletException {
     type = null;
-    message= null;
+    message = null;
     url = null;
     logger.info("removing note from memory.");
     ret.put("status", "success");

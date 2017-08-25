@@ -526,8 +526,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * validate readiness of a project and user permission and use projectManager
-   * to purge the project if things looks good
+   * validate readiness of a project and user permission and use projectManager to purge the project
+   * if things looks good
    **/
   private void handlePurgeProject(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
@@ -1030,8 +1030,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * this only returns user permissions, but not group permissions and proxy
-   * users
+   * this only returns user permissions, but not group permissions and proxy users
    */
   private void ajaxGetPermissions(final Project project, final HashMap<String, Object> ret) {
     final ArrayList<HashMap<String, Object>> permissions =

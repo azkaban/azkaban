@@ -185,8 +185,8 @@ public class LoginAbstractAzkabanServletTest {
   }
 
   /**
-   * Simulates users passing username/password via URI
-   * where it would be logged by Azkaban Web Server
+   * Simulates users passing username/password via URI where it would be logged by Azkaban Web
+   * Server
    */
   @Test
   public void testLoginRevealingCredentialsShouldThrowFailure() throws Exception {
