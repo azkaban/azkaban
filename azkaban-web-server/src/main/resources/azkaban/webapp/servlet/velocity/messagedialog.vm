@@ -14,21 +14,22 @@
  * the License.
 *#
 
-      <script type="text/javascript" src="${context}/js/azkaban/view/message-dialog.js?version=20161031"></script>
+<script type="text/javascript"
+        src="${context}/js/azkaban/view/message-dialog.js?version=20161031"></script>
 
-      <div class="modal" id="azkaban-message-dialog">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-              <h4 class="modal-title" id="azkaban-message-dialog-title"></h4>
-            </div><!-- /modal-header -->
-            <div class="modal-body">
-              <p id="azkaban-message-dialog-text"></p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-primary" data-dismiss="modal">Continue</button>
-            </div>
-          </div>
-        </div>
+<div class="modal" id="azkaban-message-dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="azkaban-message-dialog-title"></h4>
+      </div><!-- /modal-header -->
+      <div class="modal-body">
+        <p id="azkaban-message-dialog-text"></p>
       </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>

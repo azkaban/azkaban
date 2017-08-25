@@ -17,25 +17,25 @@
 ## Alert message set by servlet.
 
 #if ($error_message != "null")
-      <div class="alert alert-danger alert-dismissable">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        $error_message
-      </div>
+<div class="alert alert-danger alert-dismissable">
+  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  $error_message
+</div>
 #elseif ($warn_message != "null")
-      <div class="alert alert-warning alert-dismissable">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        $warn_message
-      </div>
+<div class="alert alert-warning alert-dismissable">
+  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  $warn_message
+</div>
 #elseif ($success_message != "null")
-      <div class="alert alert-success">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        $success_message
-      </div>
+<div class="alert alert-success">
+  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  $success_message
+</div>
 #end
 
 ## Alert message triggered by JavaScript.
 
-      <div class="alert alert-dismissable alert-messaging" id="messaging">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <p id="messaging-message"></p>
-      </div>
+<div class="alert alert-dismissable alert-messaging" id="messaging">
+  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  <p id="messaging-message"></p>
+</div>
