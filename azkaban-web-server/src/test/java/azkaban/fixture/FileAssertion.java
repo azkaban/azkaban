@@ -33,8 +33,8 @@ public class FileAssertion {
   /**
    * Return the html based content surrounded with the HTML tag.
    *
-   * This is useful to compare a fragment of HTML content with a proper expected HTML file
-   * so that the expected file can be viewed more easily with a browser.
+   * This is useful to compare a fragment of HTML content with a proper expected HTML file so that
+   * the expected file can be viewed more easily with a browser.
    *
    * @param content the content
    * @return string

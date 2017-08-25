@@ -98,22 +98,19 @@ import org.mortbay.thread.QueuedThreadPool;
 /**
  * The Azkaban Jetty server class
  *
- * Global azkaban properties for setup. All of them are optional unless
- * otherwise marked: azkaban.name - The displayed name of this instance.
- * azkaban.label - Short descriptor of this Azkaban instance. azkaban.color -
- * Theme color azkaban.temp.dir - Temp dir used by Azkaban for various file
- * uses. web.resource.dir - The directory that contains the static web files.
+ * Global azkaban properties for setup. All of them are optional unless otherwise marked:
+ * azkaban.name - The displayed name of this instance. azkaban.label - Short descriptor of this
+ * Azkaban instance. azkaban.color - Theme color azkaban.temp.dir - Temp dir used by Azkaban for
+ * various file uses. web.resource.dir - The directory that contains the static web files.
  * default.timezone.id - The timezone code. I.E. America/Los Angeles
  *
- * user.manager.class - The UserManager class used for the user manager. Default
- * is XmlUserManager. project.manager.class - The ProjectManager to load
- * projects project.global.properties - The base properties inherited by all
- * projects and jobs
+ * user.manager.class - The UserManager class used for the user manager. Default is XmlUserManager.
+ * project.manager.class - The ProjectManager to load projects project.global.properties - The base
+ * properties inherited by all projects and jobs
  *
- * jetty.maxThreads - # of threads for jetty jetty.ssl.port - The ssl port used
- * for sessionizing. jetty.keystore - Jetty keystore . jetty.keypassword - Jetty
- * keystore password jetty.truststore - Jetty truststore jetty.trustpassword -
- * Jetty truststore password
+ * jetty.maxThreads - # of threads for jetty jetty.ssl.port - The ssl port used for sessionizing.
+ * jetty.keystore - Jetty keystore . jetty.keypassword - Jetty keystore password jetty.truststore -
+ * Jetty truststore jetty.trustpassword - Jetty truststore password
  */
 public class AzkabanWebServer extends AzkabanServer {
 

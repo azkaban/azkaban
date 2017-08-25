@@ -25,14 +25,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import org.junit.Test;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
- * Test response to deploy with either warn or error reports.
- * If a report has any errors, a RestLiServiceException should be thrown.
- * Warnings should not elicit an exception.
- * If an exception does get raised, it should carry an HTTP 400 status
+ * Test response to deploy with either warn or error reports. If a report has any errors, a
+ * RestLiServiceException should be thrown. Warnings should not elicit an exception. If an exception
+ * does get raised, it should carry an HTTP 400 status
  */
 
 public class DeployProjectTest {
