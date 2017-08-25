@@ -19,6 +19,8 @@ package azkaban.database;
 /**
  * Used for when we store text data. Plain uses UTF8 encoding.
  */
+// TODO kunkun-tang: This class needs to move to azkaban-db module, as database module should be
+// Deprecated soon.
 public enum EncodingType {
   PLAIN(1), GZIP(2);
 
