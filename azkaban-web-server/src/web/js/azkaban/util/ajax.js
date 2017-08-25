@@ -15,7 +15,7 @@
  */
 
 function ajaxCall(requestURL, data, callback) {
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error == "session") {
       // We need to relogin.
       var errorDialog = document.getElementById("invalid-session");
@@ -35,7 +35,7 @@ function ajaxCall(requestURL, data, callback) {
       }
     }
     else {
-      callback.call(this,data);
+      callback.call(this, data);
     }
   };
   $.get(requestURL, data, successHandler, "json");
@@ -43,7 +43,7 @@ function ajaxCall(requestURL, data, callback) {
 
 function executeFlow(executingData) {
   executeURL = contextURL + "/executor";
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error) {
       flowExecuteDialogView.hideExecutionOptionPanel();
       messageDialogView.show("Error Executing Flow", data.error);
@@ -51,10 +51,10 @@ function executeFlow(executingData) {
     else {
       flowExecuteDialogView.hideExecutionOptionPanel();
       messageDialogView.show("Flow submitted", data.message,
-        function() {
-          var redirectURL = contextURL + "/executor?execid=" + data.execid;
-          window.location.href = redirectURL;
-        }
+          function () {
+            var redirectURL = contextURL + "/executor?execid=" + data.execid;
+            window.location.href = redirectURL;
+          }
       );
     }
   };
@@ -63,13 +63,13 @@ function executeFlow(executingData) {
 }
 
 function fetchFlowInfo(model, projectName, flowId, execId) {
-  var fetchData = {"project": projectName, "ajax":"flowInfo", "flow":flowId};
+  var fetchData = {"project": projectName, "ajax": "flowInfo", "flow": flowId};
   if (execId) {
     fetchData.execid = execId;
   }
 
   var executeURL = contextURL + "/executor";
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error) {
       alert(data.error);
     }
@@ -88,7 +88,7 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
         "concurrentOption": data.concurrentOptions,
         "pipelineLevel": data.pipelineLevel,
         "pipelineExecution": data.pipelineExecution,
-        "queueLevel":data.queueLevel
+        "queueLevel": data.queueLevel
       });
     }
     model.trigger("change:flowinfo");
@@ -108,11 +108,11 @@ function fetchFlow(model, projectName, flowId, sync) {
   sync = sync ? true : false;
   var managerUrl = contextURL + "/manager";
   var fetchData = {
-    "ajax" : "fetchflowgraph",
-    "project" : projectName,
-    "flow" : flowId
+    "ajax": "fetchflowgraph",
+    "project": projectName,
+    "flow": flowId
   };
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error) {
       alert(data.error);
     }
@@ -131,19 +131,19 @@ function fetchFlow(model, projectName, flowId, sync) {
       }
 
       for (var i = 0; i < data.edges.length; ++i) {
-         var edge = data.edges[i];
+        var edge = data.edges[i];
 
-         if (!nodeMap[edge.target].in) {
+        if (!nodeMap[edge.target].in) {
           nodeMap[edge.target].in = {};
-         }
-         var targetInMap = nodeMap[edge.target].in;
-         targetInMap[edge.from] = nodeMap[edge.from];
+        }
+        var targetInMap = nodeMap[edge.target].in;
+        targetInMap[edge.from] = nodeMap[edge.from];
 
-         if (!nodeMap[edge.from].out) {
+        if (!nodeMap[edge.from].out) {
           nodeMap[edge.from].out = {};
-         }
-         var sourceOutMap = nodeMap[edge.from].out;
-         sourceOutMap[edge.target] = nodeMap[edge.target];
+        }
+        var sourceOutMap = nodeMap[edge.from].out;
+        sourceOutMap[edge.target] = nodeMap[edge.target];
       }
 
       model.set({nodeMap: nodeMap});
@@ -160,14 +160,14 @@ function fetchFlow(model, projectName, flowId, sync) {
 }
 
 /**
-* Checks to see if a flow is running.
-*
-*/
+ * Checks to see if a flow is running.
+ *
+ */
 function flowExecutingStatus(projectName, flowId) {
   var requestURL = contextURL + "/executor";
 
   var executionIds;
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error == "session") {
       // We need to relogin.
       var errorDialog = document.getElementById("invalid-session");
@@ -198,7 +198,8 @@ function flowExecutingStatus(projectName, flowId) {
       "project": projectName,
       "flow": flowId
     },
-    error: function(data) {},
+    error: function (data) {
+    },
     success: successHandler
   });
 

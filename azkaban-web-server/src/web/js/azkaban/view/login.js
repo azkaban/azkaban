@@ -23,11 +23,11 @@ azkaban.LoginView = Backbone.View.extend({
     'keypress input': 'handleKeyPress'
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     $('#error-msg').hide();
   },
 
-  handleLogin: function(evt) {
+  handleLogin: function (evt) {
     console.log("Logging in.");
     var username = $("#username").val();
     var password = $("#password").val();
@@ -42,7 +42,7 @@ azkaban.LoginView = Backbone.View.extend({
         username: username,
         password: password
       },
-      success: function(data) {
+      success: function (data) {
         if (data.error) {
           $('#error-msg').text(data.error);
           $('#error-msg').slideDown('fast');
@@ -54,16 +54,16 @@ azkaban.LoginView = Backbone.View.extend({
     });
   },
 
-  handleKeyPress: function(evt) {
+  handleKeyPress: function (evt) {
     if (evt.charCode == 13 || evt.keyCode == 13) {
       this.handleLogin();
     }
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
-$(function() {
+$(function () {
   loginView = new azkaban.LoginView({el: $('#login-form')});
 });

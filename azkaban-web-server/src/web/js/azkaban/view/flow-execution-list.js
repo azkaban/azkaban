@@ -24,7 +24,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     //"contextmenu .flow-progress-bar": "handleProgressBoxClick"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     this.model.bind('change:graph', this.renderJobs, this);
     this.model.bind('change:update', this.updateJobs, this);
 
@@ -33,13 +33,14 @@ azkaban.ExecutionListView = Backbone.View.extend({
     executingBody.level = 0;
   },
 
-  renderJobs: function(evt) {
+  renderJobs: function (evt) {
     var data = this.model.get("data");
     var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
     var executingBody = $("#executableBody");
     this.updateJobRow(data.nodes, executingBody);
 
-    var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+    var flowLastTime = data.endTime == -1 ? (new Date()).getTime()
+        : data.endTime;
     var flowStartTime = data.startTime;
     this.updateProgressBar(data, flowStartTime, flowLastTime);
   },
@@ -64,7 +65,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 //    contextMenuView.show(evt, menu);
 //  },
 
-  updateJobs: function(evt) {
+  updateJobs: function (evt) {
     var update = this.model.get("update");
     var lastTime = update.endTime == -1
         ? (new Date()).getTime()
@@ -83,12 +84,14 @@ azkaban.ExecutionListView = Backbone.View.extend({
     this.updateProgressBar(data, flowStartTime, flowLastTime);
   },
 
-  updateJobRow: function(nodes, body) {
+  updateJobRow: function (nodes, body) {
     if (!nodes) {
       return;
     }
 
-    nodes.sort(function(a,b) { return a.startTime - b.startTime; });
+    nodes.sort(function (a, b) {
+      return a.startTime - b.startTime;
+    });
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 
@@ -119,7 +122,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
         $(endTimeTd).text(getDateFormat(enddate));
       }
 
-      var progressBar = $(row).find("> td.timeline > .flow-progress > .main-progress");
+      var progressBar = $(row).find(
+          "> td.timeline > .flow-progress > .main-progress");
       if (!progressBar.hasClass(node.status)) {
         for (var j = 0; j < statusList.length; ++j) {
           var status = statusList[j];
@@ -141,7 +145,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
             $(attemptBox).addClass("flow-progress-bar");
             $(attemptBox).addClass("attempt");
 
-            $(attemptBox).css("float","left");
+            $(attemptBox).css("float", "left");
             $(attemptBox).bind("contextmenu", attemptRightClick);
 
             $(progressBar).before(attemptBox);
@@ -153,7 +157,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
       var elapsedTime = $(row).find("> td.elapsedTime");
       if (node.endTime == -1) {
-        $(elapsedTime).text(getDuration(node.startTime, (new Date()).getTime()));
+        $(elapsedTime).text(
+            getDuration(node.startTime, (new Date()).getTime()));
       }
       else {
         $(elapsedTime).text(getDuration(node.startTime, node.endTime));
@@ -167,20 +172,22 @@ azkaban.ExecutionListView = Backbone.View.extend({
     }
   },
 
-  updateProgressBar: function(data, flowStartTime, flowLastTime) {
+  updateProgressBar: function (data, flowStartTime, flowLastTime) {
     if (data.startTime == -1) {
       return;
     }
 
     var outerWidth = $(".flow-progress").css("width");
     if (outerWidth) {
-      if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
+      if (outerWidth.substring(outerWidth.length - 2, outerWidth.length)
+          == "px") {
         outerWidth = outerWidth.substring(0, outerWidth.length - 2);
       }
       outerWidth = parseInt(outerWidth);
     }
 
-    var parentLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+    var parentLastTime = data.endTime == -1 ? (new Date()).getTime()
+        : data.endTime;
     var parentStartTime = data.startTime;
 
     var factor = outerWidth / (flowLastTime - flowStartTime);
@@ -194,7 +201,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
       // calculate the progress
       var tr = node.joblistrow;
       var outerProgressBar = $(tr).find("> td.timeline > .flow-progress");
-      var progressBar = $(tr).find("> td.timeline > .flow-progress > .main-progress");
+      var progressBar = $(tr).find(
+          "> td.timeline > .flow-progress > .main-progress");
       var offsetLeft = 0;
       var minOffset = 0;
       progressBar.attempt = 0;
@@ -205,7 +213,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
       // Add all the attempts
       if (node.pastAttempts) {
-        var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.nestedId + "&attempt=" +  node.pastAttempts.length;
+        var logURL = contextURL + "/executor?execid=" + execId + "&job="
+            + node.nestedId + "&attempt=" + node.pastAttempts.length;
         var anchor = $(tr).find("> td.details > a");
         if (anchor.length != 0) {
           $(anchor).attr("href", logURL);
@@ -217,27 +226,34 @@ azkaban.ExecutionListView = Backbone.View.extend({
           var pastAttempt = node.pastAttempts[p];
           var pastAttemptBox = pastAttempt.attemptBox;
 
-          var left = (pastAttempt.startTime - flowStartTime)*factor;
-          var width =  Math.max((pastAttempt.endTime - pastAttempt.startTime)*factor, 3);
+          var left = (pastAttempt.startTime - flowStartTime) * factor;
+          var width = Math.max((pastAttempt.endTime - pastAttempt.startTime)
+              * factor, 3);
 
           var margin = left - offsetLeft;
           $(pastAttemptBox).css("margin-left", left - offsetLeft);
           $(pastAttemptBox).css("width", width);
 
-          $(pastAttemptBox).attr("title", "attempt:" + p + "  start:" + getHourMinSec(new Date(pastAttempt.startTime)) + "  end:" + getHourMinSec(new Date(pastAttempt.endTime)));
+          $(pastAttemptBox).attr("title", "attempt:" + p + "  start:"
+              + getHourMinSec(new Date(pastAttempt.startTime)) + "  end:"
+              + getHourMinSec(new Date(pastAttempt.endTime)));
           offsetLeft += width + margin;
         }
       }
 
-      var nodeLastTime = node.endTime == -1 ? (new Date()).getTime() : node.endTime;
-      var left = Math.max((node.startTime-parentStartTime)*factor, minOffset);
+      var nodeLastTime = node.endTime == -1 ? (new Date()).getTime()
+          : node.endTime;
+      var left = Math.max((node.startTime - parentStartTime) * factor,
+          minOffset);
       var margin = left - offsetLeft;
-      var width = Math.max((nodeLastTime - node.startTime)*factor, 3);
+      var width = Math.max((nodeLastTime - node.startTime) * factor, 3);
       width = Math.min(width, outerWidth);
 
       progressBar.css("margin-left", left)
       progressBar.css("width", width);
-      progressBar.attr("title", "attempt:" + progressBar.attempt + "  start:" + getHourMinSec(new Date(node.startTime)) + "  end:" + getHourMinSec(new Date(node.endTime)));
+      progressBar.attr("title", "attempt:" + progressBar.attempt + "  start:"
+          + getHourMinSec(new Date(node.startTime)) + "  end:" + getHourMinSec(
+              new Date(node.endTime)));
 
       if (node.nodes) {
         this.updateProgressBar(node, flowStartTime, flowLastTime);
@@ -245,7 +261,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     }
   },
 
-  toggleExpandFlow: function(flow) {
+  toggleExpandFlow: function (flow) {
     console.log("Toggle Expand");
     var tr = flow.joblistrow;
     var subFlowRow = tr.subflowrow;
@@ -267,7 +283,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     }
   },
 
-  addNodeRow: function(node, body) {
+  addNodeRow: function (node, body) {
     var self = this;
     var tr = document.createElement("tr");
     var tdName = document.createElement("td");
@@ -280,7 +296,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     var tdDetails = document.createElement("td");
     node.joblistrow = tr;
     tr.node = node;
-    var padding = 15*$(body)[0].level;
+    var padding = 15 * $(body)[0].level;
 
     $(tr).append(tdName);
     $(tr).append(tdType);
@@ -318,17 +334,18 @@ azkaban.ExecutionListView = Backbone.View.extend({
     $(outerProgressBar).append(progressBox);
     $(tdTimeline).append(outerProgressBar);
 
-    var requestURL = contextURL + "/manager?project=" + projectName + "&job=" + node.id + "&history";
+    var requestURL = contextURL + "/manager?project=" + projectName + "&job="
+        + node.id + "&history";
     var a = document.createElement("a");
     $(a).attr("href", requestURL);
     $(a).text(node.id);
     $(tdName).append(a);
-    if (node.type=="flow") {
+    if (node.type == "flow") {
       var expandIcon = document.createElement("div");
       $(expandIcon).addClass("listExpand");
       $(tdName).append(expandIcon);
       $(expandIcon).addClass("expandarrow glyphicon glyphicon-chevron-down");
-      $(expandIcon).click(function(evt) {
+      $(expandIcon).click(function (evt) {
         var parent = $(evt.currentTarget).parents("tr")[0];
         self.toggleExpandFlow(parent.node);
       });
@@ -339,7 +356,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
     //$(status).attr("id", node.id + "-status-div");
     tdStatus.appendChild(status);
 
-    var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.nestedId;
+    var logURL = contextURL + "/executor?execid=" + execId + "&job="
+        + node.nestedId;
     if (node.attempt) {
       logURL += "&attempt=" + node.attempt;
     }
@@ -375,17 +393,26 @@ azkaban.ExecutionListView = Backbone.View.extend({
   }
 });
 
-var attemptRightClick = function(event) {
+var attemptRightClick = function (event) {
   var target = event.currentTarget;
   var job = target.job;
   var attempt = target.attempt;
 
   var jobId = event.currentTarget.jobid;
-  var requestURL = contextURL + "/executor?project=" + projectName + "&execid=" + execId + "&job=" + job + "&attempt=" + attempt;
+  var requestURL = contextURL + "/executor?project=" + projectName + "&execid="
+      + execId + "&job=" + job + "&attempt=" + attempt;
 
   var menu = [
-    {title: "Open Attempt Log...", callback: function() {window.location.href=requestURL;}},
-    {title: "Open Attempt Log in New Window...", callback: function() {window.open(requestURL);}}
+    {
+      title: "Open Attempt Log...", callback: function () {
+      window.location.href = requestURL;
+    }
+    },
+    {
+      title: "Open Attempt Log in New Window...", callback: function () {
+      window.open(requestURL);
+    }
+    }
   ];
 
   contextMenuView.show(event, menu);

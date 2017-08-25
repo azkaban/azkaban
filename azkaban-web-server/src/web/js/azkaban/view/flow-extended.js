@@ -1,8 +1,8 @@
 azkaban.FlowExtendedViewPanel = Backbone.View.extend({
   events: {
-    "click .closeInfoPanel" : "handleClosePanel"
+    "click .closeInfoPanel": "handleClosePanel"
   },
-  initialize: function(settings) {
+  initialize: function (settings) {
     //this.model.bind('change:flowinfo', this.changeFlowInfo, this);
     $(this.el).show();
     $(this.el).draggable({cancel: ".dataContent", containment: "document"});
@@ -10,13 +10,13 @@ azkaban.FlowExtendedViewPanel = Backbone.View.extend({
     this.render();
     $(this.el).hide();
   },
-  showExtendedView: function(evt) {
+  showExtendedView: function (evt) {
     var event = evt;
 
     $(this.el).css({top: evt.pageY, left: evt.pageX});
     $(this.el).show();
   },
-  render: function(self) {
+  render: function (self) {
     console.log("Changing title");
     $(this.el).find(".nodeId").text(this.model.get("id"));
     $(this.el).find(".nodeType").text(this.model.get("type"));
@@ -50,13 +50,18 @@ azkaban.FlowExtendedViewPanel = Backbone.View.extend({
       $(svgDataFlow).append(svgGraph);
       $(svgDataFlow).resizable();
 
-      this.graphView = new azkaban.SvgGraphView({el: svgDataFlow, model: this.model, render: true, rightClick:  { "node": nodeClickCallback, "graph": graphClickCallback }})
+      this.graphView = new azkaban.SvgGraphView({
+        el: svgDataFlow,
+        model: this.model,
+        render: true,
+        rightClick: {"node": nodeClickCallback, "graph": graphClickCallback}
+      })
     }
     else {
       $(this.el).find(".dataFlow").hide();
     }
   },
-  handleClosePanel: function(self) {
+  handleClosePanel: function (self) {
     $(this.el).hide();
   }
 });

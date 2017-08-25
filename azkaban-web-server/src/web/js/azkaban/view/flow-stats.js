@@ -18,12 +18,11 @@ $.namespace('azkaban');
 
 azkaban.FlowStatsModel = Backbone.Model.extend({});
 azkaban.FlowStatsView = Backbone.View.extend({
-  events: {
-  },
+  events: {},
 
   histogram: true,
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     this.model.bind('change:view', this.handleChangeView, this);
     this.model.bind('render', this.render, this);
     if (settings.histogram != null) {
@@ -31,19 +30,19 @@ azkaban.FlowStatsView = Backbone.View.extend({
     }
   },
 
-  render: function(evt) {
+  render: function (evt) {
   },
 
-  show: function(execId) {
+  show: function (execId) {
     this.analyzeExecution(execId);
   },
 
-  fetchJobs: function(execId) {
+  fetchJobs: function (execId) {
     var requestURL = contextURL + "/executor";
-    var requestData = {"execid": execId, "ajax":"fetchexecflow"};
+    var requestData = {"execid": execId, "ajax": "fetchexecflow"};
     var jobs = [];
-    var successHandler = function(data) {
-      data.nodes.sort(function(a, b) {
+    var successHandler = function (data) {
+      data.nodes.sort(function (a, b) {
         return a.startTime - b.startTime;
       });
       jobs = data.nodes;
@@ -58,7 +57,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
     return jobs;
   },
 
-  fetchJobStats: function(jobId, execId) {
+  fetchJobStats: function (jobId, execId) {
     var requestURL = contextURL + "/executor";
     var requestData = {
       "execid": execId,
@@ -67,7 +66,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
       "ajax": "fetchExecJobStats"
     };
     var stats = null;
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       stats = data;
     };
     $.ajax({
@@ -80,7 +79,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
     return stats;
   },
 
-  updateStatsMapred: function(state, data, job) {
+  updateStatsMapred: function (state, data, job) {
     var stats = data.stats;
     var mappers = parseInt(state.totalMappers);
     var reducers = parseInt(state.totalReducers);
@@ -97,7 +96,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
 
   },
 
-  updateStatsConf: function(conf, data, job) {
+  updateStatsConf: function (conf, data, job) {
     var stats = data.stats;
     if (conf == null) {
       data.warnings.push("No job conf available for job " + job);
@@ -162,7 +161,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
     }
   },
 
-  updateStatsCounters: function(state, data, job) {
+  updateStatsCounters: function (state, data, job) {
     var stats = data.stats;
     if (state.counters == null) {
       data.warnings.push("No job counters available for job " + job);
@@ -198,7 +197,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
     }
   },
 
-  updateStats: function(jobStats, data, job) {
+  updateStats: function (jobStats, data, job) {
     var stats = data.stats;
     var state = jobStats.state;
     var conf = jobStats.conf;
@@ -208,11 +207,11 @@ azkaban.FlowStatsView = Backbone.View.extend({
     this.updateStatsCounters(state, data, job);
   },
 
-  finalizeStats: function(data) {
+  finalizeStats: function (data) {
     data.success = true;
   },
 
-  analyzeExecution: function(execId) {
+  analyzeExecution: function (execId) {
     var jobs = this.fetchJobs(execId);
     if (jobs == null) {
       this.model.set({'data': null});
@@ -316,26 +315,26 @@ azkaban.FlowStatsView = Backbone.View.extend({
     this.model.trigger('render');
   },
 
-  render: function(evt) {
+  render: function (evt) {
     var view = this;
     var data = this.model.get('data');
     if (data == null) {
-      var msg = { message: "Error retrieving flow stats."};
-      dust.render("flowstats-no-data", msg, function(err, out) {
+      var msg = {message: "Error retrieving flow stats."};
+      dust.render("flowstats-no-data", msg, function (err, out) {
         view.display(out);
       });
     }
     else if (data.success == false) {
-      dust.render("flowstats-no-data", data, function(err, out) {
+      dust.render("flowstats-no-data", data, function (err, out) {
         view.display(out);
       });
     }
     else {
       var histogram = this.histogram;
-      dust.render("flowstats", data, function(err, out) {
+      dust.render("flowstats", data, function (err, out) {
         view.display(out);
         if (histogram == true) {
-          var yLabelFormatCallback = function(y) {
+          var yLabelFormatCallback = function (y) {
             var seconds = y / 1000.0;
             return seconds.toString() + " s";
           };
@@ -353,7 +352,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
     }
   },
 
-  display: function(out) {
+  display: function (out) {
     $('#flow-stats-container').html(out);
   },
 });

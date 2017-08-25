@@ -14,7 +14,9 @@
  * the License.
  */
 
-var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "CANCELLED", "UNKNOWN", "PAUSED", "SKIPPED", "QUEUED"];
+var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING",
+  "WAITING", "KILLED", "DISABLED", "READY", "CANCELLED", "UNKNOWN", "PAUSED",
+  "SKIPPED", "QUEUED"];
 var statusStringMap = {
   "QUEUED": "Queued",
   "SKIPPED": "Skipped",

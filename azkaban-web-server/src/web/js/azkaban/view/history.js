@@ -22,33 +22,35 @@ azkaban.AdvFilterView = Backbone.View.extend({
     "click #filter-btn": "handleAdvFilter"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     $('#datetimebegin').datetimepicker();
     $('#datetimeend').datetimepicker();
-    $('#datetimebegin').on('change.dp', function(e) {
+    $('#datetimebegin').on('change.dp', function (e) {
       $('#datetimeend').data('DateTimePicker').setStartDate(e.date);
     });
-    $('#datetimeend').on('change.dp', function(e) {
+    $('#datetimeend').on('change.dp', function (e) {
       $('#datetimebegin').data('DateTimePicker').setEndDate(e.date);
     });
     $('#adv-filter-error-msg').hide();
   },
 
-  handleAdvFilter: function(evt) {
+  handleAdvFilter: function (evt) {
     console.log("handleAdv");
     var projcontain = $('#projcontain').val();
     var flowcontain = $('#flowcontain').val();
     var usercontain = $('#usercontain').val();
     var status = $('#status').val();
-    var begin  = $('#datetimebegin').val();
-    var end    = $('#datetimeend').val();
+    var begin = $('#datetimebegin').val();
+    var end = $('#datetimeend').val();
 
     console.log("filtering history");
 
     var historyURL = contextURL + "/history"
     var redirectURL = contextURL + "/schedule"
 
-    var requestURL = historyURL + "?advfilter=true" + "&projcontain=" + projcontain + "&flowcontain=" + flowcontain + "&usercontain=" + usercontain + "&status=" + status + "&begin=" + begin + "&end=" + end ;
+    var requestURL = historyURL + "?advfilter=true" + "&projcontain="
+        + projcontain + "&flowcontain=" + flowcontain + "&usercontain="
+        + usercontain + "&status=" + status + "&begin=" + begin + "&end=" + end;
     window.location = requestURL;
 
     /*
@@ -67,13 +69,13 @@ azkaban.AdvFilterView = Backbone.View.extend({
   */
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
-$(function() {
+$(function () {
   filterView = new azkaban.AdvFilterView({el: $('#adv-filter')});
-  $('#adv-filter-btn').click( function() {
+  $('#adv-filter-btn').click(function () {
     $('#adv-filter').modal();
   });
 });
