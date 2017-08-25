@@ -17,11 +17,12 @@
 
 package azkaban.soloserver;
 
-import static azkaban.ServiceProvider.*;
-import static azkaban.executor.ExecutorManager.*;
-import static java.util.Objects.*;
-import static org.apache.commons.io.FileUtils.*;
-import static org.junit.Assert.*;
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
