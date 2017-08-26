@@ -34,8 +34,7 @@ import org.apache.log4j.Logger;
 /**
  * An improved version of java.lang.Process.
  *
- * Output is read by separate threads to avoid deadlock and logged to log4j
- * loggers.
+ * Output is read by separate threads to avoid deadlock and logged to log4j loggers.
  */
 public class AzkabanProcess {
 
@@ -150,8 +149,7 @@ public class AzkabanProcess {
   /**
    * Await the start of this process
    *
-   * When this method returns, the job process has been created and a this.processId has been
-   * set.
+   * When this method returns, the job process has been created and a this.processId has been set.
    *
    * @throws InterruptedException if the thread is interrupted while waiting.
    */

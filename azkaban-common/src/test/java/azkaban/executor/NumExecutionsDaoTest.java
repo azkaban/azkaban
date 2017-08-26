@@ -70,7 +70,6 @@ public class NumExecutionsDaoTest {
     flow1.setStatus(Status.PREPARING);
     this.executionFlowDao.uploadExecutableFlow(flow1);
 
-
     final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     flow2.setStatus(Status.RUNNING);
     this.executionFlowDao.uploadExecutableFlow(flow2);
@@ -82,7 +81,8 @@ public class NumExecutionsDaoTest {
     final int count = this.numExecutionsDao.fetchNumExecutableFlows();
     assertThat(count).isEqualTo(3);
 
-    final int flow2Count = this.numExecutionsDao.fetchNumExecutableFlows(1, "derived-member-data-2");
+    final int flow2Count = this.numExecutionsDao
+        .fetchNumExecutableFlows(1, "derived-member-data-2");
     assertThat(flow2Count).isEqualTo(2);
   }
 

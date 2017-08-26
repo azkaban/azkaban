@@ -39,7 +39,7 @@ public class ExecutorEventsDao {
   }
 
   public void postExecutorEvent(final Executor executor, final EventType type, final String user,
-                                final String message) throws ExecutorManagerException {
+      final String message) throws ExecutorManagerException {
     final String INSERT_PROJECT_EVENTS =
         "INSERT INTO executor_events (executor_id, event_type, event_time, username, message) values (?,?,?,?,?)";
     try {
@@ -51,7 +51,7 @@ public class ExecutorEventsDao {
   }
 
   public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
-                                                  final int offset)
+      final int offset)
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(ExecutorLogsResultHandler.SELECT_EXECUTOR_EVENTS_ORDER,

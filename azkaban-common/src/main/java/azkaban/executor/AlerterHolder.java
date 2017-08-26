@@ -22,7 +22,6 @@ import azkaban.utils.Emailer;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
-import azkaban.metrics.CommonMetrics;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.File;

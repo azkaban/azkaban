@@ -8,6 +8,7 @@ import org.junit.Test;
 
 
 public class UserUtilsTest {
+
   @Test
   public void testAdminUserCanUploadProject() throws UserManagerException {
     final UserManager userManager = TestUtils.createTestXmlUserManager();

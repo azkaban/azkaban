@@ -48,8 +48,8 @@ public final class FactorComparator<T> {
   }
 
   /**
-   * static function to generate an instance of the class.
-   * refer to the constructor for the param definitions.
+   * static function to generate an instance of the class. refer to the constructor for the param
+   * definitions.
    */
   public static <T> FactorComparator<T> create(final String factorName, final int weight,
       final Comparator<T> comparator) {

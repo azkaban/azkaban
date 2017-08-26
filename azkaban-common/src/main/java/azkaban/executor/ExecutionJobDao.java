@@ -174,9 +174,9 @@ public class ExecutionJobDao {
   }
 
   public List<ExecutableJobInfo> fetchJobHistory(final int projectId,
-                                                 final String jobId,
-                                                 final int skip,
-                                                 final int size) throws ExecutorManagerException {
+      final String jobId,
+      final int skip,
+      final int size) throws ExecutorManagerException {
     try {
       final List<ExecutableJobInfo> info =
           this.dbOperator.query(FetchExecutableJobHandler.FETCH_PROJECT_EXECUTABLE_NODE,
@@ -229,6 +229,7 @@ public class ExecutionJobDao {
 
   private static class FetchExecutableJobHandler implements
       ResultSetHandler<List<ExecutableJobInfo>> {
+
     private static final String FETCH_EXECUTABLE_NODE =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt "
@@ -247,7 +248,7 @@ public class ExecutionJobDao {
     @Override
     public List<ExecutableJobInfo> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Collections.<ExecutableJobInfo> emptyList();
+        return Collections.<ExecutableJobInfo>emptyList();
       }
 
       final List<ExecutableJobInfo> execNodes = new ArrayList<>();
@@ -274,6 +275,7 @@ public class ExecutionJobDao {
 
   private static class FetchExecutableJobPropsHandler implements
       ResultSetHandler<Pair<Props, Props>> {
+
     private static final String FETCH_OUTPUT_PARAM_EXECUTABLE_NODE =
         "SELECT output_params FROM execution_jobs WHERE exec_id=? AND job_id=?";
     private static final String FETCH_INPUT_PARAM_EXECUTABLE_NODE =
@@ -335,6 +337,7 @@ public class ExecutionJobDao {
 
   private static class FetchExecutableJobAttachmentsHandler implements
       ResultSetHandler<String> {
+
     private static final String FETCH_ATTACHMENTS_EXECUTABLE_NODE =
         "SELECT attachments FROM execution_jobs WHERE exec_id=? AND job_id=?";
 

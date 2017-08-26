@@ -88,7 +88,7 @@ public class ExecutionFlowDao {
   }
 
   List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-                                        final int skip, final int num)
+      final int skip, final int num)
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_HISTORY,
@@ -109,8 +109,8 @@ public class ExecutionFlowDao {
   }
 
   List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-                                        final int skip, final int num,
-                                        final Status status)
+      final int skip, final int num,
+      final Status status)
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_STATUS,
@@ -133,9 +133,9 @@ public class ExecutionFlowDao {
   }
 
   List<ExecutableFlow> fetchFlowHistory(final String projContain, final String flowContains,
-                                        final String userNameContains, final int status,
-                                        final long startTime, final long endTime,
-                                        final int skip, final int num)
+      final String userNameContains, final int status,
+      final long startTime, final long endTime,
+      final int skip, final int num)
       throws ExecutorManagerException {
     String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
     final List<Object> params = new ArrayList<>();
@@ -318,6 +318,7 @@ public class ExecutionFlowDao {
    */
   private static class FetchQueuedExecutableFlows implements
       ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
+
     // Select queued unassigned flows
     private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows"
@@ -360,6 +361,7 @@ public class ExecutionFlowDao {
 
   private static class FetchRecentlyFinishedFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
+
     // Execution_flows table is already indexed by end_time
     private static final String FETCH_RECENTLY_FINISHED_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "

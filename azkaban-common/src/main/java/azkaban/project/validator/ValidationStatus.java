@@ -1,8 +1,8 @@
 package azkaban.project.validator;
 
 /**
- * Status of the ValidationReport. It also represents the severity of each rule.
- * The order of severity for the status is PASS < WARN < ERROR.
+ * Status of the ValidationReport. It also represents the severity of each rule. The order of
+ * severity for the status is PASS < WARN < ERROR.
  */
 public enum ValidationStatus {
   PASS("PASS"),

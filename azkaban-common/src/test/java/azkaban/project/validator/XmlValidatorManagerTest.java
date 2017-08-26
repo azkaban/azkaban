@@ -12,8 +12,8 @@ public class XmlValidatorManagerTest {
   private final Props baseProps = new Props();
 
   /**
-   * Test that if the validator directory does not exist, XmlValidatorManager
-   * should still load the default validator.
+   * Test that if the validator directory does not exist, XmlValidatorManager should still load the
+   * default validator.
    */
   @Test
   public void testNoValidatorsDir() {

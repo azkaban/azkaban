@@ -34,12 +34,11 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Xml implementation of the UserManager. Looks for the property
- * user.manager.xml.file in the azkaban properties.
+ * Xml implementation of the UserManager. Looks for the property user.manager.xml.file in the
+ * azkaban properties.
  *
- * The xml to be in the following form: <azkaban-users> <user
- * username="username" password="azkaban" roles="admin" groups="azkaban"/>
- * </azkaban-users>
+ * The xml to be in the following form: <azkaban-users> <user username="username" password="azkaban"
+ * roles="admin" groups="azkaban"/> </azkaban-users>
  */
 public class XmlUserManager implements UserManager {
 

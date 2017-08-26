@@ -34,8 +34,7 @@ public class QueuedExecutions {
   }
 
   /**
-   * Wraps BoundedQueue Take method to have a corresponding update in
-   * queuedFlowMap lookup table
+   * Wraps BoundedQueue Take method to have a corresponding update in queuedFlowMap lookup table
    */
   public Pair<ExecutionReference, ExecutableFlow> fetchHead()
       throws InterruptedException {
@@ -136,8 +135,7 @@ public class QueuedExecutions {
   }
 
   /**
-   * Fetch Activereference for an execution. Returns null, if execution not in
-   * queue
+   * Fetch Activereference for an execution. Returns null, if execution not in queue
    */
   public ExecutionReference getReference(final int executionId) {
     if (hasExecution(executionId)) {

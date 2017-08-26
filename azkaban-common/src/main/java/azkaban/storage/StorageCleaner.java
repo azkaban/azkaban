@@ -87,10 +87,9 @@ public class StorageCleaner {
    * From the storage perspective, cleanup just needs the {@link Storage#delete(String)} API to
    * work.
    *
-   * Failure cases:
-   * - If the storage cleanup fails, the cleanup will be attempted again on the next upload
-   * - If the storage cleanup succeeds and the DB cleanup fails, the DB will be cleaned up in the
-   * next attempt.
+   * Failure cases: - If the storage cleanup fails, the cleanup will be attempted again on the next
+   * upload - If the storage cleanup succeeds and the DB cleanup fails, the DB will be cleaned up in
+   * the next attempt.
    *
    * @param projectId project ID
    */

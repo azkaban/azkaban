@@ -69,8 +69,8 @@ public class ExecutionLogsDaoTest {
   public void testSmallUploadLog() throws ExecutorManagerException {
     final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
     final File[] smalllog =
-        { new File(logDir, "log1.log"), new File(logDir, "log2.log"),
-            new File(logDir, "log3.log") };
+        {new File(logDir, "log1.log"), new File(logDir, "log2.log"),
+            new File(logDir, "log3.log")};
 
     this.executionLogsDao.uploadLogFile(1, "smallFiles", 0, smalllog);
 
@@ -92,8 +92,8 @@ public class ExecutionLogsDaoTest {
 
     // Multiple of 255 for Henry the Eigth
     final File[] largelog =
-        { new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"),
-            new File(logDir, "largeLog3.log") };
+        {new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"),
+            new File(logDir, "largeLog3.log")};
 
     this.executionLogsDao.uploadLogFile(1, "largeFiles", 0, largelog);
 

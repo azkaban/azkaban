@@ -15,8 +15,7 @@ import java.util.Collection;
 import org.apache.log4j.Logger;
 
 /**
- * Responsible for validating the job callback related properties at project
- * upload time
+ * Responsible for validating the job callback related properties at project upload time
  *
  * @author hluu
  */

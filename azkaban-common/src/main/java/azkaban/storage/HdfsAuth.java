@@ -58,9 +58,8 @@ public class HdfsAuth {
   }
 
   /**
-   * API to authorize HDFS access.
-   * This logins in the configured user via the keytab.
-   * If the user is already logged in then it renews the TGT.
+   * API to authorize HDFS access. This logins in the configured user via the keytab. If the user is
+   * already logged in then it renews the TGT.
    */
   public void authorize() {
     if (this.isSecurityEnabled) {
