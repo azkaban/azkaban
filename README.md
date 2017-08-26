@@ -36,19 +36,15 @@ project. You can import it into your IDE using the `build.gradle` file in the ro
 Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
 
 ### Code Style
-Azkaban follows Google code style. The template file, `intellij-java-google-style.xml`, can be found in the root 
-directory.
+Azkaban follows a slightly modified [Google code style](http://google.github.io/styleguide/). The template file, 
+`az-intellij-style.xml`, can be found in the root directory.
 
 Follow [the Intellij's code style help](https://www.jetbrains.com/help/idea/2017.1/code-style.html) 
-to import and set up the style.
- 
-Note: 
-To use different styles for different projects try
- "You can copy the IDE scheme to the current project, using the Copy to Project... command."
+to import and set up the style. Make sure to activate the AzkabanStyle by
+ "copy the IDE scheme to the current project, using the Copy to Project... command."
 
-
-We also recommend 
-intellij's [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) to 
+Install and enable the intellij's [save actions plugin](https://github
+.com/dubreuia/intellij-plugin-save-actions) to 
 reformat/refactor code automatically:
 
 Please turn on all the options except 
