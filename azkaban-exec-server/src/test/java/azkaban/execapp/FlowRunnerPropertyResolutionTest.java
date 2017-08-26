@@ -45,23 +45,17 @@ import org.junit.Test;
 /**
  * Test the property resolution of jobs in a flow.
  *
- * The tests are contained in execpropstest, and should be resolved in the
- * following fashion, where the later props take precedence over the previous
- * ones.
+ * The tests are contained in execpropstest, and should be resolved in the following fashion, where
+ * the later props take precedence over the previous ones.
  *
- * 1. Global props (set in the FlowRunner)
- * 2. Shared job props (depends on job directory)
- * 3. Flow Override properties
- * 4. Previous job outputs to the embedded flow (Only if contained in embedded flow)
- * 5. Embedded flow properties (Only if contained in embedded flow)
- * 6. Previous job outputs (if exists)
- * 7. Job Props
+ * 1. Global props (set in the FlowRunner) 2. Shared job props (depends on job directory) 3. Flow
+ * Override properties 4. Previous job outputs to the embedded flow (Only if contained in embedded
+ * flow) 5. Embedded flow properties (Only if contained in embedded flow) 6. Previous job outputs
+ * (if exists) 7. Job Props
  *
- * The test contains the following structure:
- * job2 -> innerFlow (job1 -> job4 ) -> job3
+ * The test contains the following structure: job2 -> innerFlow (job1 -> job4 ) -> job3
  *
- * job2 and 4 are in nested directories so should have different shared
- * properties than other jobs.
+ * job2 and 4 are in nested directories so should have different shared properties than other jobs.
  */
 public class FlowRunnerPropertyResolutionTest {
 
