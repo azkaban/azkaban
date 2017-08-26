@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.Logger;
 
 /**
- * Responsible keeping track of job related MBean attributes through listening
- * to job related events.
+ * Responsible keeping track of job related MBean attributes through listening to job related
+ * events.
  *
  * @author hluu
  */

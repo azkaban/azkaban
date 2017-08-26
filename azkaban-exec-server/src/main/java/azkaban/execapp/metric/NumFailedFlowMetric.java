@@ -41,8 +41,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
   }
 
   /**
-   * Listen for events to maintain correct value of number of failed flows
-   * {@inheritDoc}
+   * Listen for events to maintain correct value of number of failed flows {@inheritDoc}
    *
    * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
    */

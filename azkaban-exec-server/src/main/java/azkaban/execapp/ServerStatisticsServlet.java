@@ -183,8 +183,8 @@ public class ServerStatisticsServlet extends HttpServlet {
   }
 
   /**
-   * call the data providers to fill the returning data container for statistics data.
-   * This function refreshes the static cached copy of data in case if necessary.
+   * call the data providers to fill the returning data container for statistics data. This function
+   * refreshes the static cached copy of data in case if necessary.
    */
   protected synchronized void populateStatistics(final boolean noCache) {
     //check again before starting the work.

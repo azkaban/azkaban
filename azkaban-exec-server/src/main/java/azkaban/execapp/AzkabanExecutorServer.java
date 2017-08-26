@@ -339,14 +339,13 @@ public class AzkabanExecutorServer {
   }
 
   /**
-   * Load a custom class, which is provided by a configuration
-   * CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY.
+   * Load a custom class, which is provided by a configuration CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY.
    *
-   * This method will try to instantiate an instance of this custom class and
-   * with given properties as the argument in the constructor.
+   * This method will try to instantiate an instance of this custom class and with given properties
+   * as the argument in the constructor.
    *
-   * Basically the custom class must have a constructor that takes an argument
-   * with type Properties.
+   * Basically the custom class must have a constructor that takes an argument with type
+   * Properties.
    */
   private void loadCustomJMXAttributeProcessor(final Props props) {
     final String jmxAttributeEmitter =
@@ -495,9 +494,8 @@ public class AzkabanExecutorServer {
   }
 
   /**
-   * Shutdown the server.
-   * - performs a safe shutdown. Waits for completion of current tasks
-   * - spawns a shutdown thread and returns immediately.
+   * Shutdown the server. - performs a safe shutdown. Waits for completion of current tasks - spawns
+   * a shutdown thread and returns immediately.
    */
   public void shutdown() {
     logger.warn("Shutting down AzkabanExecutorServer...");
@@ -513,12 +511,9 @@ public class AzkabanExecutorServer {
   }
 
   /**
-   * (internal API)
-   * Note: This should be run in a separate thread.
+   * (internal API) Note: This should be run in a separate thread.
    *
-   * Shutdown the server. (blocking call)
-   * - waits for jobs to finish
-   * - doesn't accept any new jobs
+   * Shutdown the server. (blocking call) - waits for jobs to finish - doesn't accept any new jobs
    */
   private void shutdownInternal() {
     getFlowRunnerManager().shutdown();
