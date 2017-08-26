@@ -34,10 +34,9 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 /**
- * The ScheduleManager stores and executes the schedule. It uses a single thread
- * instead and waits until correct loading time for the flow. It will not remove
- * the flow from the schedule when it is run, which can potentially allow the
- * flow to and overlap each other.
+ * The ScheduleManager stores and executes the schedule. It uses a single thread instead and waits
+ * until correct loading time for the flow. It will not remove the flow from the schedule when it is
+ * run, which can potentially allow the flow to and overlap each other.
  *
  * TODO kunkun-tang: When new AZ quartz Scheduler comes, we will remove this class.
  */
@@ -55,9 +54,7 @@ public class ScheduleManager implements TriggerAgent {
       new LinkedHashMap<>();
 
   /**
-   * Give the schedule manager a loader class that will properly load the
-   * schedule.
-   *
+   * Give the schedule manager a loader class that will properly load the schedule.
    */
   @Inject
   public ScheduleManager(final ScheduleLoader loader) {
@@ -88,8 +85,7 @@ public class ScheduleManager implements TriggerAgent {
   }
 
   /**
-   * Shutdowns the scheduler thread. After shutdown, it may not be safe to use
-   * it again.
+   * Shutdowns the scheduler thread. After shutdown, it may not be safe to use it again.
    */
   @Override
   public void shutdown() {
@@ -98,7 +94,6 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Retrieves a copy of the list of schedules.
-   *
    */
   public synchronized List<Schedule> getSchedules()
       throws ScheduleManagerException {
@@ -109,7 +104,6 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Returns the scheduled flow for the flow name
-   *
    */
   public Schedule getSchedule(final int projectId, final String flowId)
       throws ScheduleManagerException {
@@ -131,7 +125,6 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Removes the flow from the schedule if it exists.
-   *
    */
   public synchronized void removeSchedule(final Schedule sched) {
     final Pair<Integer, String> identityPairMap = sched.getScheduleIdentityPair();
@@ -151,26 +144,27 @@ public class ScheduleManager implements TriggerAgent {
   }
 
   public Schedule scheduleFlow(final int scheduleId,
-                               final int projectId,
-                               final String projectName,
-                               final String flowName,
-                               final String status,
-                               final long firstSchedTime,
-                               final long endSchedTime,
-                               final DateTimeZone timezone,
-                               final ReadablePeriod period,
-                               final long lastModifyTime,
-                               final long nextExecTime,
-                               final long submitTime,
-                               final String submitUser,
-                               final ExecutionOptions execOptions,
-                               final List<SlaOption> slaOptions) {
+      final int projectId,
+      final String projectName,
+      final String flowName,
+      final String status,
+      final long firstSchedTime,
+      final long endSchedTime,
+      final DateTimeZone timezone,
+      final ReadablePeriod period,
+      final long lastModifyTime,
+      final long nextExecTime,
+      final long submitTime,
+      final String submitUser,
+      final ExecutionOptions execOptions,
+      final List<SlaOption> slaOptions) {
     final Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
         firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
         submitTime, submitUser, execOptions, slaOptions, null);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
-            + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null ? "(non-recurring)"
+            + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null
+            ? "(non-recurring)"
             : period));
 
     insertSchedule(sched);
@@ -178,20 +172,20 @@ public class ScheduleManager implements TriggerAgent {
   }
 
   public Schedule cronScheduleFlow(final int scheduleId,
-                                   final int projectId,
-                                   final String projectName,
-                                   final String flowName,
-                                   final String status,
-                                   final long firstSchedTime,
-                                   final long endSchedTime,
-                                   final DateTimeZone timezone,
-                                   final long lastModifyTime,
-                                   final long nextExecTime,
-                                   final long submitTime,
-                                   final String submitUser,
-                                   final ExecutionOptions execOptions,
-                                   final List<SlaOption> slaOptions,
-                                   final String cronExpression) {
+      final int projectId,
+      final String projectName,
+      final String flowName,
+      final String status,
+      final long firstSchedTime,
+      final long endSchedTime,
+      final DateTimeZone timezone,
+      final long lastModifyTime,
+      final long nextExecTime,
+      final long submitTime,
+      final String submitUser,
+      final ExecutionOptions execOptions,
+      final List<SlaOption> slaOptions,
+      final String cronExpression) {
     final Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
             firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
@@ -203,6 +197,7 @@ public class ScheduleManager implements TriggerAgent {
     insertSchedule(sched);
     return sched;
   }
+
   /**
    * Schedules the flow, but doesn't save the schedule afterwards.
    */

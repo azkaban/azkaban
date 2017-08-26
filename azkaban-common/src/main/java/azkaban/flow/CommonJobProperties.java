@@ -27,8 +27,7 @@ public class CommonJobProperties {
   public static final String JOB_TYPE = "type";
 
   /**
-   * Force a node to be a root node in a flow, even if there are other jobs
-   * dependent on it.
+   * Force a node to be a root node in a flow, even if there are other jobs dependent on it.
    */
   public static final String ROOT_NODE = "root.node";
 
@@ -48,8 +47,7 @@ public class CommonJobProperties {
   public static final String RETRY_BACKOFF = "retry.backoff";
 
   /**
-   * Comma delimited list of email addresses for both failure and success
-   * messages
+   * Comma delimited list of email addresses for both failure and success messages
    */
   public static final String NOTIFY_EMAILS = "notify.emails";
 
@@ -103,8 +101,7 @@ public class CommonJobProperties {
   public static final String JOB_ID = "azkaban.job.id";
 
   /**
-   * The execution id. This should be unique per flow, but may not be due to
-   * restarts.
+   * The execution id. This should be unique per flow, but may not be due to restarts.
    */
   public static final String EXEC_ID = "azkaban.flow.execid";
 
@@ -129,8 +126,7 @@ public class CommonJobProperties {
   public static final String PROJECT_LAST_CHANGED_DATE = "azkaban.flow.projectlastchangeddate";
 
   /**
-   * The version of the project the flow is running. This may change if a forced
-   * hotspot occurs.
+   * The version of the project the flow is running. This may change if a forced hotspot occurs.
    */
   public static final String PROJECT_VERSION = "azkaban.flow.projectversion";
 

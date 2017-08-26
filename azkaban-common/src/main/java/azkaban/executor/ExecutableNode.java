@@ -157,12 +157,12 @@ public class ExecutableNode {
     this.updateTime = updateTime;
   }
 
-  public void setKilledBySLA(boolean killedBySLA) {
-    this.killedBySLA = killedBySLA;
-  }
-
   public boolean isKilledBySLA() {
     return this.killedBySLA;
+  }
+
+  public void setKilledBySLA(final boolean killedBySLA) {
+    this.killedBySLA = killedBySLA;
   }
 
   public void addOutNode(final String exNode) {

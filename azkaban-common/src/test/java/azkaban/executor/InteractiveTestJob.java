@@ -63,6 +63,12 @@ public class InteractiveTestJob extends AbstractProcessJob {
     testJobs.clear();
   }
 
+  public static void clearTestJobs(final String... names) {
+    for (final String name : names) {
+      assertNotNull(testJobs.remove(name));
+    }
+  }
+
   @Override
   public void run() throws Exception {
     final String nestedFlowPath =
@@ -147,11 +153,5 @@ public class InteractiveTestJob extends AbstractProcessJob {
   public void cancel() throws InterruptedException {
     info("Killing job");
     failJob();
-  }
-
-  public static void clearTestJobs(final String... names) {
-    for (String name : names) {
-      assertNotNull(testJobs.remove(name));
-    }
   }
 }

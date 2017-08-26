@@ -1,6 +1,7 @@
 package azkaban.user;
 
 public final class UserUtils {
+
   private UserUtils() {
 
   }

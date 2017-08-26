@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Utility class for getting system memory information
  *
- * Note:
- * This check is designed for Linux only.
+ * Note: This check is designed for Linux only.
  */
 class OsMemoryUtil {
 
@@ -84,16 +83,10 @@ class OsMemoryUtil {
   }
 
   /**
-   * Example file:
-   * $ cat /proc/meminfo
-   * MemTotal:       65894008 kB
-   * MemFree:        59400536 kB
-   * Buffers:          409348 kB
-   * Cached:          4290236 kB
-   * SwapCached:            0 kB
+   * Example file: $ cat /proc/meminfo MemTotal:       65894008 kB MemFree:        59400536 kB
+   * Buffers:          409348 kB Cached:          4290236 kB SwapCached:            0 kB
    *
-   * Make the method package private to make unit testing easier.
-   * Otherwise it can be made private.
+   * Make the method package private to make unit testing easier. Otherwise it can be made private.
    *
    * @param line the text for a memory usage statistics we are interested in
    * @return size of the memory. unit kB. 0 if there is an error.

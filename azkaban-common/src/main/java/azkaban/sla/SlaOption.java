@@ -49,7 +49,7 @@ public class SlaOption {
   public static final String ACTION_KILL_JOB = "SlaKillJob";
   private static final DateTimeFormatter fmt = DateTimeFormat
       .forPattern("MM/dd, YYYY HH:mm");
-  
+
   private String type;
   private Map<String, Object> info;
   private List<String> actions;

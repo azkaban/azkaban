@@ -45,13 +45,11 @@ public interface ProjectLoader {
   Project fetchProjectByName(String name) throws ProjectManagerException;
 
   /**
-   * Should create an empty project with the given name and user and adds it to
-   * the data store. It will auto assign a unique id for this project if
-   * successful.
+   * Should create an empty project with the given name and user and adds it to the data store. It
+   * will auto assign a unique id for this project if successful.
    *
-   * If an active project of the same name exists, it will throw an exception.
-   * If the name and description of the project exceeds the store's constraints,
-   * it will throw an exception.
+   * If an active project of the same name exists, it will throw an exception. If the name and
+   * description of the project exceeds the store's constraints, it will throw an exception.
    *
    * @throws ProjectManagerException if an active project of the same name exists.
    */
@@ -65,9 +63,8 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Adds and updates the user permissions. Does not check if the user is valid.
-   * If the permission doesn't exist, it adds. If the permission exists, it
-   * updates.
+   * Adds and updates the user permissions. Does not check if the user is valid. If the permission
+   * doesn't exist, it adds. If the permission exists, it updates.
    */
   void updatePermission(Project project, String name, Permission perm,
       boolean isGroup) throws ProjectManagerException;
@@ -82,8 +79,7 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Stores logs for a particular project. Will soft fail rather than throw
-   * exception.
+   * Stores logs for a particular project. Will soft fail rather than throw exception.
    *
    * @param message return true if the posting was success.
    */

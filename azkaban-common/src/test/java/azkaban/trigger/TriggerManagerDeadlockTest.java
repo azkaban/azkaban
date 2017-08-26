@@ -16,7 +16,6 @@
 
 package azkaban.trigger;
 
-import azkaban.utils.AbstractMailerTest;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
@@ -25,6 +24,7 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
+import azkaban.utils.AbstractMailerTest;
 import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;

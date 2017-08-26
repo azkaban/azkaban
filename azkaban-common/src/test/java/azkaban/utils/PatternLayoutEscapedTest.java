@@ -26,9 +26,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Test output of PatternLayoutEscapedTest
- * It should be appending stack traces, escaping new lines, quotes, tabs and backslashes
- * This is necessary when we are logging these messages out as JSON objects
+ * Test output of PatternLayoutEscapedTest It should be appending stack traces, escaping new lines,
+ * quotes, tabs and backslashes This is necessary when we are logging these messages out as JSON
+ * objects
  */
 public class PatternLayoutEscapedTest {
 

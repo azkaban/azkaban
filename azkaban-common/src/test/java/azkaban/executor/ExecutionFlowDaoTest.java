@@ -124,11 +124,11 @@ public class ExecutionFlowDaoTest {
   public void fetchFlowHistory() throws Exception {
     final ExecutableFlow flow = createTestFlow();
     this.executionFlowDao.uploadExecutableFlow(flow);
-    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory(0,2 );
+    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory(0, 2);
     assertThat(flowList1.size()).isEqualTo(1);
 
     final List<ExecutableFlow> flowList2 = this.executionFlowDao
-        .fetchFlowHistory(flow.getProjectId(), flow.getId(),0,2 );
+        .fetchFlowHistory(flow.getProjectId(), flow.getId(), 0, 2);
     assertThat(flowList2.size()).isEqualTo(1);
 
     final ExecutableFlow fetchFlow =
@@ -182,7 +182,8 @@ public class ExecutionFlowDaoTest {
     flow2.setStatus(Status.PREPARING);
     this.executionFlowDao.uploadExecutableFlow(flow2);
 
-    final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = this.executionFlowDao.fetchQueuedFlows();
+    final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows = this.executionFlowDao
+        .fetchQueuedFlows();
     assertThat(fetchedQueuedFlows.size()).isEqualTo(2);
     final Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
     final Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
@@ -200,7 +201,8 @@ public class ExecutionFlowDaoTest {
     this.executionFlowDao.uploadExecutableFlow(flow);
     this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
 
-    final Executor fetchExecutor = this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId());
+    final Executor fetchExecutor = this.executorDao
+        .fetchExecutorByExecutionId(flow.getExecutionId());
     assertThat(fetchExecutor).isEqualTo(executor);
 
     this.assignExecutor.unassignExecutor(flow.getExecutionId());
@@ -216,13 +218,13 @@ public class ExecutionFlowDaoTest {
     // Since we haven't inserted any executors, 1 should be non-existent executor id.
     assertThatThrownBy(
         () -> this.assignExecutor.assignExecutor(1, flow.getExecutionId()))
-            .isInstanceOf(ExecutorManagerException.class)
-            .hasMessageContaining("non-existent executor");
+        .isInstanceOf(ExecutorManagerException.class)
+        .hasMessageContaining("non-existent executor");
   }
 
   /* Test exception when assigning an executor to a non-existent flow execution */
   @Test
-  public void testAssignExecutorInvalidExecution() throws Exception{
+  public void testAssignExecutorInvalidExecution() throws Exception {
     final String host = "localhost";
     final int port = 12345;
     final Executor executor = this.executorDao.addExecutor(host, port);
@@ -287,13 +289,15 @@ public class ExecutionFlowDaoTest {
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isFalse();
   }
 
-  @Test @Ignore
+  @Test
+  @Ignore
   // TODO jamiesjc: Active_execution_flow table is already deprecated. we should remove related
   // test methods as well.
   public void testFetchActiveFlowsReferenceChanged() throws Exception {
   }
 
-  @Test @Ignore
+  @Test
+  @Ignore
   // TODO jamiesjc: Active_execution_flow table is already deprecated. we should remove related
   // test methods as well.
   public void testFetchActiveFlowByExecId() throws Exception {

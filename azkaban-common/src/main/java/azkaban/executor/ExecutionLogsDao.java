@@ -55,8 +55,8 @@ public class ExecutionLogsDao {
 
   // TODO kunkun-tang: the interface's parameter is called endByte, but actually is length.
   LogData fetchLogs(final int execId, final String name, final int attempt,
-                    final int startByte,
-                    final int length) throws ExecutorManagerException {
+      final int startByte,
+      final int length) throws ExecutorManagerException {
     final FetchLogsHandler handler = new FetchLogsHandler(startByte, length + startByte);
     try {
       return this.dbOperator.query(FetchLogsHandler.FETCH_LOGS, handler,
@@ -68,7 +68,7 @@ public class ExecutionLogsDao {
   }
 
   public void uploadLogFile(final int execId, final String name, final int attempt,
-                            final File... files) throws ExecutorManagerException {
+      final File... files) throws ExecutorManagerException {
     final SQLTransaction<Integer> transaction = transOperator -> {
       uploadLogFile(transOperator, execId, name, attempt, files, this.defaultEncodingType);
       transOperator.getConnection().commit();
@@ -82,8 +82,9 @@ public class ExecutionLogsDao {
     }
   }
 
-  private void uploadLogFile(final DatabaseTransOperator transOperator, final int execId, final String name,
-                             final int attempt, final File[] files, final EncodingType encType)
+  private void uploadLogFile(final DatabaseTransOperator transOperator, final int execId,
+      final String name,
+      final int attempt, final File[] files, final EncodingType encType)
       throws SQLException {
     // 50K buffer... if logs are greater than this, we chunk.
     // However, we better prevent large log files from being uploaded somehow
@@ -148,10 +149,10 @@ public class ExecutionLogsDao {
   }
 
   private void uploadLogPart(final DatabaseTransOperator transOperator, final int execId,
-                             final String name,
-                             final int attempt, final int startByte, final int endByte,
-                             final EncodingType encType,
-                             final byte[] buffer, final int length)
+      final String name,
+      final int attempt, final int startByte, final int endByte,
+      final EncodingType encType,
+      final byte[] buffer, final int length)
       throws SQLException, IOException {
     final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs "
         + "(exec_id, name, attempt, enc_type, start_byte, end_byte, "

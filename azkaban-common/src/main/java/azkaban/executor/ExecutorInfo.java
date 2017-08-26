@@ -20,14 +20,9 @@ import java.io.IOException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
- * Class that exposes the statistics from the executor server.
- * List of the statistics -
- * remainingMemoryPercent;
- * remainingMemory;
- * remainingFlowCapacity;
- * numberOfAssignedFlows;
- * lastDispatchedTime;
- * cpuUsage;
+ * Class that exposes the statistics from the executor server. List of the statistics -
+ * remainingMemoryPercent; remainingMemory; remainingFlowCapacity; numberOfAssignedFlows;
+ * lastDispatchedTime; cpuUsage;
  */
 public class ExecutorInfo implements java.io.Serializable {
 

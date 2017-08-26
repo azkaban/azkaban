@@ -122,8 +122,7 @@ public class StorageManager {
   }
 
   /**
-   * Clean up project artifacts based on project ID.
-   * See {@link StorageCleaner#cleanupProjectArtifacts(int)}
+   * Clean up project artifacts based on project ID. See {@link StorageCleaner#cleanupProjectArtifacts(int)}
    */
   public void cleanupProjectArtifacts(final int projectId) {
     try {
