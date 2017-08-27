@@ -36,8 +36,9 @@ project. You can import it into your IDE using the `build.gradle` file in the ro
 Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
 
 ### Code Style
-Azkaban follows a slightly modified [Google code style](http://google.github.io/styleguide/). The template file, 
-`az-intellij-style.xml`, can be found in the root directory.
+Azkaban follows [Google code style](http://google.github.io/styleguide/). The template file, 
+`az-intellij-style.xml`, can be found in the root directory. It's based on the 
+[intellij-java-google-style.xml config file](https://github.com/google/styleguide/blob/75c289f1d33836d1ff4bd94e6c9033673e320b58/intellij-java-google-style.xml) from the google/styleguide project.
 
 Follow [the Intellij's code style help](https://www.jetbrains.com/help/idea/2017.1/code-style.html) 
 to import and set up the style. Make sure to activate the AzkabanStyle by
