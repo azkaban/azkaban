@@ -199,3 +199,13 @@ task wrapper(type: Wrapper) {
     gradleVersion = '4.0.2'
     distributionType('ALL')
 }
+
+if (System.env.TRAVIS == 'true') {
+    allprojects {
+        tasks.withType(Test) {
+            // Reduce the memory pressure on the Travis CI to reduce build failures.
+            maxParallelForks = 2
+            minHeapSize = '128m'
+        }
+    }
+}
