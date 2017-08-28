@@ -25,12 +25,20 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Xml implementation of the ValidatorManager. Looks for the property project.validators.xml.file in
- * the azkaban properties.
+ * Xml implementation of the ValidatorManager.
  *
- * The xml to be in the following form: <azkaban-validators> <validator classname="validator class
- * name"> <!-- optional configurations for each individual validator --> <property key="validator
- * property key" value="validator property value" /> ... </validator> </azkaban-validators>
+ * <p>Looks for the property project.validators.xml.file in the azkaban properties.
+ *
+ * <p>The xml to be in the following form:
+ * <pre>{@code
+ * <azkaban-validators>
+ *   <validator classname="validator class name">
+ *     <!-- optional configurations for each individual validator -->
+ *      <property key="validator property key" value="validator property value" />
+ *       ...
+ *   </validator>
+ * </azkaban-validators>
+ * }</pre>
  */
 public class XmlValidatorManager implements ValidatorManager {
 

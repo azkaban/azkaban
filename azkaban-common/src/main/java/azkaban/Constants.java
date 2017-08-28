@@ -18,12 +18,17 @@
 package azkaban;
 
 /**
- * Constants
+ * Constants used in configuration files or shared among classes.
  *
- * Global place for storing constants. Conventions: <p> - All internal constants to be put in the
- * root level ie. {@link Constants} class <p> - All Configuration keys to be put in {@link
- * ConfigurationKeys} class <p> - Flow level Properties keys go to {@link FlowProperties} <p> - Job
- * level Properties keys go to {@link JobProperties} <p>
+ * <p>Conventions:
+ *
+ * <p>Internal constants to be put in the {@link Constants} class
+ *
+ * <p>Configuration keys to be put in the {@link ConfigurationKeys} class
+ *
+ * <p>Flow level properties keys to be put in the {@link FlowProperties} class
+ *
+ * <p>Job level Properties keys to be put in the {@link JobProperties} class
  */
 public class Constants {
 
