@@ -13,3 +13,8 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+
+env:
+  global:
+    # Reduce the memory pressure on Travis CI to reduce build failures.
+    - GRADLE_OPTS="-Xms128m"
