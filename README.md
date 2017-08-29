@@ -35,4 +35,5 @@ We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/). Azkaban is 
 project. You can import it into your IDE using the `build.gradle` file in the root directory. For IntelliJ, choose Open 
 Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
 
-See additional information in the CONTRIBUTING.md.
+See additional information in 
+[the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).
