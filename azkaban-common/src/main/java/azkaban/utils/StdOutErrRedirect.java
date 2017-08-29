@@ -22,9 +22,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
- * A class to encapsulate the redirection of stdout and stderr to log4j
- * This allows us to catch messages written to the console (although we should
- * not be using System.out to write out).
+ * A class to encapsulate the redirection of stdout and stderr to log4j This allows us to catch
+ * messages written to the console (although we should not be using System.out to write out).
  */
 
 public class StdOutErrRedirect {

@@ -58,7 +58,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
   @Mock
   private ProjectLoader fakeProjectLoader;
-  
+
   @Mock
   private ExecutorLoader loader;
 

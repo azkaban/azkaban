@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ExecutorLoader {
+
   void uploadExecutableFlow(ExecutableFlow flow)
       throws ExecutorManagerException;
 
@@ -63,7 +64,6 @@ public interface ExecutorLoader {
    * </pre>
    *
    * @return List<Executor>
-   * @throws ExecutorManagerException
    */
   List<Executor> fetchAllExecutors() throws ExecutorManagerException;
 
@@ -76,7 +76,6 @@ public interface ExecutorLoader {
    * </pre>
    *
    * @return List<Executor>
-   * @throws ExecutorManagerException
    */
   List<Executor> fetchActiveExecutors() throws ExecutorManagerException;
 
@@ -90,10 +89,9 @@ public interface ExecutorLoader {
    * </pre>
    *
    * @return Executor
-   * @throws ExecutorManagerException
    */
   Executor fetchExecutor(String host, int port)
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -104,7 +102,6 @@ public interface ExecutorLoader {
    * </pre>
    *
    * @return Executor
-   * @throws ExecutorManagerException
    */
   Executor fetchExecutor(int executorId) throws ExecutorManagerException;
 
@@ -118,10 +115,9 @@ public interface ExecutorLoader {
    * </pre>
    *
    * @return Executor
-   * @throws ExecutorManagerException
    */
   Executor addExecutor(String host, int port)
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -131,9 +127,6 @@ public interface ExecutorLoader {
    * 2. throws an Exception if there is no executor with the given id
    * 3. return null when no executor is found with the given executorId
    * </pre>
-   *
-   * @param executorId
-   * @throws ExecutorManagerException
    */
   void updateExecutor(Executor executor) throws ExecutorManagerException;
 
@@ -144,9 +137,6 @@ public interface ExecutorLoader {
    * 1. throws an Exception in case of a SQL issue
    * 2. throws an Exception if there is no executor in the table* </pre>
    * </pre>
-   * @param host
-   * @param port
-   * @throws ExecutorManagerException
    */
   void removeExecutor(String host, int port) throws ExecutorManagerException;
 
@@ -157,14 +147,10 @@ public interface ExecutorLoader {
    * Note: throws an Exception in case of a SQL issue
    * </pre>
    *
-   * @param executor
-   * @param type
-   * @param user
-   * @param message
    * @return isSuccess
    */
   void postExecutorEvent(Executor executor, EventType type, String user,
-    String message) throws ExecutorManagerException;
+      String message) throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -175,14 +161,10 @@ public interface ExecutorLoader {
    * 2. Returns an empty list in case of no events
    * </pre>
    *
-   * @param executor
-   * @param num
-   * @param skip
    * @return List<ExecutorLogEvent>
-   * @throws ExecutorManagerException
    */
   List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
-    int offset) throws ExecutorManagerException;
+      int offset) throws ExecutorManagerException;
 
   void addActiveExecutableReference(ExecutionReference ref)
       throws ExecutorManagerException;
@@ -197,10 +179,6 @@ public interface ExecutorLoader {
    * Note:-
    * throws an Exception in case of a SQL issue
    * </pre>
-   *
-   * @param executorId
-   * @param execId
-   * @throws ExecutorManagerException
    */
   void unassignExecutor(int executionId) throws ExecutorManagerException;
 
@@ -211,13 +189,9 @@ public interface ExecutorLoader {
    * 1. throws an Exception in case of a SQL issue
    * 2. throws an Exception in case executionId or executorId do not exist
    * </pre>
-   *
-   * @param executorId
-   * @param execId
-   * @throws ExecutorManagerException
    */
   void assignExecutor(int executorId, int execId)
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -227,12 +201,10 @@ public interface ExecutorLoader {
    * 2. return null when no executor is found with the given executionId
    * </pre>
    *
-   * @param executionId
    * @return fetched Executor
-   * @throws ExecutorManagerException
    */
   Executor fetchExecutorByExecutionId(int executionId)
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -243,10 +215,9 @@ public interface ExecutorLoader {
    * </pre>
    *
    * @return List of queued flows and corresponding execution reference
-   * @throws ExecutorManagerException
    */
   List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;

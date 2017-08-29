@@ -17,12 +17,12 @@
 $.namespace('azkaban');
 
 azkaban.JobLogModel = Backbone.Model.extend({
-  initialize: function() {
+  initialize: function () {
     this.set("offset", 0);
     this.set("logData", "");
   },
 
-  refresh: function() {
+  refresh: function () {
     var requestURL = contextURL + "/executor";
     var finished = false;
 
@@ -30,7 +30,7 @@ azkaban.JobLogModel = Backbone.Model.extend({
       var requestData = {
         "execid": execId,
         "jobId": jobId,
-        "ajax":"fetchExecJobLogs",
+        "ajax": "fetchExecJobLogs",
         "offset": this.get("offset"),
         "length": 50000,
         "attempt": attempt
@@ -38,7 +38,7 @@ azkaban.JobLogModel = Backbone.Model.extend({
 
       var self = this;
 
-      var successHandler = function(data) {
+      var successHandler = function (data) {
         console.log("fetchLogs");
         if (data.error) {
           console.log(data.error);
@@ -59,7 +59,7 @@ azkaban.JobLogModel = Backbone.Model.extend({
         async: false,
         data: requestData,
         dataType: "json",
-        error: function(data) {
+        error: function (data) {
           console.log(data);
           finished = true;
         },

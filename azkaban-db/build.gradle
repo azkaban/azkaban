@@ -16,6 +16,19 @@
  */
 apply plugin: 'distribution'
 
+task testJar(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier = 'test'
+}
+
+configurations {
+    testOutput.extendsFrom(testCompile)
+}
+
+artifacts {
+    testOutput testJar
+}
+
 dependencies {
 
     // todo kunkun-tang: consolidate dependencies in azkaban-common and azkaban-db

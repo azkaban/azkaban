@@ -91,7 +91,8 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
    * NOTE : this is a static filter which means the filter will be filtering based on the system
    * standard which is not
    *        Coming for the passed flow.
-   *        Ideally this filter will make sure only the executor hasn't reached the Max allowed # of
+   *        Ideally this filter will make sure only the executor hasn't reached the Max allowed #
+   * of
    * executing flows.
    * </pre>
    */

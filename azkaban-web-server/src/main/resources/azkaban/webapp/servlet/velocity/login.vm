@@ -16,38 +16,41 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
 
-#parse("azkaban/webapp/servlet/velocity/style.vm")
-#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+  #parse("azkaban/webapp/servlet/velocity/style.vm")
+  #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <script type="text/javascript" src="${context}/js/azkaban/view/login.js"></script>
-    <script type="text/javascript">
-      var contextURL = "${context}";
-    </script>
-  </head>
-  <body>
+  <script type="text/javascript" src="${context}/js/azkaban/view/login.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+  </script>
+</head>
+<body>
 
-#set ($current_page = "all")
-#set ($navbar_disabled = 1)
-#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+  #set ($current_page = "all")
+  #set ($navbar_disabled = 1)
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-    <div class="container-full">
-      <div class="login">
-        <div class="alert alert-danger" id="error-msg"></div>
-        <div class="well">
-          <form id="login-form" role="form">
-            <fieldset>
-              <legend>Login</legend>
-              <input type="text" class="form-control" name="username" id="username" placeholder="Username">
-              <input type="password" class="form-control" name="password" id="password" placeholder="${passwordPlaceholder}">
-              <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login</button>
-            </fieldset>
-          </form>
-        </div><!-- /.well -->
-      </div><!-- /.login -->
+<div class="container-full">
+  <div class="login">
+    <div class="alert alert-danger" id="error-msg"></div>
+    <div class="well">
+      <form id="login-form" role="form">
+        <fieldset>
+          <legend>Login</legend>
+          <input type="text" class="form-control" name="username" id="username"
+                 placeholder="Username">
+          <input type="password" class="form-control" name="password" id="password"
+                 placeholder="${passwordPlaceholder}">
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login
+          </button>
+        </fieldset>
+      </form>
+    </div><!-- /.well -->
+  </div><!-- /.login -->
 
-    </div><!-- /container -->
-  </body>
+</div><!-- /container -->
+</body>
 </html>
 

@@ -68,7 +68,7 @@ public class ExecutorManagerTest {
 
   /* Helper method to create a ExecutorManager Instance */
   private ExecutorManager createMultiExecutorManagerInstance()
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     return createMultiExecutorManagerInstance(new MockExecutorLoader());
   }
 
@@ -107,14 +107,14 @@ public class ExecutorManagerTest {
     final ExecutorManager manager =
         new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     final Set<Executor> activeExecutors =
-      new HashSet(manager.getAllActiveExecutors());
+        new HashSet(manager.getAllActiveExecutors());
 
     Assert.assertEquals(activeExecutors.size(), 1);
     final Executor executor = activeExecutors.iterator().next();
     Assert.assertEquals(executor.getHost(), "localhost");
     Assert.assertEquals(executor.getPort(), 12345);
     Assert.assertArrayEquals(activeExecutors.toArray(), loader
-      .fetchActiveExecutors().toArray());
+        .fetchActiveExecutors().toArray());
   }
 
   /*
@@ -130,9 +130,9 @@ public class ExecutorManagerTest {
     final ExecutorManager manager =
         new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     final Set<Executor> activeExecutors =
-      new HashSet(manager.getAllActiveExecutors());
-    Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
-      executor1, executor2 });
+        new HashSet(manager.getAllActiveExecutors());
+    Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[]{
+        executor1, executor2});
   }
 
   /*
@@ -146,7 +146,7 @@ public class ExecutorManagerTest {
     final ExecutorManager manager =
         new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
-      new Executor[] { executor1 });
+        new Executor[]{executor1});
 
     // mark older executor as inactive
     executor1.setActive(false);
@@ -156,7 +156,7 @@ public class ExecutorManagerTest {
     manager.setupExecutors();
 
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
-      new Executor[] { executor2, executor3 });
+        new Executor[]{executor2, executor3});
   }
 
   /*
@@ -171,9 +171,9 @@ public class ExecutorManagerTest {
     final ExecutorManager manager =
         new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
     final Set<Executor> activeExecutors =
-      new HashSet(manager.getAllActiveExecutors());
+        new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(),
-      new Executor[] { executor1 });
+        new Executor[]{executor1});
 
     // mark older executor as inactive
     executor1.setActive(false);
@@ -217,7 +217,7 @@ public class ExecutorManagerTest {
     final List<Integer> testFlows = Arrays.asList(flow1.getExecutionId(), flow2.getExecutionId());
 
     final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlowsDB =
-      loader.fetchQueuedFlows();
+        loader.fetchQueuedFlows();
     Assert.assertEquals(queuedFlowsDB.size(), testFlows.size());
     // Verify things are correctly setup in db
     for (final Pair<ExecutionReference, ExecutableFlow> pair : queuedFlowsDB) {
@@ -229,7 +229,7 @@ public class ExecutorManagerTest {
     final List<Integer> managerActiveFlows = manager.getRunningFlows()
         .stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toList());
     Assert.assertTrue(managerActiveFlows.containsAll(testFlows)
-      && testFlows.containsAll(managerActiveFlows));
+        && testFlows.containsAll(managerActiveFlows));
 
     // Verify getQueuedFlowIds method
     Assert.assertEquals("[1, 2]", manager.getQueuedFlowIds());
@@ -238,11 +238,11 @@ public class ExecutorManagerTest {
   /* Test submit duplicate flow when previous instance is not dispatched */
   @Test(expected = ExecutorManagerException.class)
   public void testDuplicateQueuedFlows() throws ExecutorManagerException,
-    IOException {
+      IOException {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
     final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow1.getExecutionOptions().setConcurrentOption(
-      ExecutionOptions.CONCURRENT_OPTION_SKIP);
+        ExecutionOptions.CONCURRENT_OPTION_SKIP);
 
     final User testUser = TestUtils.getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
@@ -263,7 +263,7 @@ public class ExecutorManagerTest {
 
     manager.cancelFlow(flow1, testUser.getUserId());
     final ExecutableFlow fetchedFlow =
-      loader.fetchExecutableFlow(flow1.getExecutionId());
+        loader.fetchExecutableFlow(flow1.getExecutionId());
     Assert.assertEquals(fetchedFlow.getStatus(), Status.FAILED);
 
     Assert.assertFalse(manager.getRunningFlows().contains(flow1));
@@ -282,7 +282,8 @@ public class ExecutorManagerTest {
     verify(this.loader).addActiveExecutableReference(any());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testFetchAllActiveFlows() throws ExecutorManagerException, IOException {
     testSetUpForRunningFlows();
     final List<ExecutableFlow> flows = this.manager.getRunningFlows();
@@ -291,7 +292,8 @@ public class ExecutorManagerTest {
     }
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testFetchActiveFlowByProject() throws ExecutorManagerException, IOException {
     testSetUpForRunningFlows();
     final List<Integer> executions = this.manager.getRunningFlows(this.flow1.getProjectId(),
@@ -301,7 +303,8 @@ public class ExecutorManagerTest {
         .assertTrue(this.manager.isFlowRunning(this.flow1.getProjectId(), this.flow1.getFlowId()));
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testFetchActiveFlowWithExecutor() throws ExecutorManagerException, IOException {
     testSetUpForRunningFlows();
     final List<Pair<ExecutableFlow, Executor>> activeFlowsWithExecutor =
@@ -318,8 +321,10 @@ public class ExecutorManagerTest {
     final Set<String> activeExecutorServerHosts = this.manager.getAllActiveExecutorServerHosts();
     final Executor executor1 = this.manager.fetchExecutor(this.flow1.getExecutionId());
     final Executor executor2 = this.manager.fetchExecutor(this.flow2.getExecutionId());
-    Assert.assertTrue(activeExecutorServerHosts.contains(executor1.getHost() + ":" + executor1.getPort()));
-    Assert.assertTrue(activeExecutorServerHosts.contains(executor2.getHost() + ":" + executor2.getPort()));
+    Assert.assertTrue(
+        activeExecutorServerHosts.contains(executor1.getHost() + ":" + executor1.getPort()));
+    Assert.assertTrue(
+        activeExecutorServerHosts.contains(executor2.getHost() + ":" + executor2.getPort()));
   }
 
   /*

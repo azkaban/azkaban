@@ -16,63 +16,65 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
 
-#parse("azkaban/webapp/servlet/velocity/style.vm")
-#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+  #parse("azkaban/webapp/servlet/velocity/style.vm")
+  #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
-    <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
+  <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
+  <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css"/>
 
-    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script>
-    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
+  <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+  <script type="text/javascript"
+          src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script>
+  <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 
-    <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/triggers.js"></script>
-    <script type="text/javascript">
-      var contextURL = "${context}";
-      var currentTime = ${currentTime};
-      var timezone = "${timezone}";
-      var errorMessage = null;
-      var successMessage = null;
-    </script>
-  </head>
-  <body>
+  <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/triggers.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+    var errorMessage = null;
+    var successMessage = null;
+  </script>
+</head>
+<body>
 
-#set ($current_page="triggers")
-#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+  #set ($current_page="triggers")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-#if ($errorMsg)
-  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
-#else
+  #if ($errorMsg)
+    #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+  #else
 
-    <div class="az-page-header">
-      <div class="container-full">
-        <h1>All Triggers</h1>
-      </div>
-    </div>
-
+  <div class="az-page-header">
     <div class="container-full">
+      <h1>All Triggers</h1>
+    </div>
+  </div>
 
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+  <div class="container-full">
 
-      <div class="row">
-        <div class="col-xs-12">
-          <table id="triggersTbl" class="table table-striped table-bordered table-condensed table-hover">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Source</th>
-                <th>Submitted By</th>
-                <th>Description</th>
-                <th>Status</th>
-                <!--th colspan="2" class="action ignoresort">Action</th-->
-              </tr>
-            </thead>
-            <tbody>
-  #if ($triggers)
-    #foreach ($trigger in $triggers)
+    #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+    <div class="row">
+      <div class="col-xs-12">
+        <table id="triggersTbl"
+               class="table table-striped table-bordered table-condensed table-hover">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Source</th>
+            <th>Submitted By</th>
+            <th>Description</th>
+            <th>Status</th>
+            <!--th colspan="2" class="action ignoresort">Action</th-->
+          </tr>
+          </thead>
+          <tbody>
+            #if ($triggers)
+              #foreach ($trigger in $triggers)
               <tr>
                 <td>${trigger.triggerId}</td>
                 <td>${trigger.source}</td>
@@ -81,15 +83,17 @@
                 <td>${trigger.getStatus()}</td>
                 <!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
               </tr>
-    #end
-  #else
-              <tr><td class="last">No Trigger Found</td></tr>
-  #end
-            </tbody>
-          </table>
-        </div>
+              #end
+            #else
+            <tr>
+              <td class="last">No Trigger Found</td>
+            </tr>
+            #end
+          </tbody>
+        </table>
       </div>
     </div>
-#end
-  </body>
+  </div>
+  #end
+</body>
 </html>

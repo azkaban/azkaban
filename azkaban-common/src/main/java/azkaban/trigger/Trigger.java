@@ -53,10 +53,10 @@ public class Trigger {
   }
 
   private Trigger(final int triggerId, final long lastModifyTime, final long submitTime,
-                  final String submitUser, final String source, final Condition triggerCondition,
-                  final Condition expireCondition, final List<TriggerAction> actions,
-                  final List<TriggerAction> expireActions, final Map<String, Object> info,
-                  final Map<String, Object> context) {
+      final String submitUser, final String source, final Condition triggerCondition,
+      final Condition expireCondition, final List<TriggerAction> actions,
+      final List<TriggerAction> expireActions, final Map<String, Object> info,
+      final Map<String, Object> context) {
     requireNonNull(submitUser);
     requireNonNull(source);
     requireNonNull(triggerCondition);
@@ -216,9 +216,9 @@ public class Trigger {
     return this.expireCondition;
   }
 
- public void setExpireCondition(final Condition expireCondition) {
+  public void setExpireCondition(final Condition expireCondition) {
     this.expireCondition = expireCondition;
- }
+  }
 
   public List<TriggerAction> getActions() {
     return this.actions;
@@ -362,6 +362,7 @@ public class Trigger {
   }
 
   public static class TriggerBuilder {
+
     private final String submitUser;
     private final String source;
     private final TriggerStatus status = TriggerStatus.READY;
@@ -377,10 +378,10 @@ public class Trigger {
     private Map<String, Object> context = new HashMap<>();
 
     public TriggerBuilder(final String submitUser,
-                          final String source,
-                          final Condition triggerCondition,
-                          final Condition expireCondition,
-                          final List<TriggerAction> actions) {
+        final String source,
+        final Condition triggerCondition,
+        final Condition expireCondition,
+        final List<TriggerAction> actions) {
       this.submitUser = submitUser;
       this.source = source;
       this.triggerCondition = triggerCondition;

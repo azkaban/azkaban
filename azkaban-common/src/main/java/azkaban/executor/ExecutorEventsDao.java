@@ -16,11 +16,8 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutorLogEvent.EventType;
-import azkaban.metrics.CommonMetrics;
-import azkaban.utils.Props;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -29,53 +26,40 @@ import java.util.Date;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 
 @Singleton
-public class ExecutorEventsDao extends AbstractJdbcLoader {
+public class ExecutorEventsDao {
 
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public ExecutorEventsDao(final Props props, final CommonMetrics commonMetrics,
-                           final DatabaseOperator dbOperator) {
-    super(props, commonMetrics);
+  public ExecutorEventsDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
   public void postExecutorEvent(final Executor executor, final EventType type, final String user,
-                                final String message) throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
+      final String message) throws ExecutorManagerException {
     final String INSERT_PROJECT_EVENTS =
         "INSERT INTO executor_events (executor_id, event_type, event_time, username, message) values (?,?,?,?,?)";
-    final Date updateDate = new Date();
     try {
-      runner.update(INSERT_PROJECT_EVENTS, executor.getId(), type.getNumVal(),
-          updateDate, user, message);
+      this.dbOperator.update(INSERT_PROJECT_EVENTS, executor.getId(), type.getNumVal(),
+          new Date(), user, message);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Failed to post executor event", e);
     }
   }
 
   public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
-                                                  final int offset)
+      final int offset)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-
-    final ExecutorLogsResultHandler logHandler = new ExecutorLogsResultHandler();
-    List<ExecutorLogEvent> events = null;
     try {
-      events =
-          runner.query(ExecutorLogsResultHandler.SELECT_EXECUTOR_EVENTS_ORDER,
-              logHandler, executor.getId(), num, offset);
+      return this.dbOperator.query(ExecutorLogsResultHandler.SELECT_EXECUTOR_EVENTS_ORDER,
+          new ExecutorLogsResultHandler(), executor.getId(), num, offset);
     } catch (final SQLException e) {
       throw new ExecutorManagerException(
           "Failed to fetch events for executor id : " + executor.getId(), e);
     }
-
-    return events;
   }
 
   /**

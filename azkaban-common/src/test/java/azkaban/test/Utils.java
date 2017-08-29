@@ -30,7 +30,7 @@ public class Utils {
     SERVICE_PROVIDER.setInjector(injector);
   }
 
-  public static DatabaseOperator initTestDB() throws Exception{
+  public static DatabaseOperator initTestDB() throws Exception {
     final AzkabanDataSource dataSource = new EmbeddedH2BasicDataSource();
 
     final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();

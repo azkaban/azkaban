@@ -16,8 +16,8 @@
 package azkaban.jmx;
 
 /**
- * ParameterName - This annotation allows to supply
- * a parameter name for a method in the MBean interface.
+ * ParameterName - This annotation allows to supply a parameter name for a method in the MBean
+ * interface.
  */
 
 import java.lang.annotation.Documented;

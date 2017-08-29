@@ -16,39 +16,40 @@
 
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
 
-#parse ("azkaban/webapp/servlet/velocity/style.vm")
-#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+  #parse ("azkaban/webapp/servlet/velocity/style.vm")
+  #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <script type="text/javascript">
-      var contextURL = "${context}";
-      var currentTime = ${currentTime};
-      var timezone = "${timezone}";
-    </script>
-    <style>
-      .logout-label {
-        float: right;
-        margin: 3px;
-      }
-      .logout-submit {
-        float: right;
-      }
-    </style>
-  </head>
-  <body>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+  </script>
+  <style>
+    .logout-label {
+      float: right;
+      margin: 3px;
+    }
 
-#set ($current_page="viewer")
-#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+    .logout-submit {
+      float: right;
+    }
+  </style>
+</head>
+<body>
 
-#if ($errorMsg)
-  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
-#else
-    <div class="container-full">
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+  #set ($current_page="viewer")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+  #if ($errorMsg)
+    #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+  #else
+  <div class="container-full">
+    #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
   #parse ($viewervm)
-    </div>
-#end
-  </body>
+  </div>
+  #end
+</body>
 </html>

@@ -43,8 +43,8 @@ public class BasicTimeCheckerTest {
 
 
   /**
-   * This test manipulates global states (time) in org.joda.time.DateTimeUtils . Thus this test
-   * can run in parallel with tests that do the same.
+   * This test manipulates global states (time) in org.joda.time.DateTimeUtils . Thus this test can
+   * run in parallel with tests that do the same.
    */
   @Test
   public void periodTimerTest() {

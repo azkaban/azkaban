@@ -29,7 +29,7 @@ public class AssignExecutorDao {
 
   @Inject
   public AssignExecutorDao(final DatabaseOperator dbOperator,
-                           final ExecutorDao executorDao) {
+      final ExecutorDao executorDao) {
     this.dbOperator = dbOperator;
     this.executorDao = executorDao;
   }

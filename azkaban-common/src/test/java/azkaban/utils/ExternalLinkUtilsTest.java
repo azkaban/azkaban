@@ -59,8 +59,8 @@ public class ExternalLinkUtilsTest {
   }
 
   /**
-   * Test validates the happy path when an external analyzer is configured
-   * with '${url}' as the format in 'azkaban.properties'.
+   * Test validates the happy path when an external analyzer is configured with '${url}' as the
+   * format in 'azkaban.properties'.
    */
   @Test
   public void testGetExternalAnalyzerValidFormat() {
@@ -80,8 +80,8 @@ public class ExternalLinkUtilsTest {
   }
 
   /**
-   * Test validates the happy path when an log viewer is configured
-   * with '${execid}'  and '${jobid} as the format in 'azkaban.properties'.
+   * Test validates the happy path when an log viewer is configured with '${execid}'  and '${jobid}
+   * as the format in 'azkaban.properties'.
    */
   @Test
   public void testGetExternalLogViewerValidFormat() {
@@ -98,8 +98,8 @@ public class ExternalLinkUtilsTest {
   }
 
   /**
-   * Test validates the condition when an external analyzer is not configured
-   * in 'azkaban.properties'.
+   * Test validates the condition when an external analyzer is not configured in
+   * 'azkaban.properties'.
    */
   @Test
   public void testGetExternalAnalyzerNotConfigured() {
@@ -109,8 +109,8 @@ public class ExternalLinkUtilsTest {
   }
 
   /**
-   * Test validates the condition when an external log viewer is not configured
-   * in 'azkaban.properties'.
+   * Test validates the condition when an external log viewer is not configured in
+   * 'azkaban.properties'.
    */
   @Test
   public void testGetLogViewerNotConfigured() {

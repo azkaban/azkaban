@@ -39,6 +39,7 @@ import org.apache.commons.dbutils.ResultSetHandler;
 class JdbcProjectHandlerSet {
 
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
+
     public static String SELECT_PROJECT_BY_NAME =
         "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=?";
 
@@ -109,12 +110,15 @@ class JdbcProjectHandlerSet {
     }
   }
 
-  public static class ProjectPermissionsResultHandler implements ResultSetHandler<List<Triple<String, Boolean, Permission>>> {
+  public static class ProjectPermissionsResultHandler implements
+      ResultSetHandler<List<Triple<String, Boolean, Permission>>> {
+
     public static String SELECT_PROJECT_PERMISSION =
         "SELECT project_id, modified_time, name, permissions, isGroup FROM project_permissions WHERE project_id=?";
 
     @Override
-    public List<Triple<String, Boolean, Permission>> handle(final ResultSet rs) throws SQLException {
+    public List<Triple<String, Boolean, Permission>> handle(final ResultSet rs)
+        throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
@@ -134,6 +138,7 @@ class JdbcProjectHandlerSet {
   }
 
   public static class ProjectFlowsResultHandler implements ResultSetHandler<List<Flow>> {
+
     public static String SELECT_PROJECT_FLOW =
         "SELECT project_id, version, flow_id, modified_time, encoding_type, json FROM project_flows WHERE project_id=? AND version=? AND flow_id=?";
 
@@ -182,7 +187,9 @@ class JdbcProjectHandlerSet {
     }
   }
 
-  public static class ProjectPropertiesResultsHandler implements ResultSetHandler<List<Pair<String, Props>>> {
+  public static class ProjectPropertiesResultsHandler implements
+      ResultSetHandler<List<Pair<String, Props>>> {
+
     public static String SELECT_PROJECT_PROPERTY =
         "SELECT project_id, version, name, modified_time, encoding_type, property FROM project_properties WHERE project_id=? AND version=? AND name=?";
 
@@ -225,6 +232,7 @@ class JdbcProjectHandlerSet {
   }
 
   public static class ProjectLogsResultHandler implements ResultSetHandler<List<ProjectLogEvent>> {
+
     public static String SELECT_PROJECT_EVENTS_ORDER =
         "SELECT project_id, event_type, event_time, username, message FROM project_events WHERE project_id=? ORDER BY event_time DESC LIMIT ? OFFSET ?";
 
@@ -243,7 +251,8 @@ class JdbcProjectHandlerSet {
         final String message = rs.getString(5);
 
         final ProjectLogEvent event =
-            new ProjectLogEvent(projectId, ProjectLogEvent.EventType.fromInteger(eventType), eventTime, username,
+            new ProjectLogEvent(projectId, ProjectLogEvent.EventType.fromInteger(eventType),
+                eventTime, username,
                 message);
         events.add(event);
       } while (rs.next());
@@ -253,6 +262,7 @@ class JdbcProjectHandlerSet {
   }
 
   public static class ProjectFileChunkResultHandler implements ResultSetHandler<List<byte[]>> {
+
     public static String SELECT_PROJECT_CHUNKS_FILE =
         "SELECT project_id, version, chunk, size, file FROM project_files WHERE project_id=? AND version=? AND chunk >= ? AND chunk < ? ORDER BY chunk ASC";
 
@@ -273,7 +283,9 @@ class JdbcProjectHandlerSet {
     }
   }
 
-  public static class ProjectVersionResultHandler implements ResultSetHandler<List<ProjectFileHandler>> {
+  public static class ProjectVersionResultHandler implements
+      ResultSetHandler<List<ProjectFileHandler>> {
+
     public static String SELECT_PROJECT_VERSION =
         "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id "
             + "FROM project_versions WHERE project_id=? AND version=?";
@@ -297,7 +309,8 @@ class JdbcProjectHandlerSet {
         final String resourceId = rs.getString(9);
 
         final ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5,
+            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName,
+                numChunks, md5,
                 resourceId);
 
         handlers.add(handler);
@@ -308,6 +321,7 @@ class JdbcProjectHandlerSet {
   }
 
   public static class IntHandler implements ResultSetHandler<Integer> {
+
     public static String SELECT_LATEST_VERSION = "SELECT MAX(version) FROM project_versions WHERE project_id=?";
 
     @Override

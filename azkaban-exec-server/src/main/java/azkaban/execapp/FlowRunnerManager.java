@@ -68,23 +68,20 @@ import org.apache.log4j.Logger;
 /**
  * Execution manager for the server side execution.
  *
- * When a flow is submitted to FlowRunnerManager, it is the
- * {@link Status.PREPARING} status. When a flow is about to be executed by
- * FlowRunner, its status is updated to {@link Status.RUNNING}
+ * When a flow is submitted to FlowRunnerManager, it is the {@link Status.PREPARING} status. When a
+ * flow is about to be executed by FlowRunner, its status is updated to {@link Status.RUNNING}
  *
  * Two main data structures are used in this class to maintain flows.
  *
- * runningFlows: this is used as a bookkeeping for submitted flows in
- * FlowRunnerManager. It has nothing to do with the executor service that is
- * used to execute the flows. This bookkeeping is used at the time of canceling
- * or killing a flow. The flows in this data structure is removed in the
- * handleEvent method.
+ * runningFlows: this is used as a bookkeeping for submitted flows in FlowRunnerManager. It has
+ * nothing to do with the executor service that is used to execute the flows. This bookkeeping is
+ * used at the time of canceling or killing a flow. The flows in this data structure is removed in
+ * the handleEvent method.
  *
- * submittedFlows: this is used to keep track the execution of the flows, so it
- * has the mapping between a Future<?> and an execution id. This would allow us
- * to find out the execution ids of the flows that are in the Status.PREPARING
- * status. The entries in this map is removed once the flow execution is
- * completed.
+ * submittedFlows: this is used to keep track the execution of the flows, so it has the mapping
+ * between a Future<?> and an execution id. This would allow us to find out the execution ids of the
+ * flows that are in the Status.PREPARING status. The entries in this map is removed once the flow
+ * execution is completed.
  */
 public class FlowRunnerManager implements EventListener,
     ThreadPoolExecutingListener {
@@ -206,15 +203,16 @@ public class FlowRunnerManager implements EventListener,
   }
 
   /**
-   * Setting the gid bit on the execution directory forces all files/directories created within
-   * the directory to be a part of the group associated with the azkaban process. Then, when users
+   * Setting the gid bit on the execution directory forces all files/directories created within the
+   * directory to be a part of the group associated with the azkaban process. Then, when users
    * create their own files, the azkaban cleanup thread can properly remove them.
    *
-   * Java does not provide a standard library api for setting the gid bit because the gid bit
-   * is system dependent, so the only way to set this bit is to start a new process and run
-   * the shell command "chmod g+s " + execution directory name.
+   * Java does not provide a standard library api for setting the gid bit because the gid bit is
+   * system dependent, so the only way to set this bit is to start a new process and run the shell
+   * command "chmod g+s " + execution directory name.
    *
-   * Note that this should work on most Linux distributions and MacOS, but will not work on Windows.
+   * Note that this should work on most Linux distributions and MacOS, but will not work on
+   * Windows.
    */
   private void setgidPermissionOnExecutionDirectory() throws IOException {
     logger.info("Creating subprocess to run shell command: chmod g+s "
@@ -743,8 +741,8 @@ public class FlowRunnerManager implements EventListener,
   }
 
   /**
-   * This attempts shuts down the flow runner immediately (unsafe).
-   * This doesn't wait for jobs to finish but interrupts all threads.
+   * This attempts shuts down the flow runner immediately (unsafe). This doesn't wait for jobs to
+   * finish but interrupts all threads.
    */
   public void shutdownNow() {
     logger.warn("Shutting down FlowRunnerManager now...");

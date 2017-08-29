@@ -112,8 +112,8 @@ public class PermissionTest {
   }
 
   /**
-   * Verify that the binary bit for UPLOADPROJECTS is not turned on
-   * by setting the other permissions.
+   * Verify that the binary bit for UPLOADPROJECTS is not turned on by setting the other
+   * permissions.
    */
   @Test
   public void testUploadProjectFlag() throws Exception {

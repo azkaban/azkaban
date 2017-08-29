@@ -36,8 +36,7 @@ import org.apache.log4j.Logger;
 
 
 /**
- * Runs a few unix commands. Created this so that I can move to JNI in the
- * future.
+ * Runs a few unix commands. Created this so that I can move to JNI in the future.
  */
 public class FileIOUtils {
 

@@ -39,8 +39,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.log4j.Logger;
 
 /**
- * class handles the communication between the application and
- * a Restful API based web server.
+ * class handles the communication between the application and a Restful API based web server.
  *
  * @param T : type of the returning response object. Note: the idea of this abstract class is to
  * provide a wrapper for the logic around HTTP layer communication so development work can take this
@@ -152,12 +151,10 @@ public abstract class RestfulApiClient<T> {
   }
 
   /**
-   * Method to transform the response returned by the httpClient into the
-   * type specified.
-   * Note: Method need to handle case such as failed request.
-   * Also method is not supposed to pass the response object out
-   * via the returning value as the response will be closed after the
-   * execution steps out of the method context.
+   * Method to transform the response returned by the httpClient into the type specified. Note:
+   * Method need to handle case such as failed request. Also method is not supposed to pass the
+   * response object out via the returning value as the response will be closed after the execution
+   * steps out of the method context.
    **/
   protected abstract T parseResponse(HttpResponse response)
       throws HttpResponseException, IOException;

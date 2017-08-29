@@ -56,8 +56,7 @@ public class JobCallbackUtil {
   }
 
   /**
-   * Use to quickly determine if there is a job callback related property in the
-   * Props.
+   * Use to quickly determine if there is a job callback related property in the Props.
    *
    * @return true if there is job callback related property
    */
@@ -96,8 +95,8 @@ public class JobCallbackUtil {
   }
 
   /**
-   * This method is responsible for parsing job call URL properties and convert
-   * them into a list of HttpRequestBase, which callers can use to execute.
+   * This method is responsible for parsing job call URL properties and convert them into a list of
+   * HttpRequestBase, which callers can use to execute.
    *
    * In addition to parsing, it will also replace the tokens with actual values.
    *
@@ -226,8 +225,7 @@ public class JobCallbackUtil {
   }
 
   /**
-   * This method takes the job context info. and put the values into a map with
-   * keys as the tokens.
+   * This method takes the job context info. and put the values into a map with keys as the tokens.
    *
    * @return Map<String,String>
    */
@@ -267,8 +265,8 @@ public class JobCallbackUtil {
   }
 
   /**
-   * Replace the supported tokens in the URL with values in the contextInfo.
-   * This will also make sure the values are HTTP encoded.
+   * Replace the supported tokens in the URL with values in the contextInfo. This will also make
+   * sure the values are HTTP encoded.
    *
    * @param withEncoding - whether the token values will be HTTP encoded
    * @return String - value with tokens replaced with values

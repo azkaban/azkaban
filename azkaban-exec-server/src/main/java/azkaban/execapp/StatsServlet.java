@@ -41,8 +41,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 /**
- * Servlet to communicate with Azkaban exec server This servlet get requests
- * from stats servlet in Azkaban Web server
+ * Servlet to communicate with Azkaban exec server This servlet get requests from stats servlet in
+ * Azkaban Web server
  */
 public class StatsServlet extends HttpServlet implements ConnectorParams {
 
@@ -104,8 +104,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   }
 
   /**
-   * enable or disable metric Manager A disable will also purge all data from
-   * all metric emitters
+   * enable or disable metric Manager A disable will also purge all data from all metric emitters
    */
   private void handleChangeManagerStatusRequest(final HttpServletRequest req,
       final Map<String, Object> ret, final boolean enableMetricManager) {

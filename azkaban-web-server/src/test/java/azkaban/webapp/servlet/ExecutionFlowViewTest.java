@@ -18,8 +18,7 @@ public class ExecutionFlowViewTest {
           + "title=\"Analyze job in Dr. Elephant\">Dr. Elephant</a></li>";
 
   /**
-   * Test aims to check that the external analyzer button is displayed
-   * in the page.
+   * Test aims to check that the external analyzer button is displayed in the page.
    *
    * @throws Exception the exception
    */

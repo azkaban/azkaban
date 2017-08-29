@@ -19,10 +19,11 @@ import org.junit.Test;
 
 
 public class PageUtilsTest {
+
   @Test
   public void testUploadButtonisHiddenWhenGlobalPropertyIsSet()
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException,
-             ClassNotFoundException, InstantiationException, IOException {
+      ClassNotFoundException, InstantiationException, IOException {
     final HttpServletRequest httpServletRequest = mock(HttpServletRequest.class);
     final HttpServletResponse httpServletResponse = mock(HttpServletResponse.class);
     final User user = TestUtils.getTestUser();

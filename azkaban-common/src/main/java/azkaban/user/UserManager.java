@@ -17,12 +17,11 @@
 package azkaban.user;
 
 /**
- * Interface for the UserManager. Implementors will have to handle the retrieval
- * of the User object given the username and password.
+ * Interface for the UserManager. Implementors will have to handle the retrieval of the User object
+ * given the username and password.
  *
- * The constructor will be called with a azkaban.utils.Props object passed as
- * the only parameter. If such a constructor doesn't exist, than the UserManager
- * instantiation may fail.
+ * The constructor will be called with a azkaban.utils.Props object passed as the only parameter. If
+ * such a constructor doesn't exist, than the UserManager instantiation may fail.
  */
 public interface UserManager {
 
@@ -35,14 +34,12 @@ public interface UserManager {
       throws UserManagerException;
 
   /**
-   * Returns true if the user is valid. This is used when adding permissions for
-   * users
+   * Returns true if the user is valid. This is used when adding permissions for users
    */
   public boolean validateUser(String username);
 
   /**
-   * Returns true if the group is valid. This is used when adding permissions
-   * for groups.
+   * Returns true if the group is valid. This is used when adding permissions for groups.
    */
   public boolean validateGroup(String group);
 

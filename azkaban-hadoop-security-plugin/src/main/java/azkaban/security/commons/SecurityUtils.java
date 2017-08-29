@@ -47,8 +47,8 @@ public class SecurityUtils {
   private static UserGroupInformation loginUser = null;
 
   /**
-   * Create a proxied user based on the explicit user name, taking other
-   * parameters necessary from properties file.
+   * Create a proxied user based on the explicit user name, taking other parameters necessary from
+   * properties file.
    */
   public static synchronized UserGroupInformation getProxiedUser(
       final String toProxy, final Properties prop, final Logger log, final Configuration conf)
@@ -79,8 +79,8 @@ public class SecurityUtils {
   }
 
   /**
-   * Create a proxied user, taking all parameters, including which user to proxy
-   * from provided Properties.
+   * Create a proxied user, taking all parameters, including which user to proxy from provided
+   * Properties.
    */
   public static UserGroupInformation getProxiedUser(final Properties prop,
       final Logger log, final Configuration conf) throws IOException {

@@ -16,13 +16,10 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
+import azkaban.database.EncodingType;
 import azkaban.db.DatabaseOperator;
-import azkaban.metrics.CommonMetrics;
 import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
-import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,33 +30,25 @@ import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
 @Singleton
-public class FetchActiveFlowDao extends AbstractJdbcLoader {
+public class FetchActiveFlowDao {
 
   private static final Logger logger = Logger.getLogger(FetchActiveFlowDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public FetchActiveFlowDao(final Props props, final CommonMetrics commonMetrics,
-                            final DatabaseOperator dbOperator) {
-    super(props, commonMetrics);
+  public FetchActiveFlowDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchActiveExecutableFlows flowHandler = new FetchActiveExecutableFlows();
-
     try {
-      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> properties =
-          runner.query(FetchActiveExecutableFlows.FETCH_ACTIVE_EXECUTABLE_FLOW,
-              flowHandler);
-      return properties;
+      return this.dbOperator.query(FetchActiveExecutableFlows.FETCH_ACTIVE_EXECUTABLE_FLOW,
+          new FetchActiveExecutableFlows());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
     }
@@ -67,14 +56,11 @@ public class FetchActiveFlowDao extends AbstractJdbcLoader {
 
   Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId)
       throws ExecutorManagerException {
-    final QueryRunner runner = createQueryRunner();
-    final FetchActiveExecutableFlowByExecId flowHandler = new FetchActiveExecutableFlowByExecId();
-
     try {
       final List<Pair<ExecutionReference, ExecutableFlow>> flows =
-          runner.query(
-              FetchActiveExecutableFlowByExecId.FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID,
-              flowHandler, execId);
+          this.dbOperator
+              .query(FetchActiveExecutableFlowByExecId.FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID,
+                  new FetchActiveExecutableFlowByExecId(), execId);
       if (flows.isEmpty()) {
         return null;
       } else {
@@ -122,21 +108,11 @@ public class FetchActiveFlowDao extends AbstractJdbcLoader {
           execFlows.put(id, null);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
           try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
+
             final Executor executor = new Executor(executorId, host, port, executorStatus);
             final ExecutionReference ref = new ExecutionReference(id, executor);
             execFlows.put(id, new Pair<>(ref, exFlow));
@@ -186,18 +162,11 @@ public class FetchActiveFlowDao extends AbstractJdbcLoader {
           logger.error("Found a flow with empty data blob exec_id: " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object flowObj;
           try {
-            if (encType == EncodingType.GZIP) {
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              flowObj = JSONUtils.parseJSONFromString(jsonString);
-            }
-
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+                ExecutableFlow.createExecutableFlowFromObject(
+                    GZIPUtils.transformBytesToObject(data, encType));
+
             final Executor executor = new Executor(executorId, host, port, executorStatus);
             final ExecutionReference ref = new ExecutionReference(id, executor);
             execFlows.add(new Pair<>(ref, exFlow));

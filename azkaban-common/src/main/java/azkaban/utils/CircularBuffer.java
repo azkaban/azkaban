@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A circular buffer of items of a given length. It will grow up to the give
- * size as items are appended, then it will begin to overwrite older items.
+ * A circular buffer of items of a given length. It will grow up to the give size as items are
+ * appended, then it will begin to overwrite older items.
  *
  * @param <T> The type of the item contained.
  */

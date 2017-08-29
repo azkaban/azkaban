@@ -43,8 +43,7 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
   }
 
   /**
-   * Listen for events to maintain correct value of number of running jobs
-   * {@inheritDoc}
+   * Listen for events to maintain correct value of number of running jobs {@inheritDoc}
    *
    * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
    */

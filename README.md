@@ -35,33 +35,5 @@ We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/). Azkaban is 
 project. You can import it into your IDE using the `build.gradle` file in the root directory. For IntelliJ, choose Open 
 Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
 
-### Code Style
-Azkaban follows Google code style. The template file, `intellij-java-google-style.xml`, can be found in the root 
-directory.
-
-Follow [the Intellij's code style help](https://www.jetbrains.com/help/idea/2017.1/code-style.html) 
-to import and set up the style.
- 
-Note: 
-To use different styles for different projects try
- "You can copy the IDE scheme to the current project, using the Copy to Project... command."
-
-
-We also recommend 
-intellij's [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) to 
-reformat/refactor code automatically:
-
-Please turn on all the options except 
-  * Remove unused suppress warning annotation
-
-It allows us to do following when saving a file:
-* Organize imports
-* Reformat code based on the code style
-* Rearrange code (reorder methods, fields, etc.)
-* Add final to local variable
-* Add final to field
-* Remove explicit generic type for diamond
-* Qualify field access with this
-* Remove final from private method
-* Remove unnecessary semicolon
-* Add missing @Override annotations
+See additional information in 
+[the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).

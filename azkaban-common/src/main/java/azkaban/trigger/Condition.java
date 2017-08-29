@@ -45,7 +45,7 @@ public class Condition {
   }
 
   public Condition(final Map<String, ConditionChecker> checkers, final String expr,
-                   final long nextCheckTime) {
+      final long nextCheckTime) {
     this.nextCheckTime = nextCheckTime;
     setCheckers(checkers);
     this.expression = jexl.createExpression(expr);

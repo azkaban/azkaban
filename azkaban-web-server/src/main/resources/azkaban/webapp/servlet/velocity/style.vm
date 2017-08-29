@@ -14,27 +14,29 @@
  * the License.
 *#
 
-    <meta charset="utf-8">
-    <title>#appname()</title>
+<meta charset="utf-8">
+<title>#appname()</title>
 
-    <link rel="shortcut icon" href="${context}/favicon.ico" />
-    <!-- Bootstrap core CSS -->
-    <link href="/css/bootstrap.css" rel="stylesheet">
-    <link href="/css/azkaban.css" rel="stylesheet">
-    <style type="text/css">
-      .navbar-enviro .navbar-enviro-name {
-        color: ${azkaban_color};
-      }
-      .navbar-inverse {
-        border-top: 5px solid ${azkaban_color};
-      }
-      .navbar-inverse .navbar-nav > .active >a {
-        border-bottom: 1px solid ${azkaban_color};
-      }
-    </style>
+<link rel="shortcut icon" href="${context}/favicon.ico"/>
+<!-- Bootstrap core CSS -->
+<link href="/css/bootstrap.css" rel="stylesheet">
+<link href="/css/azkaban.css" rel="stylesheet">
+<style type="text/css">
+  .navbar-enviro .navbar-enviro-name {
+    color: ${azkaban_color};
+  }
 
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="/js/html5shiv.js"></script>
-      <script src="/js/respond.min.js"></script>
-    <![endif]-->
+  .navbar-inverse {
+    border-top: 5px solid ${azkaban_color};
+  }
+
+  .navbar-inverse .navbar-nav > .active > a {
+    border-bottom: 1px solid ${azkaban_color};
+  }
+</style>
+
+<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+  <script src="/js/html5shiv.js"></script>
+  <script src="/js/respond.min.js"></script>
+<![endif]-->

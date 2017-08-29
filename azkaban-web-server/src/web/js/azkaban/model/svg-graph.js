@@ -17,19 +17,19 @@
 $.namespace('azkaban');
 
 azkaban.GraphModel = Backbone.Model.extend({
-  initialize: function() {
+  initialize: function () {
 
   },
 
   /*
    * Process and add data from JSON.
    */
-  addFlow: function(data) {
+  addFlow: function (data) {
     this.processFlowData(data);
     this.set({'data': data});
   },
 
-  processFlowData: function(data) {
+  processFlowData: function (data) {
     var nodes = {};
     var edges = new Array();
 

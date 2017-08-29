@@ -57,8 +57,8 @@ public class MetricsManager {
   }
 
   /**
-   * A {@link Meter} measures the rate of events over time (e.g., “requests per second”).
-   * Here we track 1-minute moving averages.
+   * A {@link Meter} measures the rate of events over time (e.g., “requests per second”). Here we
+   * track 1-minute moving averages.
    */
   public Meter addMeter(final String name) {
     final Meter curr = this.registry.meter(name);
@@ -79,9 +79,8 @@ public class MetricsManager {
   }
 
   /**
-   * reporting metrics to remote metrics collector.
-   * Note: this method must be synchronized, since both web server and executor
-   * will call it during initialization.
+   * reporting metrics to remote metrics collector. Note: this method must be synchronized, since
+   * both web server and executor will call it during initialization.
    */
   public synchronized void startReporting(final String reporterName, final Props props) {
     final String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
@@ -98,7 +97,7 @@ public class MetricsManager {
         log.error("Encountered error while loading and instantiating "
             + metricsReporterClassName, e);
         throw new IllegalStateException("Encountered error while loading and instantiating "
-                + metricsReporterClassName, e);
+            + metricsReporterClassName, e);
       }
     } else {
       log.error(String.format("No value for property: %s or %s was found",

@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Queue that swaps its lists. Allows for non-blocking writes when reading. Swap
- * should be called before every read.
+ * Queue that swaps its lists. Allows for non-blocking writes when reading. Swap should be called
+ * before every read.
  */
 public class SwapQueue<T> implements Iterable<T> {
 
@@ -35,8 +35,7 @@ public class SwapQueue<T> implements Iterable<T> {
   }
 
   /**
-   * Swaps primaryQueue with secondary queue. The previous primary queue will be
-   * released.
+   * Swaps primaryQueue with secondary queue. The previous primary queue will be released.
    */
   public synchronized void swap() {
     this.primaryQueue = this.secondaryQueue;
