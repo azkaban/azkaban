@@ -1035,6 +1035,31 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
+   * Tests the case when a job is killed by SLA causing a flow to fail. The flow should be in
+   * "killed" status.
+   */
+  @Test
+  public void testFlowKilledByJobLevelSLA() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector,
+        FailureAction.CANCEL_ALL);
+
+    runFlowRunnerInThread(this.runner);
+    assertStatus("joba", Status.RUNNING);
+    assertStatus("joba1", Status.RUNNING);
+
+    for (final JobRunner jobRunner : this.runner.getActiveJobRunners()) {
+      if (jobRunner.getJobId().equals("joba")) {
+        jobRunner.killBySLA();
+        break;
+      }
+    }
+
+    assertFlowStatus(Status.KILLED);
+    assertThreadShutDown();
+  }
+
+  /**
    * Tests the case when a flow is paused and a failure causes a kill. The flow should die
    * immediately regardless of the 'paused' status.
    */

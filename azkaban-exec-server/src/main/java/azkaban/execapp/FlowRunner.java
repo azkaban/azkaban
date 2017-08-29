@@ -427,7 +427,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
-          propagateStatus(node.getParentFlow(), Status.FAILED_FINISHING);
+          propagateStatus(node.getParentFlow(),
+              node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
           if (this.failureAction == FailureAction.CANCEL_ALL) {
             this.kill();
           }
