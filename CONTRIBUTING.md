@@ -40,9 +40,9 @@ Follow [the Intellij's code style help](https://www.jetbrains.com/help/idea/2017
 to import and set up the style. Make sure to activate the AzkabanStyle by
  "copy the IDE scheme to the current project, using the Copy to Project... command."
 
-Install and enable the intellij's [save actions plugin](https://github
-.com/dubreuia/intellij-plugin-save-actions) to 
-reformat/refactor code automatically:
+Install and enable the intellij's 
+[save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) 
+to reformat/refactor code automatically:
 
 Please turn on all the options except 
   * Remove unused suppress warning annotation
