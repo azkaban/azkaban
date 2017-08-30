@@ -127,15 +127,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-      final int skip, final int num)
-      throws ExecutorManagerException {
+      final int skip, final int num) throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-      final int skip, final int num, final Status status)
-      throws ExecutorManagerException {
+      final int skip, final int num, final Status status) throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num, status);
   }
 
@@ -150,8 +148,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       final String flowContains,
       final String userNameContains, final int status,
       final long startTime,
-      final long endTime, final int skip, final int num)
-      throws ExecutorManagerException {
+      final long endTime, final int skip, final int num) throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projContain, flowContains,
         userNameContains, status, startTime, endTime, skip, num);
   }
@@ -306,8 +303,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
   @Override
   public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
-      final int offset)
-      throws ExecutorManagerException {
+      final int offset) throws ExecutorManagerException {
     return this.executorEventsDao.getExecutorEvents(executor, num, offset);
   }
 
