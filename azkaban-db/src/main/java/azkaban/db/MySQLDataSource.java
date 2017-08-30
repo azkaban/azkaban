@@ -82,7 +82,7 @@ public class MySQLDataSource extends AzkabanDataSource {
         } catch (final Exception e) {
           logger.error( "can not invalidate connection.", e);
         }
-        logger.error( "Failed to find write-enabled DB connection. Wait 1 minutes and retry."
+        logger.error( "Failed to find write-enabled DB connection. Wait 15 seconds and retry."
             + " No.Attempt = " + retryAttempt, ex);
         /**
          * When database is completed down, DB connection fails to be fetched immediately. So we need
