@@ -44,9 +44,10 @@ public class MySQLDataSource extends AzkabanDataSource {
 
   /**
    * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
+   * We don't make the call synchronized in order to guarantee normal cases performance.
    */
   @Override
-  public synchronized Connection getConnection() throws SQLException {
+  public Connection getConnection() throws SQLException {
 
     Connection connection = null;
     int retryAttempt = 1;
