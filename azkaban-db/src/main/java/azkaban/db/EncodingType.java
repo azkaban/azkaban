@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.database;
+package azkaban.db;
 
 /**
  * Used for when we store text data. Plain uses UTF8 encoding.
