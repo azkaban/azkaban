@@ -77,6 +77,7 @@ public class MySQLDataSource extends AzkabanDataSource {
           return connection;
         }
       } catch (final SQLException ex) {
+        invalidateConnection(connection);
 
         logger.error( "Failed to find write-enabled DB connection. Wait 1 minutes and retry."
             + " No.Attempt = " + retryAttempt, ex);
