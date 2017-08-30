@@ -16,7 +16,7 @@
 
 package azkaban.utils;
 
-import azkaban.database.EncodingType;
+import azkaban.db.EncodingType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

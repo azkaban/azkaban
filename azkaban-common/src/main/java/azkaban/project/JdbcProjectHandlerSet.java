@@ -15,7 +15,7 @@
  */
 package azkaban.project;
 
-import azkaban.database.EncodingType;
+import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
 import azkaban.user.Permission;
 import azkaban.utils.GZIPUtils;

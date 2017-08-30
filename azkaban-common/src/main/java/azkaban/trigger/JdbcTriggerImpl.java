@@ -16,7 +16,7 @@
 
 package azkaban.trigger;
 
-import azkaban.database.EncodingType;
+import azkaban.db.EncodingType;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
