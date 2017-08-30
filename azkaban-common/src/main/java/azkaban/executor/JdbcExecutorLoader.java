@@ -29,6 +29,7 @@ import java.util.Map;
 
 @Singleton
 public class JdbcExecutorLoader implements ExecutorLoader {
+
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;
   private final ExecutionJobDao executionJobDao;
@@ -52,7 +53,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
-    this.executionLogsDao= executionLogsDao;
+    this.executionLogsDao = executionLogsDao;
     this.executorEventsDao = executorEventsDao;
     this.activeExecutingFlowsDao = activeExecutingFlowsDao;
     this.fetchActiveFlowDao = fetchActiveFlowDao;
@@ -78,9 +79,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     return this.executionFlowDao.fetchExecutableFlow(id);
   }
 
- @Override
+  @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     return this.executionFlowDao.fetchQueuedFlows();
   }
 
@@ -126,26 +127,31 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-                                               final int skip, final int num) throws ExecutorManagerException {
+                                               final int skip, final int num)
+      throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-                                               final int skip, final int num, final Status status) throws ExecutorManagerException {
+                                               final int skip, final int num, final Status status)
+      throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num, status);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchFlowHistory(skip,num);
+    return this.executionFlowDao.fetchFlowHistory(skip, num);
   }
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain,
-                                               final String flowContains, final String userNameContains, final int status, final long startTime,
-                                               final long endTime, final int skip, final int num) throws ExecutorManagerException {
+                                               final String flowContains,
+                                               final String userNameContains, final int status,
+                                               final long startTime,
+                                               final long endTime, final int skip, final int num)
+      throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projContain, flowContains,
         userNameContains, status, startTime, endTime, skip, num);
   }
@@ -220,13 +226,15 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
   @Override
   public List<ExecutableJobInfo> fetchJobHistory(final int projectId, final String jobId,
-                                                 final int skip, final int size) throws ExecutorManagerException {
+                                                 final int skip, final int size)
+      throws ExecutorManagerException {
 
     return this.executionJobDao.fetchJobHistory(projectId, jobId, skip, size);
   }
 
   @Override
-  public LogData fetchLogs(final int execId, final String name, final int attempt, final int startByte,
+  public LogData fetchLogs(final int execId, final String name, final int attempt,
+                           final int startByte,
                            final int length) throws ExecutorManagerException {
 
     return this.executionLogsDao.fetchLogs(execId, name, attempt, startByte, length);
@@ -240,7 +248,8 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public void uploadLogFile(final int execId, final String name, final int attempt, final File... files)
+  public void uploadLogFile(final int execId, final String name, final int attempt,
+                            final File... files)
       throws ExecutorManagerException {
     this.executionLogsDao.uploadLogFile(execId, name, attempt, files);
   }
@@ -251,65 +260,66 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.executionJobDao.uploadAttachmentFile(node, file);
   }
 
- @Override
+  @Override
   public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
     return this.executorDao.fetchAllExecutors();
   }
 
- @Override
+  @Override
   public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
     return this.executorDao.fetchActiveExecutors();
   }
 
- @Override
+  @Override
   public Executor fetchExecutor(final String host, final int port)
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     return this.executorDao.fetchExecutor(host, port);
   }
 
- @Override
+  @Override
   public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
     return this.executorDao.fetchExecutor(executorId);
   }
 
- @Override
+  @Override
   public void updateExecutor(final Executor executor) throws ExecutorManagerException {
     this.executorDao.updateExecutor(executor);
   }
 
   @Override
   public Executor addExecutor(final String host, final int port)
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     return this.executorDao.addExecutor(host, port);
   }
 
- @Override
+  @Override
   public void removeExecutor(final String host, final int port) throws ExecutorManagerException {
     this.executorDao.removeExecutor(host, port);
   }
 
   @Override
   public void postExecutorEvent(final Executor executor, final EventType type, final String user,
-                                final String message) throws ExecutorManagerException{
+                                final String message) throws ExecutorManagerException {
 
     this.executorEventsDao.postExecutorEvent(executor, type, user, message);
   }
 
   @Override
   public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
-                                                  final int offset) throws ExecutorManagerException {
+                                                  final int offset)
+      throws ExecutorManagerException {
     return this.executorEventsDao.getExecutorEvents(executor, num, offset);
   }
 
   @Override
   public void assignExecutor(final int executorId, final int executionId)
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     this.assignExecutorDao.assignExecutor(executorId, executionId);
   }
 
   @Override
   public Executor fetchExecutorByExecutionId(final int executionId)
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     return this.executorDao.fetchExecutorByExecutionId(executionId);
   }
 
