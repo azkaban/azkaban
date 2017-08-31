@@ -290,9 +290,17 @@ public class AzkabanExecutorServer {
       checkState(port != -1);
       final Executor executor = this.executionLoader.fetchExecutor(host, port);
       if (executor == null) {
-        this.executionLoader.addExecutor(host, port);
+        final Executor newlyPersistedExecutor = this.executionLoader.addExecutor(host, port);
+        // Set executor state to active
+        newlyPersistedExecutor.setActive(true);
+        this.executionLoader.updateExecutor(newlyPersistedExecutor);
+      // If executor already exists, check if active
+      } else {
+        if (!executor.isActive()) {
+          executor.setActive(true);
+          this.executionLoader.updateExecutor(executor);
+        }
       }
-      // If executor already exists, ignore it
     } catch (final ExecutorManagerException e) {
       logger.error("Error inserting executor entry into DB", e);
       throw e;
