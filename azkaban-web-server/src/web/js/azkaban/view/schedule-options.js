@@ -46,44 +46,44 @@ var scheduleFlowData;
 //}
 //
 azkaban.ScheduleContextMenu = Backbone.View.extend({
-  events : {
-    "click #scheduleDisableArrow" : "handleDisabledClick",
-    "click #scheduleEnableArrow" : "handleEnabledClick"
+  events: {
+    "click #scheduleDisableArrow": "handleDisabledClick",
+    "click #scheduleEnableArrow": "handleEnabledClick"
   },
-  initialize: function(settings) {
+  initialize: function (settings) {
     $('#scheduleDisableSub').hide();
     $('#scheduleEnableSub').hide();
   },
-  handleEnabledClick: function(evt) {
-    if(evt.stopPropagation) {
+  handleEnabledClick: function (evt) {
+    if (evt.stopPropagation) {
       evt.stopPropagation();
     }
-    evt.cancelBubble=true;
+    evt.cancelBubble = true;
 
     if (evt.currentTarget.expanded) {
-      evt.currentTarget.expanded=false;
+      evt.currentTarget.expanded = false;
       $('#scheduleEnableArrow').removeClass('collapse');
       $('#scheduleEnableSub').hide();
     }
     else {
-      evt.currentTarget.expanded=true;
+      evt.currentTarget.expanded = true;
       $('#scheduleEnableArrow').addClass('collapse');
       $('#scheduleEnableSub').show();
     }
   },
-  handleDisabledClick: function(evt) {
-    if(evt.stopPropagation) {
+  handleDisabledClick: function (evt) {
+    if (evt.stopPropagation) {
       evt.stopPropagation();
     }
-    evt.cancelBubble=true;
+    evt.cancelBubble = true;
 
     if (evt.currentTarget.expanded) {
-      evt.currentTarget.expanded=false;
+      evt.currentTarget.expanded = false;
       $('#scheduleDisableArrow').removeClass('collapse');
       $('#scheduleDisableSub').hide();
     }
     else {
-      evt.currentTarget.expanded=true;
+      evt.currentTarget.expanded = true;
       $('#scheduleDisableArrow').addClass('collapse');
       $('#scheduleDisableSub').show();
     }
@@ -91,84 +91,88 @@ azkaban.ScheduleContextMenu = Backbone.View.extend({
 });
 
 azkaban.ScheduleFlowView = Backbone.View.extend({
-  events : {
-  "click #schedule-btn": "handleScheduleFlow",
-  "click #adv-schedule-opt-btn": "handleAdvancedSchedule"
+  events: {
+    "click #schedule-btn": "handleScheduleFlow",
+    "click #adv-schedule-opt-btn": "handleAdvancedSchedule"
   },
-  initialize : function(settings) {
-    $( "#datepicker" ).datepicker();
-    $( "#datepicker" ).datepicker('setDate', new Date());
+  initialize: function (settings) {
+    $("#datepicker").datepicker();
+    $("#datepicker").datepicker('setDate', new Date());
     $("#errorMsg").hide();
   },
-  handleAdvancedSchedule : function(evt) {
+  handleAdvancedSchedule: function (evt) {
     console.log("Clicked advanced schedule options button");
     //$('#confirm-container').hide();
     $.modal.close();
     advancedScheduleView.show();
   },
-  handleScheduleFlow : function(evt) {
+  handleScheduleFlow: function (evt) {
 
-  var hourVal = $('#hour').val();
-  var minutesVal = $('#minutes').val();
-  var ampmVal = $('#am_pm').val();
-  var timezoneVal = $('#timezone').val();
-  var dateVal = $('#datepicker').val();
-  var is_recurringVal = $('#is_recurring').val();
-  var periodVal = $('#period').val();
-  var periodUnits = $('#period_units').val();
+    var hourVal = $('#hour').val();
+    var minutesVal = $('#minutes').val();
+    var ampmVal = $('#am_pm').val();
+    var timezoneVal = $('#timezone').val();
+    var dateVal = $('#datepicker').val();
+    var is_recurringVal = $('#is_recurring').val();
+    var periodVal = $('#period').val();
+    var periodUnits = $('#period_units').val();
 
-  console.log("Creating schedule for "+projectName+"."+flowName);
-  $.ajax({
-    async: "false",
-    url: "schedule",
-    dataType: "json",
-    type: "POST",
-    data: {
-      action:"scheduleFlow",
-      projectId:projectId,
-      projectName:projectName,
-      flowName:flowName,
-      hour:hourVal,
-      minutes:minutesVal,
-      am_pm:ampmVal,
-      timezone:timezoneVal,
-      date:dateVal,
-      userExec:"dummy",
-      is_recurring:is_recurringVal,
-      period:periodVal,
-      period_units:periodUnits
+    console.log("Creating schedule for " + projectName + "." + flowName);
+    $.ajax({
+      async: "false",
+      url: "schedule",
+      dataType: "json",
+      type: "POST",
+      data: {
+        action: "scheduleFlow",
+        projectId: projectId,
+        projectName: projectName,
+        flowName: flowName,
+        hour: hourVal,
+        minutes: minutesVal,
+        am_pm: ampmVal,
+        timezone: timezoneVal,
+        date: dateVal,
+        userExec: "dummy",
+        is_recurring: is_recurringVal,
+        period: periodVal,
+        period_units: periodUnits
       },
-    success: function(data) {
-      if (data.status == "success") {
-        console.log("Successfully scheduled for "+projectName+"."+flowName);
-        if (data.action == "redirect") {
-          window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
-        }
-        else{
-          $("#success_message").text("Flow " + projectName + "." + flowName + " scheduled!" );
-           window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
-        }
-      }
-      else {
-        if (data.action == "login") {
-          window.location = "";
+      success: function (data) {
+        if (data.status == "success") {
+          console.log("Successfully scheduled for " + projectName + "."
+              + flowName);
+          if (data.action == "redirect") {
+            window.location = contextURL + "/manager?project=" + projectName
+                + "&flow=" + flowName;
+          }
+          else {
+            $("#success_message").text("Flow " + projectName + "." + flowName
+                + " scheduled!");
+            window.location = contextURL + "/manager?project=" + projectName
+                + "&flow=" + flowName;
+          }
         }
         else {
-          $("#errorMsg").text("ERROR: " + data.message);
-          $("#errorMsg").slideDown("fast");
+          if (data.action == "login") {
+            window.location = "";
+          }
+          else {
+            $("#errorMsg").text("ERROR: " + data.message);
+            $("#errorMsg").slideDown("fast");
+          }
         }
       }
-    }
-  });
+    });
 
   },
-  render: function() {
+  render: function () {
   }
 });
 
 azkaban.AdvancedScheduleView = Backbone.View.extend({
-  events : {
-    "click" : "closeEditingTarget",
+  events: {
+    "click": "closeEditingTarget",
     "click #adv-schedule-btn": "handleAdvSchedule",
     "click #schedule-cancel-btn": "handleCancel",
     "click .modal-close": "handleCancel",
@@ -178,13 +182,14 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
     "click table .editable": "handleEditColumn",
     "click table .removeIcon": "handleRemoveColumn"
   },
-  initialize: function(setting) {
-    this.contextMenu = new azkaban.ScheduleContextMenu({el:$('#scheduleDisableJobMenu')});
+  initialize: function (setting) {
+    this.contextMenu = new azkaban.ScheduleContextMenu(
+        {el: $('#scheduleDisableJobMenu')});
     this.handleGeneralOptionsSelect();
-    $( "#advdatepicker" ).datepicker();
-    $( "#advdatepicker" ).datepicker('setDate', new Date());
+    $("#advdatepicker").datepicker();
+    $("#advdatepicker").datepicker('setDate', new Date());
   },
-  show: function() {
+  show: function () {
     $('#scheduleModalBackground').show();
     $('#schedule-options').show();
     this.handleGeneralOptionsSelect();
@@ -193,7 +198,11 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
     this.flowData = scheduleFlowData;
     var flowData = scheduleFlowData;
 
-    var fetchData = {"project": projectName, "ajax":"flowInfo", "flow":flowName};
+    var fetchData = {
+      "project": projectName,
+      "ajax": "flowInfo",
+      "flow": flowName
+    };
 
     var executeURL = contextURL + "/executor";
     this.executeURL = executeURL;
@@ -203,12 +212,12 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
     var data = flowData.get("data");
     var nodes = {};
-    for (var i=0; i < data.nodes.length; ++i) {
+    for (var i = 0; i < data.nodes.length; ++i) {
       var node = data.nodes[i];
       nodes[node.id] = node;
     }
 
-    for (var i=0; i < data.edges.length; ++i) {
+    for (var i = 0; i < data.edges.length; ++i) {
       var edge = data.edges[i];
       var fromNode = nodes[edge.from];
       var toNode = nodes[edge.target];
@@ -232,67 +241,67 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
         updateNode.status = "READY";
         disabled[updateNode.id] = true;
       }
-      if (updateNode.status == "SUCCEEDED" || updateNode.status=="RUNNING") {
+      if (updateNode.status == "SUCCEEDED" || updateNode.status == "RUNNING") {
         disabled[updateNode.id] = true;
       }
     }
     flowData.set({disabled: disabled});
 
     $.get(
-      executeURL,
-      fetchData,
-      function(data) {
-        if (data.error) {
-          alert(data.error);
-        }
-        else {
-          if (data.successEmails) {
-            $('#scheduleSuccessEmails').val(data.successEmails.join());
+        executeURL,
+        fetchData,
+        function (data) {
+          if (data.error) {
+            alert(data.error);
           }
-          if (data.failureEmails) {
-            $('#scheduleFailureEmails').val(data.failureEmails.join());
-          }
+          else {
+            if (data.successEmails) {
+              $('#scheduleSuccessEmails').val(data.successEmails.join());
+            }
+            if (data.failureEmails) {
+              $('#scheduleFailureEmails').val(data.failureEmails.join());
+            }
 
-          if (data.failureAction) {
-            $('#scheduleFailureAction').val(data.failureAction);
-          }
-          if (data.notifyFailureFirst) {
-            $('#scheduleNotifyFailureFirst').attr('checked', true);
-          }
-          if (data.notifyFailureLast) {
-            $('#scheduleNotifyFailureLast').attr('checked', true);
-          }
-          if (data.flowParam) {
-            var flowParam = data.flowParam;
-            for (var key in flowParam) {
-              var row = handleAddRow();
-              var td = $(row).find('td');
-              $(td[0]).text(key);
-              $(td[1]).text(flowParam[key]);
+            if (data.failureAction) {
+              $('#scheduleFailureAction').val(data.failureAction);
+            }
+            if (data.notifyFailureFirst) {
+              $('#scheduleNotifyFailureFirst').attr('checked', true);
+            }
+            if (data.notifyFailureLast) {
+              $('#scheduleNotifyFailureLast').attr('checked', true);
+            }
+            if (data.flowParam) {
+              var flowParam = data.flowParam;
+              for (var key in flowParam) {
+                var row = handleAddRow();
+                var td = $(row).find('td');
+                $(td[0]).text(key);
+                $(td[1]).text(flowParam[key]);
+              }
+            }
+
+            if (!data.running || data.running.length == 0) {
+              $(".radio").attr("disabled", "disabled");
+              $(".radioLabel").addClass("disabled", "disabled");
             }
           }
-
-          if (!data.running || data.running.length == 0) {
-            $(".radio").attr("disabled", "disabled");
-            $(".radioLabel").addClass("disabled", "disabled");
-          }
-        }
-      },
-      "json"
+        },
+        "json"
     );
   },
-  handleCancel: function(evt) {
+  handleCancel: function (evt) {
     $('#scheduleModalBackground').hide();
     $('#schedule-options').hide();
   },
-  handleGeneralOptionsSelect: function(evt) {
+  handleGeneralOptionsSelect: function (evt) {
     $('#scheduleFlowOptions').removeClass('selected');
     $('#scheduleGeneralOptions').addClass('selected');
 
     $('#scheduleGeneralPanel').show();
     $('#scheduleGraphPanel').hide();
   },
-  handleFlowOptionsSelect: function(evt) {
+  handleFlowOptionsSelect: function (evt) {
     $('#scheduleGeneralOptions').removeClass('selected');
     $('#scheduleFlowOptions').addClass('selected');
 
@@ -303,18 +312,32 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
       return;
     }
 
-    scheduleCustomSvgGraphView = new azkaban.SvgGraphView({el:$('#scheduleSvgDivCustom'), model: scheduleFlowData, rightClick: {id: 'scheduleDisableJobMenu', callback: this.handleDisableMenuClick}});
-    scheduleCustomJobsListView = new azkaban.JobListView({el:$('#scheduleJobListCustom'), model: scheduleFlowData, rightClick: {id: 'scheduleDisableJobMenu', callback: this.handleDisableMenuClick}});
+    scheduleCustomSvgGraphView = new azkaban.SvgGraphView({
+      el: $('#scheduleSvgDivCustom'),
+      model: scheduleFlowData,
+      rightClick: {
+        id: 'scheduleDisableJobMenu',
+        callback: this.handleDisableMenuClick
+      }
+    });
+    scheduleCustomJobsListView = new azkaban.JobListView({
+      el: $('#scheduleJobListCustom'),
+      model: scheduleFlowData,
+      rightClick: {
+        id: 'scheduleDisableJobMenu',
+        callback: this.handleDisableMenuClick
+      }
+    });
     scheduleFlowData.trigger("change:graph");
 
     this.flowSetup = true;
   },
-  handleAdvSchedule: function(evt) {
+  handleAdvSchedule: function (evt) {
     var scheduleURL = this.scheduleURL;
     var disabled = this.flowData.get("disabled");
     var disabledJobs = "";
-    for(var job in disabled) {
-      if(disabled[job] == true) {
+    for (var job in disabled) {
+      if (disabled[job] == true) {
         disabledJobs += "," + job;
       }
     }
@@ -325,8 +348,8 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
     var notifyFailureLast = $('#scheduleNotifyFailureLast').is(':checked');
     var executingJobOption = $('input:radio[name=gender]:checked').val();
 
-
-    var scheduleTime = $('#advhour').val() + "," + $('#advminutes').val() + "," + $('#advam_pm').val() + "," + $('#advtimezone').val();
+    var scheduleTime = $('#advhour').val() + "," + $('#advminutes').val() + ","
+        + $('#advam_pm').val() + "," + $('#advtimezone').val();
     var scheduleDate = $('#advdatepicker').val();
     var is_recurring = $('#advis_recurring').val();
     var period = $('#advperiod').val() + $('#advperiod_units').val();
@@ -345,7 +368,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
     }
 
     var scheduleData = {
-      projectId:projectId,
+      projectId: projectId,
       projectName: projectName,
       ajax: "advSchedule",
       flowName: flowName,
@@ -366,7 +389,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
     $.post(
         scheduleURL,
         scheduleData,
-        function(data) {
+        function (data) {
           if (data.error) {
             alert(data.error);
           }
@@ -377,7 +400,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
         "json"
     )
   },
-  handleAddRow: function(evt) {
+  handleAddRow: function (evt) {
     var tr = document.createElement("tr");
     var tdName = document.createElement("td");
     var tdValue = document.createElement("td");
@@ -404,7 +427,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
     $(tr).insertBefore("#scheduleAddRow");
     return tr;
   },
-  handleEditColumn : function(evt) {
+  handleEditColumn: function (evt) {
     var curTarget = evt.currentTarget;
 
     if (this.editingTarget != curTarget) {
@@ -421,16 +444,17 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
       $(curTarget).append(input);
       $(input).focus();
       this.editingTarget = curTarget;
-      }
+    }
   },
-  handleRemoveColumn : function(evt) {
+  handleRemoveColumn: function (evt) {
     var curTarget = evt.currentTarget;
     // Should be the table
     var row = curTarget.parentElement.parentElement;
     $(row).remove();
   },
-  closeEditingTarget: function(evt) {
-    if (this.editingTarget != null && this.editingTarget != evt.target && this.editingTarget != evt.target.parentElement ) {
+  closeEditingTarget: function (evt) {
+    if (this.editingTarget != null && this.editingTarget != evt.target
+        && this.editingTarget != evt.target.parentElement) {
       var input = $(this.editingTarget).children("input")[0];
       var text = $(input).val();
       $(input).remove();
@@ -450,24 +474,25 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
       this.editingTarget = null;
     }
   },
-  handleDisableMenuClick : function(action, el, pos) {
+  handleDisableMenuClick: function (action, el, pos) {
     var flowData = scheduleFlowData;
     var jobid = el[0].jobid;
-    var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
+    var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
+        + flowName + "&job=" + jobid;
     if (action == "open") {
       window.location.href = requestURL;
     }
-    else if(action == "openwindow") {
+    else if (action == "openwindow") {
       window.open(requestURL);
     }
-    else if(action == "disable") {
+    else if (action == "disable") {
       var disabled = flowData.get("disabled");
 
       disabled[jobid] = true;
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
     }
-    else if(action == "disableAll") {
+    else if (action == "disableAll") {
       var disabled = flowData.get("disabled");
 
       var nodes = flowData.get("nodes");
@@ -524,14 +549,14 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
     }
-    else if(action == "enable") {
+    else if (action == "enable") {
       var disabled = flowData.get("disabled");
 
       disabled[jobid] = false;
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
     }
-    else if(action == "enableAll") {
+    else if (action == "enableAll") {
       disabled = {};
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");

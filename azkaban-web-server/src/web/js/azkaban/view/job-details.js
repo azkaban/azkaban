@@ -19,18 +19,18 @@ $.namespace('azkaban');
 var jobLogView;
 azkaban.JobLogView = Backbone.View.extend({
   events: {
-    "click #updateLogBtn" : "refresh"
+    "click #updateLogBtn": "refresh"
   },
 
-  initialize: function() {
+  initialize: function () {
     this.listenTo(this.model, "change:logData", this.render);
   },
 
-  refresh: function() {
+  refresh: function () {
     this.model.refresh();
   },
 
-  render: function() {
+  render: function () {
     var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
     var log = this.model.get("logData");
     log = log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
@@ -38,7 +38,7 @@ azkaban.JobLogView = Backbone.View.extend({
   }
 });
 
-var showDialog = function(title, message) {
+var showDialog = function (title, message) {
   $('#messageTitle').text(title);
   $('#messageBox').text(message);
   $('#messageDialog').modal({
@@ -54,7 +54,7 @@ var showDialog = function(title, message) {
   });
 }
 
-$(function() {
+$(function () {
   var jobLogModel = new azkaban.JobLogModel();
   jobLogView = new azkaban.JobLogView({
     el: $('#jobLogView'),

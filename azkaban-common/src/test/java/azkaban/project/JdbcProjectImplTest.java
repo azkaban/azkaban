@@ -15,12 +15,9 @@
  */
 package azkaban.project;
 
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.db.AzDBTestUtility;
-import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
-import azkaban.db.DatabaseOperatorImpl;
 import azkaban.flow.Flow;
+import azkaban.test.Utils;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Md5Hasher;
@@ -33,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.dbutils.QueryRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -51,24 +47,14 @@ public class JdbcProjectImplTest {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    final AzkabanDataSource dataSource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
-    dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
-
-    final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
-    props.put("database.sql.scripts.dir", sqlScriptsDir);
-
-    // TODO kunkun-tang: Need to refactor AzkabanDatabaseSetup to accept datasource in azakaban-db
-    final azkaban.database.AzkabanDataSource dataSourceForSetupDB =
-        new azkaban.database.AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
-    final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSourceForSetupDB, props);
-    setup.loadTableInfo();
-    setup.updateDatabase(true, false);
+    dbOperator = Utils.initTestDB();
   }
 
   @AfterClass
   public static void destroyDB() {
     try {
       dbOperator.update("DROP ALL OBJECTS");
+      dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -169,7 +155,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1", computeHash(testFile), "resourceId1");
+    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1",
+        computeHash(testFile), "resourceId1");
     final int currVersion = this.loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);
   }
@@ -191,7 +178,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final int newVersion = this.loader.getLatestProjectVersion(project) + 7;
     this.loader.changeProjectVersion(project, newVersion, "uploadUser1");
-    final Project sameProject= this.loader.fetchProjectById(project.getId());
+    final Project sameProject = this.loader.fetchProjectById(project.getId());
     Assert.assertEquals(sameProject.getVersion(), newVersion);
   }
 
@@ -199,9 +186,11 @@ public class JdbcProjectImplTest {
   public void testUpdatePermission() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.updatePermission(project, project.getLastModifiedUser(), new Permission(Permission.Type.ADMIN), false);
+    this.loader.updatePermission(project, project.getLastModifiedUser(),
+        new Permission(Permission.Type.ADMIN), false);
 
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader.getProjectPermissions(project);
+    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
+        .getProjectPermissions(project);
     Assert.assertEquals(permissionsTriple.size(), 1);
     Assert.assertEquals(permissionsTriple.get(0).getFirst(), "testUser1");
     Assert.assertEquals(permissionsTriple.get(0).getThird().toString(), "ADMIN");
@@ -222,9 +211,11 @@ public class JdbcProjectImplTest {
   public void testRemovePermission() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.updatePermission(project, project.getLastModifiedUser(), new Permission(Permission.Type.ADMIN), false);
+    this.loader.updatePermission(project, project.getLastModifiedUser(),
+        new Permission(Permission.Type.ADMIN), false);
     this.loader.removePermission(project, project.getLastModifiedUser(), false);
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader.getProjectPermissions(project);
+    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
+        .getProjectPermissions(project);
     Assert.assertEquals(permissionsTriple.size(), 0);
   }
 
@@ -327,7 +318,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     this.loader.uploadProjectProperties(project, list);
 
-    final Map<String, Props> propsMap = this.loader.fetchProjectProperties(project.getId(), project.getVersion());
+    final Map<String, Props> propsMap = this.loader
+        .fetchProjectProperties(project.getId(), project.getVersion());
     Assert.assertEquals(propsMap.get("source1").get("key2"), "value2");
     Assert.assertEquals(propsMap.get("source2").get("keyaaa"), "valueaaa");
   }
@@ -343,7 +335,7 @@ public class JdbcProjectImplTest {
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
 
-    this.loader.cleanOlderProjectVersion(project.getId(), newVersion+1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
 
     final ProjectFileHandler fileHandler2 = this.loader
         .fetchProjectMetaData(project.getId(), newVersion);

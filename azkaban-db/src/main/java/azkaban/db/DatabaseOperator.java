@@ -20,9 +20,9 @@ import java.sql.SQLException;
 import org.apache.commons.dbutils.ResultSetHandler;
 
 /**
- * This interface is to define Base Data Access Object contract for Azkaban. All azkaban
- * DB related operations must be performed upon this interface. AZ DB operators all leverages
- * QueryRunner interface.
+ * This interface is to define Base Data Access Object contract for Azkaban. All azkaban DB related
+ * operations must be performed upon this interface. AZ DB operators all leverages QueryRunner
+ * interface.
  *
  * @see org.apache.commons.dbutils.QueryRunner
  */
@@ -41,9 +41,9 @@ public interface DatabaseOperator {
       throws SQLException;
 
   /**
-   * Provide a way to allow users define custom SQL operations without relying on fixed
-   * SQL interface. The common use case is to group a sequence of SQL operations without
-   * commit every time.
+   * Provide a way to allow users define custom SQL operations without relying on fixed SQL
+   * interface. The common use case is to group a sequence of SQL operations without commit every
+   * time.
    *
    * @param operations A sequence of DB operations
    * @param <T> The type of object that the operations returns. Note that T could be null
@@ -60,8 +60,8 @@ public interface DatabaseOperator {
    */
   int update(String updateClause, Object... params) throws SQLException;
 
-   /**
-    * @return datasource wrapped in the database operator.
-    */
-   AzkabanDataSource getDataSource();
+  /**
+   * @return datasource wrapped in the database operator.
+   */
+  AzkabanDataSource getDataSource();
 }

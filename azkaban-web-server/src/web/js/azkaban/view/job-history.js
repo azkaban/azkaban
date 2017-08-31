@@ -14,7 +14,6 @@
  * the License.
  */
 
-
 $.namespace('azkaban');
 
 var jobHistoryView;
@@ -22,7 +21,7 @@ var jobHistoryView;
 var dataModel;
 azkaban.DataModel = Backbone.Model.extend({});
 
-$(function() {
+$(function () {
   var selected;
   var series = dataSeries;
   dataModel = new azkaban.DataModel();

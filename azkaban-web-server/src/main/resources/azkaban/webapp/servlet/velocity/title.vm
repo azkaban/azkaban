@@ -13,8 +13,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
 *#
-      <h1 class="logo"><a href="${context}/" title="Azkaban">Azkaban</a></h1>
-      <div class="enviro">
-        <p class="enviro-name">${azkaban_name}</p>
-        <p class="enviro-server">${azkaban_label}</p>
-      </div>
+<h1 class="logo"><a href="${context}/" title="Azkaban">Azkaban</a></h1>
+<div class="enviro">
+  <p class="enviro-name">${azkaban_name}</p>
+  <p class="enviro-server">${azkaban_label}</p>
+</div>

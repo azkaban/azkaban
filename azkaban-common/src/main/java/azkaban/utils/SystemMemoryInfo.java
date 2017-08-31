@@ -5,12 +5,12 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * This class is used to maintain system memory information. Processes utilizing
- * large amount of memory should consult this class to see if the system has enough
- * memory to proceed the operation.
+ * This class is used to maintain system memory information. Processes utilizing large amount of
+ * memory should consult this class to see if the system has enough memory to proceed the
+ * operation.
  *
- * Memory information is obtained from /proc/meminfo, so only Unix/Linux like system
- * will support this class.
+ * Memory information is obtained from /proc/meminfo, so only Unix/Linux like system will support
+ * this class.
  *
  * All the memory size used in this function is in KB.
  */

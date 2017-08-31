@@ -39,18 +39,23 @@ int INVALID_INPUT = 30;
 
 /*
  *  Change the real and effective user and group from super user to the specified user
- *  
+ *
  *  Adopted from:
  *  ./hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/native/container-executor/impl/container-executor.c
- *  
+ *
  */
 
-int change_user(uid_t user, gid_t group) {
+int change_user(char *username, uid_t user, gid_t group) {
     if (user == getuid() && user == geteuid() &&
             group == getgid() && group == getegid()) {
         return 0;
     }
 
+    if (initgroups(username, group) != 0) {
+        fprintf(LOGFILE, "Error setting supplementary groups for user %s: %s\n",
+            username, strerror(errno));
+        return SETUID_OPER_FAILED;
+    }
     if (seteuid(0) != 0) {
         fprintf(LOGFILE, "unable to reacquire root - %s\n", strerror(errno));
         fprintf(LOGFILE, "Real: %d:%d; Effective: %d:%d\n",
@@ -85,24 +90,24 @@ int main(int argc, char **argv){
     }
 
     if (argc < 3) {
-        fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user uid command [args]");
+        fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user username command [args]");
         return INVALID_INPUT;
     }
 
-    char *uid = argv[1];
+    char *username = argv[1];
 
     // gather information about user
-    struct passwd *user_info = getpwnam(uid);
+    struct passwd *user_info = getpwnam(username);
     if (user_info == NULL){
-        fprintf(LOGFILE, "user does not exist: %s", uid);
+        fprintf(LOGFILE, "user does not exist: %s", username);
         return USER_NOT_FOUND;
     }
 
     // try to change user
-    fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, user_info->pw_uid, user_info->pw_gid);
-    int retval = change_user(user_info->pw_uid, user_info->pw_gid);
+    fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", username, user_info->pw_uid, user_info->pw_gid);
+    int retval = change_user(username, user_info->pw_uid, user_info->pw_gid);
     if (retval != 0){
-        fprintf(LOGFILE, "Error changing user to %s\n", uid);
+        fprintf(LOGFILE, "Error changing user to %s\n", username);
         return SETUID_OPER_FAILED;
     }
 

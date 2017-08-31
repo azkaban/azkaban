@@ -30,8 +30,8 @@ import org.apache.log4j.Logger;
 class FlowRunnerTestUtil {
 
   /**
-   * Initialize the project with the flow definitions stored in the given source directory.
-   * Also copy the source directory to the working directory.
+   * Initialize the project with the flow definitions stored in the given source directory. Also
+   * copy the source directory to the working directory.
    *
    * @param project project to initialize
    * @param sourceDir the source dir

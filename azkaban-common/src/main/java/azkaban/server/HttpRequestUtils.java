@@ -84,19 +84,17 @@ public class HttpRequestUtils {
           "notifyFailureLast")));
     }
 
-    String concurrentOption = "skip";
-    if (hasParam(req, "concurrentOption")) {
-      concurrentOption = getParam(req, "concurrentOption");
-      execOptions.setConcurrentOption(concurrentOption);
-      if (concurrentOption.equals("pipeline")) {
-        final int pipelineLevel = getIntParam(req, "pipelineLevel");
-        execOptions.setPipelineLevel(pipelineLevel);
-      } else if (concurrentOption.equals("queue")) {
-        // Not yet implemented
-        final int queueLevel = getIntParam(req, "queueLevel", 1);
-        execOptions.setPipelineLevel(queueLevel);
-      }
+    String concurrentOption = getParam(req, "concurrentOption", "skip");
+    execOptions.setConcurrentOption(concurrentOption);
+    if (concurrentOption.equals("pipeline")) {
+      final int pipelineLevel = getIntParam(req, "pipelineLevel");
+      execOptions.setPipelineLevel(pipelineLevel);
+    } else if (concurrentOption.equals("queue")) {
+      // Not yet implemented
+      final int queueLevel = getIntParam(req, "queueLevel", 1);
+      execOptions.setPipelineLevel(queueLevel);
     }
+
     String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
     if (hasParam(req, "mailCreator")) {
       mailCreator = getParam(req, "mailCreator");
@@ -145,8 +143,7 @@ public class HttpRequestUtils {
   }
 
   /**
-   * parse a string as number and throws exception if parsed value is not a
-   * valid integer
+   * parse a string as number and throws exception if parsed value is not a valid integer
    *
    * @throws ExecutorManagerException if paramName is not a valid integer
    */
@@ -182,8 +179,7 @@ public class HttpRequestUtils {
   }
 
   /**
-   * Retrieves the param from the http servlet request. Will throw an exception
-   * if not found
+   * Retrieves the param from the http servlet request. Will throw an exception if not found
    */
   public static String getParam(final HttpServletRequest request, final String name)
       throws ServletException {
@@ -208,8 +204,8 @@ public class HttpRequestUtils {
   }
 
   /**
-   * Returns the param and parses it into an int. Will throw an exception if not
-   * found, or a parse error if the type is incorrect.
+   * Returns the param and parses it into an int. Will throw an exception if not found, or a parse
+   * error if the type is incorrect.
    */
   public static int getIntParam(final HttpServletRequest request, final String name)
       throws ServletException {

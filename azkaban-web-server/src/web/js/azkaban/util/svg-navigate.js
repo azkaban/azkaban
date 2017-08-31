@@ -14,8 +14,8 @@
  * the License.
  */
 
-(function($) {
-  var mouseUp = function(evt) {
+(function ($) {
+  var mouseUp = function (evt) {
     if (evt.button > 1) {
       return;
     }
@@ -25,7 +25,7 @@
     target.mDown = false;
   }
 
-  var mouseDown = function(evt) {
+  var mouseDown = function (evt) {
     if (evt.button > 1) {
       return;
     }
@@ -36,14 +36,14 @@
     target.mDown = true;
   }
 
-  var mouseOut = function(evt) {
+  var mouseOut = function (evt) {
     var target = evt.target;
     target.mx = evt.clientX;
     target.my = evt.clientY;
     target.mDown = false;
   }
 
-  var mouseMove = function(evt) {
+  var mouseMove = function (evt) {
     var target = evt.target;
     if (target.mDown) {
       var dx = evt.clientX - target.mx;
@@ -58,11 +58,11 @@
     target.my = evt.clientY;
   }
 
-  var mouseDrag = function(evt) {
+  var mouseDrag = function (evt) {
     translateDeltaGraph(evt.target, evt.dragX, evt.dragY);
   }
 
-  var mouseScrolled = function(evt) {
+  var mouseScrolled = function (evt) {
     if (!evt) {
       evt = window.event;
     }
@@ -115,7 +115,7 @@
     scaleGraph(target, scale, x, y);
   }
 
-  this.boundZoomLevel = function(target, level) {
+  this.boundZoomLevel = function (target, level) {
     if (level >= target.settings.zoomNumLevels) {
       return target.settings.zoomNumLevels - 1;
     }
@@ -126,7 +126,7 @@
     return level;
   }
 
-  this.scaleGraph = function(target, scale, x, y) {
+  this.scaleGraph = function (target, scale, x, y) {
     var sfactor = scale / target.scale;
     target.scale = scale;
 
@@ -139,7 +139,7 @@
     retransform(target);
   }
 
-  this.translateDeltaGraph = function(target, x, y) {
+  this.translateDeltaGraph = function (target, x, y) {
     target.translateX += x;
     target.translateY += y;
     if (target.model) {
@@ -148,11 +148,12 @@
     retransform(target);
   }
 
-  this.retransform = function(target) {
+  this.retransform = function (target) {
     var gs = target.childNodes;
 
-    var transformString = "translate(" + target.translateX + "," + target.translateY +
-                ") scale(" + target.scale + ")";
+    var transformString = "translate(" + target.translateX + ","
+        + target.translateY +
+        ") scale(" + target.scale + ")";
 
     for (var i = 0; i < gs.length; ++i) {
       var g = gs[i];
@@ -176,7 +177,7 @@
     }
   }
 
-  this.resetTransform = function(target) {
+  this.resetTransform = function (target) {
     var settings = target.settings;
     target.translateX = settings.x;
     target.translateY = settings.y;
@@ -194,8 +195,8 @@
       var aspectRatioDiv = divHeight / divWidth;
 
       var scale = aspectRatioGraph > aspectRatioDiv
-              ? (divHeight / height) * factor
-              : (divWidth / width) * factor;
+          ? (divHeight / height) * factor
+          : (divWidth / width) * factor;
       target.scale = scale;
     }
     else {
@@ -204,7 +205,7 @@
     }
   }
 
-  this.animateTransform = function(target, scale, x, y, duration) {
+  this.animateTransform = function (target, scale, x, y, duration) {
     var zoomLevel = calculateZoomLevel(scale, target.zoomLevels);
     target.fromScaleLevel = target.zoomIndex;
     target.toScaleLevel = zoomLevel;
@@ -220,17 +221,18 @@
     this.animateTick(target);
   }
 
-  this.animateTick = function(target) {
+  this.animateTick = function (target) {
     var time = new Date().getTime();
     if (time < target.endTime) {
       var timeDiff = time - target.startTime;
       var progress = timeDiff / (target.endTime - target.startTime);
 
-      target.scale = (target.toScale - target.fromScale) * progress + target.fromScale;
+      target.scale = (target.toScale - target.fromScale) * progress
+          + target.fromScale;
       target.translateX = (target.toX - target.fromX) * progress + target.fromX;
       target.translateY = (target.toY - target.fromY) * progress + target.fromY;
       retransform(target);
-      setTimeout(function() {
+      setTimeout(function () {
         this.animateTick(target)
       }, 1);
     }
@@ -243,7 +245,7 @@
     }
   }
 
-  this.calculateZoomScale = function(scaleLevel, numLevels, points) {
+  this.calculateZoomScale = function (scaleLevel, numLevels, points) {
     if (scaleLevel <= 0) {
       return points[0];
     }
@@ -259,7 +261,7 @@
     return b * (points[ceilingIdx] - points[floorIdx]) + points[floorIdx];
   }
 
-  this.calculateZoomLevel = function(scale, zoomLevels) {
+  this.calculateZoomLevel = function (scale, zoomLevels) {
     if (scale >= zoomLevels[zoomLevels.length - 1]) {
       return zoomLevels.length - 1;
     }
@@ -284,30 +286,30 @@
   }
 
   var methods = {
-    init : function(options) {
+    init: function (options) {
       var settings = {
-        x : 0,
-        y : 0,
-        x2 : 0,
-        y2 : 0,
-        minX : -1000,
-        minY : -1000,
-        maxX : 1000,
-        maxY : 1000,
-        zoomIndex : 24,
-        zoomPoints : [ 0.1, 0.14, 0.2, 0.4, 0.8, 1, 1.6, 2.4, 4, 8, 16 ],
-        zoomNumLevels : 48
+        x: 0,
+        y: 0,
+        x2: 0,
+        y2: 0,
+        minX: -1000,
+        minY: -1000,
+        maxX: 1000,
+        maxY: 1000,
+        zoomIndex: 24,
+        zoomPoints: [0.1, 0.14, 0.2, 0.4, 0.8, 1, 1.6, 2.4, 4, 8, 16],
+        zoomNumLevels: 48
       };
       if (options) {
         $.extend(settings, options);
       }
-      return this.each(function() {
+      return this.each(function () {
         var $this = $(this);
         this.settings = settings;
         this.marker = true;
 
         if (window.addEventListener) {
-          this.addEventListener('wheel', mouseScrolled,false);
+          this.addEventListener('wheel', mouseScrolled, false);
         }
         this.onmousewheel = mouseScrolled;
         this.onmousedown = mouseDown;
@@ -316,14 +318,15 @@
         this.onmouseout = mouseOut;
 
         this.zoomLevels = new Array(settings.zoomNumLevels);
-        for ( var i = 0; i < settings.zoomNumLevels; ++i) {
-          var scale = calculateZoomScale(i, settings.zoomNumLevels, settings.zoomPoints);
+        for (var i = 0; i < settings.zoomNumLevels; ++i) {
+          var scale = calculateZoomScale(i, settings.zoomNumLevels,
+              settings.zoomPoints);
           this.zoomLevels[i] = scale;
         }
         resetTransform(this);
       });
     },
-    transformToBox : function(arguments) {
+    transformToBox: function (arguments) {
       var $this = $(this);
       var target = ($this)[0];
       var x = arguments.x;
@@ -341,8 +344,8 @@
       var aspectRatioDiv = divHeight / divWidth;
 
       var scale = aspectRatioGraph > aspectRatioDiv
-              ? (divHeight / height) * factor
-              : (divWidth / width) * factor;
+          ? (divHeight / height) * factor
+          : (divWidth / width) * factor;
 
       if (arguments.maxScale) {
         if (scale > arguments.maxScale) {
@@ -369,7 +372,7 @@
 
       animateTransform(target, scale, sx, sy, duration);
     },
-    attachNavigateModel : function(arguments) {
+    attachNavigateModel: function (arguments) {
       var $this = $(this);
       var target = ($this)[0];
       target.model = arguments;
@@ -386,16 +389,17 @@
         obj.y2 = obj.y1 + obj.width * obj.scale;
 
         target.model.set({
-          transform : obj
+          transform: obj
         });
       }
     }
   };
 
   // Main Constructor
-  $.fn.svgNavigate = function(method) {
+  $.fn.svgNavigate = function (method) {
     if (methods[method]) {
-      return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+      return methods[method].apply(this,
+          Array.prototype.slice.call(arguments, 1));
     }
     else if (typeof method === 'object' || !method) {
       return methods.init.apply(this, arguments);

@@ -20,9 +20,6 @@ import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.server.session.Session;
 import azkaban.trigger.TriggerManager;
-import azkaban.user.Permission;
-import azkaban.user.Role;
-import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -74,12 +71,6 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     if (hasParam(req, "ajax")) {
       Map<String, Object> ret = new HashMap<>();
 
-      if (!hasPermission(session.getUser(), Permission.Type.METRICS)) {
-        ret.put("error", "User " + session.getUser().getUserId()
-            + " has no permission.");
-        this.writeJSON(resp, ret, true);
-        return;
-      }
       final String ajax = getParam(req, "ajax");
       if (JMX_GET_ALL_EXECUTOR_ATTRIBUTES.equals(ajax)) {
         if (!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_HOSTPORT)) {
@@ -177,13 +168,6 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/jmxpage.vm");
 
-    if (!hasPermission(session.getUser(), Permission.Type.METRICS)) {
-      page.add("errorMsg", "User " + session.getUser().getUserId()
-          + " has no permission.");
-      page.render();
-      return;
-    }
-
     page.add("mbeans", this.server.getMbeanNames());
 
     final Map<String, Object> executorMBeans = new HashMap<>();
@@ -213,17 +197,5 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
 
-  }
-
-  protected boolean hasPermission(final User user, final Permission.Type type) {
-    for (final String roleName : user.getRoles()) {
-      final Role role = this.userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 }

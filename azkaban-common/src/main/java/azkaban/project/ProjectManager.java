@@ -30,6 +30,7 @@ import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.log4j.Logger;
 
 
+@Singleton
 public class ProjectManager {
 
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
@@ -188,8 +190,6 @@ public class ProjectManager {
 
   /**
    * Checks if a project is active using project_name
-   *
-   * @param name
    */
   public Boolean isActiveProject(final String name) {
     return this.projectsByName.containsKey(name);
@@ -197,19 +197,13 @@ public class ProjectManager {
 
   /**
    * Checks if a project is active using project_id
-   *
-   * @param name
    */
   public Boolean isActiveProject(final int id) {
     return this.projectsById.containsKey(id);
   }
 
   /**
-   * fetch active project from cache and inactive projects from db by
-   * project_name
-   *
-   * @param name
-   * @return
+   * fetch active project from cache and inactive projects from db by project_name
    */
   public Project getProject(final String name) {
     Project fetchedProject = null;
@@ -226,11 +220,7 @@ public class ProjectManager {
   }
 
   /**
-   * fetch active project from cache and inactive projects from db by
-   * project_id
-   *
-   * @param id
-   * @return
+   * fetch active project from cache and inactive projects from db by project_id
    */
   public Project getProject(final int id) {
     Project fetchedProject = null;
@@ -292,13 +282,8 @@ public class ProjectManager {
   }
 
   /**
-   * Permanently delete all project files and properties data for all versions
-   * of a project and log event in project_events table
-   *
-   * @param project
-   * @param deleter
-   * @return
-   * @throws ProjectManagerException
+   * Permanently delete all project files and properties data for all versions of a project and log
+   * event in project_events table
    */
   public synchronized Project purgeProject(final Project project, final User deleter)
       throws ProjectManagerException {
@@ -427,28 +412,24 @@ public class ProjectManager {
   }
 
   /**
-   * This method retrieves the uploaded project zip file from DB. A temporary
-   * file is created to hold the content of the uploaded zip file. This
-   * temporary file is provided in the ProjectFileHandler instance and the
-   * caller of this method should call method
-   * {@ProjectFileHandler.deleteLocalFile}
-   * to delete the temporary file.
+   * This method retrieves the uploaded project zip file from DB. A temporary file is created to
+   * hold the content of the uploaded zip file. This temporary file is provided in the
+   * ProjectFileHandler instance and the caller of this method should call method
+   * {@ProjectFileHandler.deleteLocalFile} to delete the temporary file.
    *
-   * @param project
    * @param version - latest version is used if value is -1
-   * @return ProjectFileHandler - null if can't find project zip file based on
-   *         project name and version
-   * @throws ProjectManagerException
+   * @return ProjectFileHandler - null if can't find project zip file based on project name and
+   * version
    */
   public ProjectFileHandler getProjectFileHandler(final Project project, final int version)
       throws ProjectManagerException {
-    return azkabanProjectLoader.getProjectFile(project, version);
+    return this.azkabanProjectLoader.getProjectFile(project, version);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
       final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException {
-    return azkabanProjectLoader
+    return this.azkabanProjectLoader
         .uploadProject(project, archive, fileType, uploader, additionalProps);
   }
 

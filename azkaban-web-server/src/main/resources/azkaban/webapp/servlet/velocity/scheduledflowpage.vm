@@ -16,81 +16,82 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
 
-#parse ("azkaban/webapp/servlet/velocity/style.vm")
-#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+  #parse ("azkaban/webapp/servlet/velocity/style.vm")
+  #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
+  <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
 
-    <script type="text/javascript" src="${context}/js/moment.min.js"></script>
-    <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/scheduled.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
-    <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
-    <script type="text/javascript">
-      var contextURL = "${context}";
-      var currentTime = ${currentTime};
-      var timezone = "${timezone}";
-      var errorMessage = null;
-      var successMessage = null;
+  <script type="text/javascript" src="${context}/js/moment.min.js"></script>
+  <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/scheduled.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+    var errorMessage = null;
+    var successMessage = null;
 
-      $(document).ready(function () {
-        var flowTable = $("#scheduledFlowsTbl");
-        flowTable.tablesorter();
-      });
-    </script>
-  </head>
-  <body>
+    $(document).ready(function () {
+      var flowTable = $("#scheduledFlowsTbl");
+      flowTable.tablesorter();
+    });
+  </script>
+</head>
+<body>
 
-#set ($current_page="schedule")
-#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+  #set ($current_page="schedule")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-#if ($errorMsg)
-  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
-#else
+  #if ($errorMsg)
+    #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+  #else
 
   ## Page header.
 
-    <div class="az-page-header">
-      <div class="container-full">
-        <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
-      </div>
+  <div class="az-page-header">
+    <div class="container-full">
+      <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
     </div>
+  </div>
 
   ## Page content.
 
-    <div class="container-full">
+  <div class="container-full">
 
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+    #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
-      <div class="row">
-        <div class="col-xs-12">
-          <table id="scheduledFlowsTbl" class="table table-striped table-condensed table-bordered table-hover">
-            <thead>
-              <tr>
-                <!--th class="execid">Execution Id</th-->
-                <th>#</th>
-                <th>ID</th>
-                <th>Flow</th>
-                <th>Project</th>
-                <th>Submitted By</th>
-                <th class="date">First Scheduled to Run</th>
-                <th class="date">Next Execution Time</th>
-                <th class="date">Repeats Every</th>
-                <th class="date">Cron Expression</th>
-                <th>Has SLA</th>
-                <th colspan="2" class="action ignoresort">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-  #if(!$schedules.isEmpty())
-    #foreach($sched in $schedules)
+    <div class="row">
+      <div class="col-xs-12">
+        <table id="scheduledFlowsTbl"
+               class="table table-striped table-condensed table-bordered table-hover">
+          <thead>
+          <tr>
+            <!--th class="execid">Execution Id</th-->
+            <th>#</th>
+            <th>ID</th>
+            <th>Flow</th>
+            <th>Project</th>
+            <th>Submitted By</th>
+            <th class="date">First Scheduled to Run</th>
+            <th class="date">Next Execution Time</th>
+            <th class="date">Repeats Every</th>
+            <th class="date">Cron Expression</th>
+            <th>Has SLA</th>
+            <th colspan="2" class="action ignoresort">Action</th>
+          </tr>
+          </thead>
+          <tbody>
+            #if(!$schedules.isEmpty())
+              #foreach($sched in $schedules)
               <tr>
                 <td class="tb-name">
-                   $velocityCount
+                  $velocityCount
                 </td>
                 <td>${sched.scheduleId}</td>
                 <td class="tb-name">
@@ -103,35 +104,44 @@
                 <td>$utils.formatDateTime(${sched.firstSchedTime})</td>
                 <td>$utils.formatDateTime(${sched.nextExecTime})</td>
                 #if (${sched.period})
-                  <td> $utils.formatPeriod(${sched.period}) </td>
+                  <td> $utils.formatPeriod(${sched.period})</td>
                 #else
                   <td>Not Applicable</td>
                 #end
                 #if (${sched.cronExpression})
-                  <td> ${sched.cronExpression} </td>
+                  <td> ${sched.cronExpression}</td>
                 #else
                   <td>Not Applicable</td>
                 #end
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
-                <td><button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
-                <td><button type="button" id="addSlaBtn" class="btn btn-sm btn-primary" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
+                <td>
+                  <button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger"
+                          onclick="removeSched(${sched.scheduleId})">Remove Schedule
+                  </button>
+                </td>
+                <td>
+                  <button type="button" id="addSlaBtn" class="btn btn-sm btn-primary"
+                          onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')">
+                    Set SLA
+                  </button>
+                </td>
               </tr>
-    #end
-  #else
-              <tr>
-                <td colspan="11">No scheduled flow found.</td>
-              </tr>
-  #end
-            </tbody>
-          </table>
-        </div><!-- /col-xs-12 -->
-      </div><!-- /row -->
+              #end
+            #else
+            <tr>
+              <td colspan="11">No scheduled flow found.</td>
+            </tr>
+            #end
+          </tbody>
+        </table>
+      </div><!-- /col-xs-12 -->
+    </div><!-- /row -->
 
   ## Set SLA modal.
 
-  #parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
+    #parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
 
-    </div>
-#end
-  </body>
+  </div>
+  #end
+</body>
 </html>

@@ -24,8 +24,8 @@ import org.junit.Test;
 public class BlockingStatusTest {
 
   /**
-   * TODO: Ignore this test at present since travis in Github can not always pass this test.
-   * We will modify the below code to make travis pass in future.
+   * TODO: Ignore this test at present since travis in Github can not always pass this test. We will
+   * modify the below code to make travis pass in future.
    */
   @Ignore
   @Test
@@ -44,8 +44,8 @@ public class BlockingStatusTest {
   }
 
   /**
-   * TODO: Ignore this test at present since travis in Github can not always pass this test.
-   * We will modify the below code to make travis pass in future.
+   * TODO: Ignore this test at present since travis in Github can not always pass this test. We will
+   * modify the below code to make travis pass in future.
    */
   @Ignore
   @Test
@@ -65,8 +65,8 @@ public class BlockingStatusTest {
   }
 
   /**
-   * TODO: Ignore this test at present since travis in Github can not always pass this test.
-   * We will modify the below code to make travis pass in future.
+   * TODO: Ignore this test at present since travis in Github can not always pass this test. We will
+   * modify the below code to make travis pass in future.
    */
   @Ignore
   @Test
@@ -89,8 +89,8 @@ public class BlockingStatusTest {
   }
 
   /**
-   * TODO: Ignore this test at present since travis in Github can not always pass this test.
-   * We will modify the below code to make travis pass in future.
+   * TODO: Ignore this test at present since travis in Github can not always pass this test. We will
+   * modify the below code to make travis pass in future.
    */
   @Ignore
   @Test

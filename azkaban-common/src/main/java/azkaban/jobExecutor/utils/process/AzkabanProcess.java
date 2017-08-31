@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -34,8 +34,7 @@ import org.apache.log4j.Logger;
 /**
  * An improved version of java.lang.Process.
  *
- * Output is read by separate threads to avoid deadlock and logged to log4j
- * loggers.
+ * Output is read by separate threads to avoid deadlock and logged to log4j loggers.
  */
 public class AzkabanProcess {
 
@@ -149,6 +148,8 @@ public class AzkabanProcess {
 
   /**
    * Await the start of this process
+   *
+   * When this method returns, the job process has been created and a this.processId has been set.
    *
    * @throws InterruptedException if the thread is interrupted while waiting.
    */

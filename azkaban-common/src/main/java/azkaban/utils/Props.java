@@ -38,8 +38,8 @@ import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
 /**
- * Hashmap implementation of a hierarchitical properties with helpful converter
- * functions and Exception throwing. This class is not threadsafe.
+ * Hashmap implementation of a hierarchitical properties with helpful converter functions and
+ * Exception throwing. This class is not threadsafe.
  */
 public class Props {
 
@@ -125,16 +125,15 @@ public class Props {
   }
 
   /**
-   * Create a Props with a null parent from a list of key value pairing. i.e.
-   * [key1, value1, key2, value2 ...]
+   * Create a Props with a null parent from a list of key value pairing. i.e. [key1, value1, key2,
+   * value2 ...]
    */
   public static Props of(final String... args) {
     return of((Props) null, args);
   }
 
   /**
-   * Create a Props from a list of key value pairing. i.e. [key1, value1, key2,
-   * value2 ...]
+   * Create a Props from a list of key value pairing. i.e. [key1, value1, key2, value2 ...]
    */
   public static Props of(final Props parent, final String... args) {
     if (args.length % 2 != 0) {
@@ -254,9 +253,8 @@ public class Props {
   }
 
   /**
-   * Put the given string value for the string key. This method performs any
-   * variable substitution in the value replacing any occurance of ${name} with
-   * the value of get("name").
+   * Put the given string value for the string key. This method performs any variable substitution
+   * in the value replacing any occurance of ${name} with the value of get("name").
    *
    * @param key The key to put the value to
    * @param value The value to do substitution on and store
@@ -268,10 +266,9 @@ public class Props {
   }
 
   /**
-   * Put the given Properties into the Props. This method performs any variable
-   * substitution in the value replacing any occurrence of ${name} with the
-   * value of get("name"). get() is called first on the Props and next on the
-   * Properties object.
+   * Put the given Properties into the Props. This method performs any variable substitution in the
+   * value replacing any occurrence of ${name} with the value of get("name"). get() is called first
+   * on the Props and next on the Properties object.
    *
    * @param properties The properties to put
    * @throws IllegalArgumentException If the variable given for substitution is not a valid key in
@@ -354,16 +351,16 @@ public class Props {
   }
 
   /**
-   * The number of unique keys defined by this Props (keys defined only in
-   * parent Props are not counted)
+   * The number of unique keys defined by this Props (keys defined only in parent Props are not
+   * counted)
    */
   public int localSize() {
     return this._current.size();
   }
 
   /**
-   * Attempts to return the Class that corresponds to the Props value. If the
-   * class doesn't exit, an IllegalArgumentException will be thrown.
+   * Attempts to return the Class that corresponds to the Props value. If the class doesn't exit, an
+   * IllegalArgumentException will be thrown.
    */
   public Class<?> getClass(final String key) {
     try {
@@ -392,8 +389,7 @@ public class Props {
   }
 
   /**
-   * Gets the class from the Props. If it doesn't exist, it will return the
-   * defaultClass
+   * Gets the class from the Props. If it doesn't exist, it will return the defaultClass
    */
   public Class<?> getClass(final String key, final Class<?> defaultClass) {
     if (containsKey(key)) {
@@ -404,8 +400,7 @@ public class Props {
   }
 
   /**
-   * Gets the string from the Props. If it doesn't exist, it will return the
-   * defaultValue
+   * Gets the string from the Props. If it doesn't exist, it will return the defaultValue
    */
   public String getString(final String key, final String defaultValue) {
     if (containsKey(key)) {
@@ -416,8 +411,7 @@ public class Props {
   }
 
   /**
-   * Gets the string from the Props. If it doesn't exist, throw and
-   * UndefinedPropertiesException
+   * Gets the string from the Props. If it doesn't exist, throw and UndefinedPropertiesException
    */
   public String getString(final String key) {
     if (containsKey(key)) {
@@ -453,8 +447,8 @@ public class Props {
   }
 
   /**
-   * Returns a list of strings with the comma as the separator of the value. If
-   * the value is null, it'll return the defaultValue.
+   * Returns a list of strings with the comma as the separator of the value. If the value is null,
+   * it'll return the defaultValue.
    */
   public List<String> getStringList(final String key, final List<String> defaultValue) {
     if (containsKey(key)) {
@@ -465,8 +459,8 @@ public class Props {
   }
 
   /**
-   * Returns a list of strings with the sep as the separator of the value. If
-   * the value is null, it'll return the defaultValue.
+   * Returns a list of strings with the sep as the separator of the value. If the value is null,
+   * it'll return the defaultValue.
    */
   public List<String> getStringList(final String key, final List<String> defaultValue,
       final String sep) {
@@ -478,8 +472,8 @@ public class Props {
   }
 
   /**
-   * Returns true if the value equals "true". If the value is null, then the
-   * default value is returned.
+   * Returns true if the value equals "true". If the value is null, then the default value is
+   * returned.
    */
   public boolean getBoolean(final String key, final boolean defaultValue) {
     if (containsKey(key)) {
@@ -503,9 +497,8 @@ public class Props {
   }
 
   /**
-   * Returns the long representation of the value. If the value is null, then
-   * the default value is returned. If the value isn't a long, then a parse
-   * exception will be thrown.
+   * Returns the long representation of the value. If the value is null, then the default value is
+   * returned. If the value isn't a long, then a parse exception will be thrown.
    */
   public long getLong(final String name, final long defaultValue) {
     if (containsKey(name)) {
@@ -517,8 +510,8 @@ public class Props {
 
   /**
    * Returns the long representation of the value. If the value is null, then a
-   * UndefinedPropertyException will be thrown. If the value isn't a long, then
-   * a parse exception will be thrown.
+   * UndefinedPropertyException will be thrown. If the value isn't a long, then a parse exception
+   * will be thrown.
    */
   public long getLong(final String name) {
     if (containsKey(name)) {
@@ -530,9 +523,8 @@ public class Props {
   }
 
   /**
-   * Returns the int representation of the value. If the value is null, then the
-   * default value is returned. If the value isn't a int, then a parse exception
-   * will be thrown.
+   * Returns the int representation of the value. If the value is null, then the default value is
+   * returned. If the value isn't a int, then a parse exception will be thrown.
    */
   public int getInt(final String name, final int defaultValue) {
     if (containsKey(name)) {
@@ -544,8 +536,8 @@ public class Props {
 
   /**
    * Returns the int representation of the value. If the value is null, then a
-   * UndefinedPropertyException will be thrown. If the value isn't a int, then a
-   * parse exception will be thrown.
+   * UndefinedPropertyException will be thrown. If the value isn't a int, then a parse exception
+   * will be thrown.
    */
   public int getInt(final String name) {
     if (containsKey(name)) {
@@ -557,9 +549,8 @@ public class Props {
   }
 
   /**
-   * Returns the double representation of the value. If the value is null, then
-   * the default value is returned. If the value isn't a double, then a parse
-   * exception will be thrown.
+   * Returns the double representation of the value. If the value is null, then the default value is
+   * returned. If the value isn't a double, then a parse exception will be thrown.
    */
   public double getDouble(final String name, final double defaultValue) {
     if (containsKey(name)) {
@@ -570,9 +561,9 @@ public class Props {
   }
 
   /**
-   * Returns the double representation of the value. If the value is null, then
-   * a UndefinedPropertyException will be thrown. If the value isn't a double,
-   * then a parse exception will be thrown.
+   * Returns the double representation of the value. If the value is null, then a
+   * UndefinedPropertyException will be thrown. If the value isn't a double, then a parse exception
+   * will be thrown.
    */
   public double getDouble(final String name) {
     if (containsKey(name)) {
@@ -584,9 +575,8 @@ public class Props {
   }
 
   /**
-   * Returns the uri representation of the value. If the value is null, then the
-   * default value is returned. If the value isn't a uri, then a
-   * IllegalArgumentException will be thrown.
+   * Returns the uri representation of the value. If the value is null, then the default value is
+   * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
    */
   public URI getUri(final String name) {
     if (containsKey(name)) {
@@ -602,9 +592,8 @@ public class Props {
   }
 
   /**
-   * Returns the double representation of the value. If the value is null, then
-   * the default value is returned. If the value isn't a uri, then a
-   * IllegalArgumentException will be thrown.
+   * Returns the double representation of the value. If the value is null, then the default value is
+   * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
    */
   public URI getUri(final String name, final URI defaultValue) {
     if (containsKey(name)) {

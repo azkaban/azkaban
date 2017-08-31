@@ -16,7 +16,7 @@
 
 package azkaban.project;
 
-import azkaban.test.executions.TestExecutions;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.net.URISyntaxException;
 import org.apache.log4j.Logger;
@@ -38,7 +38,7 @@ public class DirectoryFlowLoaderTest {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("exectest1"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("exectest1"));
     logger.info(loader.getFlowMap().size());
   }
 
@@ -47,7 +47,7 @@ public class DirectoryFlowLoaderTest {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
   }
 
@@ -56,7 +56,7 @@ public class DirectoryFlowLoaderTest {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, TestExecutions.getFlowDir("embedded_bad"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded_bad"));
     for (final String error : loader.getErrors()) {
       System.out.println(error);
     }

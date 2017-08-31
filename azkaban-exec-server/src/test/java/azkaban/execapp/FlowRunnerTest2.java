@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
@@ -32,10 +33,10 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -95,13 +96,10 @@ import org.junit.Test;
  */
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
-  private static final File TEST_DIR = new File(
-      "../test/src/test/resources/azkaban/test/executions/embedded2");
   private static int id = 101;
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
-  private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
   private Project project;
   private Map<String, Flow> flowMap;
@@ -121,14 +119,14 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
     pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, TEST_DIR, this.logger, this.workingDir);
+        .prepareProject(this.project, ExecutionsTestUtil.getFlowDir("embedded2"), this.logger,
+            this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -1037,6 +1035,31 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   }
 
   /**
+   * Tests the case when a job is killed by SLA causing a flow to fail. The flow should be in
+   * "killed" status.
+   */
+  @Test
+  public void testFlowKilledByJobLevelSLA() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector,
+        FailureAction.CANCEL_ALL);
+
+    runFlowRunnerInThread(this.runner);
+    assertStatus("joba", Status.RUNNING);
+    assertStatus("joba1", Status.RUNNING);
+
+    for (final JobRunner jobRunner : this.runner.getActiveJobRunners()) {
+      if (jobRunner.getJobId().equals("joba")) {
+        jobRunner.killBySLA();
+        break;
+      }
+    }
+
+    assertFlowStatus(Status.KILLED);
+    assertThreadShutDown();
+  }
+
+  /**
    * Tests the case when a flow is paused and a failure causes a kill. The flow should die
    * immediately regardless of the 'paused' status.
    */
@@ -1118,7 +1141,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     final FlowRunner runner = new FlowRunner(
         this.fakeExecutorLoader.fetchExecutableFlow(exId), this.fakeExecutorLoader,
-        this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
+        mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

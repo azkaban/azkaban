@@ -96,10 +96,8 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable {
   }
 
   /**
-   * Method used to notify manager for a tracking event.
-   * Metric is free to call this method as per implementation.
-   * Timer based or Azkaban events are the most common implementation
-   * {@inheritDoc}
+   * Method used to notify manager for a tracking event. Metric is free to call this method as per
+   * implementation. Timer based or Azkaban events are the most common implementation {@inheritDoc}
    *
    * @see azkaban.metric.IMetric#notifyManager()
    */

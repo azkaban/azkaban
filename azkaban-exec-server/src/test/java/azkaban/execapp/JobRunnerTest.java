@@ -286,9 +286,11 @@ public class JobRunnerTest {
     final Thread thread = new Thread(runner);
     thread.start();
 
-    Thread.sleep(2000);
+    StatusTestUtils.waitForStatus(node, Status.READY);
+    // sleep so that job has time to get into delayExecution() -> wait()
+    Thread.sleep(1000L);
     runner.kill();
-    Thread.sleep(500);
+    StatusTestUtils.waitForStatus(node, Status.KILLED);
 
     eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node)));
 
@@ -297,8 +299,8 @@ public class JobRunnerTest {
         node.getStatus() == Status.KILLED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 1000);
-    Assert.assertTrue(node.getStartTime() - startTime >= 2000);
-    Assert.assertTrue(node.getStartTime() - startTime <= 5000);
+    Assert.assertTrue(node.getStartTime() - startTime >= 1000);
+    Assert.assertTrue(node.getStartTime() - startTime <= 4000);
     Assert.assertTrue(runner.isKilled());
 
     final File logFile = new File(runner.getLogFilePath());
@@ -306,6 +308,9 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(logFile.exists());
 
+    // sleep so that there's time to make the "DB update" for KILLED status
+    Thread.sleep(1000L);
+    Assert.assertEquals(2L, loader.getNodeUpdateCount("testJob").longValue());
     Assert.assertEquals(2L, (long) loader.getNodeUpdateCount("testJob"));
     eventCollector.assertEvents(Type.JOB_FINISHED);
   }

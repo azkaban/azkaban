@@ -34,12 +34,11 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Xml implementation of the UserManager. Looks for the property
- * user.manager.xml.file in the azkaban properties.
+ * Xml implementation of the UserManager. Looks for the property user.manager.xml.file in the
+ * azkaban properties.
  *
- * The xml to be in the following form: <azkaban-users> <user
- * username="username" password="azkaban" roles="admin" groups="azkaban"/>
- * </azkaban-users>
+ * The xml to be in the following form: <azkaban-users> <user username="username" password="azkaban"
+ * roles="admin" groups="azkaban"/> </azkaban-users>
  */
 public class XmlUserManager implements UserManager {
 
@@ -60,7 +59,6 @@ public class XmlUserManager implements UserManager {
   private static final Logger logger = Logger.getLogger(XmlUserManager.class
       .getName());
   private final String xmlPath;
-  private final String passwordErrorMessage;
 
   private HashMap<String, User> users;
   private HashMap<String, String> userPassword;
@@ -73,7 +71,7 @@ public class XmlUserManager implements UserManager {
    */
   public XmlUserManager(final Props props) {
     this.xmlPath = props.getString(XML_FILE_PARAM);
-    this.passwordErrorMessage = props.getString("azkaban.error.password.message", "Username/password not found.");
+
     parseXMLFile();
   }
 
@@ -261,7 +259,7 @@ public class XmlUserManager implements UserManager {
     }
 
     if (foundPassword == null || !foundPassword.equals(password)) {
-      throw new UserManagerException(this.passwordErrorMessage);
+      throw new UserManagerException("Username/Password not found.");
     }
     // Once it gets to this point, no exception has been thrown. User
     // shoudn't be

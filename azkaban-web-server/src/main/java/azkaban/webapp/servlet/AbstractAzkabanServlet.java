@@ -123,8 +123,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
-   * Retrieves the param from the http servlet request. Will throw an exception
-   * if not found
+   * Retrieves the param from the http servlet request. Will throw an exception if not found
    */
   public String getParam(final HttpServletRequest request, final String name)
       throws ServletException {
@@ -140,8 +139,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
-   * Returns the param and parses it into an int. Will throw an exception if not
-   * found, or a parse error if the type is incorrect.
+   * Returns the param and parses it into an int. Will throw an exception if not found, or a parse
+   * error if the type is incorrect.
    */
   public int getIntParam(final HttpServletRequest request, final String name)
       throws ServletException {
@@ -190,8 +189,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
-   * Sets an error message in azkaban.failure.message in the cookie. This will
-   * be used by the web client javascript to somehow display the message
+   * Sets an error message in azkaban.failure.message in the cookie. This will be used by the web
+   * client javascript to somehow display the message
    */
   protected void setErrorMessageInCookie(final HttpServletResponse response,
       final String errorMsg) {
@@ -201,8 +200,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
-   * Sets a warning message in azkaban.warn.message in the cookie. This will
-   * be used by the web client javascript to somehow display the message
+   * Sets a warning message in azkaban.warn.message in the cookie. This will be used by the web
+   * client javascript to somehow display the message
    */
   protected void setWarnMessageInCookie(final HttpServletResponse response,
       final String errorMsg) {
@@ -212,8 +211,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
-   * Sets a message in azkaban.success.message in the cookie. This will be used
-   * by the web client javascript to somehow display the message
+   * Sets a message in azkaban.success.message in the cookie. This will be used by the web client
+   * javascript to somehow display the message
    */
   protected void setSuccessMessageInCookie(final HttpServletResponse response,
       final String message) {
@@ -259,8 +258,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
-   * Retrieves a cookie by name. Potential issue in performance if a lot of
-   * cookie variables are used.
+   * Retrieves a cookie by name. Potential issue in performance if a lot of cookie variables are
+   * used.
    */
   protected Cookie getCookieByName(final HttpServletRequest request, final String name) {
     final Cookie[] cookies = request.getCookies();
@@ -285,6 +284,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
+    page.add("note_type", NoteServlet.type);
+    page.add("note_message", NoteServlet.message);
+    page.add("note_url", NoteServlet.url);
     page.add("utils", utils);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
@@ -331,6 +333,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
+    page.add("note_type", NoteServlet.type);
+    page.add("note_message", NoteServlet.message);
+    page.add("note_url", NoteServlet.url);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("context", req.getContextPath());

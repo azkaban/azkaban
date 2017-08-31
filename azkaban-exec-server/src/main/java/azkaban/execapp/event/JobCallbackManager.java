@@ -30,14 +30,13 @@ import org.apache.log4j.Logger;
 /**
  * Responsible processing job callback properties on job status change events.
  *
- * When job callback properties are specified, they will be converted to HTTP
- * calls to execute. The HTTP requests will be made in asynchronous mode so the
- * caller to the handleEvent method will not be block. In addition, the HTTP
- * calls will be configured to time appropriately for connection request,
- * creating connection, and socket timeout.
+ * When job callback properties are specified, they will be converted to HTTP calls to execute. The
+ * HTTP requests will be made in asynchronous mode so the caller to the handleEvent method will not
+ * be block. In addition, the HTTP calls will be configured to time appropriately for connection
+ * request, creating connection, and socket timeout.
  *
- * The HTTP request and response will be logged out the job's log for debugging
- * and traceability purpose.
+ * The HTTP request and response will be logged out the job's log for debugging and traceability
+ * purpose.
  *
  * @author hluu
  */

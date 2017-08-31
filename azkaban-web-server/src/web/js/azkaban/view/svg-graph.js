@@ -21,10 +21,9 @@
 $.namespace('azkaban');
 
 azkaban.SvgGraphView = Backbone.View.extend({
-  events: {
-  },
+  events: {},
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     this.model.bind('change:selected', this.changeSelected, this);
     this.model.bind('centerNode', this.centerNode, this);
     this.model.bind('change:graph', this.render, this);
@@ -65,7 +64,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
     var self = this;
     if (self.rightClick && self.rightClick.graph) {
-      $(svg).on("contextmenu", function(evt) {
+      $(svg).on("contextmenu", function (evt) {
         console.log("graph click");
         var currentTarget = evt.currentTarget;
 
@@ -74,13 +73,14 @@ azkaban.SvgGraphView = Backbone.View.extend({
       });
     }
 
-    this.tooltipcontainer = settings.tooltipcontainer ? settings.tooltipcontainer : "body";
+    this.tooltipcontainer = settings.tooltipcontainer
+        ? settings.tooltipcontainer : "body";
     if (settings.render) {
       this.render();
     }
   },
 
-  render: function() {
+  render: function () {
     console.log("graph render");
     $(this.mainG).empty();
 
@@ -88,7 +88,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.resetPanZoom(0);
   },
 
-  renderGraph: function(data, g) {
+  renderGraph: function (data, g) {
     g.data = data;
     var nodes = data.nodes;
     var edges = data.edges;
@@ -99,7 +99,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
     if (nodes.length == 0) {
       console.log("No results");
       return;
-    };
+    }
+    ;
 
     // Assign labels
     for (var i = 0; i < nodes.length; ++i) {
@@ -109,13 +110,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var self = this;
     for (var i = 0; i < nodes.length; ++i) {
       this.drawNode(this, nodes[i], g);
-      $(nodes[i].gNode).click(function(evt) {
+      $(nodes[i].gNode).click(function (evt) {
         var selected = self.model.get("selected");
         if (selected == evt.currentTarget.data) {
           self.model.unset("selected");
         }
         else {
-          self.model.set({"selected":evt.currentTarget.data});
+          self.model.set({"selected": evt.currentTarget.data});
         }
 
         evt.stopPropagation();
@@ -134,7 +135,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
       this.drawEdge(this, edges[i], edgeG);
     }
 
-    this.model.set({"flowId":data.flowId, "edges": edges});
+    this.model.set({"flowId": data.flowId, "edges": edges});
 
     var margin = this.graphMargin;
     bounds.minX = bounds.minX ? bounds.minX - margin : -margin;
@@ -148,7 +149,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
       if (self.rightClick.node) {
         // Proper children selectors don't work properly on svg
         for (var i = 0; i < nodes.length; ++i) {
-          $(nodes[i].gNode).on("contextmenu", function(evt) {
+          $(nodes[i].gNode).on("contextmenu", function (evt) {
             console.log("node click");
             var currentTarget = evt.currentTarget;
             self.rightClick.node(evt, self.model, currentTarget.data);
@@ -157,7 +158,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
         }
       }
       if (this.rightClick.graph) {
-        $(g).on("contextmenu", function(evt) {
+        $(g).on("contextmenu", function (evt) {
           console.log("graph click");
           var currentTarget = evt.currentTarget;
 
@@ -165,9 +166,10 @@ azkaban.SvgGraphView = Backbone.View.extend({
           return false;
         });
       }
-    };
+    }
+    ;
 
-    $(".node").each(function(d,i) {
+    $(".node").each(function (d, i) {
       $(this).tooltip({
         container: self.tooltipcontainer,
         delay: {
@@ -180,32 +182,34 @@ azkaban.SvgGraphView = Backbone.View.extend({
     return bounds;
   },
 
-  handleDisabledChange: function(evt) {
+  handleDisabledChange: function (evt) {
     this.changeDisabled(this.model.get('data'));
   },
 
-  changeDisabled: function(data) {
+  changeDisabled: function (data) {
     for (var i = 0; i < data.nodes.length; ++i) {
       var node = data.nodes[i];
       if (node.disabled) {
         if (node.gNode) {
           addClass(node.gNode, "nodeDisabled");
-          $(node.gNode).attr("title", "DISABLED (" + node.type + ")").tooltip('fixTitle');
+          $(node.gNode).attr("title", "DISABLED (" + node.type + ")").tooltip(
+              'fixTitle');
         }
       }
       else {
         if (node.gNode) {
           removeClass(node.gNode, "nodeDisabled");
-          $(node.gNode).attr("title", node.status + " (" + node.type + ")").tooltip('fixTitle');
+          $(node.gNode).attr("title", node.status + " (" + node.type
+              + ")").tooltip('fixTitle');
         }
-        if (node.type=='flow') {
+        if (node.type == 'flow') {
           this.changeDisabled(node);
         }
       }
     }
   },
 
-  assignInitialStatus: function(evt, data) {
+  assignInitialStatus: function (evt, data) {
     for (var i = 0; i < data.nodes.length; ++i) {
       var updateNode = data.nodes[i];
       var g = updateNode.gNode;
@@ -222,7 +226,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  changeSelected: function(self) {
+  changeSelected: function (self) {
     console.log("change selected");
     var selected = this.model.get("selected");
     var previous = this.model.previous("selected");
@@ -244,20 +248,20 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  propagateExpansion: function(node) {
+  propagateExpansion: function (node) {
     if (node.parent.type) {
       this.propagateExpansion(node.parent);
       this.expandFlow(node.parent);
     }
   },
 
-  handleStatusUpdate: function(evt) {
+  handleStatusUpdate: function (evt) {
     var updateData = this.model.get("update");
     var data = this.model.get("data");
     this.updateStatusChanges(updateData, data);
   },
 
-  updateStatusChanges: function(updateData, data) {
+  updateStatusChanges: function (updateData, data) {
     // Assumes all changes have been applied.
     if (updateData.nodes) {
       var nodeMap = data.nodeMap;
@@ -285,14 +289,14 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  handleRemoveAllStatus: function(gNode) {
+  handleRemoveAllStatus: function (gNode) {
     for (var j = 0; j < statusList.length; ++j) {
       var status = statusList[j];
       removeClass(gNode, status);
     }
   },
 
-  handleRightClick: function(self) {
+  handleRightClick: function (self) {
     if (this.rightClick) {
       var callbacks = this.rightClick;
       var currentTarget = self.currentTarget;
@@ -301,7 +305,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
       }
       else if (callbacks.edge &&
           (currentTarget.nodeName == "polyline" ||
-           currentTarget.nodeName == "line")) {
+              currentTarget.nodeName == "line")) {
         callbacks.edge(self, this.model);
       }
       else if (callbacks.graph) {
@@ -312,37 +316,38 @@ azkaban.SvgGraphView = Backbone.View.extend({
     return true;
   },
 
-  drawEdge: function(self, edge, g) {
+  drawEdge: function (self, edge, g) {
     var svg = this.svg;
     var svgns = self.svgns;
 
     var startNode = edge.fromNode;
     var endNode = edge.toNode;
 
-    var startPointY = startNode.y + startNode.height/2;
-    var endPointY = endNode.y - endNode.height/2;
+    var startPointY = startNode.y + startNode.height / 2;
+    var endPointY = endNode.y - endNode.height / 2;
 
     if (edge.guides) {
       // Create guide array
       var pointArray = new Array();
       pointArray.push([startNode.x, startPointY]);
-      for (var i = 0; i < edge.guides.length; ++i ) {
+      for (var i = 0; i < edge.guides.length; ++i) {
         var edgeGuidePoint = edge.guides[i];
         pointArray.push([edgeGuidePoint.x, edgeGuidePoint.y]);
       }
       pointArray.push([endNode.x, endPointY]);
 
-      edge.line = svg.polyline(g, pointArray, {class:"edge", fill:"none"});
+      edge.line = svg.polyline(g, pointArray, {class: "edge", fill: "none"});
       edge.line.data = edge;
       edge.oldpoints = pointArray;
     }
     else {
-      edge.line = svg.line(g, startNode.x, startPointY, endNode.x, endPointY, {class:"edge"});
+      edge.line = svg.line(g, startNode.x, startPointY, endNode.x, endPointY,
+          {class: "edge"});
       edge.line.data = edge;
     }
   },
 
-  drawNode: function(self, node, g) {
+  drawNode: function (self, node, g) {
     if (node.type == 'flow') {
       this.drawFlowNode(self, node, g);
     }
@@ -351,7 +356,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  moveNodes: function(nodes) {
+  moveNodes: function (nodes) {
     var svg = this.svg;
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i];
@@ -361,7 +366,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  expandFlow: function(node) {
+  expandFlow: function (node) {
     var svg = this.svg;
     var gnode = node.gNode;
     node.expanded = true;
@@ -372,7 +377,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
     var bbox;
     if (!innerG.expandedFlow) {
-      var topmargin= 30, bottommargin=5;
+      var topmargin = 30, bottommargin = 5;
       var hmargin = 10;
 
       var expandedFlow = svg.group(innerG, "", {class: "expandedGraph"});
@@ -403,7 +408,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.graphBounds = bounds;
   },
 
-  collapseFlow: function(node) {
+  collapseFlow: function (node) {
     console.log("Collapsing flow");
     var svg = this.svg;
     var gnode = node.gNode;
@@ -432,7 +437,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.graphBounds = bounds;
   },
 
-  relayoutFlow: function(node) {
+  relayoutFlow: function (node) {
     if (node.expanded) {
       this.layoutExpandedFlowNode(node);
     }
@@ -447,7 +452,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  moveNodeEdges: function(nodes, edges) {
+  moveNodeEdges: function (nodes, edges) {
     var svg = this.svg;
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i];
@@ -462,14 +467,14 @@ azkaban.SvgGraphView = Backbone.View.extend({
       var endNode = edge.toNode;
       var line = edge.line;
 
-      var startPointY = startNode.y + startNode.height/2;
-      var endPointY = endNode.y - endNode.height/2;
+      var startPointY = startNode.y + startNode.height / 2;
+      var endPointY = endNode.y - endNode.height / 2;
 
       if (edge.guides) {
         // Create guide array
         var pointArray = new Array();
         pointArray.push([startNode.x, startPointY]);
-        for (var i = 0; i < edge.guides.length; ++i ) {
+        for (var i = 0; i < edge.guides.length; ++i) {
           var edgeGuidePoint = edge.guides[i];
           pointArray.push([edgeGuidePoint.x, edgeGuidePoint.y]);
         }
@@ -489,7 +494,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  calculateBounds: function(nodes) {
+  calculateBounds: function (nodes) {
     var bounds = {};
     var node = nodes[0];
     bounds.minX = node.x - 10;
@@ -499,8 +504,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
     for (var i = 0; i < nodes.length; ++i) {
       node = nodes[i];
-      var centerX = node.width/2;
-      var centerY = node.height/2;
+      var centerX = node.width / 2;
+      var centerY = node.height / 2;
 
       var minX = node.x - centerX;
       var minY = node.y - centerY;
@@ -518,34 +523,35 @@ azkaban.SvgGraphView = Backbone.View.extend({
     return bounds;
   },
 
-  drawBoxNode: function(self, node, g) {
+  drawBoxNode: function (self, node, g) {
     var svg = this.svg;
     var horizontalMargin = 8;
     var verticalMargin = 2;
 
-    var nodeG = svg.group(g, "", {class:"node jobnode"});
+    var nodeG = svg.group(g, "", {class: "node jobnode"});
 
-    var innerG = svg.group(nodeG, "", {class:"nodebox"});
+    var innerG = svg.group(nodeG, "", {class: "nodebox"});
     var borderRect = svg.rect(innerG, 0, 0, 10, 10, 3, 3, {class: "border"});
     var jobNameText = svg.text(innerG, horizontalMargin, 16, node.label);
     nodeG.innerG = innerG;
     innerG.borderRect = borderRect;
 
     var labelBBox = jobNameText.getBBox();
-    var totalWidth = labelBBox.width + 2*horizontalMargin;
-    var totalHeight = labelBBox.height + 2*verticalMargin;
+    var totalWidth = labelBBox.width + 2 * horizontalMargin;
+    var totalHeight = labelBBox.height + 2 * verticalMargin;
     svg.change(borderRect, {width: totalWidth, height: totalHeight});
-    svg.change(jobNameText, {y: (totalHeight + labelBBox.height)/2 - 3});
-    svg.change(innerG, {transform: translateStr(-totalWidth/2, -totalHeight/2)});
+    svg.change(jobNameText, {y: (totalHeight + labelBBox.height) / 2 - 3});
+    svg.change(innerG,
+        {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
 
-    node.width=totalWidth;
-    node.height=totalHeight;
+    node.width = totalWidth;
+    node.height = totalHeight;
 
     node.gNode = nodeG;
     nodeG.data = node;
   },
 
-  drawFlowNode: function(self, node, g) {
+  drawFlowNode: function (self, node, g) {
     var svg = this.svg;
 
     // Base flow node
@@ -553,7 +559,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
     // Create all the elements
     var innerG = svg.group(nodeG, "", {class: "nodebox collapsed"});
-    var borderRect = svg.rect(innerG, 0, 0, 10, 10, 3, 3, {class: "flowborder"});
+    var borderRect = svg.rect(innerG, 0, 0, 10, 10, 3, 3,
+        {class: "flowborder"});
 
     // Create label
     var labelG = svg.group(innerG);
@@ -561,15 +568,16 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var iconWidth = 21;
     var textOffset = iconWidth + 4;
     var jobNameText = svg.text(labelG, textOffset, 1, node.label);
-    var flowIdText = svg.text(labelG, textOffset, 11, node.flowId, {"font-size": 8})
+    var flowIdText = svg.text(labelG, textOffset, 11, node.flowId,
+        {"font-size": 8})
     var tempLabelG = labelG.getBBox();
     var iconImage = svg.image(
-        labelG, 0, -iconHeight/2, iconWidth, iconHeight,
+        labelG, 0, -iconHeight / 2, iconWidth, iconHeight,
         contextURL + "/images/graph-icon.png", {});
 
     // Assign key values to make searching quicker
-    node.gNode=nodeG;
-    nodeG.data=node;
+    node.gNode = nodeG;
+    nodeG.data = node;
 
     // Do this because jquery svg selectors don't work
     nodeG.innerG = innerG;
@@ -580,7 +588,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.layoutFlowNode(self, node);
   },
 
-  layoutFlowNode: function(self, node) {
+  layoutFlowNode: function (self, node) {
     var svg = this.svg;
     var horizontalMargin = 8;
     var verticalMargin = 2;
@@ -591,11 +599,15 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var labelG = innerG.labelG;
 
     var labelBBox = labelG.getBBox();
-    var totalWidth = labelBBox.width + 2*horizontalMargin;
-    var totalHeight = labelBBox.height + 2*verticalMargin;
+    var totalWidth = labelBBox.width + 2 * horizontalMargin;
+    var totalHeight = labelBBox.height + 2 * verticalMargin;
 
-    svg.change(labelG, {transform: translateStr(horizontalMargin, labelBBox.height/2 + verticalMargin)});
-    svg.change(innerG, {transform: translateStr(-totalWidth/2, -totalHeight/2)});
+    svg.change(labelG, {
+      transform: translateStr(horizontalMargin, labelBBox.height / 2
+          + verticalMargin)
+    });
+    svg.change(innerG,
+        {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
     svg.change(borderRect, {width: totalWidth, height: totalHeight});
 
     node.height = totalHeight;
@@ -604,9 +616,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
     node.collapsedWidth = totalWidth;
   },
 
-  layoutExpandedFlowNode: function(node) {
+  layoutExpandedFlowNode: function (node) {
     var svg = this.svg;
-    var topmargin= 30, bottommargin=5;
+    var topmargin = 30, bottommargin = 5;
     var hmargin = 10;
 
     var gNode = node.gNode;
@@ -618,23 +630,26 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var bound = this.calculateBounds(node.nodes);
 
     node.height = bound.height + topmargin + bottommargin;
-    node.width = bound.width + hmargin*2;
-    svg.change(expandedFlow, {transform: translateStr(-bound.minX + hmargin, -bound.minY + topmargin)});
+    node.width = bound.width + hmargin * 2;
+    svg.change(expandedFlow, {
+      transform: translateStr(-bound.minX + hmargin, -bound.minY + topmargin)
+    });
     //$(innerG).animate({svgTransform: translateStr(-node.width/2, -node.height/2)}, 50);
     //$(borderRect).animate({svgWidth: node.width, svgHeight: node.height}, 50);
   },
 
-  animateExpandedFlowNode: function(node, time) {
+  animateExpandedFlowNode: function (node, time) {
     var gNode = node.gNode;
     var innerG = gNode.innerG;
     var borderRect = innerG.borderRect;
 
-    $(innerG).animate({svgTransform: translateStr(-node.width/2, -node.height/2)}, time);
+    $(innerG).animate(
+        {svgTransform: translateStr(-node.width / 2, -node.height / 2)}, time);
     $(borderRect).animate({svgWidth: node.width, svgHeight: node.height}, time);
     $(borderRect).animate({svgFill: 'white'}, time);
   },
 
-  resetPanZoom: function(duration) {
+  resetPanZoom: function (duration) {
     var bounds = this.graphBounds;
     var param = {
       x: bounds.minX,
@@ -646,24 +661,23 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.panZoom(param);
   },
 
-  centerNode: function(node) {
+  centerNode: function (node) {
     // The magic of affine transformation.
     // Multiply the inverse root matrix with the current matrix to get the node
     // position.
     // Rather do this than to traverse backwards through the scene graph.
     var ctm = node.gNode.getCTM();
-    var transform = node.gNode.getTransformToElement();
     var globalCTM = this.mainG.getCTM().inverse();
     var otherTransform = globalCTM.multiply(ctm);
     // Also a beauty of affine transformation. The translate is always the
     // left most column of the matrix.
-    var x = otherTransform.e - node.width/2;
-    var y = otherTransform.f - node.height/2;
+    var x = otherTransform.e - node.width / 2;
+    var y = otherTransform.f - node.height / 2;
 
     this.panZoom({x: x, y: y, width: node.width, height: node.height});
   },
 
-  globalNodePosition: function(gNode) {
+  globalNodePosition: function (gNode) {
     if (node.parent) {
 
       var parentPos = this.globalNodePosition(node.parent);
@@ -674,7 +688,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  panZoom: function(params) {
+  panZoom: function (params) {
     params.maxScale = 2;
     $(this.svgGraph).svgNavigate("transformToBox", params);
   }

@@ -47,8 +47,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 /**
- * Abstract Servlet that handles auto login when the session hasn't been
- * verified.
+ * Abstract Servlet that handles auto login when the session hasn't been verified.
  */
 public abstract class LoginAbstractAzkabanServlet extends
     AbstractAzkabanServlet {
@@ -228,7 +227,6 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   private Session getSessionFromRequest(final HttpServletRequest req)
       throws ServletException {
-    final String remoteIp = getRealClientIpAddr(req);
     final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
     String sessionId = null;
 
@@ -239,21 +237,15 @@ public abstract class LoginAbstractAzkabanServlet extends
     if (sessionId == null && hasParam(req, "session.id")) {
       sessionId = getParam(req, "session.id");
     }
-    return getSessionFromSessionId(sessionId, remoteIp);
+    return getSessionFromSessionId(sessionId);
   }
 
-  private Session getSessionFromSessionId(final String sessionId, final String remoteIp) {
+  private Session getSessionFromSessionId(final String sessionId) {
     if (sessionId == null) {
       return null;
     }
 
-    final Session session = getApplication().getSessionCache().getSession(sessionId);
-    // Check if the IP's are equal. If not, we invalidate the sesson.
-    if (session == null || !remoteIp.equals(session.getIp())) {
-      return null;
-    }
-
-    return session;
+    return getApplication().getSessionCache().getSession(sessionId);
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp)
@@ -290,9 +282,8 @@ public abstract class LoginAbstractAzkabanServlet extends
         // See if the session id is properly set.
         if (params.containsKey("session.id")) {
           final String sessionId = (String) params.get("session.id");
-          final String ip = getRealClientIpAddr(req);
 
-          session = getSessionFromSessionId(sessionId, ip);
+          session = getSessionFromSessionId(sessionId);
           if (session != null) {
             handleMultiformPost(req, resp, params, session);
             return;
@@ -354,16 +345,15 @@ public abstract class LoginAbstractAzkabanServlet extends
    * Disallows users from logging in by passing their username and password via the request header
    * where it'd be logged.
    *
-   * Example of illegal post request:
-   * curl -X POST http://localhost:8081/?action=login\&username=azkaban\&password=azkaban
+   * Example of illegal post request: curl -X POST http://localhost:8081/?action=login\&username=azkaban\&password=azkaban
    *
    * req.getParameterMap() or req.getParameterNames() cannot be used because they draw no
-   * distinction between the illegal request above and the following valid request:
-   * curl -X POST -d "action=login&username=azkaban&password=azkaban" http://localhost:8081/
+   * distinction between the illegal request above and the following valid request: curl -X POST -d
+   * "action=login&username=azkaban&password=azkaban" http://localhost:8081/
    *
    * "password=" is searched for because it leverages the query syntax to determine that the user is
-   * passing the password as a parameter name. There is no other ajax call that has a parameter
-   * that includes the string "password" at the end which could throw false positives.
+   * passing the password as a parameter name. There is no other ajax call that has a parameter that
+   * includes the string "password" at the end which could throw false positives.
    */
   private boolean isIllegalPostRequest(final HttpServletRequest req) {
     return (req.getQueryString() != null && req.getQueryString().contains("password="));
@@ -448,24 +438,21 @@ public abstract class LoginAbstractAzkabanServlet extends
   }
 
   /**
-   * The get request is handed off to the implementor after the user is logged
-   * in.
+   * The get request is handed off to the implementor after the user is logged in.
    */
   protected abstract void handleGet(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException,
       IOException;
 
   /**
-   * The post request is handed off to the implementor after the user is logged
-   * in.
+   * The post request is handed off to the implementor after the user is logged in.
    */
   protected abstract void handlePost(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException,
       IOException;
 
   /**
-   * The post request is handed off to the implementor after the user is logged
-   * in.
+   * The post request is handed off to the implementor after the user is logged in.
    */
   protected void handleMultiformPost(final HttpServletRequest req,
       final HttpServletResponse resp, final Map<String, Object> multipart, final Session session)

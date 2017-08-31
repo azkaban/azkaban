@@ -32,8 +32,8 @@ import org.apache.log4j.Logger;
 
 
 /**
- * Metric Emitter which maintains in memory snapshots of the metrics
- * This is also the default metric emitter and used by /stats servlet
+ * Metric Emitter which maintains in memory snapshots of the metrics This is also the default metric
+ * emitter and used by /stats servlet
  */
 public class InMemoryMetricEmitter implements IMetricEmitter {
 
@@ -83,8 +83,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   }
 
   /**
-   * Ingest metric in snapshot data structure while maintaining interval
-   * {@inheritDoc}
+   * Ingest metric in snapshot data structure while maintaining interval {@inheritDoc}
    *
    * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
    */
@@ -231,8 +230,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   }
 
   /**
-   * Clear snapshot data structure
-   * {@inheritDoc}
+   * Clear snapshot data structure {@inheritDoc}
    *
    * @see azkaban.metric.IMetricEmitter#purgeAllData()
    */

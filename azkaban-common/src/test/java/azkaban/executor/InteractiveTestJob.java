@@ -33,7 +33,6 @@ public class InteractiveTestJob extends AbstractProcessJob {
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
   private boolean succeed = true;
-  private boolean ignoreCancel = false;
 
   public InteractiveTestJob(final String jobId, final Props sysProps, final Props jobProps,
       final Logger log) {
@@ -41,7 +40,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
   }
 
   public static InteractiveTestJob getTestJob(final String name) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       if (testJobs.containsKey(name)) {
         return testJobs.get(name);
       }
@@ -49,6 +48,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
         try {
           InteractiveTestJob.testJobs.wait(10L);
         } catch (final InterruptedException e) {
+          i--;
         }
       }
     }
@@ -144,12 +144,6 @@ public class InteractiveTestJob extends AbstractProcessJob {
     }
   }
 
-  public void ignoreCancel() {
-    synchronized (this) {
-      this.ignoreCancel = true;
-    }
-  }
-
   @Override
   public Props getJobGeneratedProperties() {
     return this.generatedProperties;
@@ -158,8 +152,6 @@ public class InteractiveTestJob extends AbstractProcessJob {
   @Override
   public void cancel() throws InterruptedException {
     info("Killing job");
-    if (!this.ignoreCancel) {
-      failJob();
-    }
+    failJob();
   }
 }

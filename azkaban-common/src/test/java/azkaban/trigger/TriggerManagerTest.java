@@ -122,7 +122,7 @@ public class TriggerManagerTest {
     assertTrue(t1.getStatus() == TriggerStatus.PAUSED);
   }
 
-  private void sleep (final long millis) {
+  private void sleep(final long millis) {
     try {
       Thread.sleep(millis);
     } catch (final InterruptedException e) {
@@ -135,7 +135,7 @@ public class TriggerManagerTest {
     final Map<String, ConditionChecker> expireCheckers = new HashMap<>();
     final ConditionChecker triggerChecker = new ThresholdChecker(ThresholdChecker.type, threshold);
     final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeCheck_1", 111L,
-        DateTimeZone.UTC, 2536871155000L,false, false,
+        DateTimeZone.UTC, 2536871155000L, false, false,
         null, null);
     triggerCheckers.put(triggerChecker.getId(), triggerChecker);
     expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
@@ -169,7 +169,7 @@ public class TriggerManagerTest {
 
     // End time is 3 seconds past now.
     final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,
-        DateTimeZone.UTC, currMillis + 3000L,false, false,
+        DateTimeZone.UTC, currMillis + 3000L, false, false,
         null, null);
     triggerCheckers.put(triggerChecker.getId(), triggerChecker);
     expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
@@ -199,6 +199,7 @@ public class TriggerManagerTest {
   }
 
   public static class MockTriggerLoader implements TriggerLoader {
+
     private final Map<Integer, Trigger> triggers = new HashMap<>();
     private int idIndex = 0;
 

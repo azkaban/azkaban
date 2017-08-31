@@ -45,53 +45,60 @@ public class WebServerProvider implements Provider<Server> {
 
     final int maxThreads = this.props
         .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
-    final boolean isStatsOn = this.props.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
 
-    final boolean ssl;
+    final boolean useSsl = this.props.getBoolean("jetty.use.ssl", true);
     final int port;
     final Server server = new Server();
-    if (this.props.getBoolean("jetty.use.ssl", true)) {
+    if (useSsl) {
       final int sslPortNumber = this.props
           .getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
       port = sslPortNumber;
-      ssl = true;
-      logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
-          + " and numThreads:" + maxThreads);
-
-      final SslSocketConnector secureConnector = new SslSocketConnector();
-      secureConnector.setPort(sslPortNumber);
-      secureConnector.setKeystore(this.props.getString("jetty.keystore"));
-      secureConnector.setPassword(this.props.getString("jetty.password"));
-      secureConnector.setKeyPassword(this.props.getString("jetty.keypassword"));
-      secureConnector.setTruststore(this.props.getString("jetty.truststore"));
-      secureConnector.setTrustPassword(this.props.getString("jetty.trustpassword"));
-      secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
-
-      // set up vulnerable cipher suites to exclude
-      final List<String> cipherSuitesToExclude = this.props
-          .getStringList("jetty.excludeCipherSuites");
-      logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
-      if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
-        secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
-      }
-
-      server.addConnector(secureConnector);
+      server.addConnector(getSslSocketConnector(sslPortNumber));
     } else {
-      ssl = false;
       port = this.props.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
-      final SocketConnector connector = new SocketConnector();
-      connector.setPort(port);
-      connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
-      server.addConnector(connector);
+      server.addConnector(getSocketConnector(port));
     }
 
     // setting stats configuration for connectors
+    setStatsOnConnectors(server);
+
+    logger.info(String.format(
+        "Starting %sserver on port: %d # Max threads: %d", useSsl ? "SSL " : "", port, maxThreads));
+    return server;
+  }
+
+  private void setStatsOnConnectors(final Server server) {
+    final boolean isStatsOn = this.props.getBoolean("jetty.connector.stats", true);
+    logger.info("Setting up connector with stats on: " + isStatsOn);
     for (final Connector connector : server.getConnectors()) {
       connector.setStatsOn(isStatsOn);
     }
+  }
 
-    logger.info(String.format("Starting %sserver on port: %d", ssl ? "SSL " : "", port));
-    return server;
+  private SocketConnector getSocketConnector(final int port) {
+    final SocketConnector connector = new SocketConnector();
+    connector.setPort(port);
+    connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+    return connector;
+  }
+
+  private SslSocketConnector getSslSocketConnector(final int sslPortNumber) {
+    final SslSocketConnector secureConnector = new SslSocketConnector();
+    secureConnector.setPort(sslPortNumber);
+    secureConnector.setKeystore(this.props.getString("jetty.keystore"));
+    secureConnector.setPassword(this.props.getString("jetty.password"));
+    secureConnector.setKeyPassword(this.props.getString("jetty.keypassword"));
+    secureConnector.setTruststore(this.props.getString("jetty.truststore"));
+    secureConnector.setTrustPassword(this.props.getString("jetty.trustpassword"));
+    secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+
+    // set up vulnerable cipher suites to exclude
+    final List<String> cipherSuitesToExclude = this.props
+        .getStringList("jetty.excludeCipherSuites");
+    logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
+    if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
+      secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
+    }
+    return secureConnector;
   }
 }

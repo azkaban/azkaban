@@ -97,8 +97,6 @@ public class WebUtils {
         return "Paused";
       case SKIPPED:
         return "Skipped";
-      case KILLING:
-        return "Killing";
       default:
     }
     return "Unknown";
@@ -169,12 +167,11 @@ public class WebUtils {
   }
 
   /**
-   * Gets the actual client IP address inspecting the X-Forwarded-For
-   * HTTP header or using the provided 'remote IP address' from the
-   * low level TCP connection from the client.
+   * Gets the actual client IP address inspecting the X-Forwarded-For HTTP header or using the
+   * provided 'remote IP address' from the low level TCP connection from the client.
    *
-   * If multiple IP addresses are provided in the X-Forwarded-For header
-   * then the first one (first hop) is used
+   * If multiple IP addresses are provided in the X-Forwarded-For header then the first one (first
+   * hop) is used
    *
    * @param httpHeaders List of HTTP headers for the current request
    * @param remoteAddr The client IP address and port from the current request's TCP connection

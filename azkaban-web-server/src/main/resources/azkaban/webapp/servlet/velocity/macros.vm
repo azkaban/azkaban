@@ -15,5 +15,5 @@
 *#
 
 #macro(appname)
-  Azkaban Web Client
+Azkaban Web Client
 #end

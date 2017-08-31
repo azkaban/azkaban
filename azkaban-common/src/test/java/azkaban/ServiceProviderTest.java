@@ -18,7 +18,7 @@
 package azkaban;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectImpl;
@@ -39,6 +39,15 @@ public class ServiceProviderTest {
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
 
+  // Test if one class is singletonly guiced. could be called by
+  // AZ Common, Web, or Exec Modules.
+  public static void assertSingleton(final Class azkabanClass, final Injector injector) {
+    final Object azkabanObj1 = injector.getInstance(azkabanClass);
+    final Object azkabanObj2 = injector.getInstance(azkabanClass);
+    // Note: isSameAs is quite different from isEqualto in AssertJ
+    assertThat(azkabanObj1).isSameAs(azkabanObj2).isNotNull();
+  }
+
   @After
   public void tearDown() throws Exception {
     FileUtils.deleteDirectory(new File(AZKABAN_LOCAL_TEST_STORAGE));
@@ -58,11 +67,11 @@ public class ServiceProviderTest {
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
 
-    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectImpl.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(StorageManager.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(Storage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseOperator.class));
+    assertThat(injector.getInstance(JdbcProjectImpl.class)).isNotNull();
+    assertThat(injector.getInstance(StorageManager.class)).isNotNull();
+    assertThat(injector.getInstance(DatabaseStorage.class)).isNotNull();
+    assertThat(injector.getInstance(LocalStorage.class)).isNotNull();
+    assertThat(injector.getInstance(Storage.class)).isNotNull();
+    assertThat(injector.getInstance(DatabaseOperator.class)).isNotNull();
   }
 }

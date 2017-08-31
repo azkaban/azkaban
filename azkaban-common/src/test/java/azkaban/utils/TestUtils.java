@@ -19,6 +19,7 @@ package azkaban.utils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
@@ -31,16 +32,8 @@ import java.util.HashMap;
  */
 public class TestUtils {
 
-  /* Base  resource direcotyr for unit tests */
-  private static final String UNIT_RESOURCE_DIR =
-      "../test/src/test/resources/azkaban/test";
-  /* Directory with serialized description of test flows */
-  private static final String UNIT_EXECUTION_DIR =
-      UNIT_RESOURCE_DIR + "/executions";
-
   public static File getFlowDir(final String projectName, final String flow) {
-    return new File(String.format("%s/%s/%s.flow", UNIT_EXECUTION_DIR, projectName,
-        flow));
+    return ExecutionsTestUtil.getFlowFile(projectName, flow + ".flow");
   }
 
   public static User getTestUser() {
@@ -67,8 +60,8 @@ public class TestUtils {
   /* Helper method to create an XmlUserManager from XML_FILE_PARAM file */
   public static UserManager createTestXmlUserManager() {
     final Props props = new Props();
-    props.put(XmlUserManager.XML_FILE_PARAM, UNIT_RESOURCE_DIR
-        + "/azkaban-users.xml");
+    props.put(XmlUserManager.XML_FILE_PARAM, ExecutionsTestUtil.getDataRootDir()
+        + "azkaban-users.xml");
     final UserManager manager = new XmlUserManager(props);
     return manager;
   }

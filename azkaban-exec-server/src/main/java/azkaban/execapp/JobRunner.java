@@ -246,6 +246,10 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.node;
   }
 
+  public String getJobId() {
+    return this.node.getId();
+  }
+
   public String getLogFilePath() {
     return this.logFile == null ? null : this.logFile.getPath();
   }
@@ -390,32 +394,36 @@ public class JobRunner extends EventHandler implements Runnable {
    * anything.
    */
   private boolean handleNonReadyStatus() {
-    Status nodeStatus = this.node.getStatus();
-    boolean quickFinish = false;
-    final long time = System.currentTimeMillis();
+    synchronized (this.syncObject) {
+      Status nodeStatus = this.node.getStatus();
+      boolean quickFinish = false;
+      final long time = System.currentTimeMillis();
 
-    if (Status.isStatusFinished(nodeStatus)) {
-      quickFinish = true;
-    } else if (nodeStatus == Status.DISABLED) {
-      nodeStatus = changeStatus(Status.SKIPPED, time);
-      quickFinish = true;
-    } else if (this.isKilled()) {
-      nodeStatus = changeStatus(Status.KILLING, time);
-      quickFinish = true;
+      if (Status.isStatusFinished(nodeStatus)) {
+        quickFinish = true;
+      } else if (nodeStatus == Status.DISABLED) {
+        nodeStatus = changeStatus(Status.SKIPPED, time);
+        quickFinish = true;
+      } else if (this.isKilled()) {
+        nodeStatus = changeStatus(Status.KILLED, time);
+        quickFinish = true;
+      }
+
+      if (quickFinish) {
+        this.node.setStartTime(time);
+        fireEvent(
+            Event.create(this, Type.JOB_STARTED,
+                new EventData(nodeStatus, this.node.getNestedId())));
+        this.node.setEndTime(time);
+        fireEvent(
+            Event
+                .create(this, Type.JOB_FINISHED,
+                    new EventData(nodeStatus, this.node.getNestedId())));
+        return true;
+      }
+
+      return false;
     }
-
-    if (quickFinish) {
-      this.node.setStartTime(time);
-      fireEvent(
-          Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus, this.node.getNestedId())));
-      this.node.setEndTime(time);
-      fireEvent(
-          Event
-              .create(this, Type.JOB_FINISHED, new EventData(nodeStatus, this.node.getNestedId())));
-      return true;
-    }
-
-    return false;
   }
 
   /**
@@ -462,15 +470,15 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private boolean delayExecution() {
-    if (this.isKilled()) {
-      return true;
-    }
+    synchronized (this) {
+      if (this.isKilled()) {
+        return true;
+      }
 
-    final long currentTime = System.currentTimeMillis();
-    if (this.delayStartMs > 0) {
-      this.logger.info("Delaying start of execution for " + this.delayStartMs
-          + " milliseconds.");
-      synchronized (this) {
+      final long currentTime = System.currentTimeMillis();
+      if (this.delayStartMs > 0) {
+        this.logger.info("Delaying start of execution for " + this.delayStartMs
+            + " milliseconds.");
         try {
           this.wait(this.delayStartMs);
           this.logger.info("Execution has been delayed for " + this.delayStartMs
@@ -480,11 +488,11 @@ public class JobRunner extends EventHandler implements Runnable {
               + this.delayStartMs + ". Interrupted after "
               + (System.currentTimeMillis() - currentTime));
         }
-      }
 
-      if (this.isKilled()) {
-        this.logger.info("Job was killed while in delay. Quiting.");
-        return true;
+        if (this.isKilled()) {
+          this.logger.info("Job was killed while in delay. Quiting.");
+          return true;
+        }
       }
     }
 
@@ -597,15 +605,19 @@ public class JobRunner extends EventHandler implements Runnable {
       finalStatus = changeStatus(Status.KILLED);
     }
 
-    final int attemptNo = this.node.getAttempt();
-    logInfo("Finishing job " + this.jobId + " attempt: " + attemptNo + " at "
-        + this.node.getEndTime() + " with status " + this.node.getStatus());
+    logInfo(
+        "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
+            + " with status " + this.node.getStatus());
 
     fireEvent(Event.create(this, Type.JOB_FINISHED,
         new EventData(finalStatus, this.node.getNestedId())), false);
-    finalizeLogFile(attemptNo);
+    finalizeLogFile(this.node.getAttempt());
     finalizeAttachmentFile();
     writeStatus();
+  }
+
+  private String getNodeRetryLog() {
+    return this.node.getAttempt() > 0 ? (" retry: " + this.node.getAttempt()) : "";
   }
 
   private void uploadExecutableNode() {
@@ -629,12 +641,7 @@ public class JobRunner extends EventHandler implements Runnable {
         return null;
       }
 
-      if (this.node.getAttempt() > 0) {
-        logInfo("Starting job " + this.jobId + " attempt " + this.node.getAttempt()
-            + " at " + this.node.getStartTime());
-      } else {
-        logInfo("Starting job " + this.jobId + " at " + this.node.getStartTime());
-      }
+      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node.getStartTime());
 
       // If it's an embedded flow, we'll add the nested flow info to the job
       // conf
@@ -736,24 +743,25 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private Status runJob() {
-    Status finalStatus;
+    Status finalStatus = this.node.getStatus();
     try {
       this.job.run();
-      finalStatus = this.node.getStatus();
     } catch (final Throwable e) {
-      if (this.props.getBoolean("job.succeed.on.failure", false)) {
-        finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
-        logError("Job run failed, but will treat it like success.");
-        logError(e.getMessage() + " cause: " + e.getCause(), e);
-      } else {
-        if (isKilled() || this.node.getStatus() == Status.KILLED) {
-          finalStatus = Status.KILLED;
-          logError("Job run killed!", e);
+      synchronized (this.syncObject) {
+        if (this.props.getBoolean("job.succeed.on.failure", false)) {
+          finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
+          logError("Job run failed, but will treat it like success.");
+          logError(e.getMessage() + " cause: " + e.getCause(), e);
         } else {
-          finalStatus = changeStatus(Status.FAILED);
-          logError("Job run failed!", e);
+          if (isKilled() || this.node.getStatus() == Status.KILLED) {
+            finalStatus = Status.KILLED;
+            logError("Job run killed!", e);
+          } else {
+            finalStatus = changeStatus(Status.FAILED);
+            logError("Job run failed!", e);
+          }
+          logError(e.getMessage() + " cause: " + e.getCause());
         }
-        logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
 
@@ -761,9 +769,11 @@ public class JobRunner extends EventHandler implements Runnable {
       this.node.setOutputProps(this.job.getJobGeneratedProperties());
     }
 
-    // If the job is still running (but not killed), set the status to Success.
-    if (!Status.isStatusFinished(finalStatus) && finalStatus != Status.KILLING) {
-      finalStatus = changeStatus(Status.SUCCEEDED);
+    synchronized (this.syncObject) {
+      // If the job is still running, set the status to Success.
+      if (!Status.isStatusFinished(finalStatus) && !isKilled()) {
+        finalStatus = changeStatus(Status.SUCCEEDED);
+      }
     }
     return finalStatus;
   }
@@ -790,13 +800,17 @@ public class JobRunner extends EventHandler implements Runnable {
     this.fireEventListeners(event);
   }
 
+  public void killBySLA() {
+    kill();
+    this.getNode().setKilledBySLA(true);
+  }
+
   public void kill() {
     synchronized (this.syncObject) {
       if (Status.isStatusFinished(this.node.getStatus())) {
         return;
       }
       logError("Kill has been called.");
-      this.changeStatus(Status.KILLING);
       this.killed = true;
 
       final BlockingStatus status = this.currentBlockStatus;
@@ -822,6 +836,7 @@ public class JobRunner extends EventHandler implements Runnable {
             "Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
       }
 
+      this.changeStatus(Status.KILLED);
     }
   }
 

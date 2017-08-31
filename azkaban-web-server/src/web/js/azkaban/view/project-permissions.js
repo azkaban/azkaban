@@ -20,37 +20,38 @@ var permissionTableView;
 var groupPermissionTableView;
 
 azkaban.PermissionTableView = Backbone.View.extend({
-  events : {
+  events: {
     "click button": "handleChangePermission"
   },
 
-  initialize : function(settings) {
+  initialize: function (settings) {
     this.group = settings.group;
     this.proxy = settings.proxy;
   },
 
-  render: function() {
+  render: function () {
   },
 
-  handleChangePermission: function(evt) {
+  handleChangePermission: function (evt) {
     var currentTarget = evt.currentTarget;
-    changePermissionView.display(currentTarget.id, false, this.group, this.proxy);
+    changePermissionView.display(currentTarget.id, false, this.group,
+        this.proxy);
   }
 });
 
 var proxyTableView;
-azkaban.ProxyTableView= Backbone.View.extend({
-  events : {
+azkaban.ProxyTableView = Backbone.View.extend({
+  events: {
     "click button": "handleRemoveProxy"
   },
 
-  initialize : function(settings) {
+  initialize: function (settings) {
   },
 
-  render: function() {
+  render: function () {
   },
 
-  handleRemoveProxy: function(evt) {
+  handleRemoveProxy: function (evt) {
     removeProxyView.display($(evt.currentTarget).attr("name"));
   }
 });
@@ -61,19 +62,19 @@ azkaban.RemoveProxyView = Backbone.View.extend({
     "click #remove-proxy-btn": "handleRemoveProxy"
   },
 
-  initialize : function(settings) {
+  initialize: function (settings) {
     $('#remove-proxy-error-msg').hide();
   },
 
-  display: function(proxyName) {
+  display: function (proxyName) {
     this.el.proxyName = proxyName;
     $("#remove-proxy-msg").text("Removing proxy user '" + proxyName + "'");
-    $(this.el).modal().on('hide.bs.modal', function(e) {
+    $(this.el).modal().on('hide.bs.modal', function (e) {
       $('#remove-proxy-error-msg').hide();
     });
   },
 
-  handleRemoveProxy: function() {
+  handleRemoveProxy: function () {
     var requestURL = contextURL + "/manager";
     var proxyName = this.el.proxyName;
     var requestData = {
@@ -81,14 +82,14 @@ azkaban.RemoveProxyView = Backbone.View.extend({
       "name": proxyName,
       "ajax": "removeProxyUser"
     };
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       console.log("Output");
       if (data.error) {
         $("#remove-proxy-error-msg").text(data.error);
         $("#remove-proxy-error-msg").slideDown();
         return;
       }
-      var replaceURL = requestURL + "?project=" + projectName +"&permissions";
+      var replaceURL = requestURL + "?project=" + projectName + "&permissions";
       window.location.replace(replaceURL);
     };
 
@@ -102,26 +103,26 @@ azkaban.AddProxyView = Backbone.View.extend({
     "click #add-proxy-btn": "handleAddProxy"
   },
 
-  initialize : function(settings) {
+  initialize: function (settings) {
     $('#add-proxy-error-msg').hide();
   },
 
-  display: function() {
-    $(this.el).modal().on('hide.bs.modal', function(e) {
+  display: function () {
+    $(this.el).modal().on('hide.bs.modal', function (e) {
       $('#add-proxy-error-msg').hide();
     });
   },
 
-  handleAddProxy: function() {
+  handleAddProxy: function () {
     var requestURL = contextURL + "/manager";
     var name = $('#proxy-user-box').val().trim();
     var requestData = {
       "project": projectName,
       "name": name,
-      "ajax":"addProxyUser"
+      "ajax": "addProxyUser"
     };
 
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       console.log("Output");
       if (data.error) {
         $("#add-proxy-error-msg").text(data.error);
@@ -129,7 +130,7 @@ azkaban.AddProxyView = Backbone.View.extend({
         return;
       }
 
-      var replaceURL = requestURL + "?project=" + projectName +"&permissions";
+      var replaceURL = requestURL + "?project=" + projectName + "&permissions";
       window.location.replace(replaceURL);
     };
     $.get(requestURL, requestData, successHandler, "json");
@@ -137,20 +138,20 @@ azkaban.AddProxyView = Backbone.View.extend({
 });
 
 var changePermissionView;
-azkaban.ChangePermissionView= Backbone.View.extend({
+azkaban.ChangePermissionView = Backbone.View.extend({
   events: {
     "click input[type=checkbox]": "handleCheckboxClick",
     "click #change-btn": "handleChangePermissions"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     $('#change-permission-error-msg').hide();
   },
 
-  display: function(userid, newPerm, group, proxy) {
+  display: function (userid, newPerm, group, proxy) {
     // 6 is the length of the prefix "group-"
     this.userid = group ? userid.substring(6, userid.length) : userid;
-    if(group == true) {
+    if (group == true) {
       this.userid = userid.substring(6, userid.length)
     } else if (proxy == true) {
       this.userid = userid.substring(6, userid.length)
@@ -174,10 +175,10 @@ azkaban.ChangePermissionView= Backbone.View.extend({
       if (group) {
         $('#change-title').text("Add New Group Permissions");
       }
-      else if(proxy){
+      else if (proxy) {
         $('#change-title').text("Add New Proxy User Permissions");
       }
-      else{
+      else {
         $('#change-title').text("Add New User Permissions");
       }
       $('#user-box').attr("disabled", null);
@@ -209,18 +210,18 @@ azkaban.ChangePermissionView= Backbone.View.extend({
     this.changeCheckbox();
 
     changePermissionView.render();
-    $('#change-permission').modal().on('hide.bs.modal', function(e) {
+    $('#change-permission').modal().on('hide.bs.modal', function (e) {
       $('#change-permission-error-msg').hide();
     });
   },
 
-  render: function() {
+  render: function () {
   },
 
-  handleCheckboxClick: function(evt) {
+  handleCheckboxClick: function (evt) {
     console.log("click");
     var targetName = evt.currentTarget.name;
-    if(targetName == "proxy") {
+    if (targetName == "proxy") {
       this.doProxy = evt.currentTarget.checked;
     }
     else {
@@ -229,7 +230,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
     this.changeCheckbox(evt);
   },
 
-  changeCheckbox: function(evt) {
+  changeCheckbox: function (evt) {
     var perm = this.permission;
 
     if (perm.admin) {
@@ -259,13 +260,14 @@ azkaban.ChangePermissionView= Backbone.View.extend({
       $("#execute-change").attr("disabled", null);
 
       $("#schedule-change").attr("checked", perm.schedule);
-    $("#schedule-change").attr("disabled", null);
+      $("#schedule-change").attr("disabled", null);
     }
 
     $("#change-btn").removeClass("btn-disabled");
     $("#change-btn").attr("disabled", null);
 
-    if (perm.admin || perm.read || perm.write || perm.execute || perm.schedule) {
+    if (perm.admin || perm.read || perm.write || perm.execute
+        || perm.schedule) {
       $("#change-btn").text("Commit");
     }
     else {
@@ -279,7 +281,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
     }
   },
 
-  handleChangePermissions : function(evt) {
+  handleChangePermissions: function (evt) {
     var requestURL = contextURL + "/manager";
     var name = $('#user-box').val().trim();
     var command = this.newPerm ? "addPermission" : "changePermission";
@@ -299,7 +301,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
       "permissions": this.permission,
       "group": group
     };
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       console.log("Output");
       if (data.error) {
         $("#change-permission-error-msg").text(data.error);
@@ -307,7 +309,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
         return;
       }
 
-      var replaceURL = requestURL + "?project=" + projectName +"&permissions";
+      var replaceURL = requestURL + "?project=" + projectName + "&permissions";
       window.location.replace(replaceURL);
     };
 
@@ -315,7 +317,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
   }
 });
 
-$(function() {
+$(function () {
   permissionTableView = new azkaban.PermissionTableView({
     el: $('#permissions-table'),
     group: false,
@@ -340,15 +342,15 @@ $(function() {
   removeProxyView = new azkaban.RemoveProxyView({
     el: $('#remove-proxy')
   });
-  $('#addUser').bind('click', function() {
+  $('#addUser').bind('click', function () {
     changePermissionView.display("", true, false, false);
   });
 
-  $('#addGroup').bind('click', function() {
+  $('#addGroup').bind('click', function () {
     changePermissionView.display("", true, true, false);
   });
 
-  $('#addProxyUser').bind('click', function() {
+  $('#addProxyUser').bind('click', function () {
     addProxyView.display();
   });
 });

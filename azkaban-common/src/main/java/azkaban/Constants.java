@@ -18,14 +18,17 @@
 package azkaban;
 
 /**
- * Constants
+ * Constants used in configuration files or shared among classes.
  *
- * Global place for storing constants.
- * Conventions:
- * - All internal constants to be put in the root level ie. {@link Constants} class
- * - All Configuration keys to be put in {@link ConfigurationKeys} class
- * - Flow level Properties keys go to {@link FlowProperties}
- * - Job  level Properties keys go to {@link JobProperties}
+ * <p>Conventions:
+ *
+ * <p>Internal constants to be put in the {@link Constants} class
+ *
+ * <p>Configuration keys to be put in the {@link ConfigurationKeys} class
+ *
+ * <p>Flow level properties keys to be put in the {@link FlowProperties} class
+ *
+ * <p>Job level Properties keys to be put in the {@link JobProperties} class
  */
 public class Constants {
 
@@ -53,7 +56,9 @@ public class Constants {
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
   public static class ConfigurationKeys {
+
     // These properties are configurable through azkaban.properties
+    public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";
 
     // Defines a list of external links, each referred to as a topic
     public static final String AZKABAN_SERVER_EXTERNAL_TOPICS = "azkaban.server.external.topics";
@@ -87,6 +92,12 @@ public class Constants {
     // List of users we prevent azkaban from running flows as. (ie: root, azkaban)
     public static final String BLACK_LISTED_USERS = "azkaban.server.blacklist.users";
 
+    // Path name of execute-as-user executable
+    public static final String AZKABAN_SERVER_NATIVE_LIB_FOLDER = "azkaban.native.lib";
+
+    // Name of *nix group associated with the process running Azkaban
+    public static final String AZKABAN_SERVER_GROUP_NAME = "azkaban.group.name";
+
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
     // The property is used for the web server to get the host name of the executor when running in SOLO mode.
@@ -103,6 +114,23 @@ public class Constants {
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";
+
+    /*
+     * The max number of artifacts retained per project.
+     * Accepted Values:
+     * - 0 : Save all artifacts. No clean up is done on storage.
+     * - 1, 2, 3, ... (any +ve integer 'n') : Maintain 'n' latest versions in storage
+     *
+     * Note: Having an unacceptable value results in an exception and the service would REFUSE
+     * to start.
+     *
+     * Example:
+     * a) azkaban.storage.artifact.max.retention=all
+     *    implies save all artifacts
+     * b) azkaban.storage.artifact.max.retention=3
+     *    implies save latest 3 versions saved in storage.
+     **/
+    public static final String AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION = "azkaban.storage.artifact.max.retention";
   }
 
   public static class FlowProperties {

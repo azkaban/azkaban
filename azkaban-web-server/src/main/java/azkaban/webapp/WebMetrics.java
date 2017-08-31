@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * This singleton class WebMetrics is in charge of collecting varieties of metrics
- * from azkaban-web-server modules.
+ * This singleton class WebMetrics is in charge of collecting varieties of metrics from
+ * azkaban-web-server modules.
  */
 @Singleton
 public class WebMetrics {
@@ -47,10 +47,9 @@ public class WebMetrics {
   /**
    * Mark the occurrence of a GET call
    *
-   * This method should be Thread Safe.
-   * Two reasons that we don't make this function call synchronized:
-   * 1). drop wizard metrics deals with concurrency internally;
-   * 2). mark is basically a math addition operation, which should not cause race condition issue.
+   * This method should be Thread Safe. Two reasons that we don't make this function call
+   * synchronized: 1). drop wizard metrics deals with concurrency internally; 2). mark is basically
+   * a math addition operation, which should not cause race condition issue.
    */
   public void markWebGetCall() {
     this.webGetCall.mark();

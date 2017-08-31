@@ -61,8 +61,8 @@ public class ExecutorLogEvent {
   }
 
   /**
-   * Log event type messages. Do not change the numeric representation of each
-   * enum. Only represent from 0 to 255 different codes.
+   * Log event type messages. Do not change the numeric representation of each enum. Only represent
+   * from 0 to 255 different codes.
    */
   public enum EventType {
     ERROR(128), HOST_UPDATE(1), PORT_UPDATE(2), ACTIVATION(3), INACTIVATION(4),

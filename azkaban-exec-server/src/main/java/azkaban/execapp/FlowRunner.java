@@ -45,6 +45,7 @@ import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
@@ -112,13 +114,13 @@ public class FlowRunner extends EventHandler implements Runnable {
   private String jobLogFileSize = "5MB";
   private int jobLogNumFiles = 4;
 
-  private volatile boolean flowPaused = false;
-  private volatile boolean flowFailed = false;
-  private volatile boolean flowFinished = false;
-  private volatile boolean flowKilled = false;
+  private boolean flowPaused = false;
+  private boolean flowFailed = false;
+  private boolean flowFinished = false;
+  private boolean flowKilled = false;
 
   // The following is state that will trigger a retry of all failed jobs
-  private volatile boolean retryFailedJobs = false;
+  private boolean retryFailedJobs = false;
 
   /**
    * Constructor. This will create its own ExecutorService for thread pools
@@ -418,13 +420,15 @@ public class FlowRunner extends EventHandler implements Runnable {
       Set<String> outNodeIds = node.getOutNodes();
       ExecutableFlowBase parentFlow = node.getParentFlow();
 
-      // If a job is seen as failed, then we set the parent flow to
+      // If a job is seen as failed or killed due to failing SLA, then we set the parent flow to
       // FAILED_FINISHING
-      if (node.getStatus() == Status.FAILED) {
+      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node
+          .isKilledBySLA())) {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
-          propagateStatus(node.getParentFlow(), Status.FAILED_FINISHING);
+          propagateStatus(node.getParentFlow(),
+              node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
           if (this.failureAction == FailureAction.CANCEL_ALL) {
             this.kill();
           }
@@ -462,7 +466,8 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Instant kill or skip if necessary.
     boolean jobsRun = false;
     for (final ExecutableNode node : nodesToCheck) {
-      if (notReadyToRun(node.getStatus())) {
+      if (Status.isStatusFinished(node.getStatus())
+          || Status.isStatusRunning(node.getStatus())) {
         // Really shouldn't get in here.
         continue;
       }
@@ -476,12 +481,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     return false;
-  }
-
-  private boolean notReadyToRun(final Status status) {
-    return Status.isStatusFinished(status)
-        || Status.isStatusRunning(status)
-        || Status.KILLING == status;
   }
 
   private boolean runReadyJob(final ExecutableNode node) throws IOException {
@@ -546,7 +545,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   private void propagateStatus(final ExecutableFlowBase base, final Status status) {
-    if (!Status.isStatusFinished(base.getStatus()) && base.getStatus() != Status.KILLING) {
+    if (!Status.isStatusFinished(base.getStatus())) {
       this.logger.info("Setting " + base.getNestedId() + " to " + status);
       base.setStatus(status);
       if (base.getParentFlow() != null) {
@@ -573,7 +572,6 @@ public class FlowRunner extends EventHandler implements Runnable {
       final ExecutableNode node = flow.getExecutableNode(end);
 
       if (node.getStatus() == Status.KILLED
-          || node.getStatus() == Status.KILLING
           || node.getStatus() == Status.FAILED
           || node.getStatus() == Status.CANCELLED) {
         succeeded = false;
@@ -600,11 +598,6 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.logger.info("Setting flow '" + id + "' status to FAILED in "
             + durationSec + " seconds");
         flow.setStatus(Status.FAILED);
-        break;
-      case KILLING:
-        this.logger
-            .info("Setting flow '" + id + "' status to KILLED in " + durationSec + " seconds");
-        flow.setStatus(Status.KILLED);
         break;
       case FAILED:
       case KILLED:
@@ -874,7 +867,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         if (this.flowFailed) {
           this.flow.setStatus(Status.FAILED_FINISHING);
         } else if (this.flowKilled) {
-          this.flow.setStatus(Status.KILLING);
+          this.flow.setStatus(Status.KILLED);
         } else {
           this.flow.setStatus(Status.RUNNING);
         }
@@ -897,7 +890,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         return;
       }
       this.logger.info("Kill has been called on flow " + this.execId);
-      this.flow.setStatus(Status.KILLING);
+      this.flow.setStatus(Status.KILLED);
       // If the flow is paused, then we'll also unpause
       this.flowPaused = false;
       this.flowKilled = true;
@@ -947,8 +940,6 @@ public class FlowRunner extends EventHandler implements Runnable {
         nodesToRetry.add(node);
         continue;
       } else if (node.getStatus() == Status.RUNNING) {
-        continue;
-      } else if (node.getStatus() == Status.KILLING) {
         continue;
       } else if (node.getStatus() == Status.SKIPPED) {
         node.setStatus(Status.DISABLED);
@@ -1102,6 +1093,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     return this.execId;
   }
 
+  public Set<JobRunner> getActiveJobRunners() {
+    return ImmutableSet.copyOf(this.activeJobRunners);
+  }
+
   private class JobRunnerEventListener implements EventListener {
 
     public JobRunnerEventListener() {
@@ -1130,6 +1125,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           }
 
           FlowRunner.this.finishedNodes.add(node);
+          FlowRunner.this.activeJobRunners.remove(runner);
           node.getParentFlow().setUpdateTime(System.currentTimeMillis());
           interrupt();
           fireEventListeners(event);

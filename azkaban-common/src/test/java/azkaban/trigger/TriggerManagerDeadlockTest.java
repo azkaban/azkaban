@@ -24,6 +24,8 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
+import azkaban.utils.AbstractMailerTest;
+import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
@@ -44,12 +46,14 @@ public class TriggerManagerDeadlockTest {
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
     this.loader = new MockTriggerLoader();
-    final Props props = new Props();
+    final Props props = AbstractMailerTest.createMailProperties();
     props.put("trigger.scan.interval", 1000);
     props.put("executor.port", 12321);
     this.execLoader = new MockExecutorLoader();
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        new AlerterHolder(props), new CommonMetrics(new MetricsManager(new MetricRegistry())));
+        new AlerterHolder(props, new Emailer(props, commonMetrics)),
+        commonMetrics);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 

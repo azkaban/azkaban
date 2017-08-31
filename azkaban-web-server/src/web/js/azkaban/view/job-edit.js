@@ -18,8 +18,8 @@ $.namespace('azkaban');
 
 var jobEditView;
 azkaban.JobEditView = Backbone.View.extend({
-  events : {
-    "click" : "closeEditingTarget",
+  events: {
+    "click": "closeEditingTarget",
     "click #set-btn": "handleSet",
     "click #cancel-btn": "handleCancel",
     "click #close-btn": "handleCancel",
@@ -28,23 +28,23 @@ azkaban.JobEditView = Backbone.View.extend({
     "click table .remove-btn": "handleRemoveColumn"
   },
 
-  initialize: function(setting) {
+  initialize: function (setting) {
     this.projectURL = contextURL + "manager"
     this.generalParams = {}
     this.overrideParams = {}
   },
 
-  handleCancel: function(evt) {
+  handleCancel: function (evt) {
     $('#job-edit-pane').hide();
     var tbl = document.getElementById("generalProps").tBodies[0];
     var rows = tbl.rows;
     var len = rows.length;
-    for (var i = 0; i < len-1; i++) {
+    for (var i = 0; i < len - 1; i++) {
       tbl.deleteRow(0);
     }
   },
 
-  show: function(projectName, flowName, jobName) {
+  show: function (projectName, flowName, jobName) {
     this.projectName = projectName;
     this.flowName = flowName;
     this.jobName = jobName;
@@ -66,7 +66,7 @@ azkaban.JobEditView = Backbone.View.extend({
       "jobName": this.jobName
     };
     var mythis = this;
-    var fetchJobSuccessHandler = function(data) {
+    var fetchJobSuccessHandler = function (data) {
       if (data.error) {
         alert(data.error);
         return;
@@ -99,7 +99,7 @@ azkaban.JobEditView = Backbone.View.extend({
     $.get(projectURL, fetchJobInfo, fetchJobSuccessHandler, "json");
   },
 
-  handleSet: function(evt) {
+  handleSet: function (evt) {
     this.closeEditingTarget(evt);
     var jobOverride = {};
     var editRows = $(".editRow");
@@ -135,8 +135,9 @@ azkaban.JobEditView = Backbone.View.extend({
     };
 
     var projectURL = this.projectURL
-    var redirectURL = projectURL+'?project='+project+'&flow='+flowName+'&job='+jobName;
-    var jobOverrideSuccessHandler = function(data) {
+    var redirectURL = projectURL + '?project=' + project + '&flow=' + flowName
+        + '&job=' + jobName;
+    var jobOverrideSuccessHandler = function (data) {
       if (data.error) {
         alert(data.error);
       }
@@ -148,7 +149,7 @@ azkaban.JobEditView = Backbone.View.extend({
     $.get(projectURL, jobOverrideData, jobOverrideSuccessHandler, "json");
   },
 
-  handleAddRow: function(evt) {
+  handleAddRow: function (evt) {
     var tr = document.createElement("tr");
     var tdName = document.createElement("td");
     $(tdName).addClass('property-key');
@@ -185,7 +186,7 @@ azkaban.JobEditView = Backbone.View.extend({
     return tr;
   },
 
-  handleEditColumn: function(evt) {
+  handleEditColumn: function (evt) {
     var curTarget = evt.currentTarget;
     if (this.editingTarget != curTarget) {
       this.closeEditingTarget(evt);
@@ -202,7 +203,7 @@ azkaban.JobEditView = Backbone.View.extend({
       $(curTarget).append(input);
       $(input).focus();
       var obj = this;
-      $(input).keypress(function(evt) {
+      $(input).keypress(function (evt) {
         if (evt.which == 13) {
           obj.closeEditingTarget(evt);
         }
@@ -214,14 +215,14 @@ azkaban.JobEditView = Backbone.View.extend({
     evt.stopPropagation();
   },
 
-  handleRemoveColumn: function(evt) {
+  handleRemoveColumn: function (evt) {
     var curTarget = evt.currentTarget;
     // Should be the table
     var row = curTarget.parentElement.parentElement;
     $(row).remove();
   },
 
-  closeEditingTarget: function(evt) {
+  closeEditingTarget: function (evt) {
     if (this.editingTarget == null ||
         this.editingTarget == evt.target ||
         this.editingTarget == evt.target.myparent) {
@@ -253,7 +254,7 @@ azkaban.JobEditView = Backbone.View.extend({
   }
 });
 
-$(function() {
+$(function () {
   jobEditView = new azkaban.JobEditView({
     el: $('#job-edit-pane')
   });

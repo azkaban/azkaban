@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static org.mockito.Mockito.mock;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -25,7 +27,6 @@ import azkaban.executor.JavaJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.Props;
@@ -44,23 +45,17 @@ import org.junit.Test;
 /**
  * Test the property resolution of jobs in a flow.
  *
- * The tests are contained in execpropstest, and should be resolved in the
- * following fashion, where the later props take precedence over the previous
- * ones.
+ * The tests are contained in execpropstest, and should be resolved in the following fashion, where
+ * the later props take precedence over the previous ones.
  *
- * 1. Global props (set in the FlowRunner)
- * 2. Shared job props (depends on job directory)
- * 3. Flow Override properties
- * 4. Previous job outputs to the embedded flow (Only if contained in embedded flow)
- * 5. Embedded flow properties (Only if contained in embedded flow)
- * 6. Previous job outputs (if exists)
- * 7. Job Props
+ * 1. Global props (set in the FlowRunner) 2. Shared job props (depends on job directory) 3. Flow
+ * Override properties 4. Previous job outputs to the embedded flow (Only if contained in embedded
+ * flow) 5. Embedded flow properties (Only if contained in embedded flow) 6. Previous job outputs
+ * (if exists) 7. Job Props
  *
- * The test contains the following structure:
- * job2 -> innerFlow (job1 -> job4 ) -> job3
+ * The test contains the following structure: job2 -> innerFlow (job1 -> job4 ) -> job3
  *
- * job2 and 4 are in nested directories so should have different shared
- * properties than other jobs.
+ * job2 and 4 are in nested directories so should have different shared properties than other jobs.
  */
 public class FlowRunnerPropertyResolutionTest {
 
@@ -68,7 +63,6 @@ public class FlowRunnerPropertyResolutionTest {
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
-  private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
   private Project project;
   private Map<String, Flow> flowMap;
@@ -86,7 +80,6 @@ public class FlowRunnerPropertyResolutionTest {
     this.jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
     this.jobtypeManager.getJobTypePluginSet().addPluginClass("test",
         InteractiveTestJob.class);
-    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
     this.fakeExecutorLoader = new MockExecutorLoader();
     this.project = new Project(1, "testProject");
 
@@ -222,7 +215,7 @@ public class FlowRunnerPropertyResolutionTest {
 
     final FlowRunner runner =
         new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
-            this.fakeExecutorLoader, this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
+            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
     return runner;
   }
 
