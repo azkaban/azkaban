@@ -94,7 +94,7 @@ subprojects {
 
     configurations.errorprone {
         dependencies {
-            errorprone 'com.google.errorprone:error_prone_core:2.0.15'
+            errorprone 'com.google.errorprone:error_prone_core:2.1.0'
         }
     }
 
