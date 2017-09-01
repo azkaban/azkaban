@@ -37,8 +37,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 /**
- * Test the flow run, especially with embedded flows. Files are in
- * unit/plugins/jobtypes
+ * Test the flow run, especially with embedded flows. Files are in unit/plugins/jobtypes
  */
 public class JobTypeManagerTest {
 
@@ -92,8 +91,8 @@ public class JobTypeManagerTest {
   }
 
   /**
-   * Tests that the proper classes were loaded and that the common and the load
-   * properties are properly loaded.
+   * Tests that the proper classes were loaded and that the common and the load properties are
+   * properly loaded.
    */
   @Test
   public void testLoadedClasses() throws Exception {

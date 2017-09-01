@@ -54,6 +54,7 @@ public class JdbcProjectImplTest {
   public static void destroyDB() {
     try {
       dbOperator.update("DROP ALL OBJECTS");
+      dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -154,7 +155,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1", computeHash(testFile), "resourceId1");
+    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1",
+        computeHash(testFile), "resourceId1");
     final int currVersion = this.loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);
   }
@@ -176,7 +178,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final int newVersion = this.loader.getLatestProjectVersion(project) + 7;
     this.loader.changeProjectVersion(project, newVersion, "uploadUser1");
-    final Project sameProject= this.loader.fetchProjectById(project.getId());
+    final Project sameProject = this.loader.fetchProjectById(project.getId());
     Assert.assertEquals(sameProject.getVersion(), newVersion);
   }
 
@@ -184,9 +186,11 @@ public class JdbcProjectImplTest {
   public void testUpdatePermission() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.updatePermission(project, project.getLastModifiedUser(), new Permission(Permission.Type.ADMIN), false);
+    this.loader.updatePermission(project, project.getLastModifiedUser(),
+        new Permission(Permission.Type.ADMIN), false);
 
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader.getProjectPermissions(project);
+    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
+        .getProjectPermissions(project);
     Assert.assertEquals(permissionsTriple.size(), 1);
     Assert.assertEquals(permissionsTriple.get(0).getFirst(), "testUser1");
     Assert.assertEquals(permissionsTriple.get(0).getThird().toString(), "ADMIN");
@@ -207,9 +211,11 @@ public class JdbcProjectImplTest {
   public void testRemovePermission() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.updatePermission(project, project.getLastModifiedUser(), new Permission(Permission.Type.ADMIN), false);
+    this.loader.updatePermission(project, project.getLastModifiedUser(),
+        new Permission(Permission.Type.ADMIN), false);
     this.loader.removePermission(project, project.getLastModifiedUser(), false);
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader.getProjectPermissions(project);
+    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
+        .getProjectPermissions(project);
     Assert.assertEquals(permissionsTriple.size(), 0);
   }
 
@@ -312,7 +318,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     this.loader.uploadProjectProperties(project, list);
 
-    final Map<String, Props> propsMap = this.loader.fetchProjectProperties(project.getId(), project.getVersion());
+    final Map<String, Props> propsMap = this.loader
+        .fetchProjectProperties(project.getId(), project.getVersion());
     Assert.assertEquals(propsMap.get("source1").get("key2"), "value2");
     Assert.assertEquals(propsMap.get("source2").get("keyaaa"), "valueaaa");
   }
@@ -328,7 +335,7 @@ public class JdbcProjectImplTest {
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
 
-    this.loader.cleanOlderProjectVersion(project.getId(), newVersion+1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
 
     final ProjectFileHandler fileHandler2 = this.loader
         .fetchProjectMetaData(project.getId(), newVersion);

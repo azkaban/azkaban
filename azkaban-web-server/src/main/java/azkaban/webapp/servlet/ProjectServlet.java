@@ -105,12 +105,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * We know the intention of API call is to return project ownership based on
-   * given user. <br>
-   * If user provides an user name, the method honors it <br>
-   * If user provides an empty user name, the user defaults to the session user<br>
-   * If user does not provide the user param, the user also defaults to the
-   * session user<br>
+   * We know the intention of API call is to return project ownership based on given user. <br> If
+   * user provides an user name, the method honors it <br> If user provides an empty user name, the
+   * user defaults to the session user<br> If user does not provide the user param, the user also
+   * defaults to the session user<br>
    */
   private void handleFetchUserProjects(final HttpServletRequest req, final Session session,
       final ProjectManager manager, final HashMap<String, Object> ret)
@@ -222,10 +220,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * This class is used to represent a simplified project, which can be returned
-   * to end users via REST API. This is done in consideration that the API
-   * caller only wants certain project level information regarding a project,
-   * but does not want every flow and every job inside that project.
+   * This class is used to represent a simplified project, which can be returned to end users via
+   * REST API. This is done in consideration that the API caller only wants certain project level
+   * information regarding a project, but does not want every flow and every job inside that
+   * project.
    *
    * @author jyu
    */

@@ -22,11 +22,11 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -413,7 +413,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(final Duration maxAge)
       throws ExecutorManagerException {
     return new ArrayList<>();
   }

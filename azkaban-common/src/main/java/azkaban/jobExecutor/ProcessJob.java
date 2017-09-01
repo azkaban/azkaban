@@ -77,8 +77,8 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * Splits the command into a unix like command line structure. Quotes and
-   * single quotes are treated as nested strings.
+   * Splits the command into a unix like command line structure. Quotes and single quotes are
+   * treated as nested strings.
    */
   public static String[] partitionCommandLine(final String command) {
     final ArrayList<String> commands = new ArrayList<>();
@@ -360,8 +360,8 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * Checks to see if user has write access to current working directory which many users
-   * need for their jobs to store temporary data/jars on the executor.
+   * Checks to see if user has write access to current working directory which many users need for
+   * their jobs to store temporary data/jars on the executor.
    *
    * Accomplishes this by using execute-as-user to try to create an empty file in the cwd.
    *
@@ -379,8 +379,8 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * Changes permission on current working directory so that the directory is owned by the user
-   * and the group remains azkaban.
+   * Changes permission on current working directory so that the directory is owned by the user and
+   * the group remains azkaban.
    *
    * Leverages execute-as-user with "root" as the user to run the command.
    *
@@ -401,9 +401,9 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * This is used to get the min/max memory size requirement by processes.
-   * SystemMemoryInfo can use the info to determine if the memory request can be
-   * fulfilled. For Java process, this should be Xms/Xmx setting.
+   * This is used to get the min/max memory size requirement by processes. SystemMemoryInfo can use
+   * the info to determine if the memory request can be fulfilled. For Java process, this should be
+   * Xms/Xmx setting.
    *
    * @return pair of min/max memory size
    */

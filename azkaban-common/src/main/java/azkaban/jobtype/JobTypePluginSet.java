@@ -23,11 +23,11 @@ import java.util.Map;
 /**
  * Container for job type plugins
  *
- * This contains the jobClass objects, the properties for loading plugins, and
- * the properties given by default to the plugin.
+ * This contains the jobClass objects, the properties for loading plugins, and the properties given
+ * by default to the plugin.
  *
- * This class is not thread safe, so adding to this class should only be
- * populated and controlled by the JobTypeManager
+ * This class is not thread safe, so adding to this class should only be populated and controlled by
+ * the JobTypeManager
  */
 public class JobTypePluginSet {
 
@@ -94,8 +94,7 @@ public class JobTypePluginSet {
   }
 
   /**
-   * Get the properties that will be given to the plugin as default job
-   * properties.
+   * Get the properties that will be given to the plugin as default job properties.
    */
   public Props getPluginJobProps(final String jobTypeName) {
     return this.pluginJobPropsMap.get(jobTypeName);

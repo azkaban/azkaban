@@ -26,7 +26,6 @@ import azkaban.db.DatabaseOperatorImpl;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;

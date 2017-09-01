@@ -43,22 +43,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class FlowRunnerTest extends FlowRunnerTestBase {
 
   private static final File TEST_DIR = ExecutionsTestUtil.getFlowDir("exectest1");
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File workingDir;
   private JobTypeManager jobtypeManager;
-
   @Mock
   private ProjectLoader fakeProjectLoader;
-  
   @Mock
   private ExecutorLoader loader;
 
@@ -66,12 +67,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
     when(this.loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
-    System.out.println("Create temp dir");
-    this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
-    if (this.workingDir.exists()) {
-      FileUtils.deleteDirectory(this.workingDir);
-    }
-    this.workingDir.mkdirs();
+    this.workingDir = temporaryFolder.newFolder();
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
@@ -81,17 +77,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
     InteractiveTestJob.clearTestJobs();
-  }
-
-  @After
-  public void tearDown() throws IOException {
-    System.out.println("Teardown temp dir");
-    synchronized (this) {
-      if (this.workingDir != null) {
-        FileUtils.deleteDirectory(this.workingDir);
-        this.workingDir = null;
-      }
-    }
   }
 
   @Test

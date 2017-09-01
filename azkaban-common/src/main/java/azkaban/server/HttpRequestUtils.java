@@ -143,8 +143,7 @@ public class HttpRequestUtils {
   }
 
   /**
-   * parse a string as number and throws exception if parsed value is not a
-   * valid integer
+   * parse a string as number and throws exception if parsed value is not a valid integer
    *
    * @throws ExecutorManagerException if paramName is not a valid integer
    */
@@ -180,8 +179,7 @@ public class HttpRequestUtils {
   }
 
   /**
-   * Retrieves the param from the http servlet request. Will throw an exception
-   * if not found
+   * Retrieves the param from the http servlet request. Will throw an exception if not found
    */
   public static String getParam(final HttpServletRequest request, final String name)
       throws ServletException {
@@ -206,8 +204,8 @@ public class HttpRequestUtils {
   }
 
   /**
-   * Returns the param and parses it into an int. Will throw an exception if not
-   * found, or a parse error if the type is incorrect.
+   * Returns the param and parses it into an int. Will throw an exception if not found, or a parse
+   * error if the type is incorrect.
    */
   public static int getIntParam(final HttpServletRequest request, final String name)
       throws ServletException {

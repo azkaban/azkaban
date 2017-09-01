@@ -22,10 +22,10 @@ azkaban.ProjectTableView = Backbone.View.extend({
     "click .project-expander": "expandProject"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
   },
 
-  expandProject: function(evt) {
+  expandProject: function (evt) {
     if (evt.target.tagName == "A") {
       return;
     }
@@ -59,7 +59,8 @@ azkaban.ProjectTableView = Backbone.View.extend({
     }
     else {
       // projectId is available
-      $(target).addClass('wait').removeClass('collapsed').removeClass('expanded');
+      $(target).addClass('wait').removeClass('collapsed').removeClass(
+          'expanded');
       target.loading = true;
 
       var request = {
@@ -67,7 +68,7 @@ azkaban.ProjectTableView = Backbone.View.extend({
         "ajax": "fetchprojectflows"
       };
 
-      var successHandler = function(data) {
+      var successHandler = function (data) {
         console.log("Success");
         target.loaded = true;
         target.loading = false;
@@ -85,12 +86,12 @@ azkaban.ProjectTableView = Backbone.View.extend({
     }
   },
 
-  render: function() {
+  render: function () {
   },
 
-  createFlowListTable: function(data, innerTable) {
+  createFlowListTable: function (data, innerTable) {
     var flows = data.flows;
-    flows.sort(function(a,b) {
+    flows.sort(function (a, b) {
       return a.flowId.localeCompare(b.flowId);
     });
     var requestURL = contextURL + "/manager?project=" + data.project + "&flow=";
@@ -112,7 +113,7 @@ azkaban.ProjectHeaderView = Backbone.View.extend({
     "click #create-project-btn": "handleCreateProjectJob"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     console.log("project header view initialize.");
     if (settings.errorMsg && settings.errorMsg != "null") {
       $('#messaging').addClass("alert-danger");
@@ -130,11 +131,11 @@ azkaban.ProjectHeaderView = Backbone.View.extend({
     }
   },
 
-  handleCreateProjectJob: function(evt) {
+  handleCreateProjectJob: function (evt) {
     $('#create-project-modal').modal();
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
@@ -144,11 +145,11 @@ azkaban.CreateProjectView = Backbone.View.extend({
     "click #create-btn": "handleCreateProject"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     $("#modal-error-msg").hide();
   },
 
-  handleCreateProject: function(evt) {
+  handleCreateProject: function (evt) {
     // First make sure we can upload
     var projectName = $('#path').val();
     var description = $('#description').val();
@@ -163,7 +164,7 @@ azkaban.CreateProjectView = Backbone.View.extend({
         name: projectName,
         description: description
       },
-      success: function(data) {
+      success: function (data) {
         if (data.status == "success") {
           if (data.action == "redirect") {
             window.location = data.path;
@@ -182,12 +183,12 @@ azkaban.CreateProjectView = Backbone.View.extend({
     });
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
 var tableSorterView;
-$(function() {
+$(function () {
   projectHeaderView = new azkaban.ProjectHeaderView({
     el: $('#create-project'),
     successMsg: successMessage,

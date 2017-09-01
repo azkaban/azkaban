@@ -22,9 +22,9 @@ import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This singleton class CommonMetrics is in charge of collecting varieties of metrics
- * which are accessed in both web and exec modules. That said, these metrics will be
- * exposed in both Web server and executor.
+ * This singleton class CommonMetrics is in charge of collecting varieties of metrics which are
+ * accessed in both web and exec modules. That said, these metrics will be exposed in both Web
+ * server and executor.
  */
 @Singleton
 public class CommonMetrics {
@@ -71,8 +71,8 @@ public class CommonMetrics {
   }
 
   /**
-   * Mark flowFailMeter when a flow is considered as FAILED.
-   * This method could be called by Web Server or Executor, as they both detect flow failure.
+   * Mark flowFailMeter when a flow is considered as FAILED. This method could be called by Web
+   * Server or Executor, as they both detect flow failure.
    */
   public void markFlowFail() {
     this.flowFailMeter.mark();

@@ -58,21 +58,21 @@ public class Schedule {
   private List<SlaOption> slaOptions;
 
   public Schedule(final int scheduleId,
-                  final int projectId,
-                  final String projectName,
-                  final String flowName,
-                  final String status,
-                  final long firstSchedTime,
-                  final long endSchedTime,
-                  final DateTimeZone timezone,
-                  final ReadablePeriod period,
-                  final long lastModifyTime,
-                  final long nextExecTime,
-                  final long submitTime,
-                  final String submitUser,
-                  final ExecutionOptions executionOptions,
-                  final List<SlaOption> slaOptions,
-                  final String cronExpression) {
+      final int projectId,
+      final String projectName,
+      final String flowName,
+      final String status,
+      final long firstSchedTime,
+      final long endSchedTime,
+      final DateTimeZone timezone,
+      final ReadablePeriod period,
+      final long lastModifyTime,
+      final long nextExecTime,
+      final long submitTime,
+      final String submitUser,
+      final ExecutionOptions executionOptions,
+      final List<SlaOption> slaOptions,
+      final String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
@@ -101,27 +101,27 @@ public class Schedule {
     final int periodInt =
         Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
     switch (periodUnit) {
-    case 'M':
-      period = Months.months(periodInt);
-      break;
-    case 'w':
-      period = Weeks.weeks(periodInt);
-      break;
-    case 'd':
-      period = Days.days(periodInt);
-      break;
-    case 'h':
-      period = Hours.hours(periodInt);
-      break;
-    case 'm':
-      period = Minutes.minutes(periodInt);
-      break;
-    case 's':
-      period = Seconds.seconds(periodInt);
-      break;
-    default:
-      throw new IllegalArgumentException("Invalid schedule period unit '"
-          + periodUnit);
+      case 'M':
+        period = Months.months(periodInt);
+        break;
+      case 'w':
+        period = Weeks.weeks(periodInt);
+        break;
+      case 'd':
+        period = Days.days(periodInt);
+        break;
+      case 'h':
+        period = Hours.hours(periodInt);
+        break;
+      case 'm':
+        period = Minutes.minutes(periodInt);
+        break;
+      case 's':
+        period = Seconds.seconds(periodInt);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid schedule period unit '"
+            + periodUnit);
     }
 
     return period;
@@ -181,7 +181,8 @@ public class Schedule {
   public String toString() {
 
     final String underlying =
-        this.projectName + "." + this.flowName + " (" + this.projectId + ")" + " to be run at (starting) " + new DateTime(
+        this.projectName + "." + this.flowName + " (" + this.projectId + ")"
+            + " to be run at (starting) " + new DateTime(
             this.firstSchedTime).toDateTimeISO();
     if (this.period == null && this.cronExpression == null) {
       return underlying + " non-recurring";
@@ -280,7 +281,7 @@ public class Schedule {
   }
 
   private DateTime getNextRuntime(final long scheduleTime, final DateTimeZone timezone,
-                                  final ReadablePeriod period) {
+      final ReadablePeriod period) {
     final DateTime now = new DateTime();
     DateTime date = new DateTime(scheduleTime).withZone(timezone);
     int count = 0;
@@ -303,14 +304,13 @@ public class Schedule {
   }
 
   /**
-   *
-   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API call.
+   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API
+   * call.
    * @param timezone is always UTC (after 3.1.0)
-   * @param ce
    * @return the First Scheduled DateTime to run this flow.
    */
   private DateTime getNextCronRuntime(final long scheduleTime, final DateTimeZone timezone,
-                                      final CronExpression ce) {
+      final CronExpression ce) {
 
     Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
     if (ce != null) {

@@ -25,13 +25,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Test response to deploy with either warn or error reports.
- * If a report has any errors, a RestLiServiceException should be thrown.
- * Warnings should not elicit an exception.
- * If an exception does get raised, it should carry an HTTP 400 status
+ * Test response to deploy with either warn or error reports. If a report has any errors, a
+ * RestLiServiceException should be thrown. Warnings should not elicit an exception. If an exception
+ * does get raised, it should carry an HTTP 400 status
  */
 
 public class DeployProjectTest {
@@ -59,6 +59,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -82,6 +83,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -102,6 +104,7 @@ public class DeployProjectTest {
     // report with errors. Uncaught exceptions will result in failure
     try {
       resource.checkReports(reports);
+      Assert.fail();
     } catch (final RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);

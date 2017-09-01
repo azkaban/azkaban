@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
- * A job that passes all the job properties as command line arguments in "long"
- * format, e.g. --key1 value1 --key2 value2 ...
+ * A job that passes all the job properties as command line arguments in "long" format, e.g. --key1
+ * value1 --key2 value2 ...
  */
 public abstract class LongArgJob extends AbstractProcessJob {
 
@@ -101,8 +101,8 @@ public abstract class LongArgJob extends AbstractProcessJob {
   }
 
   /**
-   * This gives access to the process builder used to construct the process. An
-   * overriding class can use this to add to the command being executed.
+   * This gives access to the process builder used to construct the process. An overriding class can
+   * use this to add to the command being executed.
    */
   protected AzkabanProcessBuilder getBuilder() {
     return this.builder;

@@ -175,17 +175,14 @@ public interface ExecutorManagerAdapter {
       throws ExecutorManagerException;
 
   /**
-   * Manage servlet call for stats servlet in Azkaban execution server
-   * Action can take any of the following values
-   * <ul>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_CLEANINGINTERVAL}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_MAXREPORTERPOINTS}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_GET_ALLMETRICSNAME}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_GET_METRICHISTORY}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li>
-   * </ul>
+   * Manage servlet call for stats servlet in Azkaban execution server Action can take any of the
+   * following values <ul> <li>{@link azkaban.executor.ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
+   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_CLEANINGINTERVAL}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_SET_MAXREPORTERPOINTS}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_GET_ALLMETRICSNAME}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_GET_METRICHISTORY}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li> </ul>
    */
   public Map<String, Object> callExecutorStats(int executorId, String action,
       Pair<String, String>... param) throws IOException, ExecutorManagerException;
@@ -206,8 +203,7 @@ public interface ExecutorManagerAdapter {
   public Set<? extends String> getPrimaryServerHosts();
 
   /**
-   * Returns a collection of all the active executors maintained by active
-   * executors
+   * Returns a collection of all the active executors maintained by active executors
    */
   public Collection<Executor> getAllActiveExecutors();
 

@@ -48,23 +48,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Flows in this test:
- * joba
- * jobb
- * joba1
- * jobc->joba
- * jobd->joba
- * jobe->jobb,jobc,jobd
- * jobf->jobe,joba1
+ * Flows in this test: joba jobb joba1 jobc->joba jobd->joba jobe->jobb,jobc,jobd jobf->jobe,joba1
  *
- * jobb = innerFlow
- * innerJobA
- * innerJobB->innerJobA
- * innerJobC->innerJobB
+ * jobb = innerFlow innerJobA innerJobB->innerJobA innerJobC->innerJobB
  * innerFlow->innerJobB,innerJobC
  *
- * jobd=innerFlow2
- * innerFlow2->innerJobA
+ * jobd=innerFlow2 innerFlow2->innerJobA
  *
  * @author rpark
  */

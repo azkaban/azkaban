@@ -20,15 +20,15 @@ import org.xml.sax.SAXException;
 /**
  * @author wkang
  *
- *         This class manages project whitelist defined in xml config file. An single xml config
- *         file contains different types of whitelisted projects. For additional type of whitelist,
- *         modify WhitelistType enum.
+ * This class manages project whitelist defined in xml config file. An single xml config file
+ * contains different types of whitelisted projects. For additional type of whitelist, modify
+ * WhitelistType enum.
  *
- *         The xml config file should in the following format. Please note the tag <MemoryCheck> is
- *         same as the defined enum MemoryCheck
+ * The xml config file should in the following format. Please note the tag <MemoryCheck> is same as
+ * the defined enum MemoryCheck
  *
- *         <ProjectWhitelist> <MemoryCheck> <project projectname="project1" /> <project
- *         projectname="project2" /> </MemoryCheck> <ProjectWhitelist>
+ * <ProjectWhitelist> <MemoryCheck> <project projectname="project1" /> <project
+ * projectname="project2" /> </MemoryCheck> <ProjectWhitelist>
  */
 public class ProjectWhitelist {
 
@@ -127,8 +127,7 @@ public class ProjectWhitelist {
   }
 
   /**
-   * The tag in the project whitelist xml config file should be same as
-   * the defined enums.
+   * The tag in the project whitelist xml config file should be same as the defined enums.
    */
   public static enum WhitelistType {
     MemoryCheck,

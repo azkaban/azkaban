@@ -30,13 +30,14 @@ import azkaban.spi.StorageMetadata;
 import azkaban.user.User;
 import azkaban.utils.Md5Hasher;
 import azkaban.utils.Props;
-import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -45,20 +46,24 @@ import org.apache.log4j.Logger;
  * StorageManager manages and coordinates all interactions with the Storage layer. This also
  * includes bookkeeping like updating DB with the new versionm, etc
  */
+@Singleton
 public class StorageManager {
 
   private static final Logger log = Logger.getLogger(StorageManager.class);
 
+  private final StorageCleaner storageCleaner;
   private final Storage storage;
   private final ProjectLoader projectLoader;
   private final File tempDir;
 
   @Inject
   public StorageManager(final Props props, final Storage storage,
-      final ProjectLoader projectLoader) {
+      final ProjectLoader projectLoader,
+      final StorageCleaner storageCleaner) {
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
-    this.storage = requireNonNull(storage);
-    this.projectLoader = requireNonNull(projectLoader);
+    this.storage = requireNonNull(storage, "storage is null");
+    this.projectLoader = requireNonNull(projectLoader, "projectLoader is null");
+    this.storageCleaner = requireNonNull(storageCleaner, "storageCleanUp is null");
 
     prepareTempDir();
   }
@@ -113,6 +118,17 @@ public class StorageManager {
       );
       log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
           metadata, localFile.getName(), localFile.length(), resourceId));
+    }
+  }
+
+  /**
+   * Clean up project artifacts based on project ID. See {@link StorageCleaner#cleanupProjectArtifacts(int)}
+   */
+  public void cleanupProjectArtifacts(final int projectId) {
+    try {
+      this.storageCleaner.cleanupProjectArtifacts(projectId);
+    } catch (final Exception e) {
+      log.error("Error occured during cleanup. Ignoring and continuing...", e);
     }
   }
 

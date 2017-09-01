@@ -21,7 +21,7 @@ azkaban.TableSorter = Backbone.View.extend({
     "click .sortable": "handleClickSort"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     $(this.el).addClass("sortableTable");
 
     var thead = $(this.el).children("thead");
@@ -39,7 +39,7 @@ azkaban.TableSorter = Backbone.View.extend({
     var rows = $(tbody).children("tr");
 
     var row;
-    for (var i = 0; i < rows.length; ++i ) {
+    for (var i = 0; i < rows.length; ++i) {
       var nextRow = rows[i];
       if (row && $(nextRow).hasClass("childrow")) {
         if (!row.childRows) {
@@ -57,11 +57,11 @@ azkaban.TableSorter = Backbone.View.extend({
     }
   },
 
-  handleClickSort: function(evt) {
+  handleClickSort: function (evt) {
     this.toggleSort(evt.currentTarget);
   },
 
-  toggleSort: function(th) {
+  toggleSort: function (th) {
     console.log("sorting by index " + $(th).index());
     if ($(th).hasClass("asc")) {
       $(th).removeClass("asc");
@@ -77,14 +77,15 @@ azkaban.TableSorter = Backbone.View.extend({
       this.sort($(th).index(), false);
     }
     else {
-      $(th).parent().children(".sortable").removeClass("asc").removeClass("desc");
+      $(th).parent().children(".sortable").removeClass("asc").removeClass(
+          "desc");
       $(th).addClass("asc");
 
       this.sort($(th).index(), false);
     }
   },
 
-  sort: function(index, desc) {
+  sort: function (index, desc) {
     var tbody = $(this.el).children("tbody");
     var rows = $(tbody).children("tr");
 
@@ -98,7 +99,7 @@ azkaban.TableSorter = Backbone.View.extend({
     }
 
     if (desc) {
-      tdToSort.sort(function(a,b) {
+      tdToSort.sort(function (a, b) {
         var texta = $(a).text().trim().toLowerCase();
         var textb = $(b).text().trim().toLowerCase();
 
@@ -114,7 +115,7 @@ azkaban.TableSorter = Backbone.View.extend({
       });
     }
     else {
-      tdToSort.sort(function(a,b) {
+      tdToSort.sort(function (a, b) {
         var texta = $(a).text().trim().toLowerCase();
         var textb = $(b).text().trim().toLowerCase();
 
@@ -137,7 +138,7 @@ azkaban.TableSorter = Backbone.View.extend({
 
       var childRows = tr[0].childRows;
       if (childRows) {
-        for(var j=0; j < childRows.length; ++j) {
+        for (var j = 0; j < childRows.length; ++j) {
           sortedTR.push(childRows[j]);
         }
       }
@@ -148,7 +149,7 @@ azkaban.TableSorter = Backbone.View.extend({
     }
   },
 
-  render: function() {
+  render: function () {
     console.log("render sorted table");
   }
 });

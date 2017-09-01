@@ -25,10 +25,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * Cache for web session.
  *
- * The following global azkaban properties can be used: max.num.sessions - used
- * to determine the number of live sessions that azkaban will handle. Default is
- * 10000 session.time.to.live -Number of seconds before session expires. Default
- * set to 10 hours.
+ * The following global azkaban properties can be used: max.num.sessions - used to determine the
+ * number of live sessions that azkaban will handle. Default is 10000 session.time.to.live -Number
+ * of seconds before session expires. Default set to 10 hours.
  */
 public class SessionCache {
 

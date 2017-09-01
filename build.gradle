@@ -23,7 +23,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.cinnober.gradle:semver-git:2.2.3'
-        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.11'
     }
 }
 
@@ -67,6 +67,7 @@ ext.deps = [
         hadoopHdfs          : "org.apache.hadoop:hadoop-hdfs:" + versions.hadoop,
         hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
         hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
+        hiveExecCore        : "org.apache.hive:hive-exec:" + versions.hive + ":core",
         hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
         httpclient          : 'org.apache.httpcomponents:httpclient:4.5.3',
         io                  : 'commons-io:commons-io:2.4',
@@ -104,6 +105,12 @@ subprojects {
 
     // Set the same version for all sub-projects to root project version
     version = rootProject.version
+
+    configurations.errorprone {
+        dependencies {
+            errorprone 'com.google.errorprone:error_prone_core:2.1.0'
+        }
+    }
 
     plugins.withType(JavaPlugin) {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -185,11 +192,20 @@ subprojects {
     }
 }
 
-
 /**
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
     gradleVersion = '4.0.2'
     distributionType('ALL')
+}
+
+if (System.env.TRAVIS == 'true') {
+    allprojects {
+        tasks.withType(Test) {
+            // Reduce the memory pressure on the Travis CI to reduce build failures.
+            maxParallelForks = 2
+            minHeapSize = '128m'
+        }
+    }
 }

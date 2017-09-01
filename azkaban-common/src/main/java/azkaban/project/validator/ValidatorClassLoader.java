@@ -14,8 +14,8 @@ import java.util.jar.JarFile;
 import sun.net.www.protocol.jar.JarURLConnection;
 
 /**
- * Workaround for jdk 6 disgrace with open jar files & native libs,
- * which is a reason of unrefreshable classloader.
+ * Workaround for jdk 6 disgrace with open jar files & native libs, which is a reason of
+ * unrefreshable classloader.
  */
 public class ValidatorClassLoader extends URLClassLoader {
 

@@ -1,10 +1,11 @@
 package azkaban.fixture;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import org.junit.Assert;
 
 
 /**
@@ -15,6 +16,8 @@ public class FileAssertion {
   /**
    * Assert the given string equals the given file's content.
    *
+   * The white space differences are ignored.
+   *
    * @param expectedFilePath the expected file path
    * @param actual the actual string
    * @throws IOException the io exception
@@ -24,14 +27,14 @@ public class FileAssertion {
       throws IOException {
     final String expected = new String(Files.readAllBytes(Paths.get(expectedFilePath)),
         StandardCharsets.UTF_8);
-    Assert.assertEquals(expected, actual);
+    assertThat(actual).isEqualToIgnoringWhitespace(expected);
   }
 
   /**
    * Return the html based content surrounded with the HTML tag.
    *
-   * This is useful to compare a fragment of HTML content with a proper expected HTML file
-   * so that the expected file can be viewed more easily with a browser.
+   * This is useful to compare a fragment of HTML content with a proper expected HTML file so that
+   * the expected file can be viewed more easily with a browser.
    *
    * @param content the content
    * @return string

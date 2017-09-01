@@ -11,6 +11,7 @@ import org.junit.Test;
  * Test validates the enable/disable feature of the 'Upload' button
  */
 public class ProjectPageHeaderTest {
+
   private static final String UPLOAD_BUTTON
       = "<button id=\"project-upload-btn\" class=\"btn btn-sm btn-primary\">"
       + "<span class=\"glyphicon glyphicon-upload\"></span> Upload </button>";

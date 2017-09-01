@@ -424,11 +424,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 
       // If a job is seen as failed or killed due to failing SLA, then we set the parent flow to
       // FAILED_FINISHING
-      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node.isKilledBySLA())) {
+      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node
+          .isKilledBySLA())) {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
-          propagateStatus(node.getParentFlow(), Status.FAILED_FINISHING);
+          propagateStatus(node.getParentFlow(),
+              node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
           if (this.failureAction == FailureAction.CANCEL_ALL) {
             this.kill();
           }
@@ -1093,6 +1095,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     return this.execId;
   }
 
+  public Set<JobRunner> getActiveJobRunners() {
+    return ImmutableSet.copyOf(this.activeJobRunners);
+  }
+
   private class JobRunnerEventListener implements EventListener {
 
     public JobRunnerEventListener() {
@@ -1121,7 +1127,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           }
 
           FlowRunner.this.finishedNodes.add(node);
-          activeJobRunners.remove(runner);
+          FlowRunner.this.activeJobRunners.remove(runner);
           node.getParentFlow().setUpdateTime(System.currentTimeMillis());
           interrupt();
           fireEventListeners(event);
@@ -1135,9 +1141,5 @@ public class FlowRunner extends EventHandler implements Runnable {
                 FlowRunner.this.flow));
       }
     }
-  }
-
-  public Set<JobRunner> getActiveJobRunners() {
-    return ImmutableSet.copyOf(this.activeJobRunners);
   }
 }

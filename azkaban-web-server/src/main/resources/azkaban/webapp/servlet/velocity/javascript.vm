@@ -14,8 +14,8 @@
  * the License.
 *#
 
-    <script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
-    <script type="text/javascript" src="${context}/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/namespace.js"></script>
-    <script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
+<script type="text/javascript" src="${context}/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/namespace.js"></script>
+<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>

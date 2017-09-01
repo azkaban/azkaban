@@ -16,7 +16,7 @@
 
 var extendedViewPanels = {};
 var extendedDataModels = {};
-var openJobDisplayCallback = function(nodeId, flowId, evt) {
+var openJobDisplayCallback = function (nodeId, flowId, evt) {
   console.log("Open up data");
 
   /*
@@ -45,25 +45,27 @@ var openJobDisplayCallback = function(nodeId, flowId, evt) {
     */
 }
 
-var createNewPanel = function(node, model, evt) {
+var createNewPanel = function (node, model, evt) {
   var parentPath = node.parentPath;
 
-  var nodeInfoPanelID = parentPath ? parentPath + ":" + node.id + "-info" : node.id + "-info";
+  var nodeInfoPanelID = parentPath ? parentPath + ":" + node.id + "-info"
+      : node.id + "-info";
   var cloneStuff = $("#flowInfoBase").clone();
   cloneStuff.data = node;
   $(cloneStuff).attr("id", nodeInfoPanelID);
   $("#flowInfoBase").before(cloneStuff);
 
-  var backboneView = new azkaban.FlowExtendedViewPanel({el:cloneStuff, model: model});
+  var backboneView = new azkaban.FlowExtendedViewPanel(
+      {el: cloneStuff, model: model});
   node.panel = backboneView;
   backboneView.showExtendedView(evt);
 }
 
-var closeAllSubDisplays = function() {
+var closeAllSubDisplays = function () {
   $(".flowExtendedView").hide();
 }
 
-var nodeClickCallback = function(event, model, node) {
+var nodeClickCallback = function (event, model, node) {
   console.log("Node clicked callback");
 
   var target = event.currentTarget;
@@ -71,95 +73,184 @@ var nodeClickCallback = function(event, model, node) {
   var flowId = node.parent.flow;
   var jobId = node.id;
 
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
+      + flowId + "&job=" + jobId;
   var menu = [];
 
   if (type == "flow") {
-    var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
+    var flowRequestURL = contextURL + "/manager?project=" + projectName
+        + "&flow=" + node.flowId;
     if (node.expanded) {
-      menu = [{title: "Collapse Flow...", callback: function() {model.trigger("collapseFlow", node);}}];
+      menu = [{
+        title: "Collapse Flow...", callback: function () {
+          model.trigger("collapseFlow", node);
+        }
+      }];
     }
     else {
-      menu = [{title: "Expand Flow...", callback: function() {model.trigger("expandFlow", node);}}];
+      menu = [{
+        title: "Expand Flow...", callback: function () {
+          model.trigger("expandFlow", node);
+        }
+      }];
     }
 
     $.merge(menu, [
-    //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+      //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
       {break: 1},
-      {title: "Open Flow...", callback: function() {window.location.href=flowRequestURL;}},
-      {title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}},
+      {
+        title: "Open Flow...", callback: function () {
+        window.location.href = flowRequestURL;
+      }
+      },
+      {
+        title: "Open Flow in New Window...", callback: function () {
+        window.open(flowRequestURL);
+      }
+      },
       {break: 1},
-      {title: "Open Properties...", callback: function() {window.location.href=requestURL;}},
-      {title: "Open Properties in New Window...", callback: function() {window.open(requestURL);}},
+      {
+        title: "Open Properties...", callback: function () {
+        window.location.href = requestURL;
+      }
+      },
+      {
+        title: "Open Properties in New Window...", callback: function () {
+        window.open(requestURL);
+      }
+      },
       {break: 1},
-      {title: "Center Flow", callback: function() {model.trigger("centerNode", node);}}
+      {
+        title: "Center Flow", callback: function () {
+        model.trigger("centerNode", node);
+      }
+      }
     ]);
   }
   else {
     menu = [
-    //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
-    //  {break: 1},
-      {title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-      {title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+      //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+      //  {break: 1},
+      {
+        title: "Open Job...", callback: function () {
+        window.location.href = requestURL;
+      }
+      },
+      {
+        title: "Open Job in New Window...", callback: function () {
+        window.open(requestURL);
+      }
+      },
       {break: 1},
-      {title: "Center Job", callback: function() {model.trigger("centerNode", node)}}
+      {
+        title: "Center Job", callback: function () {
+        model.trigger("centerNode", node)
+      }
+      }
     ];
   }
   contextMenuView.show(event, menu);
 }
 
-var jobClickCallback = function(event, model, node) {
+var jobClickCallback = function (event, model, node) {
   console.log("Node clicked callback");
   var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
   var jobId = node.id;
 
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + node.id;
+  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
+      + flowId + "&job=" + node.id;
 
   var menu;
   if (type == "flow") {
-    var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
+    var flowRequestURL = contextURL + "/manager?project=" + projectName
+        + "&flow=" + node.flowId;
     menu = [
-    //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
-    //  {break: 1},
-      {title: "Open Flow...", callback: function() {window.location.href=flowRequestURL;}},
-      {title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}},
+      //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+      //  {break: 1},
+      {
+        title: "Open Flow...", callback: function () {
+        window.location.href = flowRequestURL;
+      }
+      },
+      {
+        title: "Open Flow in New Window...", callback: function () {
+        window.open(flowRequestURL);
+      }
+      },
       {break: 1},
-      {title: "Open Properties...", callback: function() {window.location.href=requestURL;}},
-      {title: "Open Properties in New Window...", callback: function() {window.open(requestURL);}},
+      {
+        title: "Open Properties...", callback: function () {
+        window.location.href = requestURL;
+      }
+      },
+      {
+        title: "Open Properties in New Window...", callback: function () {
+        window.open(requestURL);
+      }
+      },
       {break: 1},
-      {title: "Center Flow", callback: function() {model.trigger("centerNode", node)}}
+      {
+        title: "Center Flow", callback: function () {
+        model.trigger("centerNode", node)
+      }
+      }
     ];
   }
   else {
     menu = [
-    //  {title: "View Job...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
-    //  {break: 1},
-      {title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-      {title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+      //  {title: "View Job...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+      //  {break: 1},
+      {
+        title: "Open Job...", callback: function () {
+        window.location.href = requestURL;
+      }
+      },
+      {
+        title: "Open Job in New Window...", callback: function () {
+        window.open(requestURL);
+      }
+      },
       {break: 1},
-      {title: "Center Job", callback: function() {graphModel.trigger("centerNode", node)}}
+      {
+        title: "Center Job", callback: function () {
+        graphModel.trigger("centerNode", node)
+      }
+      }
     ];
   }
   contextMenuView.show(event, menu);
 }
 
-var edgeClickCallback = function(event, model) {
+var edgeClickCallback = function (event, model) {
   console.log("Edge clicked callback");
 }
 
-var graphClickCallback = function(event, model) {
+var graphClickCallback = function (event, model) {
   console.log("Graph clicked callback");
   var data = model.get("data");
   var flowId = data.flow;
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
+  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
+      + flowId;
 
   var menu = [
-    {title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
-    {title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
+    {
+      title: "Open Flow...", callback: function () {
+      window.location.href = requestURL;
+    }
+    },
+    {
+      title: "Open Flow in New Window...", callback: function () {
+      window.open(requestURL);
+    }
+    },
     {break: 1},
-    {title: "Center Graph", callback: function() {model.trigger("resetPanZoom");}}
+    {
+      title: "Center Graph", callback: function () {
+      model.trigger("resetPanZoom");
+    }
+    }
   ];
 
   contextMenuView.show(event, menu);

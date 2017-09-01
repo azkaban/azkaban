@@ -44,8 +44,8 @@ public final class FactorFilter<T, V> {
   }
 
   /**
-   * static function to generate an instance of the class.
-   * refer to the constructor for the param definitions.
+   * static function to generate an instance of the class. refer to the constructor for the param
+   * definitions.
    */
   public static <T, V> FactorFilter<T, V> create(final String factorName,
       final Filter<T, V> filter) {

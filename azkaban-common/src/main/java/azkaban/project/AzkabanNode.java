@@ -12,34 +12,30 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
-package azkaban.database;
+package azkaban.project;
 
-/**
- * Used for when we store text data. Plain uses UTF8 encoding.
- */
-public enum EncodingType {
-  PLAIN(1), GZIP(2);
+import static java.util.Objects.requireNonNull;
 
-  private final int numVal;
+import azkaban.utils.Props;
 
-  EncodingType(final int numVal) {
-    this.numVal = numVal;
+public abstract class AzkabanNode {
+
+  protected final String name;
+  protected final Props props;
+
+  public AzkabanNode(final String name, final Props props) {
+    this.name = requireNonNull(name);
+    this.props = requireNonNull(props);
   }
 
-  public static EncodingType fromInteger(final int x) {
-    switch (x) {
-      case 1:
-        return PLAIN;
-      case 2:
-        return GZIP;
-      default:
-        return PLAIN;
-    }
+  public String getName() {
+    return name;
   }
 
-  public int getNumVal() {
-    return this.numVal;
+  public Props getProps() {
+    return props;
   }
 }

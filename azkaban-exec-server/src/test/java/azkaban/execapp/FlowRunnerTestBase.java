@@ -28,13 +28,13 @@ public class FlowRunnerTestBase {
   public void assertThreadShutDown() {
     waitFlowRunner(
         runner -> Status.isStatusFinished(runner.getExecutableFlow().getStatus())
-        && !runner.isRunnerThreadAlive());
+            && !runner.isRunnerThreadAlive());
   }
 
   public void assertThreadRunning() {
     waitFlowRunner(
         runner -> Status.isStatusRunning(runner.getExecutableFlow().getStatus())
-        && runner.isRunnerThreadAlive());
+            && runner.isRunnerThreadAlive());
   }
 
   public void waitFlowRunner(final Function<FlowRunner, Boolean> statusCheck) {
@@ -103,7 +103,7 @@ public class FlowRunnerTestBase {
 
   protected void assertFlowStatus(final Status status) {
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    waitForStatus(flow, status);
+    StatusTestUtils.waitForStatus(flow, status);
     printStatuses(status, flow);
     assertEquals(status, flow.getStatus());
   }
@@ -112,24 +112,9 @@ public class FlowRunnerTestBase {
     final ExecutableFlow exFlow = this.runner.getExecutableFlow();
     final ExecutableNode node = exFlow.getExecutableNodePath(name);
     assertNotNull(name + " wasn't found", node);
-    waitForStatus(node, status);
+    StatusTestUtils.waitForStatus(node, status);
     printStatuses(status, node);
     assertEquals("Wrong status for [" + name + "]", status, node.getStatus());
-  }
-
-  private void waitForStatus(ExecutableNode node, Status status) {
-    for (int i = 0; i < 1000; i++) {
-      if (node.getStatus() == status) {
-        break;
-      }
-      synchronized (EventCollectorListener.handleEvent) {
-        try {
-          EventCollectorListener.handleEvent.wait(10L);
-        } catch (final InterruptedException e) {
-          i--;
-        }
-      }
-    }
   }
 
   protected void printStatuses(final Status status, final ExecutableNode node) {

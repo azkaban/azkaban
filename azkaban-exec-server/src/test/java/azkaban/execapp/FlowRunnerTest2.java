@@ -39,14 +39,13 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * Test the flow run, especially with embedded flows.
@@ -98,6 +97,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   private static int id = 101;
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ExecutorLoader fakeExecutorLoader;
@@ -106,12 +107,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("Create temp dir");
-    this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
-    if (this.workingDir.exists()) {
-      FileUtils.deleteDirectory(this.workingDir);
-    }
-    FileUtils.forceMkdir(this.workingDir);
+    this.workingDir = this.temporaryFolder.newFolder();
     this.jobtypeManager = new JobTypeManager(null, null,
         this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
@@ -129,15 +125,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
             this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
-  }
-
-  @After
-  public void tearDown() throws IOException {
-    System.out.println("Teardown temp dir");
-    if (this.workingDir != null) {
-      FileUtils.deleteDirectory(this.workingDir);
-      this.workingDir = null;
-    }
   }
 
   /**
@@ -1031,6 +1018,31 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.CANCELLED);
 
     assertFlowStatus(Status.FAILED);
+    assertThreadShutDown();
+  }
+
+  /**
+   * Tests the case when a job is killed by SLA causing a flow to fail. The flow should be in
+   * "killed" status.
+   */
+  @Test
+  public void testFlowKilledByJobLevelSLA() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = createFlowRunner(eventCollector,
+        FailureAction.CANCEL_ALL);
+
+    runFlowRunnerInThread(this.runner);
+    assertStatus("joba", Status.RUNNING);
+    assertStatus("joba1", Status.RUNNING);
+
+    for (final JobRunner jobRunner : this.runner.getActiveJobRunners()) {
+      if (jobRunner.getJobId().equals("joba")) {
+        jobRunner.killBySLA();
+        break;
+      }
+    }
+
+    assertFlowStatus(Status.KILLED);
     assertThreadShutDown();
   }
 
