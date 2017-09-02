@@ -212,20 +212,22 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
       this.flow.setStatus(Status.FAILED);
     } finally {
-      if (this.watcher != null) {
-        this.logger.info("Watcher is attached. Stopping watcher.");
-        this.watcher.stopWatcher();
-        this.logger
-            .info("Watcher cancelled status is " + this.watcher.isWatchCancelled());
+      try {
+        if (this.watcher != null) {
+          this.logger.info("Watcher is attached. Stopping watcher.");
+          this.watcher.stopWatcher();
+          this.logger
+              .info("Watcher cancelled status is " + this.watcher.isWatchCancelled());
+        }
+
+        this.flow.setEndTime(System.currentTimeMillis());
+        this.logger.info("Setting end time for flow " + this.execId + " to "
+            + System.currentTimeMillis());
+        closeLogger();
+        updateFlow();
+      } finally {
+        this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED, new EventData(this.flow)));
       }
-
-      this.flow.setEndTime(System.currentTimeMillis());
-      this.logger.info("Setting end time for flow " + this.execId + " to "
-          + System.currentTimeMillis());
-      closeLogger();
-
-      updateFlow();
-      this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED, new EventData(this.flow)));
     }
   }
 
