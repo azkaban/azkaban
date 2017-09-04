@@ -16,24 +16,19 @@
 
 package azkaban.executor;
 
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.executor.ExecutorLogEvent.EventType;
-import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.File;
-import java.sql.Connection;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.dbutils.DbUtils;
 
 @Singleton
-public class JdbcExecutorLoader extends AbstractJdbcLoader implements
-    ExecutorLoader {
+public class JdbcExecutorLoader implements ExecutorLoader {
 
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;
@@ -44,11 +39,9 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private final FetchActiveFlowDao fetchActiveFlowDao;
   private final AssignExecutorDao assignExecutorDao;
   private final NumExecutionsDao numExecutionsDao;
-  private EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  public JdbcExecutorLoader(final Props props, final CommonMetrics commonMetrics,
-      final ExecutionFlowDao executionFlowDao,
+  public JdbcExecutorLoader(final ExecutionFlowDao executionFlowDao,
       final ExecutorDao executorDao,
       final ExecutionJobDao executionJobDao,
       final ExecutionLogsDao executionLogsDao,
@@ -57,7 +50,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       final FetchActiveFlowDao fetchActiveFlowDao,
       final AssignExecutorDao assignExecutorDao,
       final NumExecutionsDao numExecutionsDao) {
-    super(props, commonMetrics);
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
@@ -67,14 +59,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     this.fetchActiveFlowDao = fetchActiveFlowDao;
     this.numExecutionsDao = numExecutionsDao;
     this.assignExecutorDao = assignExecutorDao;
-  }
-
-  public EncodingType getDefaultEncodingType() {
-    return this.defaultEncodingType;
-  }
-
-  public void setDefaultEncodingType(final EncodingType defaultEncodingType) {
-    this.defaultEncodingType = defaultEncodingType;
   }
 
   @Override
@@ -161,7 +145,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final String projContain,
-      final String flowContains, final String userNameContains, final int status,
+      final String flowContains,
+      final String userNameContains, final int status,
       final long startTime,
       final long endTime, final int skip, final int num) throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projContain, flowContains,
@@ -238,7 +223,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   @Override
   public List<ExecutableJobInfo> fetchJobHistory(final int projectId, final String jobId,
-      final int skip, final int size) throws ExecutorManagerException {
+      final int skip, final int size)
+      throws ExecutorManagerException {
 
     return this.executionJobDao.fetchJobHistory(projectId, jobId, skip, size);
   }
@@ -269,17 +255,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   public void uploadAttachmentFile(final ExecutableNode node, final File file)
       throws ExecutorManagerException {
     this.executionJobDao.uploadAttachmentFile(node, file);
-  }
-
-  private Connection getConnection() throws ExecutorManagerException {
-    Connection connection = null;
-    try {
-      connection = super.getDBConnection(false);
-    } catch (final Exception e) {
-      DbUtils.closeQuietly(connection);
-      throw new ExecutorManagerException("Error getting DB connection.", e);
-    }
-    return connection;
   }
 
   @Override
