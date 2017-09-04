@@ -30,6 +30,8 @@ import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 
@@ -47,8 +49,20 @@ public class AzkabanSingleServer {
     this.executor = executor;
   }
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     log.info("Starting Azkaban Server");
+
+    // to enable "run out of the box for testing"
+    if (args.length == 0) {
+      final File templateFolder = new File("test/local-conf-templates");
+      final File localConfFolder = new File("local");
+      if (!localConfFolder.exists()) {
+        FileUtils.copyDirectory(templateFolder, localConfFolder);
+        log.info("Copied local conf templates from " + templateFolder.getAbsolutePath());
+      }
+      log.info("Using conf at " + localConfFolder.getAbsolutePath() + "/conf");
+      args = new String[]{"-conf", "local/conf"};
+    }
 
     final Props props = AzkabanServer.loadProps(args);
     if (props == null) {
