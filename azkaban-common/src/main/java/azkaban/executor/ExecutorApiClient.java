@@ -29,22 +29,6 @@ import org.apache.http.util.EntityUtils;
  */
 public class ExecutorApiClient extends RestfulApiClient<String> {
 
-  private static ExecutorApiClient instance = null;
-
-  private ExecutorApiClient() {
-  }
-
-  /**
-   * Singleton method to return the instance of the current object.
-   */
-  public static ExecutorApiClient getInstance() {
-    if (null == instance) {
-      instance = new ExecutorApiClient();
-    }
-
-    return instance;
-  }
-
   /**
    * Implementing the parseResponse function to return de-serialized Json object.
    *
