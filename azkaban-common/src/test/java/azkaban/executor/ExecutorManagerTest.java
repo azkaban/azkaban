@@ -31,6 +31,7 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,6 +40,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.Charsets;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -257,6 +261,31 @@ public class ExecutorManagerTest {
     Assert.assertFalse(manager.getRunningFlows().contains(flow1));
   }
 
+  /* Flow has been running on an executor but is not any more (for example because of restart) */
+  @Test
+  public void testNotFoundFlows() throws Exception {
+    testSetUpForRunningFlows();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
+    when(this.apiClient.httpGet(any(URI.class), any())).thenAnswer(invocation -> {
+      final Map<String, String> params = paramsToMap(invocation.getArgumentAt(0, URI.class));
+      System.out.println("params = " + params);
+      if (ConnectorParams.UPDATE_ACTION.equals(params.get("action"))) {
+        // TODO too low level? how about extracting some further code into a "gateway"?
+        // then this could be done with ImmutableMap.of(..)
+        return "{\"updated\":[{\"executionId\":-1, \"error\": \"Flow does not exist\"}]}";
+      } else {
+        // action=execute
+        return "{}";
+      }
+    });
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    // TODO this takes rather long, I think it's because of some wait() in ExecutingManagerUpdaterThread
+    // so change that wait to 0 for this test
+    final ExecutableFlow fetchedFlow = waitFlowFinished(flow1);
+    Assert.assertEquals(fetchedFlow.getStatus(), Status.FAILED);
+  }
+
   /*
    * Added tests for runningFlows
    * TODO: When removing queuedFlows cache, will refactor rest of the ExecutorManager test cases
@@ -349,4 +378,23 @@ public class ExecutorManagerTest {
     this.activeFlows.put(this.flow2.getExecutionId(), new Pair<>(ref2, this.flow2));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
   }
+
+  private ExecutableFlow waitFlowFinished(final ExecutableFlow flow1)
+      throws ExecutorManagerException, InterruptedException {
+    ExecutableFlow fetchedFlow;
+    while ((fetchedFlow = this.loader.fetchExecutableFlow(flow1.getExecutionId())) == null
+        || !Status.isStatusFinished(fetchedFlow.getStatus())) {
+      // TODO maybe something more elegant?
+      Thread.sleep(10L);
+    }
+    return fetchedFlow;
+  }
+
+  private Map<String, String> paramsToMap(final URI uri) {
+    final List<NameValuePair> params = URLEncodedUtils.parse(uri, Charsets.UTF_8);
+    return params.stream()
+        .collect(Collectors.toMap(NameValuePair::getName,
+            param -> param.getValue() == null ? "" : param.getValue()));
+  }
+
 }
