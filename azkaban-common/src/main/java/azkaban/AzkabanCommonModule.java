@@ -25,6 +25,7 @@ import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
+import azkaban.executor.ExecutorApiClient;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectImpl;
@@ -82,6 +83,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
     bind(MetricRegistry.class).in(Scopes.SINGLETON);
+    bind(ExecutorApiClient.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
