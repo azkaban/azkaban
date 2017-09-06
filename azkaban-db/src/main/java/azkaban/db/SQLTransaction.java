@@ -22,7 +22,7 @@ import java.sql.SQLException;
 /**
  * This interface defines how a sequence of sql statements are organized and packed together. All
  * transaction implementations must follow this interface, and will be called in {@link
- * DatabaseOperatorImpl#transaction(SQLTransaction)}
+ * DatabaseOperator#transaction(SQLTransaction)}
  *
  * @param <T> The transaction return type
  */

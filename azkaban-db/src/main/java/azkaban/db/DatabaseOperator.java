@@ -16,8 +16,16 @@
  */
 package azkaban.db;
 
+import static java.util.Objects.requireNonNull;
+
+import java.sql.Connection;
 import java.sql.SQLException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.log4j.Logger;
 
 /**
  * This interface is to define Base Data Access Object contract for Azkaban. All azkaban DB related
@@ -26,10 +34,25 @@ import org.apache.commons.dbutils.ResultSetHandler;
  *
  * @see org.apache.commons.dbutils.QueryRunner
  */
-public interface DatabaseOperator {
+@Singleton
+public class DatabaseOperator {
+
+  private static final Logger logger = Logger.getLogger(DatabaseOperator.class);
+
+  private final QueryRunner queryRunner;
 
   /**
-   * Executes the given Azkaban related SELECT SQL operations.
+   * Note: this queryRunner should include a concrete {@link AzkabanDataSource} inside.
+   */
+  @Inject
+  public DatabaseOperator(final QueryRunner queryRunner) {
+    requireNonNull(queryRunner.getDataSource(), "data source must not be null.");
+    this.queryRunner = queryRunner;
+  }
+
+  /**
+   * Executes the given Azkaban related SELECT SQL operations. it will call
+   * {@link AzkabanDataSource#getConnection()} inside queryrunner.query.
    *
    * @param sqlQuery The SQL query statement to execute.
    * @param resultHandler The handler used to create the result object
@@ -37,8 +60,17 @@ public interface DatabaseOperator {
    * @param <T> The type of object that the qeury handler returns
    * @return The object returned by the handler.
    */
-  <T> T query(String sqlQuery, ResultSetHandler<T> resultHandler, Object... params)
-      throws SQLException;
+  public <T> T query(final String baseQuery, final ResultSetHandler<T> resultHandler,
+      final Object... params)
+      throws SQLException {
+    try {
+      return this.queryRunner.query(baseQuery, resultHandler, params);
+    } catch (final SQLException ex) {
+      // todo kunkun-tang: Retry logics should be implemented here.
+      logger.error("query failed", ex);
+      throw ex;
+    }
+  }
 
   /**
    * Provide a way to allow users define custom SQL operations without relying on fixed SQL
@@ -49,19 +81,48 @@ public interface DatabaseOperator {
    * @param <T> The type of object that the operations returns. Note that T could be null
    * @return T The object returned by the SQL statement, expected by the caller
    */
-  <T> T transaction(SQLTransaction<T> operations) throws SQLException;
+  public <T> T transaction(final SQLTransaction<T> operations) throws SQLException {
+    Connection conn = null;
+    try {
+      conn = this.queryRunner.getDataSource().getConnection();
+      conn.setAutoCommit(false);
+      final DatabaseTransOperator transOperator = new DatabaseTransOperator(this.queryRunner,
+          conn);
+      final T res = operations.execute(transOperator);
+      conn.commit();
+      return res;
+    } catch (final SQLException ex) {
+      // todo kunkun-tang: Retry logics should be implemented here.
+      logger.error("transaction failed", ex);
+      throw ex;
+    } finally {
+      DbUtils.closeQuietly(conn);
+    }
+  }
 
   /**
    * Executes the given AZ related INSERT, UPDATE, or DELETE SQL statement.
+   * it will call {@link AzkabanDataSource#getConnection()} inside
+   * queryrunner.update.
    *
    * @param updateClause sql statements to execute
    * @param params Initialize the PreparedStatement's IN parameters
    * @return The number of rows updated.
    */
-  int update(String updateClause, Object... params) throws SQLException;
+  public int update(final String updateClause, final Object... params) throws SQLException {
+    try {
+      return this.queryRunner.update(updateClause, params);
+    } catch (final SQLException ex) {
+      // todo kunkun-tang: Retry logics should be implemented here.
+      logger.error("update failed", ex);
+      throw ex;
+    }
+  }
 
   /**
    * @return datasource wrapped in the database operator.
    */
-  AzkabanDataSource getDataSource();
+  public AzkabanDataSource getDataSource() {
+    return (AzkabanDataSource) this.queryRunner.getDataSource();
+  }
 }
