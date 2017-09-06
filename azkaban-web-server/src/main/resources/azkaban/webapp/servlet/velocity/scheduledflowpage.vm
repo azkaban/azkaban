@@ -148,7 +148,7 @@
               #end
             #else
             <tr>
-                <td colspan="12">No scheduled flow found.</td>
+              <td colspan="12">No scheduled flow found.</td>
             </tr>
             #end
           </tbody>
