@@ -16,7 +16,11 @@
 
 package azkaban.executor;
 
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,15 +34,22 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.Charsets;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -59,30 +70,31 @@ public class ExecutorManagerTest {
   private ExecutableFlow flow1;
   private ExecutableFlow flow2;
   private AlerterHolder alertHolder;
+  private ExecutorApiGateway apiGateway;
 
   @Before
-  public void setup() {
+  public void setup() throws Exception {
     this.props = AbstractMailerTest.createMailProperties();
     this.alertHolder = new AlerterHolder(this.props, new Emailer(this.props, this.commonMetrics));
+    this.loader = new MockExecutorLoader();
   }
 
-  /* Helper method to create a ExecutorManager Instance */
-  private ExecutorManager createMultiExecutorManagerInstance()
-      throws ExecutorManagerException {
-    return createMultiExecutorManagerInstance(new MockExecutorLoader());
+  @After
+  public void tearDown() throws Exception {
+    if (this.manager != null) {
+      this.manager.shutdown();
+    }
   }
 
   /*
-   * Helper method to create a ExecutorManager Instance with the given
-   * ExecutorLoader
+   * Helper method to create a ExecutorManager Instance
    */
-  private ExecutorManager createMultiExecutorManagerInstance(
-      final ExecutorLoader loader) throws ExecutorManagerException {
+  private ExecutorManager createMultiExecutorManagerInstance() throws Exception {
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     this.props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "false");
-    loader.addExecutor("localhost", 12345);
-    loader.addExecutor("localhost", 12346);
-    return new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
+    this.loader.addExecutor("localhost", 12345);
+    this.loader.addExecutor("localhost", 12346);
+    return createExecutorManager();
   }
 
   /*
@@ -92,9 +104,7 @@ public class ExecutorManagerTest {
   @Test(expected = ExecutorManagerException.class)
   public void testNoExecutorScenario() throws ExecutorManagerException {
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-    final ExecutorLoader loader = new MockExecutorLoader();
-    @SuppressWarnings("unused") final ExecutorManager manager =
-        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
+    @SuppressWarnings("unused") final ExecutorManager manager = createExecutorManager();
   }
 
   /*
@@ -103,9 +113,7 @@ public class ExecutorManagerTest {
   @Test
   public void testLocalExecutorScenario() throws ExecutorManagerException {
     this.props.put("executor.port", 12345);
-    final ExecutorLoader loader = new MockExecutorLoader();
-    final ExecutorManager manager =
-        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
+    final ExecutorManager manager = createExecutorManager();
     final Set<Executor> activeExecutors =
         new HashSet(manager.getAllActiveExecutors());
 
@@ -113,7 +121,7 @@ public class ExecutorManagerTest {
     final Executor executor = activeExecutors.iterator().next();
     Assert.assertEquals(executor.getHost(), "localhost");
     Assert.assertEquals(executor.getPort(), 12345);
-    Assert.assertArrayEquals(activeExecutors.toArray(), loader
+    Assert.assertArrayEquals(activeExecutors.toArray(), this.loader
         .fetchActiveExecutors().toArray());
   }
 
@@ -123,16 +131,20 @@ public class ExecutorManagerTest {
   @Test
   public void testMultipleExecutorScenario() throws ExecutorManagerException {
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-    final ExecutorLoader loader = new MockExecutorLoader();
-    final Executor executor1 = loader.addExecutor("localhost", 12345);
-    final Executor executor2 = loader.addExecutor("localhost", 12346);
+    final Executor executor1 = this.loader.addExecutor("localhost", 12345);
+    final Executor executor2 = this.loader.addExecutor("localhost", 12346);
 
-    final ExecutorManager manager =
-        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
+    final ExecutorManager manager = createExecutorManager();
     final Set<Executor> activeExecutors =
         new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[]{
         executor1, executor2});
+  }
+
+  private ExecutorManager createExecutorManager()
+      throws ExecutorManagerException {
+    return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
+        this.apiGateway);
   }
 
   /*
@@ -141,18 +153,16 @@ public class ExecutorManagerTest {
   @Test
   public void testSetupExecutorsSucess() throws ExecutorManagerException {
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-    final ExecutorLoader loader = new MockExecutorLoader();
-    final Executor executor1 = loader.addExecutor("localhost", 12345);
-    final ExecutorManager manager =
-        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
+    final Executor executor1 = this.loader.addExecutor("localhost", 12345);
+    final ExecutorManager manager = createExecutorManager();
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
         new Executor[]{executor1});
 
     // mark older executor as inactive
     executor1.setActive(false);
-    loader.updateExecutor(executor1);
-    final Executor executor2 = loader.addExecutor("localhost", 12346);
-    final Executor executor3 = loader.addExecutor("localhost", 12347);
+    this.loader.updateExecutor(executor1);
+    final Executor executor2 = this.loader.addExecutor("localhost", 12346);
+    final Executor executor3 = this.loader.addExecutor("localhost", 12347);
     manager.setupExecutors();
 
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
@@ -166,10 +176,8 @@ public class ExecutorManagerTest {
   @Test(expected = ExecutorManagerException.class)
   public void testSetupExecutorsException() throws ExecutorManagerException {
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-    final ExecutorLoader loader = new MockExecutorLoader();
-    final Executor executor1 = loader.addExecutor("localhost", 12345);
-    final ExecutorManager manager =
-        new ExecutorManager(this.props, loader, this.alertHolder, this.commonMetrics);
+    final Executor executor1 = this.loader.addExecutor("localhost", 12345);
+    final ExecutorManager manager = createExecutorManager();
     final Set<Executor> activeExecutors =
         new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(),
@@ -177,13 +185,13 @@ public class ExecutorManagerTest {
 
     // mark older executor as inactive
     executor1.setActive(false);
-    loader.updateExecutor(executor1);
+    this.loader.updateExecutor(executor1);
     manager.setupExecutors();
   }
 
   /* Test disabling queue process thread to pause dispatching */
   @Test
-  public void testDisablingQueueProcessThread() throws ExecutorManagerException {
+  public void testDisablingQueueProcessThread() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
     manager.enableQueueProcessorThread();
     Assert.assertEquals(manager.isQueueProcessorThreadActive(), true);
@@ -193,7 +201,7 @@ public class ExecutorManagerTest {
 
   /* Test renabling queue process thread to pause restart dispatching */
   @Test
-  public void testEnablingQueueProcessThread() throws ExecutorManagerException {
+  public void testEnablingQueueProcessThread() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
     Assert.assertEquals(manager.isQueueProcessorThreadActive(), false);
     manager.enableQueueProcessorThread();
@@ -202,9 +210,8 @@ public class ExecutorManagerTest {
 
   /* Test submit a non-dispatched flow */
   @Test
-  public void testQueuedFlows() throws ExecutorManagerException, IOException {
-    final ExecutorLoader loader = new MockExecutorLoader();
-    final ExecutorManager manager = createMultiExecutorManagerInstance(loader);
+  public void testQueuedFlows() throws Exception {
+    final ExecutorManager manager = createMultiExecutorManagerInstance();
     final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow1.setExecutionId(1);
     final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
@@ -217,7 +224,7 @@ public class ExecutorManagerTest {
     final List<Integer> testFlows = Arrays.asList(flow1.getExecutionId(), flow2.getExecutionId());
 
     final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlowsDB =
-        loader.fetchQueuedFlows();
+        this.loader.fetchQueuedFlows();
     Assert.assertEquals(queuedFlowsDB.size(), testFlows.size());
     // Verify things are correctly setup in db
     for (final Pair<ExecutionReference, ExecutableFlow> pair : queuedFlowsDB) {
@@ -237,8 +244,7 @@ public class ExecutorManagerTest {
 
   /* Test submit duplicate flow when previous instance is not dispatched */
   @Test(expected = ExecutorManagerException.class)
-  public void testDuplicateQueuedFlows() throws ExecutorManagerException,
-      IOException {
+  public void testDuplicateQueuedFlows() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
     final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow1.getExecutionOptions().setConcurrentOption(
@@ -254,19 +260,36 @@ public class ExecutorManagerTest {
    * non-dispatched flow
    */
   @Test
-  public void testKillQueuedFlow() throws ExecutorManagerException, IOException {
-    final ExecutorLoader loader = new MockExecutorLoader();
-    final ExecutorManager manager = createMultiExecutorManagerInstance(loader);
+  public void testKillQueuedFlow() throws Exception {
+    final ExecutorManager manager = createMultiExecutorManagerInstance();
     final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     final User testUser = TestUtils.getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
 
     manager.cancelFlow(flow1, testUser.getUserId());
     final ExecutableFlow fetchedFlow =
-        loader.fetchExecutableFlow(flow1.getExecutionId());
+        this.loader.fetchExecutableFlow(flow1.getExecutionId());
     Assert.assertEquals(fetchedFlow.getStatus(), Status.FAILED);
 
     Assert.assertFalse(manager.getRunningFlows().contains(flow1));
+  }
+
+  /* Flow has been running on an executor but is not any more (for example because of restart) */
+  @Test
+  public void testNotFoundFlows() throws Exception {
+    setQuickExecutorUpdater();
+    testSetUpForRunningFlows();
+    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
+    doReturn(ImmutableMap.of(ConnectorParams.RESPONSE_UPDATED_FLOWS,
+        Arrays.asList(ImmutableMap.of(
+            ConnectorParams.UPDATE_MAP_EXEC_ID, -1,
+            "error", "Flow does not exist")))).when(this.apiGateway)
+        .callExecutorServer(anyString(), anyInt(), eq(ConnectorParams.UPDATE_ACTION),
+            any(), any(), any(), any());
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    final ExecutableFlow fetchedFlow = waitFlowFinished(flow1);
+    Assert.assertEquals(fetchedFlow.getStatus(), Status.FAILED);
   }
 
   /*
@@ -333,6 +356,7 @@ public class ExecutorManagerTest {
   private void testSetUpForRunningFlows()
       throws ExecutorManagerException, IOException {
     this.loader = mock(ExecutorLoader.class);
+    this.apiGateway = mock(ExecutorApiGateway.class);
     this.user = TestUtils.getTestUser();
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     //To test runningFlows, AZKABAN_QUEUEPROCESSING_ENABLED should be set to true
@@ -346,8 +370,20 @@ public class ExecutorManagerTest {
     executors.add(executor2);
 
     when(this.loader.fetchActiveExecutors()).thenReturn(executors);
-    this.manager = new ExecutorManager(this.props, this.loader, this.alertHolder,
-        this.commonMetrics);
+
+    when(this.apiGateway.callExecutorServer(any(), any(), anyString()))
+        .thenReturn(Collections.emptyMap());
+    when(this.apiGateway.callExecutorServer(anyString(), anyInt(), any(), any(), any(), any()))
+        .thenReturn(Collections.emptyMap());
+    when(this.apiGateway
+        .callExecutorServer(anyString(), anyInt(), anyString(), any(), any(), any(), any()))
+        .thenReturn(Collections.emptyMap());
+    when(this.apiGateway.callExecutorServer(any(ExecutionReference.class), any(), any()))
+        .thenReturn(Collections.emptyMap());
+    when(this.apiGateway.callExecutorServer(any(ExecutionReference.class), any(), any(), any()))
+        .thenReturn(Collections.emptyMap());
+
+    this.manager = createExecutorManager();
 
     this.flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     this.flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
@@ -361,4 +397,28 @@ public class ExecutorManagerTest {
     this.activeFlows.put(this.flow2.getExecutionId(), new Pair<>(ref2, this.flow2));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
   }
+
+  private void setQuickExecutorUpdater() {
+    this.props.put(ExecutorManager.AZKABAN_EXECUTOR_UPDATER_WAIT_TIME_IDLE_MS, "1");
+    this.props.put(ExecutorManager.AZKABAN_EXECUTOR_UPDATER_WAIT_TIME_MS, "1");
+  }
+
+  private ExecutableFlow waitFlowFinished(final ExecutableFlow flow1)
+      throws ExecutorManagerException, InterruptedException {
+    ExecutableFlow fetchedFlow;
+    while ((fetchedFlow = this.loader.fetchExecutableFlow(flow1.getExecutionId())) == null
+        || !Status.isStatusFinished(fetchedFlow.getStatus())) {
+      // TODO maybe something more elegant?
+      Thread.sleep(10L);
+    }
+    return fetchedFlow;
+  }
+
+  private Map<String, String> paramsToMap(final URI uri) {
+    final List<NameValuePair> params = URLEncodedUtils.parse(uri, Charsets.UTF_8);
+    return params.stream()
+        .collect(Collectors.toMap(NameValuePair::getName,
+            param -> param.getValue() == null ? "" : param.getValue()));
+  }
+
 }

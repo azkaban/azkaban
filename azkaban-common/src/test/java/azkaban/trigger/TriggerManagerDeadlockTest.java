@@ -16,7 +16,10 @@
 
 package azkaban.trigger;
 
+import static org.mockito.Mockito.mock;
+
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutorApiGateway;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
@@ -42,6 +45,7 @@ public class TriggerManagerDeadlockTest {
   TriggerLoader loader;
   TriggerManager triggerManager;
   ExecutorLoader execLoader;
+  ExecutorApiGateway apiGateway;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
@@ -50,10 +54,11 @@ public class TriggerManagerDeadlockTest {
     props.put("trigger.scan.interval", 1000);
     props.put("executor.port", 12321);
     this.execLoader = new MockExecutorLoader();
+    this.apiGateway = mock(ExecutorApiGateway.class);
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
         new AlerterHolder(props, new Emailer(props, commonMetrics)),
-        commonMetrics);
+        commonMetrics, this.apiGateway);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 
