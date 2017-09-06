@@ -86,6 +86,11 @@ public class Constants {
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
 
+    // mail hostname and port parametters, when this parametters set in properties file this parametters are used generate email links.
+    public static final String MAIL_JETTY_HOSTNAME = "mail.jetty.hostname";
+    public static final String MAIL_JETTY_SSL_PORT = "mail.jetty.ssl.port";
+    public static final String MAIL_JETTY_PORT = "mail.jetty.port";
+
     // Hostname for the host, if not specified, canonical hostname will be used
     public static final String AZKABAN_SERVER_HOST_NAME = "azkaban.server.hostname";
 
