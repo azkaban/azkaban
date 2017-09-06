@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.EventCollectorListener;
 import azkaban.execapp.FlowRunner;
+import azkaban.execapp.FlowRunnerTestUtil;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -29,18 +30,13 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -233,7 +229,7 @@ public class RemoteFlowWatcherTest {
       throws Exception {
     final File testDir = ExecutionsTestUtil.getFlowDir("exectest1");
     final ExecutableFlow exFlow =
-        prepareExecDir(workingDir, testDir, flowName, execId);
+        FlowRunnerTestUtil.prepareExecDir(workingDir, testDir, flowName, execId);
     final ExecutionOptions options = exFlow.getExecutionOptions();
     if (watcher != null) {
       options.setPipelineLevel(pipeline);
@@ -260,19 +256,4 @@ public class RemoteFlowWatcherTest {
     }
   }
 
-  private ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
-      final String flowName, final int execId) throws IOException {
-    FileUtils.copyDirectory(execDir, workingDir);
-
-    final File jsonFlowFile = new File(workingDir, flowName + ".flow");
-    final HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    final Project project = new Project(1, "test");
-    final Flow flow = Flow.flowFromObject(flowObj);
-    final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-    execFlow.setExecutionId(execId);
-    execFlow.setExecutionPath(workingDir.getPath());
-    return execFlow;
-  }
 }
