@@ -68,6 +68,8 @@ It allows us to do following when saving a file:
   Exceptions should be rare. 
   An example is automated UI testing, until the test framework catches up. 
   
+- Define configuration keys in the azkaban.Constants class.
+  
 - [Favor composition over inheritance](http://thefinestartist.com/effective-java/16).
 
 - Favor @Singleton notation over the bind method. 
@@ -91,7 +93,7 @@ It allows us to do following when saving a file:
 
   See [this blog post](https://rrees.me/2009/01/31/programming-to-interfaces-anti-pattern/).
 
-- Favor small and focused classes, files, methods over large ones
+- Favor small and focused classes, files, methods over large ones.
 
   It's ok to have many classes, files.
   Here is [a rule of 30 suggestion](https://dzone.com/articles/rule-30-%E2%80%93-when-method-class-or).
