@@ -1385,6 +1385,9 @@ public class ExecutorManager extends EventHandler implements
     // move from flow to running flows
     this.runningFlows.put(exflow.getExecutionId(),
         new Pair<>(reference, exflow));
+    synchronized (this) {
+      this.notifyAll();
+    }
 
     logger.info(String.format(
         "Successfully dispatched exec %d with error count %d",
@@ -1521,12 +1524,12 @@ public class ExecutorManager extends EventHandler implements
 
           ExecutorManager.this.updaterStage = "Updated all active flows. Waiting for next round.";
 
-          synchronized (this) {
+          synchronized (ExecutorManager.this) {
             try {
               if (ExecutorManager.this.runningFlows.size() > 0) {
-                this.wait(this.waitTimeMs);
+                ExecutorManager.this.wait(this.waitTimeMs);
               } else {
-                this.wait(this.waitTimeIdleMs);
+                ExecutorManager.this.wait(this.waitTimeIdleMs);
               }
             } catch (final InterruptedException e) {
             }
