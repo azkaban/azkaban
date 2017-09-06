@@ -67,6 +67,14 @@ public class ExecutorManager extends EventHandler implements
 
   public static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
       "azkaban.use.multiple.executors";
+  public static final String AZKABAN_EXECUTOR_UPDATER_WAIT_TIME_IDLE_MS =
+      "azkaban.executorUpdater.waitTimeIdleMs";
+  public static final String AZKABAN_EXECUTOR_UPDATER_WAIT_TIME_MS =
+      "azkaban.executorUpdater.waitTimeMs";
+  public static final String AZKABAN_EXECUTOR_UPDATER_NUM_ERRORS =
+      "azkaban.executorUpdater.numErrors";
+  public static final String AZKABAN_EXECUTOR_UPDATER_ERROR_THRESHOLD =
+      "azkaban.executorUpdater.errorThreshold";
   static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
       "azkaban.executorselector.filters";
   static final String AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
@@ -1391,15 +1399,22 @@ public class ExecutorManager extends EventHandler implements
 
   private class ExecutingManagerUpdaterThread extends Thread {
 
-    private final int waitTimeIdleMs = 2000;
-    private final int waitTimeMs = 500;
-    // When we have an http error, for that flow, we'll check every 10 secs, 6
-    // times (1 mins) before we evict.
-    private final int numErrors = 6;
-    private final long errorThreshold = 10000;
+    private final int waitTimeIdleMs;
+    private final int waitTimeMs;
+    private final int numErrors;
+    private final long errorThreshold;
     private boolean shutdown = false;
 
     public ExecutingManagerUpdaterThread() {
+      this.waitTimeIdleMs = ExecutorManager.this.azkProps
+          .getInt(AZKABAN_EXECUTOR_UPDATER_WAIT_TIME_IDLE_MS, 2000);
+      this.waitTimeMs = ExecutorManager.this.azkProps
+          .getInt(AZKABAN_EXECUTOR_UPDATER_WAIT_TIME_MS, 500);
+      // When we have an http error, for that flow, we'll check every 10 secs, 6
+      // times (1 mins) before we evict.
+      this.numErrors = ExecutorManager.this.azkProps.getInt(AZKABAN_EXECUTOR_UPDATER_NUM_ERRORS, 6);
+      this.errorThreshold = ExecutorManager.this.azkProps
+          .getInt(AZKABAN_EXECUTOR_UPDATER_ERROR_THRESHOLD, 10000);
       this.setName("ExecutorManagerUpdaterThread");
     }
 
