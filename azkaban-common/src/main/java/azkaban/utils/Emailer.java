@@ -74,7 +74,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
-    this.clientHostname = props.getString("jetty.hostname", "localhost");
+    this.clientHostname = props.getString("mail.jetty.hostname", props.getString("jetty.hostname", "localhost"));
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
