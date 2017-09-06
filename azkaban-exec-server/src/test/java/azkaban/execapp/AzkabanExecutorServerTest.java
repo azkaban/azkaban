@@ -17,6 +17,7 @@
 
 package azkaban.execapp;
 
+import static azkaban.ServiceProviderTest.assertSingleton;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
@@ -89,8 +90,11 @@ public class AzkabanExecutorServerTest {
         new AzkabanExecServerModule()
     );
 
-    assertNotNull(injector.getInstance(AzkabanExecutorServer.class));
     assertNotNull(injector.getInstance(Emailer.class));
     assertNotNull(injector.getInstance(AlerterHolder.class));
+
+    assertSingleton(TriggerManager.class, injector);
+    assertSingleton(FlowRunnerManager.class, injector);
+    assertSingleton(AzkabanExecutorServer.class, injector);
   }
 }
