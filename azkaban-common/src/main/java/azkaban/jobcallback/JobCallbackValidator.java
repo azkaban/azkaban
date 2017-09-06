@@ -10,18 +10,14 @@ import static azkaban.jobcallback.JobCallbackConstants.MAX_POST_BODY_LENGTH_PROP
 import static azkaban.jobcallback.JobCallbackConstants.SEQUENCE_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
+import azkaban.utils.Props;
 import java.util.Collection;
-
 import org.apache.log4j.Logger;
 
-import azkaban.utils.Props;
-
 /**
- * Responsible for validating the job callback related properties at project
- * upload time
- * 
- * @author hluu
+ * Responsible for validating the job callback related properties at project upload time
  *
+ * @author hluu
  */
 public class JobCallbackValidator {
 
@@ -30,25 +26,22 @@ public class JobCallbackValidator {
 
   /**
    * Make sure all the job callback related properties are valid
-   * 
-   * @param jobProps
-   * @param error
-   * @return number of valid job callback properties. Mainly for testing
-   *         purpose.
+   *
+   * @return number of valid job callback properties. Mainly for testing purpose.
    */
-  public static int validate(String jobName, Props serverProps, Props jobProps,
-      Collection<String> errors) {
-    int maxNumCallback =
+  public static int validate(final String jobName, final Props serverProps, final Props jobProps,
+      final Collection<String> errors) {
+    final int maxNumCallback =
         serverProps.getInt(
             JobCallbackConstants.MAX_CALLBACK_COUNT_PROPERTY_KEY,
             JobCallbackConstants.DEFAULT_MAX_CALLBACK_COUNT);
 
-    int maxPostBodyLength =
+    final int maxPostBodyLength =
         serverProps.getInt(MAX_POST_BODY_LENGTH_PROPERTY_KEY,
             DEFAULT_POST_BODY_LENGTH);
 
     int totalCallbackCount = 0;
-    for (JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
+    for (final JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
       totalCallbackCount +=
           validateBasedOnStatus(jobProps, errors, jobStatus, maxNumCallback,
               maxPostBodyLength);
@@ -61,29 +54,29 @@ public class JobCallbackValidator {
     return totalCallbackCount;
   }
 
-  private static int validateBasedOnStatus(Props jobProps,
-      Collection<String> errors, JobCallbackStatusEnum jobStatus,
-      int maxNumCallback, int maxPostBodyLength) {
+  private static int validateBasedOnStatus(final Props jobProps,
+      final Collection<String> errors, final JobCallbackStatusEnum jobStatus,
+      final int maxNumCallback, final int maxPostBodyLength) {
 
     int callbackCount = 0;
     // replace property templates with status
-    String jobCallBackUrl =
+    final String jobCallBackUrl =
         JOB_CALLBACK_URL_TEMPLATE.replaceFirst(STATUS_TOKEN, jobStatus.name()
             .toLowerCase());
 
-    String requestMethod =
+    final String requestMethod =
         JOB_CALLBACK_REQUEST_METHOD_TEMPLATE.replaceFirst(STATUS_TOKEN,
             jobStatus.name().toLowerCase());
 
-    String httpBody =
+    final String httpBody =
         JOB_CALLBACK_BODY_TEMPLATE.replaceFirst(STATUS_TOKEN, jobStatus.name()
             .toLowerCase());
 
     for (int i = 0; i <= maxNumCallback; i++) {
       // callback url
-      String callbackUrlKey =
+      final String callbackUrlKey =
           jobCallBackUrl.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
-      String callbackUrlValue = jobProps.get(callbackUrlKey);
+      final String callbackUrlValue = jobProps.get(callbackUrlKey);
 
       // sequence number should start at 1, this is to check for sequence
       // number that starts a 0
@@ -97,16 +90,16 @@ public class JobCallbackValidator {
       if (callbackUrlValue == null || callbackUrlValue.length() == 0) {
         break;
       } else {
-        String requestMethodKey =
+        final String requestMethodKey =
             requestMethod.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
 
-        String methodValue = jobProps.getString(requestMethodKey, HTTP_GET);
+        final String methodValue = jobProps.getString(requestMethodKey, HTTP_GET);
 
         if (HTTP_POST.equals(methodValue)) {
           // now try to get the post body
-          String postBodyKey =
+          final String postBodyKey =
               httpBody.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
-          String postBodyValue = jobProps.get(postBodyKey);
+          final String postBodyValue = jobProps.get(postBodyKey);
           if (postBodyValue == null || postBodyValue.length() == 0) {
             errors.add("No POST body was specified for job callback '"
                 + callbackUrlValue + "'");

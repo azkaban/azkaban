@@ -19,101 +19,88 @@ package azkaban.utils;
 import java.util.Collection;
 
 public class AbstractMailer {
-  private static int MB_IN_BYTES = 1048576;
-  private String clientHostname;
-  private int clientPort;
-  private boolean usesSSL;
-  private boolean usesAuth;
 
-  private String mailHost;
-  private String mailUser;
-  private String mailPassword;
-  private String mailSender;
-  private String azkabanName;
+  public static final int DEFAULT_SMTP_PORT = 25;
+  private static final int MB_IN_BYTES = 1048576;
+  private final boolean usesAuth;
 
-  private String referenceURL;
+  private final String mailHost;
+  private final int mailPort;
+  private final String mailUser;
+  private final String mailPassword;
+  private final String mailSender;
+  private final String azkabanName;
+  private final String tls;
 
-  private long attachmentMazSizeInByte;
+  private final long attachmentMazSizeInByte;
 
-  public AbstractMailer(Props props) {
+  public AbstractMailer(final Props props) {
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
+    this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
-    long maxAttachmentSizeInMB =
+    this.tls = props.getString("mail.tls", "false");
+    final long maxAttachmentSizeInMB =
         props.getInt("mail.max.attachment.size.mb", 100);
 
-    attachmentMazSizeInByte = maxAttachmentSizeInMB * MB_IN_BYTES;
+    this.attachmentMazSizeInByte = maxAttachmentSizeInMB * MB_IN_BYTES;
 
     this.mailSender = props.getString("mail.sender", "");
     this.usesAuth = props.getBoolean("mail.useAuth", true);
-
-    this.clientHostname = props.get("server.hostname");
-    this.clientPort = props.getInt("server.port");
-    this.usesSSL = props.getBoolean("server.useSSL");
-
-    if (usesSSL) {
-      referenceURL =
-          "https://" + clientHostname
-              + (clientPort == 443 ? "/" : ":" + clientPort + "/");
-    } else {
-      referenceURL =
-          "http://" + clientHostname
-              + (clientPort == 80 ? "/" : ":" + clientPort + "/");
-    }
   }
 
-  public String getReferenceURL() {
-    return referenceURL;
-  }
-
-  protected EmailMessage createEmailMessage(String subject, String mimetype,
-      Collection<String> emailList) {
-    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-    message.setFromAddress(mailSender);
+  protected EmailMessage createEmailMessage(final String subject, final String mimetype,
+      final Collection<String> emailList) {
+    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
+        this.mailPassword);
+    message.setFromAddress(this.mailSender);
     message.addAllToAddress(emailList);
     message.setMimeType(mimetype);
     message.setSubject(subject);
-    message.setAuth(usesAuth);
+    message.setAuth(this.usesAuth);
+    message.setTLS(this.tls);
 
     return message;
   }
 
-  public EmailMessage prepareEmailMessage(String subject, String mimetype,
-      Collection<String> emailList) {
+  public EmailMessage prepareEmailMessage(final String subject, final String mimetype,
+      final Collection<String> emailList) {
     return createEmailMessage(subject, mimetype, emailList);
   }
 
   public String getAzkabanName() {
-    return azkabanName;
+    return this.azkabanName;
   }
 
   public String getMailHost() {
-    return mailHost;
+    return this.mailHost;
   }
 
   public String getMailUser() {
-    return mailUser;
+    return this.mailUser;
   }
 
   public String getMailPassword() {
-    return mailPassword;
+    return this.mailPassword;
   }
 
   public String getMailSender() {
-    return mailSender;
+    return this.mailSender;
+  }
+
+  public int getMailPort() {
+    return this.mailPort;
   }
 
   /**
    * Attachment maximum size in bytes
-   * 
-   * @return
    */
   public long getAttachmentMaxSize() {
-    return attachmentMazSizeInByte;
+    return this.attachmentMazSizeInByte;
   }
 
   public boolean hasMailAuth() {
-    return usesAuth;
+    return this.usesAuth;
   }
 }

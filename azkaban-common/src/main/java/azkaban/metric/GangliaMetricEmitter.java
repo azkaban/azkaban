@@ -16,8 +16,6 @@
 
 package azkaban.metric;
 
-import org.apache.commons.collections.bag.SynchronizedBag;
-
 import azkaban.utils.Props;
 
 
@@ -25,47 +23,51 @@ import azkaban.utils.Props;
  * MetricEmitter implementation to report metric to a ganglia gmetric process
  */
 public class GangliaMetricEmitter implements IMetricEmitter {
+
   private static final String GANGLIA_METRIC_REPORTER_PATH = "azkaban.metric.ganglia.path";
-  private String gmetricPath;
+  private final String gmetricPath;
 
   /**
    * @param azkProps Azkaban Properties
    */
-  public GangliaMetricEmitter(Props azkProps) {
-    gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
+  public GangliaMetricEmitter(final Props azkProps) {
+    this.gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
   }
 
-  private String buildCommand(IMetric<?> metric) {
+  private String buildCommand(final IMetric<?> metric) {
     String cmd = null;
 
     synchronized (metric) {
       cmd =
-          String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
-              .toString());
+          String
+              .format("%s -t %s -n %s -v %s", this.gmetricPath, metric.getValueType(),
+                  metric.getName(),
+                  metric.getValue()
+                      .toString());
     }
 
     return cmd;
   }
 
   /**
-   * Report metric by executing command line interface of gmetrics
-   * {@inheritDoc}
+   * Report metric by executing command line interface of gmetrics {@inheritDoc}
+   *
    * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
    */
   @Override
   public void reportMetric(final IMetric<?> metric) throws MetricException {
-    String gangliaCommand = buildCommand(metric);
+    final String gangliaCommand = buildCommand(metric);
 
     if (gangliaCommand != null) {
       // executes shell command to report metric to ganglia dashboard
       try {
-        Process emission = Runtime.getRuntime().exec(gangliaCommand);
-        int exitCode;
+        final Process emission = Runtime.getRuntime().exec(gangliaCommand);
+        final int exitCode;
         exitCode = emission.waitFor();
         if (exitCode != 0) {
           throw new MetricException("Failed to report metric using gmetric");
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new MetricException("Failed to report metric using gmetric");
       }
     } else {

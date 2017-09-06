@@ -16,6 +16,10 @@
 
 package azkaban.executor;
 
+import azkaban.project.Project;
+import azkaban.utils.FileIOUtils.JobMetaData;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Collection;
@@ -23,62 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.project.Project;
-import azkaban.utils.FileIOUtils.JobMetaData;
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.Pair;
-
 public interface ExecutorManagerAdapter {
-
-  public static final String LOCAL_MODE = "local";
-  public static final String REMOTE_MODE = "remote";
-
-  public static final String REMOTE_EXECUTOR_MANAGER_HOST =
-      "remote.executor.manager.host";
-  public static final String REMOTE_EXECUTOR_MANAGER_PORT =
-      "remote.executor.manager.port";
-  public static final String REMOTE_EXECUTOR_MANAGER_URL = "/executormanager";
-
-  public static final String ACTION_GET_FLOW_LOG = "getFlowLog";
-  public static final String ACTION_GET_JOB_LOG = "getJobLog";
-  public static final String ACTION_CANCEL_FLOW = "cancelFlow";
-  public static final String ACTION_SUBMIT_FLOW = "submitFlow";
-  public static final String ACTION_RESUME_FLOW = "resumeFlow";
-  public static final String ACTION_PAUSE_FLOW = "pauseFlow";
-  public static final String ACTION_MODIFY_EXECUTION = "modifyExecution";
-  public static final String ACTION_UPDATE = "update";
-  public static final String ACTION_GET_JMX = "getJMX";
-
-  public static final String COMMAND_MODIFY_PAUSE_JOBS = "modifyPauseJobs";
-  public static final String COMMAND_MODIFY_RESUME_JOBS = "modifyResumeJobs";
-  public static final String COMMAND_MODIFY_RETRY_FAILURES =
-      "modifyRetryFailures";
-  public static final String COMMAND_MODIFY_RETRY_JOBS = "modifyRetryJobs";
-  public static final String COMMAND_MODIFY_DISABLE_JOBS = "modifyDisableJobs";
-  public static final String COMMAND_MODIFY_ENABLE_JOBS = "modifyEnableJobs";
-  public static final String COMMAND_MODIFY_CANCEL_JOBS = "modifyCancelJobs";
-
-  public static final String INFO_JMX_TYPE = "jmxType";
-  public static final String INFO_JMX_DATA = "jmxData";
-  public static final String INFO_ACTION = "action";
-  public static final String INFO_TYPE = "type";
-  public static final String INFO_EXEC_ID = "execId";
-  public static final String INFO_EXEC_FLOW_JSON = "execFlowJson";
-  public static final String INFO_PROJECT_ID = "projectId";
-  public static final String INFO_FLOW_NAME = "flowName";
-  public static final String INFO_JOB_NAME = "jobName";
-  public static final String INFO_OFFSET = "offset";
-  public static final String INFO_LENGTH = "length";
-  public static final String INFO_ATTEMPT = "attempt";
-  public static final String INFO_MODIFY_JOB_IDS = "modifyJobIds";
-  public static final String INFO_MODIFY_COMMAND = "modifyCommand";
-  public static final String INFO_MESSAGE = "message";
-  public static final String INFO_ERROR = "error";
-  public static final String INFO_UPDATE_TIME_LIST = "updateTimeList";
-  public static final String INFO_EXEC_ID_LIST = "execIdList";
-  public static final String INFO_UPDATES = "updates";
-  public static final String INFO_USER_ID = "userId";
-  public static final String INFO_LOG = "logData";
 
   public boolean isFlowRunning(int projectId, String flowId);
 
@@ -94,12 +43,9 @@ public interface ExecutorManagerAdapter {
    * Returns All running with executors and queued flows
    * Note, returns empty list if there isn't any running or queued flows
    * </pre>
-   *
-   * @return
-   * @throws IOException
    */
   public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
-    throws IOException;
+      throws IOException;
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
@@ -179,21 +125,17 @@ public interface ExecutorManagerAdapter {
       throws ExecutorManagerException;
 
   /**
-   * Manage servlet call for stats servlet in Azkaban execution server
-   * Action can take any of the following values
-   * <ul>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_CLEANINGINTERVAL}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_MAXREPORTERPOINTS}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_GET_ALLMETRICSNAME}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_GET_METRICHISTORY}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li>
-   * </ul>
-   * @throws ExecutorManagerException
+   * Manage servlet call for stats servlet in Azkaban execution server Action can take any of the
+   * following values <ul> <li>{@link azkaban.executor.ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
+   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_CLEANINGINTERVAL}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_SET_MAXREPORTERPOINTS}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_GET_ALLMETRICSNAME}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_GET_METRICHISTORY}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li> <li>{@link
+   * azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li> </ul>
    */
   public Map<String, Object> callExecutorStats(int executorId, String action,
-    Pair<String, String>... param) throws IOException, ExecutorManagerException;
+      Pair<String, String>... param) throws IOException, ExecutorManagerException;
 
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;
@@ -211,10 +153,7 @@ public interface ExecutorManagerAdapter {
   public Set<? extends String> getPrimaryServerHosts();
 
   /**
-   * Returns a collection of all the active executors maintained by active
-   * executors
-   *
-   * @return
+   * Returns a collection of all the active executors maintained by active executors
    */
   public Collection<Executor> getAllActiveExecutors();
 
@@ -225,9 +164,6 @@ public interface ExecutorManagerAdapter {
    * 1. throws an Exception in case of a SQL issue
    * 2. return null when no executor is found with the given executorId
    * </pre>
-   *
-   * @throws ExecutorManagerException
-   *
    */
   public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
 
@@ -242,22 +178,16 @@ public interface ExecutorManagerAdapter {
    * 3. In local mode, If a local executor is specified and it is marked inactive in db,
    *    this method will convert local executor as active in DB
    * </pre>
-   *
-   * @throws ExecutorManagerException
    */
-   public void setupExecutors() throws ExecutorManagerException;
+  public void setupExecutors() throws ExecutorManagerException;
 
-   /**
-    * Enable flow dispatching in QueueProcessor
-    *
-    * @throws ExecutorManagerException
-    */
-   public void enableQueueProcessorThread() throws ExecutorManagerException;
+  /**
+   * Enable flow dispatching in QueueProcessor
+   */
+  public void enableQueueProcessorThread() throws ExecutorManagerException;
 
-   /**
-    * Disable flow dispatching in QueueProcessor
-    *
-    * @throws ExecutorManagerException
-    */
-   public void disableQueueProcessorThread() throws ExecutorManagerException;
+  /**
+   * Disable flow dispatching in QueueProcessor
+   */
+  public void disableQueueProcessorThread() throws ExecutorManagerException;
 }

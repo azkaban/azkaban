@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
@@ -29,152 +28,131 @@ import org.joda.time.DateTime;
 
 public class Condition {
 
-  private static Logger logger = Logger.getLogger(Condition.class);
+  private static final Logger logger = Logger.getLogger(Condition.class);
 
-  private static JexlEngine jexl = new JexlEngine();
+  private static final JexlEngine jexl = new JexlEngine();
   private static CheckerTypeLoader checkerLoader = null;
+  private final MapContext context = new MapContext();
   private Expression expression;
   private Map<String, ConditionChecker> checkers =
-      new HashMap<String, ConditionChecker>();
-  private MapContext context = new MapContext();
+      new HashMap<>();
   private Long nextCheckTime = -1L;
 
-  public Condition(Map<String, ConditionChecker> checkers, String expr) {
+  public Condition(final Map<String, ConditionChecker> checkers, final String expr) {
     setCheckers(checkers);
     this.expression = jexl.createExpression(expr);
     updateNextCheckTime();
   }
 
-  public Condition(Map<String, ConditionChecker> checkers, String expr,
-      long nextCheckTime) {
+  public Condition(final Map<String, ConditionChecker> checkers, final String expr,
+      final long nextCheckTime) {
     this.nextCheckTime = nextCheckTime;
     setCheckers(checkers);
     this.expression = jexl.createExpression(expr);
   }
 
-  public synchronized static void setJexlEngine(JexlEngine jexl) {
-    Condition.jexl = jexl;
-  }
-
-  public synchronized static void setCheckerLoader(CheckerTypeLoader loader) {
+  public synchronized static void setCheckerLoader(final CheckerTypeLoader loader) {
     Condition.checkerLoader = loader;
   }
 
-  protected static CheckerTypeLoader getCheckerLoader() {
-    return checkerLoader;
-  }
-
-  protected void registerChecker(ConditionChecker checker) {
-    checkers.put(checker.getId(), checker);
-    context.set(checker.getId(), checker);
-    updateNextCheckTime();
-  }
-
-  public long getNextCheckTime() {
-    return nextCheckTime;
-  }
-
-  public Map<String, ConditionChecker> getCheckers() {
-    return this.checkers;
-  }
-
-  public void setCheckers(Map<String, ConditionChecker> checkers) {
-    this.checkers = checkers;
-    for (ConditionChecker checker : checkers.values()) {
-      this.context.set(checker.getId(), checker);
-    }
-    updateNextCheckTime();
-  }
-
-  public void updateCheckTime(Long ct) {
-    if (nextCheckTime < ct) {
-      nextCheckTime = ct;
-    }
-  }
-
-  private void updateNextCheckTime() {
-    long time = Long.MAX_VALUE;
-    for (ConditionChecker checker : checkers.values()) {
-      time = Math.min(time, checker.getNextCheckTime());
-    }
-    this.nextCheckTime = time;
-  }
-
-  public void resetCheckers() {
-    for (ConditionChecker checker : checkers.values()) {
-      checker.reset();
-    }
-    updateNextCheckTime();
-    logger.info("Done resetting checkers. The next check time will be "
-        + new DateTime(nextCheckTime));
-  }
-
-  public String getExpression() {
-    return this.expression.getExpression();
-  }
-
-  public void setExpression(String expr) {
-    this.expression = jexl.createExpression(expr);
-  }
-
-  public boolean isMet() {
-    if (logger.isDebugEnabled()) {
-      logger.debug("Testing condition " + expression);
-    }
-    return expression.evaluate(context).equals(Boolean.TRUE);
-  }
-
-  public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
-    jsonObj.put("expression", expression.getExpression());
-
-    List<Object> checkersJson = new ArrayList<Object>();
-    for (ConditionChecker checker : checkers.values()) {
-      Map<String, Object> oneChecker = new HashMap<String, Object>();
-      oneChecker.put("type", checker.getType());
-      oneChecker.put("checkerJson", checker.toJson());
-      checkersJson.add(oneChecker);
-    }
-    jsonObj.put("checkers", checkersJson);
-    jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime));
-
-    return jsonObj;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static Condition fromJson(Object obj) throws Exception {
+  public static Condition fromJson(final Object obj) throws Exception {
     if (checkerLoader == null) {
       throw new Exception("Condition Checker loader not initialized!");
     }
 
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
     Condition cond = null;
 
     try {
-      Map<String, ConditionChecker> checkers =
-          new HashMap<String, ConditionChecker>();
-      List<Object> checkersJson = (List<Object>) jsonObj.get("checkers");
-      for (Object oneCheckerJson : checkersJson) {
-        Map<String, Object> oneChecker =
+      final Map<String, ConditionChecker> checkers =
+          new HashMap<>();
+      final List<Object> checkersJson = (List<Object>) jsonObj.get("checkers");
+      for (final Object oneCheckerJson : checkersJson) {
+        final Map<String, Object> oneChecker =
             (HashMap<String, Object>) oneCheckerJson;
-        String type = (String) oneChecker.get("type");
-        ConditionChecker ck =
+        final String type = (String) oneChecker.get("type");
+        final ConditionChecker ck =
             checkerLoader.createCheckerFromJson(type,
                 oneChecker.get("checkerJson"));
         checkers.put(ck.getId(), ck);
       }
-      String expr = (String) jsonObj.get("expression");
-      Long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
+      final String expr = (String) jsonObj.get("expression");
+      final Long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
 
       cond = new Condition(checkers, expr, nextCheckTime);
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       logger.error("Failed to recreate condition from json.", e);
       throw new Exception("Failed to recreate condition from json.", e);
     }
 
     return cond;
+  }
+
+  public long getNextCheckTime() {
+    return this.nextCheckTime;
+  }
+
+  public Map<String, ConditionChecker> getCheckers() {
+    return this.checkers;
+  }
+
+  private void setCheckers(final Map<String, ConditionChecker> checkers) {
+    this.checkers = checkers;
+    for (final ConditionChecker checker : checkers.values()) {
+      this.context.set(checker.getId(), checker);
+    }
+    updateNextCheckTime();
+  }
+
+  private void updateNextCheckTime() {
+    long time = Long.MAX_VALUE;
+    for (final ConditionChecker checker : this.checkers.values()) {
+      time = Math.min(time, checker.getNextCheckTime());
+    }
+    this.nextCheckTime = time;
+  }
+
+  public void resetCheckers() {
+    for (final ConditionChecker checker : this.checkers.values()) {
+      checker.reset();
+    }
+    updateNextCheckTime();
+    logger.info("Done resetting checkers. The next check time will be "
+        + new DateTime(this.nextCheckTime));
+  }
+
+  public String getExpression() {
+    return this.expression.getExpression();
+  }
+
+  public void setExpression(final String expr) {
+    this.expression = jexl.createExpression(expr);
+  }
+
+  public boolean isMet() {
+    if (logger.isDebugEnabled()) {
+      logger.debug("Testing condition " + this.expression);
+    }
+    return this.expression.evaluate(this.context).equals(Boolean.TRUE);
+  }
+
+  public Object toJson() {
+    final Map<String, Object> jsonObj = new HashMap<>();
+    jsonObj.put("expression", this.expression.getExpression());
+
+    final List<Object> checkersJson = new ArrayList<>();
+    for (final ConditionChecker checker : this.checkers.values()) {
+      final Map<String, Object> oneChecker = new HashMap<>();
+      oneChecker.put("type", checker.getType());
+      oneChecker.put("checkerJson", checker.toJson());
+      checkersJson.add(oneChecker);
+    }
+    jsonObj.put("checkers", checkersJson);
+    jsonObj.put("nextCheckTime", String.valueOf(this.nextCheckTime));
+
+    return jsonObj;
   }
 
 }

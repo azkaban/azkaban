@@ -16,6 +16,9 @@
 
 package azkaban.executor;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
+
 public enum Status {
   READY(10),
   PREPARING(20),
@@ -29,73 +32,48 @@ public enum Status {
   DISABLED(100),
   QUEUED(110),
   FAILED_SUCCEEDED(120),
-  CANCELLED(130);
+  CANCELLED(125);
+  // status is TINYINT in DB and the value ranges from -128 to 127
 
-  private int numVal;
+  private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
+      .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
 
-  Status(int numVal) {
+  private final int numVal;
+
+  Status(final int numVal) {
     this.numVal = numVal;
   }
 
+  public static Status fromInteger(final int x) {
+    return numValMap.getOrDefault(x, READY);
+  }
+
+  public static boolean isStatusFinished(final Status status) {
+    switch (status) {
+      case FAILED:
+      case KILLED:
+      case SUCCEEDED:
+      case SKIPPED:
+      case FAILED_SUCCEEDED:
+      case CANCELLED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static boolean isStatusRunning(final Status status) {
+    switch (status) {
+      case RUNNING:
+      case FAILED_FINISHING:
+      case QUEUED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public int getNumVal() {
-    return numVal;
-  }
-
-  public static Status fromInteger(int x) {
-    switch (x) {
-    case 10:
-      return READY;
-    case 20:
-      return PREPARING;
-    case 30:
-      return RUNNING;
-    case 40:
-      return PAUSED;
-    case 50:
-      return SUCCEEDED;
-    case 60:
-      return KILLED;
-    case 70:
-      return FAILED;
-    case 80:
-      return FAILED_FINISHING;
-    case 90:
-      return SKIPPED;
-    case 100:
-      return DISABLED;
-    case 110:
-      return QUEUED;
-    case 120:
-      return FAILED_SUCCEEDED;
-    case 130:
-      return CANCELLED;
-    default:
-      return READY;
-    }
-  }
-
-  public static boolean isStatusFinished(Status status) {
-    switch (status) {
-    case FAILED:
-    case KILLED:
-    case SUCCEEDED:
-    case SKIPPED:
-    case FAILED_SUCCEEDED:
-    case CANCELLED:
-      return true;
-    default:
-      return false;
-    }
-  }
-
-  public static boolean isStatusRunning(Status status) {
-    switch (status) {
-    case RUNNING:
-    case FAILED_FINISHING:
-    case QUEUED:
-      return true;
-    default:
-      return false;
-    }
+    return this.numVal;
   }
 }

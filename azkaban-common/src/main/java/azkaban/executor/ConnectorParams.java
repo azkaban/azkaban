@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 public interface ConnectorParams {
+
   public static final String EXECUTOR_ID_PARAM = "executorId";
   public static final String ACTION_PARAM = "action";
   public static final String EXECID_PARAM = "execid";
@@ -34,6 +35,10 @@ public interface ConnectorParams {
   public static final String ATTACHMENTS_ACTION = "attachments";
   public static final String METADATA_ACTION = "metadata";
   public static final String RELOAD_JOBTYPE_PLUGINS_ACTION = "reloadJobTypePlugins";
+  public static final String ACTIVATE = "activate";
+  public static final String DEACTIVATE = "deactivate";
+  public static final String GET_STATUS = "getStatus";
+  public static final String SHUTDOWN = "shutdown";
 
   public static final String MODIFY_EXECUTION_ACTION = "modifyExecution";
   public static final String MODIFY_EXECUTION_ACTION_TYPE = "modifyType";
@@ -97,8 +102,8 @@ public interface ConnectorParams {
   public static final String STATS_MAP_METRICNAMEPARAM = "metricName";
 
   /**
-   * useStats param is used to filter datapoints on /stats graph by using standard deviation and means
-   * By default, we consider only top/bottom 5% datapoints
+   * useStats param is used to filter datapoints on /stats graph by using standard deviation and
+   * means By default, we consider only top/bottom 5% datapoints
    */
 
   public static final String STATS_MAP_METRICRETRIEVALMODE = "useStats";

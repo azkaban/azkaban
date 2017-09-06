@@ -21,55 +21,51 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Queue that swaps its lists. Allows for non-blocking writes when reading. Swap
- * should be called before every read.
+ * Queue that swaps its lists. Allows for non-blocking writes when reading. Swap should be called
+ * before every read.
  */
 public class SwapQueue<T> implements Iterable<T> {
+
   ArrayList<T> primaryQueue;
   ArrayList<T> secondaryQueue;
 
   public SwapQueue() {
-    primaryQueue = new ArrayList<T>();
-    secondaryQueue = new ArrayList<T>();
+    this.primaryQueue = new ArrayList<>();
+    this.secondaryQueue = new ArrayList<>();
   }
 
   /**
-   * Swaps primaryQueue with secondary queue. The previous primary queue will be
-   * released.
+   * Swaps primaryQueue with secondary queue. The previous primary queue will be released.
    */
   public synchronized void swap() {
-    primaryQueue = secondaryQueue;
-    secondaryQueue = new ArrayList<T>();
+    this.primaryQueue = this.secondaryQueue;
+    this.secondaryQueue = new ArrayList<>();
   }
 
   /**
    * Returns a count of the secondary queue.
-   *
-   * @return
    */
   public synchronized int getSwapQueueSize() {
-    return secondaryQueue.size();
+    return this.secondaryQueue.size();
   }
 
   public synchronized int getPrimarySize() {
-    return primaryQueue.size();
+    return this.primaryQueue.size();
   }
 
-  public synchronized void addAll(Collection<T> col) {
-    secondaryQueue.addAll(col);
+  public synchronized void addAll(final Collection<T> col) {
+    this.secondaryQueue.addAll(col);
   }
 
   /**
    * Returns both the secondary and primary size
-   *
-   * @return
    */
   public synchronized int getSize() {
-    return secondaryQueue.size() + primaryQueue.size();
+    return this.secondaryQueue.size() + this.primaryQueue.size();
   }
 
-  public synchronized void add(T element) {
-    secondaryQueue.add(element);
+  public synchronized void add(final T element) {
+    this.secondaryQueue.add(element);
   }
 
   /**
@@ -77,6 +73,6 @@ public class SwapQueue<T> implements Iterable<T> {
    */
   @Override
   public synchronized Iterator<T> iterator() {
-    return primaryQueue.iterator();
+    return this.primaryQueue.iterator();
   }
 }

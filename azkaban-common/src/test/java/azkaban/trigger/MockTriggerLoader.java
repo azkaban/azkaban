@@ -23,44 +23,44 @@ import java.util.Map;
 
 public class MockTriggerLoader implements TriggerLoader {
 
-  Map<Integer, Trigger> triggers = new HashMap<Integer, Trigger>();
+  Map<Integer, Trigger> triggers = new HashMap<>();
   int triggerCount = 0;
 
   @Override
-  public synchronized void addTrigger(Trigger t) throws TriggerLoaderException {
-    t.setTriggerId(triggerCount);
+  public synchronized void addTrigger(final Trigger t) throws TriggerLoaderException {
+    t.setTriggerId(this.triggerCount);
     t.setLastModifyTime(System.currentTimeMillis());
-    triggers.put(t.getTriggerId(), t);
-    triggerCount++;
+    this.triggers.put(t.getTriggerId(), t);
+    this.triggerCount++;
   }
 
   @Override
-  public synchronized void removeTrigger(Trigger s)
+  public synchronized void removeTrigger(final Trigger s)
       throws TriggerLoaderException {
-    triggers.remove(s);
+    this.triggers.remove(s.getTriggerId());
   }
 
   @Override
-  public synchronized void updateTrigger(Trigger t)
+  public synchronized void updateTrigger(final Trigger t)
       throws TriggerLoaderException {
     t.setLastModifyTime(System.currentTimeMillis());
-    triggers.put(t.getTriggerId(), t);
+    this.triggers.put(t.getTriggerId(), t);
   }
 
   @Override
   public synchronized List<Trigger> loadTriggers()
       throws TriggerLoaderException {
-    return new ArrayList<Trigger>(triggers.values());
+    return new ArrayList<>(this.triggers.values());
   }
 
   @Override
-  public synchronized Trigger loadTrigger(int triggerId)
+  public synchronized Trigger loadTrigger(final int triggerId)
       throws TriggerLoaderException {
-    return triggers.get(triggerId);
+    return this.triggers.get(triggerId);
   }
 
   @Override
-  public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
+  public List<Trigger> getUpdatedTriggers(final long lastUpdateTime)
       throws TriggerLoaderException {
     // TODO Auto-generated method stub
     return null;

@@ -16,36 +16,35 @@
 
 package azkaban.trigger;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class ExecuteFlowActionTest {
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void jsonConversionTest() throws Exception {
-    ActionTypeLoader loader = new ActionTypeLoader();
+    final ActionTypeLoader loader = new ActionTypeLoader();
     loader.init(new Props());
 
-    ExecutionOptions options = new ExecutionOptions();
-    List<Object> disabledJobs = new ArrayList<Object>();
+    final ExecutionOptions options = new ExecutionOptions();
+    final List<Object> disabledJobs = new ArrayList<>();
     options.setDisabledJobs(disabledJobs);
 
-    ExecuteFlowAction executeFlowAction =
+    final ExecuteFlowAction executeFlowAction =
         new ExecuteFlowAction("ExecuteFlowAction", 1, "testproject",
             "testflow", "azkaban", options, null);
 
-    Object obj = executeFlowAction.toJson();
+    final Object obj = executeFlowAction.toJson();
 
-    ExecuteFlowAction action =
+    final ExecuteFlowAction action =
         (ExecuteFlowAction) loader.createActionFromJson(ExecuteFlowAction.type,
             obj);
     assertTrue(executeFlowAction.getProjectId() == action.getProjectId());

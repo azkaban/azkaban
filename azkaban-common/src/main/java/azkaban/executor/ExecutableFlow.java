@@ -15,6 +15,10 @@
  */
 package azkaban.executor;
 
+import azkaban.flow.Flow;
+import azkaban.project.Project;
+import azkaban.sla.SlaOption;
+import azkaban.utils.TypedMapWrapper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,12 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import azkaban.flow.Flow;
-import azkaban.project.Project;
-import azkaban.utils.TypedMapWrapper;
 
 public class ExecutableFlow extends ExecutableFlowBase {
+
   public static final String EXECUTIONID_PARAM = "executionId";
   public static final String EXECUTIONPATH_PARAM = "executionPath";
   public static final String EXECUTIONOPTIONS_PARAM = "executionOptions";
@@ -40,8 +43,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String PROJECTNAME_PARAM = "projectName";
   public static final String LASTMODIFIEDTIME_PARAM = "lastModfiedTime";
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
-
-
+  public static final String SLAOPTIONS_PARAM = "slaOptions";
+  private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
   private int projectId;
@@ -52,11 +55,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private long lastModifiedTimestamp;
   private String submitUser;
   private String executionPath;
-
-  private HashSet<String> proxyUsers = new HashSet<String>();
   private ExecutionOptions executionOptions;
+  private List<SlaOption> slaOptions = new ArrayList<>();
 
-  public ExecutableFlow(Project project, Flow flow) {
+  public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
     this.projectName = project.getName();
     this.version = project.getVersion();
@@ -69,6 +71,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public ExecutableFlow() {
   }
 
+  public static ExecutableFlow createExecutableFlowFromObject(final Object obj) {
+    final ExecutableFlow exFlow = new ExecutableFlow();
+    final HashMap<String, Object> flowObj = (HashMap<String, Object>) obj;
+    exFlow.fillExecutableFromMapObject(flowObj);
+
+    return exFlow;
+  }
+
   @Override
   public String getId() {
     return getFlowId();
@@ -79,160 +89,164 @@ public class ExecutableFlow extends ExecutableFlowBase {
     return this;
   }
 
-  public void addAllProxyUsers(Collection<String> proxyUsers) {
+  public void addAllProxyUsers(final Collection<String> proxyUsers) {
     this.proxyUsers.addAll(proxyUsers);
   }
 
   public Set<String> getProxyUsers() {
-    return new HashSet<String>(this.proxyUsers);
-  }
-
-  public void setExecutionOptions(ExecutionOptions options) {
-    executionOptions = options;
+    return new HashSet<>(this.proxyUsers);
   }
 
   public ExecutionOptions getExecutionOptions() {
-    return executionOptions;
+    return this.executionOptions;
+  }
+
+  public void setExecutionOptions(final ExecutionOptions options) {
+    this.executionOptions = options;
+  }
+
+  public List<SlaOption> getSlaOptions() {
+    return this.slaOptions;
+  }
+
+  public void setSlaOptions(final List<SlaOption> slaOptions) {
+    this.slaOptions = slaOptions;
   }
 
   @Override
-  protected void setFlow(Project project, Flow flow) {
+  protected void setFlow(final Project project, final Flow flow) {
     super.setFlow(project, flow);
-    executionOptions = new ExecutionOptions();
-    executionOptions.setMailCreator(flow.getMailCreator());
+    this.executionOptions = new ExecutionOptions();
+    this.executionOptions.setMailCreator(flow.getMailCreator());
 
     if (flow.getSuccessEmails() != null) {
-      executionOptions.setSuccessEmails(flow.getSuccessEmails());
+      this.executionOptions.setSuccessEmails(flow.getSuccessEmails());
     }
     if (flow.getFailureEmails() != null) {
-      executionOptions.setFailureEmails(flow.getFailureEmails());
+      this.executionOptions.setFailureEmails(flow.getFailureEmails());
     }
   }
 
   @Override
   public int getExecutionId() {
-    return executionId;
+    return this.executionId;
   }
 
-  public void setExecutionId(int executionId) {
+  public void setExecutionId(final int executionId) {
     this.executionId = executionId;
   }
 
   @Override
   public long getLastModifiedTimestamp() {
-    return lastModifiedTimestamp;
+    return this.lastModifiedTimestamp;
   }
 
-  public void setLastModifiedTimestamp(long lastModifiedTimestamp) {
+  public void setLastModifiedTimestamp(final long lastModifiedTimestamp) {
     this.lastModifiedTimestamp = lastModifiedTimestamp;
   }
 
   @Override
   public String getLastModifiedByUser() {
-    return lastModifiedUser;
+    return this.lastModifiedUser;
   }
 
-  public void setLastModifiedByUser(String lastModifiedUser) {
+  public void setLastModifiedByUser(final String lastModifiedUser) {
     this.lastModifiedUser = lastModifiedUser;
   }
 
   @Override
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
-  public void setProjectId(int projectId) {
+  public void setProjectId(final int projectId) {
     this.projectId = projectId;
   }
 
   @Override
   public String getProjectName() {
-    return projectName;
+    return this.projectName;
   }
 
   public int getScheduleId() {
-    return scheduleId;
+    return this.scheduleId;
   }
 
-  public void setScheduleId(int scheduleId) {
+  public void setScheduleId(final int scheduleId) {
     this.scheduleId = scheduleId;
   }
 
   public String getExecutionPath() {
-    return executionPath;
+    return this.executionPath;
   }
 
-  public void setExecutionPath(String executionPath) {
+  public void setExecutionPath(final String executionPath) {
     this.executionPath = executionPath;
   }
 
   public String getSubmitUser() {
-    return submitUser;
+    return this.submitUser;
   }
 
-  public void setSubmitUser(String submitUser) {
+  public void setSubmitUser(final String submitUser) {
     this.submitUser = submitUser;
   }
 
   @Override
   public int getVersion() {
-    return version;
+    return this.version;
   }
 
-  public void setVersion(int version) {
+  public void setVersion(final int version) {
     this.version = version;
   }
 
   public long getSubmitTime() {
-    return submitTime;
+    return this.submitTime;
   }
 
-  public void setSubmitTime(long submitTime) {
+  public void setSubmitTime(final long submitTime) {
     this.submitTime = submitTime;
   }
 
   @Override
   public Map<String, Object> toObject() {
-    HashMap<String, Object> flowObj = new HashMap<String, Object>();
+    final HashMap<String, Object> flowObj = new HashMap<>();
     fillMapFromExecutable(flowObj);
 
-    flowObj.put(EXECUTIONID_PARAM, executionId);
-    flowObj.put(EXECUTIONPATH_PARAM, executionPath);
-    flowObj.put(PROJECTID_PARAM, projectId);
-    flowObj.put(PROJECTNAME_PARAM, projectName);
+    flowObj.put(EXECUTIONID_PARAM, this.executionId);
+    flowObj.put(EXECUTIONPATH_PARAM, this.executionPath);
+    flowObj.put(PROJECTID_PARAM, this.projectId);
+    flowObj.put(PROJECTNAME_PARAM, this.projectName);
 
-    if (scheduleId >= 0) {
-      flowObj.put(SCHEDULEID_PARAM, scheduleId);
+    if (this.scheduleId >= 0) {
+      flowObj.put(SCHEDULEID_PARAM, this.scheduleId);
     }
 
-    flowObj.put(SUBMITUSER_PARAM, submitUser);
-    flowObj.put(VERSION_PARAM, version);
-    flowObj.put(LASTMODIFIEDTIME_PARAM, lastModifiedTimestamp);
-    flowObj.put(LASTMODIFIEDUSER_PARAM, lastModifiedUser);
+    flowObj.put(SUBMITUSER_PARAM, this.submitUser);
+    flowObj.put(VERSION_PARAM, this.version);
+    flowObj.put(LASTMODIFIEDTIME_PARAM, this.lastModifiedTimestamp);
+    flowObj.put(LASTMODIFIEDUSER_PARAM, this.lastModifiedUser);
 
     flowObj.put(EXECUTIONOPTIONS_PARAM, this.executionOptions.toObject());
-    flowObj.put(VERSION_PARAM, version);
+    flowObj.put(VERSION_PARAM, this.version);
 
-    ArrayList<String> proxyUserList = new ArrayList<String>(proxyUsers);
+    final ArrayList<String> proxyUserList = new ArrayList<>(this.proxyUsers);
     flowObj.put(PROXYUSERS_PARAM, proxyUserList);
 
-    flowObj.put(SUBMITTIME_PARAM, submitTime);
+    flowObj.put(SUBMITTIME_PARAM, this.submitTime);
+
+    final List<Map<String, Object>> slaOptions = new ArrayList<>();
+    this.getSlaOptions().stream().forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
+
+    flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
     return flowObj;
   }
 
-  @SuppressWarnings("unchecked")
-  public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
-    ExecutableFlow exFlow = new ExecutableFlow();
-    HashMap<String, Object> flowObj = (HashMap<String, Object>) obj;
-    exFlow.fillExecutableFromMapObject(flowObj);
-
-    return exFlow;
-  }
-
   @Override
   public void fillExecutableFromMapObject(
-      TypedMapWrapper<String, Object> flowObj) {
+      final TypedMapWrapper<String, Object> flowObj) {
     super.fillExecutableFromMapObject(flowObj);
 
     this.executionId = flowObj.getInt(EXECUTIONID_PARAM);
@@ -257,15 +271,21 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     if (flowObj.containsKey(PROXYUSERS_PARAM)) {
-      List<String> proxyUserList = flowObj.<String> getList(PROXYUSERS_PARAM);
+      final List<String> proxyUserList = flowObj.<String>getList(PROXYUSERS_PARAM);
       this.addAllProxyUsers(proxyUserList);
+    }
 
+    if (flowObj.containsKey(SLAOPTIONS_PARAM)) {
+      final List<SlaOption> slaOptions =
+          flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
+              .collect(Collectors.toList());
+      this.setSlaOptions(slaOptions);
     }
   }
 
   @Override
-  public Map<String, Object> toUpdateObject(long lastUpdateTime) {
-    Map<String, Object> updateData = super.toUpdateObject(lastUpdateTime);
+  public Map<String, Object> toUpdateObject(final long lastUpdateTime) {
+    final Map<String, Object> updateData = super.toUpdateObject(lastUpdateTime);
     updateData.put(EXECUTIONID_PARAM, this.executionId);
     return updateData;
   }

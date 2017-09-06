@@ -1,8 +1,20 @@
 languages: java
-# TODO(dzc): Add openjdk8 once it is available in Travis.
+# TODO: Add openjdk8 once it is available in Travis.
 jdk:
-  - openjdk7
-  - oraclejdk7
   - oraclejdk8
 sudo: false
-script: ./gradlew distTar
+script: ./gradlew clean build --no-daemon --info
+
+# see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+
+env:
+  global:
+    # Reduce the memory pressure on Travis CI to reduce build failures.
+    - GRADLE_OPTS="-Xms128m"

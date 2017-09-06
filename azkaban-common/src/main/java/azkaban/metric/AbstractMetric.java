@@ -20,9 +20,11 @@ import org.apache.log4j.Logger;
 
 /**
  * Abstract class for Metric
+ *
  * @param <T> Type of Value of a given metric
  */
-public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
+public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable {
+
   protected static final Logger logger = Logger.getLogger(MetricReportManager.class);
   protected String name;
   protected T value;
@@ -35,68 +37,78 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @param initialValue Initial Value of a metric
    * @param manager Metric Manager whom a metric will report to
    */
-  protected AbstractMetric(String metricName, String metricType, T initialValue, MetricReportManager manager) {
-    name = metricName;
-    type = metricType;
-    value = initialValue;
-    metricManager = manager;
+  protected AbstractMetric(final String metricName, final String metricType, final T initialValue,
+      final MetricReportManager manager) {
+    this.name = metricName;
+    this.type = metricType;
+    this.value = initialValue;
+    this.metricManager = manager;
   }
 
   /**
    * {@inheritDoc}
+   *
    * @see azkaban.metric.IMetric#getName()
    */
+  @Override
   public String getName() {
-    return name;
+    return this.name;
   }
 
   /**
    * {@inheritDoc}
+   *
    * @see azkaban.metric.IMetric#getValueType()
    */
+  @Override
   public String getValueType() {
-    return type;
+    return this.type;
   }
 
   /**
    * {@inheritDoc}
+   *
    * @see azkaban.metric.IMetric#updateMetricManager(azkaban.metric.MetricReportManager)
    */
+  @Override
   public void updateMetricManager(final MetricReportManager manager) {
-    metricManager = manager;
+    this.metricManager = manager;
   }
 
   /**
    * {@inheritDoc}
-   * @throws CloneNotSupportedException
+   *
    * @see azkaban.metric.IMetric#getSnapshot()
    */
-  @SuppressWarnings("unchecked")
-  public IMetric<T> getSnapshot() throws CloneNotSupportedException{
+  @Override
+  public IMetric<T> getSnapshot() throws CloneNotSupportedException {
     return (IMetric<T>) this.clone();
   }
 
   /**
    * {@inheritDoc}
+   *
    * @see azkaban.metric.IMetric#getValue()
    */
+  @Override
   public T getValue() {
-    return value;
+    return this.value;
   }
 
   /**
-   * Method used to notify manager for a tracking event.
-   * Metric is free to call this method as per implementation.
-   * Timer based or Azkaban events are the most common implementation
-   * {@inheritDoc}
+   * Method used to notify manager for a tracking event. Metric is free to call this method as per
+   * implementation. Timer based or Azkaban events are the most common implementation {@inheritDoc}
+   *
    * @see azkaban.metric.IMetric#notifyManager()
    */
+  @Override
   public void notifyManager() {
     logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
-      metricManager.reportMetric(this);
-    } catch (Throwable ex) {
-      logger.error(String.format("Metric Manager is not set for %s metric", this.getClass().getName()), ex);
+      this.metricManager.reportMetric(this);
+    } catch (final Throwable ex) {
+      logger.error(
+          String.format("Metric Manager is not set for %s metric", this.getClass().getName()), ex);
     }
   }
 }

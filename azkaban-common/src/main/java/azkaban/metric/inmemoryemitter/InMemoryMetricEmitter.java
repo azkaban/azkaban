@@ -16,6 +16,10 @@
 
 package azkaban.metric.inmemoryemitter;
 
+import azkaban.metric.IMetric;
+import azkaban.metric.IMetricEmitter;
+import azkaban.metric.MetricException;
+import azkaban.utils.Props;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,34 +27,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.log4j.Logger;
-
-import azkaban.metric.IMetric;
-import azkaban.metric.IMetricEmitter;
-import azkaban.metric.MetricException;
-import azkaban.utils.Props;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.log4j.Logger;
 
 
 /**
- * Metric Emitter which maintains in memory snapshots of the metrics
- * This is also the default metric emitter and used by /stats servlet
+ * Metric Emitter which maintains in memory snapshots of the metrics This is also the default metric
+ * emitter and used by /stats servlet
  */
 public class InMemoryMetricEmitter implements IMetricEmitter {
-  protected static final Logger logger = Logger.getLogger(InMemoryMetricEmitter.class);
 
-  /**
-   * Data structure to keep track of snapshots
-   */
-  protected Map<String, LinkedList<InMemoryHistoryNode>> historyListMapping;
+  protected static final Logger logger = Logger.getLogger(InMemoryMetricEmitter.class);
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
   private static final String INMEMORY_METRIC_STANDARDDEVIATION_FACTOR =
       "azkaban.metric.inmemory.standardDeviationFactor";
-
-  private double standardDeviationFactor;
+  private final double standardDeviationFactor;
+  /**
+   * Data structure to keep track of snapshots
+   */
+  protected Map<String, LinkedList<InMemoryHistoryNode>> historyListMapping;
   /**
    * Interval (in millisecond) from today for which we should maintain the in memory snapshots
    */
@@ -63,64 +59,66 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   /**
    * @param azkProps Azkaban Properties
    */
-  public InMemoryMetricEmitter(Props azkProps) {
-    historyListMapping = new HashMap<String, LinkedList<InMemoryHistoryNode>>();
-    timeWindow = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7 * 1000);
-    numInstances = azkProps.getLong(INMEMORY_METRIC_NUM_INSTANCES, 50);
-    standardDeviationFactor = azkProps.getDouble(INMEMORY_METRIC_STANDARDDEVIATION_FACTOR, 2);
+  public InMemoryMetricEmitter(final Props azkProps) {
+    this.historyListMapping = new HashMap<>();
+    this.timeWindow = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7 * 1000);
+    this.numInstances = azkProps.getLong(INMEMORY_METRIC_NUM_INSTANCES, 50);
+    this.standardDeviationFactor = azkProps.getDouble(INMEMORY_METRIC_STANDARDDEVIATION_FACTOR, 2);
   }
 
   /**
    * Update reporting interval
+   *
    * @param val interval in milli seconds
    */
-  public synchronized void setReportingInterval(long val) {
-    timeWindow = val;
+  public synchronized void setReportingInterval(final long val) {
+    this.timeWindow = val;
   }
 
   /**
    * Set number of /stats servlet display points
-   * @param num
    */
-  public void setReportingInstances(long num) {
-    numInstances = num;
+  public void setReportingInstances(final long num) {
+    this.numInstances = num;
   }
 
   /**
-   * Ingest metric in snapshot data structure while maintaining interval
-   * {@inheritDoc}
+   * Ingest metric in snapshot data structure while maintaining interval {@inheritDoc}
+   *
    * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
    */
   @Override
   public void reportMetric(final IMetric<?> metric) throws MetricException {
-    String metricName = metric.getName();
-    if (!historyListMapping.containsKey(metricName)) {
+    final String metricName = metric.getName();
+    if (!this.historyListMapping.containsKey(metricName)) {
       logger.info("First time capturing metric: " + metricName);
-      historyListMapping.put(metricName, new LinkedList<InMemoryHistoryNode>());
+      this.historyListMapping.put(metricName, new LinkedList<>());
     }
-    synchronized (historyListMapping.get(metricName)) {
+    synchronized (this.historyListMapping.get(metricName)) {
       logger.debug("Ingesting metric: " + metricName);
-      historyListMapping.get(metricName).add(new InMemoryHistoryNode(metric.getValue()));
-      cleanUsingTime(metricName, historyListMapping.get(metricName).peekLast().getTimestamp());
+      this.historyListMapping.get(metricName).add(new InMemoryHistoryNode(metric.getValue()));
+      cleanUsingTime(metricName, this.historyListMapping.get(metricName).peekLast().getTimestamp());
     }
   }
 
   /**
    * Get snapshots for a given metric at a given time
+   *
    * @param metricName name of the metric
    * @param from Start date
    * @param to end date
    * @param useStats get statistically significant points only
    * @return List of snapshots
    */
-  public List<InMemoryHistoryNode> getMetrics(final String metricName, final Date from, final Date to,
+  public List<InMemoryHistoryNode> getMetrics(final String metricName, final Date from,
+      final Date to,
       final Boolean useStats) throws ClassCastException {
-    LinkedList<InMemoryHistoryNode> selectedLists = new LinkedList<InMemoryHistoryNode>();
-    if (historyListMapping.containsKey(metricName)) {
+    final LinkedList<InMemoryHistoryNode> selectedLists = new LinkedList<>();
+    if (this.historyListMapping.containsKey(metricName)) {
 
       logger.debug("selecting snapshots within time frame");
-      synchronized (historyListMapping.get(metricName)) {
-        for (InMemoryHistoryNode node : historyListMapping.get(metricName)) {
+      synchronized (this.historyListMapping.get(metricName)) {
+        for (final InMemoryHistoryNode node : this.historyListMapping.get(metricName)) {
           if (node.getTimestamp().after(from) && node.getTimestamp().before(to)) {
             selectedLists.add(node);
           }
@@ -143,30 +141,33 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
 
   /**
    * filter snapshots using statistically significant points only
+   *
    * @param selectedLists list of snapshots
    */
   private void statBasedSelectMetricHistory(final LinkedList<InMemoryHistoryNode> selectedLists)
       throws ClassCastException {
     logger.debug("selecting snapshots which are far away from mean value");
-    DescriptiveStatistics descStats = getDescriptiveStatistics(selectedLists);
-    Double mean = descStats.getMean();
-    Double std = descStats.getStandardDeviation();
+    final DescriptiveStatistics descStats = getDescriptiveStatistics(selectedLists);
+    final Double mean = descStats.getMean();
+    final Double std = descStats.getStandardDeviation();
 
-    Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
+    final Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
     while (ite.hasNext()) {
-      InMemoryHistoryNode currentNode = ite.next();
-      double value = ((Number) currentNode.getValue()).doubleValue();
+      final InMemoryHistoryNode currentNode = ite.next();
+      final double value = ((Number) currentNode.getValue()).doubleValue();
       // remove all elements which lies in 95% value band
-      if (value < mean + standardDeviationFactor * std && value > mean - standardDeviationFactor * std) {
+      if (value < mean + this.standardDeviationFactor * std
+          && value > mean - this.standardDeviationFactor * std) {
         ite.remove();
       }
     }
   }
 
-  private DescriptiveStatistics getDescriptiveStatistics(final LinkedList<InMemoryHistoryNode> selectedLists)
+  private DescriptiveStatistics getDescriptiveStatistics(
+      final LinkedList<InMemoryHistoryNode> selectedLists)
       throws ClassCastException {
-    DescriptiveStatistics descStats = new DescriptiveStatistics();
-    for (InMemoryHistoryNode node : selectedLists) {
+    final DescriptiveStatistics descStats = new DescriptiveStatistics();
+    for (final InMemoryHistoryNode node : selectedLists) {
       descStats.addValue(((Number) node.getValue()).doubleValue());
     }
     return descStats;
@@ -174,14 +175,15 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
 
   /**
    * filter snapshots by evenly selecting points across the interval
+   *
    * @param selectedLists list of snapshots
    */
   private void generalSelectMetricHistory(final LinkedList<InMemoryHistoryNode> selectedLists) {
     logger.debug("selecting snapshots evenly from across the time interval");
-    if (selectedLists.size() > numInstances) {
-      double step = (double) selectedLists.size() / numInstances;
+    if (selectedLists.size() > this.numInstances) {
+      final double step = (double) selectedLists.size() / this.numInstances;
       long nextIndex = 0, currentIndex = 0, numSelectedInstances = 1;
-      Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
+      final Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
       while (ite.hasNext()) {
         ite.next();
         if (currentIndex == nextIndex) {
@@ -197,39 +199,43 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
 
   /**
    * Remove snapshots to maintain reporting interval
+   *
    * @param metricName Name of the metric
    * @param firstAllowedDate End date of the interval
    */
   private void cleanUsingTime(final String metricName, final Date firstAllowedDate) {
-    if (historyListMapping.containsKey(metricName) && historyListMapping.get(metricName) != null) {
-      synchronized (historyListMapping.get(metricName)) {
+    if (this.historyListMapping.containsKey(metricName)
+        && this.historyListMapping.get(metricName) != null) {
+      synchronized (this.historyListMapping.get(metricName)) {
 
-        InMemoryHistoryNode firstNode = historyListMapping.get(metricName).peekFirst();
+        InMemoryHistoryNode firstNode = this.historyListMapping.get(metricName).peekFirst();
         long localCopyOfTimeWindow = 0;
 
         // go ahead for clean up using latest possible value of interval
         // any interval change will not affect on going clean up
         synchronized (this) {
-          localCopyOfTimeWindow = timeWindow;
+          localCopyOfTimeWindow = this.timeWindow;
         }
 
         // removing objects older than Interval time from firstAllowedDate
         while (firstNode != null
-            && TimeUnit.MILLISECONDS.toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime()) > localCopyOfTimeWindow) {
-          historyListMapping.get(metricName).removeFirst();
-          firstNode = historyListMapping.get(metricName).peekFirst();
+            && TimeUnit.MILLISECONDS
+            .toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime())
+            > localCopyOfTimeWindow) {
+          this.historyListMapping.get(metricName).removeFirst();
+          firstNode = this.historyListMapping.get(metricName).peekFirst();
         }
       }
     }
   }
 
   /**
-   * Clear snapshot data structure
-   * {@inheritDoc}
+   * Clear snapshot data structure {@inheritDoc}
+   *
    * @see azkaban.metric.IMetricEmitter#purgeAllData()
    */
   @Override
   public void purgeAllData() throws MetricException {
-    historyListMapping.clear();
+    this.historyListMapping.clear();
   }
 }

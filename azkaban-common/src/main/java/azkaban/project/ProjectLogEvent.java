@@ -17,6 +17,43 @@
 package azkaban.project;
 
 public class ProjectLogEvent {
+
+  private final int projectId;
+  private final String user;
+  private final long time;
+  private final EventType type;
+  private final String message;
+
+  public ProjectLogEvent(final int projectId, final EventType type, final long time,
+      final String user,
+      final String message) {
+    this.projectId = projectId;
+    this.user = user;
+    this.time = time;
+    this.type = type;
+    this.message = message;
+  }
+
+  public int getProjectId() {
+    return this.projectId;
+  }
+
+  public String getUser() {
+    return this.user;
+  }
+
+  public long getTime() {
+    return this.time;
+  }
+
+  public EventType getType() {
+    return this.type;
+  }
+
+  public String getMessage() {
+    return this.message;
+  }
+
   /**
    * Log event type messages. Do not change the numeric representation of each enum.
    *
@@ -33,81 +70,49 @@ public class ProjectLogEvent {
     SCHEDULE(7),
     SLA(8),
     PROXY_USER(9),
-    PURGE(10);
+    PURGE(10),
+    PROPERTY_OVERRIDE(11);
 
-    private int numVal;
+    private final int numVal;
 
-    EventType(int numVal) {
+    EventType(final int numVal) {
       this.numVal = numVal;
     }
 
-    public int getNumVal() {
-      return numVal;
-    }
-
-    public static EventType fromInteger(int x) {
+    public static EventType fromInteger(final int x) {
       switch (x) {
-      case 1:
-        return CREATED;
-      case 2:
-        return DELETED;
-      case 3:
-        return USER_PERMISSION;
-      case 4:
-        return GROUP_PERMISSION;
-      case 5:
-        return DESCRIPTION;
-      case 6:
-        return UPLOADED;
-      case 7:
-        return SCHEDULE;
-      case 8:
-        return SLA;
-      case 9:
-        return PROXY_USER;
-      case 10:
-        return PURGE;
-      case 128:
-        return ERROR;
-      default:
-        return ERROR;
+        case 1:
+          return CREATED;
+        case 2:
+          return DELETED;
+        case 3:
+          return USER_PERMISSION;
+        case 4:
+          return GROUP_PERMISSION;
+        case 5:
+          return DESCRIPTION;
+        case 6:
+          return UPLOADED;
+        case 7:
+          return SCHEDULE;
+        case 8:
+          return SLA;
+        case 9:
+          return PROXY_USER;
+        case 10:
+          return PURGE;
+        case 11:
+          return PROPERTY_OVERRIDE;
+        case 128:
+          return ERROR;
+        default:
+          return ERROR;
       }
     }
-  }
 
-  private final int projectId;
-  private final String user;
-  private final long time;
-  private final EventType type;
-  private final String message;
-
-  public ProjectLogEvent(int projectId, EventType type, long time, String user,
-      String message) {
-    this.projectId = projectId;
-    this.user = user;
-    this.time = time;
-    this.type = type;
-    this.message = message;
-  }
-
-  public int getProjectId() {
-    return projectId;
-  }
-
-  public String getUser() {
-    return user;
-  }
-
-  public long getTime() {
-    return time;
-  }
-
-  public EventType getType() {
-    return type;
-  }
-
-  public String getMessage() {
-    return message;
+    public int getNumVal() {
+      return this.numVal;
+    }
   }
 
 }

@@ -16,7 +16,53 @@
 
 package azkaban.event;
 
+import com.google.common.base.Preconditions;
+
 public class Event {
+
+  private final Object runner;
+  private final Type type;
+  private final EventData eventData;
+  private final long time;
+
+  private Event(final Object runner, final Type type, final EventData eventData) {
+    this.runner = runner;
+    this.type = type;
+    this.eventData = eventData;
+    this.time = System.currentTimeMillis();
+  }
+
+  /**
+   * Creates a new event.
+   *
+   * @param runner runner.
+   * @param type type.
+   * @param eventData EventData, null is not allowed.
+   * @return New Event instance.
+   * @throws NullPointerException if EventData is null.
+   */
+  public static Event create(final Object runner, final Type type, final EventData eventData)
+      throws NullPointerException {
+    Preconditions.checkNotNull(eventData, "EventData was null");
+    return new Event(runner, type, eventData);
+  }
+
+  public Object getRunner() {
+    return this.runner;
+  }
+
+  public Type getType() {
+    return this.type;
+  }
+
+  public long getTime() {
+    return this.time;
+  }
+
+  public EventData getData() {
+    return this.eventData;
+  }
+
   public enum Type {
     FLOW_STARTED,
     FLOW_FINISHED,
@@ -27,50 +73,4 @@ public class Event {
     EXTERNAL_JOB_UPDATED
   }
 
-  private final Object runner;
-  private final Type type;
-  private final Object eventData;
-  private final long time;
-  private final boolean shouldUpdate;
-
-  private Event(Object runner, Type type, Object eventData, boolean shouldUpdate) {
-    this.runner = runner;
-    this.type = type;
-    this.eventData = eventData;
-    this.time = System.currentTimeMillis();
-    this.shouldUpdate = shouldUpdate;
-  }
-
-  public Object getRunner() {
-    return runner;
-  }
-
-  public Type getType() {
-    return type;
-  }
-
-  public long getTime() {
-    return time;
-  }
-
-  public Object getData() {
-    return eventData;
-  }
-
-  public static Event create(Object runner, Type type) {
-    return new Event(runner, type, null, true);
-  }
-
-  public static Event create(Object runner, Type type, Object eventData) {
-    return new Event(runner, type, eventData, true);
-  }
-
-  public static Event create(Object runner, Type type, Object eventData,
-      boolean shouldUpdate) {
-    return new Event(runner, type, eventData, shouldUpdate);
-  }
-
-  public boolean isShouldUpdate() {
-    return shouldUpdate;
-  }
 }

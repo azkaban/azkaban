@@ -16,38 +16,35 @@
 
 package azkaban.database;
 
+import azkaban.server.AzkabanServer;
+import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
-
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-
 import org.apache.log4j.Logger;
 
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.utils.Props;
-import azkaban.server.AzkabanServer;
-
 public class AzkabanDatabaseUpdater {
+
   private static final Logger logger = Logger
       .getLogger(AzkabanDatabaseUpdater.class);
 
-  public static void main(String[] args) throws Exception {
-    OptionParser parser = new OptionParser();
+  public static void main(final String[] args) throws Exception {
+    final OptionParser parser = new OptionParser();
 
-    OptionSpec<String> scriptDirectory =
+    final OptionSpec<String> scriptDirectory =
         parser
             .acceptsAll(Arrays.asList("s", "script"),
                 "Directory of update scripts.").withRequiredArg()
             .describedAs("script").ofType(String.class);
 
-    OptionSpec<Void> updateOption =
+    final OptionSpec<Void> updateOption =
         parser.acceptsAll(Arrays.asList("u", "update"),
             "Will update if necessary");
 
-    Props props = AzkabanServer.loadProps(args, parser);
+    final Props props = AzkabanServer.loadProps(args, parser);
 
     if (props == null) {
       logger.error("Properties not found. Need it to connect to the db.");
@@ -55,7 +52,7 @@ public class AzkabanDatabaseUpdater {
       return;
     }
 
-    OptionSet options = parser.parse(args);
+    final OptionSet options = parser.parse(args);
     boolean updateDB = false;
     if (options.has(updateOption)) {
       updateDB = true;
@@ -71,8 +68,8 @@ public class AzkabanDatabaseUpdater {
     runDatabaseUpdater(props, scriptDir, updateDB);
   }
 
-  public static void runDatabaseUpdater(Props props, String sqlDir,
-      boolean updateDB) throws IOException, SQLException {
+  public static void runDatabaseUpdater(final Props props, final String sqlDir,
+      final boolean updateDB) throws IOException, SQLException {
     logger.info("Use scripting directory " + sqlDir);
 
     if (updateDB) {
@@ -81,7 +78,7 @@ public class AzkabanDatabaseUpdater {
       logger.info("Running DatabaseUpdater in test mode. Use -u to update");
     }
 
-    AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(props);
+    final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(props);
     setup.loadTableInfo();
     if (!setup.needsUpdating()) {
       logger.info("Everything looks up to date.");

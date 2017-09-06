@@ -17,17 +17,18 @@
 package azkaban.trigger;
 
 public class TriggerManagerException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
-  public TriggerManagerException(String message) {
+  public TriggerManagerException(final String message) {
     super(message);
   }
 
-  public TriggerManagerException(String message, Throwable cause) {
+  public TriggerManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public TriggerManagerException(Throwable e) {
+  public TriggerManagerException(final Throwable e) {
     super(e);
   }
 }

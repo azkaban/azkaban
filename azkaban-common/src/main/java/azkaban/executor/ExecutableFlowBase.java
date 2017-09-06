@@ -15,12 +15,6 @@
  */
 package azkaban.executor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
@@ -28,25 +22,30 @@ import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.project.Project;
 import azkaban.utils.TypedMapWrapper;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ExecutableFlowBase extends ExecutableNode {
+
   public static final String FLOW_ID_PARAM = "flowId";
   public static final String NODES_PARAM = "nodes";
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
   public static final String INHERITED_PARAM = "inherited";
 
-  private HashMap<String, ExecutableNode> executableNodes =
-      new HashMap<String, ExecutableNode>();
+  private final HashMap<String, ExecutableNode> executableNodes =
+      new HashMap<>();
+  private final HashMap<String, FlowProps> flowProps =
+      new HashMap<>();
   private ArrayList<String> startNodes;
   private ArrayList<String> endNodes;
-
-  private HashMap<String, FlowProps> flowProps =
-      new HashMap<String, FlowProps>();
   private String flowId;
 
-  public ExecutableFlowBase(Project project, Node node, Flow flow,
-      ExecutableFlowBase parent) {
+  public ExecutableFlowBase(final Project project, final Node node, final Flow flow,
+      final ExecutableFlowBase parent) {
     super(node, parent);
 
     setFlow(project, flow);
@@ -104,35 +103,35 @@ public class ExecutableFlowBase extends ExecutableNode {
   }
 
   public Collection<FlowProps> getFlowProps() {
-    return flowProps.values();
+    return this.flowProps.values();
   }
 
   public String getFlowId() {
-    return flowId;
+    return this.flowId;
   }
 
-  protected void setFlow(Project project, Flow flow) {
+  protected void setFlow(final Project project, final Flow flow) {
     this.flowId = flow.getId();
-    flowProps.putAll(flow.getAllFlowProps());
+    this.flowProps.putAll(flow.getAllFlowProps());
 
-    for (Node node : flow.getNodes()) {
-      String id = node.getId();
+    for (final Node node : flow.getNodes()) {
+      final String id = node.getId();
       if (node.getType().equals(SpecialJobTypes.EMBEDDED_FLOW_TYPE)) {
-        String embeddedFlowId = node.getEmbeddedFlowId();
-        Flow subFlow = project.getFlow(embeddedFlowId);
+        final String embeddedFlowId = node.getEmbeddedFlowId();
+        final Flow subFlow = project.getFlow(embeddedFlowId);
 
-        ExecutableFlowBase embeddedFlow =
+        final ExecutableFlowBase embeddedFlow =
             new ExecutableFlowBase(project, node, subFlow, this);
-        executableNodes.put(id, embeddedFlow);
+        this.executableNodes.put(id, embeddedFlow);
       } else {
-        ExecutableNode exNode = new ExecutableNode(node, this);
-        executableNodes.put(id, exNode);
+        final ExecutableNode exNode = new ExecutableNode(node, this);
+        this.executableNodes.put(id, exNode);
       }
     }
 
-    for (Edge edge : flow.getEdges()) {
-      ExecutableNode sourceNode = executableNodes.get(edge.getSourceId());
-      ExecutableNode targetNode = executableNodes.get(edge.getTargetId());
+    for (final Edge edge : flow.getEdges()) {
+      final ExecutableNode sourceNode = this.executableNodes.get(edge.getSourceId());
+      final ExecutableNode targetNode = this.executableNodes.get(edge.getTargetId());
 
       if (sourceNode == null) {
         System.out.println("Source node " + edge.getSourceId()
@@ -144,25 +143,25 @@ public class ExecutableFlowBase extends ExecutableNode {
   }
 
   public List<ExecutableNode> getExecutableNodes() {
-    return new ArrayList<ExecutableNode>(executableNodes.values());
+    return new ArrayList<>(this.executableNodes.values());
   }
 
-  public ExecutableNode getExecutableNode(String id) {
-    return executableNodes.get(id);
+  public ExecutableNode getExecutableNode(final String id) {
+    return this.executableNodes.get(id);
   }
 
-  public ExecutableNode getExecutableNodePath(String ids) {
-    String[] split = ids.split(":");
+  public ExecutableNode getExecutableNodePath(final String ids) {
+    final String[] split = ids.split(":");
     return getExecutableNodePath(split);
   }
 
-  public ExecutableNode getExecutableNodePath(String... ids) {
+  public ExecutableNode getExecutableNodePath(final String... ids) {
     return getExecutableNodePath(this, ids, 0);
   }
 
-  private ExecutableNode getExecutableNodePath(ExecutableFlowBase flow,
-      String[] ids, int currentIdIdx) {
-    ExecutableNode node = flow.getExecutableNode(ids[currentIdIdx]);
+  private ExecutableNode getExecutableNodePath(final ExecutableFlowBase flow,
+      final String[] ids, int currentIdIdx) {
+    final ExecutableNode node = flow.getExecutableNode(ids[currentIdIdx]);
     currentIdIdx++;
 
     if (node == null) {
@@ -180,57 +179,57 @@ public class ExecutableFlowBase extends ExecutableNode {
   }
 
   public List<String> getStartNodes() {
-    if (startNodes == null) {
-      startNodes = new ArrayList<String>();
-      for (ExecutableNode node : executableNodes.values()) {
+    if (this.startNodes == null) {
+      this.startNodes = new ArrayList<>();
+      for (final ExecutableNode node : this.executableNodes.values()) {
         if (node.getInNodes().isEmpty()) {
-          startNodes.add(node.getId());
+          this.startNodes.add(node.getId());
         }
       }
     }
 
-    return startNodes;
+    return this.startNodes;
   }
 
   public List<String> getEndNodes() {
-    if (endNodes == null) {
-      endNodes = new ArrayList<String>();
-      for (ExecutableNode node : executableNodes.values()) {
+    if (this.endNodes == null) {
+      this.endNodes = new ArrayList<>();
+      for (final ExecutableNode node : this.executableNodes.values()) {
         if (node.getOutNodes().isEmpty()) {
-          endNodes.add(node.getId());
+          this.endNodes.add(node.getId());
         }
       }
     }
 
-    return endNodes;
+    return this.endNodes;
   }
 
   @Override
   public Map<String, Object> toObject() {
-    Map<String, Object> mapObj = new HashMap<String, Object>();
+    final Map<String, Object> mapObj = new HashMap<>();
     fillMapFromExecutable(mapObj);
 
     return mapObj;
   }
 
   @Override
-  protected void fillMapFromExecutable(Map<String, Object> flowObjMap) {
+  protected void fillMapFromExecutable(final Map<String, Object> flowObjMap) {
     super.fillMapFromExecutable(flowObjMap);
 
-    flowObjMap.put(FLOW_ID_PARAM, flowId);
+    flowObjMap.put(FLOW_ID_PARAM, this.flowId);
 
-    ArrayList<Object> nodes = new ArrayList<Object>();
-    for (ExecutableNode node : executableNodes.values()) {
+    final ArrayList<Object> nodes = new ArrayList<>();
+    for (final ExecutableNode node : this.executableNodes.values()) {
       nodes.add(node.toObject());
     }
     flowObjMap.put(NODES_PARAM, nodes);
 
     // Flow properties
-    ArrayList<Object> props = new ArrayList<Object>();
-    for (FlowProps fprop : flowProps.values()) {
-      HashMap<String, Object> propObj = new HashMap<String, Object>();
-      String source = fprop.getSource();
-      String inheritedSource = fprop.getInheritedSource();
+    final ArrayList<Object> props = new ArrayList<>();
+    for (final FlowProps fprop : this.flowProps.values()) {
+      final HashMap<String, Object> propObj = new HashMap<>();
+      final String source = fprop.getSource();
+      final String inheritedSource = fprop.getInheritedSource();
 
       propObj.put(SOURCE_PARAM, source);
       if (inheritedSource != null) {
@@ -243,56 +242,54 @@ public class ExecutableFlowBase extends ExecutableNode {
 
   @Override
   public void fillExecutableFromMapObject(
-      TypedMapWrapper<String, Object> flowObjMap) {
+      final TypedMapWrapper<String, Object> flowObjMap) {
     super.fillExecutableFromMapObject(flowObjMap);
 
     this.flowId = flowObjMap.getString(FLOW_ID_PARAM);
-    List<Object> nodes = flowObjMap.<Object> getList(NODES_PARAM);
+    final List<Object> nodes = flowObjMap.<Object>getList(NODES_PARAM);
 
     if (nodes != null) {
-      for (Object nodeObj : nodes) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> nodeObjMap = (Map<String, Object>) nodeObj;
-        TypedMapWrapper<String, Object> wrapper =
-            new TypedMapWrapper<String, Object>(nodeObjMap);
+      for (final Object nodeObj : nodes) {
+        final Map<String, Object> nodeObjMap = (Map<String, Object>) nodeObj;
+        final TypedMapWrapper<String, Object> wrapper =
+            new TypedMapWrapper<>(nodeObjMap);
 
-        String type = wrapper.getString(TYPE_PARAM);
+        final String type = wrapper.getString(TYPE_PARAM);
         if (type != null && type.equals(SpecialJobTypes.EMBEDDED_FLOW_TYPE)) {
-          ExecutableFlowBase exFlow = new ExecutableFlowBase();
+          final ExecutableFlowBase exFlow = new ExecutableFlowBase();
           exFlow.fillExecutableFromMapObject(wrapper);
           exFlow.setParentFlow(this);
 
-          executableNodes.put(exFlow.getId(), exFlow);
+          this.executableNodes.put(exFlow.getId(), exFlow);
         } else {
-          ExecutableNode exJob = new ExecutableNode();
+          final ExecutableNode exJob = new ExecutableNode();
           exJob.fillExecutableFromMapObject(nodeObjMap);
           exJob.setParentFlow(this);
 
-          executableNodes.put(exJob.getId(), exJob);
+          this.executableNodes.put(exJob.getId(), exJob);
         }
       }
     }
 
-    List<Object> properties = flowObjMap.<Object> getList(PROPERTIES_PARAM);
-    for (Object propNode : properties) {
-      @SuppressWarnings("unchecked")
-      HashMap<String, Object> fprop = (HashMap<String, Object>) propNode;
-      String source = (String) fprop.get("source");
-      String inheritedSource = (String) fprop.get("inherited");
+    final List<Object> properties = flowObjMap.<Object>getList(PROPERTIES_PARAM);
+    for (final Object propNode : properties) {
+      final HashMap<String, Object> fprop = (HashMap<String, Object>) propNode;
+      final String source = (String) fprop.get("source");
+      final String inheritedSource = (String) fprop.get("inherited");
 
-      FlowProps flowProps = new FlowProps(inheritedSource, source);
+      final FlowProps flowProps = new FlowProps(inheritedSource, source);
       this.flowProps.put(source, flowProps);
     }
   }
 
-  public Map<String, Object> toUpdateObject(long lastUpdateTime) {
-    Map<String, Object> updateData = super.toUpdateObject();
+  public Map<String, Object> toUpdateObject(final long lastUpdateTime) {
+    final Map<String, Object> updateData = super.toUpdateObject();
 
-    List<Map<String, Object>> updatedNodes =
-        new ArrayList<Map<String, Object>>();
-    for (ExecutableNode node : executableNodes.values()) {
+    final List<Map<String, Object>> updatedNodes =
+        new ArrayList<>();
+    for (final ExecutableNode node : this.executableNodes.values()) {
       if (node instanceof ExecutableFlowBase) {
-        Map<String, Object> updatedNodeMap =
+        final Map<String, Object> updatedNodeMap =
             ((ExecutableFlowBase) node).toUpdateObject(lastUpdateTime);
         // We add only flows to the list which either have a good update time,
         // or has updated descendants.
@@ -302,7 +299,7 @@ public class ExecutableFlowBase extends ExecutableNode {
         }
       } else {
         if (node.getUpdateTime() > lastUpdateTime) {
-          Map<String, Object> updatedNodeMap = node.toUpdateObject();
+          final Map<String, Object> updatedNodeMap = node.toUpdateObject();
           updatedNodes.add(updatedNodeMap);
         }
       }
@@ -319,28 +316,28 @@ public class ExecutableFlowBase extends ExecutableNode {
     return updateData;
   }
 
-  public void applyUpdateObject(TypedMapWrapper<String, Object> updateData,
-      List<ExecutableNode> updatedNodes) {
+  public void applyUpdateObject(final TypedMapWrapper<String, Object> updateData,
+      final List<ExecutableNode> updatedNodes) {
     super.applyUpdateObject(updateData);
 
     if (updatedNodes != null) {
       updatedNodes.add(this);
     }
 
-    List<Map<String, Object>> nodes =
+    final List<Map<String, Object>> nodes =
         (List<Map<String, Object>>) updateData
-        .<Map<String, Object>> getList(NODES_PARAM);
+            .<Map<String, Object>>getList(NODES_PARAM);
     if (nodes != null) {
-      for (Map<String, Object> node : nodes) {
-        TypedMapWrapper<String, Object> nodeWrapper =
-            new TypedMapWrapper<String, Object>(node);
+      for (final Map<String, Object> node : nodes) {
+        final TypedMapWrapper<String, Object> nodeWrapper =
+            new TypedMapWrapper<>(node);
         String id = nodeWrapper.getString(ID_PARAM);
         if (id == null) {
           // Legacy case
           id = nodeWrapper.getString("jobId");
         }
 
-        ExecutableNode exNode = executableNodes.get(id);
+        final ExecutableNode exNode = this.executableNodes.get(id);
         if (updatedNodes != null) {
           updatedNodes.add(exNode);
         }
@@ -355,24 +352,24 @@ public class ExecutableFlowBase extends ExecutableNode {
     }
   }
 
-  public void applyUpdateObject(Map<String, Object> updateData,
-      List<ExecutableNode> updatedNodes) {
-    TypedMapWrapper<String, Object> typedMapWrapper =
-        new TypedMapWrapper<String, Object>(updateData);
+  public void applyUpdateObject(final Map<String, Object> updateData,
+      final List<ExecutableNode> updatedNodes) {
+    final TypedMapWrapper<String, Object> typedMapWrapper =
+        new TypedMapWrapper<>(updateData);
     applyUpdateObject(typedMapWrapper, updatedNodes);
   }
 
   @Override
-  public void applyUpdateObject(Map<String, Object> updateData) {
-    TypedMapWrapper<String, Object> typedMapWrapper =
-        new TypedMapWrapper<String, Object>(updateData);
+  public void applyUpdateObject(final Map<String, Object> updateData) {
+    final TypedMapWrapper<String, Object> typedMapWrapper =
+        new TypedMapWrapper<>(updateData);
     applyUpdateObject(typedMapWrapper, null);
   }
 
-  public void reEnableDependents(ExecutableNode... nodes) {
-    for (ExecutableNode node : nodes) {
-      for (String dependent : node.getOutNodes()) {
-        ExecutableNode dependentNode = getExecutableNode(dependent);
+  public void reEnableDependents(final ExecutableNode... nodes) {
+    for (final ExecutableNode node : nodes) {
+      for (final String dependent : node.getOutNodes()) {
+        final ExecutableNode dependentNode = getExecutableNode(dependent);
 
         if (dependentNode.getStatus() == Status.KILLED) {
           dependentNode.setStatus(Status.READY);
@@ -390,66 +387,6 @@ public class ExecutableFlowBase extends ExecutableNode {
         }
       }
     }
-  }
-
-  /**
-   * Only returns true if the status of all finished nodes is true.
-   *
-   * @return
-   */
-  public boolean isFlowFinished() {
-    for (String end : getEndNodes()) {
-      ExecutableNode node = getExecutableNode(end);
-      if (!Status.isStatusFinished(node.getStatus())) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * Finds all jobs which are ready to run. This occurs when all of its
-   * dependency nodes are finished running.
-   *
-   * It will also return any subflow that has been completed such that the
-   * FlowRunner can properly handle them.
-   *
-   * @param flow
-   * @return
-   */
-  public List<ExecutableNode> findNextJobsToRun() {
-    ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
-
-    if (isFlowFinished() && !Status.isStatusFinished(getStatus())) {
-      jobsToRun.add(this);
-    } else {
-      nodeloop: for (ExecutableNode node : executableNodes.values()) {
-        if (Status.isStatusFinished(node.getStatus())) {
-          continue;
-        }
-
-        if ((node instanceof ExecutableFlowBase)
-            && Status.isStatusRunning(node.getStatus())) {
-          // If the flow is still running, we traverse into the flow
-          jobsToRun.addAll(((ExecutableFlowBase) node).findNextJobsToRun());
-        } else if (Status.isStatusRunning(node.getStatus())) {
-          continue;
-        } else {
-          for (String dependency : node.getInNodes()) {
-            // We find that the outer-loop is unfinished.
-            if (!Status.isStatusFinished(getExecutableNode(dependency)
-                .getStatus())) {
-              continue nodeloop;
-            }
-          }
-
-          jobsToRun.add(node);
-        }
-      }
-    }
-
-    return jobsToRun;
   }
 
   public String getFlowPath() {

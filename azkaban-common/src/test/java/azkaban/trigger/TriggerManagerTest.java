@@ -16,194 +16,226 @@
 
 package azkaban.trigger;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+
+import azkaban.executor.ExecutorManager;
+import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.joda.time.DateTime;
-
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
-import azkaban.utils.Props;
-
+@Ignore
+// todo HappyRay: fix these slow tests or delete them.
 public class TriggerManagerTest {
 
-  private TriggerLoader triggerLoader;
+  private static TriggerLoader triggerLoader;
+  private static ExecutorManager executorManager;
+  private TriggerManager triggerManager;
+
+  @BeforeClass
+  public static void prepare() {
+    triggerLoader = new MockTriggerLoader();
+    executorManager = mock(ExecutorManager.class);
+    doNothing().when(executorManager).addListener(anyObject());
+  }
 
   @Before
   public void setup() throws TriggerException, TriggerManagerException {
-    triggerLoader = new MockTriggerLoader();
-
+    final Props props = new Props();
+    props.put("trigger.scan.interval", 300);
+    this.triggerManager = new TriggerManager(props, triggerLoader, executorManager);
+    this.triggerManager.registerCheckerType(ThresholdChecker.type,
+        ThresholdChecker.class);
+    this.triggerManager.registerActionType(DummyTriggerAction.type,
+        DummyTriggerAction.class);
+    this.triggerManager.start();
   }
 
   @After
   public void tearDown() {
-
+    this.triggerManager.shutdown();
   }
 
-  @Ignore @Test
-  public void triggerManagerSimpleTest() throws TriggerManagerException {
-    Props props = new Props();
-    props.put("trigger.scan.interval", 4000);
-    TriggerManager triggerManager =
-        new TriggerManager(props, triggerLoader, null);
+  @Test
+  public void neverExpireTriggerTest() throws TriggerManagerException {
 
-    triggerManager.registerCheckerType(ThresholdChecker.type,
-        ThresholdChecker.class);
-    triggerManager.registerActionType(DummyTriggerAction.type,
-        DummyTriggerAction.class);
-
-    ThresholdChecker.setVal(1);
-
-    triggerManager.insertTrigger(
-        createDummyTrigger("test1", "triggerLoader", 10), "testUser");
-    List<Trigger> triggers = triggerManager.getTriggers();
-    assertTrue(triggers.size() == 1);
-    Trigger t1 = triggers.get(0);
+    final Trigger t1 = createNeverExpireTrigger("triggerLoader", 10);
+    this.triggerManager.insertTrigger(t1);
     t1.setResetOnTrigger(false);
-    triggerManager.updateTrigger(t1, "testUser");
-    ThresholdChecker checker1 =
+    final ThresholdChecker triggerChecker =
         (ThresholdChecker) t1.getTriggerCondition().getCheckers().values()
             .toArray()[0];
-    assertTrue(t1.getSource().equals("triggerLoader"));
 
-    Trigger t2 =
-        createDummyTrigger("test2: add new trigger", "addNewTriggerTest", 20);
-    triggerManager.insertTrigger(t2, "testUser");
-    ThresholdChecker checker2 =
-        (ThresholdChecker) t2.getTriggerCondition().getCheckers().values()
+    final BasicTimeChecker expireChecker =
+        (BasicTimeChecker) t1.getExpireCondition().getCheckers().values()
             .toArray()[0];
 
     ThresholdChecker.setVal(15);
-    try {
-      Thread.sleep(2000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    assertTrue(checker1.isCheckerMet() == false);
-    assertTrue(checker2.isCheckerMet() == false);
-    assertTrue(checker1.isCheckerReset() == false);
-    assertTrue(checker2.isCheckerReset() == false);
-
-    try {
-      Thread.sleep(2000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    assertTrue(checker1.isCheckerMet() == true);
-    assertTrue(checker2.isCheckerMet() == false);
-    assertTrue(checker1.isCheckerReset() == false);
-    assertTrue(checker2.isCheckerReset() == false);
+    sleep(300);
+    sleep(300);
+    assertTrue(triggerChecker.isCheckerMet() == true);
+    assertTrue(expireChecker.eval() == false);
 
     ThresholdChecker.setVal(25);
-    try {
-      Thread.sleep(4000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    assertTrue(checker1.isCheckerMet() == true);
-    assertTrue(checker1.isCheckerReset() == false);
-    assertTrue(checker2.isCheckerReset() == true);
-
-    triggers = triggerManager.getTriggers();
-    assertTrue(triggers.size() == 1);
-
+    sleep(300);
+    assertTrue(triggerChecker.isCheckerMet() == true);
+    assertTrue(expireChecker.eval() == false);
   }
 
-  public class MockTriggerLoader implements TriggerLoader {
 
-    private Map<Integer, Trigger> triggers = new HashMap<Integer, Trigger>();
+  @Test
+  public void timeCheckerAndExpireTriggerTest() throws TriggerManagerException {
+
+    final long curr = System.currentTimeMillis();
+    final Trigger t1 = createPeriodAndEndCheckerTrigger(curr);
+    this.triggerManager.insertTrigger(t1);
+    t1.setResetOnTrigger(true);
+    final BasicTimeChecker expireChecker =
+        (BasicTimeChecker) t1.getExpireCondition().getCheckers().values()
+            .toArray()[0];
+
+    sleep(1000);
+
+    assertTrue(expireChecker.eval() == false);
+    assertTrue(t1.getStatus() == TriggerStatus.READY);
+
+    sleep(1000);
+    sleep(1000);
+    sleep(1000);
+    assertTrue(expireChecker.eval() == true);
+    assertTrue(t1.getStatus() == TriggerStatus.PAUSED);
+
+    sleep(1000);
+    assertTrue(expireChecker.eval() == true);
+    assertTrue(t1.getStatus() == TriggerStatus.PAUSED);
+  }
+
+  private void sleep(final long millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (final InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private Trigger createNeverExpireTrigger(final String source, final int threshold) {
+    final Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
+    final Map<String, ConditionChecker> expireCheckers = new HashMap<>();
+    final ConditionChecker triggerChecker = new ThresholdChecker(ThresholdChecker.type, threshold);
+    final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeCheck_1", 111L,
+        DateTimeZone.UTC, 2536871155000L, false, false,
+        null, null);
+    triggerCheckers.put(triggerChecker.getId(), triggerChecker);
+    expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
+
+    final String triggerExpr = triggerChecker.getId() + ".eval()";
+    final String expireExpr = endTimeChecker.getId() + ".eval()";
+
+    final Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+    final Condition expireCond = new Condition(expireCheckers, expireExpr);
+
+    final Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
+        source,
+        triggerCond,
+        expireCond,
+        getTriggerActions()).build();
+
+    fakeTrigger.setResetOnTrigger(false);
+    fakeTrigger.setResetOnExpire(true);
+    return fakeTrigger;
+  }
+
+  private Trigger createPeriodAndEndCheckerTrigger(final long currMillis) {
+    final Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
+    final Map<String, ConditionChecker> expireCheckers = new HashMap<>();
+
+    // TODO kunkun-tang: 1 second is the minimum unit for {@link org.joda.time.ReadablePeriod}.
+    // In future, we should use some smaller alternative.
+    final ConditionChecker triggerChecker = new BasicTimeChecker("BasicTimeChecker_1",
+        currMillis, DateTimeZone.UTC, true, true,
+        Utils.parsePeriodString("1s"), null);
+
+    // End time is 3 seconds past now.
+    final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,
+        DateTimeZone.UTC, currMillis + 3000L, false, false,
+        null, null);
+    triggerCheckers.put(triggerChecker.getId(), triggerChecker);
+    expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
+
+    final String triggerExpr = triggerChecker.getId() + ".eval()";
+    final String expireExpr = endTimeChecker.getId() + ".eval()";
+
+    final Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+    final Condition expireCond = new Condition(expireCheckers, expireExpr);
+
+    final Trigger timeTrigger = new Trigger.TriggerBuilder("azkaban",
+        "",
+        triggerCond,
+        expireCond,
+        getTriggerActions()).build();
+
+    timeTrigger.setResetOnTrigger(false);
+    timeTrigger.setResetOnExpire(true);
+    return timeTrigger;
+  }
+
+  private List<TriggerAction> getTriggerActions() {
+    final List<TriggerAction> actions = new ArrayList<>();
+    final TriggerAction act = new DummyTriggerAction("");
+    actions.add(act);
+    return actions;
+  }
+
+  public static class MockTriggerLoader implements TriggerLoader {
+
+    private final Map<Integer, Trigger> triggers = new HashMap<>();
     private int idIndex = 0;
 
     @Override
-    public void addTrigger(Trigger t) throws TriggerLoaderException {
-      t.setTriggerId(idIndex++);
-      triggers.put(t.getTriggerId(), t);
+    public void addTrigger(final Trigger t) throws TriggerLoaderException {
+      t.setTriggerId(this.idIndex++);
+      this.triggers.put(t.getTriggerId(), t);
     }
 
     @Override
-    public void removeTrigger(Trigger s) throws TriggerLoaderException {
-      triggers.remove(s.getTriggerId());
+    public void removeTrigger(final Trigger s) throws TriggerLoaderException {
+      this.triggers.remove(s.getTriggerId());
 
     }
 
     @Override
-    public void updateTrigger(Trigger t) throws TriggerLoaderException {
-      triggers.put(t.getTriggerId(), t);
+    public void updateTrigger(final Trigger t) throws TriggerLoaderException {
+      this.triggers.put(t.getTriggerId(), t);
     }
 
     @Override
     public List<Trigger> loadTriggers() {
-      return new ArrayList<Trigger>(triggers.values());
+      return new ArrayList<>(this.triggers.values());
     }
 
     @Override
-    public Trigger loadTrigger(int triggerId) throws TriggerLoaderException {
+    public Trigger loadTrigger(final int triggerId) throws TriggerLoaderException {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
+    public List<Trigger> getUpdatedTriggers(final long lastUpdateTime)
         throws TriggerLoaderException {
       // TODO Auto-generated method stub
       return null;
     }
-
   }
-
-  private Trigger createDummyTrigger(String message, String source,
-      int threshold) {
-
-    Map<String, ConditionChecker> checkers =
-        new HashMap<String, ConditionChecker>();
-    ConditionChecker checker =
-        new ThresholdChecker(ThresholdChecker.type, threshold);
-    checkers.put(checker.getId(), checker);
-
-    List<TriggerAction> actions = new ArrayList<TriggerAction>();
-    TriggerAction act = new DummyTriggerAction(message);
-    actions.add(act);
-
-    String expr = checker.getId() + ".eval()";
-
-    Condition triggerCond = new Condition(checkers, expr);
-    Condition expireCond = new Condition(checkers, expr);
-
-    Trigger fakeTrigger =
-        new Trigger(DateTime.now().getMillis(), DateTime.now().getMillis(),
-            "azkaban", source, triggerCond, expireCond, actions);
-    fakeTrigger.setResetOnTrigger(true);
-    fakeTrigger.setResetOnExpire(true);
-
-    return fakeTrigger;
-  }
-
-  // public class MockCheckerLoader extends CheckerTypeLoader{
-  //
-  // @Override
-  // public void init(Props props) {
-  // checkerToClass.put(ThresholdChecker.type, ThresholdChecker.class);
-  // }
-  // }
-  //
-  // public class MockActionLoader extends ActionTypeLoader {
-  // @Override
-  // public void init(Props props) {
-  // actionToClass.put(DummyTriggerAction.type, DummyTriggerAction.class);
-  // }
-  // }
-
 }

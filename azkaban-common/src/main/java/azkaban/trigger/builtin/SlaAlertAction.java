@@ -16,16 +16,16 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
+import azkaban.ServiceProvider;
 import azkaban.alert.Alerter;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 public class SlaAlertAction implements TriggerAction {
 
@@ -33,29 +33,41 @@ public class SlaAlertAction implements TriggerAction {
 
   private static final Logger logger = Logger.getLogger(SlaAlertAction.class);
 
-  private String actionId;
-  private SlaOption slaOption;
-  private int execId;
-  private static Map<String, azkaban.alert.Alerter> alerters;
-  private static ExecutorManagerAdapter executorManager;
+  private final String actionId;
+  private final SlaOption slaOption;
+  private final int execId;
+  private final AlerterHolder alerters;
+  private final ExecutorLoader executorLoader;
 
-  public SlaAlertAction(String id, SlaOption slaOption, int execId) {
+  //todo chengren311: move this class to executor module when all existing triggers in db are expired
+  public SlaAlertAction(final String id, final SlaOption slaOption, final int execId) {
     this.actionId = id;
     this.slaOption = slaOption;
     this.execId = execId;
+    this.alerters = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class);
+    this.executorLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorLoader.class);
   }
 
-  public static void setAlerters(Map<String, Alerter> alts) {
-    alerters = alts;
+  public static SlaAlertAction createFromJson(final Object obj) throws Exception {
+    return createFromJson((HashMap<String, Object>) obj);
   }
 
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
-    executorManager = em;
+  public static SlaAlertAction createFromJson(final HashMap<String, Object> obj)
+      throws Exception {
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create action of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    final String actionId = (String) jsonObj.get("actionId");
+    final SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
+    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    return new SlaAlertAction(actionId, slaOption, execId);
   }
 
   @Override
   public String getId() {
-    return actionId;
+    return this.actionId;
   }
 
   @Override
@@ -63,36 +75,18 @@ public class SlaAlertAction implements TriggerAction {
     return type;
   }
 
-  @SuppressWarnings("unchecked")
-  public static SlaAlertAction createFromJson(Object obj) throws Exception {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static SlaAlertAction createFromJson(HashMap<String, Object> obj)
-      throws Exception {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create action of " + type + " from "
-          + jsonObj.get("type"));
-    }
-    String actionId = (String) jsonObj.get("actionId");
-    SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    return new SlaAlertAction(actionId, slaOption, execId);
-  }
-
   @Override
-  public TriggerAction fromJson(Object obj) throws Exception {
+  public TriggerAction fromJson(final Object obj) throws Exception {
     return createFromJson(obj);
   }
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
-    jsonObj.put("actionId", actionId);
+    final Map<String, Object> jsonObj = new HashMap<>();
+    jsonObj.put("actionId", this.actionId);
     jsonObj.put("type", type);
-    jsonObj.put("slaOption", slaOption.toObject());
-    jsonObj.put("execId", String.valueOf(execId));
+    jsonObj.put("slaOption", this.slaOption.toObject());
+    jsonObj.put("execId", String.valueOf(this.execId));
 
     return jsonObj;
   }
@@ -100,16 +94,15 @@ public class SlaAlertAction implements TriggerAction {
   @Override
   public void doAction() throws Exception {
     logger.info("Alerting on sla failure.");
-    Map<String, Object> alert = slaOption.getInfo();
+    final Map<String, Object> alert = this.slaOption.getInfo();
     if (alert.containsKey(SlaOption.ALERT_TYPE)) {
-      String alertType = (String) alert.get(SlaOption.ALERT_TYPE);
-      Alerter alerter = alerters.get(alertType);
+      final String alertType = (String) alert.get(SlaOption.ALERT_TYPE);
+      final Alerter alerter = this.alerters.get(alertType);
       if (alerter != null) {
         try {
-          ExecutableFlow flow = executorManager.getExecutableFlow(execId);
-          alerter.alertOnSla(slaOption,
-              SlaOption.createSlaMessage(slaOption, flow));
-        } catch (Exception e) {
+          final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
+          alerter.alertOnSla(this.slaOption, SlaOption.createSlaMessage(this.slaOption, flow));
+        } catch (final Exception e) {
           e.printStackTrace();
           logger.error("Failed to alert by " + alertType);
         }
@@ -121,12 +114,12 @@ public class SlaAlertAction implements TriggerAction {
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 
   @Override
   public String getDescription() {
-    return type + " for " + execId + " with " + slaOption.toString();
+    return type + " for " + this.execId + " with " + this.slaOption.toString();
   }
 
 }

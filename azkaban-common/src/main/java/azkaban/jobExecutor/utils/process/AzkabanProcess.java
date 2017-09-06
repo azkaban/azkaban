@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,33 +16,30 @@
 
 package azkaban.jobExecutor.utils.process;
 
+import azkaban.utils.LogGobbler;
+import com.google.common.base.Joiner;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import azkaban.utils.LogGobbler;
-
-import com.google.common.base.Joiner;
-
 /**
  * An improved version of java.lang.Process.
- * 
- * Output is read by separate threads to avoid deadlock and logged to log4j
- * loggers.
+ *
+ * Output is read by separate threads to avoid deadlock and logged to log4j loggers.
  */
 public class AzkabanProcess {
-  
+
   public static String KILL_COMMAND = "kill";
-  
+
   private final String workingDir;
   private final List<String> cmd;
   private final Map<String, String> env;
@@ -68,9 +65,9 @@ public class AzkabanProcess {
     this.logger = logger;
   }
 
-  public AzkabanProcess(List<String> cmd, Map<String, String> env,
-      String workingDir, Logger logger, String executeAsUserBinary,
-      String effectiveUser) {
+  public AzkabanProcess(final List<String> cmd, final Map<String, String> env,
+      final String workingDir, final Logger logger, final String executeAsUserBinary,
+      final String effectiveUser) {
     this(cmd, env, workingDir, logger);
     this.isExecuteAsUser = true;
     this.executeAsUserBinary = executeAsUserBinary;
@@ -85,45 +82,47 @@ public class AzkabanProcess {
       throw new IllegalStateException("The process can only be used once.");
     }
 
-    ProcessBuilder builder = new ProcessBuilder(cmd);
-    builder.directory(new File(workingDir));
-    builder.environment().putAll(env);
+    final ProcessBuilder builder = new ProcessBuilder(this.cmd);
+    builder.directory(new File(this.workingDir));
+    builder.environment().putAll(this.env);
     builder.redirectErrorStream(true);
     this.process = builder.start();
     try {
-      this.processId = processId(process);
-      if (processId == 0) {
-        logger.debug("Spawned thread with unknown process id");
+      this.processId = processId(this.process);
+      if (this.processId == 0) {
+        this.logger.debug("Spawned thread with unknown process id");
       } else {
-        logger.debug("Spawned thread with process id " + processId);
+        this.logger.debug("Spawned thread with process id " + this.processId);
       }
 
       this.startupLatch.countDown();
 
-      LogGobbler outputGobbler =
-          new LogGobbler(new InputStreamReader(process.getInputStream()),
-              logger, Level.INFO, 30);
-      LogGobbler errorGobbler =
-          new LogGobbler(new InputStreamReader(process.getErrorStream()),
-              logger, Level.ERROR, 30);
+      final LogGobbler outputGobbler =
+          new LogGobbler(
+              new InputStreamReader(this.process.getInputStream(), StandardCharsets.UTF_8),
+              this.logger, Level.INFO, 30);
+      final LogGobbler errorGobbler =
+          new LogGobbler(
+              new InputStreamReader(this.process.getErrorStream(), StandardCharsets.UTF_8),
+              this.logger, Level.ERROR, 30);
 
       outputGobbler.start();
       errorGobbler.start();
       int exitCode = -1;
       try {
-        exitCode = process.waitFor();
-      } catch (InterruptedException e) {
-        logger.info("Process interrupted. Exit code is " + exitCode, e);
+        exitCode = this.process.waitFor();
+      } catch (final InterruptedException e) {
+        this.logger.info("Process interrupted. Exit code is " + exitCode, e);
       }
 
-      completeLatch.countDown();
+      this.completeLatch.countDown();
 
       // try to wait for everything to get logged out before exiting
       outputGobbler.awaitCompletion(5000);
       errorGobbler.awaitCompletion(5000);
 
       if (exitCode != 0) {
-        String output =
+        final String output =
             new StringBuilder().append("Stdout:\n")
                 .append(outputGobbler.getRecentLog()).append("\n\n")
                 .append("Stderr:\n").append(errorGobbler.getRecentLog())
@@ -132,15 +131,15 @@ public class AzkabanProcess {
       }
 
     } finally {
-      IOUtils.closeQuietly(process.getInputStream());
-      IOUtils.closeQuietly(process.getOutputStream());
-      IOUtils.closeQuietly(process.getErrorStream());
+      IOUtils.closeQuietly(this.process.getInputStream());
+      IOUtils.closeQuietly(this.process.getOutputStream());
+      IOUtils.closeQuietly(this.process.getErrorStream());
     }
   }
 
   /**
    * Await the completion of this process
-   * 
+   *
    * @throws InterruptedException if the thread is interrupted while waiting.
    */
   public void awaitCompletion() throws InterruptedException {
@@ -149,7 +148,9 @@ public class AzkabanProcess {
 
   /**
    * Await the start of this process
-   * 
+   *
+   * When this method returns, the job process has been created and a this.processId has been set.
+   *
    * @throws InterruptedException if the thread is interrupted while waiting.
    */
   public void awaitStartup() throws InterruptedException {
@@ -158,7 +159,7 @@ public class AzkabanProcess {
 
   /**
    * Get the process id for this process, if it has started.
-   * 
+   *
    * @return The process id or -1 if it cannot be fetched
    */
   public int getProcessId() {
@@ -168,7 +169,7 @@ public class AzkabanProcess {
 
   /**
    * Attempt to kill the process, waiting up to the given time for it to die
-   * 
+   *
    * @param time The amount of time to wait
    * @param unit The time unit
    * @return true iff this soft kill kills the process in the given wait time.
@@ -176,20 +177,20 @@ public class AzkabanProcess {
   public boolean softKill(final long time, final TimeUnit unit)
       throws InterruptedException {
     checkStarted();
-    if (processId != 0 && isStarted()) {
+    if (this.processId != 0 && isStarted()) {
       try {
-        if (isExecuteAsUser) {
-          String cmd =
-              String.format("%s %s %s %d", executeAsUserBinary,
-                  effectiveUser, KILL_COMMAND, processId);
+        if (this.isExecuteAsUser) {
+          final String cmd =
+              String.format("%s %s %s %d", this.executeAsUserBinary,
+                  this.effectiveUser, KILL_COMMAND, this.processId);
           Runtime.getRuntime().exec(cmd);
         } else {
-          String cmd = String.format("%s %d", KILL_COMMAND, processId);
+          final String cmd = String.format("%s %d", KILL_COMMAND, this.processId);
           Runtime.getRuntime().exec(cmd);
         }
-        return completeLatch.await(time, unit);
-      } catch (IOException e) {
-        logger.error("Kill attempt failed.", e);
+        return this.completeLatch.await(time, unit);
+      } catch (final IOException e) {
+        this.logger.error("Kill attempt failed.", e);
       }
       return false;
     }
@@ -202,39 +203,39 @@ public class AzkabanProcess {
   public void hardKill() {
     checkStarted();
     if (isRunning()) {
-      if (processId != 0) {
+      if (this.processId != 0) {
         try {
-          if (isExecuteAsUser) {
-            String cmd =
-                String.format("%s %s %s -9 %d", executeAsUserBinary,
-                    effectiveUser, KILL_COMMAND, processId);
+          if (this.isExecuteAsUser) {
+            final String cmd =
+                String.format("%s %s %s -9 %d", this.executeAsUserBinary,
+                    this.effectiveUser, KILL_COMMAND, this.processId);
             Runtime.getRuntime().exec(cmd);
           } else {
-            String cmd = String.format("%s -9 %d", KILL_COMMAND, processId);
+            final String cmd = String.format("%s -9 %d", KILL_COMMAND, this.processId);
             Runtime.getRuntime().exec(cmd);
           }
-        } catch (IOException e) {
-          logger.error("Kill attempt failed.", e);
+        } catch (final IOException e) {
+          this.logger.error("Kill attempt failed.", e);
         }
       }
-      process.destroy();
+      this.process.destroy();
     }
   }
 
   /**
    * Attempt to get the process id for this process
-   * 
+   *
    * @param process The process to get the id from
    * @return The id of the process
    */
   private int processId(final java.lang.Process process) {
     int processId = 0;
     try {
-      Field f = process.getClass().getDeclaredField("pid");
+      final Field f = process.getClass().getDeclaredField("pid");
       f.setAccessible(true);
 
       processId = f.getInt(process);
-    } catch (Throwable e) {
+    } catch (final Throwable e) {
       e.printStackTrace();
     }
 
@@ -245,14 +246,14 @@ public class AzkabanProcess {
    * @return true iff the process has been started
    */
   public boolean isStarted() {
-    return startupLatch.getCount() == 0L;
+    return this.startupLatch.getCount() == 0L;
   }
 
   /**
    * @return true iff the process has completed
    */
   public boolean isComplete() {
-    return completeLatch.getCount() == 0L;
+    return this.completeLatch.getCount() == 0L;
   }
 
   /**
@@ -270,15 +271,15 @@ public class AzkabanProcess {
 
   @Override
   public String toString() {
-    return "Process(cmd = " + Joiner.on(" ").join(cmd) + ", env = " + env
-        + ", cwd = " + workingDir + ")";
+    return "Process(cmd = " + Joiner.on(" ").join(this.cmd) + ", env = " + this.env
+        + ", cwd = " + this.workingDir + ")";
   }
 
   public boolean isExecuteAsUser() {
-    return isExecuteAsUser;
+    return this.isExecuteAsUser;
   }
 
   public String getEffectiveUser() {
-    return effectiveUser;
+    return this.effectiveUser;
   }
 }

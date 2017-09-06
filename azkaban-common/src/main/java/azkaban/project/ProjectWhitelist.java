@@ -1,5 +1,6 @@
 package azkaban.project;
 
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -7,65 +8,57 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import azkaban.utils.Props;
-
 /**
  * @author wkang
  *
- * This class manages project whitelist defined in xml config file.
- * An single xml config file contains different types of whitelisted
- * projects. For additional type of whitelist, modify WhitelistType enum.
+ * This class manages project whitelist defined in xml config file. An single xml config file
+ * contains different types of whitelisted projects. For additional type of whitelist, modify
+ * WhitelistType enum.
  *
- * The xml config file should in the following format. Please note
- * the tag <MemoryCheck> is same as the defined enum MemoryCheck
+ * The xml config file should in the following format. Please note the tag <MemoryCheck> is same as
+ * the defined enum MemoryCheck
  *
- * <ProjectWhitelist>
- *  <MemoryCheck>
- *      <project projectname="project1" />
- *      <project projectname="project2" />
- *  </MemoryCheck>
- * <ProjectWhitelist>
- *
+ * <ProjectWhitelist> <MemoryCheck> <project projectname="project1" /> <project
+ * projectname="project2" /> </MemoryCheck> <ProjectWhitelist>
  */
 public class ProjectWhitelist {
+
   public static final String XML_FILE_PARAM = "project.whitelist.xml.file";
   private static final String PROJECT_WHITELIST_TAG = "ProjectWhitelist";
   private static final String PROJECT_TAG = "project";
   private static final String PROJECTID_ATTR = "projectid";
 
-  private static AtomicReference<Map<WhitelistType, Set<Integer>>> projectsWhitelisted =
-          new AtomicReference<Map<WhitelistType, Set<Integer>>>();
+  private static final AtomicReference<Map<WhitelistType, Set<Integer>>> projectsWhitelisted =
+      new AtomicReference<>();
 
-  static void load(Props props) {
-    String xmlFile = props.getString(XML_FILE_PARAM);
+  static void load(final Props props) {
+    final String xmlFile = props.getString(XML_FILE_PARAM);
     parseXMLFile(xmlFile);
   }
 
-  private static void parseXMLFile(String xmlFile) {
-    File file = new File(xmlFile);
+  private static void parseXMLFile(final String xmlFile) {
+    final File file = new File(xmlFile);
     if (!file.exists()) {
       throw new IllegalArgumentException("Project whitelist xml file " + xmlFile
           + " doesn't exist.");
     }
 
     // Creating the document builder to parse xml.
-    DocumentBuilderFactory docBuilderFactory =
+    final DocumentBuilderFactory docBuilderFactory =
         DocumentBuilderFactory.newInstance();
     DocumentBuilder builder = null;
     try {
       builder = docBuilderFactory.newDocumentBuilder();
-    } catch (ParserConfigurationException e) {
+    } catch (final ParserConfigurationException e) {
       throw new IllegalArgumentException(
           "Exception while parsing project whitelist xml. Document builder not created.", e);
     }
@@ -73,32 +66,32 @@ public class ProjectWhitelist {
     Document doc = null;
     try {
       doc = builder.parse(file);
-    } catch (SAXException e) {
+    } catch (final SAXException e) {
       throw new IllegalArgumentException("Exception while parsing " + xmlFile
           + ". Invalid XML.", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IllegalArgumentException("Exception while parsing " + xmlFile
           + ". Error reading file.", e);
     }
 
-    Map<WhitelistType, Set<Integer>> projsWhitelisted = new HashMap<WhitelistType, Set<Integer>>();
-    NodeList tagList = doc.getChildNodes();
+    final Map<WhitelistType, Set<Integer>> projsWhitelisted = new HashMap<>();
+    final NodeList tagList = doc.getChildNodes();
     if (!tagList.item(0).getNodeName().equals(PROJECT_WHITELIST_TAG)) {
-      throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELIST_TAG + "' in " + xmlFile);
+      throw new RuntimeException("Cannot find tag '" + PROJECT_WHITELIST_TAG + "' in " + xmlFile);
     }
 
-    NodeList whitelist = tagList.item(0).getChildNodes();
+    final NodeList whitelist = tagList.item(0).getChildNodes();
     for (int n = 0; n < whitelist.getLength(); ++n) {
       if (whitelist.item(n).getNodeType() != Node.ELEMENT_NODE) {
         continue;
       }
 
-      String whitelistType = whitelist.item(n).getNodeName();
-      Set<Integer> projs = new HashSet<Integer>();
+      final String whitelistType = whitelist.item(n).getNodeName();
+      final Set<Integer> projs = new HashSet<>();
 
-      NodeList projectsList = whitelist.item(n).getChildNodes();
+      final NodeList projectsList = whitelist.item(n).getChildNodes();
       for (int i = 0; i < projectsList.getLength(); ++i) {
-        Node node = projectsList.item(i);
+        final Node node = projectsList.item(i);
         if (node.getNodeType() == Node.ELEMENT_NODE) {
           if (node.getNodeName().equals(PROJECT_TAG)) {
             parseProjectTag(node, projs);
@@ -110,22 +103,22 @@ public class ProjectWhitelist {
     projectsWhitelisted.set(projsWhitelisted);
   }
 
-  private static void parseProjectTag(Node node, Set<Integer> projects) {
-    NamedNodeMap projectAttrMap = node.getAttributes();
-    Node projectIdAttr = projectAttrMap.getNamedItem(PROJECTID_ATTR);
+  private static void parseProjectTag(final Node node, final Set<Integer> projects) {
+    final NamedNodeMap projectAttrMap = node.getAttributes();
+    final Node projectIdAttr = projectAttrMap.getNamedItem(PROJECTID_ATTR);
     if (projectIdAttr == null) {
       throw new RuntimeException("Error loading project. The '" + PROJECTID_ATTR
-              + "' attribute doesn't exist");
+          + "' attribute doesn't exist");
     }
 
-    String projectId = projectIdAttr.getNodeValue();
+    final String projectId = projectIdAttr.getNodeValue();
     projects.add(Integer.parseInt(projectId));
   }
 
-  public static boolean isProjectWhitelisted(int project, WhitelistType whitelistType) {
-    Map<WhitelistType, Set<Integer>> projsWhitelisted = projectsWhitelisted.get();
+  public static boolean isProjectWhitelisted(final int project, final WhitelistType whitelistType) {
+    final Map<WhitelistType, Set<Integer>> projsWhitelisted = projectsWhitelisted.get();
     if (projsWhitelisted != null) {
-      Set<Integer> projs = projsWhitelisted.get(whitelistType);
+      final Set<Integer> projs = projsWhitelisted.get(whitelistType);
       if (projs != null) {
         return projs.contains(project);
       }
@@ -134,8 +127,7 @@ public class ProjectWhitelist {
   }
 
   /**
-   * The tag in the project whitelist xml config file should be same as
-   * the defined enums.
+   * The tag in the project whitelist xml config file should be same as the defined enums.
    */
   public static enum WhitelistType {
     MemoryCheck,

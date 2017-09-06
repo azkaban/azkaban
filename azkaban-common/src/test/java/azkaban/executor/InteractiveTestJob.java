@@ -16,54 +16,112 @@
 
 package azkaban.executor;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.log4j.Logger;
+import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
+import static org.junit.Assert.assertNotNull;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.log4j.Logger;
 
 public class InteractiveTestJob extends AbstractProcessJob {
-  private static ConcurrentHashMap<String, InteractiveTestJob> testJobs =
-      new ConcurrentHashMap<String, InteractiveTestJob>();
+
+  private static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
+      new ConcurrentHashMap<>();
+  private static volatile boolean quickSuccess = false;
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
   private boolean succeed = true;
 
-  public static InteractiveTestJob getTestJob(String name) {
-    return testJobs.get(name);
+  public InteractiveTestJob(final String jobId, final Props sysProps, final Props jobProps,
+      final Logger log) {
+    super(jobId, sysProps, jobProps, log);
+  }
+
+  public static InteractiveTestJob getTestJob(final String name) {
+    for (int i = 0; i < 1000; i++) {
+      if (testJobs.containsKey(name)) {
+        return testJobs.get(name);
+      }
+      synchronized (testJobs) {
+        try {
+          InteractiveTestJob.testJobs.wait(10L);
+        } catch (final InterruptedException e) {
+          i--;
+        }
+      }
+    }
+    throw new IllegalStateException(name + " wasn't added in testJobs map");
+  }
+
+  public static Collection<String> getTestJobNames() {
+    return testJobs.keySet();
   }
 
   public static void clearTestJobs() {
     testJobs.clear();
   }
 
-  public InteractiveTestJob(String jobId, Props sysProps, Props jobProps,
-      Logger log) {
-    super(jobId, sysProps, jobProps, log);
+  public static void clearTestJobs(final String... names) {
+    for (final String name : names) {
+      assertNotNull(testJobs.remove(name));
+    }
+  }
+
+  public static void setQuickSuccess(final boolean quickSuccess) {
+    InteractiveTestJob.quickSuccess = quickSuccess;
+  }
+
+  public static void resetQuickSuccess() {
+    InteractiveTestJob.quickSuccess = false;
   }
 
   @Override
   public void run() throws Exception {
-    String nestedFlowPath =
+    final String nestedFlowPath =
         this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
-    String groupName = this.getJobProps().getString("group", null);
+    final String groupName = this.getJobProps().getString("group", null);
     String id = nestedFlowPath == null ? this.getId() : nestedFlowPath;
     if (groupName != null) {
       id = groupName + ":" + id;
     }
     testJobs.put(id, this);
+    synchronized (testJobs) {
+      testJobs.notifyAll();
+    }
+    if (quickSuccess) {
+      return;
+    }
 
-    while (isWaiting) {
+    if (this.jobProps.getBoolean("fail", false)) {
+      final int passRetry = this.jobProps.getInt("passRetry", -1);
+      if (passRetry > 0 && passRetry < this.jobProps.getInt(JOB_ATTEMPT)) {
+        succeedJob();
+      } else {
+        failJob();
+      }
+    }
+    if (!this.succeed) {
+      throw new RuntimeException("Forced failure of " + getId());
+    }
+
+    while (this.isWaiting) {
       synchronized (this) {
-        try {
-          wait(30000);
-        } catch (InterruptedException e) {
+        final int waitMillis = this.jobProps.getInt("seconds", 5) * 1000;
+        if (waitMillis > 0) {
+          try {
+            wait(waitMillis);
+          } catch (final InterruptedException e) {
+          }
+        }
+        if (this.jobProps.containsKey("fail")) {
+          succeedJob();
         }
 
-        if (!isWaiting) {
-          if (!succeed) {
+        if (!this.isWaiting) {
+          if (!this.succeed) {
             throw new RuntimeException("Forced failure of " + getId());
           } else {
             info("Job " + getId() + " succeeded.");
@@ -75,32 +133,32 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
   public void failJob() {
     synchronized (this) {
-      succeed = false;
-      isWaiting = false;
+      this.succeed = false;
+      this.isWaiting = false;
       this.notify();
     }
   }
 
   public void succeedJob() {
     synchronized (this) {
-      succeed = true;
-      isWaiting = false;
+      this.succeed = true;
+      this.isWaiting = false;
       this.notify();
     }
   }
 
-  public void succeedJob(Props generatedProperties) {
+  public void succeedJob(final Props generatedProperties) {
     synchronized (this) {
       this.generatedProperties = generatedProperties;
-      succeed = true;
-      isWaiting = false;
+      this.succeed = true;
+      this.isWaiting = false;
       this.notify();
     }
   }
 
   @Override
   public Props getJobGeneratedProperties() {
-    return generatedProperties;
+    return this.generatedProperties;
   }
 
   @Override

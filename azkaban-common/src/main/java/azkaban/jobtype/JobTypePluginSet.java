@@ -15,25 +15,25 @@
  */
 package azkaban.jobtype;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.jobExecutor.Job;
 import azkaban.utils.Props;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Container for job type plugins
  *
- * This contains the jobClass objects, the properties for loading plugins, and
- * the properties given by default to the plugin.
+ * This contains the jobClass objects, the properties for loading plugins, and the properties given
+ * by default to the plugin.
  *
- * This class is not thread safe, so adding to this class should only be
- * populated and controlled by the JobTypeManager
+ * This class is not thread safe, so adding to this class should only be populated and controlled by
+ * the JobTypeManager
  */
 public class JobTypePluginSet {
-  private Map<String, Class<? extends Job>> jobToClass;
-  private Map<String, Props> pluginJobPropsMap;
-  private Map<String, Props> pluginLoadPropsMap;
+
+  private final Map<String, Class<? extends Job>> jobToClass;
+  private final Map<String, Props> pluginJobPropsMap;
+  private final Map<String, Props> pluginLoadPropsMap;
 
   private Props commonJobProps;
   private Props commonLoadProps;
@@ -42,110 +42,90 @@ public class JobTypePluginSet {
    * Base constructor
    */
   public JobTypePluginSet() {
-    jobToClass = new HashMap<String, Class<? extends Job>>();
-    pluginJobPropsMap = new HashMap<String, Props>();
-    pluginLoadPropsMap = new HashMap<String, Props>();
+    this.jobToClass = new HashMap<>();
+    this.pluginJobPropsMap = new HashMap<>();
+    this.pluginLoadPropsMap = new HashMap<>();
   }
 
   /**
    * Copy constructor
-   *
-   * @param clone
    */
-  public JobTypePluginSet(JobTypePluginSet clone) {
-    jobToClass = new HashMap<String, Class<? extends Job>>(clone.jobToClass);
-    pluginJobPropsMap = new HashMap<String, Props>(clone.pluginJobPropsMap);
-    pluginLoadPropsMap = new HashMap<String, Props>(clone.pluginLoadPropsMap);
-    commonJobProps = clone.commonJobProps;
-    commonLoadProps = clone.commonLoadProps;
-  }
-
-  /**
-   * Sets the common properties shared in every jobtype
-   *
-   * @param commonJobProps
-   */
-  public void setCommonPluginJobProps(Props commonJobProps) {
-    this.commonJobProps = commonJobProps;
-  }
-
-  /**
-   * Sets the common properties used to load every plugin
-   *
-   * @param commonLoadProps
-   */
-  public void setCommonPluginLoadProps(Props commonLoadProps) {
-    this.commonLoadProps = commonLoadProps;
+  public JobTypePluginSet(final JobTypePluginSet clone) {
+    this.jobToClass = new HashMap<>(clone.jobToClass);
+    this.pluginJobPropsMap = new HashMap<>(clone.pluginJobPropsMap);
+    this.pluginLoadPropsMap = new HashMap<>(clone.pluginLoadPropsMap);
+    this.commonJobProps = clone.commonJobProps;
+    this.commonLoadProps = clone.commonLoadProps;
   }
 
   /**
    * Gets common properties for every jobtype
-   *
-   * @return
    */
   public Props getCommonPluginJobProps() {
-    return commonJobProps;
+    return this.commonJobProps;
+  }
+
+  /**
+   * Sets the common properties shared in every jobtype
+   */
+  public void setCommonPluginJobProps(final Props commonJobProps) {
+    this.commonJobProps = commonJobProps;
   }
 
   /**
    * Gets the common properties used to load a plugin
-   *
-   * @return
    */
   public Props getCommonPluginLoadProps() {
-    return commonLoadProps;
+    return this.commonLoadProps;
+  }
+
+  /**
+   * Sets the common properties used to load every plugin
+   */
+  public void setCommonPluginLoadProps(final Props commonLoadProps) {
+    this.commonLoadProps = commonLoadProps;
   }
 
   /**
    * Get the properties for a jobtype used to setup and load a plugin
-   *
-   * @param jobTypeName
-   * @return
    */
-  public Props getPluginLoaderProps(String jobTypeName) {
-    return pluginLoadPropsMap.get(jobTypeName);
+  public Props getPluginLoaderProps(final String jobTypeName) {
+    return this.pluginLoadPropsMap.get(jobTypeName);
   }
 
   /**
-   * Get the properties that will be given to the plugin as default job
-   * properties.
-   *
-   * @param jobTypeName
-   * @return
+   * Get the properties that will be given to the plugin as default job properties.
    */
-  public Props getPluginJobProps(String jobTypeName) {
-    return pluginJobPropsMap.get(jobTypeName);
+  public Props getPluginJobProps(final String jobTypeName) {
+    return this.pluginJobPropsMap.get(jobTypeName);
   }
 
   /**
    * Gets the plugin job runner class
-   *
-   * @param jobTypeName
-   * @return
    */
-  public Class<? extends Job> getPluginClass(String jobTypeName) {
-    return jobToClass.get(jobTypeName);
+  public Class<? extends Job> getPluginClass(final String jobTypeName) {
+    return this.jobToClass.get(jobTypeName);
   }
 
   /**
    * Adds plugin jobtype class
    */
-  public void addPluginClass(String jobTypeName,
-      Class<? extends Job> jobTypeClass) {
-    jobToClass.put(jobTypeName, jobTypeClass);
+  public void addPluginClass(final String jobTypeName,
+      final Class<? extends Job> jobTypeClass) {
+    this.jobToClass.put(jobTypeName, jobTypeClass);
   }
 
   /**
    * Adds plugin job properties used as default runtime properties
    */
-  public void addPluginJobProps(String jobTypeName, Props props) {
-    pluginJobPropsMap.put(jobTypeName, props);
+  public void addPluginJobProps(final String jobTypeName, final Props props) {
+    this.pluginJobPropsMap.put(jobTypeName, props);
   }
 
   /**
    * Adds plugin load properties used to load the plugin
    */
-  public void addPluginLoadProps(String jobTypeName, Props props) {
-    pluginLoadPropsMap.put(jobTypeName, props);
+  public void addPluginLoadProps(final String jobTypeName, final Props props) {
+    this.pluginLoadPropsMap.put(jobTypeName, props);
   }
 }

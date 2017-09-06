@@ -16,13 +16,13 @@
 
 package azkaban.flow;
 
+import azkaban.utils.Utils;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
 
-import azkaban.utils.Utils;
-
 public class Node {
+
   private final String id;
   private String jobSource;
   private String propsSource;
@@ -34,108 +34,41 @@ public class Node {
 
   private String embeddedFlowId;
 
-  public Node(String id) {
+  public Node(final String id) {
     this.id = id;
   }
 
   /**
    * Clones nodes
-   *
-   * @param node
    */
-  public Node(Node clone) {
+  public Node(final Node clone) {
     this.id = clone.id;
     this.propsSource = clone.propsSource;
     this.jobSource = clone.jobSource;
   }
 
-  public String getId() {
-    return id;
-  }
+  public static Node fromObject(final Object obj) {
+    final Map<String, Object> mapObj = (Map<String, Object>) obj;
+    final String id = (String) mapObj.get("id");
 
-  public String getType() {
-    return type;
-  }
+    final Node node = new Node(id);
+    final String jobSource = (String) mapObj.get("jobSource");
+    final String propSource = (String) mapObj.get("propSource");
+    final String jobType = (String) mapObj.get("jobType");
 
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public Point2D getPosition() {
-    return position;
-  }
-
-  public void setPosition(Point2D position) {
-    this.position = position;
-  }
-
-  public void setPosition(double x, double y) {
-    this.position = new Point2D.Double(x, y);
-  }
-
-  public int getLevel() {
-    return level;
-  }
-
-  public void setLevel(int level) {
-    this.level = level;
-  }
-
-  public String getJobSource() {
-    return jobSource;
-  }
-
-  public void setJobSource(String jobSource) {
-    this.jobSource = jobSource;
-  }
-
-  public String getPropsSource() {
-    return propsSource;
-  }
-
-  public void setPropsSource(String propsSource) {
-    this.propsSource = propsSource;
-  }
-
-  public void setExpectedRuntimeSec(int runtimeSec) {
-    expectedRunTimeSec = runtimeSec;
-  }
-
-  public int getExpectedRuntimeSec() {
-    return expectedRunTimeSec;
-  }
-
-  public void setEmbeddedFlowId(String flowId) {
-    embeddedFlowId = flowId;
-  }
-
-  public String getEmbeddedFlowId() {
-    return embeddedFlowId;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static Node fromObject(Object obj) {
-    Map<String, Object> mapObj = (Map<String, Object>) obj;
-    String id = (String) mapObj.get("id");
-
-    Node node = new Node(id);
-    String jobSource = (String) mapObj.get("jobSource");
-    String propSource = (String) mapObj.get("propSource");
-    String jobType = (String) mapObj.get("jobType");
-
-    String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
+    final String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
 
     node.setJobSource(jobSource);
     node.setPropsSource(propSource);
     node.setType(jobType);
     node.setEmbeddedFlowId(embeddedFlowId);
 
-    Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
+    final Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
     if (expectedRuntime != null) {
       node.setExpectedRuntimeSec(expectedRuntime);
     }
 
-    Map<String, Object> layoutInfo = (Map<String, Object>) mapObj.get("layout");
+    final Map<String, Object> layoutInfo = (Map<String, Object>) mapObj.get("layout");
     if (layoutInfo != null) {
       Double x = null;
       Double y = null;
@@ -145,7 +78,7 @@ public class Node {
         x = Utils.convertToDouble(layoutInfo.get("x"));
         y = Utils.convertToDouble(layoutInfo.get("y"));
         level = (Integer) layoutInfo.get("level");
-      } catch (ClassCastException e) {
+      } catch (final ClassCastException e) {
         throw new RuntimeException("Error creating node " + id, e);
       }
 
@@ -160,23 +93,87 @@ public class Node {
     return node;
   }
 
-  public Object toObject() {
-    HashMap<String, Object> objMap = new HashMap<String, Object>();
-    objMap.put("id", id);
-    objMap.put("jobSource", jobSource);
-    objMap.put("propSource", propsSource);
-    objMap.put("jobType", type);
-    if (embeddedFlowId != null) {
-      objMap.put("embeddedFlowId", embeddedFlowId);
-    }
-    objMap.put("expectedRuntime", expectedRunTimeSec);
+  public String getId() {
+    return this.id;
+  }
 
-    HashMap<String, Object> layoutInfo = new HashMap<String, Object>();
-    if (position != null) {
-      layoutInfo.put("x", position.getX());
-      layoutInfo.put("y", position.getY());
+  public String getType() {
+    return this.type;
+  }
+
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  public Point2D getPosition() {
+    return this.position;
+  }
+
+  public void setPosition(final Point2D position) {
+    this.position = position;
+  }
+
+  public void setPosition(final double x, final double y) {
+    this.position = new Point2D.Double(x, y);
+  }
+
+  public int getLevel() {
+    return this.level;
+  }
+
+  public void setLevel(final int level) {
+    this.level = level;
+  }
+
+  public String getJobSource() {
+    return this.jobSource;
+  }
+
+  public void setJobSource(final String jobSource) {
+    this.jobSource = jobSource;
+  }
+
+  public String getPropsSource() {
+    return this.propsSource;
+  }
+
+  public void setPropsSource(final String propsSource) {
+    this.propsSource = propsSource;
+  }
+
+  public int getExpectedRuntimeSec() {
+    return this.expectedRunTimeSec;
+  }
+
+  public void setExpectedRuntimeSec(final int runtimeSec) {
+    this.expectedRunTimeSec = runtimeSec;
+  }
+
+  public String getEmbeddedFlowId() {
+    return this.embeddedFlowId;
+  }
+
+  public void setEmbeddedFlowId(final String flowId) {
+    this.embeddedFlowId = flowId;
+  }
+
+  public Object toObject() {
+    final HashMap<String, Object> objMap = new HashMap<>();
+    objMap.put("id", this.id);
+    objMap.put("jobSource", this.jobSource);
+    objMap.put("propSource", this.propsSource);
+    objMap.put("jobType", this.type);
+    if (this.embeddedFlowId != null) {
+      objMap.put("embeddedFlowId", this.embeddedFlowId);
     }
-    layoutInfo.put("level", level);
+    objMap.put("expectedRuntime", this.expectedRunTimeSec);
+
+    final HashMap<String, Object> layoutInfo = new HashMap<>();
+    if (this.position != null) {
+      layoutInfo.put("x", this.position.getX());
+      layoutInfo.put("y", this.position.getY());
+    }
+    layoutInfo.put("level", this.level);
     objMap.put("layout", layoutInfo);
 
     return objMap;

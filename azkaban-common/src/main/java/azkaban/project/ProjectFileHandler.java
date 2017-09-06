@@ -19,96 +19,88 @@ package azkaban.project;
 import java.io.File;
 
 public class ProjectFileHandler {
+
   private final int projectId;
   private final int version;
   private final long uploadTime;
-  private String fileType;
-  private String fileName;
-  private String uploader;
-  private byte[] md5Hash;
-  private int numChunks;
+  private final String fileType;
+  private final String fileName;
+  private final String uploader;
+  private final byte[] md5Hash;
+  private final int numChunks;
+  private final String resourceId;
+
   private File localFile = null;
 
-  public ProjectFileHandler(int projectId, int version, long uploadTime,
-      String uploader, String fileType, String fileName, int numChunks,
-      byte[] md5Hash) {
+  public ProjectFileHandler(
+      final int projectId,
+      final int version,
+      final long uploadTime,
+      final String uploader,
+      final String fileType,
+      final String fileName,
+      final int numChunks,
+      final byte[] md5Hash,
+      final String resourceId) {
     this.projectId = projectId;
     this.version = version;
     this.uploadTime = uploadTime;
-    this.setUploader(uploader);
-    this.setFileType(fileType);
-    this.setFileName(fileName);
-    this.setMd5Hash(md5Hash);
-    this.setNumChunks(numChunks);
+    this.uploader = uploader;
+    this.fileType = fileType;
+    this.fileName = fileName;
+    this.md5Hash = md5Hash;
+    this.numChunks = numChunks;
+    this.resourceId = resourceId;
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
   public int getVersion() {
-    return version;
+    return this.version;
   }
 
   public long getUploadTime() {
-    return uploadTime;
+    return this.uploadTime;
   }
 
   public String getFileType() {
-    return fileType;
-  }
-
-  public void setFileType(String fileType) {
-    this.fileType = fileType;
+    return this.fileType;
   }
 
   public String getFileName() {
-    return fileName;
-  }
-
-  public void setFileName(String fileName) {
-    this.fileName = fileName;
+    return this.fileName;
   }
 
   public byte[] getMd5Hash() {
-    return md5Hash;
-  }
-
-  public void setMd5Hash(byte[] md5Hash) {
-    this.md5Hash = md5Hash;
+    return this.md5Hash;
   }
 
   public File getLocalFile() {
-    return localFile;
+    return this.localFile;
   }
 
-  public synchronized void setLocalFile(File localFile) {
+  public synchronized void setLocalFile(final File localFile) {
     this.localFile = localFile;
   }
 
   public synchronized void deleteLocalFile() {
-    if (localFile == null) {
-      return;
-    } else {
-      localFile.delete();
-      localFile = null;
+    if (this.localFile != null) {
+      this.localFile.delete();
+      this.localFile = null;
     }
   }
 
   public String getUploader() {
-    return uploader;
-  }
-
-  public void setUploader(String uploader) {
-    this.uploader = uploader;
+    return this.uploader;
   }
 
   public int getNumChunks() {
-    return numChunks;
+    return this.numChunks;
   }
 
-  public void setNumChunks(int numChunks) {
-    this.numChunks = numChunks;
+  public String getResourceId() {
+    return this.resourceId;
   }
-
 }

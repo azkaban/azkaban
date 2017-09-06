@@ -11,25 +11,27 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.jar.JarFile;
+import sun.net.www.protocol.jar.JarURLConnection;
 
 /**
- * Workaround for jdk 6 disgrace with open jar files & native libs,
- * which is a reason of unrefreshable classloader.
+ * Workaround for jdk 6 disgrace with open jar files & native libs, which is a reason of
+ * unrefreshable classloader.
  */
 public class ValidatorClassLoader extends URLClassLoader {
 
-  protected HashSet<String> setJarFileNames2Close = new HashSet<String>();
+  protected HashSet<String> setJarFileNames2Close = new HashSet<>();
 
-  public ValidatorClassLoader(URL[] urls, ClassLoader parent) {
+  public ValidatorClassLoader(final URL[] urls, final ClassLoader parent) {
     super(urls, parent);
   }
 
-  public ValidatorClassLoader(URL[] urls) {
+  public ValidatorClassLoader(final URL[] urls) {
     super(urls);
   }
 
+  @Override
   public void close() throws ValidatorManagerException {
-    setJarFileNames2Close.clear();
+    this.setJarFileNames2Close.clear();
     closeClassLoader(this);
     finalizeNativeLibs(this);
     cleanupJarFileFactory();
@@ -38,38 +40,29 @@ public class ValidatorClassLoader extends URLClassLoader {
   /**
    * cleanup jar file factory cache
    */
-  @SuppressWarnings({ "nls", "rawtypes" })
   public boolean cleanupJarFileFactory() throws ValidatorManagerException {
     boolean res = false;
-    Class classJarURLConnection = null;
-    try {
-      classJarURLConnection = Class.forName("sun.net.www.protocol.jar.JarURLConnection");
-    } catch (ClassNotFoundException e) {
-      throw new ValidatorManagerException(e);
-    }
-    if (classJarURLConnection == null) {
-      return res;
-    }
-    Field f = null;
+    final Class classJarURLConnection = JarURLConnection.class;
+    Field f;
     try {
       f = classJarURLConnection.getDeclaredField("factory");
-    } catch (NoSuchFieldException e) {
+    } catch (final NoSuchFieldException e) {
       throw new ValidatorManagerException(e);
     }
     if (f == null) {
-      return res;
+      return false;
     }
     f.setAccessible(true);
-    Object obj = null;
+    Object obj;
     try {
       obj = f.get(null);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     if (obj == null) {
-      return res;
+      return false;
     }
-    Class classJarFileFactory = obj.getClass();
+    final Class classJarFileFactory = obj.getClass();
 
     HashMap fileCache = null;
     try {
@@ -79,9 +72,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       if (obj instanceof HashMap) {
         fileCache = (HashMap) obj;
       }
-    } catch (NoSuchFieldException e) {
-      throw new ValidatorManagerException(e);
-    } catch (IllegalAccessException e) {
+    } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     HashMap urlCache = null;
@@ -92,24 +83,22 @@ public class ValidatorClassLoader extends URLClassLoader {
       if (obj instanceof HashMap) {
         urlCache = (HashMap) obj;
       }
-    } catch (NoSuchFieldException e) {
-      throw new ValidatorManagerException(e);
-    } catch (IllegalAccessException e) {
+    } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     if (urlCache != null) {
-      HashMap urlCacheTmp = (HashMap) urlCache.clone();
-      Iterator it = urlCacheTmp.keySet().iterator();
+      final HashMap urlCacheTmp = (HashMap) urlCache.clone();
+      final Iterator it = urlCacheTmp.keySet().iterator();
       while (it.hasNext()) {
         obj = it.next();
         if (!(obj instanceof JarFile)) {
           continue;
         }
-        JarFile jarFile = (JarFile) obj;
-        if (setJarFileNames2Close.contains(jarFile.getName())) {
+        final JarFile jarFile = (JarFile) obj;
+        if (this.setJarFileNames2Close.contains(jarFile.getName())) {
           try {
             jarFile.close();
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new ValidatorManagerException(e);
           }
           if (fileCache != null) {
@@ -120,19 +109,19 @@ public class ValidatorClassLoader extends URLClassLoader {
       }
       res = true;
     } else if (fileCache != null) {
-      HashMap fileCacheTmp = (HashMap) fileCache.clone();
-      Iterator it = fileCacheTmp.keySet().iterator();
+      final HashMap fileCacheTmp = (HashMap) fileCache.clone();
+      final Iterator it = fileCacheTmp.keySet().iterator();
       while (it.hasNext()) {
-        Object key = it.next();
+        final Object key = it.next();
         obj = fileCache.get(key);
         if (!(obj instanceof JarFile)) {
           continue;
         }
-        JarFile jarFile = (JarFile) obj;
-        if (setJarFileNames2Close.contains(jarFile.getName())) {
+        final JarFile jarFile = (JarFile) obj;
+        if (this.setJarFileNames2Close.contains(jarFile.getName())) {
           try {
             jarFile.close();
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new ValidatorManagerException(e);
           }
           fileCache.remove(key);
@@ -140,26 +129,23 @@ public class ValidatorClassLoader extends URLClassLoader {
       }
       res = true;
     }
-    setJarFileNames2Close.clear();
+    this.setJarFileNames2Close.clear();
     return res;
   }
 
   /**
    * close jar files of cl
-   * @param cl
-   * @return
    */
-  @SuppressWarnings({ "nls", "rawtypes" })
-  public boolean closeClassLoader(ClassLoader cl) throws ValidatorManagerException {
+  public boolean closeClassLoader(final ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
     if (cl == null) {
       return res;
     }
-    Class classURLClassLoader = URLClassLoader.class;
+    final Class classURLClassLoader = URLClassLoader.class;
     Field f = null;
     try {
       f = classURLClassLoader.getDeclaredField("ucp");
-    } catch (NoSuchFieldException e) {
+    } catch (final NoSuchFieldException e) {
       throw new ValidatorManagerException(e);
     }
     if (f != null) {
@@ -167,7 +153,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       Object obj = null;
       try {
         obj = f.get(cl);
-      } catch (IllegalAccessException e) {
+      } catch (final IllegalAccessException e) {
         throw new ValidatorManagerException(e);
       }
       if (obj != null) {
@@ -175,7 +161,7 @@ public class ValidatorClassLoader extends URLClassLoader {
         f = null;
         try {
           f = ucp.getClass().getDeclaredField("loaders");
-        } catch (NoSuchFieldException e) {
+        } catch (final NoSuchFieldException e) {
           throw new ValidatorManagerException(e);
         }
         if (f != null) {
@@ -184,7 +170,7 @@ public class ValidatorClassLoader extends URLClassLoader {
           try {
             loaders = (ArrayList) f.get(ucp);
             res = true;
-          } catch (IllegalAccessException e) {
+          } catch (final IllegalAccessException e) {
             throw new ValidatorManagerException(e);
           }
           for (int i = 0; loaders != null && i < loaders.size(); i++) {
@@ -192,22 +178,22 @@ public class ValidatorClassLoader extends URLClassLoader {
             f = null;
             try {
               f = obj.getClass().getDeclaredField("jar");
-            } catch (NoSuchFieldException e) {
+            } catch (final NoSuchFieldException e) {
               throw new ValidatorManagerException(e);
             }
             if (f != null) {
               f.setAccessible(true);
               try {
                 obj = f.get(obj);
-              } catch (IllegalAccessException e) {
+              } catch (final IllegalAccessException e) {
                 throw new ValidatorManagerException(e);
               }
               if (obj instanceof JarFile) {
                 final JarFile jarFile = (JarFile) obj;
-                setJarFileNames2Close.add(jarFile.getName());
+                this.setJarFileNames2Close.add(jarFile.getName());
                 try {
                   jarFile.close();
-                } catch (IOException e) {
+                } catch (final IOException e) {
                   throw new ValidatorManagerException(e);
                 }
               }
@@ -221,17 +207,14 @@ public class ValidatorClassLoader extends URLClassLoader {
 
   /**
    * finalize native libraries
-   * @param cl
-   * @return
    */
-  @SuppressWarnings({ "nls", "rawtypes" })
-  public boolean finalizeNativeLibs(ClassLoader cl) throws ValidatorManagerException {
+  public boolean finalizeNativeLibs(final ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
-    Class classClassLoader = ClassLoader.class;
+    final Class classClassLoader = ClassLoader.class;
     java.lang.reflect.Field nativeLibraries = null;
     try {
       nativeLibraries = classClassLoader.getDeclaredField("nativeLibraries");
-    } catch (NoSuchFieldException e) {
+    } catch (final NoSuchFieldException e) {
       throw new ValidatorManagerException(e);
     }
     if (nativeLibraries == null) {
@@ -241,28 +224,28 @@ public class ValidatorClassLoader extends URLClassLoader {
     Object obj = null;
     try {
       obj = nativeLibraries.get(cl);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     if (!(obj instanceof Vector)) {
       return res;
     }
     res = true;
-    Vector java_lang_ClassLoader_NativeLibrary = (Vector) obj;
-    for (Object lib : java_lang_ClassLoader_NativeLibrary) {
+    final Vector java_lang_ClassLoader_NativeLibrary = (Vector) obj;
+    for (final Object lib : java_lang_ClassLoader_NativeLibrary) {
       java.lang.reflect.Method finalize = null;
       try {
         finalize = lib.getClass().getDeclaredMethod("finalize", new Class[0]);
-      } catch (NoSuchMethodException e) {
+      } catch (final NoSuchMethodException e) {
         throw new ValidatorManagerException(e);
       }
       if (finalize != null) {
         finalize.setAccessible(true);
         try {
           finalize.invoke(lib, new Object[0]);
-        } catch (IllegalAccessException e) {
+        } catch (final IllegalAccessException e) {
           throw new ValidatorManagerException(e);
-        } catch (InvocationTargetException e) {
+        } catch (final InvocationTargetException e) {
           throw new ValidatorManagerException(e);
         }
       }

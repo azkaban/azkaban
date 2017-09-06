@@ -16,13 +16,25 @@
 
 package azkaban.jobExecutor;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
+import azkaban.flow.CommonJobProperties;
+import azkaban.utils.Props;
 
-@RunWith(Suite.class)
-@SuiteClasses({ JavaProcessJobTest.class, ProcessJobTest.class,
-    PythonJobTest.class })
 public class AllJobExecutorTests {
 
+  public static Props setUpCommonProps() {
+
+    final Props props = new Props();
+    props.put("fullPath", ".");
+    props.put(CommonJobProperties.PROJECT_NAME, "test_project");
+    props.put(CommonJobProperties.FLOW_ID, "test_flow");
+    props.put(CommonJobProperties.JOB_ID, "test_job");
+    props.put(CommonJobProperties.EXEC_ID, "123");
+    props.put(CommonJobProperties.SUBMIT_USER, "test_user");
+
+    //The execute-as-user binary requires special permission. It's not convenient to 
+    //set up in a unit test that is self contained. So EXECUTE_AS_USER is set to false 
+    //so that we don't have to rely on the binary file to change user in the test case.
+    props.put(ProcessJob.EXECUTE_AS_USER, "false");
+    return props;
+  }
 }

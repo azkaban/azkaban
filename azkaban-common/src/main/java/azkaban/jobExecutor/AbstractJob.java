@@ -16,9 +16,8 @@
 
 package azkaban.jobExecutor;
 
-import org.apache.log4j.Logger;
-
 import azkaban.utils.Props;
+import org.apache.log4j.Logger;
 
 public abstract class AbstractJob implements Job {
 
@@ -32,70 +31,76 @@ public abstract class AbstractJob implements Job {
   private final Logger _log;
   private volatile double _progress;
 
-  protected AbstractJob(String id, Logger log) {
-    _id = id;
-    _log = log;
-    _progress = 0.0;
+  protected AbstractJob(final String id, final Logger log) {
+    this._id = id;
+    this._log = log;
+    this._progress = 0.0;
   }
 
+  @Override
   public String getId() {
-    return _id;
+    return this._id;
   }
 
+  @Override
   public double getProgress() throws Exception {
-    return _progress;
+    return this._progress;
   }
 
-  public void setProgress(double progress) {
+  public void setProgress(final double progress) {
     this._progress = progress;
   }
 
+  @Override
   public void cancel() throws Exception {
-    throw new RuntimeException("Job " + _id + " does not support cancellation!");
+    throw new RuntimeException("Job " + this._id + " does not support cancellation!");
   }
 
   public Logger getLog() {
     return this._log;
   }
 
-  public void debug(String message) {
+  public void debug(final String message) {
     this._log.debug(message);
   }
 
-  public void debug(String message, Throwable t) {
+  public void debug(final String message, final Throwable t) {
     this._log.debug(message, t);
   }
 
-  public void info(String message) {
+  public void info(final String message) {
     this._log.info(message);
   }
 
-  public void info(String message, Throwable t) {
+  public void info(final String message, final Throwable t) {
     this._log.info(message, t);
   }
 
-  public void warn(String message) {
+  public void warn(final String message) {
     this._log.warn(message);
   }
 
-  public void warn(String message, Throwable t) {
+  public void warn(final String message, final Throwable t) {
     this._log.warn(message, t);
   }
 
-  public void error(String message) {
+  public void error(final String message) {
     this._log.error(message);
   }
 
-  public void error(String message, Throwable t) {
+  public void error(final String message, final Throwable t) {
     this._log.error(message, t);
   }
 
+  @Override
   public Props getJobGeneratedProperties() {
     return new Props();
   }
 
+  @Override
   public abstract void run() throws Exception;
 
+  @Override
   public boolean isCanceled() {
     return false;
   }

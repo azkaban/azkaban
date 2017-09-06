@@ -1,0 +1,48 @@
+description = 'A test server which runs the web server and an executor in one process.'
+
+apply plugin: 'distribution'
+
+dependencies {
+    compile(project(':azkaban-web-server'))
+    compile(project(':azkaban-exec-server'))
+
+    runtime deps.h2
+}
+
+installDist.dependsOn ':azkaban-web-server:installDist'
+distTar.dependsOn ':azkaban-web-server:installDist'
+distZip.dependsOn ':azkaban-web-server:installDist'
+
+distributions {
+    main {
+        contents {
+            from('src/main/bash') {
+                into 'bin'
+                fileMode = 0755
+            }
+            from(project(':azkaban-common').files('src/main/bash')) {
+                into 'bin'
+                fileMode = 0755
+            }
+            from('src/main/resources/conf') {
+                into 'conf'
+            }
+            from('src/main/resources/commonprivate.properties') {
+                into 'plugins/jobtypes'
+            }
+            from(configurations.runtime) {
+                into 'lib'
+            }
+            from(jar) {
+                into 'lib'
+            }
+            from(project(':azkaban-db').files('src/main/sql')) {
+                into('sql')
+            }
+            // Get the files from sub-dir of distribution of another sub-project
+            from(new File(tasks.getByPath(':azkaban-web-server:installDist').destinationDir, 'web')) {
+                into 'web'
+            }
+        }
+    }
+}

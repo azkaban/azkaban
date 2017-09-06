@@ -19,58 +19,67 @@ package azkaban.executor.selector;
 import java.util.Comparator;
 import org.apache.log4j.Logger;
 
-/** wrapper class for a factor comparator .
- *@param T: the type of the objects to be compared.
+/**
+ * wrapper class for a factor comparator .
+ *
+ * @param T: the type of the objects to be compared.
  */
-public final class FactorComparator<T>{
-  private static Logger logger = Logger.getLogger(CandidateComparator.class);
+public final class FactorComparator<T> {
 
-  private String factorName;
+  private static final Logger logger = Logger.getLogger(CandidateComparator.class);
+
+  private final String factorName;
+  private final Comparator<T> comparator;
   private int weight;
-  private Comparator<T> comparator;
 
-  /** private constructor of the class. User will create the instance of the class by calling the static
-   *  method provided below.
+  /**
+   * private constructor of the class. User will create the instance of the class by calling the
+   * static method provided below.
+   *
    * @param factorName : the factor name .
    * @param weight : the weight of the comparator.
    * @param comparator : function to be provided by user on how the comparison should be made.
-   * */
-  private FactorComparator(String factorName, int weight, Comparator<T> comparator){
+   */
+  private FactorComparator(final String factorName, final int weight,
+      final Comparator<T> comparator) {
     this.factorName = factorName;
     this.weight = weight;
     this.comparator = comparator;
   }
 
-  /** static function to generate an instance of the class.
-   *  refer to the constructor for the param definitions.
-   * */
-  public static <T> FactorComparator<T> create(String factorName, int weight, Comparator<T> comparator){
+  /**
+   * static function to generate an instance of the class. refer to the constructor for the param
+   * definitions.
+   */
+  public static <T> FactorComparator<T> create(final String factorName, final int weight,
+      final Comparator<T> comparator) {
 
-    if (null == factorName || factorName.length() == 0 || weight < 0 || null == comparator){
-      logger.error("failed to create instance of FactorComparator, at least one of the input paramters are invalid");
+    if (null == factorName || factorName.length() == 0 || weight < 0 || null == comparator) {
+      logger.error(
+          "failed to create instance of FactorComparator, at least one of the input paramters are invalid");
       return null;
     }
 
-    return new FactorComparator<T>(factorName,weight,comparator);
+    return new FactorComparator<>(factorName, weight, comparator);
   }
 
   // function to return the factor name.
-  public String getFactorName(){
+  public String getFactorName() {
     return this.factorName;
   }
 
   // function to return the weight value.
-  public int getWeight(){
+  public int getWeight() {
     return this.weight;
   }
 
   // function to return the weight value.
-  public void updateWeight(int value){
+  public void updateWeight(final int value) {
     this.weight = value;
   }
 
   // the actual compare function, which will leverage the user defined function.
-  public int compare(T object1, T object2){
+  public int compare(final T object1, final T object2) {
     return this.comparator.compare(object1, object2);
   }
 }

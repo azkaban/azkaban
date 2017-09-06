@@ -16,24 +16,25 @@
 
 package azkaban.jobExecutor;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 
 public class Utils {
+
   private Utils() {
   }
 
-  public static void dumpFile(String filename, String filecontent)
-      throws IOException {
-    PrintWriter writer = new PrintWriter(new FileWriter(filename));
-    writer.print(filecontent);
-    writer.close();
+  static void dumpFile(final String filename, final String fileContent) throws IOException {
+    try (PrintWriter writer = new PrintWriter(filename, StandardCharsets.UTF_8.toString())) {
+      writer.print(fileContent);
+    }
   }
 
-  public static void removeFile(String filename) {
-    File file = new File(filename);
-    file.delete();
+  static void removeFile(final String filename) throws IOException {
+    Files.delete(Paths.get(filename));
   }
 }

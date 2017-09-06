@@ -21,48 +21,43 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.log4j.Logger;
 
 
 /**
- * Manager for access or updating metric related functionality of Azkaban
- * MetricManager is responsible all handling all action requests from statsServlet in Exec server
- * <p> Metric Manager 'has a' relationship with :-
- * <ul>
- * <li>all the metric Azkaban is tracking</li>
- * <li>all the emitters Azkaban is supposed to report metrics</li>
- * </ul></p>
+ * Manager for access or updating metric related functionality of Azkaban MetricManager is
+ * responsible all handling all action requests from statsServlet in Exec server <p> Metric Manager
+ * 'has a' relationship with :- <ul> <li>all the metric Azkaban is tracking</li> <li>all the
+ * emitters Azkaban is supposed to report metrics</li> </ul></p>
  */
 public class MetricReportManager {
+
   /**
    * Maximum number of metrics reporting threads
    */
   private static final int MAX_EMITTER_THREADS = 4;
   private static final Logger logger = Logger.getLogger(MetricReportManager.class);
-
-  /**
-   * List of all the metrics that Azkaban is tracking
-   * Manager is not concerned with type of metric as long as it honors IMetric contracts
-   */
-  private List<IMetric<?>> metrics;
-
-  /**
-   * List of all the emitter listening all the metrics
-   * Manager is not concerned with how emitter is reporting value.
-   * Manager is only responsible to notify all emitters whenever an IMetric wants to be notified
-   */
-  private List<IMetricEmitter> metricEmitters;
-  private ExecutorService executorService;
   // Singleton variable
   private static volatile MetricReportManager instance = null;
   private static volatile boolean isManagerEnabled;
+  /**
+   * List of all the metrics that Azkaban is tracking Manager is not concerned with type of metric
+   * as long as it honors IMetric contracts
+   */
+  private final List<IMetric<?>> metrics;
+  /**
+   * List of all the emitter listening all the metrics Manager is not concerned with how emitter is
+   * reporting value. Manager is only responsible to notify all emitters whenever an IMetric wants
+   * to be notified
+   */
+  private final List<IMetricEmitter> metricEmitters;
+  private final ExecutorService executorService;
 
   private MetricReportManager() {
     logger.debug("Instantiating Metric Manager");
-    executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
-    metrics = new ArrayList<IMetric<?>>();
-    metricEmitters = new LinkedList<IMetricEmitter>();
+    this.executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
+    this.metrics = new ArrayList<>();
+    this.metricEmitters = new LinkedList<>();
     enableManager();
   }
 
@@ -99,6 +94,7 @@ public class MetricReportManager {
    * each element of metrics List is responsible to call this method and report metrics
    * @param metric
    */
+  @SuppressWarnings("FutureReturnValueIgnored")
   public void reportMetric(final IMetric<?> metric) {
     if (metric != null && isAvailable()) {
       try {
@@ -107,62 +103,61 @@ public class MetricReportManager {
         synchronized (metric) {
           metricSnapshot = metric.getSnapshot();
         }
-        logger.debug(String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
+        logger.debug(String
+            .format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
         // report to all emitters
-        for (final IMetricEmitter metricEmitter : metricEmitters) {
-          executorService.submit(new Runnable() {
-            @Override
-            public void run() {
-              try {
-                metricEmitter.reportMetric(metricSnapshot);
-              } catch (Exception ex) {
-                logger.error(String.format("Failed to report %s metric due to ", metricSnapshot.getName()), ex);
-              }
+        for (final IMetricEmitter metricEmitter : this.metricEmitters) {
+          this.executorService.submit(() -> {
+            try {
+              metricEmitter.reportMetric(metricSnapshot);
+            } catch (final Exception ex) {
+              logger.error(
+                  String.format("Failed to report %s metric due to ", metricSnapshot.getName()),
+                  ex);
             }
           });
         }
-      } catch (CloneNotSupportedException ex) {
-        logger.error(String.format("Failed to take snapshot for %s metric", metric.getClass().getName()), ex);
+      } catch (final CloneNotSupportedException ex) {
+        logger.error(
+            String.format("Failed to take snapshot for %s metric", metric.getClass().getName()),
+            ex);
       }
     }
   }
 
   /**
    * Add a metric emitter to report metric
-   * @param emitter
    */
   public void addMetricEmitter(final IMetricEmitter emitter) {
-    metricEmitters.add(emitter);
+    this.metricEmitters.add(emitter);
   }
 
   /**
    * remove a metric emitter
-   * @param emitter
    */
   public void removeMetricEmitter(final IMetricEmitter emitter) {
-    metricEmitters.remove(emitter);
+    this.metricEmitters.remove(emitter);
   }
 
   /**
    * Get all the metric emitters
-   * @return
    */
   public List<IMetricEmitter> getMetricEmitters() {
-    return metricEmitters;
+    return this.metricEmitters;
   }
 
   /**
    * Add a metric to be managed by Metric Manager
-   * @param metric
    */
   public void addMetric(final IMetric<?> metric) {
     // metric null or already present
-    if(metric == null)
+    if (metric == null) {
       throw new IllegalArgumentException("Cannot add a null metric");
+    }
 
     if (getMetricFromName(metric.getName()) == null) {
       logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
-      metrics.add(metric);
+      this.metrics.add(metric);
       metric.updateMetricManager(this);
     } else {
       logger.error("Failed to add metric");
@@ -171,13 +166,14 @@ public class MetricReportManager {
 
   /**
    * Get metric object for a given metric name
+   *
    * @param name metricName
    * @return metric Object, if found. Otherwise null.
    */
   public IMetric<?> getMetricFromName(final String name) {
     IMetric<?> metric = null;
     if (name != null) {
-      for (IMetric<?> currentMetric : metrics) {
+      for (final IMetric<?> currentMetric : this.metrics) {
         if (currentMetric.getName().equals(name)) {
           metric = currentMetric;
           break;
@@ -189,10 +185,9 @@ public class MetricReportManager {
 
   /**
    * Get all the emitters
-   * @return
    */
   public List<IMetric<?>> getAllMetrics() {
-    return metrics;
+    return this.metrics;
   }
 
   public void enableManager() {
@@ -207,10 +202,10 @@ public class MetricReportManager {
     logger.info("Disabling Metric Manager");
     if (isManagerEnabled) {
       isManagerEnabled = false;
-      for (IMetricEmitter emitter : metricEmitters) {
+      for (final IMetricEmitter emitter : this.metricEmitters) {
         try {
           emitter.purgeAllData();
-        } catch (MetricException ex) {
+        } catch (final MetricException ex) {
           logger.error("Failed to purge data ", ex);
         }
       }
@@ -218,11 +213,12 @@ public class MetricReportManager {
   }
 
   /**
-   * Shutdown execution service
-   * {@inheritDoc}
+   * Shutdown execution service {@inheritDoc}
+   *
    * @see java.lang.Object#finalize()
    */
+  @Override
   protected void finalize() {
-    executorService.shutdown();
+    this.executorService.shutdown();
   }
 }

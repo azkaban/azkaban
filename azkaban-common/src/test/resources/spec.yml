@@ -1,0 +1,21 @@
+---
+version: 1.0
+# The version of the spec file.
+# This is the version of the YAML structure and not the project version.
+# This key will allow us to update the spec structure itself.
+
+preExec:
+    # Stuff to do before the execution phase, like fetching dependencies, etc
+    # fetch section can be used to fetch dependencies externally
+    # into a destination directory.
+    # The format is
+    # destination_dir:
+    #  - url1 # This can be an http url that will be fetched at runtime
+    #  - group:artifact:version # You can also mention coordinates to resource
+    fetch:
+        #  name of directory. This is created if doesn’t exist!
+        lib:
+         - http://central.maven.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17.jar
+        #  path of directory. Again, entire path is created if doesn’t exist!
+        path/to/foo:
+         - http://central.maven.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17.jar

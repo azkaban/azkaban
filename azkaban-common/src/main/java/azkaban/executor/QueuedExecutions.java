@@ -1,14 +1,12 @@
 package azkaban.executor;
 
+import azkaban.utils.Pair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-
 import org.apache.log4j.Logger;
-
-import azkaban.utils.Pair;
 
 /**
  * <pre>
@@ -17,7 +15,8 @@ import azkaban.utils.Pair;
  * </pre>
  */
 public class QueuedExecutions {
-  private static Logger logger = Logger.getLogger(QueuedExecutions.class);
+
+  private static final Logger logger = Logger.getLogger(QueuedExecutions.class);
   final long capacity;
 
   /* map to easily access queued flows */
@@ -25,40 +24,34 @@ public class QueuedExecutions {
   /* actual queue */
   final private BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queuedFlowList;
 
-  public QueuedExecutions(long capacity) {
+  public QueuedExecutions(final long capacity) {
     this.capacity = capacity;
-    queuedFlowMap =
-      new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
-    queuedFlowList =
-      new PriorityBlockingQueue<Pair<ExecutionReference, ExecutableFlow>>(10,
-        new ExecutableFlowPriorityComparator());
+    this.queuedFlowMap =
+        new ConcurrentHashMap<>();
+    this.queuedFlowList =
+        new PriorityBlockingQueue<>(10,
+            new ExecutableFlowPriorityComparator());
   }
 
   /**
-   * Wraps BoundedQueue Take method to have a corresponding update in
-   * queuedFlowMap lookup table
-   *
-   * @return
-   * @throws InterruptedException
+   * Wraps BoundedQueue Take method to have a corresponding update in queuedFlowMap lookup table
    */
   public Pair<ExecutionReference, ExecutableFlow> fetchHead()
-    throws InterruptedException {
-    Pair<ExecutionReference, ExecutableFlow> pair = queuedFlowList.take();
+      throws InterruptedException {
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.queuedFlowList.take();
     if (pair != null && pair.getFirst() != null) {
-      queuedFlowMap.remove(pair.getFirst().getExecId());
+      this.queuedFlowMap.remove(pair.getFirst().getExecId());
     }
     return pair;
   }
 
   /**
    * Helper method to have a single point of deletion in the queued flows
-   *
-   * @param executionId
    */
-  public void dequeue(int executionId) {
-    if (queuedFlowMap.containsKey(executionId)) {
-      queuedFlowList.remove(queuedFlowMap.get(executionId));
-      queuedFlowMap.remove(executionId);
+  public void dequeue(final int executionId) {
+    if (this.queuedFlowMap.containsKey(executionId)) {
+      this.queuedFlowList.remove(this.queuedFlowMap.get(executionId));
+      this.queuedFlowMap.remove(executionId);
     }
   }
 
@@ -77,20 +70,20 @@ public class QueuedExecutions {
    *           same execution Id
    * </pre>
    */
-  public void enqueue(ExecutableFlow exflow, ExecutionReference ref)
-    throws ExecutorManagerException {
+  public void enqueue(final ExecutableFlow exflow, final ExecutionReference ref)
+      throws ExecutorManagerException {
     if (hasExecution(exflow.getExecutionId())) {
-      String errMsg = "Flow already in queue " + exflow.getExecutionId();
+      final String errMsg = "Flow already in queue " + exflow.getExecutionId();
       throw new ExecutorManagerException(errMsg);
     }
 
-    Pair<ExecutionReference, ExecutableFlow> pair =
-      new Pair<ExecutionReference, ExecutableFlow>(ref, exflow);
+    final Pair<ExecutionReference, ExecutableFlow> pair =
+        new Pair<>(ref, exflow);
     try {
-      queuedFlowMap.put(exflow.getExecutionId(), pair);
-      queuedFlowList.put(pair);
-    } catch (InterruptedException e) {
-      String errMsg = "Failed to insert flow " + exflow.getExecutionId();
+      this.queuedFlowMap.put(exflow.getExecutionId(), pair);
+      this.queuedFlowList.put(pair);
+    } catch (final InterruptedException e) {
+      final String errMsg = "Failed to insert flow " + exflow.getExecutionId();
       logger.error(errMsg, e);
       throw new ExecutorManagerException(errMsg);
     }
@@ -110,91 +103,73 @@ public class QueuedExecutions {
    * </pre>
    */
   public void enqueueAll(
-    Collection<Pair<ExecutionReference, ExecutableFlow>> collection)
-    throws ExecutorManagerException {
-    for (Pair<ExecutionReference, ExecutableFlow> pair : collection) {
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection)
+      throws ExecutorManagerException {
+    for (final Pair<ExecutionReference, ExecutableFlow> pair : collection) {
       enqueue(pair.getSecond(), pair.getFirst());
     }
   }
 
   /**
    * Returns a read only collection of all the queued (flows, reference) pairs
-   *
-   * @return
    */
   public Collection<Pair<ExecutionReference, ExecutableFlow>> getAllEntries() {
-    return Collections.unmodifiableCollection(queuedFlowMap.values());
+    return Collections.unmodifiableCollection(this.queuedFlowMap.values());
   }
 
   /**
    * Checks if an execution is queued or not
-   *
-   * @param executionId
-   * @return
    */
-  public boolean hasExecution(int executionId) {
-    return queuedFlowMap.containsKey(executionId);
+  public boolean hasExecution(final int executionId) {
+    return this.queuedFlowMap.containsKey(executionId);
   }
 
   /**
    * Fetch flow for an execution. Returns null, if execution not in queue
-   *
-   * @param executionId
-   * @return
    */
-  public ExecutableFlow getFlow(int executionId) {
+  public ExecutableFlow getFlow(final int executionId) {
     if (hasExecution(executionId)) {
-      return queuedFlowMap.get(executionId).getSecond();
+      return this.queuedFlowMap.get(executionId).getSecond();
     }
     return null;
   }
 
   /**
-   * Fetch Activereference for an execution. Returns null, if execution not in
-   * queue
-   *
-   * @param executionId
-   * @return
+   * Fetch Activereference for an execution. Returns null, if execution not in queue
    */
-  public ExecutionReference getReference(int executionId) {
+  public ExecutionReference getReference(final int executionId) {
     if (hasExecution(executionId)) {
-      return queuedFlowMap.get(executionId).getFirst();
+      return this.queuedFlowMap.get(executionId).getFirst();
     }
     return null;
   }
 
   /**
    * Size of the queue
-   *
-   * @return
    */
   public long size() {
-    return queuedFlowList.size();
+    return this.queuedFlowList.size();
   }
 
   /**
    * Verify, if queue is full as per initialized capacity
-   *
-   * @return
    */
   public boolean isFull() {
-    return size() >= capacity;
+    return size() >= this.capacity;
   }
 
   /**
    * Verify, if queue is empty or not
-   *
-   * @return
    */
   public boolean isEmpty() {
-    return queuedFlowList.isEmpty() && queuedFlowMap.isEmpty();
+    return this.queuedFlowList.isEmpty() && this.queuedFlowMap.isEmpty();
   }
 
   /**
    * Empties queue by dequeuing all the elements
    */
   public void clear() {
-    for (Pair<ExecutionReference, ExecutableFlow> pair : queuedFlowMap.values()) {
+    for (final Pair<ExecutionReference, ExecutableFlow> pair : this.queuedFlowMap.values()) {
       dequeue(pair.getFirst().getExecId());
     }
   }

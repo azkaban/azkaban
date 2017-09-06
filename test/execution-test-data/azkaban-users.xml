@@ -1,0 +1,7 @@
+<azkaban-users>
+  <user groups="azkaban" password="testAdmin" roles="admin" username="testAdmin"/>
+  <user password="testUpload" roles="upload" username="testUpload"/>
+  <user password="testUser" username="testUser"/>
+  <role name="admin" permissions="ADMIN"/>
+  <role name="upload" permissions="UPLOADPROJECTS"/>
+</azkaban-users>

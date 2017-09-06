@@ -16,51 +16,48 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URISyntaxException;
-
-import azkaban.test.executions.TestExecutions;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-
+import java.net.URISyntaxException;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class DirectoryFlowLoaderTest {
+
   private Project project;
 
   @Before
   public void setUp() {
-    project = new Project(11, "myTestProject");
+    this.project = new Project(11, "myTestProject");
   }
 
   @Test
   public void testDirectoryLoad() throws URISyntaxException {
-    Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final Logger logger = Logger.getLogger(this.getClass());
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(project, TestExecutions.getFlowDir("exectest1"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("exectest1"));
     logger.info(loader.getFlowMap().size());
   }
 
   @Test
   public void testLoadEmbeddedFlow() throws URISyntaxException {
-    Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final Logger logger = Logger.getLogger(this.getClass());
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
   }
 
   @Test
   public void testRecursiveLoadEmbeddedFlow() throws URISyntaxException {
-    Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final Logger logger = Logger.getLogger(this.getClass());
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded_bad"));
-    for (String error : loader.getErrors()) {
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded_bad"));
+    for (final String error : loader.getErrors()) {
       System.out.println(error);
     }
 

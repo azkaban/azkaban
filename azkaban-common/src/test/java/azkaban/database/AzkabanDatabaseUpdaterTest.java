@@ -16,74 +16,22 @@
 
 package azkaban.database;
 
-import com.google.common.io.Resources;
-
-import java.io.File;
-import java.net.URL;
-import java.sql.SQLException;
-
-import javax.sql.DataSource;
-
-import org.apache.commons.dbutils.QueryRunner;
-
-import org.junit.Ignore;
-import org.junit.Test;
-
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.utils.Props;
+import com.google.common.io.Resources;
+import java.io.File;
+import java.net.URL;
+import java.sql.SQLException;
+import javax.sql.DataSource;
+import org.apache.commons.dbutils.QueryRunner;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class AzkabanDatabaseUpdaterTest {
-  @Ignore @Test
-  public void testMySQLAutoCreate() throws Exception {
-    clearMySQLTestDb();
-
-    URL resourceUrl = Resources.getResource("conf/dbtestmysql");
-    assertNotNull(resourceUrl);
-    File resource = new File(resourceUrl.toURI());
-    String confDir = resource.getParent();
-
-    System.out.println("1.***Now testing check");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
-
-    System.out.println("2.***Now testing update");
-    AzkabanDatabaseUpdater.main(new String[] { "-u", "-c", confDir });
-
-    System.out.println("3.***Now testing check again");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
-
-    System.out.println("4.***Now testing update again");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir, "-u" });
-
-    System.out.println("5.***Now testing check again");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
-  }
-
-  @Test
-  public void testH2AutoCreate() throws Exception {
-    URL resourceUrl = Resources.getResource("conf/dbtesth2");
-    assertNotNull(resourceUrl);
-    File resource = new File(resourceUrl.toURI());
-    String confDir = resource.getParent();
-
-    System.out.println("1.***Now testing check");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
-
-    System.out.println("2.***Now testing update");
-    AzkabanDatabaseUpdater.main(new String[] { "-u", "-c", confDir });
-
-    System.out.println("3.***Now testing check again");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
-
-    System.out.println("4.***Now testing update again");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir, "-u" });
-
-    System.out.println("5.***Now testing check again");
-    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
-  }
 
   private static void clearMySQLTestDb() throws SQLException {
-    Props props = new Props();
+    final Props props = new Props();
 
     props.put("database.type", "mysql");
     props.put("mysql.host", "localhost");
@@ -93,12 +41,61 @@ public class AzkabanDatabaseUpdaterTest {
     props.put("mysql.password", "");
     props.put("mysql.numconnections", 10);
 
-    DataSource datasource = DataSourceUtils.getDataSource(props);
-    QueryRunner runner = new QueryRunner(datasource);
+    final DataSource datasource = DataSourceUtils.getDataSource(props);
+    final QueryRunner runner = new QueryRunner(datasource);
     try {
       runner.update("drop database azkabanunittest");
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
     }
     runner.update("create database azkabanunittest");
+  }
+
+  @Ignore
+  @Test
+  public void testMySQLAutoCreate() throws Exception {
+    clearMySQLTestDb();
+
+    final URL resourceUrl = Resources.getResource("conf/dbtestmysql");
+    assertNotNull(resourceUrl);
+    final File resource = new File(resourceUrl.toURI());
+    final String confDir = resource.getParent();
+
+    System.out.println("1.***Now testing check");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir});
+
+    System.out.println("2.***Now testing update");
+    AzkabanDatabaseUpdater.main(new String[]{"-u", "-c", confDir});
+
+    System.out.println("3.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir});
+
+    System.out.println("4.***Now testing update again");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir, "-u"});
+
+    System.out.println("5.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir});
+  }
+
+  @Test
+  public void testH2AutoCreate() throws Exception {
+    final URL resourceUrl = Resources.getResource("conf/dbtesth2");
+    assertNotNull(resourceUrl);
+    final File resource = new File(resourceUrl.toURI());
+    final String confDir = resource.getParent();
+
+    System.out.println("1.***Now testing check");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir});
+
+    System.out.println("2.***Now testing update");
+    AzkabanDatabaseUpdater.main(new String[]{"-u", "-c", confDir});
+
+    System.out.println("3.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir});
+
+    System.out.println("4.***Now testing update again");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir, "-u"});
+
+    System.out.println("5.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[]{"-c", confDir});
   }
 }
