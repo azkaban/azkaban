@@ -127,7 +127,6 @@ public class AzkabanWebServerTest {
     executor.setActive(true);
     executorLoader.updateExecutor(executor);
 
-    assertNotNull(injector.getInstance(AzkabanWebServer.class));
     assertNotNull(injector.getInstance(ExecutionFlowDao.class));
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
@@ -148,6 +147,7 @@ public class AzkabanWebServerTest {
     assertSingleton(ExecutorEventsDao.class, injector);
     assertSingleton(ActiveExecutingFlowsDao.class, injector);
     assertSingleton(FetchActiveFlowDao.class, injector);
+    assertSingleton(AzkabanWebServer.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

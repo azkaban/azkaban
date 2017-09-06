@@ -16,10 +16,12 @@
 
 package azkaban.execapp;
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectManagerException;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +29,7 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-class FlowRunnerTestUtil {
+public class FlowRunnerTestUtil {
 
   /**
    * Initialize the project with the flow definitions stored in the given source directory. Also
@@ -41,7 +43,7 @@ class FlowRunnerTestUtil {
    * @throws ProjectManagerException the project manager exception
    * @throws IOException the io exception
    */
-  static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
+  public static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
       final Logger logger, final File workingDir)
       throws ProjectManagerException, IOException {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
@@ -60,6 +62,19 @@ class FlowRunnerTestUtil {
     FileUtils.copyDirectory(sourceDir, workingDir);
 
     return flowMap;
+  }
+
+  public static ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
+      final String flowName, final int execId) throws IOException {
+    FileUtils.copyDirectory(execDir, workingDir);
+    final File jsonFlowFile = new File(workingDir, flowName + ".flow");
+    final Object flowObj = JSONUtils.parseJSONFromFile(jsonFlowFile);
+    final Project project = new Project(1, "test");
+    final Flow flow = Flow.flowFromObject(flowObj);
+    final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+    execFlow.setExecutionId(execId);
+    execFlow.setExecutionPath(workingDir.getPath());
+    return execFlow;
   }
 
 }

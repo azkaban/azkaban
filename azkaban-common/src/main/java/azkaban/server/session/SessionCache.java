@@ -19,7 +19,7 @@ package azkaban.server.session;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
 /**

@@ -17,8 +17,8 @@ package azkaban.db;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.sql.Connection;
 import java.sql.SQLException;
 import org.apache.commons.dbutils.DbUtils;

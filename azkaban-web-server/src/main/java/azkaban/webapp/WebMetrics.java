@@ -18,8 +18,8 @@ package azkaban.webapp;
 
 import azkaban.metrics.MetricsManager;
 import com.codahale.metrics.Meter;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 
