@@ -17,8 +17,8 @@
 package azkaban.execapp;
 
 import azkaban.metrics.MetricsManager;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class ExecMetrics is in charge of collecting metrics from executors.
