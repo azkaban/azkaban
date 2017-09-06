@@ -29,56 +29,6 @@ import java.util.Set;
 
 public interface ExecutorManagerAdapter {
 
-  public static final String LOCAL_MODE = "local";
-  public static final String REMOTE_MODE = "remote";
-
-  public static final String REMOTE_EXECUTOR_MANAGER_HOST =
-      "remote.executor.manager.host";
-  public static final String REMOTE_EXECUTOR_MANAGER_PORT =
-      "remote.executor.manager.port";
-  public static final String REMOTE_EXECUTOR_MANAGER_URL = "/executormanager";
-
-  public static final String ACTION_GET_FLOW_LOG = "getFlowLog";
-  public static final String ACTION_GET_JOB_LOG = "getJobLog";
-  public static final String ACTION_CANCEL_FLOW = "cancelFlow";
-  public static final String ACTION_SUBMIT_FLOW = "submitFlow";
-  public static final String ACTION_RESUME_FLOW = "resumeFlow";
-  public static final String ACTION_PAUSE_FLOW = "pauseFlow";
-  public static final String ACTION_MODIFY_EXECUTION = "modifyExecution";
-  public static final String ACTION_UPDATE = "update";
-  public static final String ACTION_GET_JMX = "getJMX";
-
-  public static final String COMMAND_MODIFY_PAUSE_JOBS = "modifyPauseJobs";
-  public static final String COMMAND_MODIFY_RESUME_JOBS = "modifyResumeJobs";
-  public static final String COMMAND_MODIFY_RETRY_FAILURES =
-      "modifyRetryFailures";
-  public static final String COMMAND_MODIFY_RETRY_JOBS = "modifyRetryJobs";
-  public static final String COMMAND_MODIFY_DISABLE_JOBS = "modifyDisableJobs";
-  public static final String COMMAND_MODIFY_ENABLE_JOBS = "modifyEnableJobs";
-  public static final String COMMAND_MODIFY_CANCEL_JOBS = "modifyCancelJobs";
-
-  public static final String INFO_JMX_TYPE = "jmxType";
-  public static final String INFO_JMX_DATA = "jmxData";
-  public static final String INFO_ACTION = "action";
-  public static final String INFO_TYPE = "type";
-  public static final String INFO_EXEC_ID = "execId";
-  public static final String INFO_EXEC_FLOW_JSON = "execFlowJson";
-  public static final String INFO_PROJECT_ID = "projectId";
-  public static final String INFO_FLOW_NAME = "flowName";
-  public static final String INFO_JOB_NAME = "jobName";
-  public static final String INFO_OFFSET = "offset";
-  public static final String INFO_LENGTH = "length";
-  public static final String INFO_ATTEMPT = "attempt";
-  public static final String INFO_MODIFY_JOB_IDS = "modifyJobIds";
-  public static final String INFO_MODIFY_COMMAND = "modifyCommand";
-  public static final String INFO_MESSAGE = "message";
-  public static final String INFO_ERROR = "error";
-  public static final String INFO_UPDATE_TIME_LIST = "updateTimeList";
-  public static final String INFO_EXEC_ID_LIST = "execIdList";
-  public static final String INFO_UPDATES = "updates";
-  public static final String INFO_USER_ID = "userId";
-  public static final String INFO_LOG = "logData";
-
   public boolean isFlowRunning(int projectId, String flowId);
 
   public ExecutableFlow getExecutableFlow(int execId)
