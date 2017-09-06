@@ -22,7 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 // todo kunkun-tang: complete this test.
-public class DatabaseTransOperatorImplTest {
+public class DatabaseTransOperatorTest {
 
   @Before
   public void setUp() throws Exception {
