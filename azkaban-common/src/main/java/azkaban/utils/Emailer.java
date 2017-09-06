@@ -78,11 +78,11 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
-      this.clientPortNumber = Integer.toString(props.getString("mail.jetty.ssl.port", props.getInt("jetty.ssl.port",
+      this.clientPortNumber = Integer.toString(props.getInt("mail.jetty.ssl.port", props.getInt("jetty.ssl.port",
           Constants.DEFAULT_SSL_PORT_NUMBER)));
     } else {
       this.scheme = HTTP;
-      this.clientPortNumber = Integer.toString(props.getString("mail.jetty.port", Integer.toString(props.getInt("jetty.port",
+      this.clientPortNumber = Integer.toString(props.getInt("mail.jetty.port", props.getInt("jetty.port",
           Constants.DEFAULT_PORT_NUMBER)));
     }
 
