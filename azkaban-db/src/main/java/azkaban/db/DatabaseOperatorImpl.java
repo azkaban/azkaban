@@ -17,10 +17,10 @@ package azkaban.db;
 
 import static java.util.Objects.requireNonNull;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.sql.Connection;
 import java.sql.SQLException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -71,7 +71,7 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
     try {
       conn = this.queryRunner.getDataSource().getConnection();
       conn.setAutoCommit(false);
-      final DatabaseTransOperator transOperator = new DatabaseTransOperatorImpl(this.queryRunner,
+      final DatabaseTransOperator transOperator = new DatabaseTransOperator(this.queryRunner,
           conn);
       final T res = operations.execute(transOperator);
       conn.commit();
