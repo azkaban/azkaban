@@ -1,6 +1,6 @@
 package azkaban.utils;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import org.slf4j.LoggerFactory;
 
 
