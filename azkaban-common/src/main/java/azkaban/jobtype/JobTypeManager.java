@@ -20,9 +20,6 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobExecutor.NoopJob;
 import azkaban.jobExecutor.ProcessJob;
-import azkaban.jobExecutor.PythonJob;
-import azkaban.jobExecutor.RubyJob;
-import azkaban.jobExecutor.ScriptJob;
 import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -93,9 +90,6 @@ public class JobTypeManager {
     plugins.addPluginClass("command", ProcessJob.class);
     plugins.addPluginClass("javaprocess", JavaProcessJob.class);
     plugins.addPluginClass("noop", NoopJob.class);
-    plugins.addPluginClass("python", PythonJob.class);
-    plugins.addPluginClass("ruby", RubyJob.class);
-    plugins.addPluginClass("script", ScriptJob.class);
   }
 
   // load Job Types from jobtype plugin dir
