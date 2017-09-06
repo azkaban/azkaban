@@ -16,9 +16,6 @@
 
 package azkaban.executor;
 
-import java.io.IOException;
-import org.codehaus.jackson.map.ObjectMapper;
-
 /**
  * Class that exposes the statistics from the executor server. List of the statistics -
  * remainingMemoryPercent; remainingMemory; remainingFlowCapacity; numberOfAssignedFlows;
@@ -49,20 +46,6 @@ public class ExecutorInfo implements java.io.Serializable {
     this.remainingMemoryPercent = remainingMemoryPercent;
     this.lastDispatchedTime = lastDispatched;
     this.numberOfAssignedFlows = numberOfAssignedFlows;
-  }
-
-  /**
-   * Helper function to get an ExecutorInfo instance from the JSon String serialized from another
-   * object.
-   *
-   * @param jsonString the string that will be de-serialized from.
-   * @return instance of the object if the parsing is successful, null other wise.
-   */
-  public static ExecutorInfo fromJSONString(final String jsonString) throws IOException {
-    if (null == jsonString || jsonString.length() == 0) {
-      return null;
-    }
-    return new ObjectMapper().readValue(jsonString, ExecutorInfo.class);
   }
 
   public double getCpuUsage() {
@@ -143,5 +126,17 @@ public class ExecutorInfo implements java.io.Serializable {
       return result;
     }
     return false;
+  }
+
+  @Override
+  public String toString() {
+    return "ExecutorInfo{" +
+        "remainingMemoryPercent=" + this.remainingMemoryPercent +
+        ", remainingMemoryInMB=" + this.remainingMemoryInMB +
+        ", remainingFlowCapacity=" + this.remainingFlowCapacity +
+        ", numberOfAssignedFlows=" + this.numberOfAssignedFlows +
+        ", lastDispatchedTime=" + this.lastDispatchedTime +
+        ", cpuUsage=" + this.cpuUsage +
+        '}';
   }
 }
