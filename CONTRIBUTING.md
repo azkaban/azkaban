@@ -86,10 +86,11 @@ It allows us to do following when saving a file:
    second implementation, refactor the code to introduce an interface as needed. 
    The person making that change in the future will know more (two implementations) than you do now (one implementation) 
    and they will use that knowledge to make better API choices. Modern IDEs have good support for
-    such a refactoring. There is less IDE support for removing an interface.
+    such refactoring. There is less IDE support for removing an interface.
     
-  This convention only applies to the code internal to this project. It's a good use of interface
-   for public APIs which are used by the code that the project owners can't change and evolve easily.
+  This convention only applies to the code internal to this project. It's a good use of interfaces
+   for public APIs, which are used by the code that the project owners can't change and evolve 
+   easily.
 
   See [this blog post](https://rrees.me/2009/01/31/programming-to-interfaces-anti-pattern/).
 
