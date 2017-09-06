@@ -98,3 +98,8 @@ It allows us to do following when saving a file:
   It's ok to have many classes, files.
   Here is [a rule of 30 suggestion](https://dzone.com/articles/rule-30-%E2%80%93-when-method-class-or).
 
+- Use [Mockito](http://site.mockito.org/) as the mocking framework in unit tests.
+
+  It's an exception rather than the rule to create custom mocking classes.
+  
+- Use [AssertJ](http://joel-costigliola.github.io/assertj/) as the assertion library in unit tests.
