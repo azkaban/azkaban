@@ -63,7 +63,7 @@ public class ExecutorManagerTest {
   private ExecutableFlow flow1;
   private ExecutableFlow flow2;
   private AlerterHolder alertHolder;
-  private ExecutorApiClient apiClient;
+  private ExecutorApiGateway apiGateway;
 
   @Before
   public void setup() {
@@ -130,7 +130,7 @@ public class ExecutorManagerTest {
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
     return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiClient);
+        this.apiGateway);
   }
 
   /*
@@ -350,7 +350,7 @@ public class ExecutorManagerTest {
   private void testSetUpForRunningFlows()
       throws ExecutorManagerException, IOException {
     this.loader = mock(ExecutorLoader.class);
-    this.apiClient = mock(ExecutorApiClient.class);
+    this.apiGateway = mock(ExecutorApiGateway.class);
     this.user = TestUtils.getTestUser();
     this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
     //To test runningFlows, AZKABAN_QUEUEPROCESSING_ENABLED should be set to true
