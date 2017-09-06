@@ -21,6 +21,7 @@ import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
@@ -46,7 +47,6 @@ public abstract class LongArgJob extends AbstractProcessJob {
 
     this.builder =
         new AzkabanProcessBuilder(command)
-            .setEnv(getJobProps().getMapByPrefix(ENV_PREFIX))
             .setWorkingDir(getCwd()).setLogger(getLog());
     appendProps(suppressedKeys);
   }
@@ -59,6 +59,19 @@ public abstract class LongArgJob extends AbstractProcessJob {
       error("Bad property definition! " + e.getMessage());
     }
 
+    File[] propFiles = initPropsFiles();
+
+    // Set the environment variables for this job now that the
+    // properties files have been created and added there
+    Map<String, String> env = getEnvironmentVariables();
+    if (this.builder.getEnv() != null) {
+      // Merge any variables extending classes have decided to
+      // define to the ones found from the properties
+      env.putAll(this.builder.getEnv());
+    }
+
+    this.builder.setEnv(env);
+
     final long startMs = System.currentTimeMillis();
     info("Command: " + this.builder.getCommandString());
     if (this.builder.getEnv().size() > 0) {
@@ -66,7 +79,6 @@ public abstract class LongArgJob extends AbstractProcessJob {
     }
     info("Working directory: " + this.builder.getWorkingDir());
 
-    final File[] propFiles = initPropsFiles();
 
     // print out the Job properties to the job log.
     this.logJobProperties();
