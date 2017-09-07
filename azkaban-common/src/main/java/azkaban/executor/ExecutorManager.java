@@ -32,8 +32,8 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -99,6 +99,7 @@ public class ExecutorManager extends EventHandler implements
   private final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
       new ConcurrentHashMap<>();
   private final ExecutingManagerUpdaterThread executingManager;
+  private final ExecutorApiClient apiClient;
   QueuedExecutions queuedFlows;
   File cacheDir;
   private QueueProcessorThread queueProcessor;
@@ -114,11 +115,13 @@ public class ExecutorManager extends EventHandler implements
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader loader,
       final AlerterHolder alerterHolder,
-      final CommonMetrics commonMetrics) throws ExecutorManagerException {
+      final CommonMetrics commonMetrics,
+      final ExecutorApiClient apiClient) throws ExecutorManagerException {
     this.alerterHolder = alerterHolder;
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
     this.executorLoader = loader;
+    this.apiClient = apiClient;
     this.setupExecutors();
     this.loadRunningFlows();
 
@@ -1135,12 +1138,11 @@ public class ExecutorManager extends EventHandler implements
       paramList = new ArrayList<>();
     }
 
-    final ExecutorApiClient apiclient = ExecutorApiClient.getInstance();
     @SuppressWarnings("unchecked") final URI uri =
         ExecutorApiClient.buildUri(host, port, path, true,
             paramList.toArray(new Pair[0]));
 
-    return apiclient.httpGet(uri, null);
+    return this.apiClient.httpGet(uri, null);
   }
 
   /**

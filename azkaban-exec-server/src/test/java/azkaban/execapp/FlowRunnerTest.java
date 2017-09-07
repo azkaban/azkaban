@@ -29,20 +29,14 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,7 +61,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
     when(this.loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
-    this.workingDir = temporaryFolder.newFolder();
+    this.workingDir = this.temporaryFolder.newFolder();
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
@@ -111,7 +105,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    final ExecutableFlow exFlow = prepareExecDir(TEST_DIR, "exec1", 1);
+    final ExecutableFlow exFlow = FlowRunnerTestUtil
+        .prepareExecDir(this.workingDir, TEST_DIR, "exec1", 1);
 
     // Disable couple in the middle and at the end.
     exFlow.getExecutableNode("job1").setStatus(Status.DISABLED);
@@ -150,7 +145,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
+    final ExecutableFlow flow = FlowRunnerTestUtil
+        .prepareExecDir(this.workingDir, TEST_DIR, "exec2", 1);
 
     this.runner = createFlowRunner(flow, this.loader, eventCollector);
 
@@ -180,7 +176,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
+    final ExecutableFlow flow = FlowRunnerTestUtil
+        .prepareExecDir(this.workingDir, TEST_DIR, "exec2", 1);
     flow.getExecutionOptions().setFailureAction(FailureAction.CANCEL_ALL);
 
     this.runner = createFlowRunner(flow, this.loader, eventCollector);
@@ -211,7 +208,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
-    final ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec3", 1);
+    final ExecutableFlow flow = FlowRunnerTestUtil
+        .prepareExecDir(this.workingDir, TEST_DIR, "exec3", 1);
     flow.getExecutionOptions().setFailureAction(
         FailureAction.FINISH_ALL_POSSIBLE);
     this.runner = createFlowRunner(flow, this.loader, eventCollector);
@@ -300,24 +298,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     }
   }
 
-  private ExecutableFlow prepareExecDir(final File execDir, final String flowName,
-      final int execId) throws IOException {
-    FileUtils.copyDirectory(execDir, this.workingDir);
-
-    final File jsonFlowFile = new File(this.workingDir, flowName + ".flow");
-    final HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    final Project project = new Project(1, "myproject");
-    project.setVersion(2);
-
-    final Flow flow = Flow.flowFromObject(flowObj);
-    final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-    execFlow.setExecutionId(execId);
-    execFlow.setExecutionPath(this.workingDir.getPath());
-    return execFlow;
-  }
-
   private void compareFinishedRuntime(final FlowRunner runner) throws Exception {
     final ExecutableFlow flow = runner.getExecutableFlow();
     for (final String flowName : flow.getStartNodes()) {
@@ -375,7 +355,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
   private FlowRunner createFlowRunner(final ExecutorLoader loader,
       final EventCollectorListener eventCollector, final String flowName, final Props azkabanProps)
       throws Exception {
-    final ExecutableFlow exFlow = prepareExecDir(TEST_DIR, flowName, 1);
+    final ExecutableFlow exFlow = FlowRunnerTestUtil
+        .prepareExecDir(this.workingDir, TEST_DIR, flowName, 1);
 
     loader.uploadExecutableFlow(exFlow);
 
