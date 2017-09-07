@@ -109,9 +109,7 @@ class Node {
   }
 
   /**
-   * Returns true when the dependency requirement is considered satisfied.
-   *
-   * @return true if the status is either success or disabled.
+   * @return true if the dependency requirement is considered satisfied
    */
   private boolean isSuccess() {
     return Status.EFFECTIVE_SUCCESS_STATES.contains(this.status);
