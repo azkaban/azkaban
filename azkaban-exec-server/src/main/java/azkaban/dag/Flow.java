@@ -31,28 +31,17 @@ class Flow {
     this.flowProcessor = flowProcessor;
   }
 
-  public void setStatus(final Status status) {
-    this.status = status;
-  }
-
   Flow addNode(final Node node) {
     this.nodes.add(node);
     return this;
   }
 
-  /**
-   * Gets all the initial nodes that are ready to run.
-   *
-   * @return a set of nodes that are ready to run
-   */
-  private Set<Node> getInitialReadyNodes() {
-    final Set<Node> readyNodes = new HashSet<>();
-    for (final Node node : this.nodes) {
-      if (node.isReady() && !node.hasParent()) {
-        readyNodes.add(node);
-      }
+  void start() {
+    final Set<Node> readyNodes = getInitialReadyNodes();
+    for (final Node node : readyNodes) {
+      node.run();
     }
-    return readyNodes;
+    changeStatus(Status.RUNNING);
   }
 
   void kill() {
@@ -86,12 +75,19 @@ class Flow {
     this.flowProcessor.finish(this);
   }
 
-  void start() {
-    final Set<Node> readyNodes = getInitialReadyNodes();
-    for (final Node node : readyNodes) {
-      node.run();
+  /**
+   * Gets all the initial nodes that are ready to run.
+   *
+   * @return a set of nodes that are ready to run
+   */
+  private Set<Node> getInitialReadyNodes() {
+    final Set<Node> readyNodes = new HashSet<>();
+    for (final Node node : this.nodes) {
+      if (node.isReady() && !node.hasParent()) {
+        readyNodes.add(node);
+      }
     }
-    changeStatus(Status.RUNNING);
+    return readyNodes;
   }
 
   private void changeStatus(final Status status) {
