@@ -27,7 +27,7 @@ public class NodeTest {
   public void hasParent() throws Exception {
     final Node node = new Node("a");
     final Node parentNode = new Node("parent");
-    node.addParent(parentNode);
+    parentNode.addChild(node);
     final boolean hasParent = node.hasParent();
     assertThat(hasParent).isTrue();
   }

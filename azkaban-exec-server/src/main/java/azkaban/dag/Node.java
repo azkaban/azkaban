@@ -59,13 +59,14 @@ class Node {
     this.flow = flow;
   }
 
-  Node addParent(final Node node) {
+  private Node addParent(final Node node) {
     this.parents.add(node);
     return this;
   }
 
   Node addChild(final Node node) {
     this.children.add(node);
+    node.addParent(this);
     return this;
   }
 
