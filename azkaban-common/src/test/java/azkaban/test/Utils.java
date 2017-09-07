@@ -5,7 +5,6 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import azkaban.db.AzDBTestUtility.EmbeddedH2BasicDataSource;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
-import azkaban.db.DatabaseOperatorImpl;
 import azkaban.db.DatabaseSetup;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
@@ -39,6 +38,6 @@ public class Utils {
 
     final DatabaseSetup setup = new DatabaseSetup(dataSource, sqlScriptsDir);
     setup.updateDatabase();
-    return new DatabaseOperatorImpl(new QueryRunner(dataSource));
+    return new DatabaseOperator(new QueryRunner(dataSource));
   }
 }
