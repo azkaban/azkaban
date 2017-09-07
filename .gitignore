@@ -13,7 +13,8 @@ Gemfile.lock
 vendor/
 **/velocity.log
 
-# temp directory is ignored so that it can be used to store temporary files such as local testing configurations.
+# local & temp directories are ignored so that they can be used to store temporary files such as local testing configurations.
+local/
 temp/
 
 # Intellij files
