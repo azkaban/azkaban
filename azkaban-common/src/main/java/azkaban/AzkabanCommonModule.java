@@ -21,8 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.db.AzkabanDataSource;
-import azkaban.db.DatabaseOperator;
-import azkaban.db.DatabaseOperatorImpl;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
@@ -39,14 +37,14 @@ import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
-import javax.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.hadoop.conf.Configuration;
@@ -76,7 +74,6 @@ public class AzkabanCommonModule extends AbstractModule {
   protected void configure() {
     bind(Props.class).toInstance(this.config.getProps());
     bind(Storage.class).to(resolveStorageClassType());
-    bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class);
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(DataSource.class).to(AzkabanDataSource.class);
