@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import azkaban.utils.RestfulApiClient;
 import java.io.IOException;
+import javax.inject.Singleton;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
@@ -27,23 +28,8 @@ import org.apache.http.util.EntityUtils;
  * Client class that will be used to handle all Restful API calls between Executor and the host
  * application.
  */
+@Singleton
 public class ExecutorApiClient extends RestfulApiClient<String> {
-
-  private static ExecutorApiClient instance = null;
-
-  private ExecutorApiClient() {
-  }
-
-  /**
-   * Singleton method to return the instance of the current object.
-   */
-  public static ExecutorApiClient getInstance() {
-    if (null == instance) {
-      instance = new ExecutorApiClient();
-    }
-
-    return instance;
-  }
 
   /**
    * Implementing the parseResponse function to return de-serialized Json object.
