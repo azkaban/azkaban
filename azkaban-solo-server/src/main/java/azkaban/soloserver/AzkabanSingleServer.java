@@ -31,6 +31,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import java.io.File;
+import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -52,16 +53,8 @@ public class AzkabanSingleServer {
   public static void main(String[] args) throws Exception {
     log.info("Starting Azkaban Server");
 
-    // to enable "run out of the box for testing"
     if (args.length == 0) {
-      final File templateFolder = new File("test/local-conf-templates");
-      final File localConfFolder = new File("local");
-      if (!localConfFolder.exists()) {
-        FileUtils.copyDirectory(templateFolder, localConfFolder);
-        log.info("Copied local conf templates from " + templateFolder.getAbsolutePath());
-      }
-      log.info("Using conf at " + localConfFolder.getAbsolutePath() + "/conf");
-      args = new String[]{"-conf", "local/conf"};
+      args = prepareDefaultConf();
     }
 
     final Props props = AzkabanServer.loadProps(args);
@@ -88,6 +81,20 @@ public class AzkabanSingleServer {
 
     /* Launch server */
     injector.getInstance(AzkabanSingleServer.class).launch();
+  }
+
+  /**
+   * To enable "run out of the box for testing".
+   */
+  private static String[] prepareDefaultConf() throws IOException {
+    final File templateFolder = new File("test/local-conf-templates");
+    final File localConfFolder = new File("local");
+    if (!localConfFolder.exists()) {
+      FileUtils.copyDirectory(templateFolder, localConfFolder);
+      log.info("Copied local conf templates from " + templateFolder.getAbsolutePath());
+    }
+    log.info("Using conf at " + localConfFolder.getAbsolutePath() + "/conf");
+    return new String[]{"-conf", "local/conf"};
   }
 
   private void launch() throws Exception {
