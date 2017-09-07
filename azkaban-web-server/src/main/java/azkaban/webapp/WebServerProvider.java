@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.utils.Props;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import com.google.inject.Provider;
 import java.util.List;
 import org.apache.log4j.Logger;

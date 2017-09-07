@@ -23,10 +23,9 @@ import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
+import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
@@ -49,7 +48,6 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(Server.class).toProvider(WebServerProvider.class);
-    bind(AzkabanWebServer.class).in(Scopes.SINGLETON);
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
   }
 

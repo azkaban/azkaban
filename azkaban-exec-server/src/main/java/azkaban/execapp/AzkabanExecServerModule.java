@@ -20,7 +20,6 @@ package azkaban.execapp;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This
@@ -33,8 +32,5 @@ public class AzkabanExecServerModule extends AbstractModule {
   protected void configure() {
     install(new ExecJettyServerModule());
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
-    bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
-    bind(TriggerManager.class).in(Scopes.SINGLETON);
-    bind(FlowRunnerManager.class).in(Scopes.SINGLETON);
   }
 }
