@@ -86,7 +86,10 @@ public class Constants {
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
 
-    // mail hostname and port parametters, when this parametters set in properties file this parametters are used generate email links.
+    // mail hostname and port parametters, when this parametters set in properties file this parametters are used to generate email links.
+    // if these parametters are not set then jetty.hostname, and jetty.port(jetty.ssl.port if ssl configured) are used.
+    // its used when there is reverse proxy between azkaban server and user, this parametters set to the values that enduser sees
+    // localhost:8081 -> proxy -> myazkaban:443 -> enduser
     public static final String MAIL_JETTY_HOSTNAME = "mail.jetty.hostname";
     public static final String MAIL_JETTY_SSL_PORT = "mail.jetty.ssl.port";
     public static final String MAIL_JETTY_PORT = "mail.jetty.port";
