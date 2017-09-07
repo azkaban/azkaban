@@ -65,6 +65,8 @@ class Flow {
    * Checks if the flow is done.
    */
   void checkFinished() {
+    // A flow may have nodes that are disabled. It's safer to scan all the nodes.
+    // The assumption is that the overhead is minimal. If it is not the case, we can optimize later.
     boolean failed = false;
     for (final Node node : this.nodes) {
       if (!node.isInTerminalState()) {

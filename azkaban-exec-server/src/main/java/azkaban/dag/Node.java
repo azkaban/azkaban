@@ -16,17 +16,6 @@
 
 package azkaban.dag;
 
-//import static azkaban.dag.Status.FAILURE;
-//import static azkaban.dag.Status.SUCCESS;
-//import static azkaban.dag.Status.DISABLED;
-//import static azkaban.dag.Status.READY;
-//import static azkaban.dag.Status.RUNNING;
-
-import static azkaban.dag.Status.FAILURE;
-import static azkaban.dag.Status.KILLING;
-import static azkaban.dag.Status.RUNNING;
-import static azkaban.dag.Status.TERMINAL_STATES;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,6 +25,8 @@ import java.util.Set;
 class Node {
 
   private final String name;
+
+  private final NodeProcessor nodeProcessor;
 
   // The nodes that this node depends on.
   private final Set<Node> parents = new HashSet<>();
@@ -47,8 +38,9 @@ class Node {
 
   private Flow flow;
 
-  Node(final String name) {
+  Node(final String name, final NodeProcessor nodeProcessor) {
     this.name = name;
+    this.nodeProcessor = nodeProcessor;
   }
 
   public Flow getFlow() {
@@ -79,11 +71,16 @@ class Node {
   }
 
   public void run() {
-    this.status = Status.RUNNING;
+    changeStatus(Status.RUNNING);
+    this.nodeProcessor.run(this);
+  }
+
+  private void saveStatus() {
+    this.nodeProcessor.saveStatus(this, this.status);
   }
 
   public void markSuccess() {
-    this.status = Status.SUCCESS;
+    changeStatus(Status.SUCCESS);
     for (final Node child : this.children) {
       child.check();
     }
@@ -121,7 +118,7 @@ class Node {
   }
 
   void markFailure() {
-    this.status = FAILURE;
+    changeStatus(Status.FAILURE);
     for (final Node child : this.children) {
       child.cancel();
     }
@@ -132,27 +129,32 @@ class Node {
     // The node can't be in the running or killed state since one of its ancestors has failed or
     // been killed. It shouldn't have started.
     if (this.status != Status.DISABLED) {
-      this.status = Status.CANCELED;
+      changeStatus(Status.CANCELED);
     }
     for (final Node node : this.children) {
       node.cancel();
     }
   }
 
+  private void changeStatus(final Status status) {
+    this.status = status;
+    saveStatus();
+  }
+
   void kill() {
     if (this.status == Status.READY || this.status == Status.BLOCKED) {
       this.status = Status.CANCELED;
-    } else if (this.status == RUNNING) {
+    } else if (this.status == Status.RUNNING) {
       // kill the job
-      this.status = KILLING;
+      this.status = Status.KILLING;
     }
   }
 
   boolean isInTerminalState() {
-    return TERMINAL_STATES.contains(this.status);
+    return Status.TERMINAL_STATES.contains(this.status);
   }
 
   boolean isFailure() {
-    return this.status == FAILURE;
+    return this.status == Status.FAILURE;
   }
 }

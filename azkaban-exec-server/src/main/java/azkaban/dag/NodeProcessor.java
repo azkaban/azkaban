@@ -16,6 +16,11 @@
 
 package azkaban.dag;
 
-class FlowBuilder {
+public interface NodeProcessor {
 
+  void saveStatus(Node node, Status status);
+
+  void run(Node node);
+
+  void kill(Node node);
 }
