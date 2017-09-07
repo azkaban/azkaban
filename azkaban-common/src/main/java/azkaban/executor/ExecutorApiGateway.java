@@ -83,7 +83,7 @@ public class ExecutorApiGateway {
   }
 
   /**
-   * Call executor and parse the JSON response as an instance the class given as an argument.
+   * Call executor and parse the JSON response as an instance of the class given as an argument.
    */
   <T> T callForJsonType(final String host, final int port, final String path,
       final List<Pair<String, String>> paramList, final Class<T> valueType) throws IOException {
