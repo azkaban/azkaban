@@ -13,13 +13,9 @@ Gemfile.lock
 vendor/
 **/velocity.log
 
-# temp & local directories are ignored so that they can be used to store temporary files such as local testing configurations.
-temp/
+# local & temp directories are ignored so that they can be used to store temporary files such as local testing configurations.
 local/
-executor.port
-azkaban-webserver.log
-executions/
-projects/
+temp/
 
 # Intellij files
 .idea
