@@ -25,7 +25,9 @@ enum Status {
   RUNNING,
   SUCCESS,
   FAILURE,
-  CANCELED, // doesn't run because one of the nodes it depends on fails or is killed
+
+  // doesn't run because one of the nodes it depends on fails or is killed. Apples to a node only.
+  CANCELED,
   KILLING, // in the process of killing a running job
   KILLED; // explicitly killed by a user
 

@@ -22,11 +22,13 @@ import java.util.Set;
 class Flow {
 
   private final String name;
+  private final FlowProcessor flowProcessor;
   private final Set<Node> nodes = new HashSet<>();
   private Status status = Status.READY;
 
-  Flow(final String name) {
+  Flow(final String name, final FlowProcessor flowProcessor) {
     this.name = name;
+    this.flowProcessor = flowProcessor;
   }
 
   public void setStatus(final Status status) {
@@ -54,7 +56,7 @@ class Flow {
   }
 
   void kill() {
-    this.status = Status.KILLED;
+    changeStatus(Status.KILLED);
     for (final Node node : this.nodes) {
       node.kill();
     }
@@ -77,10 +79,11 @@ class Flow {
       }
     }
     if (failed) {
-      this.status = Status.FAILURE;
+      changeStatus(Status.FAILURE);
     } else {
-      this.status = Status.SUCCESS;
+      changeStatus(Status.SUCCESS);
     }
+    this.flowProcessor.finish(this);
   }
 
   void start() {
@@ -88,6 +91,10 @@ class Flow {
     for (final Node node : readyNodes) {
       node.run();
     }
-    this.status = Status.RUNNING;
+    changeStatus(Status.RUNNING);
+  }
+
+  private void changeStatus(final Status status) {
+    this.status = status;
   }
 }
