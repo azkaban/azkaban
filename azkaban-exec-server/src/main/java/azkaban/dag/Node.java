@@ -114,7 +114,7 @@ class Node {
    * @return true if the status is either success or disabled.
    */
   private boolean isSuccess() {
-    return this.status == Status.SUCCESS || this.status == Status.DISABLED;
+    return Status.EFFECTIVE_SUCCESS_STATES.contains(this.status);
   }
 
   void markFailure() {

@@ -32,4 +32,8 @@ enum Status {
   // The states that will not transition to other states
   static final ImmutableSet TERMINAL_STATES = ImmutableSet.of(DISABLED, SUCCESS, FAILURE,
       CANCELED, KILLED);
+
+  // The states that are considered as success effectively
+  static final ImmutableSet EFFECTIVE_SUCCESS_STATES = ImmutableSet.of(DISABLED, SUCCESS);
+
 }
