@@ -73,10 +73,7 @@ public class ExecutorApiGateway {
           .valueOf(executionId)));
       paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
 
-      final Map<String, Object> jsonResponse =
-          callForJsonObjectMap(host, port, "/executor", paramList);
-
-      return jsonResponse;
+      return callForJsonObjectMap(host, port, "/executor", paramList);
     } catch (final IOException e) {
       throw new ExecutorManagerException(e);
     }
