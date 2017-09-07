@@ -38,65 +38,56 @@ public class ExecutorApiGateway {
     this.apiClient = apiClient;
   }
 
-  Map<String, Object> callExecutorServer(final ExecutableFlow exflow,
+  Map<String, Object> callWithExecutable(final ExecutableFlow exflow,
       final Executor executor, final String action) throws ExecutorManagerException {
-    try {
-      return callExecutorServer(executor.getHost(), executor.getPort(), action,
-          exflow.getExecutionId(), null, (Pair<String, String>[]) null);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
-    }
+    return callWithExecutionId(executor.getHost(), executor.getPort(), action,
+        exflow.getExecutionId(), null, (Pair<String, String>[]) null);
   }
 
-  Map<String, Object> callExecutorServer(final ExecutionReference ref,
-      final String action, final Pair<String, String>... params)
-      throws ExecutorManagerException {
-    try {
-      return callExecutorServer(ref.getHost(), ref.getPort(), action,
-          ref.getExecId(), null, params);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
-    }
+  Map<String, Object> callWithReference(final ExecutionReference ref, final String action,
+      final Pair<String, String>... params) throws ExecutorManagerException {
+    return callWithExecutionId(ref.getHost(), ref.getPort(), action, ref.getExecId(),
+        null, params);
   }
 
-  Map<String, Object> callExecutorServer(final ExecutionReference ref,
+  Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
       final String action, final String user, final Pair<String, String>... params)
       throws ExecutorManagerException {
+    return callWithExecutionId(ref.getHost(), ref.getPort(), action,
+        ref.getExecId(), user, params);
+  }
+
+  Map<String, Object> callWithExecutionId(final String host, final int port,
+      final String action, final Integer executionId, final String user,
+      final Pair<String, String>... params) throws ExecutorManagerException {
     try {
-      return callExecutorServer(ref.getHost(), ref.getPort(), action,
-          ref.getExecId(), user, params);
+      final List<Pair<String, String>> paramList = new ArrayList<>();
+
+      if (params != null) {
+        paramList.addAll(Arrays.asList(params));
+      }
+
+      paramList
+          .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
+      paramList.add(new Pair<>(ConnectorParams.EXECID_PARAM, String
+          .valueOf(executionId)));
+      paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
+
+      final Map<String, Object> jsonResponse =
+          callForJsonObjectMap(host, port, "/executor", paramList);
+
+      return jsonResponse;
     } catch (final IOException e) {
       throw new ExecutorManagerException(e);
     }
-  }
-
-  Map<String, Object> callExecutorServer(final String host, final int port,
-      final String action, final Integer executionId, final String user,
-      final Pair<String, String>... params) throws IOException {
-    final List<Pair<String, String>> paramList = new ArrayList<>();
-
-    if (params != null) {
-      paramList.addAll(Arrays.asList(params));
-    }
-
-    paramList
-        .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
-    paramList.add(new Pair<>(ConnectorParams.EXECID_PARAM, String
-        .valueOf(executionId)));
-    paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
-
-    final Map<String, Object> jsonResponse =
-        callExecutorForJsonObject(host, port, "/executor", paramList);
-
-    return jsonResponse;
   }
 
   /**
    * Call executor and parse the JSON response as an instance the class given as an argument.
    */
-  <T> T callExecutorForJsonType(final String host, final int port, final String path,
+  <T> T callForJsonType(final String host, final int port, final String path,
       final List<Pair<String, String>> paramList, final Class<T> valueType) throws IOException {
-    final String responseString = callExecutorForJsonString(host, port, path, paramList);
+    final String responseString = callForJsonString(host, port, path, paramList);
     if (null == responseString || responseString.length() == 0) {
       return null;
     }
@@ -106,10 +97,10 @@ public class ExecutorApiGateway {
   /*
    * Call executor and return json object map.
    */
-  Map<String, Object> callExecutorForJsonObject(final String host, final int port,
+  Map<String, Object> callForJsonObjectMap(final String host, final int port,
       final String path, final List<Pair<String, String>> paramList) throws IOException {
     final String responseString =
-        callExecutorForJsonString(host, port, path, paramList);
+        callForJsonString(host, port, path, paramList);
 
     @SuppressWarnings("unchecked") final Map<String, Object> jsonResponse =
         (Map<String, Object>) JSONUtils.parseJSONFromString(responseString);
@@ -123,7 +114,7 @@ public class ExecutorApiGateway {
   /*
    * Call executor and return raw json string.
    */
-  private String callExecutorForJsonString(final String host, final int port, final String path,
+  private String callForJsonString(final String host, final int port, final String path,
       List<Pair<String, String>> paramList) throws IOException {
     if (paramList == null) {
       paramList = new ArrayList<>();

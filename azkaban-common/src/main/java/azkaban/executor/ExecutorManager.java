@@ -32,8 +32,6 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -54,6 +52,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -238,7 +238,7 @@ public class ExecutorManager extends EventHandler implements
         // execute each executorInfo refresh task to fetch
         final Future<ExecutorInfo> fetchExecutionInfo =
             this.executorInforRefresherService.submit(
-                () -> this.apiGateway.callExecutorForJsonType(executor.getHost(),
+                () -> this.apiGateway.callForJsonType(executor.getHost(),
                     executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
         futures.add(new Pair<>(executor,
             fetchExecutionInfo));
@@ -685,7 +685,7 @@ public class ExecutorManager extends EventHandler implements
           new Pair<>("length", String.valueOf(length));
 
       @SuppressWarnings("unchecked") final Map<String, Object> result =
-          this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION,
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
               typeParam, offsetParam, lengthParam);
       return LogData.createLogDataFromObject(result);
     } else {
@@ -713,7 +713,7 @@ public class ExecutorManager extends EventHandler implements
           new Pair<>("attempt", String.valueOf(attempt));
 
       @SuppressWarnings("unchecked") final Map<String, Object> result =
-          this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION,
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return LogData.createLogDataFromObject(result);
     } else {
@@ -739,7 +739,7 @@ public class ExecutorManager extends EventHandler implements
         new Pair<>("attempt", String.valueOf(attempt));
 
     @SuppressWarnings("unchecked") final Map<String, Object> result =
-        this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.ATTACHMENTS_ACTION,
+        this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.ATTACHMENTS_ACTION,
             jobIdParam, attemptParam);
 
     @SuppressWarnings("unchecked") final List<Object> jobStats = (List<Object>) result
@@ -767,7 +767,7 @@ public class ExecutorManager extends EventHandler implements
           new Pair<>("attempt", String.valueOf(attempt));
 
       @SuppressWarnings("unchecked") final Map<String, Object> result =
-          this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.METADATA_ACTION,
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.METADATA_ACTION,
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return JobMetaData.createJobMetaDataFromObject(result);
     } else {
@@ -789,7 +789,7 @@ public class ExecutorManager extends EventHandler implements
       if (this.runningFlows.containsKey(exFlow.getExecutionId())) {
         final Pair<ExecutionReference, ExecutableFlow> pair =
             this.runningFlows.get(exFlow.getExecutionId());
-        this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
+        this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
             userId);
       } else if (this.queuedFlows.hasExecution(exFlow.getExecutionId())) {
         this.queuedFlows.dequeue(exFlow.getExecutionId());
@@ -813,7 +813,8 @@ public class ExecutorManager extends EventHandler implements
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
             + " isn't running.");
       }
-      this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.RESUME_ACTION, userId);
+      this.apiGateway
+          .callWithReferenceByUser(pair.getFirst(), ConnectorParams.RESUME_ACTION, userId);
     }
   }
 
@@ -828,7 +829,8 @@ public class ExecutorManager extends EventHandler implements
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
             + " isn't running.");
       }
-      this.apiGateway.callExecutorServer(pair.getFirst(), ConnectorParams.PAUSE_ACTION, userId);
+      this.apiGateway
+          .callWithReferenceByUser(pair.getFirst(), ConnectorParams.PAUSE_ACTION, userId);
     }
   }
 
@@ -907,14 +909,14 @@ public class ExecutorManager extends EventHandler implements
         }
         final String ids = StringUtils.join(jobIds, ',');
         response =
-            this.apiGateway.callExecutorServer(pair.getFirst(),
+            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
                 ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
                 new Pair<>(
                     ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command),
                 new Pair<>(ConnectorParams.MODIFY_JOBS_LIST, ids));
       } else {
         response =
-            this.apiGateway.callExecutorServer(pair.getFirst(),
+            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
                 ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
                 new Pair<>(
                     ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command));
@@ -1063,7 +1065,7 @@ public class ExecutorManager extends EventHandler implements
     paramList
         .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
 
-    return this.apiGateway.callExecutorForJsonObject(executor.getHost(), executor.getPort(),
+    return this.apiGateway.callForJsonObjectMap(executor.getHost(), executor.getPort(),
         "/stats", paramList);
   }
 
@@ -1080,7 +1082,7 @@ public class ExecutorManager extends EventHandler implements
     }
 
     final String[] hostPortSplit = hostPort.split(":");
-    return this.apiGateway.callExecutorForJsonObject(hostPortSplit[0],
+    return this.apiGateway.callForJsonObjectMap(hostPortSplit[0],
         Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
   }
 
@@ -1370,7 +1372,7 @@ public class ExecutorManager extends EventHandler implements
     this.executorLoader.assignExecutor(choosenExecutor.getId(),
         exflow.getExecutionId());
     try {
-      this.apiGateway.callExecutorServer(exflow, choosenExecutor,
+      this.apiGateway.callWithExecutable(exflow, choosenExecutor,
           ConnectorParams.EXECUTE_ACTION);
     } catch (final ExecutorManagerException ex) {
       logger.error("Rolling back executor assignment for execution id:"
@@ -1450,10 +1452,10 @@ public class ExecutorManager extends EventHandler implements
               Map<String, Object> results = null;
               try {
                 results =
-                    ExecutorManager.this.apiGateway.callExecutorServer(executor.getHost(),
+                    ExecutorManager.this.apiGateway.callWithExecutionId(executor.getHost(),
                         executor.getPort(), ConnectorParams.UPDATE_ACTION,
                         null, null, executionIds, updateTimes);
-              } catch (final IOException e) {
+              } catch (final ExecutorManagerException e) {
                 logger.error(e);
                 for (final ExecutableFlow flow : entry.getValue()) {
                   final Pair<ExecutionReference, ExecutableFlow> pair =

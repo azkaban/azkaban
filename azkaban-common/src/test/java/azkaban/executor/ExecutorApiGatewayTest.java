@@ -26,7 +26,7 @@ public class ExecutorApiGatewayTest {
     final String json = JSONUtils.toJSON(exeInfo);
     when(this.client.httpGet(Mockito.any(), Mockito.any())).thenReturn(json);
     final ExecutorInfo exeInfo2 = this.gateway
-        .callExecutorForJsonType("localhost", 1234, "executor", null, ExecutorInfo.class);
+        .callForJsonType("localhost", 1234, "executor", null, ExecutorInfo.class);
     Assert.assertTrue(exeInfo.equals(exeInfo2));
   }
 
