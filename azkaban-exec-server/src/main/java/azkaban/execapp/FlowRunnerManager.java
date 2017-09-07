@@ -44,7 +44,6 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
-import com.google.inject.Inject;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -62,6 +61,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -83,6 +84,7 @@ import org.apache.log4j.Logger;
  * flows that are in the Status.PREPARING status. The entries in this map is removed once the flow
  * execution is completed.
  */
+@Singleton
 public class FlowRunnerManager implements EventListener,
     ThreadPoolExecutingListener {
 

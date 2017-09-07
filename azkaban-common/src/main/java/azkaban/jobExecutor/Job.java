@@ -19,9 +19,9 @@ package azkaban.jobExecutor;
 import azkaban.utils.Props;
 
 /**
- * This interface defines a Raw Job interface. Each job defines <ul> <li>Job Type : {HADOOP, UNIX,
- * JAVA, SUCCESS_TEST, CONTROLLER}</li> <li>Job ID/Name : {String}</li> <li>Arguments: Key/Value Map
- * for Strings</li> </ul>
+ * Raw job interface.
+ *
+ * A job is unit of work to perform.
  *
  * A job is required to have a constructor Job(String jobId, Props props)
  */
