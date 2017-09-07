@@ -62,7 +62,7 @@ class Node {
     return this;
   }
 
-  public boolean hasParent() {
+  boolean hasParent() {
     return !this.parents.isEmpty();
   }
 
@@ -79,7 +79,7 @@ class Node {
     this.nodeProcessor.saveStatus(this, this.status);
   }
 
-  public void markSuccess() {
+  void markSuccess() {
     changeStatus(Status.SUCCESS);
     for (final Node child : this.children) {
       child.check();
