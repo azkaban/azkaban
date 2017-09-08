@@ -28,6 +28,8 @@ public class DagServiceTest {
   final DagService dagService = new DagService();
   final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService);
   final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
+  final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
+  final Flow testFlow = createFlow("fa");
 
   @After
   public void tearDown() throws Exception {
@@ -38,16 +40,17 @@ public class DagServiceTest {
     return new Node(name, this.nodeProcessor);
   }
 
+  private Flow createFlow(final String name) {
+    return new Flow(name, this.flowProcessor);
+  }
   /**
    * Tests a DAG with one node which will run successfully.
    */
   @Test
   public void OneNodeSuccess() throws Exception {
     final Node aNode = createNode("a");
-    final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
-    final Flow flow = new Flow("fa", flowProcessor);
-    flow.addNode(aNode);
-    this.dagService.startFlow(flow);
+    testFlow.addNode(aNode);
+    this.dagService.startFlow(testFlow);
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
@@ -63,11 +66,9 @@ public class DagServiceTest {
     final Node aNode = createNode("a");
     final Node bNode = createNode("b");
     aNode.addChild(bNode);
-    final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
-    final Flow flow = new Flow("fa", flowProcessor);
-    flow.addNode(aNode);
-    flow.addNode(bNode);
-    this.dagService.startFlow(flow);
+    testFlow.addNode(aNode);
+    testFlow.addNode(bNode);
+    this.dagService.startFlow(testFlow);
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
