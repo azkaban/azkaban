@@ -34,12 +34,16 @@ public class DagServiceTest {
     this.dagService.shutdownAndAwaitTermination();
   }
 
+  private Node createNode(final String name) {
+    return new Node(name, this.nodeProcessor);
+  }
+
   /**
    * Tests a DAG with one node which will run successfully.
    */
   @Test
   public void OneNodeSuccess() throws Exception {
-    final Node aNode = new Node("a", this.nodeProcessor);
+    final Node aNode = createNode("a");
     final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
     final Flow flow = new Flow("fa", flowProcessor);
     flow.addNode(aNode);
@@ -56,8 +60,8 @@ public class DagServiceTest {
    */
   @Test
   public void TwoNodesSuccess() throws Exception {
-    final Node aNode = new Node("a", this.nodeProcessor);
-    final Node bNode = new Node("b", this.nodeProcessor);
+    final Node aNode = createNode("a");
+    final Node bNode = createNode("b");
     aNode.addChild(bNode);
     final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
     final Flow flow = new Flow("fa", flowProcessor);
