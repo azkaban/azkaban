@@ -273,8 +273,10 @@ public class AzkabanExecutorServer {
 
   private void dumpPortToFile() throws IOException {
     // By default this should write to the working directory
+    final String portFile = this.props
+        .getString(Constants.AZKABAN_EXECUTOR_PORT_FILE, AZKABAN_EXECUTOR_PORT_FILENAME);
     try (BufferedWriter writer = Files
-        .newBufferedWriter(Paths.get(AZKABAN_EXECUTOR_PORT_FILENAME), StandardCharsets.UTF_8)) {
+        .newBufferedWriter(Paths.get(portFile), StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(getPort()));
       writer.write("\n");
     } catch (final IOException e) {

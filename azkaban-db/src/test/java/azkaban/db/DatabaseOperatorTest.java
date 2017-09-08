@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class DatabaseOperatorImplTest {
+public class DatabaseOperatorTest {
 
   private static final List<Integer> list = new ArrayList<>();
   private static final int index_2 = 15;
@@ -60,7 +60,7 @@ public class DatabaseOperatorImplTest {
     when(this.queryRunner.getDataSource()).thenReturn(mockDataSource);
     when(mockDataSource.getConnection()).thenReturn(this.conn);
 
-    this.dbOperator = new DatabaseOperatorImpl(this.queryRunner);
+    this.dbOperator = new DatabaseOperator(this.queryRunner);
 
     list.add(index_1);
     list.add(index_2);

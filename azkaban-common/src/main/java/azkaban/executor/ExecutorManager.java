@@ -32,12 +32,9 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,13 +46,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -99,6 +97,7 @@ public class ExecutorManager extends EventHandler implements
   private final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
       new ConcurrentHashMap<>();
   private final ExecutingManagerUpdaterThread executingManager;
+  private final ExecutorApiGateway apiGateway;
   QueuedExecutions queuedFlows;
   File cacheDir;
   private QueueProcessorThread queueProcessor;
@@ -114,11 +113,13 @@ public class ExecutorManager extends EventHandler implements
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader loader,
       final AlerterHolder alerterHolder,
-      final CommonMetrics commonMetrics) throws ExecutorManagerException {
+      final CommonMetrics commonMetrics,
+      final ExecutorApiGateway apiGateway) throws ExecutorManagerException {
     this.alerterHolder = alerterHolder;
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
     this.executorLoader = loader;
+    this.apiGateway = apiGateway;
     this.setupExecutors();
     this.loadRunningFlows();
 
@@ -231,33 +232,30 @@ public class ExecutorManager extends EventHandler implements
   private void refreshExecutors() {
     synchronized (this.activeExecutors) {
 
-      final List<Pair<Executor, Future<String>>> futures =
+      final List<Pair<Executor, Future<ExecutorInfo>>> futures =
           new ArrayList<>();
       for (final Executor executor : this.activeExecutors) {
         // execute each executorInfo refresh task to fetch
-        final Future<String> fetchExecutionInfo =
-            this.executorInforRefresherService.submit(new Callable<String>() {
-              @Override
-              public String call() throws Exception {
-                return callExecutorForJsonString(executor.getHost(),
-                    executor.getPort(), "/serverStatistics", null);
-              }
-            });
+        final Future<ExecutorInfo> fetchExecutionInfo =
+            this.executorInforRefresherService.submit(
+                () -> this.apiGateway.callForJsonType(executor.getHost(),
+                    executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
         futures.add(new Pair<>(executor,
             fetchExecutionInfo));
       }
 
       boolean wasSuccess = true;
-      for (final Pair<Executor, Future<String>> refreshPair : futures) {
+      for (final Pair<Executor, Future<ExecutorInfo>> refreshPair : futures) {
         final Executor executor = refreshPair.getFirst();
-        executor.setExecutorInfo(null); // invalidate cached EXecutorInfo
+        executor.setExecutorInfo(null); // invalidate cached ExecutorInfo
         try {
           // max 5 secs
-          final String jsonString = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
-          executor.setExecutorInfo(ExecutorInfo.fromJSONString(jsonString));
+          final ExecutorInfo executorInfo = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
+          // executorInfo is null if the response was empty
+          executor.setExecutorInfo(executorInfo);
           logger.info(String.format(
               "Successfully refreshed executor: %s with executor info : %s",
-              executor, jsonString));
+              executor, executorInfo));
         } catch (final TimeoutException e) {
           wasSuccess = false;
           logger.error("Timed out while waiting for ExecutorInfo refresh"
@@ -687,7 +685,7 @@ public class ExecutorManager extends EventHandler implements
           new Pair<>("length", String.valueOf(length));
 
       @SuppressWarnings("unchecked") final Map<String, Object> result =
-          callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION,
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
               typeParam, offsetParam, lengthParam);
       return LogData.createLogDataFromObject(result);
     } else {
@@ -715,7 +713,7 @@ public class ExecutorManager extends EventHandler implements
           new Pair<>("attempt", String.valueOf(attempt));
 
       @SuppressWarnings("unchecked") final Map<String, Object> result =
-          callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION,
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return LogData.createLogDataFromObject(result);
     } else {
@@ -741,7 +739,7 @@ public class ExecutorManager extends EventHandler implements
         new Pair<>("attempt", String.valueOf(attempt));
 
     @SuppressWarnings("unchecked") final Map<String, Object> result =
-        callExecutorServer(pair.getFirst(), ConnectorParams.ATTACHMENTS_ACTION,
+        this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.ATTACHMENTS_ACTION,
             jobIdParam, attemptParam);
 
     @SuppressWarnings("unchecked") final List<Object> jobStats = (List<Object>) result
@@ -769,7 +767,7 @@ public class ExecutorManager extends EventHandler implements
           new Pair<>("attempt", String.valueOf(attempt));
 
       @SuppressWarnings("unchecked") final Map<String, Object> result =
-          callExecutorServer(pair.getFirst(), ConnectorParams.METADATA_ACTION,
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.METADATA_ACTION,
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return JobMetaData.createJobMetaDataFromObject(result);
     } else {
@@ -791,7 +789,7 @@ public class ExecutorManager extends EventHandler implements
       if (this.runningFlows.containsKey(exFlow.getExecutionId())) {
         final Pair<ExecutionReference, ExecutableFlow> pair =
             this.runningFlows.get(exFlow.getExecutionId());
-        callExecutorServer(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
+        this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
             userId);
       } else if (this.queuedFlows.hasExecution(exFlow.getExecutionId())) {
         this.queuedFlows.dequeue(exFlow.getExecutionId());
@@ -815,7 +813,8 @@ public class ExecutorManager extends EventHandler implements
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
             + " isn't running.");
       }
-      callExecutorServer(pair.getFirst(), ConnectorParams.RESUME_ACTION, userId);
+      this.apiGateway
+          .callWithReferenceByUser(pair.getFirst(), ConnectorParams.RESUME_ACTION, userId);
     }
   }
 
@@ -830,7 +829,8 @@ public class ExecutorManager extends EventHandler implements
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
             + " isn't running.");
       }
-      callExecutorServer(pair.getFirst(), ConnectorParams.PAUSE_ACTION, userId);
+      this.apiGateway
+          .callWithReferenceByUser(pair.getFirst(), ConnectorParams.PAUSE_ACTION, userId);
     }
   }
 
@@ -895,7 +895,7 @@ public class ExecutorManager extends EventHandler implements
             + " isn't running.");
       }
 
-      Map<String, Object> response = null;
+      final Map<String, Object> response;
       if (jobIds != null && jobIds.length > 0) {
         for (final String jobId : jobIds) {
           if (!jobId.isEmpty()) {
@@ -909,14 +909,14 @@ public class ExecutorManager extends EventHandler implements
         }
         final String ids = StringUtils.join(jobIds, ',');
         response =
-            callExecutorServer(pair.getFirst(),
+            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
                 ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
                 new Pair<>(
                     ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command),
                 new Pair<>(ConnectorParams.MODIFY_JOBS_LIST, ids));
       } else {
         response =
-            callExecutorServer(pair.getFirst(),
+            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
                 ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
                 new Pair<>(
                     ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command));
@@ -1043,110 +1043,10 @@ public class ExecutorManager extends EventHandler implements
             + " seconds.");
   }
 
-  private Map<String, Object> callExecutorServer(final ExecutableFlow exflow,
-      final Executor executor, final String action) throws ExecutorManagerException {
-    try {
-      return callExecutorServer(executor.getHost(), executor.getPort(), action,
-          exflow.getExecutionId(), null, (Pair<String, String>[]) null);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
-    }
-  }
-
-  private Map<String, Object> callExecutorServer(final ExecutionReference ref,
-      final String action, final String user) throws ExecutorManagerException {
-    try {
-      return callExecutorServer(ref.getHost(), ref.getPort(), action,
-          ref.getExecId(), user, (Pair<String, String>[]) null);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
-    }
-  }
-
-  private Map<String, Object> callExecutorServer(final ExecutionReference ref,
-      final String action, final Pair<String, String>... params)
-      throws ExecutorManagerException {
-    try {
-      return callExecutorServer(ref.getHost(), ref.getPort(), action,
-          ref.getExecId(), null, params);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
-    }
-  }
-
-  private Map<String, Object> callExecutorServer(final ExecutionReference ref,
-      final String action, final String user, final Pair<String, String>... params)
-      throws ExecutorManagerException {
-    try {
-      return callExecutorServer(ref.getHost(), ref.getPort(), action,
-          ref.getExecId(), user, params);
-    } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
-    }
-  }
-
-  private Map<String, Object> callExecutorServer(final String host, final int port,
-      final String action, final Integer executionId, final String user,
-      final Pair<String, String>... params) throws IOException {
-    final List<Pair<String, String>> paramList = new ArrayList<>();
-
-    // if params = null
-    if (params != null) {
-      paramList.addAll(Arrays.asList(params));
-    }
-
-    paramList
-        .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
-    paramList.add(new Pair<>(ConnectorParams.EXECID_PARAM, String
-        .valueOf(executionId)));
-    paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
-
-    final Map<String, Object> jsonResponse =
-        callExecutorForJsonObject(host, port, "/executor", paramList);
-
-    return jsonResponse;
-  }
-
-  /*
-   * Helper method used by ExecutorManager to call executor and return json
-   * object map
-   */
-  private Map<String, Object> callExecutorForJsonObject(final String host, final int port,
-      final String path, final List<Pair<String, String>> paramList) throws IOException {
-    final String responseString =
-        callExecutorForJsonString(host, port, path, paramList);
-
-    @SuppressWarnings("unchecked") final Map<String, Object> jsonResponse =
-        (Map<String, Object>) JSONUtils.parseJSONFromString(responseString);
-    final String error = (String) jsonResponse.get(ConnectorParams.RESPONSE_ERROR);
-    if (error != null) {
-      throw new IOException(error);
-    }
-    return jsonResponse;
-  }
-
-  /*
-   * Helper method used by ExecutorManager to call executor and return raw json
-   * string
-   */
-  private String callExecutorForJsonString(final String host, final int port, final String path,
-      List<Pair<String, String>> paramList) throws IOException {
-    if (paramList == null) {
-      paramList = new ArrayList<>();
-    }
-
-    final ExecutorApiClient apiclient = ExecutorApiClient.getInstance();
-    @SuppressWarnings("unchecked") final URI uri =
-        ExecutorApiClient.buildUri(host, port, path, true,
-            paramList.toArray(new Pair[0]));
-
-    return apiclient.httpGet(uri, null);
-  }
-
   /**
    * Manage servlet call for stats servlet in Azkaban execution server {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#callExecutorStats(java.lang.String,
+   * @see azkaban.executor.ExecutorManagerAdapter#callExecutorStats(int, java.lang.String,
    * azkaban.utils.Pair[])
    */
   @Override
@@ -1165,7 +1065,7 @@ public class ExecutorManager extends EventHandler implements
     paramList
         .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
 
-    return callExecutorForJsonObject(executor.getHost(), executor.getPort(),
+    return this.apiGateway.callForJsonObjectMap(executor.getHost(), executor.getPort(),
         "/stats", paramList);
   }
 
@@ -1182,7 +1082,7 @@ public class ExecutorManager extends EventHandler implements
     }
 
     final String[] hostPortSplit = hostPort.split(":");
-    return callExecutorForJsonObject(hostPortSplit[0],
+    return this.apiGateway.callForJsonObjectMap(hostPortSplit[0],
         Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
   }
 
@@ -1472,7 +1372,7 @@ public class ExecutorManager extends EventHandler implements
     this.executorLoader.assignExecutor(choosenExecutor.getId(),
         exflow.getExecutionId());
     try {
-      callExecutorServer(exflow, choosenExecutor,
+      this.apiGateway.callWithExecutable(exflow, choosenExecutor,
           ConnectorParams.EXECUTE_ACTION);
     } catch (final ExecutorManagerException ex) {
       logger.error("Rolling back executor assignment for execution id:"
@@ -1552,10 +1452,10 @@ public class ExecutorManager extends EventHandler implements
               Map<String, Object> results = null;
               try {
                 results =
-                    callExecutorServer(executor.getHost(),
+                    ExecutorManager.this.apiGateway.callWithExecutionId(executor.getHost(),
                         executor.getPort(), ConnectorParams.UPDATE_ACTION,
                         null, null, executionIds, updateTimes);
-              } catch (final IOException e) {
+              } catch (final ExecutorManagerException e) {
                 logger.error(e);
                 for (final ExecutableFlow flow : entry.getValue()) {
                   final Pair<ExecutionReference, ExecutableFlow> pair =
