@@ -21,61 +21,52 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 public class DagServiceTest {
 
-  DagService dagService;
-
-  @Before
-  public void setUp() throws Exception {
-    this.dagService = new DagService();
-  }
+  final DagService dagService = new DagService();
+  final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService);
+  final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
 
   @After
   public void tearDown() throws Exception {
     this.dagService.shutdownAndAwaitTermination();
   }
 
-  @Test
   /**
    * Tests a DAG with one node which will run successfully.
    */
+  @Test
   public void OneNodeSuccess() throws Exception {
-    final NodeProcessor processor = new TestNodeProcessor(this.dagService);
-    final Node aNode = new Node("a", processor);
-    final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
-    final FlowProcessor flowProcessor = new TestFlowProcessor(flowFinishedLatch);
+    final Node aNode = new Node("a", this.nodeProcessor);
+    final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
     final Flow flow = new Flow("fa", flowProcessor);
     flow.addNode(aNode);
     this.dagService.startFlow(flow);
-    final boolean isWaitSuccessful = flowFinishedLatch.await(120, TimeUnit.SECONDS);
+    final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
     assertThat(isWaitSuccessful).isTrue();
   }
 
-  @Test
   /**
    * Tests a DAG with two nodes which will run successfully.
    * a -> b
    */
+  @Test
   public void TwoNodesSuccess() throws Exception {
-    final NodeProcessor processor = new TestNodeProcessor(this.dagService);
-    final Node aNode = new Node("a", processor);
-    final Node bNode = new Node("b", processor);
+    final Node aNode = new Node("a", this.nodeProcessor);
+    final Node bNode = new Node("b", this.nodeProcessor);
     aNode.addChild(bNode);
-    final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
-    final FlowProcessor flowProcessor = new TestFlowProcessor(flowFinishedLatch);
+    final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
     final Flow flow = new Flow("fa", flowProcessor);
     flow.addNode(aNode);
     flow.addNode(bNode);
     this.dagService.startFlow(flow);
-    final boolean isWaitSuccessful = flowFinishedLatch.await(120, TimeUnit.SECONDS);
+    final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
     assertThat(isWaitSuccessful).isTrue();
   }
-
 }
