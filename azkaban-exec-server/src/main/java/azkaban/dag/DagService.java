@@ -18,7 +18,6 @@ package azkaban.dag;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -29,14 +28,7 @@ import javax.inject.Singleton;
 @Singleton
 public class DagService {
 
-  private final DagProcessor dagProcessor;
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-  @Inject
-
-  public DagService(final DagProcessor dagProcessor) {
-    this.dagProcessor = dagProcessor;
-  }
 
   public void startFlow(final Flow flow) {
     this.executorService.submit(() -> flow.start());
