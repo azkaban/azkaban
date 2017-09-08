@@ -16,26 +16,10 @@
 
 package azkaban.dag;
 
-public class TestNodeProcessor implements NodeProcessor {
-
-  private final DagService dagService;
-
-  public TestNodeProcessor(final DagService dagService) {
-    this.dagService = dagService;
-  }
+public class TestFlowProcessor implements FlowProcessor {
 
   @Override
-  public void changeStatus(final Node node, final Status status) {
-    switch (status) {
-      case RUNNING:
-        this.dagService.markJobSuccess(node);
-        break;
-      case KILLING:
-        this.dagService.failJob(node);
-        break;
-      default:
-        // todo: save status
-        break;
-    }
+  public void changeStatus(final Flow flow, final Status status) {
+
   }
 }

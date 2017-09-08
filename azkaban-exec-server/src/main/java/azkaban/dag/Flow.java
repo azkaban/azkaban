@@ -32,6 +32,7 @@ class Flow {
   }
 
   Flow addNode(final Node node) {
+    node.setFlow(this);
     this.nodes.add(node);
     return this;
   }

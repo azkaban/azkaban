@@ -16,6 +16,23 @@
 
 package azkaban.dag;
 
+import org.junit.Test;
+
 public class DagServiceTest {
 
+  @Test
+  /**
+   * Tests a DAG with one node which will run successfully.
+   */
+  public void OneNodeSuccess() throws Exception {
+    final DagService dagService = new DagService();
+    final NodeProcessor processor = new TestNodeProcessor(dagService);
+    final Node aNode = new Node("a", processor);
+    final FlowProcessor flowProcessor = new TestFlowProcessor();
+    final Flow flow = new Flow("fa", flowProcessor);
+    flow.addNode(aNode);
+    dagService.startFlow(flow);
+    Thread.sleep(1000000);
+    dagService.shutdownAndAwaitTermination();
+  }
 }
