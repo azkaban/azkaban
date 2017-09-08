@@ -147,6 +147,36 @@ public class DagServiceTest {
     runAndVerify();
   }
 
+  /**
+   * Tests a DAG with three nodes with one failure.
+   *
+   * <pre>
+   *       a
+   *   /      \
+   * b (fail)    c
+   * </pre>
+   */
+  @Test
+  public void threeNodesFailSecond() throws Exception {
+    final Node aNode = createNode("a");
+    final Node bNode = createNode("b");
+    final Node cNode = createNode("c");
+    aNode.addChildren(bNode, cNode);
+
+    this.nodesToFail.add(bNode);
+
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.SUCCESS);
+    addToExpectedSequence("b", Status.RUNNING);
+    addToExpectedSequence("c", Status.RUNNING);
+    addToExpectedSequence("b", Status.FAILURE);
+    addToExpectedSequence("c", Status.SUCCESS);
+    addToExpectedSequence("fa", Status.FAILURE);
+
+    runAndVerify();
+
+  }
   private void addToExpectedSequence(final String name, final Status status) {
     this.expectedSequence.add(new Pair(name, status));
   }
