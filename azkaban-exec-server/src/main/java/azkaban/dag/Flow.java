@@ -94,4 +94,9 @@ class Flow {
     this.status = status;
     this.flowProcessor.changeStatus(this, status);
   }
+
+  @Override
+  public String toString() {
+    return String.format("Flow (%s), status (%s)", this.name, this.status);
+  }
 }

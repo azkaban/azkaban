@@ -158,4 +158,9 @@ class Node {
   boolean isFailure() {
     return this.status == Status.FAILURE;
   }
+
+  @Override
+  public String toString() {
+    return String.format("Node (%s) status (%s) in %s", this.name, this.status, this.flow);
+  }
 }
