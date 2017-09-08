@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static org.hamcrest.CoreMatchers.is;
+
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
@@ -32,8 +34,10 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -292,7 +296,7 @@ public class JobRunnerTest {
 
     StatusTestUtils.waitForStatus(node, Status.READY);
     // sleep so that job has time to get into delayExecution() -> wait()
-    Thread.sleep(1000L);
+    Thread.sleep(2000L);
     runner.kill();
     StatusTestUtils.waitForStatus(node, Status.KILLED);
 
@@ -303,8 +307,8 @@ public class JobRunnerTest {
         node.getStatus() == Status.KILLED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 1000);
-    Assert.assertTrue(node.getStartTime() - startTime >= 1000);
-    Assert.assertTrue(node.getStartTime() - startTime <= 4000);
+    Assert.assertTrue(node.getStartTime() - startTime >= 2000);
+    Assert.assertTrue(node.getStartTime() - startTime <= 5000);
     Assert.assertTrue(runner.isKilled());
 
     final File logFile = new File(runner.getLogFilePath());
@@ -312,10 +316,9 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(logFile.exists());
 
-    // sleep so that there's time to make the "DB update" for KILLED status
-    Thread.sleep(1000L);
-    Assert.assertEquals(2L, loader.getNodeUpdateCount("testJob").longValue());
-    Assert.assertEquals(2L, (long) loader.getNodeUpdateCount("testJob"));
+    // wait so that there's time to make the "DB update" for KILLED status
+    Awaitility.await().atMost(10L, TimeUnit.SECONDS).pollInterval(10L, TimeUnit.MILLISECONDS)
+        .until(() -> loader.getNodeUpdateCount("testJob"), is(2));
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 
