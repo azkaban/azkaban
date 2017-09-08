@@ -19,7 +19,9 @@ package azkaban.dag;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javafx.util.Pair;
@@ -30,8 +32,9 @@ public class DagServiceTest {
 
   private final DagService dagService = new DagService();
   private final StatusChangeRecorder statusChangeRecorder = new StatusChangeRecorder();
+  private final Set<Node> nodesToFail = new HashSet<>();
   private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService,
-      this.statusChangeRecorder);
+      this.statusChangeRecorder, this.nodesToFail);
   private final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
   private final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch,
       this.statusChangeRecorder);
@@ -50,7 +53,6 @@ public class DagServiceTest {
   @Test
   public void oneNodeSuccess() throws Exception {
     final Node aNode = createNode("a");
-    this.testFlow.addNode(aNode);
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("a", Status.RUNNING);
     addToExpectedSequence("a", Status.SUCCESS);
@@ -106,6 +108,43 @@ public class DagServiceTest {
 
     runAndVerify();
 
+  }
+
+  /**
+   * Tests a DAG with one node which will fail.
+   */
+  @Test
+  public void oneNodeFailure() throws Exception {
+    final Node aNode = createNode("a");
+    this.nodesToFail.add(aNode);
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.FAILURE);
+    addToExpectedSequence("fa", Status.FAILURE);
+
+    runAndVerify();
+  }
+
+  /**
+   * Tests a DAG with two nodes, fails the first one.
+   * a (fail)
+   * |
+   * b
+   */
+  @Test
+  public void twoNodesFailFirst() throws Exception {
+    final Node aNode = createNode("a");
+    final Node bNode = createNode("b");
+    aNode.addChild(bNode);
+    this.nodesToFail.add(aNode);
+
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.FAILURE);
+    addToExpectedSequence("b", Status.CANCELED);
+    addToExpectedSequence("fa", Status.FAILURE);
+
+    runAndVerify();
   }
 
   private void addToExpectedSequence(final String name, final Status status) {

@@ -16,15 +16,19 @@
 
 package azkaban.dag;
 
+import java.util.Set;
+
 public class TestNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
+  private final Set<Node> nodesToFail;
 
   public TestNodeProcessor(final DagService dagService,
-      final StatusChangeRecorder statusChangeRecorder) {
+      final StatusChangeRecorder statusChangeRecorder, final Set<Node> nodesToFail) {
     this.dagService = dagService;
     this.statusChangeRecorder = statusChangeRecorder;
+    this.nodesToFail = nodesToFail;
   }
 
   @Override
@@ -34,7 +38,11 @@ public class TestNodeProcessor implements NodeProcessor {
 
     switch (status) {
       case RUNNING:
-        this.dagService.markJobSuccess(node);
+        if (this.nodesToFail.contains(node)) {
+          this.dagService.failJob(node);
+        } else {
+          this.dagService.markJobSuccess(node);
+        }
         break;
       case KILLING:
         this.dagService.failJob(node);
