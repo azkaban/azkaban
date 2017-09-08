@@ -18,8 +18,11 @@ package azkaban.dag;
 
 public interface FlowProcessor {
 
-  void saveStatus(Flow flow, Status status);
-
-  // The flow has finished
-  void finish(Flow flow);
+  /**
+   * Changes the status of the flow.
+   *
+   * @param flow the flow to change
+   * @param status the new status
+   */
+  void changeStatus(Flow flow, Status status);
 }

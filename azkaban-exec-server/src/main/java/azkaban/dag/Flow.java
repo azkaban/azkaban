@@ -72,7 +72,6 @@ class Flow {
     } else {
       changeStatus(Status.SUCCESS);
     }
-    this.flowProcessor.finish(this);
   }
 
   /**
@@ -92,5 +91,6 @@ class Flow {
 
   private void changeStatus(final Status status) {
     this.status = status;
+    this.flowProcessor.changeStatus(this, status);
   }
 }
