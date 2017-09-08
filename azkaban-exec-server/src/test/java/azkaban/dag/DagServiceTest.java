@@ -36,13 +36,6 @@ public class DagServiceTest {
     this.dagService.shutdownAndAwaitTermination();
   }
 
-  private Node createNode(final String name) {
-    return new Node(name, this.nodeProcessor);
-  }
-
-  private Flow createFlow(final String name) {
-    return new Flow(name, this.flowProcessor);
-  }
   /**
    * Tests a DAG with one node which will run successfully.
    */
@@ -50,13 +43,8 @@ public class DagServiceTest {
   public void oneNodeSuccess() throws Exception {
     final Node aNode = createNode("a");
     this.testFlow.addNode(aNode);
-    this.dagService.startFlow(this.testFlow);
-    final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
-
-    // Make sure the flow finishes.
-    assertThat(isWaitSuccessful).isTrue();
+    runFlow();
   }
-
   /**
    * Tests a DAG with two nodes which will run successfully.
    * a -> b
@@ -68,10 +56,22 @@ public class DagServiceTest {
     aNode.addChild(bNode);
     this.testFlow.addNode(aNode);
     this.testFlow.addNode(bNode);
+    runFlow();
+  }
+
+  private void runFlow() throws InterruptedException {
     this.dagService.startFlow(this.testFlow);
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
     assertThat(isWaitSuccessful).isTrue();
+  }
+
+  private Node createNode(final String name) {
+    return new Node(name, this.nodeProcessor);
+  }
+
+  private Flow createFlow(final String name) {
+    return new Flow(name, this.flowProcessor);
   }
 }
