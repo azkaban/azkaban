@@ -67,7 +67,15 @@ class Node {
   }
 
   boolean isReady() {
-    return this.status == Status.READY;
+    if (this.status != Status.READY) {
+      return false;
+    }
+    for (final Node parent : this.parents) {
+      if (!parent.isSuccess()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public void run() {

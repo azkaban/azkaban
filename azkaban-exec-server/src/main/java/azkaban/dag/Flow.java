@@ -39,7 +39,7 @@ class Flow {
 
   void start() {
     changeStatus(Status.RUNNING);
-    final Set<Node> readyNodes = getInitialReadyNodes();
+    final Set<Node> readyNodes = getReadyNodes();
     for (final Node node : readyNodes) {
       node.run();
     }
@@ -76,14 +76,14 @@ class Flow {
   }
 
   /**
-   * Gets all the initial nodes that are ready to run.
+   * Gets all the nodes that are ready to run.
    *
    * @return a set of nodes that are ready to run
    */
-  private Set<Node> getInitialReadyNodes() {
+  private Set<Node> getReadyNodes() {
     final Set<Node> readyNodes = new HashSet<>();
     for (final Node node : this.nodes) {
-      if (node.isReady() && !node.hasParent()) {
+      if (node.isReady()) {
         readyNodes.add(node);
       }
     }
