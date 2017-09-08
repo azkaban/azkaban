@@ -47,10 +47,10 @@ public class DagServiceTest {
    * Tests a DAG with one node which will run successfully.
    */
   @Test
-  public void OneNodeSuccess() throws Exception {
+  public void oneNodeSuccess() throws Exception {
     final Node aNode = createNode("a");
-    testFlow.addNode(aNode);
-    this.dagService.startFlow(testFlow);
+    this.testFlow.addNode(aNode);
+    this.dagService.startFlow(this.testFlow);
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
@@ -62,13 +62,13 @@ public class DagServiceTest {
    * a -> b
    */
   @Test
-  public void TwoNodesSuccess() throws Exception {
+  public void twoNodesSuccess() throws Exception {
     final Node aNode = createNode("a");
     final Node bNode = createNode("b");
     aNode.addChild(bNode);
-    testFlow.addNode(aNode);
-    testFlow.addNode(bNode);
-    this.dagService.startFlow(testFlow);
+    this.testFlow.addNode(aNode);
+    this.testFlow.addNode(bNode);
+    this.dagService.startFlow(this.testFlow);
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
