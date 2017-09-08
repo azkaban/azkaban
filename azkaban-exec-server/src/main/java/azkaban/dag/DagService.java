@@ -16,8 +16,10 @@
 
 package azkaban.dag;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -34,7 +36,13 @@ public class DagService {
   private static final long SHUTDOWN_WAIT_TIMEOUT = 60;
   private static final Logger logger = LoggerFactory.getLogger(DagService.class);
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private final ExecutorService executorService;
+
+  public DagService() {
+    final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat("Dag-service-%d").build();
+    this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
+  }
 
   public void startFlow(final Flow flow) {
     this.executorService.submit(() -> flow.start());
