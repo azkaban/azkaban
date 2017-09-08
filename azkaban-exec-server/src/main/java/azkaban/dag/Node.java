@@ -62,6 +62,13 @@ class Node {
     return this;
   }
 
+  Node addChildren(final Node... nodes) {
+    for (final Node node : nodes) {
+      addChild(node);
+    }
+    return this;
+  }
+
   boolean hasParent() {
     return !this.parents.isEmpty();
   }

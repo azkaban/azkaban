@@ -37,6 +37,13 @@ class Flow {
     return this;
   }
 
+  Flow addNodes(final Node... nodes) {
+    for (final Node node : nodes) {
+      addNode(node);
+    }
+    return this;
+  }
+
   void start() {
     changeStatus(Status.RUNNING);
     final Set<Node> readyNodes = getReadyNodes();

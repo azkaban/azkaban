@@ -54,8 +54,7 @@ public class DagServiceTest {
     final Node aNode = createNode("a");
     final Node bNode = createNode("b");
     aNode.addChild(bNode);
-    this.testFlow.addNode(aNode);
-    this.testFlow.addNode(bNode);
+    this.testFlow.addNodes(aNode, bNode);
     runFlow();
   }
 
