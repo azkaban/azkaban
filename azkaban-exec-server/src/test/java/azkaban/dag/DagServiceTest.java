@@ -25,11 +25,11 @@ import org.junit.Test;
 
 public class DagServiceTest {
 
-  final DagService dagService = new DagService();
-  final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService);
-  final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
-  final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
-  final Flow testFlow = createFlow("fa");
+  private final DagService dagService = new DagService();
+  private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService);
+  private final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
+  private final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
+  private final Flow testFlow = createFlow("fa");
 
   @After
   public void tearDown() throws Exception {
@@ -45,9 +45,12 @@ public class DagServiceTest {
     this.testFlow.addNode(aNode);
     runFlow();
   }
+
   /**
    * Tests a DAG with two nodes which will run successfully.
-   * a -> b
+   * a
+   * |
+   * b
    */
   @Test
   public void twoNodesSuccess() throws Exception {
@@ -55,6 +58,24 @@ public class DagServiceTest {
     final Node bNode = createNode("b");
     aNode.addChild(bNode);
     this.testFlow.addNodes(aNode, bNode);
+    runFlow();
+  }
+
+  /**
+   * Tests a DAG with three nodes which will run successfully.
+   * <pre>
+   *    a
+   *  /  \
+   * b    c
+   * </pre>
+   */
+  @Test
+  public void threeNodesSuccess() throws Exception {
+    final Node aNode = createNode("a");
+    final Node bNode = createNode("b");
+    final Node cNode = createNode("c");
+    aNode.addChildren(bNode, cNode);
+    this.testFlow.addNodes(aNode, bNode, cNode);
     runFlow();
   }
 
