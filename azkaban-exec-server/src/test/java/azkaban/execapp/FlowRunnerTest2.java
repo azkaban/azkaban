@@ -398,6 +398,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
     assertStatus("jobb:innerJobA", Status.SUCCEEDED);
     assertStatus("jobd:innerJobA", Status.SUCCEEDED);
+    // the happens failure on this line
     assertStatus("jobb:innerJobB", Status.CANCELLED);
     assertStatus("jobb:innerJobC", Status.CANCELLED);
     assertStatus("jobb:innerFlow", Status.CANCELLED);
