@@ -106,4 +106,12 @@ class Flow {
   public String toString() {
     return String.format("Flow (%s), status (%s)", this.name, this.status);
   }
+
+  String getName() {
+    return this.name;
+  }
+
+  Status getStatus() {
+    return this.status;
+  }
 }

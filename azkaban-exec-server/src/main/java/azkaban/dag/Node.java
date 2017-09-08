@@ -170,4 +170,12 @@ class Node {
   public String toString() {
     return String.format("Node (%s) status (%s) in %s", this.name, this.status, this.flow);
   }
+
+  Status getStatus() {
+    return this.status;
+  }
+
+  String getName() {
+    return this.name;
+  }
 }

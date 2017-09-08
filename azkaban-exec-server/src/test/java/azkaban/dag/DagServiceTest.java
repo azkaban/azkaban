@@ -18,17 +18,23 @@ package azkaban.dag;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javafx.util.Pair;
 import org.junit.After;
 import org.junit.Test;
 
 public class DagServiceTest {
 
   private final DagService dagService = new DagService();
-  private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService);
+  private final StatusChangeRecorder statusChangeRecorder = new StatusChangeRecorder();
+  private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService,
+      this.statusChangeRecorder);
   private final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
-  private final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch);
+  private final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch,
+      this.statusChangeRecorder);
   private final Flow testFlow = createFlow("fa");
 
   @After
@@ -44,6 +50,13 @@ public class DagServiceTest {
     final Node aNode = createNode("a");
     this.testFlow.addNode(aNode);
     runFlow();
+
+    final List<Pair<String, Status>> expectedSequence = new ArrayList<>();
+    expectedSequence.add(new Pair("fa", Status.RUNNING));
+    expectedSequence.add(new Pair("a", Status.RUNNING));
+    expectedSequence.add(new Pair("a", Status.SUCCESS));
+    expectedSequence.add(new Pair("fa", Status.SUCCESS));
+    this.statusChangeRecorder.verifySequence(expectedSequence);
   }
 
   /**
@@ -75,6 +88,7 @@ public class DagServiceTest {
     final Node cNode = createNode("c");
     aNode.addChildren(bNode, cNode);
     runFlow();
+
   }
 
   private void runFlow() throws InterruptedException {
@@ -92,7 +106,7 @@ public class DagServiceTest {
    * @return Node object
    */
   private Node createNode(final String name) {
-    Node node = new Node(name, this.nodeProcessor);
+    final Node node = new Node(name, this.nodeProcessor);
     this.testFlow.addNode(node);
     return node;
   }

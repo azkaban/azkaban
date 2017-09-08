@@ -19,14 +19,19 @@ package azkaban.dag;
 public class TestNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
+  private final StatusChangeRecorder statusChangeRecorder;
 
-  public TestNodeProcessor(final DagService dagService) {
+  public TestNodeProcessor(final DagService dagService,
+      final StatusChangeRecorder statusChangeRecorder) {
     this.dagService = dagService;
+    this.statusChangeRecorder = statusChangeRecorder;
   }
 
   @Override
   public void changeStatus(final Node node, final Status status) {
     System.out.println(node);
+    this.statusChangeRecorder.recordNode(node);
+
     switch (status) {
       case RUNNING:
         this.dagService.markJobSuccess(node);

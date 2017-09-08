@@ -20,15 +20,20 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestFlowProcessor implements FlowProcessor {
 
+  private final StatusChangeRecorder statusChangeRecorder;
   CountDownLatch flowFinishedLatch;
 
-  public TestFlowProcessor(final CountDownLatch flowFinishedLatch) {
+
+  public TestFlowProcessor(final CountDownLatch flowFinishedLatch,
+      StatusChangeRecorder statusChangeRecorder) {
     this.flowFinishedLatch = flowFinishedLatch;
+    this.statusChangeRecorder = statusChangeRecorder;
   }
 
   @Override
   public void changeStatus(final Flow flow, final Status status) {
     System.out.println(flow);
+    statusChangeRecorder.recordFlow(flow);
     if (Status.isTerminal(status)) {
       this.flowFinishedLatch.countDown();
     }
