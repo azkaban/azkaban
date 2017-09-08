@@ -26,6 +26,7 @@ public class TestNodeProcessor implements NodeProcessor {
 
   @Override
   public void changeStatus(final Node node, final Status status) {
+    System.out.println(node);
     switch (status) {
       case RUNNING:
         this.dagService.markJobSuccess(node);

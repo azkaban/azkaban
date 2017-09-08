@@ -43,4 +43,29 @@ public class DagServiceTest {
     assertThat(isWaitSuccessful).isTrue();
     dagService.shutdownAndAwaitTermination();
   }
+
+  @Test
+  /**
+   * Tests a DAG with two nodes which will run successfully.
+   * a -> b
+   */
+  public void TwoNodesSuccess() throws Exception {
+    final DagService dagService = new DagService();
+    final NodeProcessor processor = new TestNodeProcessor(dagService);
+    final Node aNode = new Node("a", processor);
+    final Node bNode = new Node("b", processor);
+    aNode.addChild(bNode);
+    final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
+    final FlowProcessor flowProcessor = new TestFlowProcessor(flowFinishedLatch);
+    final Flow flow = new Flow("fa", flowProcessor);
+    flow.addNode(aNode);
+    flow.addNode(bNode);
+    dagService.startFlow(flow);
+    final boolean isWaitSuccessful = flowFinishedLatch.await(120, TimeUnit.SECONDS);
+
+    // Make sure the flow finishes.
+    assertThat(isWaitSuccessful).isTrue();
+    dagService.shutdownAndAwaitTermination();
+  }
+
 }

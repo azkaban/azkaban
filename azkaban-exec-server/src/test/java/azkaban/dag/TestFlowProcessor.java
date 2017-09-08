@@ -28,6 +28,7 @@ public class TestFlowProcessor implements FlowProcessor {
 
   @Override
   public void changeStatus(final Flow flow, final Status status) {
+    System.out.println(flow);
     if (Status.isTerminal(status)) {
       this.flowFinishedLatch.countDown();
     }
