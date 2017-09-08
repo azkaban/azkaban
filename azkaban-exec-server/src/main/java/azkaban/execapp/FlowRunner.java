@@ -198,6 +198,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.logger.info("Updating initial flow directory.");
       updateFlow();
       this.logger.info("Fetching job and shared properties.");
+
+      // Currently flow properties are loaded from .properties file
+      // Todo jamiesjc: support loading properties from azkabanFlow for azkaban.flow.2.0
       loadAllProperties();
 
       this.fireEventListeners(

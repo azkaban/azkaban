@@ -1,0 +1,40 @@
+# All flow level properties here
+config:
+  flow-level-parameter: value
+
+# This section defines the list of jobs
+# A node can be a job or a flow
+# In this example, all nodes are jobs
+nodes:
+  # Job definition
+  # The job definition is like a YAMLified version of properties file
+  # with one major difference. All custom properties are now clubbed together
+  # in a config section in the definition.
+  # The first line describes the name of the job
+  - name: basic_flow_shell_end
+    # Describe the type of the job
+    type: noop
+
+    # List the dependencies of the job
+    dependsOn:
+      - basic_flow_shell_pwd
+      - basic_flow_shell_echo
+      - basic_flow_shell_bash
+
+  - name: basic_flow_shell_echo
+    # Describe the type of the job
+    type: command
+    config:
+      command: echo "This is an echoed text."
+
+  - name: basic_flow_shell_pwd
+    # Describe the type of the job
+    type: command
+    config:
+      command: pwd
+
+  - name: basic_flow_shell_bash
+    # Describe the type of the job
+    type: command
+    config:
+      command: bash ./sample_script.sh

@@ -16,6 +16,7 @@
 package azkaban.executor;
 
 import azkaban.flow.Flow;
+import azkaban.project.AzkabanFlow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
@@ -57,6 +58,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private List<SlaOption> slaOptions = new ArrayList<>();
+  // Todo jamiesjc: integrate azkabanFlow in flow execution
+  private AzkabanFlow azkabanFlow;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -77,6 +80,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     exFlow.fillExecutableFromMapObject(flowObj);
 
     return exFlow;
+  }
+
+  public AzkabanFlow getAzkabanFlow() {
+    return azkabanFlow;
+  }
+
+  public void setAzkabanFlow(AzkabanFlow azkabanFlow) {
+    this.azkabanFlow = azkabanFlow;
   }
 
   @Override

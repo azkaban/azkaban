@@ -58,9 +58,16 @@ public class FlowBeanLoader {
   }
 
   public AzkabanFlow toAzkabanFlow(final String flowName, final FlowBean flowBean) {
+    // Source refers to .job or .properties file in current azkaban.
+    // It is needed when storing project properties in DB and also loading properties
+    // for the execution flow on executor side.
+    // In azkaban.flow.2.0., .job and .properties files will be deprecated.
+    // So for now just set source to flow/job name. Will change it later if needed.
+    Props props = new Props(null, flowBean.getConfig());
+    props.setSource(flowName);
     final AzkabanFlow flow = new AzkabanFlow.AzkabanFlowBuilder()
         .setName(flowName)
-        .setProps(new Props(null, flowBean.getConfig()))
+        .setProps(props)
         .setNodes(
             flowBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
         .build();
@@ -70,10 +77,12 @@ public class FlowBeanLoader {
   private AzkabanNode toAzkabanNode(final NodeBean nodeBean) {
     // Note: For now, all DAG nodes are assumed to be Jobs. The AzkabanNode generalize is for
     // future so that flows can refer to flows within it.
-
+    // Set source to job name for now.
+    Props props = new Props(null, nodeBean.getConfig());
+    props.setSource(nodeBean.getName());
     return new AzkabanJob.AzkabanJobBuilder()
         .setName(nodeBean.getName())
-        .setProps(new Props(null, nodeBean.getConfig()))
+        .setProps(props)
         .setType(nodeBean.getType())
         .setDependsOn(nodeBean.getDependsOn())
         .build();

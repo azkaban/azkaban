@@ -212,7 +212,7 @@ public class ExecutableFlowTest {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"), null);
     Assert.assertEquals(0, loader.getErrors().size());
 
     this.project.setFlows(loader.getFlowMap());

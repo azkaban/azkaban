@@ -16,6 +16,7 @@
 
 package azkaban.flow;
 
+import azkaban.project.AzkabanNode;
 import azkaban.utils.Utils;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
@@ -33,6 +34,8 @@ public class Node {
   private String type;
 
   private String embeddedFlowId;
+
+  private AzkabanNode azkabanNode;
 
   public Node(final String id) {
     this.id = id;
@@ -155,6 +158,14 @@ public class Node {
 
   public void setEmbeddedFlowId(final String flowId) {
     this.embeddedFlowId = flowId;
+  }
+
+  public AzkabanNode getAzkabanNode() {
+    return azkabanNode;
+  }
+
+  public void setAzkabanNode(AzkabanNode azkabanNode) {
+    this.azkabanNode = azkabanNode;
   }
 
   public Object toObject() {

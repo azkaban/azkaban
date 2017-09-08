@@ -55,7 +55,7 @@ public class EmailerTest {
 
     this.props = createMailProperties();
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props, logger);
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"), null);
     Assert.assertEquals(0, loader.getErrors().size());
     this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);

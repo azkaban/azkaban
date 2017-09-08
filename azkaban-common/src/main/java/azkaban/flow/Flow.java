@@ -17,6 +17,7 @@
 package azkaban.flow;
 
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.project.AzkabanFlow;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,6 +48,9 @@ public class Flow {
   private Map<String, Object> metadata = new HashMap<>();
 
   private boolean isLayedOut = false;
+
+  // Todo jamiesjc: integrate azkabanFlow in flow execution
+  private AzkabanFlow azkabanFlow;
 
   public Flow(final String id) {
     this.id = id;
@@ -131,6 +135,14 @@ public class Flow {
     }
 
     return properties;
+  }
+
+  public AzkabanFlow getAzkabanFlow() {
+    return azkabanFlow;
+  }
+
+  public void setAzkabanFlow(AzkabanFlow azkabanFlow) {
+    this.azkabanFlow = azkabanFlow;
   }
 
   public int getVersion() {
