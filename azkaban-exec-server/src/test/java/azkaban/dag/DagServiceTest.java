@@ -57,7 +57,6 @@ public class DagServiceTest {
     final Node aNode = createNode("a");
     final Node bNode = createNode("b");
     aNode.addChild(bNode);
-    this.testFlow.addNodes(aNode, bNode);
     runFlow();
   }
 
@@ -75,7 +74,6 @@ public class DagServiceTest {
     final Node bNode = createNode("b");
     final Node cNode = createNode("c");
     aNode.addChildren(bNode, cNode);
-    this.testFlow.addNodes(aNode, bNode, cNode);
     runFlow();
   }
 
@@ -87,8 +85,16 @@ public class DagServiceTest {
     assertThat(isWaitSuccessful).isTrue();
   }
 
+  /**
+   * Creates a node and add to the test flow.
+   *
+   * @param name node name
+   * @return Node object
+   */
   private Node createNode(final String name) {
-    return new Node(name, this.nodeProcessor);
+    Node node = new Node(name, this.nodeProcessor);
+    this.testFlow.addNode(node);
+    return node;
   }
 
   private Flow createFlow(final String name) {
