@@ -16,14 +16,16 @@
 
 package azkaban.dag;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 class Flow {
 
   private final String name;
   private final FlowProcessor flowProcessor;
-  private final Set<Node> nodes = new HashSet<>();
+  private final List<Node> nodes = new ArrayList<>();
   private Status status = Status.READY;
 
   Flow(final String name, final FlowProcessor flowProcessor) {

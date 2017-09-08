@@ -16,8 +16,8 @@
 
 package azkaban.dag;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Node in a DAG: Directed acyclic graph.
@@ -29,10 +29,10 @@ class Node {
   private final NodeProcessor nodeProcessor;
 
   // The nodes that this node depends on.
-  private final Set<Node> parents = new HashSet<>();
+  private final List<Node> parents = new ArrayList<>();
 
   // The nodes that depend on this node.
-  private final Set<Node> children = new HashSet<>();
+  private final List<Node> children = new ArrayList<>();
 
   private Status status = Status.READY;
 
@@ -95,10 +95,6 @@ class Node {
       child.check();
     }
     this.flow.checkFinished();
-  }
-
-  public Set<Node> getChildren() {
-    return this.children;
   }
 
   /**

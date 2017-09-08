@@ -36,6 +36,8 @@ public class DagServiceTest {
   private final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch,
       this.statusChangeRecorder);
   private final Flow testFlow = createFlow("fa");
+  private final List<Pair<String, Status>> expectedSequence = new ArrayList<>();
+
 
   @After
   public void tearDown() throws Exception {
@@ -49,14 +51,12 @@ public class DagServiceTest {
   public void oneNodeSuccess() throws Exception {
     final Node aNode = createNode("a");
     this.testFlow.addNode(aNode);
-    runFlow();
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.SUCCESS);
+    addToExpectedSequence("fa", Status.SUCCESS);
 
-    final List<Pair<String, Status>> expectedSequence = new ArrayList<>();
-    expectedSequence.add(new Pair("fa", Status.RUNNING));
-    expectedSequence.add(new Pair("a", Status.RUNNING));
-    expectedSequence.add(new Pair("a", Status.SUCCESS));
-    expectedSequence.add(new Pair("fa", Status.SUCCESS));
-    this.statusChangeRecorder.verifySequence(expectedSequence);
+    runAndVerify();
   }
 
   /**
@@ -70,7 +70,14 @@ public class DagServiceTest {
     final Node aNode = createNode("a");
     final Node bNode = createNode("b");
     aNode.addChild(bNode);
-    runFlow();
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.SUCCESS);
+    addToExpectedSequence("b", Status.RUNNING);
+    addToExpectedSequence("b", Status.SUCCESS);
+    addToExpectedSequence("fa", Status.SUCCESS);
+
+    runAndVerify();
   }
 
   /**
@@ -87,8 +94,22 @@ public class DagServiceTest {
     final Node bNode = createNode("b");
     final Node cNode = createNode("c");
     aNode.addChildren(bNode, cNode);
-    runFlow();
 
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.SUCCESS);
+    addToExpectedSequence("b", Status.RUNNING);
+    addToExpectedSequence("c", Status.RUNNING);
+    addToExpectedSequence("b", Status.SUCCESS);
+    addToExpectedSequence("c", Status.SUCCESS);
+    addToExpectedSequence("fa", Status.SUCCESS);
+
+    runAndVerify();
+
+  }
+
+  private void addToExpectedSequence(final String name, final Status status) {
+    this.expectedSequence.add(new Pair(name, status));
   }
 
   private void runFlow() throws InterruptedException {
@@ -97,6 +118,15 @@ public class DagServiceTest {
 
     // Make sure the flow finishes.
     assertThat(isWaitSuccessful).isTrue();
+  }
+
+  private void verifyStatusSequence() {
+    this.statusChangeRecorder.verifySequence(this.expectedSequence);
+  }
+
+  private void runAndVerify() throws InterruptedException {
+    runFlow();
+    verifyStatusSequence();
   }
 
   /**
