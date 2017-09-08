@@ -20,28 +20,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DagServiceTest {
+
+  DagService dagService;
+
+  @Before
+  public void setUp() throws Exception {
+    this.dagService = new DagService();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    this.dagService.shutdownAndAwaitTermination();
+  }
 
   @Test
   /**
    * Tests a DAG with one node which will run successfully.
    */
   public void OneNodeSuccess() throws Exception {
-    final DagService dagService = new DagService();
-    final NodeProcessor processor = new TestNodeProcessor(dagService);
+    final NodeProcessor processor = new TestNodeProcessor(this.dagService);
     final Node aNode = new Node("a", processor);
     final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
     final FlowProcessor flowProcessor = new TestFlowProcessor(flowFinishedLatch);
     final Flow flow = new Flow("fa", flowProcessor);
     flow.addNode(aNode);
-    dagService.startFlow(flow);
+    this.dagService.startFlow(flow);
     final boolean isWaitSuccessful = flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
     assertThat(isWaitSuccessful).isTrue();
-    dagService.shutdownAndAwaitTermination();
   }
 
   @Test
@@ -50,8 +62,7 @@ public class DagServiceTest {
    * a -> b
    */
   public void TwoNodesSuccess() throws Exception {
-    final DagService dagService = new DagService();
-    final NodeProcessor processor = new TestNodeProcessor(dagService);
+    final NodeProcessor processor = new TestNodeProcessor(this.dagService);
     final Node aNode = new Node("a", processor);
     final Node bNode = new Node("b", processor);
     aNode.addChild(bNode);
@@ -60,12 +71,11 @@ public class DagServiceTest {
     final Flow flow = new Flow("fa", flowProcessor);
     flow.addNode(aNode);
     flow.addNode(bNode);
-    dagService.startFlow(flow);
+    this.dagService.startFlow(flow);
     final boolean isWaitSuccessful = flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.
     assertThat(isWaitSuccessful).isTrue();
-    dagService.shutdownAndAwaitTermination();
   }
 
 }
