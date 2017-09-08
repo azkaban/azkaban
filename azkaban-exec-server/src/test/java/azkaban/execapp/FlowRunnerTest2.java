@@ -392,12 +392,14 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     InteractiveTestJob.getTestJob("joba1").failJob();
     assertStatus("joba1", Status.FAILED);
+    assertFlowStatus(Status.FAILED_FINISHING);
 
     // 3. joba completes, everything is killed
     InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
     InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
     assertStatus("jobb:innerJobA", Status.SUCCEEDED);
     assertStatus("jobd:innerJobA", Status.SUCCEEDED);
+    // the happens failure on this line
     assertStatus("jobb:innerJobB", Status.CANCELLED);
     assertStatus("jobb:innerJobC", Status.CANCELLED);
     assertStatus("jobb:innerFlow", Status.CANCELLED);

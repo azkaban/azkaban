@@ -608,7 +608,15 @@ public class JobRunner extends EventHandler implements Runnable {
     logInfo(
         "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
             + " with status " + this.node.getStatus());
-
+    if (finalStatus == Status.FAILED) {
+      this.logger.warn("SLEEPING BEFORE fireEvent :)");
+      try {
+        Thread.sleep(1000L);
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      this.logger.warn("NOW -> fireEvent");
+    }
     fireEvent(Event.create(this, Type.JOB_FINISHED,
         new EventData(finalStatus, this.node.getNestedId())), false);
     finalizeLogFile(this.node.getAttempt());
