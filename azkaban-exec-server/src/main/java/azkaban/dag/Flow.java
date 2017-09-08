@@ -37,11 +37,11 @@ class Flow {
   }
 
   void start() {
+    changeStatus(Status.RUNNING);
     final Set<Node> readyNodes = getInitialReadyNodes();
     for (final Node node : readyNodes) {
       node.run();
     }
-    changeStatus(Status.RUNNING);
   }
 
   void kill() {

@@ -18,9 +18,19 @@ package azkaban.dag;
 
 public interface NodeProcessor {
 
-  void saveStatus(Node node, Status status);
-
-  void run(Node node);
-
-  void kill(Node node);
+  /**
+   * Changes the status of the node.
+   *
+   * Typically a processor implementation should handle the RUNNING and KILLING status by staring
+   * or killing a unit of work and call the {@link DagService} to transition the node to the next
+   * status.
+   *
+   * The call will be made in the context of the DagService's one and only thread. Thus a
+   * processor should limit the time it takes to process the call. For lengthy operations such as
+   * I/O operations, consider offloading them to other threads.
+   *
+   * @param node the node to change
+   * @param status the new status
+   */
+  void changeStatus(Node node, Status status);
 }

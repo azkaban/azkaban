@@ -72,11 +72,6 @@ class Node {
 
   public void run() {
     changeStatus(Status.RUNNING);
-    this.nodeProcessor.run(this);
-  }
-
-  private void saveStatus() {
-    this.nodeProcessor.saveStatus(this, this.status);
   }
 
   void markSuccess() {
@@ -136,7 +131,7 @@ class Node {
 
   private void changeStatus(final Status status) {
     this.status = status;
-    saveStatus();
+    this.nodeProcessor.changeStatus(this, this.status);
   }
 
   void kill() {
