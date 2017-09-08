@@ -127,6 +127,9 @@ public class DagServiceTest {
 
   /**
    * Tests a DAG with two nodes, fails the first one.
+   *
+   * Expect the child node to be marked canceled.
+   *
    * a (fail)
    * |
    * b
@@ -149,6 +152,8 @@ public class DagServiceTest {
 
   /**
    * Tests a DAG with three nodes with one failure.
+   *
+   * Expect the sibling nodes to finish.
    *
    * <pre>
    *       a
