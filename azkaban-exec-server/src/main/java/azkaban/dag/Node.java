@@ -71,7 +71,7 @@ class Node {
       return false;
     }
     for (final Node parent : this.parents) {
-      if (!parent.isSuccess()) {
+      if (!parent.isSuccessEffectively()) {
         return false;
       }
     }
@@ -103,7 +103,7 @@ class Node {
     }
 
     for (final Node node : this.parents) {
-      if (!node.isSuccess()) {
+      if (!node.isSuccessEffectively()) {
         return;
       }
     }
@@ -114,8 +114,8 @@ class Node {
   /**
    * @return true if the dependency requirement is considered satisfied
    */
-  private boolean isSuccess() {
-    return Status.EFFECTIVE_SUCCESS_STATES.contains(this.status);
+  private boolean isSuccessEffectively() {
+    return Status.isSuccessEffectively(this.status);
   }
 
   void markFailure() {
@@ -152,7 +152,7 @@ class Node {
   }
 
   boolean isInTerminalState() {
-    return Status.TERMINAL_STATES.contains(this.status);
+    return Status.isTerminal(this.status);
   }
 
   boolean isFailure() {

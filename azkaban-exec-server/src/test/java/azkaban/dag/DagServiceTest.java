@@ -16,6 +16,10 @@
 
 package azkaban.dag;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class DagServiceTest {
@@ -28,11 +32,15 @@ public class DagServiceTest {
     final DagService dagService = new DagService();
     final NodeProcessor processor = new TestNodeProcessor(dagService);
     final Node aNode = new Node("a", processor);
-    final FlowProcessor flowProcessor = new TestFlowProcessor();
+    final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
+    final FlowProcessor flowProcessor = new TestFlowProcessor(flowFinishedLatch);
     final Flow flow = new Flow("fa", flowProcessor);
     flow.addNode(aNode);
     dagService.startFlow(flow);
-    Thread.sleep(1000000);
+    final boolean isWaitSuccessful = flowFinishedLatch.await(120, TimeUnit.SECONDS);
+
+    // Make sure the flow finishes.
+    assertThat(isWaitSuccessful).isTrue();
     dagService.shutdownAndAwaitTermination();
   }
 }

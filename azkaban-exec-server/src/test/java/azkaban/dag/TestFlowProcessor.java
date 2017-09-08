@@ -16,10 +16,20 @@
 
 package azkaban.dag;
 
+import java.util.concurrent.CountDownLatch;
+
 public class TestFlowProcessor implements FlowProcessor {
+
+  CountDownLatch flowFinishedLatch;
+
+  public TestFlowProcessor(final CountDownLatch flowFinishedLatch) {
+    this.flowFinishedLatch = flowFinishedLatch;
+  }
 
   @Override
   public void changeStatus(final Flow flow, final Status status) {
-
+    if (Status.isTerminal(status)) {
+      this.flowFinishedLatch.countDown();
+    }
   }
 }
