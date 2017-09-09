@@ -16,6 +16,8 @@
 
 package azkaban.dag;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +42,7 @@ class Node {
 
   Node(final String name, final NodeProcessor nodeProcessor) {
     this.name = name;
+    requireNonNull(nodeProcessor);
     this.nodeProcessor = nodeProcessor;
   }
 
@@ -173,5 +176,9 @@ class Node {
 
   String getName() {
     return this.name;
+  }
+
+  void disable() {
+    this.status = Status.DISABLED;
   }
 }

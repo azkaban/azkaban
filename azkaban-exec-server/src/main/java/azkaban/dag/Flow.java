@@ -16,6 +16,8 @@
 
 package azkaban.dag;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +32,7 @@ class Flow {
 
   Flow(final String name, final FlowProcessor flowProcessor) {
     this.name = name;
+    requireNonNull(flowProcessor);
     this.flowProcessor = flowProcessor;
   }
 
@@ -52,6 +55,9 @@ class Flow {
     for (final Node node : readyNodes) {
       node.run();
     }
+    // It's possible that all nodes are disabled. In this rare case the flow should be
+    // marked success. Otherwise it will be stuck in the the running state.
+    checkFinished();
   }
 
   void kill() {
