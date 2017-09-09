@@ -18,6 +18,7 @@ package azkaban.dag;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -61,11 +62,10 @@ class Flow {
   }
 
   void kill() {
-    changeStatus(Status.KILLED);
+    changeStatus(Status.KILLING);
     for (final Node node : this.nodes) {
       node.kill();
     }
-
   }
 
   /**
@@ -121,5 +121,10 @@ class Flow {
 
   Status getStatus() {
     return this.status;
+  }
+
+  @VisibleForTesting
+  void setStatus(final Status status) {
+    this.status = status;
   }
 }

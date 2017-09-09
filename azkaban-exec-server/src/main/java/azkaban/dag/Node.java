@@ -18,6 +18,7 @@ package azkaban.dag;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,10 +151,10 @@ class Node {
 
   void kill() {
     if (this.status == Status.READY || this.status == Status.BLOCKED) {
-      this.status = Status.CANCELED;
+      changeStatus(Status.CANCELED);
     } else if (this.status == Status.RUNNING) {
       // kill the job
-      this.status = Status.KILLING;
+      changeStatus(Status.KILLING);
     }
   }
 
@@ -174,11 +175,12 @@ class Node {
     return this.status;
   }
 
-  String getName() {
-    return this.name;
+  @VisibleForTesting
+  void setStatus(final Status status) {
+    this.status = status;
   }
 
-  void disable() {
-    this.status = Status.DISABLED;
+  String getName() {
+    return this.name;
   }
 }
