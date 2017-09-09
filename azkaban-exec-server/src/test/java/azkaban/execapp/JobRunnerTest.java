@@ -16,6 +16,9 @@
 
 package azkaban.execapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
+import azkaban.AzkabanCommonModule;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventData;
@@ -26,9 +29,12 @@ import azkaban.executor.JavaJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.SleepJavaJob;
 import azkaban.executor.Status;
+import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.utils.Props;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -62,6 +68,15 @@ public class JobRunnerTest {
         new JobTypeManager(null, null, this.getClass().getClassLoader());
 
     this.jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
+    final Props pluginLoadProps = new Props();
+    pluginLoadProps.put(ProcessJob.EXECUTE_AS_USER, "false");
+    this.jobtypeManager.getJobTypePluginSet().addPluginLoadProps("java", pluginLoadProps);
+
+    final Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(new Props())
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(injector);
   }
 
   @After
@@ -73,13 +88,12 @@ public class JobRunnerTest {
     }
   }
 
-  @Ignore
   @Test
   public void testBasicRun() {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
-        createJobRunner(1, "testJob", 1, false, loader, eventCollector);
+        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
     final ExecutableNode node = runner.getNode();
 
     eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED, new EventData(node)));
@@ -93,7 +107,7 @@ public class JobRunnerTest {
     Assert.assertTrue("Node status is " + node.getStatus(),
         node.getStatus() == Status.SUCCEEDED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
-    Assert.assertTrue(node.getEndTime() - node.getStartTime() > 1000);
+    Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
@@ -320,8 +334,14 @@ public class JobRunnerTest {
     props.put("type", "java");
 
     props.put(JavaJob.JOB_CLASS, SleepJavaJob.class.getName());
+    // TODO always use 0 if "immediate succeess" and 10 if "wait until killed"
+    // 0 makes the tests as quick as possible and 10 provides stability when test run is slow
     props.put("seconds", sleepSec);
     props.put(ProcessJob.WORKING_DIR, this.workingDir.getPath());
+    props.put(CommonJobProperties.SUBMIT_USER, "testuser");
+    props.put(CommonJobProperties.PROJECT_NAME, "testproject");
+    props.put(CommonJobProperties.FLOW_ID, "testflow");
+    props.put(CommonJobProperties.EXEC_ID, "-1");
     props.put("fail", String.valueOf(fail));
 
     return props;
