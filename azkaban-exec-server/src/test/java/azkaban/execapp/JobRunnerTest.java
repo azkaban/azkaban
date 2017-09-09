@@ -81,6 +81,7 @@ public class JobRunnerTest {
 
   @After
   public void tearDown() throws IOException {
+    SERVICE_PROVIDER.unsetInjector();
     System.out.println("Teardown temp dir");
     if (this.workingDir != null) {
       FileUtils.deleteDirectory(this.workingDir);
