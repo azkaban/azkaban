@@ -43,7 +43,6 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class JobRunnerTest {
@@ -119,7 +118,6 @@ public class JobRunnerTest {
     eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
-  @Ignore
   @Test
   public void testFailedRun() {
     final MockExecutorLoader loader = new MockExecutorLoader();
@@ -210,7 +208,6 @@ public class JobRunnerTest {
     eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_FINISHED);
   }
 
-  @Ignore
   @Test
   // todo: HappyRay investigate if it is worth fixing this test. If not, remove it.
   // The change history doesn't mention why this test was ignored.
@@ -249,7 +246,6 @@ public class JobRunnerTest {
     eventCollector.assertEvents(Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED);
   }
 
-  @Ignore
   @Test
   public void testDelayedExecutionJob() {
     final MockExecutorLoader loader = new MockExecutorLoader();
