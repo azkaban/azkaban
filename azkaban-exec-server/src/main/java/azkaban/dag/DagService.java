@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  *
  * Since only one thread is used to progress the DAG, thread synchronization is avoided.
  */
+@SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
 public class DagService {
 
@@ -45,22 +46,18 @@ public class DagService {
     this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
   }
 
-  @SuppressWarnings("FutureReturnValueIgnored")
   public void startFlow(final Flow flow) {
     this.executorService.submit(() -> flow.start());
   }
 
-  @SuppressWarnings("FutureReturnValueIgnored")
   public void markJobSuccess(final Node node) {
     this.executorService.submit(() -> node.markSuccess());
   }
 
-  @SuppressWarnings("FutureReturnValueIgnored")
   public void failJob(final Node node) {
     this.executorService.submit(() -> node.markFailure());
   }
 
-  @SuppressWarnings("FutureReturnValueIgnored")
   public void killFlow(final Flow flow) {
     this.executorService.submit(() -> flow.kill());
   }
