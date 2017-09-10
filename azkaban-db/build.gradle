@@ -41,7 +41,7 @@ dependencies {
 
 /**
  * concat task
- * Concatenate all the sql queries / files (except update.*.sql) and collect it into a single
+ * Concatenate all the sql queries / files (except upgrade.*.sql) and collect it into a single
  * SQL file.
  */
 task concat() {
@@ -51,6 +51,7 @@ task concat() {
             logger.info('Concating create scripts to ' + destFile)
             fileset(dir: 'src/main/sql') {
                 exclude(name: 'database.properties')
+                exclude(name: 'upgrade.*.sql')
             }
         }
     }
