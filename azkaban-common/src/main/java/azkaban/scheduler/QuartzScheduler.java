@@ -1,8 +1,12 @@
 package azkaban.scheduler;
 
-import java.util.Properties;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,18 +22,31 @@ public class QuartzScheduler {
   }
 
   public void initialize() throws SchedulerException {
-    // create the properties
-    final Properties qrtzProperties = new Properties();
 
-    // start the scheduler
+    final JobDetail job = JobBuilder.newJob(QuartzSampleJob.class)
+        .withIdentity("dummyJobName4", "group1").build();
+    final Trigger trigger = TriggerBuilder
+        .newTrigger()
+        .withIdentity("dummyTriggerName4", "group1")
+        .withSchedule(
+            CronScheduleBuilder.cronSchedule("*/20 * * * * ?")
+            .withMisfireHandlingInstructionFireAndProceed()
+//            .withMisfireHandlingInstructionDoNothing()
+//            .withMisfireHandlingInstructionIgnoreMisfires()
+        )
+        .build();
+
     final StdSchedulerFactory schedulerFactory = new StdSchedulerFactory
         ("/Users/latang/Desktop/conf/quartz.properties");
     try {
-      schedulerFactory.initialize(qrtzProperties);
+//      schedulerFactory.initialize(new Properties());
       scheduler = schedulerFactory.getScheduler();
       scheduler.start();
+//      scheduler.clear();
+//      scheduler.scheduleJob(job, trigger);
     } catch (final SchedulerException e) {
       logger.warn("Error starting Quartz scheduler: " + e.getMessage());
+      e.printStackTrace();
     }
     logger.debug("QrtzScheduler started");
   }
