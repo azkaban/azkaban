@@ -149,10 +149,6 @@ public class FlowTest {
     assertThat(bNode.getStatus()).isEqualTo(Status.FAILURE);
   }
 
-  private Node createNode(final String name) {
-    return new Node(name, new NullNodeProcessor());
-  }
-
   /**
    * Creates a node and add to the test flow.
    *
@@ -160,7 +156,7 @@ public class FlowTest {
    * @return Node object
    */
   private Node createAndAddNode(final String name) {
-    final Node node = createNode(name);
+    final Node node = TestUtil.createNodeWithNullProcessor(name);
     this.testFlow.addNode(node);
     return node;
   }

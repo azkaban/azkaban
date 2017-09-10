@@ -25,8 +25,8 @@ public class NodeTest {
 
   @Test
   public void hasParent() throws Exception {
-    final Node node = new Node("a", null);
-    final Node parentNode = new Node("parent", null);
+    final Node node = TestUtil.createNodeWithNullProcessor("a");
+    final Node parentNode = TestUtil.createNodeWithNullProcessor("parent");
     parentNode.addChild(node);
     final boolean hasParent = node.hasParent();
     assertThat(hasParent).isTrue();
@@ -34,7 +34,7 @@ public class NodeTest {
 
   @Test
   public void hasParentNegative() throws Exception {
-    final Node node = new Node("a", null);
+    final Node node = TestUtil.createNodeWithNullProcessor("a");
     final boolean hasParent = node.hasParent();
     assertThat(hasParent).isFalse();
   }

@@ -52,7 +52,7 @@ public class DagServiceTest {
    */
   @Test
   public void oneNodeSuccess() throws Exception {
-    final Node aNode = createNode("a");
+    createNode("a");
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("a", Status.RUNNING);
     addToExpectedSequence("a", Status.SUCCESS);
