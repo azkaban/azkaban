@@ -64,6 +64,7 @@ class Flow {
     for (final Node node : this.nodes) {
       node.kill();
     }
+    checkFinished();
   }
 
   /**
@@ -73,16 +74,26 @@ class Flow {
     // A flow may have nodes that are disabled. It's safer to scan all the nodes.
     // The assumption is that the overhead is minimal. If it is not the case, we can optimize later.
     boolean failed = false;
+    boolean killed = false;
     for (final Node node : this.nodes) {
       if (!node.isInTerminalState()) {
         return;
       }
-      if (node.isFailure()) {
-        failed = true;
+      switch (this.status) {
+        case FAILURE:
+          failed = true;
+          break;
+        case KILLED:
+          killed = true;
+          break;
       }
     }
+
     if (failed) {
+      // If there are both failures and killed nodes, the flow status should be failed.
       changeStatus(Status.FAILURE);
+    } else if (killed) {
+      changeStatus(Status.KILLED);
     } else {
       changeStatus(Status.SUCCESS);
     }

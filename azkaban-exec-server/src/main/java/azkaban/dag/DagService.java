@@ -54,6 +54,10 @@ public class DagService {
     this.executorService.submit(() -> node.markSuccess());
   }
 
+  public void markJobKilled(final Node node) {
+    this.executorService.submit(() -> node.markKilled());
+  }
+
   public void failJob(final Node node) {
     this.executorService.submit(() -> node.markFailure());
   }

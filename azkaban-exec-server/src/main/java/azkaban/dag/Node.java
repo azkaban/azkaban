@@ -149,6 +149,14 @@ class Node {
     this.nodeProcessor.changeStatus(this, this.status);
   }
 
+  /**
+   * Kills a node.
+   *
+   * Unlike other events, this method expects that the caller will check if the flow is finished.
+   * This action will only be invoked by the {@link Flow#kill()} method, i.e. there is no
+   * DagService#killNode method. In the interest of efficiency, it only needs to check once in
+   * the Flow#kill method.
+   */
   void kill() {
     if (this.status == Status.READY || this.status == Status.BLOCKED) {
       changeStatus(Status.CANCELED);
@@ -158,12 +166,14 @@ class Node {
     }
   }
 
-  boolean isInTerminalState() {
-    return Status.isTerminal(this.status);
+  void markKilled() {
+    assert (this.status == Status.KILLING);
+    changeStatus(Status.KILLED);
+    this.flow.checkFinished();
   }
 
-  boolean isFailure() {
-    return this.status == Status.FAILURE;
+  boolean isInTerminalState() {
+    return Status.isTerminal(this.status);
   }
 
   @Override
