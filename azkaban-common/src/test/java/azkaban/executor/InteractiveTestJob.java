@@ -109,7 +109,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
     while (this.isWaiting) {
       synchronized (this) {
-        final int waitMillis = this.jobProps.getInt("seconds", 5) * 1000;
+        final int waitMillis = this.jobProps.getInt("seconds", 10) * 1000;
         if (waitMillis > 0) {
           try {
             wait(waitMillis);
