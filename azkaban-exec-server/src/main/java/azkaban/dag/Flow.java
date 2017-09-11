@@ -20,9 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 class Flow {
 
@@ -52,7 +50,7 @@ class Flow {
 
   void start() {
     changeStatus(Status.RUNNING);
-    final Set<Node> readyNodes = getReadyNodes();
+    final List<Node> readyNodes = getReadyNodes();
     for (final Node node : readyNodes) {
       node.run();
     }
@@ -93,10 +91,10 @@ class Flow {
   /**
    * Gets all the nodes that are ready to run.
    *
-   * @return a set of nodes that are ready to run
+   * @return a list of nodes that are ready to run
    */
-  private Set<Node> getReadyNodes() {
-    final Set<Node> readyNodes = new HashSet<>();
+  private List<Node> getReadyNodes() {
+    final List<Node> readyNodes = new ArrayList<>();
     for (final Node node : this.nodes) {
       if (node.isReady()) {
         readyNodes.add(node);
