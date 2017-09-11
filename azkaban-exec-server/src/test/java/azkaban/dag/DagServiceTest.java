@@ -228,6 +228,36 @@ public class DagServiceTest {
     runAndVerify();
 
   }
+
+  /**
+   * Tests killing a flow.
+   */
+  @Test
+  public void kill_a_node() throws Exception {
+    final CountDownLatch jobRunningLatch = new CountDownLatch(1);
+    final TestKillNodeProcessor killNodeProcessor = new TestKillNodeProcessor(this.dagService,
+        this.statusChangeRecorder, jobRunningLatch);
+    final Node aNode = new Node("a", killNodeProcessor);
+    this.testFlow.addNode(aNode);
+
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("fa", Status.KILLING);
+    addToExpectedSequence("a", Status.KILLING);
+    addToExpectedSequence("a", Status.KILLED);
+    addToExpectedSequence("fa", Status.KILLED);
+
+    this.dagService.startFlow(this.testFlow);
+    jobRunningLatch.await(120, TimeUnit.SECONDS);
+    this.dagService.killFlow(this.testFlow);
+
+    final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
+    // Make sure the flow finishes.
+    assertThat(isWaitSuccessful).isTrue();
+    verifyStatusSequence();
+  }
+
+
   private void addToExpectedSequence(final String name, final Status status) {
     this.expectedSequence.add(new Pair(name, status));
   }

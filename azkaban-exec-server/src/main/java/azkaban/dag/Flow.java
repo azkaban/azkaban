@@ -79,12 +79,14 @@ class Flow {
       if (!node.isInTerminalState()) {
         return;
       }
-      switch (this.status) {
+      switch (node.getStatus()) {
         case FAILURE:
           failed = true;
           break;
         case KILLED:
           killed = true;
+          break;
+        default:
           break;
       }
     }
