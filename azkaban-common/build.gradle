@@ -12,24 +12,7 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
- *
  */
-
-apply plugin: 'c'
-model {
-    components {
-        main(NativeExecutableSpec) {
-            sources {
-                c {
-                    source {
-                        srcDir "src/main"
-                        include "**/*.c"
-                    }
-                }
-            }
-        }
-    }
-}
 
 dependencies {
     compile project(':azkaban-spi')

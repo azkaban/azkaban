@@ -13,15 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-rootProject.name = 'azkaban'
-
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'test'
+apply plugin: 'c'
+model {
+    components {
+        main(NativeExecutableSpec) {
+            sources {
+                c {
+                    source {
+                        srcDir "src/main"
+                        include "**/*.c"
+                    }
+                }
+            }
+        }
+    }
+}
