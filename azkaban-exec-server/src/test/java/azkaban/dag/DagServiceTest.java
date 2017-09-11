@@ -128,7 +128,7 @@ public class DagServiceTest {
   /**
    * Tests a DAG with two nodes, fails the first one.
    *
-   * Expect the child node to be marked canceled.
+   * Expects the child node to be marked canceled.
    *
    * a (fail)
    * |
@@ -148,6 +148,39 @@ public class DagServiceTest {
     addToExpectedSequence("fa", Status.FAILURE);
 
     runAndVerify();
+  }
+
+  /**
+   * Tests a DAG with three nodes with one failure.
+   *
+   * Expects the sibling nodes to finish.
+   *
+   * <pre>
+   *       a
+   *   /      \
+   * b (fail)    c
+   * </pre>
+   */
+  @Test
+  public void threeNodesFailSecond() throws Exception {
+    final Node aNode = createNodeAndAddToTestFlow("a");
+    final Node bNode = createNodeAndAddToTestFlow("b");
+    final Node cNode = createNodeAndAddToTestFlow("c");
+    aNode.addChildren(bNode, cNode);
+
+    this.nodesToFail.add(bNode);
+
+    addToExpectedSequence("fa", Status.RUNNING);
+    addToExpectedSequence("a", Status.RUNNING);
+    addToExpectedSequence("a", Status.SUCCESS);
+    addToExpectedSequence("b", Status.RUNNING);
+    addToExpectedSequence("c", Status.RUNNING);
+    addToExpectedSequence("b", Status.FAILURE);
+    addToExpectedSequence("c", Status.SUCCESS);
+    addToExpectedSequence("fa", Status.FAILURE);
+
+    runAndVerify();
+
   }
 
   /**
@@ -191,39 +224,6 @@ public class DagServiceTest {
     addToExpectedSequence("c", Status.RUNNING);
     addToExpectedSequence("c", Status.SUCCESS);
     addToExpectedSequence("fa", Status.SUCCESS);
-
-    runAndVerify();
-
-  }
-
-  /**
-   * Tests a DAG with three nodes with one failure.
-   *
-   * Expect the sibling nodes to finish.
-   *
-   * <pre>
-   *       a
-   *   /      \
-   * b (fail)    c
-   * </pre>
-   */
-  @Test
-  public void threeNodesFailSecond() throws Exception {
-    final Node aNode = createNodeAndAddToTestFlow("a");
-    final Node bNode = createNodeAndAddToTestFlow("b");
-    final Node cNode = createNodeAndAddToTestFlow("c");
-    aNode.addChildren(bNode, cNode);
-
-    this.nodesToFail.add(bNode);
-
-    addToExpectedSequence("fa", Status.RUNNING);
-    addToExpectedSequence("a", Status.RUNNING);
-    addToExpectedSequence("a", Status.SUCCESS);
-    addToExpectedSequence("b", Status.RUNNING);
-    addToExpectedSequence("c", Status.RUNNING);
-    addToExpectedSequence("b", Status.FAILURE);
-    addToExpectedSequence("c", Status.SUCCESS);
-    addToExpectedSequence("fa", Status.FAILURE);
 
     runAndVerify();
 
