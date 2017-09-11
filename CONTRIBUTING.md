@@ -7,6 +7,7 @@ reach out on [the Azkaban Google Group](https://groups.google.com/forum/?fromgro
 if you have any questions.
 
 ## Reporting issues
+
 We [use Github issues](https://github.com/azkaban/azkaban/issues) to track bug reports, feature requests,
  and submitting pull requests.
 
@@ -31,7 +32,8 @@ Please give your pull request a clear title and description and note which issue
 under [the Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).
 
 
-## Styleguides
+## Style guides
+
 Azkaban follows [Google code style](http://google.github.io/styleguide/). The template file, 
 `az-intellij-style.xml`, can be found in the root directory. It's based on the 
 [intellij-java-google-style.xml config file](https://github.com/google/styleguide/blob/75c289f1d33836d1ff4bd94e6c9033673e320b58/intellij-java-google-style.xml) from the google/styleguide project.
@@ -59,3 +61,46 @@ It allows us to do following when saving a file:
 * Remove unnecessary semicolon
 * Add missing @Override annotations
 
+## Coding conventions
+
+- Automated tests are expected.
+  
+  Exceptions should be rare. 
+  An example is automated UI testing, until the test framework catches up. 
+  
+- Define configuration keys in the azkaban.Constants class.
+  
+- [Favor composition over inheritance](http://thefinestartist.com/effective-java/16).
+
+- Favor @Singleton notation over the bind method. 
+
+  See [this example PR](https://github.com/azkaban/azkaban/pull/1428).
+
+- [Favor JSR-330's annotations and Provider interface](https://github.com/google/guice/wiki/JSR330). 
+  
+  e.g. `import javax.inject.Inject;` instead of `import com.google.inject.Inject;`
+
+- Introduce an interface only when needed.
+  
+  When there is a single implementation, don't introduce an interface. When there is a need for a
+   second implementation, refactor the code to introduce an interface as needed. 
+   The person making that change in the future will know more (two implementations) than you do now (one implementation) 
+   and they will use that knowledge to make better API choices. Modern IDEs have good support for
+    such refactoring. There is less IDE support for removing an interface.
+    
+  This convention only applies to the code internal to this project. It's a good use of interfaces
+   for public APIs, which are used by the code that the project owners can't change and evolve 
+   easily.
+
+  See [this blog post](https://rrees.me/2009/01/31/programming-to-interfaces-anti-pattern/).
+
+- Favor small and focused classes, files, methods over large ones.
+
+  It's ok to have many classes, files.
+  Here is [a rule of 30 suggestion](https://dzone.com/articles/rule-30-%E2%80%93-when-method-class-or).
+
+- Use [Mockito](http://site.mockito.org/) as the mocking framework in unit tests.
+
+  It's an exception rather than the rule to create custom mocking classes.
+  
+- Use [AssertJ](http://joel-costigliola.github.io/assertj/) as the assertion library in unit tests.

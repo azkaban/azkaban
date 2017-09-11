@@ -22,12 +22,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 // todo kunkun-tang: complete this test.
-public class DatabaseTransOperatorImplTest {
+public class DatabaseTransOperatorTest {
 
   @Before
   public void setUp() throws Exception {
     final AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
-    final DatabaseTransOperator operator = new DatabaseTransOperatorImpl(new QueryRunner(),
+    final DatabaseTransOperator operator = new DatabaseTransOperator(new QueryRunner(),
         datasource.getConnection());
   }
 
