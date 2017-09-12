@@ -18,7 +18,6 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.event.Event;
-import azkaban.event.Event.Type;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.execapp.event.BlockingStatus;
@@ -34,6 +33,7 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.spi.EventType;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.PatternLayoutEscaped;
 import azkaban.utils.Props;
@@ -412,12 +412,12 @@ public class JobRunner extends EventHandler implements Runnable {
       if (quickFinish) {
         this.node.setStartTime(time);
         fireEvent(
-            Event.create(this, Type.JOB_STARTED,
+            Event.create(this, EventType.JOB_STARTED,
                 new EventData(nodeStatus, this.node.getNestedId())));
         this.node.setEndTime(time);
         fireEvent(
             Event
-                .create(this, Type.JOB_FINISHED,
+                .create(this, EventType.JOB_FINISHED,
                     new EventData(nodeStatus, this.node.getNestedId())));
         return true;
       }
@@ -580,13 +580,13 @@ public class JobRunner extends EventHandler implements Runnable {
     Status finalStatus = this.node.getStatus();
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
-      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(this.node)));
+      fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
       final Status prepareStatus = prepareJob();
       if (prepareStatus != null) {
         // Writes status to the db
         writeStatus();
-        fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED,
+        fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED,
             new EventData(prepareStatus, this.node.getNestedId())));
         finalStatus = runJob();
       } else {
@@ -609,7 +609,7 @@ public class JobRunner extends EventHandler implements Runnable {
         "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
             + " with status " + this.node.getStatus());
 
-    fireEvent(Event.create(this, Type.JOB_FINISHED,
+    fireEvent(Event.create(this, EventType.JOB_FINISHED,
         new EventData(finalStatus, this.node.getNestedId())), false);
     finalizeLogFile(this.node.getAttempt());
     finalizeAttachmentFile();
