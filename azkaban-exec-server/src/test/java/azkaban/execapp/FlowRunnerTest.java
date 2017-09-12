@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -83,7 +83,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     startThread(this.runner);
     succeedJobs("job3", "job4", "job6");
 
-    assertFlowStatus(Status.SUCCEEDED);
+    waitForAndAssertFlowStatus(Status.SUCCEEDED);
     assertThreadShutDown();
     compareFinishedRuntime(this.runner);
 
@@ -117,7 +117,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     this.runner = createFlowRunner(exFlow, this.loader, eventCollector);
 
     Assert.assertTrue(!this.runner.isKilled());
-    assertFlowStatus(Status.READY);
+    waitForAndAssertFlowStatus(Status.READY);
 
     startThread(this.runner);
     succeedJobs("job3", "job4");
@@ -125,7 +125,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
     compareFinishedRuntime(this.runner);
 
-    assertFlowStatus(Status.SUCCEEDED);
+    waitForAndAssertFlowStatus(Status.SUCCEEDED);
 
     assertStatus("job1", Status.SKIPPED);
     assertStatus("job2", Status.SUCCEEDED);
@@ -154,7 +154,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     succeedJobs("job6");
 
     Assert.assertTrue(!this.runner.isKilled());
-    assertFlowStatus(Status.FAILED);
+    waitForAndAssertFlowStatus(Status.FAILED);
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2d", Status.FAILED);
@@ -187,7 +187,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     Assert.assertTrue(this.runner.isKilled());
 
-    assertFlowStatus(Status.KILLED);
+    waitForAndAssertFlowStatus(Status.KILLED);
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2d", Status.FAILED);
@@ -217,7 +217,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     startThread(this.runner);
     succeedJobs("job3");
 
-    assertFlowStatus(Status.FAILED);
+    waitForAndAssertFlowStatus(Status.FAILED);
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2d", Status.FAILED);
@@ -259,7 +259,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job6", Status.KILLED);
     assertThreadShutDown();
 
-    assertFlowStatus(Status.KILLED);
+    waitForAndAssertFlowStatus(Status.KILLED);
 
     eventCollector.assertEvents(Type.FLOW_STARTED, Type.FLOW_FINISHED);
   }
@@ -281,7 +281,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertAttempts("job-pass", 0);
     assertAttempts("job-retry-fail", 2);
 
-    assertFlowStatus(Status.FAILED);
+    waitForAndAssertFlowStatus(Status.FAILED);
   }
 
   private void startThread(final FlowRunner runner) {
