@@ -6,6 +6,7 @@ import azkaban.event.EventListener;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
@@ -108,16 +109,16 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
             + eventData.getStatus());
       }
 
-      if (event.getType() == Event.Type.JOB_STARTED) {
+      if (event.getType() == EventType.JOB_STARTED) {
         this.runningJobCount.incrementAndGet();
-      } else if (event.getType() == Event.Type.JOB_FINISHED) {
+      } else if (event.getType() == EventType.JOB_FINISHED) {
         this.totalExecutedJobCount.incrementAndGet();
         if (this.runningJobCount.intValue() > 0) {
           this.runningJobCount.decrementAndGet();
         } else {
           logger.warn("runningJobCount not messed up, it is already zero "
               + "and we are trying to decrement on job event "
-              + Event.Type.JOB_FINISHED);
+              + EventType.JOB_FINISHED);
         }
 
         if (eventData.getStatus() == Status.FAILED) {

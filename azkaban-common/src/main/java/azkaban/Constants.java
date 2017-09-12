@@ -124,6 +124,17 @@ public class Constants {
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";
 
+    // Event reporting properties
+    public static final String AZKABAN_EVENT_REPORTING_CLASS_PARAM =
+        "azkaban.event.reporting.class";
+    public static final String AZKABAN_EVENT_REPORTING_ENABLED = "azkaban.event.reporting.enabled";
+    public static final String AZKABAN_EVENT_REPORTING_KAFKA_BROKERS =
+        "azkaban.event.reporting.kafka.brokers";
+    public static final String AZKABAN_EVENT_REPORTING_KAFKA_TOPIC =
+        "azkaban.event.reporting.kafka.topic";
+    public static final String AZKABAN_EVENT_REPORTING_KAFKA_SCHEMA_REGISTRY_URL =
+        "azkaban.event.reporting.kafka.schema.registry.url";
+
     /*
      * The max number of artifacts retained per project.
      * Accepted Values:
