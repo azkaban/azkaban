@@ -62,7 +62,6 @@ import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
 import java.io.File;
@@ -80,6 +79,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -112,6 +113,7 @@ import org.mortbay.thread.QueuedThreadPool;
  * jetty.keystore - Jetty keystore . jetty.keypassword - Jetty keystore password jetty.truststore -
  * Jetty truststore jetty.trustpassword - Jetty truststore password
  */
+@Singleton
 public class AzkabanWebServer extends AzkabanServer {
 
   public static final String DEFAULT_CONF_PATH = "conf";

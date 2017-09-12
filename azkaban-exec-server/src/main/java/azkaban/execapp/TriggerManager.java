@@ -25,7 +25,6 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.utils.Utils;
-import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,10 +32,13 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 import org.joda.time.ReadablePeriod;
 
 
+@Singleton
 public class TriggerManager {
 
   private static final int SCHEDULED_THREAD_POOL_SIZE = 4;

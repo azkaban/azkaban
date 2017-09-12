@@ -24,7 +24,6 @@ import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
 import azkaban.executor.selector.FactorComparator;
 import azkaban.executor.selector.FactorFilter;
-import azkaban.utils.JSONUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -555,15 +554,6 @@ public class SelectorTest {
         .setExecutorInfo(new ExecutorInfo(99.9, 4095, 50, System.currentTimeMillis(), 90, 1));
     executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(2), executor);
-  }
-
-  @Test
-  public void testExecutorInfoJsonParser() throws Exception {
-    final ExecutorInfo exeInfo = new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89,
-        10);
-    final String json = JSONUtils.toJSON(exeInfo);
-    final ExecutorInfo exeInfo2 = ExecutorInfo.fromJSONString(json);
-    Assert.assertTrue(exeInfo.equals(exeInfo2));
   }
 
   // mock executor object.

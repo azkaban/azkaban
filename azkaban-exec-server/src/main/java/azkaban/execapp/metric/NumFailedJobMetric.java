@@ -17,12 +17,12 @@
 package azkaban.execapp.metric;
 
 import azkaban.event.Event;
-import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
 import azkaban.executor.Status;
 import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
+import azkaban.spi.EventType;
 
 /**
  * Metric to keep track of number of failed jobs in between the tracking events
@@ -45,7 +45,8 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
    */
   @Override
   public synchronized void handleEvent(final Event event) {
-    if (event.getType() == Type.JOB_FINISHED && Status.FAILED.equals(event.getData().getStatus())) {
+    if (event.getType() == EventType.JOB_FINISHED && Status.FAILED
+        .equals(event.getData().getStatus())) {
       this.value = this.value + 1;
     }
   }

@@ -17,10 +17,21 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+
+import azkaban.execapp.reporter.AzkabanKafkaAvroEventReporter;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.spi.AzkabanEventReporter;
+import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import com.google.inject.Provides;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.log4j.Logger;
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This
@@ -29,12 +40,47 @@ import com.google.inject.Scopes;
  */
 public class AzkabanExecServerModule extends AbstractModule {
 
+  private static final Logger logger = Logger.getLogger(AzkabanExecServerModule.class);
+
   @Override
   protected void configure() {
     install(new ExecJettyServerModule());
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
-    bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
-    bind(TriggerManager.class).in(Scopes.SINGLETON);
-    bind(FlowRunnerManager.class).in(Scopes.SINGLETON);
   }
+
+  @Inject
+  @Provides
+  @Singleton
+  public AzkabanEventReporter createAzkabanEventReporter(final Props props) {
+    final boolean eventReporterEnabled =
+        props.getBoolean(AZKABAN_EVENT_REPORTING_ENABLED, false);
+
+    if (!eventReporterEnabled) {
+      logger.info("Event reporter is not enabled");
+      return null;
+    }
+
+    final Class<?> eventReporterClass =
+        props.getClass(AZKABAN_EVENT_REPORTING_CLASS_PARAM, AzkabanKafkaAvroEventReporter.class);
+    if (eventReporterClass != null && eventReporterClass.getConstructors().length > 0) {
+      this.logger.info("Loading event reporter class " + eventReporterClass.getName());
+      try {
+        final Constructor<?> eventReporterClassConstructor =
+            eventReporterClass.getConstructor(Props.class);
+        return (AzkabanEventReporter) eventReporterClassConstructor.newInstance(props);
+      } catch (final InvocationTargetException e) {
+        this.logger.error(e.getTargetException().getMessage());
+        if (e.getTargetException() instanceof IllegalArgumentException) {
+          throw new IllegalArgumentException(e);
+        } else {
+          throw new RuntimeException(e);
+        }
+      } catch (final Exception e) {
+        this.logger.error("Could not instantiate EventReporter " + eventReporterClass.getName());
+        throw new RuntimeException(e);
+      }
+    }
+    return null;
+  }
+
 }

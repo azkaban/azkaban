@@ -31,7 +31,7 @@ import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;

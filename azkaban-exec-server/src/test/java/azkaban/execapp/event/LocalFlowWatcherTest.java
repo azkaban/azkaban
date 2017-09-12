@@ -19,7 +19,9 @@ package azkaban.execapp.event;
 import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.EventCollectorListener;
+import azkaban.execapp.EventReporterUtil;
 import azkaban.execapp.FlowRunner;
+import azkaban.execapp.FlowRunnerTestUtil;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -27,15 +29,12 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JavaJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.utils.JSONUtils;
+import azkaban.spi.AzkabanEventReporter;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -45,6 +44,8 @@ import org.junit.Test;
 
 public class LocalFlowWatcherTest {
 
+  private final AzkabanEventReporter azkabanEventReporter =
+      EventReporterUtil.getTestAzkabanEventReporter();
   private JobTypeManager jobtypeManager;
   private int dirVal = 0;
 
@@ -163,14 +164,14 @@ public class LocalFlowWatcherTest {
 
   private void testPipelineLevel1(final ExecutableFlow first, final ExecutableFlow second) {
     for (final ExecutableNode node : second.getExecutableNodes()) {
-      Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
+      Assert.assertEquals(Status.SUCCEEDED, node.getStatus());
 
       // check it's start time is after the first's children.
       final ExecutableNode watchedNode = first.getExecutableNode(node.getId());
       if (watchedNode == null) {
         continue;
       }
-      Assert.assertEquals(watchedNode.getStatus(), Status.SUCCEEDED);
+      Assert.assertEquals(Status.SUCCEEDED, watchedNode.getStatus());
 
       System.out.println("Node " + node.getId() + " start: "
           + node.getStartTime() + " dependent on " + watchedNode.getId() + " "
@@ -197,14 +198,14 @@ public class LocalFlowWatcherTest {
 
   private void testPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second) {
     for (final ExecutableNode node : second.getExecutableNodes()) {
-      Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
+      Assert.assertEquals(Status.SUCCEEDED, node.getStatus());
 
       // check it's start time is after the first's children.
       final ExecutableNode watchedNode = first.getExecutableNode(node.getId());
       if (watchedNode == null) {
         continue;
       }
-      Assert.assertEquals(watchedNode.getStatus(), Status.SUCCEEDED);
+      Assert.assertEquals(Status.SUCCEEDED, watchedNode.getStatus());
 
       long minDiff = Long.MAX_VALUE;
       for (final String watchedChild : watchedNode.getOutNodes()) {
@@ -212,7 +213,7 @@ public class LocalFlowWatcherTest {
         if (child == null) {
           continue;
         }
-        Assert.assertEquals(child.getStatus(), Status.SUCCEEDED);
+        Assert.assertEquals(Status.SUCCEEDED, child.getStatus());
         final long diff = node.getStartTime() - child.getEndTime();
         minDiff = Math.min(minDiff, diff);
         System.out.println("Node " + node.getId() + " start: "
@@ -247,7 +248,7 @@ public class LocalFlowWatcherTest {
       throws Exception {
     final File testDir = new File("unit/executions/exectest1");
     final ExecutableFlow exFlow =
-        prepareExecDir(workingDir, testDir, flowName, execId);
+        FlowRunnerTestUtil.prepareExecDir(workingDir, testDir, flowName, execId);
     final ExecutionOptions option = exFlow.getExecutionOptions();
     if (watcher != null) {
       option.setPipelineLevel(pipeline);
@@ -255,26 +256,11 @@ public class LocalFlowWatcherTest {
     }
     loader.uploadExecutableFlow(exFlow);
     final FlowRunner runner = new FlowRunner(exFlow, loader, mock(ProjectLoader.class),
-        this.jobtypeManager, azkabanProps);
+        this.jobtypeManager, azkabanProps, this.azkabanEventReporter);
     runner.setFlowWatcher(watcher);
     runner.addListener(eventCollector);
 
     return runner;
   }
 
-  private ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
-      final String flowName, final int execId) throws IOException {
-    FileUtils.copyDirectory(execDir, workingDir);
-
-    final File jsonFlowFile = new File(workingDir, flowName + ".flow");
-    final HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    final Project project = new Project(1, "test");
-    final Flow flow = Flow.flowFromObject(flowObj);
-    final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-    execFlow.setExecutionId(execId);
-    execFlow.setExecutionPath(workingDir.getPath());
-    return execFlow;
-  }
 }

@@ -22,7 +22,6 @@ import azkaban.database.AzkabanConnectionPoolTest;
 import azkaban.database.AzkabanDataSource;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.db.DatabaseOperator;
-import azkaban.db.DatabaseOperatorImpl;
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
@@ -79,7 +78,7 @@ public class JdbcTriggerImplTest {
   @Before
   public void setUp() {
 
-    this.dbOperator = new DatabaseOperatorImpl(new QueryRunner(dataSource));
+    this.dbOperator = new DatabaseOperator(new QueryRunner(dataSource));
     this.loader = new JdbcTriggerImpl(this.dbOperator);
   }
 
