@@ -24,5 +24,5 @@ public interface ProjectValidator {
    * Validate the project inside the given directory. The validator, using its own validation logic,
    * will generate a {@link ValidationReport} representing the result of the validation.
    */
-  ValidationReport validateProject(Project project, File projectDir);
+  ValidationReport validateProject(Project project, File projectDir, String azkabanFlowVersion);
 }

@@ -226,10 +226,10 @@ public class XmlValidatorManager implements ValidatorManager {
   }
 
   @Override
-  public Map<String, ValidationReport> validate(final Project project, final File projectDir) {
+  public Map<String, ValidationReport> validate(final Project project, final File projectDir, final String azkabanFlowVersion) {
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
     for (final Entry<String, ProjectValidator> validator : this.validators.entrySet()) {
-      reports.put(validator.getKey(), validator.getValue().validateProject(project, projectDir));
+      reports.put(validator.getKey(), validator.getValue().validateProject(project, projectDir, azkabanFlowVersion));
       logger.info("Validation status of validator " + validator.getKey() + " is "
           + reports.get(validator.getKey()).getStatus());
     }

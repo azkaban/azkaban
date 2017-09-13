@@ -16,9 +16,9 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-import java.net.URISyntaxException;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,29 +34,29 @@ public class DirectoryFlowLoaderTest {
   }
 
   @Test
-  public void testDirectoryLoad() throws URISyntaxException {
+  public void testDirectoryLoad() {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("exectest1"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("exectest1"), null);
     logger.info(loader.getFlowMap().size());
   }
 
   @Test
-  public void testLoadEmbeddedFlow() throws URISyntaxException {
+  public void testLoadEmbeddedFlow() {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"), null);
     Assert.assertEquals(0, loader.getErrors().size());
   }
 
   @Test
-  public void testRecursiveLoadEmbeddedFlow() throws URISyntaxException {
+  public void testRecursiveLoadEmbeddedFlow() {
     final Logger logger = Logger.getLogger(this.getClass());
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded_bad"));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded_bad"), null);
     for (final String error : loader.getErrors()) {
       System.out.println(error);
     }
@@ -64,4 +64,22 @@ public class DirectoryFlowLoaderTest {
     // Should be 3 errors: jobe->innerFlow, innerFlow->jobe, innerFlow
     Assert.assertEquals(3, loader.getErrors().size());
   }
+
+  @Test
+  public void testLoadBasicFlowYaml() {
+    final Logger logger = Logger.getLogger(this.getClass());
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("basicflowyamltest"),
+        Constants.AZKABAN_FLOW_VERSION_2_0);
+    Assert.assertEquals(1, loader.getFlowMap().size());
+    Assert.assertTrue(loader.getFlowMap().containsKey("basic_flow_shell_end"));
+    Assert.assertEquals(4, loader.getJobProps().size());
+    Assert.assertTrue(loader.getJobProps().containsKey("basic_flow_shell_end"));
+    Assert.assertTrue(loader.getJobProps().containsKey("basic_flow_shell_pwd"));
+    Assert.assertTrue(loader.getJobProps().containsKey("basic_flow_shell_echo"));
+    Assert.assertTrue(loader.getJobProps().containsKey("basic_flow_shell_bash"));
+  }
+
+  //Todo jamiesjc: add tests for loading embedded flow yaml
 }

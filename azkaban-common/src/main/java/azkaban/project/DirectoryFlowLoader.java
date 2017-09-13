@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -31,6 +32,7 @@ import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +53,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
+  private static final String YML_SUFFIX = ".yml";
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
 
@@ -123,7 +126,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
    * @param project The project to load flows to.
    * @param baseDirectory The directory to load flows from.
    */
-  public void loadProjectFlow(final Project project, final File baseDirectory) {
+  public void loadProjectFlow(final Project project, final File baseDirectory, final String azkabanFlowVersion) {
     this.propsList = new ArrayList<>();
     this.flowPropsList = new ArrayList<>();
     this.jobPropsMap = new HashMap<>();
@@ -135,13 +138,24 @@ public class DirectoryFlowLoader implements ProjectValidator {
     this.rootNodes = new HashSet<>();
     this.flowDependencies = new HashMap<>();
 
-    // Load all the props files and create the Node objects
-    loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
+    if(azkabanFlowVersion == null) {
+      // Load all the props files and create the Node objects
+      loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
+      // Create edges and find missing dependencies
+      resolveDependencies();
+    }
+    else if(azkabanFlowVersion.equals(Constants.AZKABAN_FLOW_VERSION_2_0)) {
+      // For azkaban.flow.2.0, yaml files will be used to describe flow info.
+      // First convert yaml files to azkabanFlows, and then load project from
+      // azkabanFlows. This is the first step to integrate azkabanFlows in the
+      // core azkaban code.
+      for (AzkabanFlow azkabanFlow : convertYamlFileToAzkabanFlows(baseDirectory)) {
+        loadProjectFromAzkabanFlow(azkabanFlow);
+      }
+      resolveDependenciesFromAzkabanFlow();
+    }
 
     jobPropertiesCheck(project);
-
-    // Create edges and find missing dependencies
-    resolveDependencies();
 
     // Create the flows.
     buildFlowsFromDependencies();
@@ -149,6 +163,58 @@ public class DirectoryFlowLoader implements ProjectValidator {
     // Resolve embedded flows
     resolveEmbeddedFlows();
 
+  }
+
+  private ArrayList<AzkabanFlow> convertYamlFileToAzkabanFlows(File projectDir) {
+    ArrayList<AzkabanFlow> azkabanFlows = new ArrayList<>();
+    // Load all yaml files to AzkabanFlows in current project directory,
+    // Do not support loading from subdirectories for now.
+    final File[] yamlFiles = projectDir.listFiles(new SuffixFilter(YML_SUFFIX));
+    Arrays.sort(yamlFiles);
+
+    for (final File file : yamlFiles) {
+      final FlowBeanLoader loader = new FlowBeanLoader();
+      try {
+        final FlowBean flowBean = loader.load(file);
+        final AzkabanFlow flow = loader.toAzkabanFlow(loader.getFlowName(file), flowBean);
+        azkabanFlows.add(flow);
+      }
+      catch (FileNotFoundException e) {
+        logger.error("Error loading yaml files", e);
+      }
+    }
+
+    return azkabanFlows;
+  }
+
+  private void loadProjectFromAzkabanFlow(final AzkabanFlow azkabanFlow) {
+    this.flowPropsList.add(new FlowProps((azkabanFlow.getProps())));
+    this.propsList.add(azkabanFlow.getProps());
+
+    final Map<String, AzkabanNode> azkabanNodes = azkabanFlow.getNodes();
+    for(final String jobName : azkabanNodes.keySet()) {
+      if(!this.duplicateJobs.contains(jobName)) {
+        if(this.jobPropsMap.containsKey(jobName)) {
+          this.errors.add("Duplicate job names found '" + jobName + "'.");
+          this.duplicateJobs.add(jobName);
+          this.jobPropsMap.remove(jobName);
+          this.nodeMap.remove(jobName);
+        } else {
+          final Node node = new Node(jobName);
+          final AzkabanJob azkabanJob = (AzkabanJob) azkabanNodes.get(jobName);
+          final Props prop = azkabanJob.getProps();
+          node.setAzkabanNode(azkabanJob);
+          node.setType(azkabanJob.getType());
+          // Force root node
+          if (prop.getBoolean(CommonJobProperties.ROOT_NODE, false)) {
+            this.rootNodes.add(jobName);
+          }
+
+          this.jobPropsMap.put(jobName, prop);
+          this.nodeMap.put(jobName, node);
+        }
+      }
+    }
   }
 
   private void loadProjectFromDir(final String base, final File dir, Props parent) {
@@ -264,49 +330,58 @@ public class DirectoryFlowLoader implements ProjectValidator {
         continue;
       }
 
-      final List<String> dependencyList =
+      resolveDependenciesFromList(
           props.getStringList(CommonJobProperties.DEPENDENCIES,
-              (List<String>) null);
+              (List<String>) null), node);
+    }
+  }
 
-      if (dependencyList != null) {
-        Map<String, Edge> dependencies = this.nodeDependencies.get(node.getId());
-        if (dependencies == null) {
-          dependencies = new HashMap<>();
+  private void resolveDependenciesFromAzkabanFlow() {
+    for (final Node node : this.nodeMap.values()) {
+      resolveDependenciesFromList(
+          ((AzkabanJob)node.getAzkabanNode()).getDependsOn(), node);
+    }
+  }
 
-          for (String dependencyName : dependencyList) {
-            dependencyName =
-                dependencyName == null ? null : dependencyName.trim();
-            if (dependencyName == null || dependencyName.isEmpty()) {
-              continue;
-            }
+  private void resolveDependenciesFromList(List<String> dependencyList, Node node) {
+    if (dependencyList != null && !dependencyList.isEmpty()) {
+      Map<String, Edge> dependencies = this.nodeDependencies.get(node.getId());
+      if (dependencies == null) {
+        dependencies = new HashMap<>();
 
-            final Edge edge = new Edge(dependencyName, node.getId());
-            final Node dependencyNode = this.nodeMap.get(dependencyName);
-            if (dependencyNode == null) {
-              if (this.duplicateJobs.contains(dependencyName)) {
-                edge.setError("Ambiguous Dependency. Duplicates found.");
-                dependencies.put(dependencyName, edge);
-                this.errors.add(node.getId() + " has ambiguous dependency "
-                    + dependencyName);
-              } else {
-                edge.setError("Dependency not found.");
-                dependencies.put(dependencyName, edge);
-                this.errors.add(node.getId() + " cannot find dependency "
-                    + dependencyName);
-              }
-            } else if (dependencyNode == node) {
-              // We have a self cycle
-              edge.setError("Self cycle found.");
+        for (String dependencyName : dependencyList) {
+          dependencyName =
+              dependencyName == null ? null : dependencyName.trim();
+          if (dependencyName == null || dependencyName.isEmpty()) {
+            continue;
+          }
+
+          final Edge edge = new Edge(dependencyName, node.getId());
+          final Node dependencyNode = this.nodeMap.get(dependencyName);
+          if (dependencyNode == null) {
+            if (this.duplicateJobs.contains(dependencyName)) {
+              edge.setError("Ambiguous Dependency. Duplicates found.");
               dependencies.put(dependencyName, edge);
-              this.errors.add(node.getId() + " has a self cycle");
+              this.errors.add(node.getId() + " has ambiguous dependency "
+                  + dependencyName);
             } else {
+              edge.setError("Dependency not found.");
               dependencies.put(dependencyName, edge);
+              this.errors.add(node.getId() + " cannot find dependency "
+                  + dependencyName);
             }
+          } else if (dependencyNode == node) {
+            // We have a self cycle
+            edge.setError("Self cycle found.");
+            dependencies.put(dependencyName, edge);
+            this.errors.add(node.getId() + " has a self cycle");
+          } else {
+            dependencies.put(dependencyName, edge);
           }
+        }
 
-          if (!dependencies.isEmpty()) {
-            this.nodeDependencies.put(node.getId(), dependencies);
-          }
+        if (!dependencies.isEmpty()) {
+          this.nodeDependencies.put(node.getId(), dependencies);
         }
       }
     }
@@ -467,8 +542,8 @@ public class DirectoryFlowLoader implements ProjectValidator {
   }
 
   @Override
-  public ValidationReport validateProject(final Project project, final File projectDir) {
-    loadProjectFlow(project, projectDir);
+  public ValidationReport validateProject(final Project project, final File projectDir, final String azkabanFlowVersion) {
+    loadProjectFlow(project, projectDir, azkabanFlowVersion);
     final ValidationReport report = new ValidationReport();
     report.addErrorMsgs(this.errors);
     return report;

@@ -31,6 +31,8 @@ package azkaban;
  * <p>Job level Properties keys to be put in the {@link JobProperties} class
  */
 public class Constants {
+  // Azkaban Flow Version
+  public static final String AZKABAN_FLOW_VERSION_2_0 = "azkaban.flow.2.0";
 
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";

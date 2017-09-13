@@ -19,6 +19,7 @@ package azkaban.project;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
@@ -121,11 +122,16 @@ class AzkabanProjectLoader {
     // synchronization between uploads. Since we're already reloading the XML
     // config file and creating validator objects for each upload, this does
     // not add too much additional overhead.
+
+    // Todo jamiesjc: Check if MANIFEST.MF file exists in the zip,
+    // if yes, treat it as flow 2.0, otherwise flow 1.0
+    // String azkabanFlowVersion = Constants.AZKABAN_FLOW_VERSION_2_0;
+    String azkabanFlowVersion = null;
     final ValidatorManager validatorManager = new XmlValidatorManager(prop);
     log.info("Validating project " + archive.getName()
         + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
-    final Map<String, ValidationReport> reports = validatorManager.validate(project, file);
+    final Map<String, ValidationReport> reports = validatorManager.validate(project, file, azkabanFlowVersion);
     ValidationStatus status = ValidationStatus.PASS;
     for (final Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
