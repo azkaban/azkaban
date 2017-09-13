@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.jmx.JmxExecutorManager;
@@ -28,6 +29,7 @@ import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.QuartzScheduler;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.session.SessionCache;
@@ -139,6 +141,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private final Props props;
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
+  private final QuartzScheduler quartzScheduler;
 
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
@@ -154,6 +157,7 @@ public class AzkabanWebServer extends AzkabanServer {
       final UserManager userManager,
       final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
+      final QuartzScheduler quartzScheduler,
       final StatusService statusService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
@@ -165,6 +169,7 @@ public class AzkabanWebServer extends AzkabanServer {
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
+    this.quartzScheduler = requireNonNull(quartzScheduler, "quartzScheduler is null.");
     this.statusService = statusService;
 
     loadBuiltinCheckersAndActions();
@@ -184,8 +189,13 @@ public class AzkabanWebServer extends AzkabanServer {
       DateTimeZone.setDefault(DateTimeZone.forID(timezone));
       logger.info("Setting timezone to " + timezone);
     }
-
     configureMBeanServer();
+
+    // Start Quartz Server
+    if(props.containsKey(ConfigurationKeys.ENABLE_QUARTZ) && props.getBoolean(ConfigurationKeys
+        .ENABLE_QUARTZ)) {
+      quartzScheduler.start();
+    }
   }
 
   @Deprecated

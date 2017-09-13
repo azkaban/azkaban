@@ -151,6 +151,9 @@ public class Constants {
      *    implies save latest 3 versions saved in storage.
      **/
     public static final String AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION = "azkaban.storage.artifact.max.retention";
+
+    // enable Quartz Scheduler if true.
+    public static final String ENABLE_QUARTZ= "enable.quartz";
   }
 
   public static class FlowProperties {
