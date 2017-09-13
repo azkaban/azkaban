@@ -6,7 +6,6 @@ import azkaban.db.AzDBTestUtility.EmbeddedH2BasicDataSource;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseSetup;
-import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -33,11 +32,9 @@ public class Utils {
     final AzkabanDataSource dataSource = new EmbeddedH2BasicDataSource();
 
     final String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
-    final Props props = new Props();
-    props.put("database.sql.scripts.dir", sqlScriptsDir);
-
     final DatabaseSetup setup = new DatabaseSetup(dataSource, sqlScriptsDir);
     setup.updateDatabase();
+
     return new DatabaseOperator(new QueryRunner(dataSource));
   }
 }
