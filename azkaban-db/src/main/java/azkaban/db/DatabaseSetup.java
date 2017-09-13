@@ -33,7 +33,9 @@ import org.apache.log4j.Logger;
  * This class is used for creating DB tables by specifying where the create scripts are. The
  * input to this class is a folder path, which includes all create table sql scripts. The script's
  * name should follow: create.[table_name].sql in order to be identified. This class is used for
- * unit test only for now. We need to fix some reliability issues if we rely on this class to
+ * unit test only for now.
+ *
+ * Todo kunkun-tang: We need to fix some reliability issues if we rely on this class to
  * create tables when launching AZ in future.
  */
 public class DatabaseSetup {
