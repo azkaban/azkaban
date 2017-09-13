@@ -19,6 +19,7 @@ package azkaban.utils;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -74,16 +75,16 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
-    this.clientHostname = props.getString("jetty.hostname", "localhost");
+    this.clientHostname = props.getString(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME, props.getString("jetty.hostname", "localhost"));
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
-      this.clientPortNumber = Integer.toString(props.getInt("jetty.ssl.port",
-          Constants.DEFAULT_SSL_PORT_NUMBER));
+      this.clientPortNumber = Integer.toString(props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT, props.getInt("jetty.ssl.port",
+          Constants.DEFAULT_SSL_PORT_NUMBER)));
     } else {
       this.scheme = HTTP;
-      this.clientPortNumber = Integer.toString(props.getInt("jetty.port",
-          Constants.DEFAULT_PORT_NUMBER));
+      this.clientPortNumber = Integer.toString(props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT, props.getInt("jetty.port",
+          Constants.DEFAULT_PORT_NUMBER)));
     }
 
     this.testMode = props.getBoolean("test.mode", false);
