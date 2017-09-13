@@ -37,4 +37,15 @@ public class Utils {
 
     return new DatabaseOperator(new QueryRunner(dataSource));
   }
+
+  public static DatabaseOperator initQuartzDB() throws Exception {
+    final AzkabanDataSource dataSource = new EmbeddedH2BasicDataSource();
+
+    final String sqlScriptsDir = new File("../azkaban-web-server/src/test/resources/")
+        .getCanonicalPath();
+
+    final DatabaseSetup setup = new DatabaseSetup(dataSource, sqlScriptsDir);
+    setup.updateDatabase();
+    return new DatabaseOperatorImpl(new QueryRunner(dataSource));
+  }
 }

@@ -21,7 +21,7 @@ public class QuartzScheduler {
     this.scheduler = schedulerFactory.getScheduler();
   }
 
-  public void start()  {
+  public void start() {
     try {
       this.scheduler.start();
     } catch (final SchedulerException e) {
