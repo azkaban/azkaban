@@ -29,15 +29,20 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+/**
+ * This class is used for creating DB tables by specifying where the create scripts are. The
+ * input to this class is a folder path, which includes all create table sql scripts. The script's
+ * name should follow: create.[table_name].sql in order to be identified. This class is used for
+ * unit test only for now. We need to fix some reliability issues if we rely on this class to
+ * create tables when launching AZ in future.
+ */
 public class DatabaseSetup {
 
-  private static final Logger logger = Logger
-      .getLogger(DatabaseSetup.class);
+  private static final Logger logger = Logger .getLogger(DatabaseSetup.class);
   private static final String CREATE_SCRIPT_PREFIX = "create.";
   private static final String SQL_SCRIPT_SUFFIX = ".sql";
 
   private final AzkabanDataSource dataSource;
-  private final Set<String> tables = new HashSet<>();
   private String scriptPath = null;
 
   public DatabaseSetup(final AzkabanDataSource ds, final String path) {
@@ -47,11 +52,12 @@ public class DatabaseSetup {
 
   public void updateDatabase()
       throws SQLException, IOException {
-    collectAllTables();
-    createTables();
+    final Set<String> tables = collectAllTables();
+    createTables(tables);
   }
 
-  private void collectAllTables() {
+  private Set<String> collectAllTables() {
+    final Set<String> tables = new HashSet<>();
     final File directory = new File(this.scriptPath);
     final File[] createScripts =
         directory.listFiles(new PrefixSuffixFileFilter(
@@ -61,16 +67,17 @@ public class DatabaseSetup {
         final String name = script.getName();
         final String[] nameSplit = name.split("\\.");
         final String tableName = nameSplit[1];
-        this.tables.add(tableName);
+        tables.add(tableName);
       }
     }
+    return tables;
   }
 
-  private void createTables() throws SQLException, IOException {
+  private void createTables(final Set<String> tables) throws SQLException, IOException {
     final Connection conn = this.dataSource.getConnection();
     conn.setAutoCommit(false);
     try {
-      for (final String table : this.tables) {
+      for (final String table : tables) {
         runTableScripts(conn, table);
       }
     } finally {
@@ -80,7 +87,7 @@ public class DatabaseSetup {
 
   private void runTableScripts(final Connection conn, final String table)
       throws IOException, SQLException {
-    logger.info("Creating new table " + table );
+    logger.info("Creating new table " + table);
 
     final String dbSpecificScript = "create." + table + ".sql";
     final File script = new File(this.scriptPath, dbSpecificScript);
@@ -120,7 +127,7 @@ public class DatabaseSetup {
 
       final String name = pathname.getName();
       final int length = name.length();
-      return !(this.suffix.length() > length || this.prefix.length() > length) && name
+      return this.suffix.length() <= length && this.prefix.length() <= length && name
           .startsWith(this.prefix) && name.endsWith(this.suffix);
     }
   }
