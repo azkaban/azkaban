@@ -38,7 +38,6 @@ dependencies {
     compile deps.metricsCore
     compile deps.metricsJvm
     compile deps.mysqlConnector
-    compile deps.quartz
     compile deps.snakeyaml
     compile deps.velocity
 
