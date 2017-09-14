@@ -16,8 +16,6 @@
 
 package azkaban.utils;
 
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.flow.CommonJobProperties;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import java.io.File;
@@ -28,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.jexl2.Expression;
@@ -37,7 +34,6 @@ import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 public class PropsUtils {
 
@@ -282,37 +278,6 @@ public class PropsUtils {
         value.substring(0, lastIndex) + result.toString()
             + value.substring(nextClosed + 1);
     return resolveVariableExpression(newValue, lastIndex, jexl);
-  }
-
-  public static Props addCommonFlowProperties(final Props parentProps,
-      final ExecutableFlowBase flow) {
-    final Props props = new Props(parentProps);
-
-    props.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
-    props.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
-    props.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
-    props.put(CommonJobProperties.PROJECT_NAME, flow.getProjectName());
-    props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
-    props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
-    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
-    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
-    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
-
-    final DateTime loadTime = new DateTime();
-
-    props.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
-    props.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
-    props.put(CommonJobProperties.FLOW_START_MONTH, loadTime.toString("MM"));
-    props.put(CommonJobProperties.FLOW_START_DAY, loadTime.toString("dd"));
-    props.put(CommonJobProperties.FLOW_START_HOUR, loadTime.toString("HH"));
-    props.put(CommonJobProperties.FLOW_START_MINUTE, loadTime.toString("mm"));
-    props.put(CommonJobProperties.FLOW_START_SECOND, loadTime.toString("ss"));
-    props.put(CommonJobProperties.FLOW_START_MILLISSECOND,
-        loadTime.toString("SSS"));
-    props.put(CommonJobProperties.FLOW_START_TIMEZONE,
-        loadTime.toString("ZZZZ"));
-
-    return props;
   }
 
   public static String toJSONString(final Props props, final boolean localOnly) {
