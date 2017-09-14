@@ -48,6 +48,7 @@ configurations {
 }
 
 dependencies {
+  compile project(':az-core')
   compile(project(':azkaban-common'))
 
   compile deps.restliServer

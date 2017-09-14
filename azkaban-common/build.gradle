@@ -15,6 +15,7 @@
  */
 
 dependencies {
+    compile project(':az-core')
     compile project(':azkaban-spi')
     compile project(':azkaban-db')
 
