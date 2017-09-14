@@ -27,6 +27,15 @@ buildscript {
     }
 }
 
+plugins {
+    id 'com.gradle.build-scan' version '1.9'
+}
+
+buildScan {
+    licenseAgreementUrl = 'https://gradle.com/terms-of-service'
+    licenseAgree = 'yes'
+}
+
 apply plugin: 'com.cinnober.gradle.semver-git'
 
 apply plugin: 'compare-gradle-builds'

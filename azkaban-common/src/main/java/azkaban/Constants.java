@@ -87,6 +87,14 @@ public class Constants {
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
 
+    // User facing web server configurations used to construct the user facing server URLs. They are useful when there is a reverse proxy between Azkaban web servers and users.
+    // enduser -> myazkabanhost:443 -> proxy -> localhost:8081
+    // when this parameters set then these parameters are used to generate email links. 
+    // if these parameters are not set then jetty.hostname, and jetty.port(if ssl configured jetty.ssl.port) are used.
+    public static final String AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME = "azkaban.webserver.external_hostname";
+    public static final String AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT = "azkaban.webserver.external_ssl_port";
+    public static final String AZKABAN_WEBSERVER_EXTERNAL_PORT = "azkaban.webserver.external_port";
+
     // Hostname for the host, if not specified, canonical hostname will be used
     public static final String AZKABAN_SERVER_HOST_NAME = "azkaban.server.hostname";
 
