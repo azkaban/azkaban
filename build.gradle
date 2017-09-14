@@ -64,6 +64,7 @@ ext.versions = [
 ext.deps = [
         // External dependencies
         assertj             : 'org.assertj:assertj-core:3.8.0',
+        awaitility          : 'org.awaitility:awaitility:3.0.0',
         collections         : 'commons-collections:commons-collections:3.2.2',
         commonsLang         : 'commons-lang:commons-lang:2.6',
         dbcp2               : 'org.apache.commons:commons-dbcp2:2.1.1',
@@ -158,6 +159,7 @@ subprojects {
             testCompile deps.assertj
             testCompile deps.junit
             testCompile deps.mockito
+            testCompile deps.awaitility
         }
 
         test {
