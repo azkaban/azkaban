@@ -37,6 +37,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.FlowProps;
+import azkaban.flow.FlowUtils;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
@@ -46,7 +47,6 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
 import com.google.common.collect.ImmutableSet;
 import java.io.File;
@@ -245,7 +245,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     final String flowId = this.flow.getFlowId();
 
     // Add a bunch of common azkaban properties
-    Props commonFlowProps = PropsUtils.addCommonFlowProperties(null, this.flow);
+    Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
     if (this.flow.getJobSource() != null) {
       final String source = this.flow.getJobSource();
