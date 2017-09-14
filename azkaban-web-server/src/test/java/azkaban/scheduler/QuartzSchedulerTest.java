@@ -7,6 +7,7 @@ import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.sql.SQLException;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,7 +18,7 @@ public class QuartzSchedulerTest {
   private static QuartzScheduler scheduler;
 
   @BeforeClass
-  public static void setUp() throws Exception {
+  public static void setUpQUartz() throws Exception {
     dbOperator = Utils.initQuartzDB();
     final String quartzPropsPath=
         new File("../azkaban-web-server/src/test/resources/quartz.test.properties")
@@ -28,13 +29,18 @@ public class QuartzSchedulerTest {
   }
 
   @AfterClass
-  public static void destroyDB() {
+  public static void destroyQuartz() {
     try {
       dbOperator.update("DROP ALL OBJECTS");
       dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
+  }
+
+  @After
+  public void cleanup() {
+    scheduler.cleanup();
   }
 
   @Test

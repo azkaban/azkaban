@@ -46,6 +46,6 @@ public class Utils {
 
     final DatabaseSetup setup = new DatabaseSetup(dataSource, sqlScriptsDir);
     setup.updateDatabase();
-    return new DatabaseOperatorImpl(new QueryRunner(dataSource));
+    return new DatabaseOperator(new QueryRunner(dataSource));
   }
 }
