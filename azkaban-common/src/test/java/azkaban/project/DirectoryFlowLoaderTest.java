@@ -18,8 +18,6 @@ package azkaban.project;
 
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-import java.net.URISyntaxException;
-import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

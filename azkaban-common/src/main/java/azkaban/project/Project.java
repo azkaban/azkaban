@@ -458,7 +458,7 @@ public class Project {
     return this.jobPropsMap;
   }
 
-  public void setJobPropsMap(Map<String, Props> jobPropsMap) {
+  public void setJobPropsMap(final Map<String, Props> jobPropsMap) {
     this.jobPropsMap = new HashMap<>(jobPropsMap);
   }
 
@@ -466,7 +466,7 @@ public class Project {
     return this.propsList;
   }
 
-  public void setPropsList(List<Props> propsList) {
+  public void setPropsList(final List<Props> propsList) {
     this.propsList = new ArrayList<>(propsList);
   }
 }

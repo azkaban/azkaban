@@ -1,6 +1,5 @@
 package azkaban.project.validator;
 
-import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.utils.Props;
 import java.io.File;
