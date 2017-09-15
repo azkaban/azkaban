@@ -60,8 +60,8 @@ public class AzkabanCommonModule extends AbstractModule {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
-  private final AzkabanCommonModuleConfig config;
   private final Props props;
+  private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(final Props props) {
     this.props = props;
@@ -77,7 +77,6 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
   }
-
 
   public Class<? extends Storage> resolveStorageClassType() {
     final StorageImplementationType type = StorageImplementationType
@@ -123,8 +122,8 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public Configuration createHadoopConfiguration(final Props props) {
-    final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
+  public Configuration createHadoopConfiguration() {
+    final String hadoopConfDirPath = requireNonNull(this.props.get(HADOOP_CONF_DIR_PATH));
 
     final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
     checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());

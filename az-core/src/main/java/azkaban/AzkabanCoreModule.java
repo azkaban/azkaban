@@ -25,9 +25,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * This Guice module is currently a one place container for all bindings in the current module. This
- * is intended to help during the migration process to Guice. Once this class starts growing we can
- * move towards more modular structuring of Guice components.
+ * The Guice launching place for az-core.
  */
 public class AzkabanCoreModule extends AbstractModule {
 

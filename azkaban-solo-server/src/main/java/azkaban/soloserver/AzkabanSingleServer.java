@@ -19,7 +19,6 @@ package azkaban.soloserver;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.AzkabanCoreModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.execapp.AzkabanExecServerModule;
@@ -74,7 +73,6 @@ public class AzkabanSingleServer {
 
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
-        new AzkabanCoreModule(props),
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(),
         new AzkabanExecServerModule()
