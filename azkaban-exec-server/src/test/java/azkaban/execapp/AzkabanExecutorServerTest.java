@@ -88,7 +88,7 @@ public class AzkabanExecutorServerTest {
 
     final Injector injector = Guice.createInjector(
         new AzkabanCoreModule(props),
-        new AzkabanCommonModule(props),
+        new AzkabanCommonModule(),
         new AzkabanExecServerModule()
     );
 

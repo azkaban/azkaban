@@ -60,7 +60,11 @@ public class AzkabanCommonModule extends AbstractModule {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
-  public AzkabanCommonModule() {
+  private final AzkabanCommonModuleConfig config;
+
+  @Inject
+  public AzkabanCommonModule(final AzkabanCommonModuleConfig config) {
+    this.config = config;
   }
 
   @Override
@@ -72,14 +76,14 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
   }
 
-  @Inject
-  public Class<? extends Storage> resolveStorageClassType(final AzkabanCommonModuleConfig config) {
+
+  public Class<? extends Storage> resolveStorageClassType() {
     final StorageImplementationType type = StorageImplementationType
-        .from(config.getStorageImplementation());
+        .from(this.config.getStorageImplementation());
     if (type != null) {
       return type.getImplementationClass();
     } else {
-      return loadCustomStorageClass(config.getStorageImplementation());
+      return loadCustomStorageClass(this.config.getStorageImplementation());
     }
   }
 

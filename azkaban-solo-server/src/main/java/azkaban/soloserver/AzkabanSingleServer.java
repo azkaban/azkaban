@@ -75,7 +75,7 @@ public class AzkabanSingleServer {
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCoreModule(props),
-        new AzkabanCommonModule(props),
+        new AzkabanCommonModule(),
         new AzkabanWebServerModule(),
         new AzkabanExecServerModule()
     );

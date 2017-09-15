@@ -63,7 +63,7 @@ public class ServiceProviderTest {
 
     final Injector injector = Guice.createInjector(
         new AzkabanCoreModule(props),
-        new AzkabanCommonModule(props)
+        new AzkabanCommonModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
