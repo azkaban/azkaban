@@ -105,7 +105,13 @@ It allows us to do following when saving a file:
   
 - Use [AssertJ](http://joel-costigliola.github.io/assertj/) as the assertion library in unit tests.
 
-- Use slf4j instead of log4j.  
+- Use slf4j instead of log4j. 
+
+  Use the form: 
+
+  `
+  private static final Logger logger = LoggerFactory.getLogger($CLASS_NAME$.class);
+  ` 
 
 - Add or update the copyright notice for most files. 
 
