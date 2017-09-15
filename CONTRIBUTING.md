@@ -115,4 +115,11 @@ It allows us to do following when saving a file:
 
 - Add or update the copyright notice for most files. 
 
-See [the dev tips wiki](https://github.com/azkaban/azkaban/wiki/Developer-Tools-and-Tips) for tips.
+# Misc
+
+- See [the dev tips wiki](https://github.com/azkaban/azkaban/wiki/Developer-Tools-and-Tips) for 
+tips.
+
+- Store images in the [azkaban-images repo](https://github.com/azkaban/azkaban-images)
+ 
+  This is useful to store images needed in the wiki pages for example. 
