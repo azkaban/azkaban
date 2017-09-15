@@ -23,7 +23,6 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.AzkabanCoreModule;
 import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
@@ -87,8 +86,7 @@ public class AzkabanExecutorServerTest {
         .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
     final Injector injector = Guice.createInjector(
-        new AzkabanCoreModule(props),
-        new AzkabanCommonModule(),
+        new AzkabanCommonModule(props),
         new AzkabanExecServerModule()
     );
 

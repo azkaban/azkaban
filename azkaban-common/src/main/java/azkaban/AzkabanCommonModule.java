@@ -61,14 +61,16 @@ public class AzkabanCommonModule extends AbstractModule {
   private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
   private final AzkabanCommonModuleConfig config;
+  private final Props props;
 
-  @Inject
-  public AzkabanCommonModule(final AzkabanCommonModuleConfig config) {
-    this.config = config;
+  public AzkabanCommonModule(final Props props) {
+    this.props = props;
+    this.config = new AzkabanCommonModuleConfig(props);
   }
 
   @Override
   protected void configure() {
+    install(new AzkabanCoreModule(this.props));
     bind(Storage.class).to(resolveStorageClassType());
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
