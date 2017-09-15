@@ -30,6 +30,7 @@ artifacts {
 }
 
 dependencies {
+    compile project(':az-core')
 
     // todo kunkun-tang: consolidate dependencies in azkaban-common and azkaban-db
     compile deps.dbutils

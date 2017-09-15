@@ -1,6 +1,7 @@
 apply plugin: 'distribution'
 
 dependencies {
+    compile project(':az-core')
     compile project(":azkaban-common")
 
     compileOnly deps.hadoopCommon
