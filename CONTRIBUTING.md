@@ -104,3 +104,9 @@ It allows us to do following when saving a file:
   It's an exception rather than the rule to create custom mocking classes.
   
 - Use [AssertJ](http://joel-costigliola.github.io/assertj/) as the assertion library in unit tests.
+
+- Use slf4j instead of log4j.  
+
+- Add or update the copyright notice for most files. 
+
+See [the dev tips wiki](https://github.com/azkaban/azkaban/wiki/Developer-Tools-and-Tips) for tips.
