@@ -87,7 +87,7 @@ public class AzkabanExecutorServerTest {
         .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
     final Injector injector = Guice.createInjector(
-        new AzkabanCoreModule(),
+        new AzkabanCoreModule(props),
         new AzkabanCommonModule(props),
         new AzkabanExecServerModule()
     );

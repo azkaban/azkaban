@@ -115,7 +115,7 @@ public class AzkabanWebServerTest {
   @Test
   public void testInjection() throws Exception {
     final Injector injector = Guice.createInjector(
-        new AzkabanCoreModule(),
+        new AzkabanCoreModule(props),
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule()
     );

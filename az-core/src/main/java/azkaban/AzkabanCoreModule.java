@@ -16,6 +16,7 @@
  */
 package azkaban;
 
+import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -31,12 +32,15 @@ import org.slf4j.LoggerFactory;
 public class AzkabanCoreModule extends AbstractModule {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanCoreModule.class);
+  private final Props props;
 
-  public AzkabanCoreModule() {
+  public AzkabanCoreModule(final Props props) {
+    this.props = props;
   }
 
   @Override
   protected void configure() {
+    bind(Props.class).toInstance(this.props);
     bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 }

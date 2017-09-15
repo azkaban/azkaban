@@ -35,10 +35,8 @@ import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -62,32 +60,26 @@ public class AzkabanCommonModule extends AbstractModule {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
-  private final Props props;
-  private final AzkabanCommonModuleConfig config;
-
-  public AzkabanCommonModule(final Props props) {
-    this.props = props;
-    this.config = new AzkabanCommonModuleConfig(props);
+  public AzkabanCommonModule() {
   }
 
   @Override
   protected void configure() {
-    bind(Props.class).toInstance(this.config.getProps());
     bind(Storage.class).to(resolveStorageClassType());
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
-    bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 
-  public Class<? extends Storage> resolveStorageClassType() {
+  @Inject
+  public Class<? extends Storage> resolveStorageClassType(final AzkabanCommonModuleConfig config) {
     final StorageImplementationType type = StorageImplementationType
-        .from(this.config.getStorageImplementation());
+        .from(config.getStorageImplementation());
     if (type != null) {
       return type.getImplementationClass();
     } else {
-      return loadCustomStorageClass(this.config.getStorageImplementation());
+      return loadCustomStorageClass(config.getStorageImplementation());
     }
   }
 
@@ -125,8 +117,8 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public Configuration createHadoopConfiguration() {
-    final String hadoopConfDirPath = requireNonNull(this.props.get(HADOOP_CONF_DIR_PATH));
+  public Configuration createHadoopConfiguration(final Props props) {
+    final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
 
     final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
     checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());

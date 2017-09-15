@@ -62,6 +62,7 @@ public class ServiceProviderTest {
         .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
     final Injector injector = Guice.createInjector(
+        new AzkabanCoreModule(props),
         new AzkabanCommonModule(props)
     );
     SERVICE_PROVIDER.unsetInjector();
