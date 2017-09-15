@@ -28,10 +28,10 @@ import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
-import javax.inject.Inject;
 import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
+import javax.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
