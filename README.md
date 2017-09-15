@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/azkaban-workflow-engine/Lobby](https://badges.gitter.im/azkaban-workflow-engine/Lobby.svg)](https://gitter.im/azkaban-workflow-engine/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Building Azkaban
+## Build
 Azkaban builds use Gradle and requires Java 8 or higher.
 
 The following set of commands run on *nix platforms like Linux, OS X.
@@ -22,6 +22,23 @@ The following set of commands run on *nix platforms like Linux, OS X.
 
 # Build without running tests
 ./gradlew build -x test
+```
+
+### Build a release
+
+Pick a release from [the release page](https://github.com/azkaban/azkaban/releases). 
+Find the tag corresponding to the release.
+
+Check out the source code corresponding to that tag.
+e.g.
+
+`
+git checkout 3.30.1
+`
+
+Build 
+```
+./gradlew clean build
 ```
 
 ## Documentation
