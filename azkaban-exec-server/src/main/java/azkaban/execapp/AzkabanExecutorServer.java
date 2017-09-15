@@ -25,6 +25,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.AzkabanCoreModule;
 import azkaban.Constants;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
@@ -141,7 +142,9 @@ public class AzkabanExecutorServer {
 
     /* Initialize Guice Injector */
     final Injector injector = Guice
-        .createInjector(new AzkabanCommonModule(props), new AzkabanExecServerModule());
+        .createInjector(new AzkabanCoreModule(),
+                        new AzkabanCommonModule(props),
+                        new AzkabanExecServerModule());
     SERVICE_PROVIDER.setInjector(injector);
 
     launch(injector.getInstance(AzkabanExecutorServer.class));

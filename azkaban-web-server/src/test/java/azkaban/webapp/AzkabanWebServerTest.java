@@ -25,6 +25,7 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.AzkabanCoreModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
@@ -114,6 +115,7 @@ public class AzkabanWebServerTest {
   @Test
   public void testInjection() throws Exception {
     final Injector injector = Guice.createInjector(
+        new AzkabanCoreModule(),
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule()
     );

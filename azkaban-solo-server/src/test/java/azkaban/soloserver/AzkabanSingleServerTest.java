@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.AzkabanCoreModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.execapp.AzkabanExecServerModule;
@@ -100,6 +101,7 @@ public class AzkabanSingleServerTest {
     SERVICE_PROVIDER.unsetInjector();
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
+        new AzkabanCoreModule(),
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(),
         new AzkabanExecServerModule()
