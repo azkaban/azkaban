@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 
 public class FlowRunnerTestUtil {
 
@@ -37,16 +36,15 @@ public class FlowRunnerTestUtil {
    *
    * @param project project to initialize
    * @param sourceDir the source dir
-   * @param logger the logger
    * @param workingDir the working dir
    * @return the flow name to flow map
    * @throws ProjectManagerException the project manager exception
    * @throws IOException the io exception
    */
   public static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
-      final Logger logger, final File workingDir)
+      final File workingDir)
       throws ProjectManagerException, IOException {
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
     loader.loadProjectFlow(project, sourceDir);
     if (!loader.getErrors().isEmpty()) {
       for (final String error : loader.getErrors()) {
@@ -57,8 +55,7 @@ public class FlowRunnerTestUtil {
           project.getName(), sourceDir));
     }
 
-    final Map<String, Flow> flowMap = loader.getFlowMap();
-    project.setFlows(flowMap);
+    final Map<String, Flow> flowMap = project.getFlowMap();
     FileUtils.copyDirectory(sourceDir, workingDir);
 
     return flowMap;

@@ -23,9 +23,7 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.jobcallback.JobCallbackValidator;
-import azkaban.project.validator.ProjectValidator;
 import azkaban.project.validator.ValidationReport;
-import azkaban.project.validator.XmlValidatorManager;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
@@ -42,7 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.log4j.Logger;
 
-public class DirectoryFlowLoader implements ProjectValidator {
+public class DirectoryFlowLoader {
 
   public static final String JOB_MAX_XMS = "job.max.Xms";
   public static final String MAX_XMS_DEFAULT = "1G";
@@ -54,7 +52,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
 
-  private final Logger logger;
+  private static final Logger logger = Logger.getLogger(DirectoryFlowLoader.class);
   private final Props props;
   private HashSet<String> rootNodes;
   private HashMap<String, Flow> flowMap;
@@ -74,20 +72,9 @@ public class DirectoryFlowLoader implements ProjectValidator {
    * Creates a new DirectoryFlowLoader.
    *
    * @param props Properties to add.
-   * @param logger The Logger to use.
    */
-  public DirectoryFlowLoader(final Props props, final Logger logger) {
-    this.logger = logger;
+  public DirectoryFlowLoader(final Props props) {
     this.props = props;
-  }
-
-  /**
-   * Returns the flow map constructed from the loaded flows.
-   *
-   * @return Map of flow name to Flow.
-   */
-  public Map<String, Flow> getFlowMap() {
-    return this.flowMap;
   }
 
   /**
@@ -97,24 +84,6 @@ public class DirectoryFlowLoader implements ProjectValidator {
    */
   public Set<String> getErrors() {
     return this.errors;
-  }
-
-  /**
-   * Returns job properties.
-   *
-   * @return Map of job name to properties.
-   */
-  public Map<String, Props> getJobProps() {
-    return this.jobPropsMap;
-  }
-
-  /**
-   * Returns list of properties.
-   *
-   * @return List of Props.
-   */
-  public List<Props> getProps() {
-    return this.propsList;
   }
 
   /**
@@ -138,8 +107,6 @@ public class DirectoryFlowLoader implements ProjectValidator {
     // Load all the props files and create the Node objects
     loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
 
-    jobPropertiesCheck(project);
-
     // Create edges and find missing dependencies
     resolveDependencies();
 
@@ -148,6 +115,10 @@ public class DirectoryFlowLoader implements ProjectValidator {
 
     // Resolve embedded flows
     resolveEmbeddedFlows();
+
+    project.setFlows(this.flowMap);
+    project.setPropsList(this.propsList);
+    project.setJobPropsMap(this.jobPropsMap);
 
   }
 
@@ -409,7 +380,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
     visited.remove(node.getId());
   }
 
-  private void jobPropertiesCheck(final Project project) {
+  private void checkJobProperties(final Project project) {
     // if project is in the memory check whitelist, then we don't need to check
     // its memory settings
     if (ProjectWhitelist.isProjectWhitelisted(project.getId(),
@@ -456,19 +427,9 @@ public class DirectoryFlowLoader implements ProjectValidator {
     return filePath.substring(basePath.length() + 1);
   }
 
-  @Override
-  public boolean initialize(final Props configuration) {
-    return true;
-  }
-
-  @Override
-  public String getValidatorName() {
-    return XmlValidatorManager.DEFAULT_VALIDATOR_KEY;
-  }
-
-  @Override
-  public ValidationReport validateProject(final Project project, final File projectDir) {
+  public ValidationReport loadProject(final Project project, final File projectDir) {
     loadProjectFlow(project, projectDir);
+    checkJobProperties(project);
     final ValidationReport report = new ValidationReport();
     report.addErrorMsgs(this.errors);
     return report;

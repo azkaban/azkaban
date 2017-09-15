@@ -21,6 +21,7 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,7 +47,9 @@ public class Project {
   private long lastModifiedTimestamp;
   private String lastModifiedUser;
   private String source;
-  private Map<String, Flow> flows = null;
+  private Map<String, Flow> flows = new HashMap<>();
+  private Map<String, Props> jobPropsMap = new HashMap<>();
+  private List<Props> propsList = new ArrayList<>();
   private Map<String, Object> metadata = new HashMap<>();
 
   public Project(final int id, final String name) {
@@ -128,7 +131,7 @@ public class Project {
   }
 
   public void setFlows(final Map<String, Flow> flows) {
-    this.flows = flows;
+    this.flows = new HashMap<>(flows);
   }
 
   public Permission getCollectivePermission(final User user) {
@@ -449,5 +452,21 @@ public class Project {
 
   public void setVersion(final int version) {
     this.version = version;
+  }
+
+  public Map<String, Props> getJobPropsMap() {
+    return this.jobPropsMap;
+  }
+
+  public void setJobPropsMap(Map<String, Props> jobPropsMap) {
+    this.jobPropsMap = new HashMap<>(jobPropsMap);
+  }
+
+  public List<Props> getPropsList() {
+    return this.propsList;
+  }
+
+  public void setPropsList(List<Props> propsList) {
+    this.propsList = new ArrayList<>(propsList);
   }
 }

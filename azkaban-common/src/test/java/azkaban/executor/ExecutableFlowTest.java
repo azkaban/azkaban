@@ -209,13 +209,11 @@ public class ExecutableFlowTest {
   public void setUp() throws Exception {
     this.project = new Project(11, "myTestProject");
 
-    final Logger logger = Logger.getLogger(this.getClass());
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
 
-    this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);
   }
 

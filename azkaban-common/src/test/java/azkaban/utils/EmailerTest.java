@@ -51,13 +51,11 @@ public class EmailerTest {
   public void setUp() throws Exception {
     this.receiveAddrList.add(this.receiveAddr);
     this.project = new Project(11, "myTestProject");
-    final Logger logger = Logger.getLogger(this.getClass());
 
     this.props = createMailProperties();
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props, logger);
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props);
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
-    this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);
   }
 

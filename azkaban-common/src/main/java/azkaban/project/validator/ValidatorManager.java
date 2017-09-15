@@ -28,10 +28,9 @@ public interface ValidatorManager {
   Map<String, ValidationReport> validate(Project project, File projectDir);
 
   /**
-   * The ValidatorManager should have a default validator which checks for the most essential
-   * components of a project. The ValidatorManager should always load the default validator. This
-   * method returns the default validator of this ValidatorManager.
+   * ValidatorManager will not have any default validator.
    */
+  @Deprecated
   ProjectValidator getDefaultValidator();
 
   /**

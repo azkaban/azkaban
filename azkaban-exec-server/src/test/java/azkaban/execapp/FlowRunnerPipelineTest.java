@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -61,7 +60,6 @@ import org.junit.Test;
 public class FlowRunnerPipelineTest {
 
   private static int id = 101;
-  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private final AzkabanEventReporter azkabanEventReporter =
       EventReporterUtil.getTestAzkabanEventReporter();
   private File workingDir;
@@ -92,7 +90,7 @@ public class FlowRunnerPipelineTest {
 
     final File dir = new File("unit/executions/embedded2");
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, dir, this.logger, this.workingDir);
+        .prepareProject(this.project, dir, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }

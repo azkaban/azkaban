@@ -42,7 +42,6 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,7 +96,6 @@ import org.junit.rules.TemporaryFolder;
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
   private static int id = 101;
-  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private final AzkabanEventReporter azkabanEventReporter =
       EventReporterUtil.getTestAzkabanEventReporter();
   @Rule
@@ -124,7 +122,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     JmxJobMBeanManager.getInstance().initialize(new Props());
 
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, ExecutionsTestUtil.getFlowDir("embedded2"), this.logger,
+        .prepareProject(this.project, ExecutionsTestUtil.getFlowDir("embedded2"),
             this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
