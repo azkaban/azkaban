@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -387,17 +386,17 @@ public class ExecutorManagerTest {
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
   }
 
-  private ExecutableFlow waitFlowFinished(final ExecutableFlow flow1) throws Exception {
-    ExecutableFlow fetchedFlow;
-    for (int i = 0; i < 1000; i++) {
-      fetchedFlow = this.loader.fetchExecutableFlow(flow1.getExecutionId());
-      if (fetchedFlow != null && Status.isStatusFinished(fetchedFlow.getStatus())) {
-        return fetchedFlow;
-      }
-      Thread.sleep(10L);
-    }
-    fail("Flow didn't finish");
-    return null;
+  private ExecutableFlow waitFlowFinished(final ExecutableFlow flow) throws Exception {
+    TestUtils.await().until(() -> getFlowStatus(flow), TestUtils.isStatusFinished());
+    return fetchFlow(flow);
+  }
+
+  private Status getFlowStatus(final ExecutableFlow flow) throws Exception {
+    return fetchFlow(flow) != null ? fetchFlow(flow).getStatus() : null;
+  }
+
+  private ExecutableFlow fetchFlow(final ExecutableFlow flow) throws ExecutorManagerException {
+    return this.loader.fetchExecutableFlow(flow.getExecutionId());
   }
 
 }
