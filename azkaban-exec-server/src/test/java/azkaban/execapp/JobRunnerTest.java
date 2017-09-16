@@ -31,13 +31,12 @@ import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -317,8 +316,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
 
     // wait so that there's time to make the "DB update" for KILLED status
-    Awaitility.await().atMost(10L, TimeUnit.SECONDS).pollInterval(10L, TimeUnit.MILLISECONDS)
-        .until(() -> loader.getNodeUpdateCount("testJob"), is(2));
+    TestUtils.await().until(() -> loader.getNodeUpdateCount("testJob"), is(2));
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 
