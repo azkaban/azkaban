@@ -19,8 +19,8 @@ package azkaban.execapp;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import azkaban.event.Event;
-import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
+import azkaban.spi.EventType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -31,9 +31,9 @@ public class EventCollectorListener implements EventListener {
   public static final Object handleEvent = new Object();
   // CopyOnWriteArrayList allows concurrent iteration and modification
   private final List<Event> eventList = new CopyOnWriteArrayList<>();
-  private final HashSet<Event.Type> filterOutTypes = new HashSet<>();
+  private final HashSet<EventType> filterOutTypes = new HashSet<>();
 
-  public void setEventFilterOut(final Event.Type... types) {
+  public void setEventFilterOut(final EventType... types) {
     this.filterOutTypes.addAll(Arrays.asList(types));
   }
 
@@ -62,7 +62,7 @@ public class EventCollectorListener implements EventListener {
     return true;
   }
 
-  public void assertEvents(final Type... expected) {
+  public void assertEvents(final EventType... expected) {
     final Object[] captured = this.eventList.stream()
         .filter(event -> event.getRunner() != null)
         .map(event -> event.getType())

@@ -104,3 +104,22 @@ It allows us to do following when saving a file:
   It's an exception rather than the rule to create custom mocking classes.
   
 - Use [AssertJ](http://joel-costigliola.github.io/assertj/) as the assertion library in unit tests.
+
+- Use slf4j instead of log4j. 
+
+  Use the form: 
+
+  `
+  private static final Logger logger = LoggerFactory.getLogger($CLASS_NAME$.class);
+  ` 
+
+- Add or update the copyright notice for most files. 
+
+# Misc
+
+- See [the dev tips wiki](https://github.com/azkaban/azkaban/wiki/Developer-Tools-and-Tips) for 
+tips.
+
+- Store images in the [azkaban-images repo](https://github.com/azkaban/azkaban-images)
+ 
+  This is useful to store images needed in the wiki pages for example. 

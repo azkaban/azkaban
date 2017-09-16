@@ -1,0 +1,56 @@
+/*
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+package azkaban.flow;
+
+import azkaban.executor.ExecutableFlowBase;
+import azkaban.utils.Props;
+import java.util.UUID;
+import org.joda.time.DateTime;
+
+public class FlowUtils {
+
+  public static Props addCommonFlowProperties(final Props parentProps,
+      final ExecutableFlowBase flow) {
+    final Props props = new Props(parentProps);
+
+    props.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
+    props.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
+    props.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
+    props.put(CommonJobProperties.PROJECT_NAME, flow.getProjectName());
+    props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
+    props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
+    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
+    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
+    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
+
+    final DateTime loadTime = new DateTime();
+
+    props.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
+    props.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_START_MONTH, loadTime.toString("MM"));
+    props.put(CommonJobProperties.FLOW_START_DAY, loadTime.toString("dd"));
+    props.put(CommonJobProperties.FLOW_START_HOUR, loadTime.toString("HH"));
+    props.put(CommonJobProperties.FLOW_START_MINUTE, loadTime.toString("mm"));
+    props.put(CommonJobProperties.FLOW_START_SECOND, loadTime.toString("ss"));
+    props.put(CommonJobProperties.FLOW_START_MILLISSECOND,
+        loadTime.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_START_TIMEZONE,
+        loadTime.toString("ZZZZ"));
+
+    return props;
+  }
+}

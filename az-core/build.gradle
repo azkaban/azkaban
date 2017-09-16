@@ -14,15 +14,17 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
-
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'test'
+/**
+ * Place foundation classes in this sub-module.
+ */
+dependencies {
+    compile deps.jexl
+    compile deps.commonsLang
+    compile deps.jodaTime
+    compile deps.io
+    compile deps.jacksonCoreAsl
+    compile deps.jacksonMapperAsl
+    compile deps.metricsCore
+    compile deps.metricsJvm
+    compile deps.quartz
+}

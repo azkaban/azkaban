@@ -33,6 +33,7 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.spi.AzkabanEventReporter;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
@@ -61,6 +62,8 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
   private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final AzkabanEventReporter azkabanEventReporter =
+      EventReporterUtil.getTestAzkabanEventReporter();
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ExecutorLoader fakeExecutorLoader;
@@ -458,8 +461,8 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     final FlowRunner runner =
         new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
-            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
-
+            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps,
+            this.azkabanEventReporter);
     runner.addListener(eventCollector);
 
     return runner;

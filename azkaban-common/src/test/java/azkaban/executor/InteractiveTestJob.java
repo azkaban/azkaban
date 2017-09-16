@@ -32,8 +32,8 @@ public class InteractiveTestJob extends AbstractProcessJob {
       new ConcurrentHashMap<>();
   private static volatile boolean quickSuccess = false;
   private Props generatedProperties = new Props();
-  private boolean isWaiting = true;
-  private boolean succeed = true;
+  private volatile boolean isWaiting = true;
+  private volatile boolean succeed = true;
 
   public InteractiveTestJob(final String jobId, final Props sysProps, final Props jobProps,
       final Logger log) {
@@ -109,7 +109,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
     while (this.isWaiting) {
       synchronized (this) {
-        final int waitMillis = this.jobProps.getInt("seconds", 5) * 1000;
+        final int waitMillis = this.jobProps.getInt("seconds", 10) * 1000;
         if (waitMillis > 0) {
           try {
             wait(waitMillis);

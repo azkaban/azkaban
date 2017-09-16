@@ -1,9 +1,11 @@
 apply plugin: 'distribution'
 
 dependencies {
+    compile(project(':az-core'))
     compile(project(':azkaban-common'))
 
     compile deps.kafkaLog4jAppender
+    compile deps.gobblinKafka
 
     runtime(project(':azkaban-hadoop-security-plugin'))
 
@@ -11,6 +13,16 @@ dependencies {
     testCompile(project(':azkaban-common').sourceSets.test.output)
 
     testRuntime deps.h2
+}
+
+configurations.compile {
+    exclude group: 'com.linkedin.gobblin', module: 'gobblin-api'
+    exclude group: 'com.linkedin.gobblin', module: 'gobblin-metrics-graphite'
+    exclude group: 'com.linkedin.gobblin', module: 'gobblin-metrics-hadoop'
+    exclude group: 'com.linkedin.gobblin', module: 'gobblin-metrics-influxdb'
+    exclude group: 'com.linkedin.gobblin', module: 'gobblin-runtime'
+
+    exclude group: 'org.projectlombok', module: 'lombok'
 }
 
 distributions {

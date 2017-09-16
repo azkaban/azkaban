@@ -206,8 +206,10 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     /* Initialize Guice Injector */
-    final Injector injector = Guice
-        .createInjector(new AzkabanCommonModule(props), new AzkabanWebServerModule());
+    final Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule()
+    );
     SERVICE_PROVIDER.setInjector(injector);
 
     launch(injector.getInstance(AzkabanWebServer.class));
