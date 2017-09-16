@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -387,7 +388,8 @@ public class ExecutorManagerTest {
   }
 
   private ExecutableFlow waitFlowFinished(final ExecutableFlow flow) throws Exception {
-    TestUtils.await().until(() -> getFlowStatus(flow), TestUtils.isStatusFinished());
+    TestUtils.await().untilAsserted(() -> assertThat(getFlowStatus(flow))
+        .matches(Status::isStatusFinished, "isStatusFinished"));
     return fetchFlow(flow);
   }
 

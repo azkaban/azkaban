@@ -17,7 +17,6 @@
 package azkaban.utils;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
@@ -30,7 +29,6 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionFactory;
-import org.hamcrest.Matcher;
 
 /**
  * Commonly used utils method for unit/integration tests
@@ -77,10 +75,6 @@ public class TestUtils {
   public static ConditionFactory await() {
     return Awaitility.await().atMost(10L, TimeUnit.SECONDS)
         .pollInterval(10L, TimeUnit.MILLISECONDS);
-  }
-
-  public static Matcher<Status> isStatusFinished() {
-    return LambdaMatcher.matches(Status::isStatusFinished, "a finished status");
   }
 
 }
