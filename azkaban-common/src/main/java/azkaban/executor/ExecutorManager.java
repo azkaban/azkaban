@@ -1386,6 +1386,10 @@ public class ExecutorManager extends EventHandler implements
     this.runningFlows.put(exflow.getExecutionId(),
         new Pair<>(reference, exflow));
     synchronized (this) {
+      // Wake up ExecutingManagerUpdaterThread from wait() so that it will immediately check status
+      // from executor(s). Normally flows will run at least some time and can't be cleaned up
+      // immediately, so there will be another wait round (or many, actually), but for unit tests
+      // this is significant to let them run quickly.
       this.notifyAll();
     }
 
