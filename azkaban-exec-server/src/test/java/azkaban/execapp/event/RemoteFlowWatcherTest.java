@@ -107,18 +107,13 @@ public class RemoteFlowWatcherTest {
 
     final EventCollectorListener eventCollector = new EventCollectorListener();
 
-    final File workingDir1 = setupDirectory();
+    final File workingDir1 = this.temporaryFolder.newFolder();
     final FlowRunner runner1 =
         createFlowRunner(workingDir1, loader, eventCollector, "exec1", 1, null,
             null);
-    // this doesn't have real significance here, but the case where some jobs are eventually left
-    // with READY status (although flow has a finished status) is when some jobs have been disabled
-    // if a subflow is skipped entirely, the subflow job is set to SKIPPED but all jobs inside it
-    // remain in READY state - TODO prove that with a test case that has subflows
-    runner1.getExecutableFlow().getExecutableNodePath("job4").setStatus(Status.DISABLED);
     final Thread runner1Thread = new Thread(runner1);
 
-    final File workingDir2 = setupDirectory();
+    final File workingDir2 = this.temporaryFolder.newFolder();
     final RemoteFlowWatcher watcher = new RemoteFlowWatcher(1, loader, 100);
     final FlowRunner runner2 =
         createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2,
@@ -140,7 +135,7 @@ public class RemoteFlowWatcherTest {
     FileUtils.deleteDirectory(workingDir1);
     FileUtils.deleteDirectory(workingDir2);
 
-    testPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow(), true);
+    assertPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow(), true);
   }
 
   @Test
@@ -238,7 +233,8 @@ public class RemoteFlowWatcherTest {
       if (watchedNode == null) {
         continue;
       }
-      Assert.assertEquals(Status.SUCCEEDED, watchedNode.getStatus());
+      Assert.assertEquals(watchedNode.getStatus(),
+          job4Skipped && watchedNode.getId().equals("job4") ? Status.READY : Status.SUCCEEDED);
 
       long minDiff = Long.MAX_VALUE;
       for (final String watchedChild : watchedNode.getOutNodes()) {
@@ -246,7 +242,8 @@ public class RemoteFlowWatcherTest {
         if (child == null) {
           continue;
         }
-        Assert.assertEquals(child.getStatus(), Status.SUCCEEDED);
+        Assert.assertEquals(child.getStatus(),
+            job4Skipped && child.getId().equals("job4") ? Status.READY : Status.SUCCEEDED);
         final long diff = node.getStartTime() - child.getEndTime();
         minDiff = Math.min(minDiff, diff);
         Assert.assertTrue(
