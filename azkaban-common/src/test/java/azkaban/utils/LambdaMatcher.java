@@ -4,6 +4,11 @@ import java.util.function.Function;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
+/**
+ * Utility Matcher to allow matching with a lambda function.
+ *
+ * @param <T> type of the matched object.
+ */
 public class LambdaMatcher<T> extends BaseMatcher<T> {
 
   private final Function<T, Boolean> matchFunction;
