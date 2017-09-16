@@ -37,6 +37,7 @@ dependencies {
     compile deps.dbcp2
     compile deps.io
 
+    testCompile project(path: ':az-core', configuration: 'testOutput')
     testRuntime deps.h2
 }
 

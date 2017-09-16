@@ -56,4 +56,8 @@ public class DBMetrics {
      */
     this.dbConnectionMeter.mark();
   }
+
+  public void setDBConnectionTime(final long milliseconds) {
+    this.dbConnectionTime.set(milliseconds);
+  }
 }

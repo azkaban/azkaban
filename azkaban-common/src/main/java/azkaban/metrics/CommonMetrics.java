@@ -17,9 +17,9 @@
 package azkaban.metrics;
 
 import com.codahale.metrics.Meter;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This singleton class CommonMetrics is in charge of collecting varieties of metrics which are
@@ -29,10 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Singleton
 public class CommonMetrics {
 
-  private final AtomicLong dbConnectionTime = new AtomicLong(0L);
   private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
   private final MetricsManager metricsManager;
-  private Meter dbConnectionMeter;
   private Meter flowFailMeter;
   private Meter dispatchFailMeter;
   private Meter dispatchSuccessMeter;
@@ -46,29 +44,14 @@ public class CommonMetrics {
   }
 
   private void setupAllMetrics() {
-    this.dbConnectionMeter = this.metricsManager.addMeter("DB-Connection-meter");
     this.flowFailMeter = this.metricsManager.addMeter("flow-fail-meter");
     this.dispatchFailMeter = this.metricsManager.addMeter("dispatch-fail-meter");
     this.dispatchSuccessMeter = this.metricsManager.addMeter("dispatch-success-meter");
     this.sendEmailFailMeter = this.metricsManager.addMeter("send-email-fail-meter");
     this.sendEmailSuccessMeter = this.metricsManager.addMeter("send-email-success-meter");
     this.metricsManager.addGauge("OOM-waiting-job-count", this.OOMWaitingJobCount::get);
-    this.metricsManager.addGauge("dbConnectionTime", this.dbConnectionTime::get);
   }
 
-  /**
-   * Mark the occurrence of an DB query event.
-   */
-  public void markDBConnection() {
-
-    /*
-     * This method should be Thread Safe.
-     * Two reasons that we don't make this function call synchronized:
-     * 1). drop wizard metrics deals with concurrency internally;
-     * 2). mark is basically a math addition operation, which should not cause race condition issue.
-     */
-    this.dbConnectionMeter.mark();
-  }
 
   /**
    * Mark flowFailMeter when a flow is considered as FAILED. This method could be called by Web
@@ -104,10 +87,6 @@ public class CommonMetrics {
    */
   public void markSendEmailSuccess() {
     this.sendEmailSuccessMeter.mark();
-  }
-
-  public void setDBConnectionTime(final long milliseconds) {
-    this.dbConnectionTime.set(milliseconds);
   }
 
   /**

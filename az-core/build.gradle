@@ -17,6 +17,19 @@
 /**
  * Place foundation classes in this sub-module.
  */
+task testJar(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier = 'test'
+}
+
+configurations {
+    testOutput.extendsFrom(testCompile)
+}
+
+artifacts {
+    testOutput testJar
+}
+
 dependencies {
     compile deps.jexl
     compile deps.commonsLang

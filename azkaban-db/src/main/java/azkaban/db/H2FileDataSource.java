@@ -15,14 +15,20 @@
  */
 package azkaban.db;
 
+import azkaban.utils.Props;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.inject.Inject;
 
 
 public class H2FileDataSource extends AzkabanDataSource {
 
-  public H2FileDataSource(final Path filePath) {
+  @Inject
+  public H2FileDataSource(final Props props) {
     super();
-    final String url = "jdbc:h2:file:" + filePath;
+    final String filePath = props.getString("h2.path");
+    final Path h2DbPath = Paths.get(filePath).toAbsolutePath();
+    final String url = "jdbc:h2:file:" + h2DbPath;
     setDriverClassName("org.h2.Driver");
     setUrl(url);
   }

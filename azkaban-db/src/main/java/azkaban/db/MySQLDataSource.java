@@ -15,20 +15,31 @@
  */
 package azkaban.db;
 
+import azkaban.utils.Props;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import javax.inject.Inject;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.log4j.Logger;
 
 public class MySQLDataSource extends AzkabanDataSource {
 
   private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
+  private final DBMetrics dbMetrics;
 
-  public MySQLDataSource(final String host, final int port, final String dbName,
-      final String user, final String password, final int numConnections) {
+  @Inject
+  public MySQLDataSource(final Props props, final DBMetrics dbMetrics) {
     super();
+    this.dbMetrics = dbMetrics;
+
+    final int port = props.getInt("mysql.port");
+    final String host = props.getString("mysql.host");
+    final String dbName = props.getString("mysql.database");
+    final String user = props.getString("mysql.user");
+    final String password = props.getString("mysql.password");
+    final int numConnections = props.getInt("mysql.numconnections");
 
     final String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
     addConnectionProperty("useUnicode", "yes");
@@ -41,7 +52,6 @@ public class MySQLDataSource extends AzkabanDataSource {
     setValidationQuery("/* ping */ select 1");
     setTestOnBorrow(true);
   }
-
   /**
    * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
    * We don't make the call synchronized in order to guarantee normal cases performance.
