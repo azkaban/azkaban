@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,9 +26,6 @@ import azkaban.user.XmlUserManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionFactory;
 
 /**
  * Commonly used utils method for unit/integration tests
@@ -67,14 +64,6 @@ public class TestUtils {
         + "azkaban-users.xml");
     final UserManager manager = new XmlUserManager(props);
     return manager;
-  }
-
-  /**
-   * Wait for 10 seconds, max. Poll every 10ms.
-   */
-  public static ConditionFactory await() {
-    return Awaitility.await().atMost(10L, TimeUnit.SECONDS)
-        .pollInterval(10L, TimeUnit.MILLISECONDS);
   }
 
 }

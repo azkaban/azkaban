@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -31,7 +31,6 @@ import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -316,7 +315,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
 
     // wait so that there's time to make the "DB update" for KILLED status
-    TestUtils.await().until(() -> loader.getNodeUpdateCount("testJob"), is(2));
+    azkaban.test.TestUtils.await().until(() -> loader.getNodeUpdateCount("testJob"), is(2));
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -388,7 +388,7 @@ public class ExecutorManagerTest {
   }
 
   private ExecutableFlow waitFlowFinished(final ExecutableFlow flow) throws Exception {
-    TestUtils.await().untilAsserted(() -> assertThat(getFlowStatus(flow))
+    azkaban.test.TestUtils.await().untilAsserted(() -> assertThat(getFlowStatus(flow))
         .matches(Status::isStatusFinished, "isStatusFinished"));
     return fetchFlow(flow);
   }
