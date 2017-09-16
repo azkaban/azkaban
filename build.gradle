@@ -99,7 +99,7 @@ ext.deps = [
         math3               : 'org.apache.commons:commons-math3:3.0',
         metricsCore         : 'io.dropwizard.metrics:metrics-core:3.1.0',
         metricsJvm          : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
-        mockito             : 'org.mockito:mockito-core:1.10.19',
+        mockito             : 'org.mockito:mockito-core:2.10.0',
         mysqlConnector      : 'mysql:mysql-connector-java:5.1.28',
         quartz              : 'org.quartz-scheduler:quartz:2.2.1',
         restliGenerator     : 'com.linkedin.pegasus:generator:' + versions.restli,
