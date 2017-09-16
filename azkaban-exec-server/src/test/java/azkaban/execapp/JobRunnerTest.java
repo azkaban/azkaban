@@ -23,12 +23,12 @@ import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.JavaJob;
+import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
-import azkaban.executor.SleepJavaJob;
 import azkaban.executor.Status;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -63,8 +63,8 @@ public class JobRunnerTest {
     this.workingDir.mkdirs();
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
-
-    this.jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
+    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
+    pluginSet.addPluginClass("test", InteractiveTestJob.class);
   }
 
   @After
@@ -76,13 +76,12 @@ public class JobRunnerTest {
     }
   }
 
-  @Ignore
   @Test
   public void testBasicRun() {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
-        createJobRunner(1, "testJob", 1, false, loader, eventCollector);
+        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
     final ExecutableNode node = runner.getNode();
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
@@ -95,8 +94,8 @@ public class JobRunnerTest {
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Node status is " + node.getStatus(),
         node.getStatus() == Status.SUCCEEDED);
-    Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
-    Assert.assertTrue(node.getEndTime() - node.getStartTime() > 1000);
+    Assert.assertTrue(node.getStartTime() >= 0 && node.getEndTime() >= 0);
+    Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
@@ -322,9 +321,9 @@ public class JobRunnerTest {
 
   private Props createProps(final int sleepSec, final boolean fail) {
     final Props props = new Props();
-    props.put("type", "java");
-
-    props.put(JavaJob.JOB_CLASS, SleepJavaJob.class.getName());
+    props.put("type", "test");
+    // TODO always use 0 if "immediate succeess" and 10 if "wait until killed"
+    // 0 makes the tests as quick as possible and 10 provides stability when test run is slow
     props.put("seconds", sleepSec);
     props.put(ProcessJob.WORKING_DIR, this.workingDir.getPath());
     props.put("fail", String.valueOf(fail));
