@@ -1,10 +1,26 @@
+/*
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.executor;
 
 import azkaban.flow.Flow;
 import azkaban.project.Project;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
-import azkaban.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,8 +31,8 @@ import org.junit.Test;
 
 public class QueuedExecutionsTest {
 
-  private File getFlowDir(final String flow) {
-    return TestUtils.getFlowDir("exectest1", flow);
+  private File getFlowFile(final String flow) {
+    return ExecutionsTestUtil.getFlowFile("exectest1", flow + ".flow");
   }
 
   /*
@@ -25,7 +41,7 @@ public class QueuedExecutionsTest {
    */
   private Pair<ExecutionReference, ExecutableFlow> createExecutablePair(
       final String flowName, final int execId) throws IOException {
-    final File jsonFlowFile = getFlowDir(flowName);
+    final File jsonFlowFile = getFlowFile(flowName);
     final HashMap<String, Object> flowObj =
         (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 
