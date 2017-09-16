@@ -39,7 +39,6 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,9 +59,6 @@ public class RemoteFlowWatcherTest {
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     this.jobtypeManager.getJobTypePluginSet().addPluginClass("test", InteractiveTestJob.class);
-    Utils.initServiceProvider();
-    JmxJobMBeanManager.getInstance().initialize(new Props());
-    InteractiveTestJob.setQuickSuccess(true);
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
     InteractiveTestJob.setQuickSuccess(true);
@@ -131,9 +127,6 @@ public class RemoteFlowWatcherTest {
 
     runner2Thread.start();
     runner2Thread.join();
-
-    FileUtils.deleteDirectory(workingDir1);
-    FileUtils.deleteDirectory(workingDir2);
 
     assertPipelineLevel2(runner1.getExecutableFlow(), runner2.getExecutableFlow(), true);
   }
