@@ -31,6 +31,7 @@ public class DBMetrics {
   private final AtomicLong dbConnectionTime = new AtomicLong(0L);
   private final MetricsManager metricsManager;
   private Meter dbConnectionMeter;
+  private Meter dbConnectionFailMeter;
 
   @Inject
   public DBMetrics(final MetricsManager metricsManager) {
@@ -40,6 +41,7 @@ public class DBMetrics {
 
   private void setupAllMetrics() {
     this.dbConnectionMeter = this.metricsManager.addMeter("DB-Connection-meter");
+    this.dbConnectionFailMeter = this.metricsManager.addMeter("DB-Fail-Connection-meter");
     this.metricsManager.addGauge("dbConnectionTime", this.dbConnectionTime::get);
   }
 
@@ -55,6 +57,13 @@ public class DBMetrics {
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
     this.dbConnectionMeter.mark();
+  }
+
+  /**
+   * Mark the occurrence when DB get connection fails.
+   */
+  public void markDBFailConnection() {
+    this.dbConnectionFailMeter.mark();
   }
 
   public void setDBConnectionTime(final long milliseconds) {

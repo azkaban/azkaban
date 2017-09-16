@@ -59,6 +59,8 @@ public class MySQLDataSource extends AzkabanDataSource {
   @Override
   public Connection getConnection() throws SQLException {
 
+    this.dbMetrics.markDBConnection();
+    final long startMs = System.currentTimeMillis();
     Connection connection = null;
     int retryAttempt = 1;
     while (retryAttempt < AzDBUtil.MAX_DB_RETRY_COUNT) {
@@ -79,6 +81,9 @@ public class MySQLDataSource extends AzkabanDataSource {
         if (connection == null || isReadOnly(connection)) {
           throw new SQLException("Failed to find DB connection Or connection is read only. ");
         } else {
+
+          // Evalaute how long it takes to get DB Connection.
+          this.dbMetrics.setDBConnectionTime(System.currentTimeMillis() - startMs);
           return connection;
         }
       } catch (final SQLException ex) {
@@ -87,6 +92,7 @@ public class MySQLDataSource extends AzkabanDataSource {
          * invalidate connection and reconstruct it later. if remote IP address is not reachable,
          * it will get hang for a while and throw exception.
          */
+        this.dbMetrics.markDBFailConnection();
         try {
           invalidateConnection(connection);
         } catch (final Exception e) {
