@@ -114,7 +114,6 @@ ext.deps = [
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'eclipse'
     apply plugin: 'net.ltgt.errorprone'
 
     // Set the same version for all sub-projects to root project version
