@@ -3,8 +3,13 @@ package azkaban.scheduler;
 import azkaban.utils.Props;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,5 +51,20 @@ public class QuartzScheduler {
     } catch (final SchedulerException e) {
       logger.error("Exception shutting down scheduler: ", e);
     }
+  }
+
+  private void register(final Scheduler scheduler, final JobDescription desc) throws SchedulerException {
+    final ScheduleBuilder schb = CronScheduleBuilder.cronSchedule(desc.getTimer().cron());
+    final Trigger trigger = TriggerBuilder.newTrigger()
+        .withIdentity(desc.getId(), "RestEasy")
+        .withSchedule(schb)
+        .build();
+    final JobDetail detail = JobBuilder.newJob(MethodDirectCallJob.class)
+        .withIdentity(desc.getId(), "RestEasy")
+        .usingJobData(MethodDirectCallJob.DEFINITION_OF_JOB, desc.getId())
+        .build();
+
+    scheduler.getContext().put(desc.getId(), desc);
+    scheduler.scheduleJob(detail, trigger);
   }
 }
