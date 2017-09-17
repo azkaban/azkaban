@@ -48,9 +48,5 @@ The source code for the documentation is in the [gh-pages](https://github.com/az
 For help, please visit the [Azkaban Google Group](https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev).
 
 ## Developer Guide
-We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/). Azkaban is a standard [Gradle](https://gradle.org/) 
-project. You can import it into your IDE using the `build.gradle` file in the root directory. For IntelliJ, choose Open 
-Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
 
-See additional information in 
-[the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).
+See [the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).
