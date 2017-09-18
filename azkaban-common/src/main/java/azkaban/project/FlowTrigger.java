@@ -53,7 +53,7 @@ public class FlowTrigger {
         Constants.TriggerProperties.SCHEDULE_MAX_WAIT_TIME);
 
     for (final String param : requiredParam) {
-      Preconditions.checkNotNull(props.containsKey(param), String.format(MISSING_REQUIRED_ERROR,
+      Preconditions.checkArgument(props.containsKey(param), String.format(MISSING_REQUIRED_ERROR,
           param));
     }
 
