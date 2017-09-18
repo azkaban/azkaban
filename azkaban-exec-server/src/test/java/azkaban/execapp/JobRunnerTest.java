@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,7 @@
 
 package azkaban.execapp;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -315,7 +315,8 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
 
     // wait so that there's time to make the "DB update" for KILLED status
-    TestUtils.await().until(() -> loader.getNodeUpdateCount("testJob"), is(2));
+    TestUtils.await().untilAsserted(
+        () -> assertThat(loader.getNodeUpdateCount("testJob")).isEqualTo(2));
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 
