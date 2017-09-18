@@ -30,7 +30,7 @@ public class Dependency {
 
   public Dependency(final Props depProps) {
     validateProps(depProps);
-    this.props = depProps;
+    this.props = new Props(depProps.getParent(), depProps);
     //todo chengren311: validate per dependencyType: daliviewdepenency needs extra special check:
     //e.x viewname format validation
     //e.x also check if it's a valid dependency type
