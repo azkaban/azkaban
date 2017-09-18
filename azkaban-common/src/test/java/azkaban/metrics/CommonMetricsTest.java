@@ -36,12 +36,6 @@ public class CommonMetricsTest {
   }
 
   @Test
-  public void testDBConnectionTimeMetrics() {
-    this.metrics.setDBConnectionTime(14);
-    assertEquals(14, this.testUtil.getGaugeValue("dbConnectionTime"));
-  }
-
-  @Test
   public void testOOMWaitingJobMetrics() {
     final String metricName = "OOM-waiting-job-count";
 
