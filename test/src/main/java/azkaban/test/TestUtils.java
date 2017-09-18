@@ -14,11 +14,23 @@
  * the License.
  */
 
-jar {
-    baseName = 'azkaban-test'
-}
+package azkaban.test;
 
-dependencies {
-    compile deps.awaitility
-    compile deps.assertj
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionFactory;
+
+/**
+ * Common test utility methods.
+ */
+public class TestUtils {
+
+
+  /**
+   * Wait for 10 seconds, max. Poll every 10ms.
+   */
+  public static ConditionFactory await() {
+    return Awaitility.await().atMost(10L, TimeUnit.SECONDS)
+        .pollInterval(10L, TimeUnit.MILLISECONDS);
+  }
 }

@@ -31,7 +31,6 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -315,7 +314,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
 
     // wait so that there's time to make the "DB update" for KILLED status
-    TestUtils.await().untilAsserted(
+    azkaban.test.TestUtils.await().untilAsserted(
         () -> assertThat(loader.getNodeUpdateCount("testJob")).isEqualTo(2));
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
