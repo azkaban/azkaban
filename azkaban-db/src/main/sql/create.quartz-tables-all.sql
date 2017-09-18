@@ -1,6 +1,6 @@
--- All necessary quartz table create statement collection
+-- This file collects all quartz table create statement required for quartz 2.2.1
 --
--- We are using Quartz 2.2.1 tables, documentation of which can be found at
+-- We are using Quartz 2.2.1 tables, the original place of which can be found at
 -- https://github.com/quartz-scheduler/quartz/blob/quartz-2.2.1/distribution/src/main/assembly/root/docs/dbTables/tables_mysql.sql
 
 
