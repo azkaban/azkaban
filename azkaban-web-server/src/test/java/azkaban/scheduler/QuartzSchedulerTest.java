@@ -7,11 +7,12 @@ import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 public class QuartzSchedulerTest {
 
   private static DatabaseOperator dbOperator;
@@ -44,8 +45,18 @@ public class QuartzSchedulerTest {
   }
 
   @Test
-  public void test1(){
-    final String aString = "lll";
-    assertThat(aString).isNotNull();
+  public void test1() throws Exception{
+    scheduler.register("* * * * * ?", createJobDescription());
+    assertThat(scheduler.ifJobExist("TestService")).isEqualTo(true);
+    Thread.sleep(5000);
+  }
+
+  private QuartzJobDescription createJobDescription() {
+    final TestService testService = new TestService("first field", "second field");
+    final Map<String, Object> contextMap = new HashMap<>();
+    contextMap.put(TestQuartzJob.DELEGATE_CLASS_NAME, testService);
+    return new QuartzJobDescription(TestQuartzJob.class,
+        "TestService",
+        contextMap);
   }
 }
