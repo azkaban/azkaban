@@ -17,7 +17,11 @@
 package azkaban.flow;
 
 import azkaban.executor.ExecutableFlowBase;
+import azkaban.executor.ExecutableNode;
+import azkaban.executor.Status;
 import azkaban.utils.Props;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.joda.time.DateTime;
 
@@ -52,5 +56,35 @@ public class FlowUtils {
         loadTime.toString("ZZZZ"));
 
     return props;
+  }
+
+  /**
+   * Change job status to disabled in exflow if the job is in disabledJobs
+   */
+  public static void applyDisabledJobs(final List<Object> disabledJobs,
+      final ExecutableFlowBase exflow) {
+    for (final Object disabled : disabledJobs) {
+      if (disabled instanceof String) {
+        final String nodeName = (String) disabled;
+        final ExecutableNode node = exflow.getExecutableNode(nodeName);
+        if (node != null) {
+          node.setStatus(Status.DISABLED);
+        }
+      } else if (disabled instanceof Map) {
+        final Map<String, Object> nestedDisabled = (Map<String, Object>) disabled;
+        final String nodeName = (String) nestedDisabled.get("id");
+        final List<Object> subDisabledJobs =
+            (List<Object>) nestedDisabled.get("children");
+
+        if (nodeName == null || subDisabledJobs == null) {
+          return;
+        }
+
+        final ExecutableNode node = exflow.getExecutableNode(nodeName);
+        if (node != null && node instanceof ExecutableFlowBase) {
+          applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase) node);
+        }
+      }
+    }
   }
 }
