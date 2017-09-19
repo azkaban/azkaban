@@ -78,10 +78,11 @@ public class FlowTrigger {
     // check uniqueness of dependency config
     seen = Sets.newHashSet();
     for (final FlowTriggerDependency dep : dependencies) {
-      final Props props = dep.getProps();
-      props.removeLocal(Constants.DependencyProperties.DEPENDENCY_NAME);
-      Preconditions.checkArgument(seen.add(props.toString()), String.format("duplicate dependency"
-          + "config %s found, dependency config should be unique", dep.getName()));
+      final Props props = dep.getPropsCopy();
+      Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
+          ("duplicate "
+              + "dependency"
+              + "config %s found, dependency config should be unique", dep.getName()));
     }
   }
 

@@ -51,7 +51,7 @@ public class FlowTriggerTest {
   public void testDuplicateDependencies() {
     final Props depProps = new Props();
     depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, "testdep");
-    final FlowTriggerDependency dep = createUniqueTestDependency("intime");
+    final FlowTriggerDependency dep = createUniqueTestDependency("type1");
 
     final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
 
@@ -66,8 +66,8 @@ public class FlowTriggerTest {
   public void testDifferentDepNameSameDepConfig() {
     final Props depProps = new Props();
     depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, "testdep");
-    final FlowTriggerDependency dep1 = createTestDependency("intime", "dep1");
-    final FlowTriggerDependency dep2 = createTestDependency("intime", "dep2");
+    final FlowTriggerDependency dep1 = createTestDependency("type1", "dep1");
+    final FlowTriggerDependency dep2 = createTestDependency("type1", "dep2");
 
     final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
 

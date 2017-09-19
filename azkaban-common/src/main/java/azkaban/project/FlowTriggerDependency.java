@@ -57,7 +57,7 @@ public class FlowTriggerDependency {
   /**
    * @return an immutable copy of props
    */
-  public Props getProps() {
+  public Props getPropsCopy() {
     return new Props(this.props.getParent(), this.props);
   }
 
