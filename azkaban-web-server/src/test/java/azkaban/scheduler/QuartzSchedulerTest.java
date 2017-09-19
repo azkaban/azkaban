@@ -123,8 +123,8 @@ public class QuartzSchedulerTest {
     final TestService testService = new TestService("first field", "second field");
     final Map<String, TestService> contextMap = new HashMap<>();
     contextMap.put(TestQuartzJob.DELEGATE_CLASS_NAME, testService);
-    return new QuartzJobDescription(TestQuartzJob.class,
-        "TestService",
+
+    return new QuartzJobDescription<>(TestQuartzJob.class, "TestService",
         contextMap);
   }
 }

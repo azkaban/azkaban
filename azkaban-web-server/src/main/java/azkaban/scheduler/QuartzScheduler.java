@@ -19,8 +19,6 @@ package azkaban.scheduler;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.utils.Props;
-import java.io.Serializable;
-import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages Quartz schedule. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
+ * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
  * mapping.
  */
 @Singleton
@@ -141,10 +139,7 @@ public class QuartzScheduler {
         .withIdentity("job1", jobDescription.getGroupName()).build();
 
     // Add external dependencies to Job Data Map.
-    for (final Map.Entry<String, ? extends Serializable> entry: jobDescription.getContextMap().entrySet
-        ()) {
-      job.getJobDataMap().put(entry.getKey(), entry.getValue());
-    }
+    job.getJobDataMap().putAll(jobDescription.getContextMap());
 
     // TODO kunkun-tang: Need management code to deal with different misfire policy
     final Trigger trigger = TriggerBuilder

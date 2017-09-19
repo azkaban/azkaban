@@ -19,15 +19,26 @@ package azkaban.scheduler;
 import java.io.Serializable;
 import java.util.Map;
 
-public class QuartzJobDescription {
+/**
+ * Manage one quartz job's variables. Every AZ Quartz Job should come with a QuartzJobDescription.
+ */
+public class QuartzJobDescription<T extends AbstractQuartzJob> {
 
   private final String groupName;
-  private final Class<? extends AbstractQuartzJob> jobClass;
+  private final Class<T> jobClass;
   private final Map<String, ? extends Serializable> contextMap;
 
-  public QuartzJobDescription(final Class<? extends AbstractQuartzJob> jobClass,
+  public QuartzJobDescription(final Class<T> jobClass,
       final String groupName,
       final Map<String, ? extends Serializable> contextMap) {
+
+    /**
+     * This check is necessary for raw type. Please see test
+     * {@link QuartzJobDescriptionTest#testCreateQuartzJobDescription2}
+     */
+    if (jobClass.getSuperclass() != AbstractQuartzJob.class) {
+      throw new RuntimeException("jobClass must extend AbstractQuartzJob class");
+    }
     this.jobClass = jobClass;
     this.groupName = groupName;
     this.contextMap = contextMap;
