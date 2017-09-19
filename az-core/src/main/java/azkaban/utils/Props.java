@@ -430,6 +430,13 @@ public class Props {
   }
 
   /**
+   * Returns a list of clusters with the comma as the separator of the value
+   */
+  public List<String> getStringListFromCluster(final String key) {
+    return getStringList(key, "\\)\\s*,\\s*\\(|\\)\\s*|\\s*\\(");
+  }
+
+  /**
    * Returns a list of strings with the sep as the separator of the value
    */
   public List<String> getStringList(final String key, final String sep) {

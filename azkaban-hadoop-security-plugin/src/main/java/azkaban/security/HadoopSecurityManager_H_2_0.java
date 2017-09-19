@@ -122,6 +122,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * supported, use comma to separate the values, values are case insensitive.
    */
   private static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
+  private static final String EXTRA_HCAT_CLUSTERS = "other_hcat_clusters";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
@@ -484,7 +485,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
     // overwrite the value of the service property of the token if the signature
     // override is specified.
-    if (tokenSignatureOverwrite != null
+    // If the service field is set, do not overwrite that
+    if (hcatToken.getService().getLength() <= 0 && tokenSignatureOverwrite != null
         && tokenSignatureOverwrite.trim().length() > 0) {
       hcatToken.setService(new Text(tokenSignatureOverwrite.trim()
           .toLowerCase()));
@@ -525,24 +527,42 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
         cred.addToken(hcatToken.getService(), hcatToken);
 
-        // check and see if user specified the extra hcat locations we need to
-        // look at and fetch token.
-        final List<String> extraHcatLocations =
-            props.getStringList(EXTRA_HCAT_LOCATION);
-        if (Collections.EMPTY_LIST != extraHcatLocations) {
-          logger.info("Need to pre-fetch extra metaStore tokens from hive.");
+        // Added support for extra_hcat_clusters LIHADOOP-29840
+        final List<String> extraHcatClusters = props.getStringListFromCluster(EXTRA_HCAT_CLUSTERS);
+        if (Collections.EMPTY_LIST != extraHcatClusters) {
+          logger.info("Need to pre-fetch extra metaStore tokens from extra hive clusters.");
 
           // start to process the user inputs.
-          for (final String thriftUrl : extraHcatLocations) {
-            logger.info("Pre-fetching metaStore token from : " + thriftUrl);
+          for (final String thriftUrls : extraHcatClusters) {
+            if (thriftUrls.isEmpty()) {
+              continue;
+            }
+            logger.info("Pre-fetching metaStore token from cluster : " + thriftUrls);
 
             hiveConf = new HiveConf();
-            hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrl);
-            hcatToken =
-                fetchHcatToken(userToProxy, hiveConf, thriftUrl, logger);
+            hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrls);
+            hcatToken = fetchHcatToken(userToProxy, hiveConf, thriftUrls, logger);
             cred.addToken(hcatToken.getService(), hcatToken);
           }
+        } else {
+          // check and see if user specified the extra hcat locations we need to
+          // look at and fetch token.
+          final List<String> extraHcatLocations =
+              props.getStringList(EXTRA_HCAT_LOCATION);
+          if (Collections.EMPTY_LIST != extraHcatLocations) {
+            logger.info("Need to pre-fetch extra metaStore tokens from hive.");
 
+            // start to process the user inputs.
+            for (final String thriftUrl : extraHcatLocations) {
+              logger.info("Pre-fetching metaStore token from : " + thriftUrl);
+
+              hiveConf = new HiveConf();
+              hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrl);
+              hcatToken =
+                  fetchHcatToken(userToProxy, hiveConf, thriftUrl, logger);
+              cred.addToken(hcatToken.getService(), hcatToken);
+            }
+          }
         }
 
       } catch (final Throwable t) {
