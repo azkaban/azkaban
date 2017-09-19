@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static java.lang.Thread.State.TIMED_WAITING;
+import static java.lang.Thread.State.WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.event.Event;
@@ -29,10 +31,12 @@ import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
+import azkaban.test.TestUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -197,7 +201,7 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testCancelRun() throws InterruptedException {
+  public void testCancelRun() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
@@ -212,7 +216,7 @@ public class JobRunnerTest {
 
     StatusTestUtils.waitForStatus(node, Status.RUNNING);
     runner.kill();
-    thread.join(10_000L);
+    assertThreadIsNotAlive(thread);
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Status is " + node.getStatus(),
@@ -234,19 +238,27 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testDelayedExecutionJob() {
+  public void testDelayedExecutionJob() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
         createJobRunner(1, "testJob", 0, false, loader, eventCollector);
-    runner.setDelayStart(100);
+    runner.setDelayStart(10_000);
     final long startTime = System.currentTimeMillis();
     final ExecutableNode node = runner.getNode();
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED);
 
-    runner.run();
+    final Thread thread = new Thread(runner);
+    thread.start();
+
+    // wait for job to get into delayExecution() -> wait()
+    assertThreadIsWaiting(thread);
+    // Wake up delayExecution() -> wait()
+    notifyWaiting(runner);
+    assertThreadIsNotAlive(thread);
+
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
@@ -254,7 +266,7 @@ public class JobRunnerTest {
         node.getStatus() == Status.SUCCEEDED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
-    Assert.assertTrue(node.getStartTime() - startTime >= 100);
+    Assert.assertTrue(node.getStartTime() - startTime >= 0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
@@ -269,12 +281,12 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testDelayedExecutionCancelledJob() throws InterruptedException {
+  public void testDelayedExecutionCancelledJob() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
         createJobRunner(1, "testJob", 0, false, loader, eventCollector);
-    runner.setDelayStart(5000);
+    runner.setDelayStart(10_000);
     final long startTime = System.currentTimeMillis();
     final ExecutableNode node = runner.getNode();
 
@@ -285,8 +297,8 @@ public class JobRunnerTest {
     thread.start();
 
     StatusTestUtils.waitForStatus(node, Status.READY);
-    // sleep so that job has time to get into delayExecution() -> wait()
-    Thread.sleep(2000L);
+    // wait for job to get into delayExecution() -> wait()
+    assertThreadIsWaiting(thread);
     runner.kill();
     StatusTestUtils.waitForStatus(node, Status.KILLED);
 
@@ -297,7 +309,7 @@ public class JobRunnerTest {
         node.getStatus() == Status.KILLED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 1000);
-    Assert.assertTrue(node.getStartTime() - startTime >= 2000);
+    Assert.assertTrue(node.getStartTime() - startTime >= 0);
     Assert.assertTrue(node.getStartTime() - startTime <= 5000);
     Assert.assertTrue(runner.isKilled());
 
@@ -307,7 +319,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
 
     // wait so that there's time to make the "DB update" for KILLED status
-    azkaban.test.TestUtils.await().untilAsserted(
+    TestUtils.await().untilAsserted(
         () -> assertThat(loader.getNodeUpdateCount("testJob")).isEqualTo(2));
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
@@ -339,6 +351,22 @@ public class JobRunnerTest {
 
     runner.addListener(listener);
     return runner;
+  }
+
+  private void assertThreadIsWaiting(final Thread thread) throws Exception {
+    TestUtils.await().until(
+        () -> thread.getState() == TIMED_WAITING || thread.getState() == WAITING);
+  }
+
+  private void assertThreadIsNotAlive(final Thread thread) throws Exception {
+    thread.join(9_000L);
+    TestUtils.await().atMost(1L, TimeUnit.SECONDS).until(() -> !thread.isAlive());
+  }
+
+  private void notifyWaiting(final Object monitor) {
+    synchronized (monitor) {
+      monitor.notifyAll();
+    }
   }
 
 }
