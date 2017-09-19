@@ -22,6 +22,7 @@ import org.quartz.JobExecutionContext;
 public class TestQuartzJob extends AbstractQuartzJob{
 
   public static final String DELEGATE_CLASS_NAME = "TestService";
+  public static int COUNT_EXECUTION = 0;
 
   public TestQuartzJob() {
   }
@@ -29,6 +30,7 @@ public class TestQuartzJob extends AbstractQuartzJob{
   @Override
   public void execute(final JobExecutionContext context) {
     final TestService service = asT(getKey(context, DELEGATE_CLASS_NAME));
+    COUNT_EXECUTION ++ ;
     service.run();
   }
 }

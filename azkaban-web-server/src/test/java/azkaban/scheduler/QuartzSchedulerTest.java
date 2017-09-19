@@ -17,25 +17,33 @@
 package azkaban.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.test.Utils;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.quartz.SchedulerException;
+
+/**
+ * Use H2-in-mem database to directly test Quartz.
+ */
 public class QuartzSchedulerTest {
 
   private static DatabaseOperator dbOperator;
   private static QuartzScheduler scheduler;
 
   @BeforeClass
-  public static void setUpQUartz() throws Exception {
+  public static void setUpQuartz() throws Exception {
     dbOperator = Utils.initQuartzDB();
     final String quartzPropsPath=
         new File("../azkaban-web-server/src/test/resources/quartz.test.properties")
@@ -56,16 +64,59 @@ public class QuartzSchedulerTest {
     }
   }
 
+  @Before
+  public void init() {
+    TestQuartzJob.COUNT_EXECUTION = 0;
+  }
+
   @After
   public void cleanup() {
     scheduler.cleanup();
   }
 
   @Test
-  public void test1() throws Exception{
-    scheduler.register("* * * * * ?", createJobDescription());
+  public void testCreateScheduleAndRun() throws Exception{
+    scheduler.registerJob("* * * * * ?", createJobDescription());
     assertThat(scheduler.ifJobExist("TestService")).isEqualTo(true);
-    Thread.sleep(5000);
+    TestUtils.await().untilAsserted(() -> assertThat(TestQuartzJob.COUNT_EXECUTION)
+        .isNotNull().isGreaterThan(1));
+  }
+
+  @Test
+  public void testNotAllowDuplicateJobRegister() throws Exception{
+    scheduler.registerJob("* * * * * ?", createJobDescription());
+    assertThatThrownBy(
+        () -> scheduler.registerJob("0 5 * * * ?", createJobDescription()))
+        .isInstanceOf(SchedulerException.class)
+        .hasMessageContaining("can not register existing job");
+  }
+
+  @Test
+  public void testInvalidCron() throws Exception{
+    assertThatThrownBy(
+        () -> scheduler.registerJob("0 5 * * * *", createJobDescription()))
+        .isInstanceOf(SchedulerException.class)
+        .hasMessageContaining("The cron expression string");
+  }
+
+  @Test
+  public void testUnregisterSchedule() throws Exception{
+    scheduler.registerJob("* * * * * ?", createJobDescription());
+    assertThat(scheduler.ifJobExist("TestService")).isEqualTo(true);
+    scheduler.unregisterJob("TestService");
+    assertThat(scheduler.ifJobExist("TestService")).isEqualTo(false);
+  }
+
+  @Test
+  public void testPauseAndResume() throws Exception{
+    scheduler.registerJob("* * * * * ?", createJobDescription());
+    scheduler.pause();
+    final int count = TestQuartzJob.COUNT_EXECUTION;
+    Thread.sleep(1500);
+    assertThat(TestQuartzJob.COUNT_EXECUTION).isEqualTo(count);
+    scheduler.resume();
+    Thread.sleep(1200);
+    assertThat(TestQuartzJob.COUNT_EXECUTION).isGreaterThan(count);
   }
 
   private QuartzJobDescription createJobDescription() {

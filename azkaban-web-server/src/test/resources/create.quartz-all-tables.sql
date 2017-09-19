@@ -1,10 +1,8 @@
--- All necessary quartz table create statement collection
+-- All necessary quartz table create statement collection for unit test purpose
 --
--- We are using Quartz 2.2.1 tables, documentation of which can be found at
--- https://github.com/quartz-scheduler/quartz/blob/quartz-2.2.1/distribution/src/main/assembly/root/docs/dbTables/tables_mysql.sql
-
--- H2 version (1.3.155) is unable to perform automatic conversion from boolean into VARCHAR(1) like MySQL can do.
--- So we replace all varchar(1) to boolean in this sql file.
+-- We are using H2-in-memory DB. However, H2 version (1.3.155) is unable to perform automatic
+-- conversion from boolean into VARCHAR(1) like MySQL can do.
+-- So we replace all varchar(1) to boolean.
 
 DROP TABLE IF EXISTS QRTZ_FIRED_TRIGGERS;
 DROP TABLE IF EXISTS QRTZ_PAUSED_TRIGGER_GRPS;

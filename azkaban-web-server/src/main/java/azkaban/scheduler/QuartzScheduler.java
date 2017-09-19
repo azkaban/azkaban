@@ -38,6 +38,10 @@ import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Manages Quartz schedule. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
+ * mapping.
+ */
 @Singleton
 public class QuartzScheduler {
   private static final Logger logger = LoggerFactory.getLogger(QuartzScheduler.class);
@@ -68,6 +72,24 @@ public class QuartzScheduler {
     }
   }
 
+  public void pause() {
+    logger.info("pausing all schedules in Quartz");
+    try {
+      this.scheduler.pauseAll();
+    } catch (final SchedulerException e) {
+      logger.error("Exception pausing scheduler: ", e);
+    }
+  }
+
+  public void resume() {
+    logger.info("resuming all schedules in Quartz");
+    try {
+      this.scheduler.resumeAll();
+    } catch (final SchedulerException e) {
+      logger.error("Exception resuming scheduler: ", e);
+    }
+  }
+
   public void shutdown() {
     logger.info("Shutting down scheduler");
     try {
@@ -77,7 +99,16 @@ public class QuartzScheduler {
     }
   }
 
+  public void unregisterJob(final String groupName) throws SchedulerException {
+    if(!ifJobExist(groupName)) {
+      logger.warn("can not find job with " + groupName + " in quartz.");
+    } else {
+      this.scheduler.deleteJob(new JobKey("job1", groupName));
+    }
+  }
+
   /**
+   * Only cron schedule register is supported.
    *
    * @param cronExpression the cron schedule for this job
    * @param jobDescription Regarding QuartzJobDescription#groupName, in order to guarantee no
@@ -90,7 +121,7 @@ public class QuartzScheduler {
    *   than number, which is the first case. </li>
    * <ul>
    */
-  public void register(final String cronExpression, final QuartzJobDescription jobDescription)
+  public void registerJob(final String cronExpression, final QuartzJobDescription jobDescription)
     throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
@@ -108,6 +139,8 @@ public class QuartzScheduler {
     // start supporting multi schedules per flow.
     final JobDetail job = JobBuilder.newJob(jobDescription.getJobClass())
         .withIdentity("job1", jobDescription.getGroupName()).build();
+
+    // Add external dependencies to Job Data Map.
     for (final Map.Entry<String, ? extends Serializable> entry: jobDescription.getContextMap().entrySet
         ()) {
       job.getJobDataMap().put(entry.getKey(), entry.getValue());
@@ -132,5 +165,9 @@ public class QuartzScheduler {
   public boolean ifJobExist(final String groupName) throws SchedulerException {
     final Set<JobKey> jobKeySet = this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
     return jobKeySet !=null && jobKeySet.size() > 0;
+  }
+
+  Scheduler getScheduler() {
+    return this.scheduler;
   }
 }
