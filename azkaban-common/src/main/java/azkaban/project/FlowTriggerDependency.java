@@ -16,9 +16,9 @@
 
 package azkaban.project;
 
-import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Dependency is an immutable class which holds
@@ -27,9 +27,15 @@ import com.google.common.base.Preconditions;
 public class FlowTriggerDependency {
 
   private final Props props;
+  private final String name;
+  private final String type;
 
-  public FlowTriggerDependency(final Props depProps) {
+  public FlowTriggerDependency(final String name, final String type, final Props depProps) {
+    Preconditions.checkArgument(StringUtils.isNotEmpty(name));
+    Preconditions.checkArgument(StringUtils.isNotEmpty(type));
     validateProps(depProps);
+    this.name = name;
+    this.type = type;
     this.props = new Props(depProps.getParent(), depProps);
     //todo chengren311: validate per dependencyType: daliviewdepenency needs extra special check:
     //e.x viewname format validation
@@ -38,18 +44,14 @@ public class FlowTriggerDependency {
 
   private void validateProps(final Props props) {
     Preconditions.checkNotNull(props, "props shouldn't be null");
-    Preconditions.checkNotNull(props.get(Constants.DependencyProperties.DEPENDENCY_NAME),
-        "missing dependency name");
-    Preconditions.checkNotNull(props.get(Constants.DependencyProperties.DEPENDENCY_TYPE),
-        "missing dependency type");
   }
 
   public String getName() {
-    return this.props.get(Constants.DependencyProperties.DEPENDENCY_NAME);
+    return this.name;
   }
 
   public String getType() {
-    return this.props.get(Constants.DependencyProperties.DEPENDENCY_TYPE);
+    return this.type;
   }
 
   /**
@@ -61,8 +63,10 @@ public class FlowTriggerDependency {
 
   @Override
   public String toString() {
-    return "Dependency{" +
+    return "FlowTriggerDependency{" +
         "props=" + this.props +
+        ", name='" + this.name + '\'' +
+        ", type='" + this.type + '\'' +
         '}';
   }
 }
