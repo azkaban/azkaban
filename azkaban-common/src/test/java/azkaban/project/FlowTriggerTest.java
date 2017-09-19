@@ -34,9 +34,7 @@ public class FlowTriggerTest {
 
   private FlowTriggerDependency createTestDependency(final String type, final String name) {
     final Props depProps = new Props();
-    depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, name);
-    depProps.put(Constants.DependencyProperties.DEPENDENCY_TYPE, type);
-    final FlowTriggerDependency dep = new FlowTriggerDependency(depProps);
+    final FlowTriggerDependency dep = new FlowTriggerDependency(name, type, depProps);
     return dep;
   }
 
