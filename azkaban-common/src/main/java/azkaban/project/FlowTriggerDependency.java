@@ -24,11 +24,11 @@ import com.google.common.base.Preconditions;
  * Dependency is an immutable class which holds
  * all the data and properties of a dependency.
  */
-public class Dependency {
+public class FlowTriggerDependency {
 
   private final Props props;
 
-  public Dependency(final Props depProps) {
+  public FlowTriggerDependency(final Props depProps) {
     validateProps(depProps);
     this.props = new Props(depProps.getParent(), depProps);
     //todo chengren311: validate per dependencyType: daliviewdepenency needs extra special check:
@@ -37,9 +37,11 @@ public class Dependency {
   }
 
   private void validateProps(final Props props) {
-    Preconditions.checkNotNull(props);
-    Preconditions.checkNotNull(props.get(Constants.DependencyProperties.DEPENDENCY_NAME));
-    Preconditions.checkNotNull(props.get(Constants.DependencyProperties.DEPENDENCY_TYPE));
+    Preconditions.checkNotNull(props, "props shouldn't be null");
+    Preconditions.checkNotNull(props.get(Constants.DependencyProperties.DEPENDENCY_NAME),
+        "missing dependency name");
+    Preconditions.checkNotNull(props.get(Constants.DependencyProperties.DEPENDENCY_TYPE),
+        "missing dependency type");
   }
 
   public String getName() {

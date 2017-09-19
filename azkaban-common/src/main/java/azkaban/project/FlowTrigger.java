@@ -34,10 +34,10 @@ import org.apache.commons.lang.StringUtils;
 
 public class FlowTrigger {
 
-  private final List<Dependency> dependencies;
+  private final List<FlowTriggerDependency> dependencies;
   private final Props props; // trigger level props
 
-  private FlowTrigger(final Props props, final List<Dependency> dependencies) {
+  private FlowTrigger(final Props props, final List<FlowTriggerDependency> dependencies) {
     validateProps(props);
     validateDependencies(dependencies);
     this.props = new Props(props.getParent(), props);
@@ -45,7 +45,7 @@ public class FlowTrigger {
   }
 
   private void validateProps(final Props props) {
-    Preconditions.checkNotNull(props);
+    Preconditions.checkNotNull(props, "props shouldn't be null");
     final String MISSING_REQUIRED_ERROR = "missing required param: %s";
 
     final Set<String> requiredParam = ImmutableSet.of(Constants.TriggerProperties.SCHEDULE_TYPE,
@@ -63,21 +63,21 @@ public class FlowTrigger {
     //todo chengren311: validate schedule type, value, and max wait time
   }
 
-  private void validateDependencies(final List<Dependency> dependencies) {
+  private void validateDependencies(final List<FlowTriggerDependency> dependencies) {
     Preconditions.checkNotNull(dependencies);
     // at least one dependency for a trigger
     Preconditions.checkArgument(!dependencies.isEmpty(), "no dependencies found");
 
     // check uniqueness of dependency.name
     Set<String> seen = Sets.newHashSet();
-    for (final Dependency dep : dependencies) {
+    for (final FlowTriggerDependency dep : dependencies) {
       Preconditions.checkArgument(seen.add(dep.getName()), String.format("duplicate dependency"
           + ".name %s found, dependency.name should be unique", dep.getName()));
     }
 
     // check uniqueness of dependency config
     seen = Sets.newHashSet();
-    for (final Dependency dep : dependencies) {
+    for (final FlowTriggerDependency dep : dependencies) {
       final Props props = dep.getProps();
       props.removeLocal(Constants.DependencyProperties.DEPENDENCY_NAME);
       Preconditions.checkArgument(seen.add(props.toString()), String.format("duplicate dependency"
@@ -93,13 +93,13 @@ public class FlowTrigger {
         '}';
   }
 
-  public List<Dependency> getDependencies() {
+  public List<FlowTriggerDependency> getDependencies() {
     return this.dependencies;
   }
 
   public static class FlowTriggerBuilder {
 
-    private final List<Dependency> dependencies;
+    private final List<FlowTriggerDependency> dependencies;
     private final Props props; // trigger level props
 
     public FlowTriggerBuilder(final Props props) {
@@ -107,7 +107,7 @@ public class FlowTrigger {
       this.dependencies = Lists.newArrayList();
     }
 
-    public FlowTriggerBuilder addDependency(final Dependency dep) {
+    public FlowTriggerBuilder addDependency(final FlowTriggerDependency dep) {
       this.dependencies.add(dep);
       return this;
     }

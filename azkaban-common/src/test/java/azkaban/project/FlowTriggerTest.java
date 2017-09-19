@@ -27,16 +27,16 @@ import org.junit.Test;
 
 public class FlowTriggerTest {
 
-  private Dependency createUniqueTestDependency(final String type) {
+  private FlowTriggerDependency createUniqueTestDependency(final String type) {
     final UUID uuid = UUID.randomUUID();
     return createTestDependency(type, uuid.toString());
   }
 
-  private Dependency createTestDependency(final String type, final String name) {
+  private FlowTriggerDependency createTestDependency(final String type, final String name) {
     final Props depProps = new Props();
     depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, name);
     depProps.put(Constants.DependencyProperties.DEPENDENCY_TYPE, type);
-    final Dependency dep = new Dependency(depProps);
+    final FlowTriggerDependency dep = new FlowTriggerDependency(depProps);
     return dep;
   }
 
@@ -53,7 +53,7 @@ public class FlowTriggerTest {
   public void testDuplicateDependencies() {
     final Props depProps = new Props();
     depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, "testdep");
-    final Dependency dep = createUniqueTestDependency("intime");
+    final FlowTriggerDependency dep = createUniqueTestDependency("intime");
 
     final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
 
@@ -68,8 +68,8 @@ public class FlowTriggerTest {
   public void testDifferentDepNameSameDepConfig() {
     final Props depProps = new Props();
     depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, "testdep");
-    final Dependency dep1 = createTestDependency("intime", "dep1");
-    final Dependency dep2 = createTestDependency("intime", "dep2");
+    final FlowTriggerDependency dep1 = createTestDependency("intime", "dep1");
+    final FlowTriggerDependency dep2 = createTestDependency("intime", "dep2");
 
     final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
 
