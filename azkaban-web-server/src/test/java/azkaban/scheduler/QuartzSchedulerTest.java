@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.test.TestUtils;
 import azkaban.test.Utils;
 import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.HashMap;

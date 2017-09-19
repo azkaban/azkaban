@@ -63,6 +63,7 @@ dependencies {
   generateRestli deps.restliGenerator
   generateRestli deps.restliTools
 
+  testCompile project(':test')
   testRuntime deps.h2
 }
 
