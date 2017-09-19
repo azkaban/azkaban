@@ -29,7 +29,7 @@ public class TestQuartzJob extends AbstractQuartzJob{
 
   @Override
   public void execute(final JobExecutionContext context) {
-    final TestService service = asT(getKey(context, DELEGATE_CLASS_NAME));
+    final TestService service = asT(getKey(context, DELEGATE_CLASS_NAME), TestService.class);
     COUNT_EXECUTION ++ ;
     service.run();
   }

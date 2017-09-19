@@ -16,13 +16,14 @@
 
 package azkaban.scheduler;
 
+import java.io.Serializable;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 
 public abstract class AbstractQuartzJob implements Job {
 
-  protected static <T> T asT(final Object service) {
-    return (T) service;
+  protected static <T extends Serializable> T asT(final Object service, final Class<T> type) {
+    return type.cast(service);
   }
 
   @Override

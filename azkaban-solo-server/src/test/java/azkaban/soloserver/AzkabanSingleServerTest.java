@@ -89,6 +89,10 @@ public class AzkabanSingleServerTest {
     props.put("user.manager.xml.file", new File(confPath, "azkaban-users.xml").getPath());
     props.put("executor.port", "12321");
 
+    // Quartz settings
+    props.put("org.quartz.threadPool.class", "org.quartz.simpl.SimpleThreadPool");
+    props.put("org.quartz.threadPool.threadCount", "10");
+
     final String sqlScriptsDir = getSqlScriptsDir();
     assertTrue(new File(sqlScriptsDir).isDirectory());
     props.put(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptsDir);
