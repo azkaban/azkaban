@@ -83,6 +83,10 @@
   &.CANCELLED {
     background-color: @flow-cancelled-color;
   }
+
+  &.FAILED_SUCCEEDED {
+    background-color: @flow-failed-succeeded-color;
+  }
 }
 
 td {
@@ -141,6 +145,10 @@ td {
     &.CANCELLED {
       background-color: @flow-cancelled-color;
     }
+
+    &.FAILED_SUCCEEDED {
+      background-color: @flow-failed-succeeded-color;
+    }
   }
 }
 
@@ -171,6 +179,10 @@ td {
 
   &.CANCELLED {
     color: @flow-cancelled-color;
+  }
+
+  &.FAILED_SUCCEEDED {
+    color: @flow-failed-succeeded-color;
   }
 
   &.FAILED_FINISHING {
@@ -311,6 +323,11 @@ li.tree-list-item {
     }
 
     &.CANCELLED .icon {
+      background-position: 0px 0px;
+      opacity: 0.5;
+    }
+
+    &.FAILED_SUCCEEDED .icon {
       background-position: 0px 0px;
       opacity: 0.5;
     }
