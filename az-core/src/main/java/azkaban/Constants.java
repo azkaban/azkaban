@@ -180,8 +180,8 @@ public class Constants {
 
   public static class DependencyProperties {
 
-    public static final String DEPENDENCY_NAME = "dependency.name";
-    public static final String DEPENDENCY_TYPE = "dependency.type";
+    public static final String DEPENDENCY_NAME = "name";
+    public static final String DEPENDENCY_TYPE = "type";
   }
 
   public static class TriggerProperties {
