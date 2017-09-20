@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -34,7 +33,6 @@ import org.apache.log4j.Logger;
  *
  * @see org.apache.commons.dbutils.QueryRunner
  */
-@Singleton
 public class DatabaseOperator {
 
   private static final Logger logger = Logger.getLogger(DatabaseOperator.class);
