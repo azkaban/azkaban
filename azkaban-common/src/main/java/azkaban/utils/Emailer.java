@@ -124,11 +124,12 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   private String getJobOrFlowName(SlaOption slaOption) {
+    String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
     String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
     if (org.apache.commons.lang.StringUtils.isNotBlank(jobName)) {
-      return jobName;
+      return flowName + ":" + jobName;
     } else {
-      return (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+      return flowName;
     }
   }
 
