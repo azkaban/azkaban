@@ -79,6 +79,7 @@ class AzkabanProjectLoader {
       final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException {
     log.info("Uploading files to " + project.getName());
+    final Map<String, ValidationReport> reports;
 
     // Since props is an instance variable of ProjectManager, and each
     // invocation to the uploadProject manager needs to pass a different
@@ -88,31 +89,35 @@ class AzkabanProjectLoader {
     final Props prop = new Props(this.props);
     prop.putAll(additionalProps);
 
-    // Unzip the project.
-    final File file = unzipProject(archive, fileType);
+    File file = null;
+    try {
+      // Unzip the project.
+      file = unzipProject(archive, fileType);
 
-    // Validate the project, load external validators to do the validation.
-    final Map<String, ValidationReport> reports =
-        validateProject(project, archive, file, prop);
+      // Validate the project, load external validators to do the validation.
+      reports = validateProject(project, archive, file, prop);
 
-    // Todo jamiesjc: in Flow 2.0, we need to create new flowLoader class and
-    // call new method to load the project flows.
-    // Need to guicify it later so that we can mock flowLoader in the tests.
-    // Load the project flows.
-    final DirectoryFlowLoader directoryFlowLoader = new DirectoryFlowLoader(prop);
-    reports.put(DIRECTORY_FLOW_REPORT_KEY,
-        directoryFlowLoader.loadProject(project, file));
+      // Todo jamiesjc: in Flow 2.0, we need to create new flowLoader class and
+      // call new method to load the project flows.
+      // Need to guicify it later so that we can mock flowLoader in the tests.
+      // Load the project flows.
+      final DirectoryFlowLoader directoryFlowLoader = new DirectoryFlowLoader(prop);
+      reports.put(DIRECTORY_FLOW_REPORT_KEY,
+          directoryFlowLoader.loadProject(project, file));
+    } finally {
+      cleanUpProjectTempDir(file);
+    }
 
     // Check the validation report.
-    if(!isReportStatusValid(reports, project, file)) {
+    if (!isReportStatusValid(reports, project)) {
       return reports;
     }
 
     // Upload the project to DB and storage.
     persistProject(project, archive, uploader);
 
-    // Clean up project directories and old installations.
-    cleanUpProject(project, file);
+    // Clean up project old installations after new project is uploaded successfully.
+    cleanUpProjectOldInstallations(project);
 
     return reports;
   }
@@ -164,7 +169,7 @@ class AzkabanProjectLoader {
   }
 
   private boolean isReportStatusValid(final Map<String, ValidationReport> reports,
-      final Project project, final File file) {
+      final Project project) {
     ValidationStatus status = ValidationStatus.PASS;
     for (final Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
@@ -172,15 +177,7 @@ class AzkabanProjectLoader {
       }
     }
     if (status == ValidationStatus.ERROR) {
-      log.error("Error found in upload to " + project.getName()
-          + ". Cleaning up.");
-
-      try {
-        FileUtils.deleteDirectory(file);
-      } catch (final IOException e) {
-        file.deleteOnExit();
-        e.printStackTrace();
-      }
+      log.error("Error found in uploading to " + project.getName());
       return false;
     }
     return true;
@@ -213,16 +210,8 @@ class AzkabanProjectLoader {
     }
   }
 
-  private void cleanUpProject(final Project project, final File file)
+  private void cleanUpProjectOldInstallations(final Project project)
       throws ProjectManagerException{
-    log.info("Uploaded project files. Cleaning up temp files.");
-    try {
-      FileUtils.deleteDirectory(file);
-    } catch (final IOException e) {
-      file.deleteOnExit();
-      e.printStackTrace();
-    }
-
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
@@ -230,6 +219,18 @@ class AzkabanProjectLoader {
 
     // Clean up storage
     this.storageManager.cleanupProjectArtifacts(project.getId());
+  }
+
+  private void cleanUpProjectTempDir(final File file) {
+    log.info("Cleaning up temp files.");
+    try {
+      if (file != null) {
+        FileUtils.deleteDirectory(file);
+      }
+    } catch (final IOException e) {
+      file.deleteOnExit();
+      e.printStackTrace();
+    }
   }
 
   private File unzipFile(final File archiveFile) throws IOException {

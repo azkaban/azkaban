@@ -22,6 +22,8 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -131,7 +133,7 @@ public class Project {
   }
 
   public void setFlows(final Map<String, Flow> flows) {
-    this.flows = new HashMap<>(flows);
+    this.flows = ImmutableMap.copyOf(flows);
   }
 
   public Permission getCollectivePermission(final User user) {
@@ -459,7 +461,7 @@ public class Project {
   }
 
   public void setJobPropsMap(final Map<String, Props> jobPropsMap) {
-    this.jobPropsMap = new HashMap<>(jobPropsMap);
+    this.jobPropsMap = ImmutableMap.copyOf(jobPropsMap);
   }
 
   public List<Props> getPropsList() {
@@ -467,6 +469,6 @@ public class Project {
   }
 
   public void setPropsList(final List<Props> propsList) {
-    this.propsList = new ArrayList<>(propsList);
+    this.propsList = ImmutableList.copyOf(propsList);
   }
 }
