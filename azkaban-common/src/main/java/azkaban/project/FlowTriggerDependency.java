@@ -22,7 +22,7 @@ import org.apache.commons.lang.StringUtils;
 
 /**
  * Dependency is an immutable class which holds
- * all the data and properties of a dependency.
+ * all the necessary properties of a dependency.
  */
 public class FlowTriggerDependency {
 
@@ -33,17 +33,13 @@ public class FlowTriggerDependency {
   public FlowTriggerDependency(final String name, final String type, final Props depProps) {
     Preconditions.checkArgument(StringUtils.isNotEmpty(name));
     Preconditions.checkArgument(StringUtils.isNotEmpty(type));
-    validateProps(depProps);
+    Preconditions.checkArgument(depProps != null);
     this.name = name;
     this.type = type;
     this.props = new Props(depProps.getParent(), depProps);
     //todo chengren311: validate per dependencyType: daliviewdepenency needs extra special check:
     //e.x viewname format validation
     //e.x also check if it's a valid dependency type
-  }
-
-  private void validateProps(final Props props) {
-    Preconditions.checkNotNull(props, "props shouldn't be null");
   }
 
   public String getName() {

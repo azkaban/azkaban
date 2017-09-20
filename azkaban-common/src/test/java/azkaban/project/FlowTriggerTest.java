@@ -55,8 +55,7 @@ public class FlowTriggerTest {
 
     final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
 
-    builder.addDependency(dep);
-    builder.addDependency(dep);
+    builder.addDependency(dep).addDependency(dep);
 
     assertThatThrownBy(() -> builder.build()).isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("dependency.name should be unique");
@@ -71,8 +70,7 @@ public class FlowTriggerTest {
 
     final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
 
-    builder.addDependency(dep1);
-    builder.addDependency(dep2);
+    builder.addDependency(dep1).addDependency(dep2);
 
     assertThatThrownBy(() -> builder.build()).isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("dependency config should be unique");

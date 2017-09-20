@@ -16,69 +16,51 @@
 
 package azkaban.project;
 
-import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.lang.StringUtils;
 
 /**
- * FlowTrigger is an immutable class which holds
- * all the data and properties of a flow trigger.
+ * FlowTrigger is an immutable class
+ * which contains a list of FlowTriggerDependency and a schedule.
  */
-
 public class FlowTrigger {
 
   private final List<FlowTriggerDependency> dependencies;
-  private final Props props; // trigger level props
+  private final FlowTriggerSchedule schedule;
 
-  private FlowTrigger(final Props props, final List<FlowTriggerDependency> dependencies) {
-    validateProps(props);
+  private FlowTrigger(final FlowTriggerSchedule schedule,
+      final List<FlowTriggerDependency> dependencies) {
     validateDependencies(dependencies);
-    this.props = new Props(props.getParent(), props);
+    this.schedule = schedule;
     this.dependencies = Collections.unmodifiableList(dependencies);
   }
 
-  private void validateProps(final Props props) {
-    Preconditions.checkNotNull(props, "props shouldn't be null");
-    final String MISSING_REQUIRED_ERROR = "missing required param: %s";
 
-    final Set<String> requiredParam = ImmutableSet.of(Constants.TriggerProperties.SCHEDULE_TYPE,
-        Constants.TriggerProperties.SCHEDULE_VALUE,
-        Constants.TriggerProperties.SCHEDULE_MAX_WAIT_TIME);
-
-    for (final String param : requiredParam) {
-      Preconditions.checkArgument(props.containsKey(param), String.format(MISSING_REQUIRED_ERROR,
-          param));
-    }
-
-    Preconditions.checkArgument(props.size() == 3, String.format("invalid param found, allowed "
-        + "params: %s", StringUtils.join(requiredParam, ",")));
-
-    //todo chengren311: validate schedule type, value, and max wait time
-  }
-
-  private void validateDependencies(final List<FlowTriggerDependency> dependencies) {
-    Preconditions.checkNotNull(dependencies);
-    // at least one dependency for a trigger
-    Preconditions.checkArgument(!dependencies.isEmpty(), "no dependencies found");
-
-    // check uniqueness of dependency.name
-    Set<String> seen = Sets.newHashSet();
-    for (final FlowTriggerDependency dep : dependencies) {
+  /**
+   * check uniqueness of dependency.name
+   */
+  private void validateDepNameUniqueness() {
+    final Set<String> seen = new HashSet<>();
+    for (final FlowTriggerDependency dep : this.dependencies) {
+      // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getName()), String.format("duplicate dependency"
           + ".name %s found, dependency.name should be unique", dep.getName()));
     }
+  }
 
-    // check uniqueness of dependency config
-    seen = Sets.newHashSet();
-    for (final FlowTriggerDependency dep : dependencies) {
+  /**
+   * check uniqueness of dependency type and params
+   */
+  private void validateDepDefinitionUniqueness() {
+    final Set<String> seen = new HashSet<>();
+    for (final FlowTriggerDependency dep : this.dependencies) {
       final Props props = dep.getPropsCopy();
+      // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
           ("duplicate "
               + "dependency"
@@ -86,11 +68,17 @@ public class FlowTrigger {
     }
   }
 
+  private void validateDependencies(final List<FlowTriggerDependency> dependencies) {
+    Preconditions.checkNotNull(dependencies);
+    validateDepNameUniqueness();
+    validateDepDefinitionUniqueness();
+  }
+
   @Override
   public String toString() {
     return "FlowTrigger{" +
         "dependencies=" + this.dependencies +
-        ", props=" + this.props +
+        ", schedule=" + this.schedule +
         '}';
   }
 
@@ -101,11 +89,11 @@ public class FlowTrigger {
   public static class FlowTriggerBuilder {
 
     private final List<FlowTriggerDependency> dependencies;
-    private final Props props; // trigger level props
+    private final FlowTriggerSchedule schedule;
 
-    public FlowTriggerBuilder(final Props props) {
-      this.props = props;
-      this.dependencies = Lists.newArrayList();
+    public FlowTriggerBuilder(final FlowTriggerSchedule schedule) {
+      this.schedule = schedule;
+      this.dependencies = new ArrayList<>();
     }
 
     public FlowTriggerBuilder addDependency(final FlowTriggerDependency dep) {
@@ -114,7 +102,7 @@ public class FlowTrigger {
     }
 
     public FlowTrigger build() {
-      return new FlowTrigger(this.props, this.dependencies);
+      return new FlowTrigger(this.schedule, this.dependencies);
     }
   }
 }

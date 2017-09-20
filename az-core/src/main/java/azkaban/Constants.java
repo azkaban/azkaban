@@ -188,6 +188,6 @@ public class Constants {
 
     public static final String SCHEDULE_TYPE = "schedule.type";
     public static final String SCHEDULE_VALUE = "schedule.value";
-    public static final String SCHEDULE_MAX_WAIT_TIME = "schedule.max.wait.time";
+    public static final String SCHEDULE_MAX_WAIT_MINS = "schedule.max.wait.mins";
   }
 }
