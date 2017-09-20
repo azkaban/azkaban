@@ -25,7 +25,7 @@ public class TestFlowProcessor implements FlowProcessor {
 
 
   public TestFlowProcessor(final CountDownLatch flowFinishedLatch,
-      StatusChangeRecorder statusChangeRecorder) {
+      final StatusChangeRecorder statusChangeRecorder) {
     this.flowFinishedLatch = flowFinishedLatch;
     this.statusChangeRecorder = statusChangeRecorder;
   }
@@ -33,8 +33,8 @@ public class TestFlowProcessor implements FlowProcessor {
   @Override
   public void changeStatus(final Flow flow, final Status status) {
     System.out.println(flow);
-    statusChangeRecorder.recordFlow(flow);
-    if (Status.isTerminal(status)) {
+    this.statusChangeRecorder.recordFlow(flow);
+    if (status.isTerminal()) {
       this.flowFinishedLatch.countDown();
     }
   }

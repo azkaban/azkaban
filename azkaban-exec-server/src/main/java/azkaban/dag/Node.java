@@ -82,7 +82,7 @@ class Node {
       return false;
     }
     for (final Node parent : this.parents) {
-      if (!parent.isSuccessEffectively()) {
+      if (!parent.status.isSuccessEffectively()) {
         return false;
       }
     }
@@ -96,7 +96,7 @@ class Node {
   void markSuccess() {
     changeStatus(Status.SUCCESS);
     for (final Node child : this.children) {
-      child.check();
+      child.runIfAllowed();
     }
     this.flow.checkFinished();
   }
@@ -104,25 +104,18 @@ class Node {
   /**
    * Checks if all the dependencies are met and run if they are.
    */
-  private void check() {
+  private void runIfAllowed() {
     if (this.status == Status.DISABLED) {
       return;
     }
 
     for (final Node node : this.parents) {
-      if (!node.isSuccessEffectively()) {
+      if (!node.status.isSuccessEffectively()) {
         return;
       }
     }
 
     run();
-  }
-
-  /**
-   * @return true if the dependency requirement is considered satisfied
-   */
-  private boolean isSuccessEffectively() {
-    return Status.isSuccessEffectively(this.status);
   }
 
   void markFailure() {
@@ -170,10 +163,6 @@ class Node {
     assert (this.status == Status.KILLING);
     changeStatus(Status.KILLED);
     this.flow.checkFinished();
-  }
-
-  boolean isInTerminalState() {
-    return Status.isTerminal(this.status);
   }
 
   @Override

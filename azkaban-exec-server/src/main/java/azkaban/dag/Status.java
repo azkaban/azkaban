@@ -26,7 +26,7 @@ enum Status {
   SUCCESS,
   FAILURE,
 
-  // doesn't run because one of the nodes it depends on fails or is killed. Apples to a node only.
+  // doesn't run because one of the nodes it depends on fails or is killed. Applies to a node only.
   CANCELED,
   KILLING, // in the process of killing a running job
   KILLED; // explicitly killed by a user
@@ -37,12 +37,12 @@ enum Status {
   // The states that are considered as success effectively
   static final ImmutableSet EFFECTIVE_SUCCESS_STATES = ImmutableSet.of(DISABLED, SUCCESS);
 
-  static boolean isTerminal(Status status) {
-    return TERMINAL_STATES.contains(status);
+  boolean isTerminal() {
+    return TERMINAL_STATES.contains(this);
   }
 
-  static boolean isSuccessEffectively(Status status) {
-    return EFFECTIVE_SUCCESS_STATES.contains(status);
+  boolean isSuccessEffectively() {
+    return EFFECTIVE_SUCCESS_STATES.contains(this);
   }
 
 }

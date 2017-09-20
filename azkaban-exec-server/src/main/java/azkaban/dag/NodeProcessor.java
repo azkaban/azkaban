@@ -21,7 +21,7 @@ public interface NodeProcessor {
   /**
    * Changes the status of the node.
    *
-   * Typically a processor implementation should handle the RUNNING and KILLING status by staring
+   * Typically a processor implementation should handle the RUNNING and KILLING status by starting
    * or killing a unit of work and call the {@link DagService} to transition the node to the next
    * status.
    *

@@ -74,28 +74,28 @@ class Flow {
     // A flow may have nodes that are disabled. It's safer to scan all the nodes.
     // The assumption is that the overhead is minimal. If it is not the case, we can optimize later.
     boolean failed = false;
-    boolean killed = false;
     for (final Node node : this.nodes) {
-      if (!node.isInTerminalState()) {
+      final Status nodeStatus = node.getStatus();
+      if (!nodeStatus.isTerminal()) {
         return;
       }
-      switch (node.getStatus()) {
-        case FAILURE:
-          failed = true;
-          break;
-        case KILLED:
-          killed = true;
-          break;
-        default:
-          break;
+      if (nodeStatus == Status.FAILURE) {
+        failed = true;
       }
     }
 
-    if (failed) {
-      // If there are both failures and killed nodes, the flow status should be failed.
-      changeStatus(Status.FAILURE);
-    } else if (killed) {
+    if (this.status == Status.KILLING) {
+      /*
+      It's possible that some nodes have failed when the flow is killed.
+      Since killing a flow signals an intent from an operator, it is more important to make
+      the flow status reflect the result of that explict intent. e.g. if the killing is a
+      result of handing a job failure, users more likely want to know that someone has taken
+      an action rather than that a job has failed. Operators can still see the individual job
+      status.
+      */
       changeStatus(Status.KILLED);
+    } else if (failed) {
+      changeStatus(Status.FAILURE);
     } else {
       changeStatus(Status.SUCCESS);
     }
