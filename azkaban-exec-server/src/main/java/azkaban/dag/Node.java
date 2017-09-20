@@ -96,10 +96,13 @@ class Node {
   }
 
   public void run() {
+    assert (isReady());
     changeStatus(Status.RUNNING);
   }
 
   void markSuccess() {
+    // It's possible that the flow is killed before this method is called.
+    assertRunningOrKilling();
     changeStatus(Status.SUCCESS);
     for (final Node child : this.children) {
       child.runIfAllowed();
@@ -111,20 +114,14 @@ class Node {
    * Checks if all the dependencies are met and run if they are.
    */
   private void runIfAllowed() {
-    if (this.status == Status.DISABLED) {
-      return;
+    if (isReady()) {
+      run();
     }
-
-    for (final Node node : this.parents) {
-      if (!node.status.isSuccessEffectively()) {
-        return;
-      }
-    }
-
-    run();
   }
 
   void markFailure() {
+    // It's possible that the flow is killed before this method is called.
+    assertRunningOrKilling();
     changeStatus(Status.FAILURE);
     for (final Node child : this.children) {
       child.cancel();
@@ -133,14 +130,24 @@ class Node {
   }
 
   private void cancel() {
-    // The node can't be in the running or killed state since one of its ancestors has failed or
-    // been killed. It shouldn't have started.
+    // The node can't be in the running, killing, success, failure, killed states since this method
+    // will only be called when one of its ancestors has failed or been killed. It shouldn't have
+    // started.
+    assert (this.status == Status.DISABLED || this.status == Status.READY
+        || this.status == Status.BLOCKED);
     if (this.status != Status.DISABLED) {
       changeStatus(Status.CANCELED);
     }
     for (final Node node : this.children) {
       node.cancel();
     }
+  }
+
+  /**
+   * Asserts that the state is running or killing.
+   */
+  private void assertRunningOrKilling() {
+    assert (this.status == Status.RUNNING || this.status == Status.KILLING);
   }
 
   private void changeStatus(final Status status) {
@@ -158,11 +165,12 @@ class Node {
    */
   void kill() {
     if (this.status == Status.READY || this.status == Status.BLOCKED) {
+      // If the node is disabled, keep the status as disabled.
       changeStatus(Status.CANCELED);
     } else if (this.status == Status.RUNNING) {
-      // kill the job
       changeStatus(Status.KILLING);
     }
+    // If the node has finished, leave the status intact.
   }
 
   void markKilled() {
