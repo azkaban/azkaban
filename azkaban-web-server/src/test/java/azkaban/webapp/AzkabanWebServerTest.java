@@ -28,6 +28,7 @@ import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
+import azkaban.db.H2FileDataSource;
 import azkaban.executor.ActiveExecutingFlowsDao;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionFlowDao;
@@ -147,8 +148,7 @@ public class AzkabanWebServerTest {
     assertSingleton(ExecutorEventsDao.class, injector);
     assertSingleton(ActiveExecutingFlowsDao.class, injector);
     assertSingleton(FetchActiveFlowDao.class, injector);
-    assertSingleton(AzkabanWebServer.class, injector);
-
+    assertSingleton(H2FileDataSource.class, injector);
     SERVICE_PROVIDER.unsetInjector();
   }
 }
