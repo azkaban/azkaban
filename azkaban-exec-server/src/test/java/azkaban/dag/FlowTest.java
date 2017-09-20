@@ -17,6 +17,7 @@
 package azkaban.dag;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
 
@@ -27,7 +28,7 @@ import org.junit.Test;
  */
 public class FlowTest {
 
-  private final Flow testFlow = new Flow("fa", new NullFlowProcessor());
+  private final Flow testFlow = new Flow("fa", mock(FlowProcessor.class));
 
   @Test
   public void flow_finish_with_only_disabled_nodes() {
