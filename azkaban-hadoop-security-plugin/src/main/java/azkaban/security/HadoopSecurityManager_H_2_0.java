@@ -121,7 +121,16 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * default one the system should pre-fetch hcat token from. Note: Multiple thrift uris are
    * supported, use comma to separate the values, values are case insensitive.
    */
+  // Use EXTRA_HCAT_CLUSTERS instead
+  @Deprecated
   private static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
+  /**
+   * this parameter is used to replace EXTRA_HCAT_LOCATION that could fail when one of the uris is not available.
+   * EXTRA_HCAT_CLUSTERS has the following format:
+   * other_hcat_clusters = "(thrift://hcat1:port,thrift://hcat2:port),(thrift://hcat3:port,thrift://hcat4:port)"
+   * Each string in the parenthesis is regarded as a "cluster", which we traverse until we get a delegation token
+   * The uris(hcat servers) in a "cluster" ensures HA is provided.
+   */
   private static final String EXTRA_HCAT_CLUSTERS = "other_hcat_clusters";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
@@ -527,7 +536,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
         cred.addToken(hcatToken.getService(), hcatToken);
 
-        // Added support for extra_hcat_clusters LIHADOOP-29840
+        // Added support for extra_hcat_clusters
         final List<String> extraHcatClusters = props.getStringListFromCluster(EXTRA_HCAT_CLUSTERS);
         if (Collections.EMPTY_LIST != extraHcatClusters) {
           logger.info("Need to pre-fetch extra metaStore tokens from extra hive clusters.");
@@ -545,6 +554,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             cred.addToken(hcatToken.getService(), hcatToken);
           }
         } else {
+          // If EXTRA_HCAT_CLUSTERS is not specified, we will continue with EXTRA_HCAT_LOCATION
           // check and see if user specified the extra hcat locations we need to
           // look at and fetch token.
           final List<String> extraHcatLocations =

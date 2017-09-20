@@ -431,6 +431,8 @@ public class Props {
 
   /**
    * Returns a list of clusters with the comma as the separator of the value
+   * e.g., for input string: "(thrift://hcat1:port,thrift://hcat2:port) , (thrift://hcat3:port,thrift://hcat4:port)"
+   * we will get ["thrift://hcat1:port,thrift://hcat2:port", "thrift://hcat3:port,thrift://hcat4:port"] as output
    */
   public List<String> getStringListFromCluster(final String key) {
     return getStringList(key, "\\)\\s*,\\s*\\(|\\)\\s*|\\s*\\(");
@@ -831,4 +833,6 @@ public class Props {
   public void setSource(final String source) {
     this.source = source;
   }
+
+
 }
