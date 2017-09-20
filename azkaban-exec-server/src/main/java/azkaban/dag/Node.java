@@ -77,8 +77,14 @@ class Node {
     return !this.parents.isEmpty();
   }
 
+  /**
+   * Checks if the node is ready to run.
+   *
+   * @return true if the node is ready to run
+   */
   boolean isReady() {
     if (this.status != Status.READY) {
+      // e.g. if the node is disabled, it is not ready to run.
       return false;
     }
     for (final Node parent : this.parents) {
