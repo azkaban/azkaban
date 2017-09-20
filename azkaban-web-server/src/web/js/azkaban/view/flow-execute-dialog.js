@@ -374,6 +374,8 @@ azkaban.EditTableView = Backbone.View.extend({
   },
 
   handleEditColumn: function (evt) {
+    if (evt.target.tagName == "INPUT")
+      return;
     var curTarget = evt.currentTarget;
 
     var text = $(curTarget).children(".spanValue").text();
