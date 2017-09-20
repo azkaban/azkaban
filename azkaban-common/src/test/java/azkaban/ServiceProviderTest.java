@@ -21,6 +21,8 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.db.H2FileDataSource;
+import azkaban.db.MySQLDataSource;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
@@ -73,5 +75,8 @@ public class ServiceProviderTest {
     assertThat(injector.getInstance(LocalStorage.class)).isNotNull();
     assertThat(injector.getInstance(Storage.class)).isNotNull();
     assertThat(injector.getInstance(DatabaseOperator.class)).isNotNull();
+
+    assertSingleton(MySQLDataSource.class, injector);
+    assertSingleton(H2FileDataSource.class, injector);
   }
 }
