@@ -16,9 +16,11 @@
 
 package azkaban.dag;
 
+import static org.mockito.Mockito.mock;
+
 public class TestUtil {
 
   static Node createNodeWithNullProcessor(final String name) {
-    return new Node(name, new NullNodeProcessor());
+    return new Node(name, mock(NodeProcessor.class));
   }
 }
