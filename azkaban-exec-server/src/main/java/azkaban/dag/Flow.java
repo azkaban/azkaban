@@ -49,6 +49,7 @@ class Flow {
   }
 
   void start() {
+    assert (this.status == Status.READY);
     changeStatus(Status.RUNNING);
     final List<Node> readyNodes = getReadyNodes();
     for (final Node node : readyNodes) {
@@ -60,6 +61,11 @@ class Flow {
   }
 
   void kill() {
+    if (this.status.isTerminal()) {
+      // It is possible that a kill is issued after a flow has finished.
+      // Without this check, this method will make duplicate calls to the FlowProcessor.
+      return;
+    }
     changeStatus(Status.KILLING);
     for (final Node node : this.nodes) {
       node.kill();
