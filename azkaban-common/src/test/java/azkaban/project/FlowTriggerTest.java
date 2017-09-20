@@ -39,12 +39,21 @@ public class FlowTriggerTest {
   }
 
   private FlowTrigger.FlowTriggerBuilder initTrigger() {
-    final Props triggerProps = new Props();
-    triggerProps.put(Constants.TriggerProperties.SCHEDULE_TYPE, "cron");
-    triggerProps.put(Constants.TriggerProperties.SCHEDULE_VALUE, "*");
-    triggerProps.put(Constants.TriggerProperties.SCHEDULE_MAX_WAIT_TIME, "1");
-    final FlowTrigger.FlowTriggerBuilder builder = new FlowTrigger.FlowTriggerBuilder(triggerProps);
+    final FlowTriggerSchedule schedule = new FlowTriggerSchedule("cron", "*", 1);
+    final FlowTrigger.FlowTriggerBuilder builder = new FlowTrigger.FlowTriggerBuilder(schedule);
     return builder;
+  }
+
+  @Test
+  public void testScheduleArgumentValidation() {
+    assertThatThrownBy(() -> new FlowTriggerSchedule("", "*", 1))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    assertThatThrownBy(() -> new FlowTriggerSchedule("cron", " ", 1))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    assertThatThrownBy(() -> new FlowTriggerSchedule("cron", "*", -1))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

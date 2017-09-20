@@ -44,9 +44,9 @@ public class FlowTrigger {
   /**
    * check uniqueness of dependency.name
    */
-  private void validateDepNameUniqueness() {
+  private void validateDepNameUniqueness(final List<FlowTriggerDependency> dependencies) {
     final Set<String> seen = new HashSet<>();
-    for (final FlowTriggerDependency dep : this.dependencies) {
+    for (final FlowTriggerDependency dep : dependencies) {
       // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getName()), String.format("duplicate dependency"
           + ".name %s found, dependency.name should be unique", dep.getName()));
@@ -56,9 +56,9 @@ public class FlowTrigger {
   /**
    * check uniqueness of dependency type and params
    */
-  private void validateDepDefinitionUniqueness() {
+  private void validateDepDefinitionUniqueness(final List<FlowTriggerDependency> dependencies) {
     final Set<String> seen = new HashSet<>();
-    for (final FlowTriggerDependency dep : this.dependencies) {
+    for (final FlowTriggerDependency dep : dependencies) {
       final Props props = dep.getPropsCopy();
       // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
@@ -70,8 +70,8 @@ public class FlowTrigger {
 
   private void validateDependencies(final List<FlowTriggerDependency> dependencies) {
     Preconditions.checkNotNull(dependencies);
-    validateDepNameUniqueness();
-    validateDepDefinitionUniqueness();
+    validateDepNameUniqueness(dependencies);
+    validateDepDefinitionUniqueness(dependencies);
   }
 
   @Override
