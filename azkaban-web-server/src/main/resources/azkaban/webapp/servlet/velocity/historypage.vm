@@ -251,6 +251,8 @@
                     <option value=90>Skipped</option>
                     <option value=100>Disabled</option>
                     <option value=110>Queued</option>
+                    <option value=120>Failed, treated as success</option>
+                    <option value=125>Cancelled</option>
                   </select>
                 </div>
               </div>

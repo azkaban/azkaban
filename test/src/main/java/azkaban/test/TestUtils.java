@@ -14,15 +14,23 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package azkaban.test;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'test'
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionFactory;
+
+/**
+ * Common test utility methods.
+ */
+public class TestUtils {
+
+
+  /**
+   * Wait for 10 seconds, max. Poll every 10ms.
+   */
+  public static ConditionFactory await() {
+    return Awaitility.await().atMost(10L, TimeUnit.SECONDS)
+        .pollInterval(10L, TimeUnit.MILLISECONDS);
+  }
+}

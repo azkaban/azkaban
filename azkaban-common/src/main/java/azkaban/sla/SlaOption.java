@@ -17,6 +17,10 @@
 package azkaban.sla;
 
 import azkaban.executor.ExecutableFlow;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 public class SlaOption {
 
@@ -97,11 +98,11 @@ public class SlaOption {
           (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
       final String basicinfo =
           "SLA Alert: Your flow " + flowName + " failed to FINISH within "
-              + duration + "</br>";
+              + duration + "<br/>";
       final String expected =
-          "Here is details : </br>" + "Flow " + flowName + " in execution "
+          "Here is details : <br/>" + "Flow " + flowName + " in execution "
               + execId + " is expected to FINISH within " + duration + " from "
-              + fmt.print(new DateTime(flow.getStartTime())) + "</br>";
+              + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
       final String actual = "Actual flow status is " + flow.getStatus();
       return basicinfo + expected + actual;
     } else if (type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
@@ -111,11 +112,11 @@ public class SlaOption {
           (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
       final String basicinfo =
           "SLA Alert: Your flow " + flowName + " failed to SUCCEED within "
-              + duration + "</br>";
+              + duration + "<br/>";
       final String expected =
-          "Here is details : </br>" + "Flow " + flowName + " in execution "
+          "Here is details : <br/>" + "Flow " + flowName + " in execution "
               + execId + " expected to FINISH within " + duration + " from "
-              + fmt.print(new DateTime(flow.getStartTime())) + "</br>";
+              + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
       final String actual = "Actual flow status is " + flow.getStatus();
       return basicinfo + expected + actual;
     } else if (type.equals(SlaOption.TYPE_JOB_FINISH)) {

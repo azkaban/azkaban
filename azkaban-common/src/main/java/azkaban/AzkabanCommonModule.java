@@ -35,17 +35,12 @@ import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -72,13 +67,12 @@ public class AzkabanCommonModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(Props.class).toInstance(this.config.getProps());
+    install(new AzkabanCoreModule(this.props));
     bind(Storage.class).to(resolveStorageClassType());
+    bind(AzkabanDataSource.class).to(resolveDataSourceType());
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
-    bind(DataSource.class).to(AzkabanDataSource.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
-    bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -99,28 +93,16 @@ public class AzkabanCommonModule extends AbstractModule {
     }
   }
 
-  // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
-  @Inject
-  @Provides
-  @Singleton
-  public AzkabanDataSource getDataSource(final Props props) {
-    final String databaseType = props.getString("database.type");
+  private Class<? extends AzkabanDataSource> resolveDataSourceType() {
 
+    final String databaseType = this.props.getString("database.type");
     if (databaseType.equals("h2")) {
-      final String path = props.getString("h2.path");
-      final Path h2DbPath = Paths.get(path).toAbsolutePath();
-      log.info("h2 DB path: " + h2DbPath);
-      return new H2FileDataSource(h2DbPath);
+      return H2FileDataSource.class;
+    } else {
+      return MySQLDataSource.class;
     }
-    final int port = props.getInt("mysql.port");
-    final String host = props.getString("mysql.host");
-    final String database = props.getString("mysql.database");
-    final String user = props.getString("mysql.user");
-    final String password = props.getString("mysql.password");
-    final int numConnections = props.getInt("mysql.numconnections");
-
-    return new MySQLDataSource(host, port, database, user, password, numConnections);
   }
+
 
   @Inject
   @Provides

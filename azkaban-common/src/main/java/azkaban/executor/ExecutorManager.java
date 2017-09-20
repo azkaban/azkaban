@@ -22,12 +22,12 @@ import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
+import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.FlowUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -1385,6 +1385,13 @@ public class ExecutorManager extends EventHandler implements
     // move from flow to running flows
     this.runningFlows.put(exflow.getExecutionId(),
         new Pair<>(reference, exflow));
+    synchronized (this) {
+      // Wake up ExecutingManagerUpdaterThread from wait() so that it will immediately check status
+      // from executor(s). Normally flows will run at least some time and can't be cleaned up
+      // immediately, so there will be another wait round (or many, actually), but for unit tests
+      // this is significant to let them run quickly.
+      this.notifyAll();
+    }
 
     logger.info(String.format(
         "Successfully dispatched exec %d with error count %d",
@@ -1521,12 +1528,12 @@ public class ExecutorManager extends EventHandler implements
 
           ExecutorManager.this.updaterStage = "Updated all active flows. Waiting for next round.";
 
-          synchronized (this) {
+          synchronized (ExecutorManager.this) {
             try {
               if (ExecutorManager.this.runningFlows.size() > 0) {
-                this.wait(this.waitTimeMs);
+                ExecutorManager.this.wait(this.waitTimeMs);
               } else {
-                this.wait(this.waitTimeIdleMs);
+                ExecutorManager.this.wait(this.waitTimeIdleMs);
               }
             } catch (final InterruptedException e) {
             }

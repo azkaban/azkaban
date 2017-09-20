@@ -30,12 +30,14 @@ artifacts {
 }
 
 dependencies {
+    compile project(':az-core')
 
     // todo kunkun-tang: consolidate dependencies in azkaban-common and azkaban-db
     compile deps.dbutils
     compile deps.dbcp2
     compile deps.io
 
+    testCompile project(path: ':az-core', configuration: 'testOutput')
     testRuntime deps.h2
 }
 

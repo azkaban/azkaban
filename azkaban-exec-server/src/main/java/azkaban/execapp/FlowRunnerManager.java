@@ -338,6 +338,8 @@ public class FlowRunnerManager implements EventListener,
       if (runner != null) {
         watcher = new LocalFlowWatcher(runner);
       } else {
+        // also ends up here if execute is called with pipelineExecId that's not running any more
+        // (it could have just finished, for example)
         watcher = new RemoteFlowWatcher(pipelineExecId, this.executorLoader);
       }
     }

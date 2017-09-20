@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/azkaban-workflow-engine/Lobby](https://badges.gitter.im/azkaban-workflow-engine/Lobby.svg)](https://gitter.im/azkaban-workflow-engine/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Building Azkaban
+## Build
 Azkaban builds use Gradle and requires Java 8 or higher.
 
 The following set of commands run on *nix platforms like Linux, OS X.
@@ -24,6 +24,23 @@ The following set of commands run on *nix platforms like Linux, OS X.
 ./gradlew build -x test
 ```
 
+### Build a release
+
+Pick a release from [the release page](https://github.com/azkaban/azkaban/releases). 
+Find the tag corresponding to the release.
+
+Check out the source code corresponding to that tag.
+e.g.
+
+`
+git checkout 3.30.1
+`
+
+Build 
+```
+./gradlew clean build
+```
+
 ## Documentation
 Documentation is available at [azkaban.github.io](http://azkaban.github.io). 
 The source code for the documentation is in the [gh-pages](https://github.com/azkaban/azkaban/tree/gh-pages) branch.
@@ -31,9 +48,5 @@ The source code for the documentation is in the [gh-pages](https://github.com/az
 For help, please visit the [Azkaban Google Group](https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev).
 
 ## Developer Guide
-We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/). Azkaban is a standard [Gradle](https://gradle.org/) 
-project. You can import it into your IDE using the `build.gradle` file in the root directory. For IntelliJ, choose Open 
-Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
 
-See additional information in 
-[the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).
+See [the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).

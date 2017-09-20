@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -32,10 +32,6 @@ import java.util.HashMap;
  */
 public class TestUtils {
 
-  public static File getFlowDir(final String projectName, final String flow) {
-    return ExecutionsTestUtil.getFlowFile(projectName, flow + ".flow");
-  }
-
   public static User getTestUser() {
     return new User("testUser");
   }
@@ -43,7 +39,7 @@ public class TestUtils {
   /* Helper method to create an ExecutableFlow from serialized description */
   public static ExecutableFlow createExecutableFlow(final String projectName,
       final String flowName) throws IOException {
-    final File jsonFlowFile = getFlowDir(projectName, flowName);
+    final File jsonFlowFile = ExecutionsTestUtil.getFlowFile(projectName, flowName + ".flow");
     final HashMap<String, Object> flowObj =
         (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 
@@ -65,4 +61,5 @@ public class TestUtils {
     final UserManager manager = new XmlUserManager(props);
     return manager;
   }
+
 }

@@ -12,34 +12,33 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
-package azkaban.db;
+package azkaban;
 
 import azkaban.utils.Props;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import javax.inject.Inject;
+import com.codahale.metrics.MetricRegistry;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public class H2FileDataSource extends AzkabanDataSource {
+/**
+ * The Guice launching place for az-core.
+ */
+public class AzkabanCoreModule extends AbstractModule {
 
-  @Inject
-  public H2FileDataSource(final Props props) {
-    super();
-    final String filePath = props.getString("h2.path");
-    final Path h2DbPath = Paths.get(filePath).toAbsolutePath();
-    final String url = "jdbc:h2:file:" + h2DbPath;
-    setDriverClassName("org.h2.Driver");
-    setUrl(url);
+  private static final Logger log = LoggerFactory.getLogger(AzkabanCoreModule.class);
+  private final Props props;
+
+  public AzkabanCoreModule(final Props props) {
+    this.props = props;
   }
 
   @Override
-  public String getDBType() {
-    return "h2";
-  }
-
-  @Override
-  public boolean allowsOnDuplicateKey() {
-    return false;
+  protected void configure() {
+    bind(Props.class).toInstance(this.props);
+    bind(MetricRegistry.class).in(Scopes.SINGLETON);
   }
 }

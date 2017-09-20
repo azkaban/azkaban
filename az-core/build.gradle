@@ -14,15 +14,30 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+/**
+ * Place foundation classes in this sub-module.
+ */
+task testJar(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier = 'test'
+}
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'test'
+configurations {
+    testOutput.extendsFrom(testCompile)
+}
+
+artifacts {
+    testOutput testJar
+}
+
+dependencies {
+    compile deps.jexl
+    compile deps.commonsLang
+    compile deps.jodaTime
+    compile deps.io
+    compile deps.jacksonCoreAsl
+    compile deps.jacksonMapperAsl
+    compile deps.metricsCore
+    compile deps.metricsJvm
+    compile deps.quartz
+}

@@ -140,8 +140,10 @@ public class AzkabanExecutorServer {
     }
 
     /* Initialize Guice Injector */
-    final Injector injector = Guice
-        .createInjector(new AzkabanCommonModule(props), new AzkabanExecServerModule());
+    final Injector injector = Guice .createInjector (
+        new AzkabanCommonModule(props),
+        new AzkabanExecServerModule()
+    );
     SERVICE_PROVIDER.setInjector(injector);
 
     launch(injector.getInstance(AzkabanExecutorServer.class));

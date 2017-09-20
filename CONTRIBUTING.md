@@ -32,9 +32,16 @@ Please give your pull request a clear title and description and note which issue
 under [the Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).
 
 
+## IDE setup
+
+We recommend [IntelliJ IDEA](https://www.jetbrains.com/idea/). There is a free community 
+edition available. Azkaban is a standard [Gradle](https://gradle.org/) 
+project. You can import it into your IDE using the `build.gradle` file in the root directory. For IntelliJ, choose Open 
+Project from the Quick Start box or choose Open from the File menu and select the root `build.gradle` file.
+
 ## Style guides
 
-Azkaban follows [Google code style](http://google.github.io/styleguide/). The template file, 
+Azkaban follows the [Google code style](http://google.github.io/styleguide/). The template file, 
 `az-intellij-style.xml`, can be found in the root directory. It's based on the 
 [intellij-java-google-style.xml config file](https://github.com/google/styleguide/blob/75c289f1d33836d1ff4bd94e6c9033673e320b58/intellij-java-google-style.xml) from the google/styleguide project.
 
@@ -60,6 +67,16 @@ It allows us to do following when saving a file:
 * Remove final from private method
 * Remove unnecessary semicolon
 * Add missing @Override annotations
+
+### todo style
+
+Add your user name to TODO items. 
+
+  Use the form:
+  
+  `
+  todo username: todo details
+  `  
 
 ## Coding conventions
 
@@ -104,3 +121,28 @@ It allows us to do following when saving a file:
   It's an exception rather than the rule to create custom mocking classes.
   
 - Use [AssertJ](http://joel-costigliola.github.io/assertj/) as the assertion library in unit tests.
+
+- Use slf4j instead of log4j. 
+
+  Use the form: 
+
+  `
+  private static final Logger logger = LoggerFactory.getLogger($CLASS_NAME$.class);
+  ` 
+
+- Add or update the copyright notice for most files.
+
+- When ignoring a test, provide reasons for ignoring the test.
+
+  Use the form: 
+  
+  `@Ignore("reasons")`
+  
+# Misc
+
+- See [the dev tips wiki](https://github.com/azkaban/azkaban/wiki/Developer-Tools-and-Tips) for 
+tips.
+
+- Store images in the [azkaban-images repo](https://github.com/azkaban/azkaban-images)
+ 
+  This is useful to store images needed in the wiki pages for example. 
