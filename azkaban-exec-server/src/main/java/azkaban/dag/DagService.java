@@ -47,23 +47,23 @@ public class DagService {
   }
 
   public void startFlow(final Flow flow) {
-    this.executorService.submit(() -> flow.start());
+    this.executorService.submit(flow::start);
   }
 
   public void markJobSuccess(final Node node) {
-    this.executorService.submit(() -> node.markSuccess());
+    this.executorService.submit(node::markSuccess);
   }
 
   public void markJobKilled(final Node node) {
-    this.executorService.submit(() -> node.markKilled());
+    this.executorService.submit(node::markKilled);
   }
 
   public void failJob(final Node node) {
-    this.executorService.submit(() -> node.markFailure());
+    this.executorService.submit(node::markFailure);
   }
 
   public void killFlow(final Flow flow) {
-    this.executorService.submit(() -> flow.kill());
+    this.executorService.submit(flow::kill);
   }
 
   public void unblockJob(final Node node) {
@@ -74,9 +74,8 @@ public class DagService {
    * Shuts down the service and wait for the tasks to finish.
    *
    * Adopted from
-   *
-   * <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html">Java
-   * Docs
+   * <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html">
+   *   the Oracle JAVA Documentation.
    * </a>
    */
   public void shutdownAndAwaitTermination() {
