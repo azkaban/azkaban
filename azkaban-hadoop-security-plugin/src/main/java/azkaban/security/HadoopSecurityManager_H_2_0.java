@@ -17,6 +17,7 @@
 package azkaban.security;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.security.commons.HadoopSecurityManager;
@@ -124,14 +125,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   // Use EXTRA_HCAT_CLUSTERS instead
   @Deprecated
   private static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
-  /**
-   * this parameter is used to replace EXTRA_HCAT_LOCATION that could fail when one of the uris is not available.
-   * EXTRA_HCAT_CLUSTERS has the following format:
-   * other_hcat_clusters = "(thrift://hcat1:port,thrift://hcat2:port),(thrift://hcat3:port,thrift://hcat4:port)"
-   * Each string in the parenthesis is regarded as a "cluster", which we traverse until we get a delegation token
-   * The uris(hcat servers) in a "cluster" ensures HA is provided.
-   */
-  private static final String EXTRA_HCAT_CLUSTERS = "other_hcat_clusters";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
@@ -543,9 +536,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           // start to process the user inputs.
           for (final String thriftUrls : extraHcatClusters) {
-            if (thriftUrls.isEmpty()) {
-              continue;
-            }
             logger.info("Pre-fetching metaStore token from cluster : " + thriftUrls);
 
             hiveConf = new HiveConf();
@@ -554,9 +544,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             cred.addToken(hcatToken.getService(), hcatToken);
           }
         } else {
-          // If EXTRA_HCAT_CLUSTERS is not specified, we will continue with EXTRA_HCAT_LOCATION
-          // check and see if user specified the extra hcat locations we need to
-          // look at and fetch token.
+          // Only if EXTRA_HCAT_CLUSTERS
           final List<String> extraHcatLocations =
               props.getStringList(EXTRA_HCAT_LOCATION);
           if (Collections.EMPTY_LIST != extraHcatLocations) {

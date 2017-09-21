@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -31,19 +31,19 @@ public class PropsTest {
   /* Test for getStringListFromCluster(String s)*/
   @Test
   public void testSplit1() {
-    String s1 = "(thrift://hcat1:port,thrift://hcat2:port),(thrift://hcat3:port,thrift://hcat4:port)";
+    String s1 = "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port;";
     p.put(EXTRA_HCAT_CLUSTERS, s1);
-    List<String> s2 = Arrays.asList("", "thrift://hcat1:port,thrift://hcat2:port" , "thrift://hcat3:port,thrift://hcat4:port");
+    List<String> s2 = Arrays.asList("thrift://hcat1:port,thrift://hcat2:port" , "thrift://hcat3:port,thrift://hcat4:port");
     Assert.assertTrue(p.getStringListFromCluster(EXTRA_HCAT_CLUSTERS).equals(s2));
 
-    String s3 = "(thrift://hcat1:port,thrift://hcat2:port)   ,   (thrift://hcat3:port,thrift://hcat4:port)";
+    String s3 = "thrift://hcat1:port,thrift://hcat2:port     ;      thrift://hcat3:port,thrift://hcat4:port;";
     p.put(EXTRA_HCAT_CLUSTERS, s3);
-    List<String> s4 = Arrays.asList("", "thrift://hcat1:port,thrift://hcat2:port" , "thrift://hcat3:port,thrift://hcat4:port");
+    List<String> s4 = Arrays.asList( "thrift://hcat1:port,thrift://hcat2:port" , "thrift://hcat3:port,thrift://hcat4:port");
     Assert.assertTrue(p.getStringListFromCluster(EXTRA_HCAT_CLUSTERS).equals(s4));
 
-    String s5 = "   (thrift://hcat1:port,thrift://hcat2:port)   ,   (thrift://hcat3:port,thrift://hcat4:port)    ";
+    String s5 = "thrift://hcat1:port,thrift://hcat2:port";
     p.put(EXTRA_HCAT_CLUSTERS, s5);
-    List<String> s6 = Arrays.asList("", "thrift://hcat1:port,thrift://hcat2:port" , "thrift://hcat3:port,thrift://hcat4:port");
+    List<String> s6 = Arrays.asList("thrift://hcat1:port,thrift://hcat2:port");
     Assert.assertTrue(p.getStringListFromCluster(EXTRA_HCAT_CLUSTERS).equals(s6));
   }
 }

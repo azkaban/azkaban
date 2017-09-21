@@ -89,7 +89,7 @@ public class Constants {
 
     // User facing web server configurations used to construct the user facing server URLs. They are useful when there is a reverse proxy between Azkaban web servers and users.
     // enduser -> myazkabanhost:443 -> proxy -> localhost:8081
-    // when this parameters set then these parameters are used to generate email links. 
+    // when this parameters set then these parameters are used to generate email links.
     // if these parameters are not set then jetty.hostname, and jetty.port(if ssl configured jetty.ssl.port) are used.
     public static final String AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME = "azkaban.webserver.external_hostname";
     public static final String AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT = "azkaban.webserver.external_ssl_port";
@@ -167,6 +167,15 @@ public class Constants {
 
     // Job property that enables/disables using Kafka logging of user job logs
     public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
+
+    /*
+     * this parameter is used to replace EXTRA_HCAT_LOCATION that could fail when one of the uris is not available.
+     * EXTRA_HCAT_CLUSTERS has the following format:
+     * other_hcat_clusters = "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port"
+     * Each string in the parenthesis is regarded as a "cluster", and we will get a delegation token from each cluster.
+     * The uris(hcat servers) in a "cluster" ensures HA is provided.
+     **/
+    public static final String EXTRA_HCAT_CLUSTERS = "other_hcat_clusters";
   }
 
   public static class JobCallbackProperties {
