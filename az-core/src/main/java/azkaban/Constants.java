@@ -177,17 +177,4 @@ public class Constants {
     public static final String JOBCALLBACK_RESPONSE_WAIT_TIMEOUT = "jobcallback.response.wait.timeout";
     public static final String JOBCALLBACK_THREAD_POOL_SIZE = "jobcallback.thread.pool.size";
   }
-
-  public static class DependencyProperties {
-
-    public static final String DEPENDENCY_NAME = "name";
-    public static final String DEPENDENCY_TYPE = "type";
-  }
-
-  public static class TriggerProperties {
-
-    public static final String SCHEDULE_TYPE = "schedule.type";
-    public static final String SCHEDULE_VALUE = "schedule.value";
-    public static final String SCHEDULE_MAX_WAIT_MINS = "schedule.max.wait.mins";
-  }
 }

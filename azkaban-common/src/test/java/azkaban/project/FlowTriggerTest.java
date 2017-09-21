@@ -19,8 +19,10 @@ package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import azkaban.Constants;
-import azkaban.utils.Props;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import org.junit.Test;
 
@@ -33,55 +35,61 @@ public class FlowTriggerTest {
   }
 
   private FlowTriggerDependency createTestDependency(final String type, final String name) {
-    final Props depProps = new Props();
-    final FlowTriggerDependency dep = new FlowTriggerDependency(name, type, depProps);
+    final FlowTriggerDependency dep = new FlowTriggerDependency(name, type, new HashMap<>());
     return dep;
-  }
-
-  private FlowTrigger.FlowTriggerBuilder initTrigger() {
-    final FlowTriggerSchedule schedule = new FlowTriggerSchedule("cron", "*", 1);
-    final FlowTrigger.FlowTriggerBuilder builder = new FlowTrigger.FlowTriggerBuilder(schedule);
-    return builder;
   }
 
   @Test
   public void testScheduleArgumentValidation() {
-    assertThatThrownBy(() -> new FlowTriggerSchedule("", "*", 1))
+    assertThatThrownBy(() -> new CronSchedule(""))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void testFlowTriggerArgumentValidation() {
+    final CronSchedule validSchedule = new CronSchedule("* * * * ? *");
+    final List<FlowTriggerDependency> validDependencyList = new ArrayList<>();
+    final List<FlowTriggerDependency> invalidDependencyList = null;
+    final Duration validDuration = Duration.ofMinutes(10);
+    final Duration invalidDuration = Duration.ofMinutes(-1);
+
+    assertThatThrownBy(() -> new FlowTrigger(validSchedule, invalidDependencyList, validDuration))
         .isInstanceOf(IllegalArgumentException.class);
 
-    assertThatThrownBy(() -> new FlowTriggerSchedule("cron", " ", 1))
-        .isInstanceOf(IllegalArgumentException.class);
-
-    assertThatThrownBy(() -> new FlowTriggerSchedule("cron", "*", -1))
+    assertThatThrownBy(() -> new FlowTrigger(validSchedule, validDependencyList, invalidDuration))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   public void testDuplicateDependencies() {
-    final Props depProps = new Props();
-    depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, "testdep");
-    final FlowTriggerDependency dep = createUniqueTestDependency("type1");
+    final FlowTriggerDependency dep = createUniqueTestDependency("type");
 
-    final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
+    final CronSchedule schedule = new CronSchedule("* * * * ? *");
+    final List<FlowTriggerDependency> dependencyList = new ArrayList<>();
+    dependencyList.add(dep);
+    dependencyList.add(dep);
 
-    builder.addDependency(dep).addDependency(dep);
-
-    assertThatThrownBy(() -> builder.build()).isInstanceOf(IllegalArgumentException.class)
+    assertThatThrownBy(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10)))
+        .isInstanceOf
+            (IllegalArgumentException
+                .class)
         .hasMessageContaining("dependency.name should be unique");
   }
 
   @Test
   public void testDifferentDepNameSameDepConfig() {
-    final Props depProps = new Props();
-    depProps.put(Constants.DependencyProperties.DEPENDENCY_NAME, "testdep");
-    final FlowTriggerDependency dep1 = createTestDependency("type1", "dep1");
-    final FlowTriggerDependency dep2 = createTestDependency("type1", "dep2");
+    final FlowTriggerDependency dep1 = createTestDependency("type", "dep1");
+    final FlowTriggerDependency dep2 = createTestDependency("type", "dep2");
 
-    final FlowTrigger.FlowTriggerBuilder builder = initTrigger();
+    final CronSchedule schedule = new CronSchedule("* * * * ? *");
+    final List<FlowTriggerDependency> dependencyList = new ArrayList<>();
+    dependencyList.add(dep1);
+    dependencyList.add(dep2);
 
-    builder.addDependency(dep1).addDependency(dep2);
-
-    assertThatThrownBy(() -> builder.build()).isInstanceOf(IllegalArgumentException.class)
+    assertThatThrownBy(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10)))
+        .isInstanceOf
+            (IllegalArgumentException
+                .class)
         .hasMessageContaining("dependency config should be unique");
   }
 }

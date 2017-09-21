@@ -16,30 +16,41 @@
 
 package azkaban.project;
 
-import azkaban.utils.Props;
 import com.google.common.base.Preconditions;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * FlowTrigger is an immutable class
- * which contains a list of FlowTriggerDependency and a schedule.
+ * FlowTrigger is the logical representation of a trigger.
+ * It couldn't be changed once gets constructed.
+ * It will be used to create running trigger instance.
  */
 public class FlowTrigger {
 
   private final List<FlowTriggerDependency> dependencies;
-  private final FlowTriggerSchedule schedule;
+  private final CronSchedule schedule;
+  private final Duration maxWaitDuration;
 
-  private FlowTrigger(final FlowTriggerSchedule schedule,
-      final List<FlowTriggerDependency> dependencies) {
+  /**
+   * @throws IllegalArgumentException if any of the argument is null
+   * @throws IllegalArgumentException if there is duplicate dependency name
+   * @throws IllegalArgumentException if there is duplicate dependency type and params
+   */
+  public FlowTrigger(final CronSchedule schedule,
+      final List<FlowTriggerDependency> dependencies, final Duration maxWaitDuration) {
+    Preconditions.checkArgument(schedule != null);
+    Preconditions.checkArgument(dependencies != null);
+    Preconditions.checkArgument(maxWaitDuration != null);
+    Preconditions.checkArgument(!maxWaitDuration.isNegative());
     validateDependencies(dependencies);
     this.schedule = schedule;
     this.dependencies = Collections.unmodifiableList(dependencies);
+    this.maxWaitDuration = maxWaitDuration;
   }
-
 
   /**
    * check uniqueness of dependency.name
@@ -59,7 +70,7 @@ public class FlowTrigger {
   private void validateDepDefinitionUniqueness(final List<FlowTriggerDependency> dependencies) {
     final Set<String> seen = new HashSet<>();
     for (final FlowTriggerDependency dep : dependencies) {
-      final Props props = dep.getPropsCopy();
+      final Map<String, String> props = dep.getProps();
       // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
           ("duplicate "
@@ -69,7 +80,6 @@ public class FlowTrigger {
   }
 
   private void validateDependencies(final List<FlowTriggerDependency> dependencies) {
-    Preconditions.checkNotNull(dependencies);
     validateDepNameUniqueness(dependencies);
     validateDepDefinitionUniqueness(dependencies);
   }
@@ -79,6 +89,7 @@ public class FlowTrigger {
     return "FlowTrigger{" +
         "dependencies=" + this.dependencies +
         ", schedule=" + this.schedule +
+        ", maxWaitDuration=" + this.maxWaitDuration +
         '}';
   }
 
@@ -86,23 +97,8 @@ public class FlowTrigger {
     return this.dependencies;
   }
 
-  public static class FlowTriggerBuilder {
-
-    private final List<FlowTriggerDependency> dependencies;
-    private final FlowTriggerSchedule schedule;
-
-    public FlowTriggerBuilder(final FlowTriggerSchedule schedule) {
-      this.schedule = schedule;
-      this.dependencies = new ArrayList<>();
-    }
-
-    public FlowTriggerBuilder addDependency(final FlowTriggerDependency dep) {
-      this.dependencies.add(dep);
-      return this;
-    }
-
-    public FlowTrigger build() {
-      return new FlowTrigger(this.schedule, this.dependencies);
-    }
+  public Duration getMaxWaitDuration() {
+    return this.maxWaitDuration;
   }
+
 }

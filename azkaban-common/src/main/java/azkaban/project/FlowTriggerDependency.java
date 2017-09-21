@@ -16,30 +16,36 @@
 
 package azkaban.project;
 
-import azkaban.utils.Props;
 import com.google.common.base.Preconditions;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 
 /**
- * Dependency is an immutable class which holds
- * all the necessary properties of a dependency.
+ * FlowTriggerDependency is the logic representation of a trigger dependency.
+ * It couldn't be changed once gets constructed.
+ * It will be used to create running dependency instance.
  */
 public class FlowTriggerDependency {
 
-  private final Props props;
+  private final Map<String, String> props;
   private final String name;
   private final String type;
 
-  public FlowTriggerDependency(final String name, final String type, final Props depProps) {
-    Preconditions.checkArgument(StringUtils.isNotEmpty(name));
-    Preconditions.checkArgument(StringUtils.isNotEmpty(type));
+  /**
+   * @throws IllegalArgumentException if name or type is null or blank
+   * @throws IllegalArgumentException if depProps is null
+   */
+  public FlowTriggerDependency(final String name, final String type, final Map<String, String>
+      depProps) {
+    Preconditions.checkArgument(StringUtils.isNotBlank(name));
+    Preconditions.checkArgument(StringUtils.isNotBlank(type));
     Preconditions.checkArgument(depProps != null);
     this.name = name;
     this.type = type;
-    this.props = new Props(depProps.getParent(), depProps);
-    //todo chengren311: validate per dependencyType: daliviewdepenency needs extra special check:
-    //e.x viewname format validation
-    //e.x also check if it's a valid dependency type
+    this.props = Collections.unmodifiableMap(depProps);
+    //todo chengren311: validate per dependencyType: some dependency type might need extra special
+    //check, also check if it's a valid dependency type
   }
 
   public String getName() {
@@ -50,11 +56,8 @@ public class FlowTriggerDependency {
     return this.type;
   }
 
-  /**
-   * @return an immutable copy of props
-   */
-  public Props getPropsCopy() {
-    return new Props(this.props.getParent(), this.props);
+  public Map<String, String> getProps() {
+    return this.props;
   }
 
   @Override
