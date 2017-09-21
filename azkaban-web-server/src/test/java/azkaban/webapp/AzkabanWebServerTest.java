@@ -28,6 +28,7 @@ import azkaban.AzkabanCommonModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
+import azkaban.db.H2FileDataSource;
 import azkaban.executor.ActiveExecutingFlowsDao;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionFlowDao;
@@ -128,6 +129,7 @@ public class AzkabanWebServerTest {
     executorLoader.updateExecutor(executor);
 
     assertNotNull(injector.getInstance(ExecutionFlowDao.class));
+    assertNotNull(injector.getInstance(DatabaseOperator.class));
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
     assertSingleton(ExecutorLoader.class, injector);
@@ -135,7 +137,6 @@ public class AzkabanWebServerTest {
     assertSingleton(ProjectLoader.class, injector);
     assertSingleton(ProjectManager.class, injector);
     assertSingleton(Storage.class, injector);
-    assertSingleton(DatabaseOperator.class, injector);
     assertSingleton(TriggerLoader.class, injector);
     assertSingleton(TriggerManager.class, injector);
     assertSingleton(AlerterHolder.class, injector);
@@ -148,6 +149,7 @@ public class AzkabanWebServerTest {
     assertSingleton(ActiveExecutingFlowsDao.class, injector);
     assertSingleton(FetchActiveFlowDao.class, injector);
     assertSingleton(AzkabanWebServer.class, injector);
+    assertSingleton(H2FileDataSource.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }
