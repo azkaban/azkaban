@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class handles the downloading and uploading of projects.
+ * Handles the downloading and uploading of projects.
  */
 class AzkabanProjectLoader {
 
@@ -91,10 +91,8 @@ class AzkabanProjectLoader {
 
     File file = null;
     try {
-      // Unzip the project.
       file = unzipProject(archive, fileType);
 
-      // Validate the project, load external validators to do the validation.
       reports = validateProject(project, archive, file, prop);
 
       // Todo jamiesjc: in Flow 2.0, we need to create new flowLoader class and
@@ -228,8 +226,8 @@ class AzkabanProjectLoader {
         FileUtils.deleteDirectory(file);
       }
     } catch (final IOException e) {
+      log.error("Failed to delete temp directory", e);
       file.deleteOnExit();
-      e.printStackTrace();
     }
   }
 

@@ -28,12 +28,6 @@ public interface ValidatorManager {
   Map<String, ValidationReport> validate(Project project, File projectDir);
 
   /**
-   * ValidatorManager will not have any default validator.
-   */
-  @Deprecated
-  ProjectValidator getDefaultValidator();
-
-  /**
    * Returns a list of String containing the name of each registered validators.
    */
   List<String> getValidatorsInfo();

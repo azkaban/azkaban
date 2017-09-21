@@ -230,11 +230,6 @@ public class XmlValidatorManager implements ValidatorManager {
   }
 
   @Override
-  public ProjectValidator getDefaultValidator() {
-    return null;
-  }
-
-  @Override
   public List<String> getValidatorsInfo() {
     final List<String> info = new ArrayList<>();
     for (final String key : this.validators.keySet()) {
