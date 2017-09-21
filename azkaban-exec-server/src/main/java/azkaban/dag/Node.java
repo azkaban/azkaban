@@ -82,7 +82,7 @@ class Node {
    *
    * @return true if the node is ready to run
    */
-  boolean isReady() {
+  private boolean isReady() {
     if (this.status != Status.READY) {
       // e.g. if the node is disabled, it is not ready to run.
       return false;
