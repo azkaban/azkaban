@@ -148,7 +148,9 @@ public class AzkabanWebServerTest {
     assertSingleton(ExecutorEventsDao.class, injector);
     assertSingleton(ActiveExecutingFlowsDao.class, injector);
     assertSingleton(FetchActiveFlowDao.class, injector);
+    assertSingleton(AzkabanWebServer.class, injector);
     assertSingleton(H2FileDataSource.class, injector);
+
     SERVICE_PROVIDER.unsetInjector();
   }
 }
