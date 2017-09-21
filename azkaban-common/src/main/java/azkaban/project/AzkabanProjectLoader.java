@@ -31,24 +31,24 @@ import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.ZipFile;
+import javax.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class handles the downloading and uploading of projects.
+ * Handles the downloading and uploading of projects.
  */
 class AzkabanProjectLoader {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
+  private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
   private final Props props;
 
@@ -79,9 +79,50 @@ class AzkabanProjectLoader {
       final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException {
     log.info("Uploading files to " + project.getName());
+    final Map<String, ValidationReport> reports;
 
-    // Unzip.
+    // Since props is an instance variable of ProjectManager, and each
+    // invocation to the uploadProject manager needs to pass a different
+    // value for the PROJECT_ARCHIVE_FILE_PATH key, it is necessary to
+    // create a new instance of Props to make sure these different values
+    // are isolated from each other.
+    final Props prop = new Props(this.props);
+    prop.putAll(additionalProps);
+
     File file = null;
+    try {
+      file = unzipProject(archive, fileType);
+
+      reports = validateProject(project, archive, file, prop);
+
+      // Todo jamiesjc: in Flow 2.0, we need to create new flowLoader class and
+      // call new method to load the project flows.
+      // Need to guicify it later so that we can mock flowLoader in the tests.
+      // Load the project flows.
+      final DirectoryFlowLoader directoryFlowLoader = new DirectoryFlowLoader(prop);
+      reports.put(DIRECTORY_FLOW_REPORT_KEY,
+          directoryFlowLoader.loadProject(project, file));
+    } finally {
+      cleanUpProjectTempDir(file);
+    }
+
+    // Check the validation report.
+    if (!isReportStatusValid(reports, project)) {
+      return reports;
+    }
+
+    // Upload the project to DB and storage.
+    persistProject(project, archive, uploader);
+
+    // Clean up project old installations after new project is uploaded successfully.
+    cleanUpProjectOldInstallations(project);
+
+    return reports;
+  }
+
+  private File unzipProject(final File archive, final String fileType)
+      throws ProjectManagerException {
+    final File file;
     try {
       if (fileType == null) {
         throw new ProjectManagerException("Unknown file type for "
@@ -95,14 +136,11 @@ class AzkabanProjectLoader {
     } catch (final IOException e) {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
+    return file;
+  }
 
-    // Since props is an instance variable of ProjectManager, and each
-    // invocation to the uploadProject manager needs to pass a different
-    // value for the PROJECT_ARCHIVE_FILE_PATH key, it is necessary to
-    // create a new instance of Props to make sure these different values
-    // are isolated from each other.
-    final Props prop = new Props(this.props);
-    prop.putAll(additionalProps);
+  private Map<String, ValidationReport> validateProject(final Project project,
+      final File archive, final File file, final Props prop) {
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH,
         archive.getAbsolutePath());
     // Basically, we want to make sure that for different invocations to the
@@ -125,7 +163,11 @@ class AzkabanProjectLoader {
     log.info("Validating project " + archive.getName()
         + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
-    final Map<String, ValidationReport> reports = validatorManager.validate(project, file);
+    return validatorManager.validate(project, file);
+  }
+
+  private boolean isReportStatusValid(final Map<String, ValidationReport> reports,
+      final Project project) {
     ValidationStatus status = ValidationStatus.PASS;
     for (final Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
@@ -133,27 +175,17 @@ class AzkabanProjectLoader {
       }
     }
     if (status == ValidationStatus.ERROR) {
-      log.error("Error found in upload to " + project.getName()
-          + ". Cleaning up.");
-
-      try {
-        FileUtils.deleteDirectory(file);
-      } catch (final IOException e) {
-        file.deleteOnExit();
-        e.printStackTrace();
-      }
-
-      return reports;
+      log.error("Error found in uploading to " + project.getName());
+      return false;
     }
+    return true;
+  }
 
-    final DirectoryFlowLoader loader =
-        (DirectoryFlowLoader) validatorManager.getDefaultValidator();
-    final Map<String, Props> jobProps = loader.getJobProps();
-    final List<Props> propProps = loader.getProps();
-
+  private void persistProject(final Project project, final File archive, final User uploader)
+      throws ProjectManagerException{
     synchronized (project) {
       final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
-      final Map<String, Flow> flows = loader.getFlowMap();
+      final Map<String, Flow> flows = project.getFlowMap();
       for (final Flow flow : flows.values()) {
         flow.setProjectId(project.getId());
         flow.setVersion(newVersion);
@@ -166,24 +198,18 @@ class AzkabanProjectLoader {
       log.info("Changing project versions " + archive.getName());
       this.projectLoader.changeProjectVersion(project, newVersion,
           uploader.getUserId());
-      project.setFlows(flows);
       log.info("Uploading Job properties");
       this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
-          jobProps.values()));
+          project.getJobPropsMap().values()));
       log.info("Uploading Props properties");
-      this.projectLoader.uploadProjectProperties(project, propProps);
+      this.projectLoader.uploadProjectProperties(project, project.getPropsList());
+      this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
+          "Uploaded project files zip " + archive.getName());
     }
+  }
 
-    log.info("Uploaded project files. Cleaning up temp files.");
-    this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
-        "Uploaded project files zip " + archive.getName());
-    try {
-      FileUtils.deleteDirectory(file);
-    } catch (final IOException e) {
-      file.deleteOnExit();
-      e.printStackTrace();
-    }
-
+  private void cleanUpProjectOldInstallations(final Project project)
+      throws ProjectManagerException{
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
@@ -191,8 +217,18 @@ class AzkabanProjectLoader {
 
     // Clean up storage
     this.storageManager.cleanupProjectArtifacts(project.getId());
+  }
 
-    return reports;
+  private void cleanUpProjectTempDir(final File file) {
+    log.info("Cleaning up temp files.");
+    try {
+      if (file != null) {
+        FileUtils.deleteDirectory(file);
+      }
+    } catch (final IOException e) {
+      log.error("Failed to delete temp directory", e);
+      file.deleteOnExit();
+    }
   }
 
   private File unzipFile(final File archiveFile) throws IOException {

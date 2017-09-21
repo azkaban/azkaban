@@ -59,7 +59,6 @@ import org.junit.rules.TemporaryFolder;
 public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   private static int id = 101;
-  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private final AzkabanEventReporter azkabanEventReporter =
       EventReporterUtil.getTestAzkabanEventReporter();
   @Rule
@@ -89,7 +88,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     final File dir = ExecutionsTestUtil.getFlowDir("embedded2");
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, dir, this.logger, this.workingDir);
+        .prepareProject(this.project, dir, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
