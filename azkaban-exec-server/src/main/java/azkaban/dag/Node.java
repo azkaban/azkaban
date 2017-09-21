@@ -113,7 +113,7 @@ class Node {
   /**
    * Checks if all the dependencies are met and run if they are.
    */
-  private void runIfAllowed() {
+  void runIfAllowed() {
     if (isReady()) {
       run();
     }

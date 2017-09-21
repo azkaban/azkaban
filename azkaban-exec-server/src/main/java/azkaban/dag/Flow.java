@@ -51,9 +51,8 @@ class Flow {
   void start() {
     assert (this.status == Status.READY);
     changeStatus(Status.RUNNING);
-    final List<Node> readyNodes = getReadyNodes();
-    for (final Node node : readyNodes) {
-      node.run();
+    for (final Node node : this.nodes) {
+      node.runIfAllowed();
     }
     // It's possible that all nodes are disabled. In this rare case the flow should be
     // marked success. Otherwise it will be stuck in the the running state.
@@ -78,7 +77,7 @@ class Flow {
    */
   void checkFinished() {
     // A flow may have nodes that are disabled. It's safer to scan all the nodes.
-    // The assumption is that the overhead is minimal. If it is not the case, we can optimize later.
+    // Assume the overhead is minimal. If it is not the case, we can optimize later.
     boolean failed = false;
     for (final Node node : this.nodes) {
       final Status nodeStatus = node.getStatus();
@@ -105,21 +104,6 @@ class Flow {
     } else {
       changeStatus(Status.SUCCESS);
     }
-  }
-
-  /**
-   * Gets all the nodes that are ready to run.
-   *
-   * @return a list of nodes that are ready to run
-   */
-  private List<Node> getReadyNodes() {
-    final List<Node> readyNodes = new ArrayList<>();
-    for (final Node node : this.nodes) {
-      if (node.isReady()) {
-        readyNodes.add(node);
-      }
-    }
-    return readyNodes;
   }
 
   private void changeStatus(final Status status) {
