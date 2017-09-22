@@ -22,6 +22,9 @@ import org.quartz.JobExecutionContext;
 
 public abstract class AbstractQuartzJob implements Job {
 
+  /**
+   * Cast the object to the original one with the type. The object must extend Serializable.
+   */
   protected static <T extends Serializable> T asT(final Object service, final Class<T> type) {
     return type.cast(service);
   }
