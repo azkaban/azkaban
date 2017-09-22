@@ -37,7 +37,7 @@ public class QuartzJobDescription<T extends AbstractQuartzJob> {
      * {@link QuartzJobDescriptionTest#testCreateQuartzJobDescription2}
      */
     if (jobClass.getSuperclass() != AbstractQuartzJob.class) {
-      throw new RuntimeException("jobClass must extend AbstractQuartzJob class");
+      throw new ClassCastException("jobClass must extend AbstractQuartzJob class");
     }
     this.jobClass = jobClass;
     this.groupName = groupName;
