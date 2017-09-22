@@ -54,15 +54,17 @@ class AzkabanProjectLoader {
 
   private final ProjectLoader projectLoader;
   private final StorageManager storageManager;
+  private final FlowLoaderFactory flowLoaderFactory;
   private final File tempDir;
   private final int projectVersionRetention;
 
   @Inject
   AzkabanProjectLoader(final Props props, final ProjectLoader projectLoader,
-      final StorageManager storageManager) {
+      final StorageManager storageManager, final FlowLoaderFactory flowLoaderFactory) {
     this.props = requireNonNull(props, "Props is null");
     this.projectLoader = requireNonNull(projectLoader, "project Loader is null");
     this.storageManager = requireNonNull(storageManager, "Storage Manager is null");
+    this.flowLoaderFactory = requireNonNull(flowLoaderFactory, "Flow Loader Factory is null");
 
     this.tempDir = new File(props.getString(ConfigurationKeys.PROJECT_TEMP_DIR, "temp"));
     if (!this.tempDir.exists()) {
@@ -95,13 +97,12 @@ class AzkabanProjectLoader {
 
       reports = validateProject(project, archive, file, prop);
 
-      // Todo jamiesjc: in Flow 2.0, we need to create new flowLoader class and
-      // call new method to load the project flows.
-      // Need to guicify it later so that we can mock flowLoader in the tests.
-      // Load the project flows.
-      final DirectoryFlowLoader directoryFlowLoader = new DirectoryFlowLoader(prop);
-      reports.put(DIRECTORY_FLOW_REPORT_KEY,
-          directoryFlowLoader.loadProject(project, file));
+      // Todo jamiesjc: need to check if manifest file exists in project zip,
+      // and create FlowLoader based on different flow versions.
+      final String flowVersion = null;
+
+      final FlowLoader loader = this.flowLoaderFactory.createFlowLoader(flowVersion);
+      reports.put(DIRECTORY_FLOW_REPORT_KEY, loader.loadProject(project, file));
     } finally {
       cleanUpProjectTempDir(file);
     }
