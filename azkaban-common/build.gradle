@@ -43,6 +43,10 @@ dependencies {
 
     testRuntime deps.h2
 
+    testCompile deps.hadoopAnnotations
+    testCompile deps.hadoopAuth
+    testCompile deps.hadoopCommon
+    testCompile deps.hadoopHdfs
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
 }

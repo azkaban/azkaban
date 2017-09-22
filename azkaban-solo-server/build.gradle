@@ -7,6 +7,10 @@ dependencies {
     compile(project(':azkaban-exec-server'))
 
     runtime deps.h2
+    testCompile deps.hadoopAnnotations
+    testCompile deps.hadoopAuth
+    testCompile deps.hadoopCommon
+    testCompile deps.hadoopHdfs
 }
 
 installDist.dependsOn ':azkaban-web-server:installDist'

@@ -5,14 +5,20 @@ dependencies {
     compile(project(':azkaban-common'))
 
     compile deps.kafkaLog4jAppender
-    compile deps.gobblinKafka
+    compile(deps.gobblinKafka) {
+        exclude group: 'org.apache.hadoop'
+    }
 
     runtime(project(':azkaban-hadoop-security-plugin'))
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
 
-    testRuntime deps.h2
+    testCompile deps.h2
+    testCompile deps.hadoopAnnotations
+    testCompile deps.hadoopAuth
+    testCompile deps.hadoopCommon
+    testCompile deps.hadoopHdfs
 }
 
 configurations.compile {
