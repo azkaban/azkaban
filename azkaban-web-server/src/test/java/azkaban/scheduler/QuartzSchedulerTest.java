@@ -19,9 +19,9 @@ package azkaban.scheduler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import azkaban.db.AzDBTestUtility;
 import azkaban.db.DatabaseOperator;
 import azkaban.test.TestUtils;
-import azkaban.test.Utils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.sql.SQLException;
@@ -44,7 +44,7 @@ public class QuartzSchedulerTest {
 
   @BeforeClass
   public static void setUpQuartz() throws Exception {
-    dbOperator = Utils.initQuartzDB();
+    dbOperator = AzDBTestUtility.initQuartzDB();
     final String quartzPropsPath=
         new File("../azkaban-web-server/src/test/resources/quartz.test.properties")
         .getCanonicalPath();
