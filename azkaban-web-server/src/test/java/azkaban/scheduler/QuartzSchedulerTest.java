@@ -66,7 +66,7 @@ public class QuartzSchedulerTest {
 
   @Before
   public void init() {
-    TestQuartzJob.COUNT_EXECUTION = 0;
+    SampleQuartzJob.COUNT_EXECUTION = 0;
   }
 
   @After
@@ -78,7 +78,7 @@ public class QuartzSchedulerTest {
   public void testCreateScheduleAndRun() throws Exception{
     scheduler.registerJob("* * * * * ?", createJobDescription());
     assertThat(scheduler.ifJobExist("TestService")).isEqualTo(true);
-    TestUtils.await().untilAsserted(() -> assertThat(TestQuartzJob.COUNT_EXECUTION)
+    TestUtils.await().untilAsserted(() -> assertThat(SampleQuartzJob.COUNT_EXECUTION)
         .isNotNull().isGreaterThan(1));
   }
 
@@ -111,20 +111,20 @@ public class QuartzSchedulerTest {
   public void testPauseAndResume() throws Exception{
     scheduler.registerJob("* * * * * ?", createJobDescription());
     scheduler.pause();
-    final int count = TestQuartzJob.COUNT_EXECUTION;
+    final int count = SampleQuartzJob.COUNT_EXECUTION;
     Thread.sleep(1500);
-    assertThat(TestQuartzJob.COUNT_EXECUTION).isEqualTo(count);
+    assertThat(SampleQuartzJob.COUNT_EXECUTION).isEqualTo(count);
     scheduler.resume();
     Thread.sleep(1200);
-    assertThat(TestQuartzJob.COUNT_EXECUTION).isGreaterThan(count);
+    assertThat(SampleQuartzJob.COUNT_EXECUTION).isGreaterThan(count);
   }
 
   private QuartzJobDescription createJobDescription() {
     final TestService testService = new TestService("first field", "second field");
     final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(TestQuartzJob.DELEGATE_CLASS_NAME, testService);
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
 
-    return new QuartzJobDescription<>(TestQuartzJob.class, "TestService",
+    return new QuartzJobDescription<>(SampleQuartzJob.class, "TestService",
         contextMap);
   }
 }

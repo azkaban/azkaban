@@ -19,12 +19,12 @@ package azkaban.scheduler;
 import java.io.Serializable;
 import org.quartz.JobExecutionContext;
 
-public class TestQuartzJob extends AbstractQuartzJob{
+public class SampleQuartzJob extends AbstractQuartzJob{
 
   public static final String DELEGATE_CLASS_NAME = "TestService";
   public static int COUNT_EXECUTION = 0;
 
-  public TestQuartzJob() {
+  public SampleQuartzJob() {
   }
 
   @Override

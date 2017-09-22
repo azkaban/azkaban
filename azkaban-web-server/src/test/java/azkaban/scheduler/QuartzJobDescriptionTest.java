@@ -29,9 +29,9 @@ public class QuartzJobDescriptionTest {
   public void testCreateQuartzJobDescription() throws Exception{
     final TestService testService = new TestService("first field", "second field");
     final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(TestQuartzJob.DELEGATE_CLASS_NAME, testService);
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
     assertThatCode(() -> {
-          new QuartzJobDescription<>(TestQuartzJob.class,
+          new QuartzJobDescription<>(SampleQuartzJob.class,
           "TestService",
           contextMap);
     }).doesNotThrowAnyException();
@@ -42,8 +42,8 @@ public class QuartzJobDescriptionTest {
   public void testCreateQuartzJobDescriptionRawType1() throws Exception{
     final TestService testService = new TestService("first field", "second field");
     final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(TestQuartzJob.DELEGATE_CLASS_NAME, testService);
-    assertThatCode(() -> {new QuartzJobDescription(TestQuartzJob.class, "TestService",
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
+    assertThatCode(() -> {new QuartzJobDescription(SampleQuartzJob.class, "TestService",
         contextMap);
     }).doesNotThrowAnyException();
   }
@@ -52,7 +52,7 @@ public class QuartzJobDescriptionTest {
   public void testCreateQuartzJobDescriptionRawType2() throws Exception{
     final TestService testService = new TestService("first field", "second field");
     final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(TestQuartzJob.DELEGATE_CLASS_NAME, testService);
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
     assertThatThrownBy(
         () -> new QuartzJobDescription(TestService.class, "TestService",
             contextMap))
