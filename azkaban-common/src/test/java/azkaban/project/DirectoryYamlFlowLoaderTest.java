@@ -25,8 +25,10 @@ import org.junit.Test;
 
 public class DirectoryYamlFlowLoaderTest {
 
-  public static final String YAML_FILE_NAME = "basicflowyamltest";
-  public static final String FLOW_NAME = "basic_flow";
+  private static final String BASIC_FLOW_YAML_DIR = "basicflowyamltest";
+  private static final String MULTIPLE_FLOW_YAML_DIR = "multipleflowyamltest";
+  private static final String FLOW_NAME_1 = "basic_flow";
+  private static final String FLOW_NAME_2 = "basic_flow2";
   private Project project;
 
   @Before
@@ -38,13 +40,28 @@ public class DirectoryYamlFlowLoaderTest {
   public void testLoadYamlFileFromDirectory() {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
 
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(YAML_FILE_NAME));
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(BASIC_FLOW_YAML_DIR));
     Assert.assertEquals(0, loader.getErrors().size());
     Assert.assertEquals(1, this.project.getFlowMap().size());
-    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME));
-    final Flow flow = this.project.getFlowMap().get(FLOW_NAME);
+    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_1));
+    final Flow flow = this.project.getFlowMap().get(FLOW_NAME_1);
     final AzkabanFlow azkabanFlow = flow.getAzkabanFlow();
-    Assert.assertEquals(FLOW_NAME, azkabanFlow.getName());
+    Assert.assertEquals(FLOW_NAME_1, azkabanFlow.getName());
+    Assert.assertEquals(4, azkabanFlow.getNodes().size());
+  }
 
+  @Test
+  public void testLoadMultipleYamlFilesFromDirectory() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(MULTIPLE_FLOW_YAML_DIR));
+    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(2, this.project.getFlowMap().size());
+    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_1));
+    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_2));
+    final Flow flow2 = this.project.getFlowMap().get(FLOW_NAME_2);
+    final AzkabanFlow azkabanFlow2 = flow2.getAzkabanFlow();
+    Assert.assertEquals(FLOW_NAME_2, azkabanFlow2.getName());
+    Assert.assertEquals(3, azkabanFlow2.getNodes().size());
   }
 }
