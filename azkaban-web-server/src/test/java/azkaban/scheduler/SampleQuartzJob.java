@@ -21,7 +21,7 @@ import org.quartz.JobExecutionContext;
 
 public class SampleQuartzJob extends AbstractQuartzJob{
 
-  public static final String DELEGATE_CLASS_NAME = "TestService";
+  public static final String DELEGATE_CLASS_NAME = "SampleService";
   public static int COUNT_EXECUTION = 0;
 
   public SampleQuartzJob() {
@@ -29,18 +29,18 @@ public class SampleQuartzJob extends AbstractQuartzJob{
 
   @Override
   public void execute(final JobExecutionContext context) {
-    final TestService service = asT(getKey(context, DELEGATE_CLASS_NAME), TestService.class);
+    final SampleService service = asT(getKey(context, DELEGATE_CLASS_NAME), SampleService.class);
     COUNT_EXECUTION ++ ;
     service.run();
   }
 }
 
-class TestService implements Serializable{
+class SampleService implements Serializable{
 
   private final String field1;
   private final String field2;
 
-  TestService(final String field1, final String field2) {
+  SampleService(final String field1, final String field2) {
     this.field1 = field1;
     this.field2 = field2;
   }

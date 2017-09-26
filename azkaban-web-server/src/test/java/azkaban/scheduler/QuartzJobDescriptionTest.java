@@ -27,12 +27,12 @@ public class QuartzJobDescriptionTest {
 
   @Test
   public void testCreateQuartzJobDescription() throws Exception{
-    final TestService testService = new TestService("first field", "second field");
-    final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
+    final SampleService sampleService = new SampleService("first field", "second field");
+    final Map<String, SampleService> contextMap = new HashMap<>();
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
     assertThatCode(() -> {
           new QuartzJobDescription<>(SampleQuartzJob.class,
-          "TestService",
+          "SampleService",
           contextMap);
     }).doesNotThrowAnyException();
   }
@@ -40,21 +40,21 @@ public class QuartzJobDescriptionTest {
 
   @Test
   public void testCreateQuartzJobDescriptionRawType1() throws Exception{
-    final TestService testService = new TestService("first field", "second field");
-    final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
-    assertThatCode(() -> {new QuartzJobDescription(SampleQuartzJob.class, "TestService",
+    final SampleService sampleService = new SampleService("first field", "second field");
+    final Map<String, SampleService> contextMap = new HashMap<>();
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
+    assertThatCode(() -> {new QuartzJobDescription(SampleQuartzJob.class, "SampleService",
         contextMap);
     }).doesNotThrowAnyException();
   }
 
   @Test
   public void testCreateQuartzJobDescriptionRawType2() throws Exception{
-    final TestService testService = new TestService("first field", "second field");
-    final Map<String, TestService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, testService);
+    final SampleService sampleService = new SampleService("first field", "second field");
+    final Map<String, SampleService> contextMap = new HashMap<>();
+    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
     assertThatThrownBy(
-        () -> new QuartzJobDescription(TestService.class, "TestService",
+        () -> new QuartzJobDescription(SampleService.class, "SampleService",
             contextMap))
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("jobClass must extend AbstractQuartzJob class");

@@ -520,11 +520,11 @@ public class AzkabanWebServer extends AzkabanServer {
       startWebMetrics();
     }
 
-    if(props.containsKey(ConfigurationKeys.ENABLE_QUARTZ) && props.getBoolean(ConfigurationKeys
+    if(this.props.containsKey(ConfigurationKeys.ENABLE_QUARTZ) && this.props.getBoolean(ConfigurationKeys
         .ENABLE_QUARTZ)) {
-      quartzScheduler.start();
+      this.quartzScheduler.start();
     }
-    
+
     try {
       this.server.start();
       logger.info("Server started");
