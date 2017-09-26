@@ -387,7 +387,7 @@ public class ProcessJob extends AbstractProcessJob {
 
   /**
    * Changes permissions on file/directory so that the file/directory is owned by the user and
-   * the group remains azkaban.
+   * the group remains the azkaban service account name.
    *
    * Leverages execute-as-user with "root" as the user to run the command.
    *
