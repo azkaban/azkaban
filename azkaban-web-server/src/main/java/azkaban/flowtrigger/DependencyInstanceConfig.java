@@ -27,7 +27,7 @@ public class DependencyInstanceConfig {
     this.config = Collections.unmodifiableMap(config);
   }
 
-  public String get(String key) {
-    return config.get(key);
+  public String get(final String key) {
+    return this.config.get(key);
   }
 }
