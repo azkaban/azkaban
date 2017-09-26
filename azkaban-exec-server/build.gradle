@@ -10,7 +10,11 @@ dependencies {
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
 
-    testRuntime deps.h2
+    testCompile deps.h2
+    testCompile deps.hadoopAnnotations
+    testCompile deps.hadoopAuth
+    testCompile deps.hadoopCommon
+    testCompile deps.hadoopHdfs
 }
 
 distributions {
