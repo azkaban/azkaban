@@ -4,12 +4,6 @@ dependencies {
     compile(project(':azkaban-common'))
 
     compile deps.kafkaLog4jAppender
-<<<<<<< HEAD
-=======
-    compile(deps.gobblinKafka) {
-        exclude group: 'org.apache.hadoop'
-    }
->>>>>>> 59cce4e9... build: change hadoop gradle dependencies to compileOnly (#1499)
 
     runtime(project(':azkaban-hadoop-security-plugin'))
 
