@@ -42,6 +42,9 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class QuartzScheduler {
+
+  //Unless specified, all Quartz jobs's identities comes with the default job name.
+  private static final String DEFAULT_JOB_NAME = "job1";
   private static final Logger logger = LoggerFactory.getLogger(QuartzScheduler.class);
   private Scheduler scheduler = null;
 
@@ -101,7 +104,7 @@ public class QuartzScheduler {
     if(!ifJobExist(groupName)) {
       logger.warn("can not find job with " + groupName + " in quartz.");
     } else {
-      this.scheduler.deleteJob(new JobKey("job1", groupName));
+      this.scheduler.deleteJob(new JobKey(DEFAULT_JOB_NAME, groupName));
     }
   }
 
@@ -133,10 +136,9 @@ public class QuartzScheduler {
       throw new SchedulerException("The cron expression string <" +  cronExpression + "> is not valid.");
     }
 
-    // TODO kunkun-tang: Today all JobDetail should use "job1", and we will modify this when we
-    // start supporting multi schedules per flow.
+    // TODO kunkun-tang: we will modify this when we start supporting multi schedules per flow.
     final JobDetail job = JobBuilder.newJob(jobDescription.getJobClass())
-        .withIdentity("job1", jobDescription.getGroupName()).build();
+        .withIdentity(DEFAULT_JOB_NAME, jobDescription.getGroupName()).build();
 
     // Add external dependencies to Job Data Map.
     job.getJobDataMap().putAll(jobDescription.getContextMap());
@@ -159,10 +161,10 @@ public class QuartzScheduler {
 
   public boolean ifJobExist(final String groupName) throws SchedulerException {
     final Set<JobKey> jobKeySet = this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
-    return jobKeySet !=null && jobKeySet.size() > 0;
+    return jobKeySet != null && jobKeySet.size() > 0;
   }
 
-  Scheduler getScheduler() {
+  public Scheduler getScheduler() {
     return this.scheduler;
   }
 }
