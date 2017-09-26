@@ -175,7 +175,16 @@ public class Constants {
      * Each string in the parenthesis is regarded as a "cluster", and we will get a delegation token from each cluster.
      * The uris(hcat servers) in a "cluster" ensures HA is provided.
      **/
-    public static final String EXTRA_HCAT_CLUSTERS = "other_hcat_clusters";
+    public static final String EXTRA_HCAT_CLUSTERS = "azkaban.job.hive.other_hcat_clusters";
+
+    /*
+     * the settings to be defined by user indicating if there are hcat locations other than the
+     * default one the system should pre-fetch hcat token from. Note: Multiple thrift uris are
+     * supported, use comma to separate the values, values are case insensitive.
+     **/
+    // Use EXTRA_HCAT_CLUSTERS instead
+    @Deprecated
+    public static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
   }
 
   public static class JobCallbackProperties {

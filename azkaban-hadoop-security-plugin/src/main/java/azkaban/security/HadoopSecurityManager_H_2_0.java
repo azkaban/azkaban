@@ -18,6 +18,7 @@ package azkaban.security;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
+import static azkaban.Constants.JobProperties.EXTRA_HCAT_LOCATION;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.security.commons.HadoopSecurityManager;
@@ -117,14 +118,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
-  /**
-   * the settings to be defined by user indicating if there are hcat locations other than the
-   * default one the system should pre-fetch hcat token from. Note: Multiple thrift uris are
-   * supported, use comma to separate the values, values are case insensitive.
-   */
-  // Use EXTRA_HCAT_CLUSTERS instead
-  @Deprecated
-  private static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
