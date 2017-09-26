@@ -237,9 +237,15 @@ public class AzkabanWebServer extends AzkabanServer {
       @Override
       public void run() {
         try {
+          webServer.quartzScheduler.shutdown();
+        } catch (final Exception e) {
+          logger.error(("Exception while shutting down quartz scheduler."), e);
+        }
+
+        try {
           logTopMemoryConsumers();
         } catch (final Exception e) {
-          logger.info(("Exception when logging top memory consumers"), e);
+          logger.error(("Exception when logging top memory consumers"), e);
         }
 
         logger.info("Shutting down http server...");

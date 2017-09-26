@@ -59,7 +59,7 @@ public class QuartzScheduler {
     try {
       this.scheduler.start();
     } catch (final SchedulerException e) {
-      logger.warn("Error starting Quartz scheduler: ", e);
+      logger.error("Error starting Quartz scheduler: ", e);
     }
     logger.info("Quartz Scheduler started.");
   }
