@@ -34,7 +34,7 @@ public class CronSchedule {
   public CronSchedule(final String cronExpression) {
     Preconditions.checkArgument(StringUtils.isNotBlank(cronExpression));
     this.cronExpression = cronExpression;
-    //todo chengren311: check cronExpression is valid
+    //todo chengren311: check cronExpression is valid: quartz has CronExpression.isValidExpression()
   }
 
   public String getCronExpression() {
