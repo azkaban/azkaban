@@ -190,12 +190,6 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.info("Setting timezone to " + timezone);
     }
     configureMBeanServer();
-
-    // Start Quartz Server
-    if(props.containsKey(ConfigurationKeys.ENABLE_QUARTZ) && props.getBoolean(ConfigurationKeys
-        .ENABLE_QUARTZ)) {
-      quartzScheduler.start();
-    }
   }
 
   @Deprecated
@@ -525,6 +519,12 @@ public class AzkabanWebServer extends AzkabanServer {
     if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       startWebMetrics();
     }
+
+    if(props.containsKey(ConfigurationKeys.ENABLE_QUARTZ) && props.getBoolean(ConfigurationKeys
+        .ENABLE_QUARTZ)) {
+      quartzScheduler.start();
+    }
+    
     try {
       this.server.start();
       logger.info("Server started");
