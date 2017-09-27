@@ -20,24 +20,24 @@ public interface DependencyCheck {
 
 
   /**
-   * run this dependency check asynchronously return immediately when the check starts
+   * Non-blocking run of dependency check
    *
    * @return context of the running dependency.
    */
   DependencyInstanceContext run(DependencyInstanceConfig config);
 
   /**
-   * kill the dependency instance
+   * Kill the dependency instance
    */
   void kill(DependencyInstanceContext depContext);
 
   /**
-   * shutdown the dependency instance. Clean up resource if needed.
+   * Shutdown the dependency plugin. Clean up resource if needed.
    */
   void shutdown();
 
   /**
-   * Initialize the dependency instance.
+   * Initialize the dependency plugin.
    *
    * @param config dependency plugin config.
    * @param successCallback callback to invoke when the check succeeds.

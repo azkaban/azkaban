@@ -17,9 +17,12 @@
 package azkaban.flowtrigger;
 
 /**
- * This class holds the context info
- * for a running dependency instance.
+ * This interface provides getExecId() method
+ * to get execution id for a running dependency instance.
+ * The implementation classes should hold context
+ * information for a running dependency instance.
  */
-public class DependencyInstanceContext {
+public interface DependencyInstanceContext {
 
+  int getExecId();
 }
