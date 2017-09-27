@@ -252,7 +252,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("job3").ignoreCancel();
     this.runner.kill("me");
     assertStatus("job3", Status.KILLING);
-    assertFlowStatus(Status.KILLING);
+    assertFlowStatus(this.runner.getExecutableFlow(), Status.KILLING);
     InteractiveTestJob.getTestJob("job3").failJob();
 
     Assert.assertTrue(this.runner.isKilled());
