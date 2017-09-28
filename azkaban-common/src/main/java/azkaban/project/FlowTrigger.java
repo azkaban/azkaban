@@ -36,9 +36,8 @@ public class FlowTrigger {
   private final Duration maxWaitDuration;
 
   /**
-   * @throws IllegalArgumentException if any of the argument is null
-   * @throws IllegalArgumentException if there is duplicate dependency name
-   * @throws IllegalArgumentException if there is duplicate dependency type and params
+   * @throws IllegalArgumentException if any of the argument is null or there is duplicate
+   * dependency name or duplicate dependency type and params
    */
   public FlowTrigger(final CronSchedule schedule,
       final List<FlowTriggerDependency> dependencies, final Duration maxWaitDuration) {
