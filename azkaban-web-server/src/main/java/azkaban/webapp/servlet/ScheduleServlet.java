@@ -90,8 +90,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ajaxSlaInfo(req, ret, session.getUser());
     } else if (ajaxName.equals("setSla")) {
       ajaxSetSla(req, ret, session.getUser());
-    } else if (ajaxName.equals("loadFlow")) {
-      ajaxLoadFlows(req, ret, session.getUser());
+    // alias loadFlow is preserved for backward compatibility
+    } else if (ajaxName.equals("fetchSchedules") || ajaxName.equals("loadFlow")) {
+      ajaxFetchSchedules(ret);
     } else if (ajaxName.equals("scheduleFlow")) {
       ajaxScheduleFlow(req, ret, session.getUser());
     } else if (ajaxName.equals("scheduleCronFlow")) {
@@ -105,8 +106,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxLoadFlows(final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws ServletException {
+  private void ajaxFetchSchedules(final HashMap<String, Object> ret) throws ServletException {
     final List<Schedule> schedules;
     try {
       schedules = this.scheduleManager.getSchedules();
