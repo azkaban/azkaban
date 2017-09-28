@@ -24,6 +24,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ public class Project {
   private Map<String, Props> jobPropsMap = new HashMap<>();
   private List<Props> propsList = new ArrayList<>();
   private Map<String, Object> metadata = new HashMap<>();
+  private Set<String> errors = new HashSet<>();
 
   public Project(final int id, final String name) {
     this.id = id;
@@ -470,5 +472,13 @@ public class Project {
 
   public void setPropsList(final List<Props> propsList) {
     this.propsList = ImmutableList.copyOf(propsList);
+  }
+
+  public Set<String> getErrors() {
+    return this.errors;
+  }
+
+  public void setErrors(final Set<String> errors) {
+    this.errors = ImmutableSet.copyOf(errors);
   }
 }

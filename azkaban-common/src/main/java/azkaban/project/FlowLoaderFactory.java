@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.utils.Props;
+import java.io.File;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -42,15 +43,18 @@ public class FlowLoaderFactory {
   }
 
   /**
-   * Creates flow loader based on different flow versions.
+   * Creates flow loader based on manifest file inside project directory.
    *
-   * @param flowVersion the flow version
+   * @param projectDir the project directory
    * @return the flow loader
    */
-  public FlowLoader createFlowLoader(final String flowVersion) throws ProjectManagerException {
+  public FlowLoader createFlowLoader(final File projectDir) throws ProjectManagerException {
+    // Todo jamiesjc: need to check if manifest file exists in project directory,
+    // and create FlowLoader based on different flow versions specified in the manifest file.
+    final String flowVersion = null;
     if (flowVersion == null) {
       return new DirectoryFlowLoader(this.props);
-    } else if (flowVersion.equals(Constants.AZKABAN_FLOW_VERSION_20)) {
+    } else if (flowVersion.equals(Constants.AZKABAN_FLOW_VERSION_2_0)) {
       return new DirectoryYamlFlowLoader(this.props);
     } else {
       throw new ProjectManagerException("Flow version " + flowVersion + "is invalid.");

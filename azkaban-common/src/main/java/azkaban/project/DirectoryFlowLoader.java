@@ -24,6 +24,7 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.jobcallback.JobCallbackValidator;
+import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
@@ -37,9 +38,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class DirectoryFlowLoader extends FlowLoader {
+public class DirectoryFlowLoader implements FlowLoader {
 
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
@@ -47,8 +49,10 @@ public class DirectoryFlowLoader extends FlowLoader {
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
 
-  private static final Logger logger = Logger.getLogger(DirectoryFlowLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(DirectoryFlowLoader.class);
   private final Props props;
+  private final Set<String> errors = new HashSet<>();
+  private final Map<String, Flow> flowMap = new HashMap<>();
   private HashSet<String> rootNodes;
   private HashMap<String, Node> nodeMap;
   private HashMap<String, Map<String, Edge>> nodeDependencies;
@@ -74,10 +78,10 @@ public class DirectoryFlowLoader extends FlowLoader {
    * Loads all flows from the directory into the project.
    *
    * @param project The project to load flows to.
-   * @param baseDirectory The directory to load flows from.
+   * @param projectDir The directory to load flows from.
    */
   @Override
-  public void loadProjectFlow(final Project project, final File baseDirectory) {
+  public void loadProjectFlow(final Project project, final File projectDir) {
     this.propsList = new ArrayList<>();
     this.flowPropsList = new ArrayList<>();
     this.jobPropsMap = new HashMap<>();
@@ -88,7 +92,7 @@ public class DirectoryFlowLoader extends FlowLoader {
     this.flowDependencies = new HashMap<>();
 
     // Load all the props files and create the Node objects
-    loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
+    loadProjectFromDir(projectDir.getPath(), projectDir, null);
 
     // Create edges and find missing dependencies
     resolveDependencies();
@@ -99,9 +103,9 @@ public class DirectoryFlowLoader extends FlowLoader {
     // Resolve embedded flows
     resolveEmbeddedFlows();
 
-    project.setFlows(this.flowMap);
-    project.setPropsList(this.propsList);
-    project.setJobPropsMap(this.jobPropsMap);
+    checkJobProperties(project);
+
+    fillProjectInfo(project);
 
   }
 
@@ -285,7 +289,7 @@ public class DirectoryFlowLoader extends FlowLoader {
         final Flow flow = new Flow(base.getId());
         final Props jobProp = this.jobPropsMap.get(base.getId());
 
-        addEmailPropsToFlow(flow, jobProp);
+        FlowLoaderUtils.addEmailPropsToFlow(flow, jobProp);
 
         flow.addAllFlowProperties(this.flowPropsList);
         constructFlow(flow, base, visitedNodes);
@@ -336,7 +340,6 @@ public class DirectoryFlowLoader extends FlowLoader {
     visited.remove(node.getId());
   }
 
-  @Override
   public void checkJobProperties(final Project project) {
     // if project is in the memory check whitelist, then we don't need to check
     // its memory settings
@@ -373,6 +376,13 @@ public class DirectoryFlowLoader extends FlowLoader {
       // job callback properties check
       JobCallbackValidator.validate(jobName, this.props, jobProps, this.errors);
     }
+  }
+
+  private void fillProjectInfo(final Project project) {
+    project.setFlows(this.flowMap);
+    project.setPropsList(this.propsList);
+    project.setJobPropsMap(this.jobPropsMap);
+    project.setErrors(this.errors);
   }
 
   private String getNameWithoutExtension(final File file) {

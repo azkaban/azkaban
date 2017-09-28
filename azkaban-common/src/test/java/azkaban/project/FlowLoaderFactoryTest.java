@@ -16,11 +16,12 @@
 
 package azkaban.project;
 
-import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import java.io.File;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class FlowLoaderFactoryTest {
@@ -37,18 +38,18 @@ public class FlowLoaderFactoryTest {
   @Test
   public void testCreateDirectoryFlowLoader() {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
-    final FlowLoader loader = loaderFactory.createFlowLoader(null);
-    loader.loadProject(this.project, ExecutionsTestUtil.getFlowDir(FLOW_10_TEST_DIRECTORY));
-    Assert.assertEquals(0, loader.getErrors().size());
-    Assert.assertEquals(5, this.project.getFlowMap().size());
+    final File projectDir = ExecutionsTestUtil.getFlowDir(FLOW_10_TEST_DIRECTORY);
+    final FlowLoader loader = loaderFactory.createFlowLoader(projectDir);
+    Assert.assertTrue(loader instanceof DirectoryFlowLoader);
   }
 
+  // Todo jamiesjc: add the manifest file with flow version 2.0 and enable this test
   @Test
+  @Ignore
   public void testCreateDirectoryYamlFlowLoader() {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
-    final FlowLoader loader = loaderFactory.createFlowLoader(Constants.AZKABAN_FLOW_VERSION_20);
-    loader.loadProject(this.project, ExecutionsTestUtil.getFlowDir(FLOW_20_TEST_DIRECTORY));
-    Assert.assertEquals(0, loader.getErrors().size());
-    Assert.assertEquals(1, this.project.getFlowMap().size());
+    final File projectDir = ExecutionsTestUtil.getFlowDir(FLOW_20_TEST_DIRECTORY);
+    final FlowLoader loader = loaderFactory.createFlowLoader(projectDir);
+    Assert.assertTrue(loader instanceof DirectoryYamlFlowLoader);
   }
 }

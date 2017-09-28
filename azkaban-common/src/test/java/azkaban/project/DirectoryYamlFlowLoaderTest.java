@@ -41,7 +41,7 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(BASIC_FLOW_YAML_DIR));
-    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(0, this.project.getErrors().size());
     Assert.assertEquals(1, this.project.getFlowMap().size());
     Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_1));
     final Flow flow = this.project.getFlowMap().get(FLOW_NAME_1);
@@ -55,7 +55,7 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(MULTIPLE_FLOW_YAML_DIR));
-    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(0, this.project.getErrors().size());
     Assert.assertEquals(2, this.project.getFlowMap().size());
     Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_1));
     Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_2));

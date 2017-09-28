@@ -17,21 +17,29 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
+import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileNotFoundException;
-import org.apache.log4j.Logger;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads yaml files to flows from project directory.
  */
-public class DirectoryYamlFlowLoader extends FlowLoader {
+public class DirectoryYamlFlowLoader implements FlowLoader {
 
-  private static final Logger logger = Logger.getLogger(DirectoryYamlFlowLoader.class);
-  private static final String PROJECT_YAML_SUFFIX = ".project";
-  private static final String FLOW_YAML_SUFFIX = ".flow";
+  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
+  private static final String PROJECT_FILE_SUFFIX = ".project";
+  private static final String FLOW_FILE_SUFFIX = ".flow";
 
   private final Props props;
+  private final Set<String> errors = new HashSet<>();
+  private final Map<String, Flow> flowMap = new HashMap<>();
 
   /**
    * Creates a new DirectoryYamlFlowLoader.
@@ -46,19 +54,20 @@ public class DirectoryYamlFlowLoader extends FlowLoader {
    * Loads all flows from the directory into the project.
    *
    * @param project The project to load flows to.
-   * @param baseDirectory The directory to load flows from.
+   * @param projectDir The directory to load flows from.
    */
   @Override
-  public void loadProjectFlow(final Project project, final File baseDirectory) {
-    convertYamlFiles(baseDirectory);
-    project.setFlows(this.flowMap);
+  public void loadProjectFlow(final Project project, final File projectDir) {
+    convertYamlFiles(projectDir);
+    checkJobProperties(project);
+    fillProjectInfo(project);
   }
 
   private void convertYamlFiles(final File projectDir) {
     // Todo jamiesjc: convert project yaml file. It will contain properties for all flows.
 
     //covert flow yaml files
-    final File[] flowFiles = projectDir.listFiles(new SuffixFilter(FLOW_YAML_SUFFIX));
+    final File[] flowFiles = projectDir.listFiles(new SuffixFilter(FLOW_FILE_SUFFIX));
     for (final File file : flowFiles) {
       final FlowBeanLoader loader = new FlowBeanLoader();
       try {
@@ -68,16 +77,21 @@ public class DirectoryYamlFlowLoader extends FlowLoader {
         flow.setAzkabanFlow(azkabanFlow);
         this.flowMap.put(azkabanFlow.getName(), flow);
         final Props flowProps = azkabanFlow.getProps();
-        addEmailPropsToFlow(flow, flowProps);
+        FlowLoaderUtils.addEmailPropsToFlow(flow, flowProps);
       } catch (final FileNotFoundException e) {
         logger.error("Error loading flow yaml files", e);
       }
     }
   }
 
-  @Override
   public void checkJobProperties(final Project project) {
     // Todo jamiesjc: implement the check later
+  }
+
+  private void fillProjectInfo(final Project project) {
+    // Todo jamiesjc: fill out other project info later
+    project.setFlows(this.flowMap);
+    project.setErrors(this.errors);
   }
 
 }

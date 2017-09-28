@@ -16,124 +16,15 @@
 
 package azkaban.project;
 
-import azkaban.flow.CommonJobProperties;
-import azkaban.flow.Flow;
-import azkaban.project.validator.ValidationReport;
-import azkaban.utils.Props;
 import java.io.File;
-import java.io.FileFilter;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-/**
- * Loads flows from project directory.
- */
-public abstract class FlowLoader {
-
-  protected Map<String, Flow> flowMap = new HashMap<>();
-  protected Set<String> errors = new HashSet<>();
+public interface FlowLoader {
 
   /**
-   * Returns errors caught when loading flows.
-   *
-   * @return Set of error strings.
-   */
-  public Set<String> getErrors() {
-    return this.errors;
-  }
-
-  /**
-   * Loads the project and returns the validation report.
+   * Loads the project flows.
    *
    * @param project the project
    * @param projectDir the project dir
-   * @return the validation report
    */
-  public ValidationReport loadProject(final Project project, final File projectDir) {
-    loadProjectFlow(project, projectDir);
-    checkJobProperties(project);
-    final ValidationReport report = new ValidationReport();
-    report.addErrorMsgs(this.errors);
-    return report;
-  }
-
-  /**
-   * Adds email properties to a flow.
-   *
-   * @param flow the flow
-   * @param prop the prop
-   */
-  public void addEmailPropsToFlow(final Flow flow, final Props prop) {
-    final List<String> successEmailList =
-        prop.getStringList(CommonJobProperties.SUCCESS_EMAILS,
-            Collections.EMPTY_LIST);
-    final Set<String> successEmail = new HashSet<>();
-    for (final String email : successEmailList) {
-      successEmail.add(email.toLowerCase());
-    }
-
-    final List<String> failureEmailList =
-        prop.getStringList(CommonJobProperties.FAILURE_EMAILS,
-            Collections.EMPTY_LIST);
-    final Set<String> failureEmail = new HashSet<>();
-    for (final String email : failureEmailList) {
-      failureEmail.add(email.toLowerCase());
-    }
-
-    final List<String> notifyEmailList =
-        prop.getStringList(CommonJobProperties.NOTIFY_EMAILS,
-            Collections.EMPTY_LIST);
-    for (String email : notifyEmailList) {
-      email = email.toLowerCase();
-      successEmail.add(email);
-      failureEmail.add(email);
-    }
-
-    flow.addFailureEmails(failureEmail);
-    flow.addSuccessEmails(successEmail);
-  }
-
-  /**
-   * Loads project flows from baseDirectory to project.
-   *
-   * @param project the project
-   * @param baseDirectory the base directory
-   */
-  public abstract void loadProjectFlow(final Project project, final File baseDirectory);
-
-  /**
-   * Checks job properties.
-   *
-   * @param project the project
-   */
-  public abstract void checkJobProperties(final Project project);
-
-  /**
-   * Implements Suffix filter.
-   */
-  public static class SuffixFilter implements FileFilter {
-
-    private final String suffix;
-
-    /**
-     * Instantiates a new Suffix filter.
-     *
-     * @param suffix the suffix
-     */
-    public SuffixFilter(final String suffix) {
-      this.suffix = suffix;
-    }
-
-    @Override
-    public boolean accept(final File pathname) {
-      final String name = pathname.getName();
-
-      return pathname.isFile() && !pathname.isHidden()
-          && name.length() > this.suffix.length() && name.endsWith(this.suffix);
-    }
-  }
+  void loadProjectFlow(final Project project, final File projectDir);
 }

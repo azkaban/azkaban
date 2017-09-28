@@ -46,8 +46,8 @@ public class FlowRunnerTestUtil {
       throws ProjectManagerException, IOException {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
     loader.loadProjectFlow(project, sourceDir);
-    if (!loader.getErrors().isEmpty()) {
-      for (final String error : loader.getErrors()) {
+    if (!project.getErrors().isEmpty()) {
+      for (final String error : project.getErrors()) {
         System.out.println(error);
       }
       throw new RuntimeException(String.format(

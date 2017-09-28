@@ -36,7 +36,7 @@ public class DirectoryFlowLoaderTest {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("exectest1"));
-    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(0, this.project.getErrors().size());
     Assert.assertEquals(5, this.project.getFlowMap().size());
     Assert.assertEquals(2, this.project.getPropsList().size());
     Assert.assertEquals(14, this.project.getJobPropsMap().size());
@@ -47,7 +47,7 @@ public class DirectoryFlowLoaderTest {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
-    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(0, this.project.getErrors().size());
     Assert.assertEquals(2, this.project.getFlowMap().size());
     Assert.assertEquals(0, this.project.getPropsList().size());
     Assert.assertEquals(9, this.project.getJobPropsMap().size());
@@ -58,11 +58,11 @@ public class DirectoryFlowLoaderTest {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded_bad"));
-    for (final String error : loader.getErrors()) {
+    for (final String error : this.project.getErrors()) {
       System.out.println(error);
     }
 
     // Should be 3 errors: jobe->innerFlow, innerFlow->jobe, innerFlow
-    Assert.assertEquals(3, loader.getErrors().size());
+    Assert.assertEquals(3, this.project.getErrors().size());
   }
 }

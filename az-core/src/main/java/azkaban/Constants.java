@@ -33,7 +33,7 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
-  public static final String AZKABAN_FLOW_VERSION_20 = "2.0";
+  public static final String AZKABAN_FLOW_VERSION_2_0 = "2.0";
 
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";

@@ -97,12 +97,11 @@ class AzkabanProjectLoader {
 
       reports = validateProject(project, archive, file, prop);
 
-      // Todo jamiesjc: need to check if manifest file exists in project zip,
-      // and create FlowLoader based on different flow versions.
-      final String flowVersion = null;
+      final FlowLoader loader = this.flowLoaderFactory.createFlowLoader(file);
+      loader.loadProjectFlow(project, file);
 
-      final FlowLoader loader = this.flowLoaderFactory.createFlowLoader(flowVersion);
-      reports.put(DIRECTORY_FLOW_REPORT_KEY, loader.loadProject(project, file));
+      final ValidationReport report = generateFlowLoaderReport(project);
+      reports.put(DIRECTORY_FLOW_REPORT_KEY, report);
     } finally {
       cleanUpProjectTempDir(file);
     }
@@ -230,6 +229,12 @@ class AzkabanProjectLoader {
       log.error("Failed to delete temp directory", e);
       file.deleteOnExit();
     }
+  }
+
+  private ValidationReport generateFlowLoaderReport(final Project project) {
+    final ValidationReport report = new ValidationReport();
+    report.addErrorMsgs(project.getErrors());
+    return report;
   }
 
   private File unzipFile(final File archiveFile) throws IOException {
