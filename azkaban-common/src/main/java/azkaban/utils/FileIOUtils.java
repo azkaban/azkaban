@@ -89,11 +89,7 @@ public class FileIOUtils {
   }
 
   /**
-<<<<<<< HEAD
-   * Use NIO to hard link files, and recurse into directories.
-=======
    * Use NIO to create symlink files, and recurse into directories.
->>>>>>> eb685f44bec83a42373d22690ae2f258bc9ccb91
    */
 
   public static void createDeepHardlink(final File sourceDir, final File destDir)
