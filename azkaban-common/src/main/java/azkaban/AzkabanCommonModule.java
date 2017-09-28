@@ -16,10 +16,6 @@
  */
 package azkaban;
 
-import static azkaban.Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH;
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
@@ -27,23 +23,15 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
-import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
-import azkaban.storage.HdfsAuth;
 import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import java.io.File;
-import java.io.IOException;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +66,9 @@ public class AzkabanCommonModule extends AbstractModule {
   public Class<? extends Storage> resolveStorageClassType() {
     final StorageImplementationType type = StorageImplementationType
         .from(this.config.getStorageImplementation());
+    if (type == StorageImplementationType.HDFS) {
+      install(new HadoopModule(this.props));
+    }
     if (type != null) {
       return type.getImplementationClass();
     } else {
@@ -100,36 +91,6 @@ public class AzkabanCommonModule extends AbstractModule {
       return H2FileDataSource.class;
     } else {
       return MySQLDataSource.class;
-    }
-  }
-
-
-  @Inject
-  @Provides
-  @Singleton
-  public Configuration createHadoopConfiguration() {
-    final String hadoopConfDirPath = requireNonNull(this.props.get(HADOOP_CONF_DIR_PATH));
-
-    final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
-    checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
-
-    final Configuration hadoopConf = new Configuration(false);
-    hadoopConf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "core-site.xml"));
-    hadoopConf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "hdfs-site.xml"));
-    hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-    return hadoopConf;
-  }
-
-  @Inject
-  @Provides
-  @Singleton
-  public FileSystem createHadoopFileSystem(final Configuration hadoopConf, final HdfsAuth auth) {
-    try {
-      auth.authorize();
-      return FileSystem.get(hadoopConf);
-    } catch (final IOException e) {
-      log.error("Unable to initialize HDFS", e);
-      throw new AzkabanException(e);
     }
   }
 
