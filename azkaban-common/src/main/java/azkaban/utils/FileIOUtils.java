@@ -89,7 +89,11 @@ public class FileIOUtils {
   }
 
   /**
+<<<<<<< HEAD
    * Use NIO to hard link files, and recurse into directories.
+=======
+   * Use NIO to create symlink files, and recurse into directories.
+>>>>>>> eb685f44bec83a42373d22690ae2f258bc9ccb91
    */
 
   public static void createDeepHardlink(final File sourceDir, final File destDir)
@@ -107,7 +111,6 @@ public class FileIOUtils {
     final Set<String> paths = new HashSet<>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
-
     for (String path : paths) {
       File sourceLink = new File(sourceDir, path);
       path = destDir + path;
@@ -119,7 +122,6 @@ public class FileIOUtils {
 
           try {
             Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
-
           } catch (IOException e) {
             e.printStackTrace();
           }
