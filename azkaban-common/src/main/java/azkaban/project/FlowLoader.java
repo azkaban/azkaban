@@ -16,15 +16,17 @@
 
 package azkaban.project;
 
+import azkaban.project.validator.ValidationReport;
 import java.io.File;
 
 public interface FlowLoader {
 
   /**
-   * Loads the project flows.
+   * Loads all project flows from the directory.
    *
-   * @param project the project
-   * @param projectDir the project dir
+   * @param project The project.
+   * @param projectDir The directory to load flows from.
+   * @return the validation report.
    */
-  void loadProjectFlow(final Project project, final File projectDir);
+  ValidationReport loadProjectFlow(final Project project, final File projectDir);
 }

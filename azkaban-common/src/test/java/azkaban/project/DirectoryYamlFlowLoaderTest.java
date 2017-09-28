@@ -41,10 +41,10 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(BASIC_FLOW_YAML_DIR));
-    Assert.assertEquals(0, this.project.getErrors().size());
-    Assert.assertEquals(1, this.project.getFlowMap().size());
-    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_1));
-    final Flow flow = this.project.getFlowMap().get(FLOW_NAME_1);
+    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(1, loader.getFlowMap().size());
+    Assert.assertTrue(loader.getFlowMap().containsKey(FLOW_NAME_1));
+    final Flow flow = loader.getFlowMap().get(FLOW_NAME_1);
     final AzkabanFlow azkabanFlow = flow.getAzkabanFlow();
     Assert.assertEquals(FLOW_NAME_1, azkabanFlow.getName());
     Assert.assertEquals(4, azkabanFlow.getNodes().size());
@@ -55,11 +55,11 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(MULTIPLE_FLOW_YAML_DIR));
-    Assert.assertEquals(0, this.project.getErrors().size());
-    Assert.assertEquals(2, this.project.getFlowMap().size());
-    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_1));
-    Assert.assertTrue(this.project.getFlowMap().containsKey(FLOW_NAME_2));
-    final Flow flow2 = this.project.getFlowMap().get(FLOW_NAME_2);
+    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(2, loader.getFlowMap().size());
+    Assert.assertTrue(loader.getFlowMap().containsKey(FLOW_NAME_1));
+    Assert.assertTrue(loader.getFlowMap().containsKey(FLOW_NAME_2));
+    final Flow flow2 = loader.getFlowMap().get(FLOW_NAME_2);
     final AzkabanFlow azkabanFlow2 = flow2.getAzkabanFlow();
     Assert.assertEquals(FLOW_NAME_2, azkabanFlow2.getName());
     Assert.assertEquals(3, azkabanFlow2.getNodes().size());

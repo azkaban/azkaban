@@ -22,12 +22,10 @@ import azkaban.Constants;
 import azkaban.utils.Props;
 import java.io.File;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Factory class to generate flow loaders.
  */
-@Singleton
 public class FlowLoaderFactory {
 
   private final Props props;

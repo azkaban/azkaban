@@ -211,8 +211,8 @@ public class ExecutableFlowTest {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
-    Assert.assertEquals(0, this.project.getErrors().size());
-
+    Assert.assertEquals(0, loader.getErrors().size());
+    this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);
   }
 

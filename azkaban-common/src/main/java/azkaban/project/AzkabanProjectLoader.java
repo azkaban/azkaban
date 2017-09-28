@@ -92,16 +92,16 @@ class AzkabanProjectLoader {
     prop.putAll(additionalProps);
 
     File file = null;
+    final FlowLoader loader;
+
     try {
       file = unzipProject(archive, fileType);
 
       reports = validateProject(project, archive, file, prop);
 
-      final FlowLoader loader = this.flowLoaderFactory.createFlowLoader(file);
-      loader.loadProjectFlow(project, file);
+      loader = this.flowLoaderFactory.createFlowLoader(file);
+      reports.put(DIRECTORY_FLOW_REPORT_KEY, loader.loadProjectFlow(project, file));
 
-      final ValidationReport report = generateFlowLoaderReport(project);
-      reports.put(DIRECTORY_FLOW_REPORT_KEY, report);
     } finally {
       cleanUpProjectTempDir(file);
     }
@@ -112,7 +112,7 @@ class AzkabanProjectLoader {
     }
 
     // Upload the project to DB and storage.
-    persistProject(project, archive, uploader);
+    persistProject(project, loader, archive, uploader);
 
     // Clean up project old installations after new project is uploaded successfully.
     cleanUpProjectOldInstallations(project);
@@ -181,30 +181,38 @@ class AzkabanProjectLoader {
     return true;
   }
 
-  private void persistProject(final Project project, final File archive, final User uploader)
-      throws ProjectManagerException{
+  private void persistProject(final Project project, final FlowLoader loader, final File archive,
+      final User uploader) throws ProjectManagerException {
     synchronized (project) {
-      final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
-      final Map<String, Flow> flows = project.getFlowMap();
-      for (final Flow flow : flows.values()) {
-        flow.setProjectId(project.getId());
-        flow.setVersion(newVersion);
+      if (loader instanceof DirectoryFlowLoader) {
+        final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
+        final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
+        final Map<String, Flow> flows = directoryFlowLoader.getFlowMap();
+        for (final Flow flow : flows.values()) {
+          flow.setProjectId(project.getId());
+          flow.setVersion(newVersion);
+        }
+
+        this.storageManager.uploadProject(project, newVersion, archive, uploader);
+
+        log.info("Uploading flow to db " + archive.getName());
+        this.projectLoader.uploadFlows(project, newVersion, flows.values());
+        log.info("Changing project versions " + archive.getName());
+        this.projectLoader.changeProjectVersion(project, newVersion,
+            uploader.getUserId());
+        project.setFlows(flows);
+        log.info("Uploading Job properties");
+        this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
+            directoryFlowLoader.getJobPropsMap().values()));
+        log.info("Uploading Props properties");
+        this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
+        this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
+            "Uploaded project files zip " + archive.getName());
+      } else if (loader instanceof DirectoryYamlFlowLoader) {
+        // Todo jamiesjc: upload yaml file to DB as a blob
+      } else {
+        throw new ProjectManagerException("Invalid type of flow loader.");
       }
-
-      this.storageManager.uploadProject(project, newVersion, archive, uploader);
-
-      log.info("Uploading flow to db " + archive.getName());
-      this.projectLoader.uploadFlows(project, newVersion, flows.values());
-      log.info("Changing project versions " + archive.getName());
-      this.projectLoader.changeProjectVersion(project, newVersion,
-          uploader.getUserId());
-      log.info("Uploading Job properties");
-      this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
-          project.getJobPropsMap().values()));
-      log.info("Uploading Props properties");
-      this.projectLoader.uploadProjectProperties(project, project.getPropsList());
-      this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
-          "Uploaded project files zip " + archive.getName());
     }
   }
 
@@ -229,12 +237,6 @@ class AzkabanProjectLoader {
       log.error("Failed to delete temp directory", e);
       file.deleteOnExit();
     }
-  }
-
-  private ValidationReport generateFlowLoaderReport(final Project project) {
-    final ValidationReport report = new ValidationReport();
-    report.addErrorMsgs(project.getErrors());
-    return report;
   }
 
   private File unzipFile(final File archiveFile) throws IOException {

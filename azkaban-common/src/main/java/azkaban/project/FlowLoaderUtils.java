@@ -17,6 +17,7 @@ package azkaban.project;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
+import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileFilter;
@@ -61,6 +62,18 @@ public class FlowLoaderUtils {
 
     flow.addFailureEmails(failureEmail);
     flow.addSuccessEmails(successEmail);
+  }
+
+  /**
+   * Generate flow loader report validation report.
+   *
+   * @param errors the errors
+   * @return the validation report
+   */
+  public static ValidationReport generateFlowLoaderReport(final Set<String> errors) {
+    final ValidationReport report = new ValidationReport();
+    report.addErrorMsgs(errors);
+    return report;
   }
 
   /**

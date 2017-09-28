@@ -25,6 +25,7 @@ import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
+import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
@@ -75,13 +76,50 @@ public class DirectoryFlowLoader implements FlowLoader {
   }
 
   /**
-   * Loads all flows from the directory into the project.
+   * Returns the flow map constructed from the loaded flows.
    *
-   * @param project The project to load flows to.
+   * @return Map of flow name to Flow.
+   */
+  public Map<String, Flow> getFlowMap() {
+    return this.flowMap;
+  }
+
+  /**
+   * Returns errors caught when loading flows.
+   *
+   * @return Set of error strings.
+   */
+  public Set<String> getErrors() {
+    return this.errors;
+  }
+
+  /**
+   * Returns job properties.
+   *
+   * @return Map of job name to properties.
+   */
+  public HashMap<String, Props> getJobPropsMap() {
+    return this.jobPropsMap;
+  }
+
+  /**
+   * Returns list of properties.
+   *
+   * @return List of Props.
+   */
+  public ArrayList<Props> getPropsList() {
+    return this.propsList;
+  }
+
+  /**
+   * Loads all project flows from the directory.
+   *
+   * @param project The project.
    * @param projectDir The directory to load flows from.
+   * @return the validation report.
    */
   @Override
-  public void loadProjectFlow(final Project project, final File projectDir) {
+  public ValidationReport loadProjectFlow(final Project project, final File projectDir) {
     this.propsList = new ArrayList<>();
     this.flowPropsList = new ArrayList<>();
     this.jobPropsMap = new HashMap<>();
@@ -105,7 +143,7 @@ public class DirectoryFlowLoader implements FlowLoader {
 
     checkJobProperties(project);
 
-    fillProjectInfo(project);
+    return FlowLoaderUtils.generateFlowLoaderReport(this.errors);
 
   }
 
@@ -376,13 +414,6 @@ public class DirectoryFlowLoader implements FlowLoader {
       // job callback properties check
       JobCallbackValidator.validate(jobName, this.props, jobProps, this.errors);
     }
-  }
-
-  private void fillProjectInfo(final Project project) {
-    project.setFlows(this.flowMap);
-    project.setPropsList(this.propsList);
-    project.setJobPropsMap(this.jobPropsMap);
-    project.setErrors(this.errors);
   }
 
   private String getNameWithoutExtension(final File file) {

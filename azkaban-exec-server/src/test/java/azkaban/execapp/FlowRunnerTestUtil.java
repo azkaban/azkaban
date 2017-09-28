@@ -46,8 +46,8 @@ public class FlowRunnerTestUtil {
       throws ProjectManagerException, IOException {
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
     loader.loadProjectFlow(project, sourceDir);
-    if (!project.getErrors().isEmpty()) {
-      for (final String error : project.getErrors()) {
+    if (!loader.getErrors().isEmpty()) {
+      for (final String error : loader.getErrors()) {
         System.out.println(error);
       }
       throw new RuntimeException(String.format(
@@ -55,7 +55,8 @@ public class FlowRunnerTestUtil {
           project.getName(), sourceDir));
     }
 
-    final Map<String, Flow> flowMap = project.getFlowMap();
+    final Map<String, Flow> flowMap = loader.getFlowMap();
+    project.setFlows(flowMap);
     FileUtils.copyDirectory(sourceDir, workingDir);
 
     return flowMap;

@@ -39,7 +39,6 @@ import azkaban.executor.ExecutorEventsDao;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.FetchActiveFlowDao;
-import azkaban.project.FlowLoaderFactory;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.spi.Storage;
@@ -149,7 +148,6 @@ public class AzkabanWebServerTest {
     assertSingleton(ActiveExecutingFlowsDao.class, injector);
     assertSingleton(FetchActiveFlowDao.class, injector);
     assertSingleton(AzkabanWebServer.class, injector);
-    assertSingleton(FlowLoaderFactory.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }

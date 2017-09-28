@@ -18,6 +18,7 @@ package azkaban.project;
 
 import azkaban.flow.Flow;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
+import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,16 +52,35 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   }
 
   /**
-   * Loads all flows from the directory into the project.
+   * Returns the flow map constructed from the loaded flows.
    *
-   * @param project The project to load flows to.
+   * @return Map of flow name to Flow.
+   */
+  public Map<String, Flow> getFlowMap() {
+    return this.flowMap;
+  }
+
+  /**
+   * Returns errors caught when loading flows.
+   *
+   * @return Set of error strings.
+   */
+  public Set<String> getErrors() {
+    return this.errors;
+  }
+
+  /**
+   * Loads all project flows from the directory.
+   *
+   * @param project The project.
    * @param projectDir The directory to load flows from.
+   * @return the validation report.
    */
   @Override
-  public void loadProjectFlow(final Project project, final File projectDir) {
+  public ValidationReport loadProjectFlow(final Project project, final File projectDir) {
     convertYamlFiles(projectDir);
     checkJobProperties(project);
-    fillProjectInfo(project);
+    return FlowLoaderUtils.generateFlowLoaderReport(this.errors);
   }
 
   private void convertYamlFiles(final File projectDir) {
@@ -86,12 +106,6 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
 
   public void checkJobProperties(final Project project) {
     // Todo jamiesjc: implement the check later
-  }
-
-  private void fillProjectInfo(final Project project) {
-    // Todo jamiesjc: fill out other project info later
-    project.setFlows(this.flowMap);
-    project.setErrors(this.errors);
   }
 
 }
