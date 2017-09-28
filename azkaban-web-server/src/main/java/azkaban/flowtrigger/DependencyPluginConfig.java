@@ -16,18 +16,7 @@
 
 package azkaban.flowtrigger;
 
-import java.util.Collections;
-import java.util.Map;
+public interface DependencyPluginConfig {
 
-public class DependencyPluginConfig {
-
-  private final Map<String, String> config;
-
-  public DependencyPluginConfig(final Map<String, String> config) {
-    this.config = Collections.unmodifiableMap(config);
-  }
-
-  public String get(final String key) {
-    return this.config.get(key);
-  }
+  String get(final String key);
 }
