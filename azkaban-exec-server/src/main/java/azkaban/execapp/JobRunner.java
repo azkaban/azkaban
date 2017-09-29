@@ -405,7 +405,7 @@ public class JobRunner extends EventHandler implements Runnable {
         nodeStatus = changeStatus(Status.SKIPPED, time);
         quickFinish = true;
       } else if (this.isKilled()) {
-        nodeStatus = changeStatus(Status.KILLED, time);
+        nodeStatus = changeStatus(Status.KILLING, time);
         quickFinish = true;
       }
 
@@ -743,9 +743,10 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private Status runJob() {
-    Status finalStatus = this.node.getStatus();
+    Status finalStatus;
     try {
       this.job.run();
+      finalStatus = this.node.getStatus();
     } catch (final Throwable e) {
       synchronized (this.syncObject) {
         if (this.props.getBoolean("job.succeed.on.failure", false)) {
@@ -770,7 +771,7 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     synchronized (this.syncObject) {
-      // If the job is still running, set the status to Success.
+      // If the job is still running (but not killed), set the status to Success.
       if (!Status.isStatusFinished(finalStatus) && !isKilled()) {
         finalStatus = changeStatus(Status.SUCCEEDED);
       }
@@ -811,6 +812,7 @@ public class JobRunner extends EventHandler implements Runnable {
         return;
       }
       logError("Kill has been called.");
+      this.changeStatus(Status.KILLING);
       this.killed = true;
 
       final BlockingStatus status = this.currentBlockStatus;
@@ -836,7 +838,6 @@ public class JobRunner extends EventHandler implements Runnable {
             "Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
       }
 
-      this.changeStatus(Status.KILLED);
     }
   }
 
