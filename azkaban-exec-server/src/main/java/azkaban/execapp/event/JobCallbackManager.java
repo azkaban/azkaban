@@ -14,7 +14,6 @@ import azkaban.execapp.jmx.JmxJobCallback;
 import azkaban.execapp.jmx.JmxJobCallbackMBean;
 import azkaban.executor.Status;
 import azkaban.jobcallback.JobCallbackStatusEnum;
-import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import java.net.InetAddress;
@@ -109,9 +108,9 @@ public class JobCallbackManager implements EventListener {
 
     if (event.getRunner() instanceof JobRunner) {
       try {
-        if (event.getType() == EventType.JOB_STARTED) {
+        if (event.getType() == Event.Type.JOB_STARTED) {
           processJobCallOnStart(event);
-        } else if (event.getType() == EventType.JOB_FINISHED) {
+        } else if (event.getType() == Event.Type.JOB_FINISHED) {
           processJobCallOnFinish(event);
         }
       } catch (final Throwable e) {

@@ -17,12 +17,12 @@
 package azkaban.execapp.event;
 
 import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
-import azkaban.spi.EventType;
 
 public class LocalFlowWatcher extends FlowWatcher {
 
@@ -58,7 +58,7 @@ public class LocalFlowWatcher extends FlowWatcher {
 
     @Override
     public void handleEvent(final Event event) {
-      if (event.getType() == EventType.JOB_FINISHED) {
+      if (event.getType() == Type.JOB_FINISHED) {
         if (event.getRunner() instanceof FlowRunner) {
           // The flow runner will finish a job without it running
           final EventData eventData = event.getData();
@@ -72,7 +72,7 @@ public class LocalFlowWatcher extends FlowWatcher {
           System.out.println(node + " looks like " + node.getStatus());
           handleJobStatusChange(node.getNestedId(), node.getStatus());
         }
-      } else if (event.getType() == EventType.FLOW_FINISHED) {
+      } else if (event.getType() == Type.FLOW_FINISHED) {
         stopWatcher();
       }
     }
