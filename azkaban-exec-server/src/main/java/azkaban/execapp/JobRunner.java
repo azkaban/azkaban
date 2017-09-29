@@ -405,7 +405,7 @@ public class JobRunner extends EventHandler implements Runnable {
         nodeStatus = changeStatus(Status.SKIPPED, time);
         quickFinish = true;
       } else if (this.isKilled()) {
-        nodeStatus = changeStatus(Status.KILLING, time);
+        nodeStatus = changeStatus(Status.KILLED, time);
         quickFinish = true;
       }
 
