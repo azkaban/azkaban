@@ -25,7 +25,7 @@ import org.junit.Test;
 public class FlowBeanLoaderTest {
 
   public static final String TEST_FLOW_NAME = "sample_flow";
-  public static final String TEST_FLOW_YML_FILENAME = TEST_FLOW_NAME + ".yml";
+  public static final String TEST_FLOW_YML_FILENAME = TEST_FLOW_NAME + ".flow";
   public static final String SHELL_END = "shell_end";
   public static final String SHELL_ECHO = "shell_echo";
   public static final String SHELL_BASH = "shell_bash";

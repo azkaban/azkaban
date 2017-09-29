@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is the top level class which is used by the YAML loader to deserialize a flow.yml file.
+ * Top level class used by the YAML loader to deserialize a flow yaml file.
  */
 public class FlowBean implements Serializable {
 

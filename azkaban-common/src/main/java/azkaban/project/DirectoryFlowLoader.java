@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -23,6 +24,7 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.jobcallback.JobCallbackValidator;
+import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -32,30 +34,27 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class DirectoryFlowLoader {
+public class DirectoryFlowLoader implements FlowLoader {
 
-  public static final String JOB_MAX_XMS = "job.max.Xms";
-  public static final String MAX_XMS_DEFAULT = "1G";
-  public static final String JOB_MAX_XMX = "job.max.Xmx";
-  public static final String MAX_XMX_DEFAULT = "2G";
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
 
-  private static final Logger logger = Logger.getLogger(DirectoryFlowLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(DirectoryFlowLoader.class);
   private final Props props;
+  private final Set<String> errors = new HashSet<>();
+  private final Map<String, Flow> flowMap = new HashMap<>();
   private HashSet<String> rootNodes;
-  private HashMap<String, Flow> flowMap;
   private HashMap<String, Node> nodeMap;
   private HashMap<String, Map<String, Edge>> nodeDependencies;
   private HashMap<String, Props> jobPropsMap;
@@ -65,7 +64,6 @@ public class DirectoryFlowLoader {
 
   private ArrayList<FlowProps> flowPropsList;
   private ArrayList<Props> propsList;
-  private Set<String> errors;
   private Set<String> duplicateJobs;
 
   /**
@@ -78,6 +76,15 @@ public class DirectoryFlowLoader {
   }
 
   /**
+   * Returns the flow map constructed from the loaded flows.
+   *
+   * @return Map of flow name to Flow.
+   */
+  public Map<String, Flow> getFlowMap() {
+    return this.flowMap;
+  }
+
+  /**
    * Returns errors caught when loading flows.
    *
    * @return Set of error strings.
@@ -87,25 +94,43 @@ public class DirectoryFlowLoader {
   }
 
   /**
-   * Loads all flows from the directory into the project.
+   * Returns job properties.
    *
-   * @param project The project to load flows to.
-   * @param baseDirectory The directory to load flows from.
+   * @return Map of job name to properties.
    */
-  public void loadProjectFlow(final Project project, final File baseDirectory) {
+  public HashMap<String, Props> getJobPropsMap() {
+    return this.jobPropsMap;
+  }
+
+  /**
+   * Returns list of properties.
+   *
+   * @return List of Props.
+   */
+  public ArrayList<Props> getPropsList() {
+    return this.propsList;
+  }
+
+  /**
+   * Loads all project flows from the directory.
+   *
+   * @param project The project.
+   * @param projectDir The directory to load flows from.
+   * @return the validation report.
+   */
+  @Override
+  public ValidationReport loadProjectFlow(final Project project, final File projectDir) {
     this.propsList = new ArrayList<>();
     this.flowPropsList = new ArrayList<>();
     this.jobPropsMap = new HashMap<>();
     this.nodeMap = new HashMap<>();
-    this.flowMap = new HashMap<>();
-    this.errors = new HashSet<>();
     this.duplicateJobs = new HashSet<>();
     this.nodeDependencies = new HashMap<>();
     this.rootNodes = new HashSet<>();
     this.flowDependencies = new HashMap<>();
 
     // Load all the props files and create the Node objects
-    loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
+    loadProjectFromDir(projectDir.getPath(), projectDir, null);
 
     // Create edges and find missing dependencies
     resolveDependencies();
@@ -116,9 +141,9 @@ public class DirectoryFlowLoader {
     // Resolve embedded flows
     resolveEmbeddedFlows();
 
-    project.setFlows(this.flowMap);
-    project.setPropsList(this.propsList);
-    project.setJobPropsMap(this.jobPropsMap);
+    checkJobProperties(project);
+
+    return FlowLoaderUtils.generateFlowLoaderReport(this.errors);
 
   }
 
@@ -302,34 +327,7 @@ public class DirectoryFlowLoader {
         final Flow flow = new Flow(base.getId());
         final Props jobProp = this.jobPropsMap.get(base.getId());
 
-        // Dedup with sets
-        final List<String> successEmailList =
-            jobProp.getStringList(CommonJobProperties.SUCCESS_EMAILS,
-                Collections.EMPTY_LIST);
-        final Set<String> successEmail = new HashSet<>();
-        for (final String email : successEmailList) {
-          successEmail.add(email.toLowerCase());
-        }
-
-        final List<String> failureEmailList =
-            jobProp.getStringList(CommonJobProperties.FAILURE_EMAILS,
-                Collections.EMPTY_LIST);
-        final Set<String> failureEmail = new HashSet<>();
-        for (final String email : failureEmailList) {
-          failureEmail.add(email.toLowerCase());
-        }
-
-        final List<String> notifyEmailList =
-            jobProp.getStringList(CommonJobProperties.NOTIFY_EMAILS,
-                Collections.EMPTY_LIST);
-        for (String email : notifyEmailList) {
-          email = email.toLowerCase();
-          successEmail.add(email);
-          failureEmail.add(email);
-        }
-
-        flow.addFailureEmails(failureEmail);
-        flow.addSuccessEmails(successEmail);
+        FlowLoaderUtils.addEmailPropsToFlow(flow, jobProp);
 
         flow.addAllFlowProperties(this.flowPropsList);
         constructFlow(flow, base, visitedNodes);
@@ -380,7 +378,7 @@ public class DirectoryFlowLoader {
     visited.remove(node.getId());
   }
 
-  private void checkJobProperties(final Project project) {
+  public void checkJobProperties(final Project project) {
     // if project is in the memory check whitelist, then we don't need to check
     // its memory settings
     if (ProjectWhitelist.isProjectWhitelisted(project.getId(),
@@ -388,8 +386,10 @@ public class DirectoryFlowLoader {
       return;
     }
 
-    final String maxXms = this.props.getString(JOB_MAX_XMS, MAX_XMS_DEFAULT);
-    final String maxXmx = this.props.getString(JOB_MAX_XMX, MAX_XMX_DEFAULT);
+    final String maxXms = this.props.getString(
+        Constants.JobProperties.JOB_MAX_XMS, Constants.JobProperties.MAX_XMS_DEFAULT);
+    final String maxXmx = this.props.getString(
+        Constants.JobProperties.JOB_MAX_XMX, Constants.JobProperties.MAX_XMX_DEFAULT);
     final long sizeMaxXms = Utils.parseMemString(maxXms);
     final long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
@@ -427,14 +427,6 @@ public class DirectoryFlowLoader {
     return filePath.substring(basePath.length() + 1);
   }
 
-  public ValidationReport loadProject(final Project project, final File projectDir) {
-    loadProjectFlow(project, projectDir);
-    checkJobProperties(project);
-    final ValidationReport report = new ValidationReport();
-    report.addErrorMsgs(this.errors);
-    return report;
-  }
-
   private static class DirFilter implements FileFilter {
 
     @Override
@@ -443,20 +435,4 @@ public class DirectoryFlowLoader {
     }
   }
 
-  private static class SuffixFilter implements FileFilter {
-
-    private final String suffix;
-
-    public SuffixFilter(final String suffix) {
-      this.suffix = suffix;
-    }
-
-    @Override
-    public boolean accept(final File pathname) {
-      final String name = pathname.getName();
-
-      return pathname.isFile() && !pathname.isHidden()
-          && name.length() > this.suffix.length() && name.endsWith(this.suffix);
-    }
-  }
 }

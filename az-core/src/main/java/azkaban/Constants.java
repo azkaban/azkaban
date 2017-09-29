@@ -32,6 +32,9 @@ package azkaban;
  */
 public class Constants {
 
+  // Azkaban Flow Versions
+  public static final String AZKABAN_FLOW_VERSION_2_0 = "2.0";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -156,6 +159,12 @@ public class Constants {
 
     // Job property that enables/disables using Kafka logging of user job logs
     public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
+
+    // Job properties that indicate maximum memory size
+    public static final String JOB_MAX_XMS = "job.max.Xms";
+    public static final String MAX_XMS_DEFAULT = "1G";
+    public static final String JOB_MAX_XMX = "job.max.Xmx";
+    public static final String MAX_XMX_DEFAULT = "2G";
   }
 
   public static class JobCallbackProperties {

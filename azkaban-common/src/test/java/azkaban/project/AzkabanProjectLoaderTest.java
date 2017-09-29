@@ -23,17 +23,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidationStatus;
 import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import java.io.File;
 import java.net.URL;
+import java.util.Map;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class AzkabanProjectLoaderTest {
+
+  private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
   @Rule
   public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
@@ -55,7 +61,7 @@ public class AzkabanProjectLoaderTest {
     this.projectLoader = mock(ProjectLoader.class);
 
     this.azkabanProjectLoader = new AzkabanProjectLoader(props, this.projectLoader,
-        this.storageManager);
+        this.storageManager, new FlowLoaderFactory(props));
   }
 
   @Test
@@ -67,7 +73,14 @@ public class AzkabanProjectLoaderTest {
     final File projectZipFile = new File(resource.getPath());
     final User uploader = new User("test_user");
 
-    this.azkabanProjectLoader.uploadProject(this.project, projectZipFile, "zip", uploader, null);
+    final Map<String, ValidationReport> validationReportMap =
+        this.azkabanProjectLoader
+            .uploadProject(this.project, projectZipFile, "zip", uploader, null);
+
+    Assert.assertEquals(1, validationReportMap.size());
+    Assert.assertTrue(validationReportMap.containsKey(DIRECTORY_FLOW_REPORT_KEY));
+    Assert.assertEquals(ValidationStatus.PASS,
+        validationReportMap.get(DIRECTORY_FLOW_REPORT_KEY).getStatus());
 
     verify(this.storageManager)
         .uploadProject(this.project, this.VERSION + 1, projectZipFile, uploader);
