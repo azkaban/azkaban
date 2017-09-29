@@ -68,6 +68,11 @@ It allows us to do following when saving a file:
 * Remove unnecessary semicolon
 * Add missing @Override annotations
 
+### New line at the end of a file
+
+Configure Intellij to automatically insert a new line at the end of a file:
+Preferences → Editor → General → Ensure line feed at file end on Save
+
 ### todo style
 
 Add your user name to TODO items. 
