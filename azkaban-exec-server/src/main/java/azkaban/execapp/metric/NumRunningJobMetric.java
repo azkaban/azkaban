@@ -17,11 +17,11 @@
 package azkaban.execapp.metric;
 
 import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
 import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
-import azkaban.spi.EventType;
 
 /**
  * Metric to keep track of number of running jobs in Azkaban exec server
@@ -49,9 +49,9 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
    */
   @Override
   public synchronized void handleEvent(final Event event) {
-    if (event.getType() == EventType.JOB_STARTED) {
+    if (event.getType() == Type.JOB_STARTED) {
       this.value = this.value + 1;
-    } else if (event.getType() == EventType.JOB_FINISHED) {
+    } else if (event.getType() == Type.JOB_FINISHED) {
       this.value = this.value - 1;
     }
   }

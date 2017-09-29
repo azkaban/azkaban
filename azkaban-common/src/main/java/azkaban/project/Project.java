@@ -21,8 +21,6 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,8 +48,6 @@ public class Project {
   private String lastModifiedUser;
   private String source;
   private Map<String, Flow> flows = new HashMap<>();
-  private Map<String, Props> jobPropsMap = new HashMap<>();
-  private List<Props> propsList = new ArrayList<>();
   private Map<String, Object> metadata = new HashMap<>();
 
   public Project(final int id, final String name) {
@@ -454,21 +450,5 @@ public class Project {
 
   public void setVersion(final int version) {
     this.version = version;
-  }
-
-  public Map<String, Props> getJobPropsMap() {
-    return this.jobPropsMap;
-  }
-
-  public void setJobPropsMap(final Map<String, Props> jobPropsMap) {
-    this.jobPropsMap = ImmutableMap.copyOf(jobPropsMap);
-  }
-
-  public List<Props> getPropsList() {
-    return this.propsList;
-  }
-
-  public void setPropsList(final List<Props> propsList) {
-    this.propsList = ImmutableList.copyOf(propsList);
   }
 }

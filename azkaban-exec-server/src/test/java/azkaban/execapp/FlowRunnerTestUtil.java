@@ -55,7 +55,8 @@ public class FlowRunnerTestUtil {
           project.getName(), sourceDir));
     }
 
-    final Map<String, Flow> flowMap = project.getFlowMap();
+    final Map<String, Flow> flowMap = loader.getFlowMap();
+    project.setFlows(flowMap);
     FileUtils.copyDirectory(sourceDir, workingDir);
 
     return flowMap;

@@ -16,7 +16,7 @@
 
 package azkaban.jobExecutor;
 
-import azkaban.project.DirectoryFlowLoader;
+import azkaban.Constants;
 import azkaban.server.AzkabanServer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -161,9 +161,9 @@ public class JavaProcessJob extends ProcessJob {
     final Props azkabanProperties = AzkabanServer.getAzkabanProperties();
     if (azkabanProperties != null) {
       final String maxXms = azkabanProperties
-          .getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
+          .getString(Constants.JobProperties.JOB_MAX_XMS, Constants.JobProperties.MAX_XMS_DEFAULT);
       final String maxXmx = azkabanProperties
-          .getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
+          .getString(Constants.JobProperties.JOB_MAX_XMX, Constants.JobProperties.MAX_XMX_DEFAULT);
       final long sizeMaxXms = Utils.parseMemString(maxXms);
       final long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
