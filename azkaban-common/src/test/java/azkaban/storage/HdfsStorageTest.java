@@ -66,7 +66,7 @@ public class HdfsStorageTest {
     when(this.hdfs.exists(any(Path.class))).thenReturn(false);
 
     final StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", Md5Hasher.md5Hash(file));
-    final String key = this.hdfsStorage.put(metadata, file);
+    final String key = this.hdfsStorage.put(metadata, file, "zip");
 
     final String expectedName = String.format("1/1-%s.zip", hash);
     Assert.assertEquals(expectedName, key);

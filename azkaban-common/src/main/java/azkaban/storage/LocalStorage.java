@@ -78,7 +78,7 @@ public class LocalStorage implements Storage {
   }
 
   @Override
-  public String put(final StorageMetadata metadata, final File localFile) {
+  public String put(final StorageMetadata metadata, final File localFile, final String fileType) {
     final File projectDir = new File(this.rootDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
       log.info("Created project dir: " + projectDir.getAbsolutePath());

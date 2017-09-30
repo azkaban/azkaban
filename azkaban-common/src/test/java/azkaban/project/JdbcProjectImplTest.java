@@ -122,7 +122,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1","zip");
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getFileName(), SAMPLE_FILE);
@@ -135,8 +135,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1", "zip");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1", "zip");
   }
 
   private byte[] computeHash(final File localFile) {
@@ -156,7 +156,7 @@ public class JdbcProjectImplTest {
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
     this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1",
-        computeHash(testFile), "resourceId1");
+        computeHash(testFile), "resourceId1", "zip");
     final int currVersion = this.loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);
   }
@@ -167,7 +167,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1", "zip");
     final ProjectFileHandler pfh = this.loader.fetchProjectMetaData(project.getId(), newVersion);
     Assert.assertEquals(pfh.getVersion(), newVersion);
   }
@@ -330,7 +330,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1", "zip");
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);

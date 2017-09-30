@@ -38,7 +38,7 @@ public class DatabaseStorageTest {
     final int version = 1;
     final String uploader = "testuser";
     final StorageMetadata metadata = new StorageMetadata(projectId, version, uploader, null);
-    this.databaseStorage.put(metadata, file);
-    verify(this.projectLoader).uploadProjectFile(projectId, version, file, uploader);
+    this.databaseStorage.put(metadata, file,"zip");
+    verify(this.projectLoader).uploadProjectFile(projectId, version, file, uploader,"zip");
   }
 }

@@ -83,7 +83,7 @@ public class AzkabanProjectLoaderTest {
         validationReportMap.get(DIRECTORY_FLOW_REPORT_KEY).getStatus());
 
     verify(this.storageManager)
-        .uploadProject(this.project, this.VERSION + 1, projectZipFile, uploader);
+        .uploadProject(this.project, this.VERSION + 1, projectZipFile, uploader, "zip");
   }
 
   @Test

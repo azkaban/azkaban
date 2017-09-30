@@ -64,7 +64,7 @@ public class HdfsStorage implements Storage {
   }
 
   @Override
-  public String put(final StorageMetadata metadata, final File localFile) {
+  public String put(final StorageMetadata metadata, final File localFile, final String fileType) {
     this.hdfsAuth.authorize();
     final Path projectsPath = new Path(this.rootUri.getPath(),
         String.valueOf(metadata.getProjectId()));

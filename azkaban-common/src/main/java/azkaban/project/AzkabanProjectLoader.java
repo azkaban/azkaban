@@ -112,7 +112,7 @@ class AzkabanProjectLoader {
     }
 
     // Upload the project to DB and storage.
-    persistProject(project, loader, archive, uploader);
+    persistProject(project, loader, archive, uploader, fileType);
 
     // Clean up project old installations after new project is uploaded successfully.
     cleanUpProjectOldInstallations(project);
@@ -182,7 +182,7 @@ class AzkabanProjectLoader {
   }
 
   private void persistProject(final Project project, final FlowLoader loader, final File archive,
-      final User uploader) throws ProjectManagerException {
+      final User uploader, final String fileType) throws ProjectManagerException {
     synchronized (project) {
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
@@ -193,7 +193,7 @@ class AzkabanProjectLoader {
           flow.setVersion(newVersion);
         }
 
-        this.storageManager.uploadProject(project, newVersion, archive, uploader);
+        this.storageManager.uploadProject(project, newVersion, archive, uploader, fileType);
 
         log.info("Uploading flow to db " + archive.getName());
         this.projectLoader.uploadFlows(project, newVersion, flows.values());

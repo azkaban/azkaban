@@ -65,7 +65,7 @@ public class LocalStorageTest {
 
     final StorageMetadata metadata = new StorageMetadata(
         1, 1, "testuser", Md5Hasher.md5Hash(testFile));
-    final String key = this.localStorage.put(metadata, testFile);
+    final String key = this.localStorage.put(metadata, testFile, "zip");
     assertNotNull(key);
     log.info("Key URI: " + key);
 

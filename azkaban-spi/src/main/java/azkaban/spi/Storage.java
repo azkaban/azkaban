@@ -49,7 +49,7 @@ public interface Storage {
    * @param localFile Read data from a local file
    * @return Key associated with the current object on successful put
    */
-  String put(StorageMetadata metadata, File localFile);
+  String put(StorageMetadata metadata, File localFile, String fileType);
 
   /**
    * Delete an object from Storage.

@@ -89,7 +89,8 @@ public class StorageManager {
       final Project project,
       final int version,
       final File localFile,
-      final User uploader) {
+      final User uploader,
+      final String fileType) {
     byte[] md5 = null;
     if (!(this.storage instanceof DatabaseStorage)) {
       md5 = computeHash(localFile);
@@ -103,7 +104,7 @@ public class StorageManager {
         metadata, localFile.getName(), localFile.length()));
 
     /* upload to storage */
-    final String resourceId = this.storage.put(metadata, localFile);
+    final String resourceId = this.storage.put(metadata, localFile, fileType);
 
     /* Add metadata to db */
     // TODO spyne: remove hack. Database storage should go through the same flow
@@ -114,7 +115,8 @@ public class StorageManager {
           localFile,
           uploader.getUserId(),
           requireNonNull(md5),
-          requireNonNull(resourceId)
+          requireNonNull(resourceId),
+          fileType
       );
       log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
           metadata, localFile.getName(), localFile.length(), resourceId));

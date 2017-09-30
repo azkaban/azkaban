@@ -244,7 +244,7 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public void uploadProjectFile(final int projectId, final int version, final File localFile,
-      final String uploader)
+      final String uploader, final String fileType)
       throws ProjectManagerException {
     final long startMs = System.currentTimeMillis();
     logger.info(String
@@ -262,7 +262,7 @@ public class JdbcProjectImpl implements ProjectLoader {
 
       /* Step 1: Update DB with new project info */
       addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader,
-          computeHash(localFile), null);
+          computeHash(localFile), null,fileType);
       transOperator.getConnection().commit();
 
       /* Step 2: Upload File in chunks to DB */
@@ -307,12 +307,13 @@ public class JdbcProjectImpl implements ProjectLoader {
       final File localFile,
       final String uploader,
       final byte[] md5,
-      final String resourceId) throws ProjectManagerException {
+      final String resourceId,
+      final String fileType) throws ProjectManagerException {
 
     // when one transaction completes, it automatically commits.
     final SQLTransaction<Integer> transaction = transOperator -> {
       addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader, md5,
-          resourceId);
+          resourceId,fileType);
       return 1;
     };
     try {
@@ -348,7 +349,8 @@ public class JdbcProjectImpl implements ProjectLoader {
       final File localFile,
       final String uploader,
       final byte[] md5,
-      final String resourceId) throws ProjectManagerException {
+      final String resourceId,
+      final String fileType) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
         + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id) values "
@@ -360,7 +362,7 @@ public class JdbcProjectImpl implements ProjectLoader {
        * and will update it after uploading completes.
        */
       transOperator.update(INSERT_PROJECT_VERSION, projectId, version, updateTime, uploader,
-          Files.getFileExtension(localFile.getName()), localFile.getName(), md5, 0, resourceId);
+          fileType, localFile.getName(), md5, 0, resourceId);
     } catch (final SQLException e) {
       final String msg = String
           .format("Error initializing project id: %d version: %d ", projectId, version);

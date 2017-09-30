@@ -54,11 +54,12 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public String put(final StorageMetadata metadata, final File localFile) {
+  public String put(final StorageMetadata metadata, final File localFile, final String fileType) {
     this.projectLoader.uploadProjectFile(
         metadata.getProjectId(),
         metadata.getVersion(),
-        localFile, metadata.getUploader());
+        localFile, metadata.getUploader(),
+        fileType);
 
     return null;
   }
