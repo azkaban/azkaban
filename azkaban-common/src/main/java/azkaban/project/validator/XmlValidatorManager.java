@@ -1,6 +1,5 @@
 package azkaban.project.validator;
 
-import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.utils.Props;
 import java.io.File;
@@ -42,11 +41,9 @@ import org.xml.sax.SAXException;
  */
 public class XmlValidatorManager implements ValidatorManager {
 
-  public static final String AZKABAN_VALIDATOR_TAG = "azkaban-validators";
   public static final String VALIDATOR_TAG = "validator";
   public static final String CLASSNAME_ATTR = "classname";
   public static final String ITEM_TAG = "property";
-  public static final String DEFAULT_VALIDATOR_KEY = "Directory Flow";
   private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
   private static final Map<String, Long> resourceTimestamps = new HashMap<>();
   private static ValidatorClassLoader validatorLoader;
@@ -58,6 +55,7 @@ public class XmlValidatorManager implements ValidatorManager {
    * validator ClassLoader. This enables creating instances of these validators in the
    * loadValidators() method.
    */
+  // Todo jamiesjc: guicify XmlValidatorManager class
   public XmlValidatorManager(final Props props) {
     this.validatorDirPath = props
         .getString(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, ValidatorConfigs.DEFAULT_VALIDATOR_DIR);
@@ -119,9 +117,8 @@ public class XmlValidatorManager implements ValidatorManager {
 
   /**
    * Instances of the validators are created here rather than in the constructors. This is because
-   * some validators might need to maintain project-specific states, such as {@link
-   * DirectoryFlowLoader}. By instantiating the validators here, it ensures that the validator
-   * objects are project-specific, rather than global.
+   * some validators might need to maintain project-specific states. By instantiating the validators
+   * here, it ensures that the validator objects are project-specific, rather than global.
    *
    * {@inheritDoc}
    *
@@ -131,10 +128,6 @@ public class XmlValidatorManager implements ValidatorManager {
   @Override
   public void loadValidators(final Props props, final Logger log) {
     this.validators = new LinkedHashMap<>();
-    // Add the default validator
-    final DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(props, log);
-    this.validators.put(flowLoader.getValidatorName(), flowLoader);
-
     if (!props.containsKey(ValidatorConfigs.XML_FILE_PARAM)) {
       logger.warn(
           "Azkaban properties file does not contain the key " + ValidatorConfigs.XML_FILE_PARAM);
@@ -234,11 +227,6 @@ public class XmlValidatorManager implements ValidatorManager {
           + reports.get(validator.getKey()).getStatus());
     }
     return reports;
-  }
-
-  @Override
-  public ProjectValidator getDefaultValidator() {
-    return this.validators.get(DEFAULT_VALIDATOR_KEY);
   }
 
   @Override

@@ -101,7 +101,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   private void sendSlaAlertEmail(final SlaOption slaOption, final String slaMessage) {
-    final String subject = "Sla Violation Alert on " + getAzkabanName();
+    final String subject = "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
     final String body = slaMessage;
     final List<String> emailList =
         (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
@@ -120,6 +120,16 @@ public class Emailer extends AbstractMailer implements Alerter {
           this.commonMetrics.markSendEmailFail();
         }
       }
+    }
+  }
+
+  private String getJobOrFlowName(SlaOption slaOption) {
+    String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+    String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+    if (org.apache.commons.lang.StringUtils.isNotBlank(jobName)) {
+      return flowName + ":" + jobName;
+    } else {
+      return flowName;
     }
   }
 

@@ -33,7 +33,7 @@ public class FlowBeanLoader {
 
   public FlowBean load(final File flowFile) throws FileNotFoundException {
     checkArgument(flowFile.exists());
-    checkArgument(flowFile.getName().endsWith(".yml"));
+    checkArgument(flowFile.getName().endsWith(".flow"));
 
     return new Yaml().loadAs(new FileInputStream(flowFile), FlowBean.class);
   }
@@ -81,7 +81,7 @@ public class FlowBeanLoader {
 
   public String getFlowName(final File flowFile) {
     checkArgument(flowFile.exists());
-    checkArgument(flowFile.getName().endsWith(".yml"));
+    checkArgument(flowFile.getName().endsWith(".flow"));
 
     return Files.getNameWithoutExtension(flowFile.getName());
   }

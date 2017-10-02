@@ -25,10 +25,10 @@ dependencies {
     compile deps.fileupload
     compile deps.guava
     compile deps.gson
-    compile deps.hadoopAnnotations
-    compile deps.hadoopAuth
-    compile deps.hadoopCommon
-    compile deps.hadoopHdfs
+    compileOnly deps.hadoopAnnotations
+    compileOnly deps.hadoopAuth
+    compileOnly deps.hadoopCommon
+    compileOnly deps.hadoopHdfs
     compile deps.httpclient
     compile deps.jetty
     compile deps.jettyUtil
@@ -43,6 +43,10 @@ dependencies {
 
     testRuntime deps.h2
 
+    testCompile deps.hadoopAnnotations
+    testCompile deps.hadoopAuth
+    testCompile deps.hadoopCommon
+    testCompile deps.hadoopHdfs
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
 }

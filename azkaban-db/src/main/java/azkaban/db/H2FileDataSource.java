@@ -19,8 +19,9 @@ import azkaban.utils.Props;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
-
+@Singleton
 public class H2FileDataSource extends AzkabanDataSource {
 
   @Inject

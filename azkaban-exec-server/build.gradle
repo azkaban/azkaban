@@ -5,24 +5,16 @@ dependencies {
     compile(project(':azkaban-common'))
 
     compile deps.kafkaLog4jAppender
-    compile deps.gobblinKafka
-
     runtime(project(':azkaban-hadoop-security-plugin'))
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
 
-    testRuntime deps.h2
-}
-
-configurations.compile {
-    exclude group: 'com.linkedin.gobblin', module: 'gobblin-api'
-    exclude group: 'com.linkedin.gobblin', module: 'gobblin-metrics-graphite'
-    exclude group: 'com.linkedin.gobblin', module: 'gobblin-metrics-hadoop'
-    exclude group: 'com.linkedin.gobblin', module: 'gobblin-metrics-influxdb'
-    exclude group: 'com.linkedin.gobblin', module: 'gobblin-runtime'
-
-    exclude group: 'org.projectlombok', module: 'lombok'
+    testCompile deps.h2
+    testCompile deps.hadoopAnnotations
+    testCompile deps.hadoopAuth
+    testCompile deps.hadoopCommon
+    testCompile deps.hadoopHdfs
 }
 
 distributions {

@@ -33,14 +33,12 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.spi.AzkabanEventReporter;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,9 +57,6 @@ import org.junit.rules.TemporaryFolder;
 public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   private static int id = 101;
-  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
-  private final AzkabanEventReporter azkabanEventReporter =
-      EventReporterUtil.getTestAzkabanEventReporter();
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File workingDir;
@@ -89,7 +84,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     final File dir = ExecutionsTestUtil.getFlowDir("embedded2");
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, dir, this.logger, this.workingDir);
+        .prepareProject(this.project, dir, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -580,8 +575,8 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     final FlowRunner runner =
         new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
-            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps,
-            this.azkabanEventReporter);
+            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
+
     runner.addListener(eventCollector);
 
     return runner;

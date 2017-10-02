@@ -21,9 +21,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.log4j.Logger;
 
+@Singleton
 public class MySQLDataSource extends AzkabanDataSource {
 
   private static final Logger logger = Logger.getLogger(MySQLDataSource.class);

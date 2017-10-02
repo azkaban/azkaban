@@ -243,7 +243,14 @@ public class ProcessJob extends AbstractProcessJob {
       // Set parent directory permissions to <uid>:azkaban so user can write in their execution directory
       // if the directory is not permissioned correctly already (should happen once per execution)
       if (!canWriteInCurrentWorkingDirectory(effectiveUser)) {
-        assignUserDirOwnership(effectiveUser);
+        info("Changing current working directory ownership");
+        assignUserFileOwnership(effectiveUser, getWorkingDirectory());
+      }
+      // Set property file permissions to <uid>:azkaban so user can write to their prop files
+      // in order to pass properties from one job to another
+      for (final File propFile : propFiles) {
+        info("Changing properties files ownership");
+        assignUserFileOwnership(effectiveUser, propFile.getAbsolutePath());
       }
     }
 
@@ -379,20 +386,22 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * Changes permission on current working directory so that the directory is owned by the user and
-   * the group remains azkaban.
+   * Changes permissions on file/directory so that the file/directory is owned by the user and
+   * the group remains the azkaban service account name.
    *
    * Leverages execute-as-user with "root" as the user to run the command.
    *
    * @param effectiveUser user/proxy user running the job
+   * @param fileName the name of the file whose permissions will be changed
    */
-  private void assignUserDirOwnership(final String effectiveUser) throws Exception {
+  private void assignUserFileOwnership(final String effectiveUser, final String fileName) throws
+      Exception {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
         this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
     final String groupName = this.sysProps.getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
     final List<String> changeOwnershipCommand = Arrays
-        .asList(CHOWN, effectiveUser + ":" + groupName, getWorkingDirectory());
-    info("Change current working directory ownership to " + effectiveUser + ":" + groupName + ".");
+        .asList(CHOWN, effectiveUser + ":" + groupName, fileName);
+    info("Change ownership of " + fileName + " to " + effectiveUser + ":" + groupName + ".");
     final int result = executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {
       handleError("Failed to change current working directory ownership. Error code: " + Integer

@@ -206,6 +206,8 @@ azkaban.FlowTabView = Backbone.View.extend({
     else if (data.status == "KILLED") {
       $("#executebtn").show();
     }
+    else if (data.status == "KILLING") {
+    }
   },
 
   handleCancelClick: function (evt) {
@@ -456,6 +458,12 @@ var updaterFunction = function () {
       setTimeout(function () {
         updaterFunction();
       }, 2 * 60 * 1000);
+    }
+    else if (data.status == "KILLING") {
+      // 30 s updates - should finish soon now
+      setTimeout(function () {
+        updaterFunction();
+      }, 30 * 1000);
     }
     else if (data.status != "SUCCEEDED" && data.status != "FAILED") {
       // 2 min updates

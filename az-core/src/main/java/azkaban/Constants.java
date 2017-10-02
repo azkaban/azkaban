@@ -32,6 +32,9 @@ package azkaban;
  */
 public class Constants {
 
+  // Azkaban Flow Versions
+  public static final String AZKABAN_FLOW_VERSION_2_0 = "2.0";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -124,17 +127,6 @@ public class Constants {
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";
 
-    // Event reporting properties
-    public static final String AZKABAN_EVENT_REPORTING_CLASS_PARAM =
-        "azkaban.event.reporting.class";
-    public static final String AZKABAN_EVENT_REPORTING_ENABLED = "azkaban.event.reporting.enabled";
-    public static final String AZKABAN_EVENT_REPORTING_KAFKA_BROKERS =
-        "azkaban.event.reporting.kafka.brokers";
-    public static final String AZKABAN_EVENT_REPORTING_KAFKA_TOPIC =
-        "azkaban.event.reporting.kafka.topic";
-    public static final String AZKABAN_EVENT_REPORTING_KAFKA_SCHEMA_REGISTRY_URL =
-        "azkaban.event.reporting.kafka.schema.registry.url";
-
     /*
      * The max number of artifacts retained per project.
      * Accepted Values:
@@ -185,6 +177,12 @@ public class Constants {
     // Use EXTRA_HCAT_CLUSTERS instead
     @Deprecated
     public static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
+
+    // Job properties that indicate maximum memory size
+    public static final String JOB_MAX_XMS = "job.max.Xms";
+    public static final String MAX_XMS_DEFAULT = "1G";
+    public static final String JOB_MAX_XMX = "job.max.Xmx";
+    public static final String MAX_XMX_DEFAULT = "2G";
   }
 
   public static class JobCallbackProperties {

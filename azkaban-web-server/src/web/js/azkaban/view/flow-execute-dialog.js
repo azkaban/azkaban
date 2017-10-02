@@ -162,7 +162,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       $('#queueLevel').val(queueLevel);
     }
 
-    if (flowParams) {
+    if (flowParams && $(".editRow").length == 0) {
       for (var key in flowParams) {
         editTableView.handleAddRow({
           paramkey: key,
@@ -374,6 +374,8 @@ azkaban.EditTableView = Backbone.View.extend({
   },
 
   handleEditColumn: function (evt) {
+    if (evt.target.tagName == "INPUT")
+      return;
     var curTarget = evt.currentTarget;
 
     var text = $(curTarget).children(".spanValue").text();

@@ -19,7 +19,6 @@ package azkaban.execapp.event;
 import static org.mockito.Mockito.mock;
 
 import azkaban.execapp.EventCollectorListener;
-import azkaban.execapp.EventReporterUtil;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.FlowRunnerTestUtil;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -33,7 +32,6 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.ProjectLoader;
-import azkaban.spi.AzkabanEventReporter;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
@@ -48,8 +46,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class RemoteFlowWatcherTest {
 
-  private final AzkabanEventReporter azkabanEventReporter =
-      EventReporterUtil.getTestAzkabanEventReporter();
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private JobTypeManager jobtypeManager;
@@ -186,14 +182,14 @@ public class RemoteFlowWatcherTest {
 
   private void testPipelineLevel1(final ExecutableFlow first, final ExecutableFlow second) {
     for (final ExecutableNode node : second.getExecutableNodes()) {
-      Assert.assertEquals(Status.SUCCEEDED, node.getStatus());
+      Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 
       // check it's start time is after the first's children.
       final ExecutableNode watchedNode = first.getExecutableNode(node.getId());
       if (watchedNode == null) {
         continue;
       }
-      Assert.assertEquals(Status.SUCCEEDED, watchedNode.getStatus());
+      Assert.assertEquals(watchedNode.getStatus(), Status.SUCCEEDED);
 
       System.out.println("Node " + node.getId() + " start: "
           + node.getStartTime() + " dependent on " + watchedNode.getId() + " "
@@ -219,7 +215,7 @@ public class RemoteFlowWatcherTest {
   private void assertPipelineLevel2(final ExecutableFlow first, final ExecutableFlow second,
       final boolean job4Skipped) {
     for (final ExecutableNode node : second.getExecutableNodes()) {
-      Assert.assertEquals(Status.SUCCEEDED, node.getStatus());
+      Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 
       // check it's start time is after the first's children.
       final ExecutableNode watchedNode = first.getExecutableNode(node.getId());
@@ -279,7 +275,7 @@ public class RemoteFlowWatcherTest {
 
     loader.uploadExecutableFlow(exFlow);
     final FlowRunner runner = new FlowRunner(exFlow, loader, mock(ProjectLoader.class),
-        this.jobtypeManager, azkabanProps, this.azkabanEventReporter);
+        this.jobtypeManager, azkabanProps);
     runner.setFlowWatcher(watcher);
     runner.addListener(eventCollector);
 

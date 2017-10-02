@@ -18,8 +18,6 @@ package azkaban.project;
 
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-import java.net.URISyntaxException;
-import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,27 +32,30 @@ public class DirectoryFlowLoaderTest {
   }
 
   @Test
-  public void testDirectoryLoad() throws URISyntaxException {
-    final Logger logger = Logger.getLogger(this.getClass());
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+  public void testDirectoryLoad() {
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("exectest1"));
-    logger.info(loader.getFlowMap().size());
+    Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(5, loader.getFlowMap().size());
+    Assert.assertEquals(2, loader.getPropsList().size());
+    Assert.assertEquals(14, loader.getJobPropsMap().size());
   }
 
   @Test
-  public void testLoadEmbeddedFlow() throws URISyntaxException {
-    final Logger logger = Logger.getLogger(this.getClass());
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+  public void testLoadEmbeddedFlow() {
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
+    Assert.assertEquals(2, loader.getFlowMap().size());
+    Assert.assertEquals(0, loader.getPropsList().size());
+    Assert.assertEquals(9, loader.getJobPropsMap().size());
   }
 
   @Test
-  public void testRecursiveLoadEmbeddedFlow() throws URISyntaxException {
-    final Logger logger = Logger.getLogger(this.getClass());
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+  public void testRecursiveLoadEmbeddedFlow() {
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded_bad"));
     for (final String error : loader.getErrors()) {

@@ -29,14 +29,12 @@ import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.spi.AzkabanEventReporter;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -61,9 +59,6 @@ import org.junit.Test;
 public class FlowRunnerPropertyResolutionTest {
 
   private static int id = 101;
-  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
-  private final AzkabanEventReporter azkabanEventReporter =
-      EventReporterUtil.getTestAzkabanEventReporter();
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ExecutorLoader fakeExecutorLoader;
@@ -88,7 +83,7 @@ public class FlowRunnerPropertyResolutionTest {
 
     final File dir = new File("unit/executions/execpropstest");
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, dir, this.logger, this.workingDir);
+        .prepareProject(this.project, dir, this.workingDir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -218,8 +213,7 @@ public class FlowRunnerPropertyResolutionTest {
 
     final FlowRunner runner =
         new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
-            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps,
-            this.azkabanEventReporter);
+            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps);
     return runner;
   }
 
