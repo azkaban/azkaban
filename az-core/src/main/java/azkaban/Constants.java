@@ -160,6 +160,24 @@ public class Constants {
     // Job property that enables/disables using Kafka logging of user job logs
     public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
 
+    /*
+     * this parameter is used to replace EXTRA_HCAT_LOCATION that could fail when one of the uris is not available.
+     * EXTRA_HCAT_CLUSTERS has the following format:
+     * other_hcat_clusters = "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port"
+     * Each string in the parenthesis is regarded as a "cluster", and we will get a delegation token from each cluster.
+     * The uris(hcat servers) in a "cluster" ensures HA is provided.
+     **/
+    public static final String EXTRA_HCAT_CLUSTERS = "azkaban.job.hive.other_hcat_clusters";
+
+    /*
+     * the settings to be defined by user indicating if there are hcat locations other than the
+     * default one the system should pre-fetch hcat token from. Note: Multiple thrift uris are
+     * supported, use comma to separate the values, values are case insensitive.
+     **/
+    // Use EXTRA_HCAT_CLUSTERS instead
+    @Deprecated
+    public static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
+
     // Job properties that indicate maximum memory size
     public static final String JOB_MAX_XMS = "job.max.Xms";
     public static final String MAX_XMS_DEFAULT = "1G";

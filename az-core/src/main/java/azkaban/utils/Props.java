@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -427,6 +428,23 @@ public class Props {
    */
   public List<String> getStringList(final String key) {
     return getStringList(key, "\\s*,\\s*");
+  }
+
+  /**
+   * Returns a list of clusters with the comma as the separator of the value
+   * e.g., for input string: "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port;"
+   * we will get ["thrift://hcat1:port,thrift://hcat2:port", "thrift://hcat3:port,thrift://hcat4:port"] as output
+   */
+  public List<String> getStringListFromCluster(final String key) {
+    List<String> curlist = getStringList(key, "\\s*;\\s*");
+    // remove empty elements in the array
+    for (Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
+      String a = iter.next();
+      if (a.length() == 0) {
+        iter.remove();
+      }
+    }
+    return curlist;
   }
 
   /**
