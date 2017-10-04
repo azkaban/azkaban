@@ -16,7 +16,13 @@
 
 package azkaban.flowtrigger;
 
+/**
+ * Defines the dependency instance level configuration.
+ */
 public interface DependencyInstanceConfig {
 
+  /**
+   * Return the value for a specified property
+   */
   String get(final String key);
 }
