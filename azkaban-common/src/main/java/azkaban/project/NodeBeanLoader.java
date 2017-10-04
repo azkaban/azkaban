@@ -19,6 +19,7 @@ package azkaban.project;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.common.io.Files;
 import java.io.File;
@@ -29,25 +30,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.yaml.snakeyaml.Yaml;
 
-public class FlowBeanLoader {
+public class NodeBeanLoader {
 
-  public FlowBean load(final File flowFile) throws FileNotFoundException {
+  private static final String NODE_BEAN_TYPE_FLOW = "flow";
+
+  public NodeBean load(final File flowFile) throws FileNotFoundException {
     checkArgument(flowFile.exists());
-    checkArgument(flowFile.getName().endsWith(".flow"));
+    checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
-    return new Yaml().loadAs(new FileInputStream(flowFile), FlowBean.class);
+    return new Yaml().loadAs(new FileInputStream(flowFile), NodeBean.class);
   }
 
-  public boolean validate(final FlowBean flowBean) {
+  public boolean validate(final NodeBean nodeBean) {
     final Set<String> nodeNames = new HashSet<>();
-    for (final NodeBean n : flowBean.getNodes()) {
+    for (final NodeBean n : nodeBean.getNodes()) {
       if (!nodeNames.add(n.getName())) {
         // Duplicate jobs
         return false;
       }
     }
 
-    for (final NodeBean n : flowBean.getNodes()) {
+    for (final NodeBean n : nodeBean.getNodes()) {
       if (!nodeNames.containsAll(n.getDependsOn())) {
         // Undefined reference to dependent job
         return false;
@@ -57,31 +60,28 @@ public class FlowBeanLoader {
     return true;
   }
 
-  public AzkabanFlow toAzkabanFlow(final String flowName, final FlowBean flowBean) {
-    final AzkabanFlow flow = new AzkabanFlow.AzkabanFlowBuilder()
-        .setName(flowName)
-        .setProps(new Props(null, flowBean.getConfig()))
-        .setNodes(
-            flowBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
-        .build();
-    return flow;
-  }
-
-  private AzkabanNode toAzkabanNode(final NodeBean nodeBean) {
-    // Note: For now, all DAG nodes are assumed to be Jobs. The AzkabanNode generalize is for
-    // future so that flows can refer to flows within it.
-
-    return new AzkabanJob.AzkabanJobBuilder()
-        .setName(nodeBean.getName())
-        .setProps(new Props(null, nodeBean.getConfig()))
-        .setType(nodeBean.getType())
-        .setDependsOn(nodeBean.getDependsOn())
-        .build();
+  public AzkabanNode toAzkabanNode(final NodeBean nodeBean) {
+    if (nodeBean.getType().equals(NODE_BEAN_TYPE_FLOW)) {
+      return new AzkabanFlow.AzkabanFlowBuilder()
+          .setName(nodeBean.getName())
+          .setProps(new Props(null, nodeBean.getConfig()))
+          .setDependsOn(nodeBean.getDependsOn())
+          .setNodes(
+              nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
+          .build();
+    } else {
+      return new AzkabanJob.AzkabanJobBuilder()
+          .setName(nodeBean.getName())
+          .setProps(new Props(null, nodeBean.getConfig()))
+          .setType(nodeBean.getType())
+          .setDependsOn(nodeBean.getDependsOn())
+          .build();
+    }
   }
 
   public String getFlowName(final File flowFile) {
     checkArgument(flowFile.exists());
-    checkArgument(flowFile.getName().endsWith(".flow"));
+    checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
     return Files.getNameWithoutExtension(flowFile.getName());
   }

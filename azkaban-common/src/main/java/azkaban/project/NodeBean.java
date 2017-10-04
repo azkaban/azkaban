@@ -17,18 +17,20 @@
 
 package azkaban.project;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 /**
- * The node bean is used by the YAML loader to deserialize DAG nodes
+ * Used by the YAML loader to deserialize DAG nodes in the flow
  */
-public class NodeBean {
+public class NodeBean implements Serializable {
 
   private String name;
   private Map<String, String> config;
   private List<String> dependsOn;
   private String type;
+  private List<NodeBean> nodes;
 
   public String getName() {
     return this.name;
@@ -62,8 +64,22 @@ public class NodeBean {
     this.type = type;
   }
 
+  public List<NodeBean> getNodes() {
+    return this.nodes;
+  }
+
+  public void setNodes(final List<NodeBean> nodes) {
+    this.nodes = nodes;
+  }
+
   @Override
   public String toString() {
-    return "Node{config=" + this.config + ", dependsOn=" + this.dependsOn + '}';
+    return "NodeBean{" +
+        "name='" + this.name + '\'' +
+        ", config=" + this.config +
+        ", dependsOn=" + this.dependsOn +
+        ", type='" + this.type + '\'' +
+        ", nodes=" + this.nodes +
+        '}';
   }
 }

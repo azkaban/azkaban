@@ -25,21 +25,15 @@ import java.util.List;
 public class AzkabanJob extends AzkabanNode {
 
   private final String type;
-  private final List<String> dependsOn;
 
   private AzkabanJob(final String name, final String type, final Props props,
       final List<String> dependsOn) {
-    super(name, props);
+    super(name, props, dependsOn);
     this.type = type;
-    this.dependsOn = dependsOn;
   }
 
   public String getType() {
-    return type;
-  }
-
-  public List<String> getDependsOn() {
-    return dependsOn;
+    return this.type;
   }
 
   public static class AzkabanJobBuilder {
@@ -73,7 +67,7 @@ public class AzkabanJob extends AzkabanNode {
     }
 
     public AzkabanJob build() {
-      return new AzkabanJob(name, type, props, dependsOn);
+      return new AzkabanJob(this.name, this.type, this.props, this.dependsOn);
     }
   }
 }

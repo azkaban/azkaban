@@ -20,22 +20,29 @@ package azkaban.project;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.utils.Props;
+import java.util.List;
 
 public abstract class AzkabanNode {
 
   protected final String name;
   protected final Props props;
+  protected final List<String> dependsOn;
 
-  public AzkabanNode(final String name, final Props props) {
+  public AzkabanNode(final String name, final Props props, final List<String> dependsOn) {
     this.name = requireNonNull(name);
     this.props = requireNonNull(props);
+    this.dependsOn = dependsOn;
   }
 
   public String getName() {
-    return name;
+    return this.name;
   }
 
   public Props getProps() {
-    return props;
+    return this.props;
+  }
+
+  public List<String> getDependsOn() {
+    return this.dependsOn;
   }
 }
