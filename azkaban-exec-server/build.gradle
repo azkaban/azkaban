@@ -4,6 +4,7 @@ dependencies {
     compile(project(':az-core'))
     compile(project(':azkaban-common'))
 
+    compile deps.guava
     compile deps.kafkaLog4jAppender
     runtime(project(':azkaban-hadoop-security-plugin'))
 
