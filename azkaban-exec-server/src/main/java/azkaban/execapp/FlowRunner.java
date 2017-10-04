@@ -1146,11 +1146,12 @@ public class FlowRunner extends EventHandler implements Runnable {
         }
       } else if (event.getType() == Type.JOB_STARTED) {
         // add job level checker
+        final String eventJobId = ((JobRunner) event.getRunner()).getNode().getId();
         final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
             .getInstance(TriggerManager.class);
         triggerManager
             .addTrigger(FlowRunner.this.flow.getExecutionId(), SlaOption.getJobLevelSLAOptions(
-                FlowRunner.this.flow));
+                FlowRunner.this.flow, eventJobId));
       }
     }
   }
