@@ -17,13 +17,13 @@
 package azkaban.execapp.metric;
 
 import azkaban.event.Event;
-import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.executor.Status;
 import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
+import azkaban.spi.EventType;
 
 /**
  * Metric to keep track of number of failed flows in between the tracking events
@@ -47,7 +47,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
    */
   @Override
   public synchronized void handleEvent(final Event event) {
-    if (event.getType() == Type.FLOW_FINISHED) {
+    if (event.getType() == EventType.FLOW_FINISHED) {
       final FlowRunner runner = (FlowRunner) event.getRunner();
       if (runner != null && runner.getExecutableFlow().getStatus().equals(Status.FAILED)) {
         this.value = this.value + 1;
