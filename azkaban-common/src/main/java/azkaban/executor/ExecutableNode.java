@@ -50,8 +50,8 @@ public class ExecutableNode {
   private String id;
   private String type = null;
   private volatile Status status = Status.READY;
-  private long startTime = -1;
-  private long endTime = -1;
+  private volatile long startTime = -1;
+  private volatile long endTime = -1;
   private long updateTime = -1;
   private volatile boolean killedBySLA = false;
 
