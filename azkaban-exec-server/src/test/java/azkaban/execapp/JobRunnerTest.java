@@ -16,10 +16,6 @@
 
 package azkaban.execapp;
 
-import static java.lang.Thread.State.TIMED_WAITING;
-import static java.lang.Thread.State.WAITING;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
@@ -33,16 +29,21 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.Thread.State.TIMED_WAITING;
+import static java.lang.Thread.State.WAITING;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JobRunnerTest {
 
@@ -124,11 +125,10 @@ public class JobRunnerTest {
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue(node.getStatus() == Status.FAILED);
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() >= 0);
-    Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
-    Assert.assertTrue(outputProps.toProperties().isEmpty());
+    Assert.assertEquals(0, outputProps.size());
     Assert.assertTrue(logFile.exists());
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(!runner.isKilled());
@@ -229,7 +229,7 @@ public class JobRunnerTest {
     // Log file and output files should not exist.
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
-    Assert.assertTrue(outputProps.toProperties().isEmpty());
+    Assert.assertEquals(0, outputProps.size());
     Assert.assertTrue(logFile.exists());
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(runner.isKilled());
@@ -359,8 +359,8 @@ public class JobRunnerTest {
   }
 
   private void assertThreadIsNotAlive(final Thread thread) throws Exception {
-    thread.join(9_000L);
-    TestUtils.await().atMost(1L, TimeUnit.SECONDS).until(() -> !thread.isAlive());
+    thread.join(9000L);
+    TestUtils.await().atMost(1000L, TimeUnit.MILLISECONDS).until(() -> !thread.isAlive());
   }
 
   private void notifyWaiting(final Object monitor) {
