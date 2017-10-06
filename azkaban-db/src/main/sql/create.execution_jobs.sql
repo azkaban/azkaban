@@ -11,12 +11,8 @@ CREATE TABLE execution_jobs (
   input_params  LONGBLOB,
   output_params LONGBLOB,
   attachments   LONGBLOB,
-  PRIMARY KEY (exec_id, job_id, attempt)
+  PRIMARY KEY (exec_id, job_id, flow_id, attempt)
 );
 
-CREATE INDEX exec_job
-  ON execution_jobs (exec_id, job_id);
-CREATE INDEX exec_id
-  ON execution_jobs (exec_id);
 CREATE INDEX ex_job_id
   ON execution_jobs (project_id, job_id);
