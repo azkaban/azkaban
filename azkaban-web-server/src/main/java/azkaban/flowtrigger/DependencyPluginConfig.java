@@ -22,7 +22,8 @@ package azkaban.flowtrigger;
 public interface DependencyPluginConfig {
 
   /**
-   * Return the value for a specified property
+   * @return value for the configuration key,
+   * null if the key doesn't exist in the configuration.
    */
   String get(final String key);
 }
