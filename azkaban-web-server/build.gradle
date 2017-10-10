@@ -63,6 +63,8 @@ dependencies {
   generateRestli deps.restliGenerator
   generateRestli deps.restliTools
 
+  testCompile project(':test')
+  testCompile project(path: ':azkaban-db', configuration: 'testOutput')
   testRuntime deps.h2
 }
 

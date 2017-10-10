@@ -42,6 +42,7 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.FetchActiveFlowDao;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.QuartzScheduler;
 import azkaban.spi.Storage;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
@@ -98,6 +99,9 @@ public class AzkabanWebServerTest {
     props.put("jetty.use.ssl", "false");
     props.put("user.manager.xml.file", getUserManagerXmlFile());
 
+    // Quartz settings
+    props.put("org.quartz.threadPool.class", "org.quartz.simpl.SimpleThreadPool");
+    props.put("org.quartz.threadPool.threadCount", "10");
     AzkabanDatabaseUpdater.runDatabaseUpdater(props, sqlScriptsDir, true);
   }
 
@@ -150,6 +154,8 @@ public class AzkabanWebServerTest {
     assertSingleton(FetchActiveFlowDao.class, injector);
     assertSingleton(AzkabanWebServer.class, injector);
     assertSingleton(H2FileDataSource.class, injector);
+
+    assertSingleton(QuartzScheduler.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
   }
