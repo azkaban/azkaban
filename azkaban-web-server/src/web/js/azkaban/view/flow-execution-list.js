@@ -95,9 +95,11 @@ azkaban.ExecutionListView = Backbone.View.extend({
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 
-      if (node.startTime < 0) {
+
+      if (node.status == 'READY') {
         continue;
       }
+
       //var nodeId = node.id.replace(".", "\\\\.");
       var row = node.joblistrow;
       if (!row) {
@@ -110,8 +112,13 @@ azkaban.ExecutionListView = Backbone.View.extend({
       $(statusDiv).attr("class", "status " + node.status);
 
       var startTimeTd = $(row).find("> td.startTime");
-      var startdate = new Date(node.startTime);
-      $(startTimeTd).text(getDateFormat(startdate));
+      if (node.startTime == -1) {
+          $(startTimeTd).text("-");
+      }
+      else {
+          var startdate = new Date(node.startTime);
+          $(startTimeTd).text(getDateFormat(startdate));
+      }
 
       var endTimeTd = $(row).find("> td.endTime");
       if (node.endTime == -1) {
@@ -173,10 +180,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
   },
 
   updateProgressBar: function (data, flowStartTime, flowLastTime) {
-    if (data.startTime == -1) {
-      return;
-    }
-
     var outerWidth = $(".flow-progress").css("width");
     if (outerWidth) {
       if (outerWidth.substring(outerWidth.length - 2, outerWidth.length)
@@ -243,10 +246,13 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
       var nodeLastTime = node.endTime == -1 ? (new Date()).getTime()
           : node.endTime;
-      var left = Math.max((node.startTime - parentStartTime) * factor,
+      var nodeStartTime = node.startTime == -1 ? (new Date()).getTime()
+          : node.startTime;
+      var left = Math.max((nodeStartTime - parentStartTime) * factor,
           minOffset);
       var margin = left - offsetLeft;
-      var width = Math.max((nodeLastTime - node.startTime) * factor, 3);
+      var width = Math.max((nodeLastTime - nodeStartTime) * factor, 3);
+
       width = Math.min(width, outerWidth);
 
       progressBar.css("margin-left", left)

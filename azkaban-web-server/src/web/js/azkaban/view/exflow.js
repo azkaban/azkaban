@@ -421,12 +421,45 @@ var updateStatus = function (updateTime) {
   ajaxCall(requestURL, requestData, successHandler);
 }
 
+function updatePastAttempts(data, update) {
+	if (!update.pastAttempts) {
+	    return;
+	}
+
+	if (data.pastAttempts) {
+		for (var i = 0; i < update.pastAttempts.length; ++i) {
+			var updatedAttempt = update.pastAttempts[i];
+			var found = false;
+			for (var j = 0; j < data.pastAttempts.length; ++j) {
+				var attempt = data.pastAttempts[j];
+				if (attempt.attempt == updatedAttempt.attempt) {
+					attempt.startTime = updatedAttempt.startTime;
+					attempt.endTime = updatedAttempt.endTime;
+					attempt.status = updatedAttempt.status;
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				data.pastAttempts.push(updatedAttempt);
+			}
+		}
+	}
+	else {
+		data.pastAttempts = update.pastAttempts;
+	}
+}
+
 var updateGraph = function (data, update) {
   var nodeMap = data.nodeMap;
   data.startTime = update.startTime;
   data.endTime = update.endTime;
   data.updateTime = update.updateTime;
   data.status = update.status;
+
+  updatePastAttempts(data, update);
+
   update.changedNode = data;
 
   if (update.nodes) {
