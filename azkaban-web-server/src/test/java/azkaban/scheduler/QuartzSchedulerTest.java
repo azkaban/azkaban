@@ -19,6 +19,7 @@ package azkaban.scheduler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzDBTestUtility;
 import azkaban.db.DatabaseOperator;
 import azkaban.test.TestUtils;
@@ -45,10 +46,11 @@ public class QuartzSchedulerTest {
   @BeforeClass
   public static void setUpQuartz() throws Exception {
     dbOperator = AzDBTestUtility.initQuartzDB();
-    final String quartzPropsPath=
+    final String quartzPropsPath =
         new File("../azkaban-web-server/src/test/resources/quartz.test.properties")
-        .getCanonicalPath();
+            .getCanonicalPath();
     final Props quartzProps = new Props(null, quartzPropsPath);
+    quartzProps.put(ConfigurationKeys.ENABLE_QUARTZ, "true");
     scheduler = new QuartzScheduler(quartzProps);
     scheduler.start();
   }
@@ -75,7 +77,7 @@ public class QuartzSchedulerTest {
   }
 
   @Test
-  public void testCreateScheduleAndRun() throws Exception{
+  public void testCreateScheduleAndRun() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
     assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(true);
     TestUtils.await().untilAsserted(() -> assertThat(SampleQuartzJob.COUNT_EXECUTION)
@@ -83,7 +85,7 @@ public class QuartzSchedulerTest {
   }
 
   @Test
-  public void testNotAllowDuplicateJobRegister() throws Exception{
+  public void testNotAllowDuplicateJobRegister() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
     assertThatThrownBy(
         () -> scheduler.registerJob("0 5 * * * ?", createJobDescription()))
@@ -92,7 +94,7 @@ public class QuartzSchedulerTest {
   }
 
   @Test
-  public void testInvalidCron() throws Exception{
+  public void testInvalidCron() throws Exception {
     assertThatThrownBy(
         () -> scheduler.registerJob("0 5 * * * *", createJobDescription()))
         .isInstanceOf(SchedulerException.class)
@@ -100,7 +102,7 @@ public class QuartzSchedulerTest {
   }
 
   @Test
-  public void testUnregisterSchedule() throws Exception{
+  public void testUnregisterSchedule() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
     assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(true);
     scheduler.unregisterJob("SampleService");
@@ -108,7 +110,7 @@ public class QuartzSchedulerTest {
   }
 
   @Test
-  public void testPauseAndResume() throws Exception{
+  public void testPauseAndResume() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
     scheduler.pause();
     final int count = SampleQuartzJob.COUNT_EXECUTION;
