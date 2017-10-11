@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.flow.Flow;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
@@ -35,8 +36,6 @@ import org.slf4j.LoggerFactory;
 public class DirectoryYamlFlowLoader implements FlowLoader {
 
   private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
-  private static final String PROJECT_FILE_SUFFIX = ".project";
-  private static final String FLOW_FILE_SUFFIX = ".flow";
 
   private final Props props;
   private final Set<String> errors = new HashSet<>();
@@ -86,13 +85,12 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   private void convertYamlFiles(final File projectDir) {
     // Todo jamiesjc: convert project yaml file. It will contain properties for all flows.
 
-    //covert flow yaml files
-    final File[] flowFiles = projectDir.listFiles(new SuffixFilter(FLOW_FILE_SUFFIX));
+    final File[] flowFiles = projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX));
     for (final File file : flowFiles) {
-      final FlowBeanLoader loader = new FlowBeanLoader();
+      final NodeBeanLoader loader = new NodeBeanLoader();
       try {
-        final FlowBean flowBean = loader.load(file);
-        final AzkabanFlow azkabanFlow = loader.toAzkabanFlow(loader.getFlowName(file), flowBean);
+        final NodeBean nodeBean = loader.load(file);
+        final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
         final Flow flow = new Flow(azkabanFlow.getName());
         flow.setAzkabanFlow(azkabanFlow);
         this.flowMap.put(azkabanFlow.getName(), flow);

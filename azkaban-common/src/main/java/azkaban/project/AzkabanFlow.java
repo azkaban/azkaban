@@ -18,9 +18,12 @@
 package azkaban.project;
 
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AzkabanFlow extends AzkabanNode {
@@ -28,23 +31,24 @@ public class AzkabanFlow extends AzkabanNode {
   private final Map<String, AzkabanNode> nodes;
 
   private AzkabanFlow(final String name, final Props props,
-      final Map<String, AzkabanNode> nodes) {
-    super(name, props);
+      final Map<String, AzkabanNode> nodes, final List<String> dependsOn) {
+    super(name, props, dependsOn);
     this.nodes = nodes;
   }
 
   public Map<String, AzkabanNode> getNodes() {
-    return nodes;
+    return this.nodes;
   }
 
-  public AzkabanJob getJob(final String name) {
-    return (AzkabanJob) nodes.get(name);
+  public AzkabanNode getNode(final String name) {
+    return this.nodes.get(name);
   }
 
   public static class AzkabanFlowBuilder {
 
     private String name;
     private Props props;
+    private List<String> dependsOn;
     private Map<String, AzkabanNode> nodes;
 
     public AzkabanFlowBuilder setName(final String name) {
@@ -57,17 +61,24 @@ public class AzkabanFlow extends AzkabanNode {
       return this;
     }
 
+    public AzkabanFlowBuilder setDependsOn(final List<String> dependsOn) {
+      this.dependsOn = dependsOn == null
+          ? Collections.emptyList()
+          : ImmutableList.copyOf(dependsOn);
+      return this;
+    }
+
     public AzkabanFlowBuilder setNodes(final Collection<? extends AzkabanNode> azkabanNodes) {
       final Map<String, AzkabanNode> tempNodes = new HashMap<>();
       for (final AzkabanNode node : azkabanNodes) {
         tempNodes.put(node.getName(), node);
       }
-      nodes = ImmutableMap.copyOf(tempNodes);
+      this.nodes = ImmutableMap.copyOf(tempNodes);
       return this;
     }
 
     public AzkabanFlow build() {
-      return new AzkabanFlow(name, props, nodes);
+      return new AzkabanFlow(this.name, this.props, this.nodes, this.dependsOn);
     }
   }
 }
