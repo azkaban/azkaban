@@ -1,6 +1,4 @@
 ---
-name: embedded_flow
-type: flow
 config:
   flow-level-parameter: value
 

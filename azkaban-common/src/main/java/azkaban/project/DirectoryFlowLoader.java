@@ -42,6 +42,9 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Loads job and properties files to flows from project directory.
+ */
 public class DirectoryFlowLoader implements FlowLoader {
 
   private static final DirFilter DIR_FILTER = new DirFilter();

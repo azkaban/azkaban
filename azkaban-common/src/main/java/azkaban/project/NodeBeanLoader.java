@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.yaml.snakeyaml.Yaml;
 
+/**
+ * Loads NodeBean from YAML files.
+ */
 public class NodeBeanLoader {
 
   private static final String NODE_BEAN_TYPE_FLOW = "flow";
@@ -38,7 +41,10 @@ public class NodeBeanLoader {
     checkArgument(flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
-    return new Yaml().loadAs(new FileInputStream(flowFile), NodeBean.class);
+    final NodeBean nodeBean = new Yaml().loadAs(new FileInputStream(flowFile), NodeBean.class);
+    nodeBean.setName(getFlowName(flowFile));
+    nodeBean.setType(NODE_BEAN_TYPE_FLOW);
+    return nodeBean;
   }
 
   public boolean validate(final NodeBean nodeBean) {
