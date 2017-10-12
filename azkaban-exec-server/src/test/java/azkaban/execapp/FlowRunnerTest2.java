@@ -17,35 +17,19 @@
 package azkaban.execapp;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
-import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
-import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
-import azkaban.executor.JavaJob;
-import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
-import azkaban.jobExecutor.AllJobExecutorTests;
-import azkaban.jobtype.JobTypeManager;
-import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.Project;
-import azkaban.project.ProjectLoader;
-import azkaban.spi.AzkabanEventReporter;
-import azkaban.test.Utils;
-import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 /**
  * Test the flow run, especially with embedded flows.
@@ -95,36 +79,11 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
-  private static int id = 101;
-  private final AzkabanEventReporter azkabanEventReporter = null;
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private File workingDir;
-  private JobTypeManager jobtypeManager;
-  private ExecutorLoader fakeExecutorLoader;
-  private Project project;
-  private Map<String, Flow> flowMap;
+  private FlowRunnerTestUtil testUtil;
 
   @Before
   public void setUp() throws Exception {
-    this.workingDir = this.temporaryFolder.newFolder();
-    this.jobtypeManager = new JobTypeManager(null, null,
-        this.getClass().getClassLoader());
-    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
-
-    pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
-    pluginSet.addPluginClass("java", JavaJob.class);
-    pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    this.fakeExecutorLoader = new MockExecutorLoader();
-    this.project = new Project(1, "testProject");
-    Utils.initServiceProvider();
-    JmxJobMBeanManager.getInstance().initialize(new Props());
-
-    this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, ExecutionsTestUtil.getFlowDir("embedded2"),
-            this.workingDir);
-
-    InteractiveTestJob.clearTestJobs();
+    this.testUtil = new FlowRunnerTestUtil("embedded2", this.temporaryFolder);
   }
 
   /**
@@ -133,10 +92,20 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testBasicRun() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+
+    final Map<String, String> flowParams = new HashMap<>();
+    flowParams.put("param4", "override.4");
+    flowParams.put("param10", "override.10");
+    flowParams.put("param11", "override.11");
+
+    final ExecutionOptions options = new ExecutionOptions();
+    options.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
+
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", options, flowParams, new Props());
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -275,14 +244,15 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testDisabledNormal() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("jobb").setStatus(Status.DISABLED);
     ((ExecutableFlowBase) flow.getExecutableNode("jobd")).getExecutableNode(
         "innerJobA").setStatus(Status.DISABLED);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -333,10 +303,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testNormalFailure1() throws Exception {
     // Test propagation of KILLED status to embedded flows.
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -371,10 +342,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testNormalFailure2() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -419,10 +391,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testNormalFailure3() throws Exception {
     // Test propagation of CANCELLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -476,11 +449,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testFailedFinishingFailure3() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
+    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
         FailureAction.FINISH_ALL_POSSIBLE);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -538,11 +511,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
+    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -587,14 +560,15 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testRetryOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("joba").setStatus(Status.DISABLED);
     ((ExecutableFlowBase) flow.getExecutableNode("jobb")).getExecutableNode(
         "innerFlow").setStatus(Status.DISABLED);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     assertStatus("joba", Status.SKIPPED);
     assertStatus("joba1", Status.RUNNING);
@@ -675,11 +649,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testCancel() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
+    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -725,10 +699,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   public void testManualCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -777,10 +752,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testPause() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -861,10 +837,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testPauseKill() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector);
+    this.runner = this.testUtil
+        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -910,11 +887,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testPauseFail() throws Exception {
     this.eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(this.eventCollector,
+    this.runner = this.testUtil.createFromFlowMap(this.eventCollector, "jobf",
         FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -970,11 +947,11 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testPauseFailFinishAll() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
+    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
         FailureAction.FINISH_ALL_POSSIBLE);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
@@ -1029,10 +1006,10 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testFlowKilledByJobLevelSLA() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
+    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
 
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
     assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
 
@@ -1054,11 +1031,10 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testPauseFailKill() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = createFlowRunner(eventCollector,
-        FailureAction.CANCEL_ALL);
+    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf", FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
-    runFlowRunnerInThread(this.runner);
+    FlowRunnerTestUtil.startThread(this.runner);
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
@@ -1091,48 +1067,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
-  }
-
-  private void runFlowRunnerInThread(final FlowRunner runner) {
-    final Thread thread = new Thread(runner);
-    thread.start();
-  }
-
-  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector)
-      throws Exception {
-    return createFlowRunner(eventCollector,
-        FailureAction.FINISH_CURRENTLY_RUNNING);
-  }
-
-  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
-      final FailureAction action) throws Exception {
-    return createFlowRunner(eventCollector, action, new Props());
-  }
-
-  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
-      final FailureAction action, final Props azkabanProps)
-      throws Exception {
-    final Flow flow = this.flowMap.get("jobf");
-
-    final int exId = id++;
-    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    exFlow.setExecutionPath(this.workingDir.getPath());
-    exFlow.setExecutionId(exId);
-
-    final Map<String, String> flowParam = new HashMap<>();
-    flowParam.put("param4", "override.4");
-    flowParam.put("param10", "override.10");
-    flowParam.put("param11", "override.11");
-    exFlow.getExecutionOptions().addAllFlowParameters(flowParam);
-    exFlow.getExecutionOptions().setFailureAction(action);
-    this.fakeExecutorLoader.uploadExecutableFlow(exFlow);
-
-    final FlowRunner runner = new FlowRunner(
-        this.fakeExecutorLoader.fetchExecutableFlow(exId), this.fakeExecutorLoader,
-        mock(ProjectLoader.class), this.jobtypeManager, azkabanProps, this.azkabanEventReporter);
-    runner.addListener(eventCollector);
-
-    return runner;
   }
 
 }

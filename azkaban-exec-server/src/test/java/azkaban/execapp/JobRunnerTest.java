@@ -16,6 +16,10 @@
 
 package azkaban.execapp;
 
+import static java.lang.Thread.State.TIMED_WAITING;
+import static java.lang.Thread.State.WAITING;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
@@ -29,21 +33,16 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
-
-import static java.lang.Thread.State.TIMED_WAITING;
-import static java.lang.Thread.State.WAITING;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class JobRunnerTest {
 
@@ -211,8 +210,7 @@ public class JobRunnerTest {
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
         || runner.getStatus() != Status.FAILED);
 
-    final Thread thread = new Thread(runner);
-    thread.start();
+    final Thread thread = startThread(runner);
 
     StatusTestUtils.waitForStatus(node, Status.RUNNING);
     runner.kill();
@@ -250,8 +248,7 @@ public class JobRunnerTest {
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED);
 
-    final Thread thread = new Thread(runner);
-    thread.start();
+    final Thread thread = startThread(runner);
 
     // wait for job to get into delayExecution() -> wait()
     assertThreadIsWaiting(thread);
@@ -293,8 +290,7 @@ public class JobRunnerTest {
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED);
 
-    final Thread thread = new Thread(runner);
-    thread.start();
+    final Thread thread = startThread(runner);
 
     StatusTestUtils.waitForStatus(node, Status.READY);
     // wait for job to get into delayExecution() -> wait()
@@ -369,4 +365,9 @@ public class JobRunnerTest {
     }
   }
 
+  private Thread startThread(final JobRunner runner) {
+    final Thread thread = new Thread(runner);
+    thread.start();
+    return thread;
+  }
 }

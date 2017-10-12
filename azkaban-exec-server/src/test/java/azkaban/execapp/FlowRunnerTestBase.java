@@ -28,8 +28,13 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import java.util.function.Function;
 import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 public class FlowRunnerTestBase {
+
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   protected FlowRunner runner;
   protected EventCollectorListener eventCollector;

@@ -16,34 +16,14 @@
 
 package azkaban.execapp;
 
-import static org.mockito.Mockito.mock;
-
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
-import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
-import azkaban.executor.JavaJob;
-import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
-import azkaban.jobtype.JobTypeManager;
-import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.Project;
-import azkaban.project.ProjectLoader;
-import azkaban.test.Utils;
-import azkaban.test.executions.ExecutionsTestUtil;
-import azkaban.spi.AzkabanEventReporter;
-import azkaban.utils.Props;
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 /**
  * Flows in this test: joba jobb joba1 jobc->joba jobd->joba jobe->jobb,jobc,jobd jobf->jobe,joba1
@@ -57,45 +37,18 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
-  private static int id = 101;
-  private final AzkabanEventReporter azkabanEventReporter = null;
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private File workingDir;
-  private JobTypeManager jobtypeManager;
-  private ExecutorLoader fakeExecutorLoader;
-  private Project project;
-  private Map<String, Flow> flowMap;
-
-  public FlowRunnerPipelineTest() {
-  }
+  private FlowRunnerTestUtil testUtil;
 
   @Before
   public void setUp() throws Exception {
-    this.workingDir = this.temporaryFolder.newFolder();
-    this.jobtypeManager =
-        new JobTypeManager(null, null, this.getClass().getClassLoader());
-    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
-
-    pluginSet.addPluginClass("java", JavaJob.class);
-    pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    this.fakeExecutorLoader = new MockExecutorLoader();
-    this.project = new Project(1, "testProject");
-    Utils.initServiceProvider();
-    JmxJobMBeanManager.getInstance().initialize(new Props());
-
-    final File dir = ExecutionsTestUtil.getFlowDir("embedded2");
-    this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, dir, this.workingDir);
-
-    InteractiveTestJob.clearTestJobs();
+    this.testUtil = new FlowRunnerTestUtil("embedded2", this.temporaryFolder);
   }
 
   @Test
   public void testBasicPipelineLevel1RunDisabledJobs() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final FlowRunner previousRunner =
-        createFlowRunner(eventCollector, "jobf", "prev");
+        this.testUtil.createFromFlowMap(eventCollector, "jobf", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
@@ -103,7 +56,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     options.setPipelineLevel(1);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
     final FlowRunner pipelineRunner =
-        createFlowRunner(eventCollector, "jobf", "pipe", options);
+        this.testUtil.createFromFlowMap(eventCollector, "jobf", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
@@ -112,12 +65,12 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     // disable the innerFlow (entire sub-flow)
     previousFlow.getExecutableNodePath("jobb").setStatus(Status.DISABLED);
 
-    runFlowRunnerInThread(previousRunner);
+    FlowRunnerTestUtil.startThread(previousRunner);
     assertStatus(previousFlow, "joba", Status.RUNNING);
     assertStatus(previousFlow, "joba", Status.RUNNING);
     assertStatus(previousFlow, "joba1", Status.RUNNING);
 
-    runFlowRunnerInThread(pipelineRunner);
+    FlowRunnerTestUtil.startThread(pipelineRunner);
     assertStatus(pipelineFlow, "joba", Status.QUEUED);
     assertStatus(pipelineFlow, "joba1", Status.QUEUED);
 
@@ -214,7 +167,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
   public void testBasicPipelineLevel1Run() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final FlowRunner previousRunner =
-        createFlowRunner(eventCollector, "jobf", "prev");
+        this.testUtil.createFromFlowMap(eventCollector, "jobf", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
@@ -222,19 +175,19 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     options.setPipelineLevel(1);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
     final FlowRunner pipelineRunner =
-        createFlowRunner(eventCollector, "jobf", "pipe", options);
+        this.testUtil.createFromFlowMap(eventCollector, "jobf", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
 
-    runFlowRunnerInThread(previousRunner);
+    FlowRunnerTestUtil.startThread(previousRunner);
     assertStatus(previousFlow, "joba", Status.RUNNING);
     assertStatus(previousFlow, "joba", Status.RUNNING);
     assertStatus(previousFlow, "joba1", Status.RUNNING);
 
-    runFlowRunnerInThread(pipelineRunner);
+    FlowRunnerTestUtil.startThread(pipelineRunner);
     assertStatus(pipelineFlow, "joba", Status.QUEUED);
     assertStatus(pipelineFlow, "joba1", Status.QUEUED);
 
@@ -335,7 +288,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
   public void testBasicPipelineLevel2Run() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final FlowRunner previousRunner =
-        createFlowRunner(eventCollector, "pipelineFlow", "prev");
+        this.testUtil.createFromFlowMap(eventCollector, "pipelineFlow", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
@@ -343,17 +296,17 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     options.setPipelineLevel(2);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
     final FlowRunner pipelineRunner =
-        createFlowRunner(eventCollector, "pipelineFlow", "pipe", options);
+        this.testUtil.createFromFlowMap(eventCollector, "pipelineFlow", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
 
-    runFlowRunnerInThread(previousRunner);
+    FlowRunnerTestUtil.startThread(previousRunner);
     assertStatus(previousFlow, "pipeline1", Status.RUNNING);
 
-    runFlowRunnerInThread(pipelineRunner);
+    FlowRunnerTestUtil.startThread(pipelineRunner);
     assertStatus(pipelineFlow, "pipeline1", Status.QUEUED);
 
     InteractiveTestJob.getTestJob("prev:pipeline1").succeedJob();
@@ -467,7 +420,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
   public void testBasicPipelineLevel2Run2() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final FlowRunner previousRunner =
-        createFlowRunner(eventCollector, "pipeline1_2", "prev");
+        this.testUtil.createFromFlowMap(eventCollector, "pipeline1_2", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
@@ -475,18 +428,18 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     options.setPipelineLevel(2);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
     final FlowRunner pipelineRunner =
-        createFlowRunner(eventCollector, "pipeline1_2", "pipe", options);
+        this.testUtil.createFromFlowMap(eventCollector, "pipeline1_2", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
     final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
     final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
 
-    runFlowRunnerInThread(previousRunner);
+    FlowRunnerTestUtil.startThread(previousRunner);
     assertStatus(previousFlow, "pipeline1_1", Status.RUNNING);
     assertStatus(previousFlow, "pipeline1_1:innerJobA", Status.RUNNING);
 
-    runFlowRunnerInThread(pipelineRunner);
+    FlowRunnerTestUtil.startThread(pipelineRunner);
     assertStatus(pipelineFlow, "pipeline1_1", Status.RUNNING);
     assertStatus(pipelineFlow, "pipeline1_1:innerJobA", Status.QUEUED);
 
@@ -538,50 +491,6 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(pipelineFlow, "pipeline1_2:innerFlow2", Status.SUCCEEDED);
     assertFlowStatus(pipelineFlow, Status.SUCCEEDED);
     assertThreadShutDown(pipelineRunner);
-  }
-
-  private void runFlowRunnerInThread(final FlowRunner runner) {
-    final Thread thread = new Thread(runner);
-    thread.start();
-  }
-
-  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
-      final String flowName, final String groupName) throws Exception {
-    return createFlowRunner(eventCollector, flowName, groupName,
-        new ExecutionOptions(), new Props());
-  }
-
-  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
-      final String flowName, final String groupName, final ExecutionOptions options)
-      throws Exception {
-    return createFlowRunner(eventCollector, flowName, groupName,
-        options, new Props());
-  }
-
-  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
-      final String flowName, final String groupName, final ExecutionOptions options,
-      final Props azkabanProps)
-      throws Exception {
-    final Flow flow = this.flowMap.get(flowName);
-
-    final int exId = id++;
-    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    exFlow.setExecutionPath(this.workingDir.getPath());
-    exFlow.setExecutionId(exId);
-
-    final Map<String, String> flowParam = new HashMap<>();
-    flowParam.put("group", groupName);
-    options.addAllFlowParameters(flowParam);
-    exFlow.setExecutionOptions(options);
-    this.fakeExecutorLoader.uploadExecutableFlow(exFlow);
-
-    final FlowRunner runner =
-        new FlowRunner(this.fakeExecutorLoader.fetchExecutableFlow(exId),
-            this.fakeExecutorLoader, mock(ProjectLoader.class), this.jobtypeManager, azkabanProps,
-            this.azkabanEventReporter);
-    runner.addListener(eventCollector);
-
-    return runner;
   }
 
 }
