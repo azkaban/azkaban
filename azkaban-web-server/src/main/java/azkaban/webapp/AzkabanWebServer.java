@@ -231,7 +231,9 @@ public class AzkabanWebServer extends AzkabanServer {
       @Override
       public void run() {
         try {
-          webServer.quartzScheduler.shutdown();
+          if (webServer.quartzScheduler != null) {
+            webServer.quartzScheduler.shutdown();
+          }
         } catch (final Exception e) {
           logger.error(("Exception while shutting down quartz scheduler."), e);
         }
