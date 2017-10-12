@@ -40,7 +40,7 @@ public interface DependencyCheck {
    * Initialize the dependency plugin.
    *
    * @param config dependency plugin config.
-   * @param successCallback callback to invoke when the check succeeds.
+   * @param callback callback to invoke when the check succeeds.
    */
-  void init(DependencyPluginConfig config, SuccessCallback successCallback);
+  void init(DependencyPluginConfig config, DependencyInstanceCallback callback);
 }
