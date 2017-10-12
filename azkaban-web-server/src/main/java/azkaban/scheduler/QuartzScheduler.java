@@ -18,6 +18,7 @@ package azkaban.scheduler;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import java.util.Set;
 import javax.inject.Inject;
@@ -37,8 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
- * mapping.
+ * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one mapping.
  */
 @Singleton
 public class QuartzScheduler {
@@ -49,7 +49,10 @@ public class QuartzScheduler {
   private Scheduler scheduler = null;
 
   @Inject
-  public QuartzScheduler(final Props azProps) throws SchedulerException{
+  public QuartzScheduler(final Props azProps) throws SchedulerException {
+    if (!azProps.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
+      return;
+    }
     final StdSchedulerFactory schedulerFactory =
         new StdSchedulerFactory(azProps.toProperties());
     this.scheduler = schedulerFactory.getScheduler();
@@ -101,7 +104,7 @@ public class QuartzScheduler {
   }
 
   public void unregisterJob(final String groupName) throws SchedulerException {
-    if(!ifJobExist(groupName)) {
+    if (!ifJobExist(groupName)) {
       logger.warn("can not find job with " + groupName + " in quartz.");
     } else {
       this.scheduler.deleteJob(new JobKey(DEFAULT_JOB_NAME, groupName));
@@ -113,27 +116,26 @@ public class QuartzScheduler {
    *
    * @param cronExpression the cron schedule for this job
    * @param jobDescription Regarding QuartzJobDescription#groupName, in order to guarantee no
-   * duplicate quartz schedules, we design the naming convention depending on use cases:
-   * <ul>
-   *   <li>User flow schedule: we use {@link org.quartz.JobKey#JobKey} to represent the identity
-   *   of a flow's schedule. The format follows "$projectID_$flowName" to guarantee no duplicates.
-   *   </li>
-   *   <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather
-   *   than number, which is the first case. </li>
-   * <ul>
+   * duplicate quartz schedules, we design the naming convention depending on use cases: <ul>
+   * <li>User flow schedule: we use {@link org.quartz.JobKey#JobKey} to represent the identity of a
+   * flow's schedule. The format follows "$projectID_$flowName" to guarantee no duplicates.
+   * <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather than
+   * number, which is the first case.</ul>
    */
   public void registerJob(final String cronExpression, final QuartzJobDescription jobDescription)
-    throws SchedulerException {
+      throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
 
     // Not allowed to register duplicate job name.
-    if(ifJobExist(jobDescription.getGroupName())) {
-      throw new SchedulerException("can not register existing job " + jobDescription.getGroupName());
+    if (ifJobExist(jobDescription.getGroupName())) {
+      throw new SchedulerException(
+          "can not register existing job " + jobDescription.getGroupName());
     }
 
     if (!CronExpression.isValidExpression(cronExpression)) {
-      throw new SchedulerException("The cron expression string <" +  cronExpression + "> is not valid.");
+      throw new SchedulerException(
+          "The cron expression string <" + cronExpression + "> is not valid.");
     }
 
     // TODO kunkun-tang: we will modify this when we start supporting multi schedules per flow.
