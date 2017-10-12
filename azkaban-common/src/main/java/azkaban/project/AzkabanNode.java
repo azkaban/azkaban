@@ -22,6 +22,9 @@ import static java.util.Objects.requireNonNull;
 import azkaban.utils.Props;
 import java.util.List;
 
+/**
+ * A unit of execution that could be either a job or a flow.
+ */
 public abstract class AzkabanNode {
 
   protected final String name;

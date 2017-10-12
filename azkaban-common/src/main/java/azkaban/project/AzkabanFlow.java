@@ -26,6 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Flow level definition of the DAG.
+ * Contains a list of AzkabanNodes and related flow properties.
+ */
 public class AzkabanFlow extends AzkabanNode {
 
   private final Map<String, AzkabanNode> nodes;

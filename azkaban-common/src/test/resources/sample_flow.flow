@@ -1,6 +1,4 @@
 ---
-name: sample_flow
-type: flow
 # All flow level properties here
 config:
   flow-level-parameter: value

@@ -19,6 +19,9 @@ package azkaban.project;
 import azkaban.project.validator.ValidationReport;
 import java.io.File;
 
+/**
+ * Interface to load project flows.
+ */
 public interface FlowLoader {
 
   /**

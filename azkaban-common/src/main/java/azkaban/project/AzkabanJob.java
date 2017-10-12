@@ -22,6 +22,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * The smallest individual unit of execution in Azkaban.
+ * Contains information about job type and related properties.
+ */
 public class AzkabanJob extends AzkabanNode {
 
   private final String type;
