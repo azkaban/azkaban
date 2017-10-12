@@ -32,6 +32,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.quartz.SchedulerException;
 
@@ -109,6 +110,7 @@ public class QuartzSchedulerTest {
     assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(false);
   }
 
+  @Ignore("Flaky test, slow too. Don't use Thread.sleep in unit tests.")
   @Test
   public void testPauseAndResume() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
