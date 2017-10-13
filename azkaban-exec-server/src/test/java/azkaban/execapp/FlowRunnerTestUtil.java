@@ -16,17 +16,22 @@
 
 package azkaban.execapp;
 
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.event.Event;
+import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
+import azkaban.executor.MockExecutorLoader;
+import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
@@ -51,9 +56,9 @@ public class FlowRunnerTestUtil {
   private final Map<String, Flow> flowMap;
   private final Project project;
   private final File workingDir;
-  private final ExecutorLoader fakeExecutorLoader;
   private final JobTypeManager jobtypeManager;
   private final File projectDir;
+  private ExecutorLoader executorLoader;
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
       throws Exception {
@@ -65,8 +70,8 @@ public class FlowRunnerTestUtil {
     this.flowMap = FlowRunnerTestUtil
         .prepareProject(this.project, ExecutionsTestUtil.getFlowDir(flowName), this.workingDir);
 
-    this.fakeExecutorLoader = mock(ExecutorLoader.class);
-    when(this.fakeExecutorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+    this.executorLoader = mock(ExecutorLoader.class);
+    when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
 
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
@@ -109,6 +114,23 @@ public class FlowRunnerTestUtil {
     return flowMap;
   }
 
+  public static void waitEventFired(final EventCollectorListener eventCollector,
+      final String nestedId, final Status status)
+      throws InterruptedException {
+    for (int i = 0; i < 1000; i++) {
+      for (final Event event : eventCollector.getEventList()) {
+        if (event.getData().getStatus() == status && event.getData().getNestedId()
+            .equals(nestedId)) {
+          return;
+        }
+      }
+      synchronized (EventCollectorListener.handleEvent) {
+        EventCollectorListener.handleEvent.wait(10L);
+      }
+    }
+    fail("Event wasn't fired with [" + nestedId + "], " + status);
+  }
+
   public static ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
       final String flowName, final int execId) throws IOException {
     FileUtils.copyDirectory(execDir, workingDir);
@@ -126,35 +148,64 @@ public class FlowRunnerTestUtil {
     new Thread(runner).start();
   }
 
+  public FlowRunner createFromFlowFile(final String flowName) throws Exception {
+    return createFromFlowFile(new EventCollectorListener(), flowName);
+  }
+
   public FlowRunner createFromFlowFile(final EventCollectorListener eventCollector,
       final String flowName) throws Exception {
     return createFromFlowFile(flowName, eventCollector, new ExecutionOptions());
   }
 
   public FlowRunner createFromFlowFile(final String flowName,
+      final EventCollectorListener eventCollector, final ExecutionOptions options)
+      throws Exception {
+    return createFromFlowFile(flowName, eventCollector, options, null, null);
+  }
+
+  public FlowRunner createFromFlowFile(final String flowName, final FlowWatcher watcher,
+      final Integer pipeline) throws Exception {
+    return createFromFlowFile(flowName, new EventCollectorListener(), new ExecutionOptions(),
+        watcher, pipeline);
+  }
+
+  public FlowRunner createFromFlowFile(final String flowName,
       final EventCollectorListener eventCollector,
-      final ExecutionOptions options) throws Exception {
+      final ExecutionOptions options, final FlowWatcher watcher, final Integer pipeline)
+      throws Exception {
     final ExecutableFlow exFlow = FlowRunnerTestUtil
         .prepareExecDir(this.workingDir, this.projectDir, flowName, 1);
-    return createFromExecutableFlow(eventCollector, exFlow, options, new HashMap<>(), new Props());
+    if (watcher != null) {
+      options.setPipelineLevel(pipeline);
+      options.setPipelineExecutionId(watcher.getExecId());
+    }
+    final FlowRunner runner = createFromExecutableFlow(eventCollector, exFlow, options,
+        new HashMap<>(),
+        new Props());
+    runner.setFlowWatcher(watcher);
+    return runner;
   }
 
-  public FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
-      final String flowName, final String jobIdPrefix) throws Exception {
-    return createFromFlowMap(eventCollector, flowName, jobIdPrefix,
-        new ExecutionOptions(), new Props());
-  }
-
-  public FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
-      final String flowName, final String jobIdPrefix, final ExecutionOptions options)
+  public FlowRunner createFromFlowMap(final String flowName, final String jobIdPrefix)
       throws Exception {
-    return createFromFlowMap(eventCollector, flowName, jobIdPrefix,
-        options, new Props());
+    return createFromFlowMap(flowName, jobIdPrefix, new ExecutionOptions());
+  }
+
+  public FlowRunner createFromFlowMap(final String flowName, final String jobIdPrefix,
+      final ExecutionOptions options)
+      throws Exception {
+    return createFromFlowMap(flowName, jobIdPrefix, options, new Props());
   }
 
   public FlowRunner createFromFlowMap(final String flowName,
       final HashMap<String, String> flowParams) throws Exception {
     return createFromFlowMap(null, flowName, null, flowParams, new Props());
+  }
+
+  public FlowRunner createFromFlowMap(final String flowName, final ExecutionOptions options,
+      final Map<String, String> flowParams, final Props azkabanProps) throws Exception {
+    return createFromFlowMap(null, flowName, options, flowParams,
+        azkabanProps);
   }
 
   public FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
@@ -163,24 +214,23 @@ public class FlowRunnerTestUtil {
       throws Exception {
     final Flow flow = this.flowMap.get(flowName);
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    return createFromExecutableFlow(eventCollector, exFlow, options, flowParams, azkabanProps);
+    return createFromExecutableFlow(eventCollector, exFlow, options, flowParams,
+        azkabanProps);
   }
 
-  public FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
-      final String flowName, final FailureAction action)
+  public FlowRunner createFromFlowMap(final String flowName, final FailureAction action)
       throws Exception {
     final ExecutionOptions options = new ExecutionOptions();
     options.setFailureAction(action);
-    return createFromFlowMap(eventCollector, flowName, options, new HashMap<>(), new Props());
+    return createFromFlowMap(flowName, options, new HashMap<>(), new Props());
   }
 
-  private FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
-      final String flowName, final String jobIdPrefix, final ExecutionOptions options,
-      final Props azkabanProps)
-      throws Exception {
+  private FlowRunner createFromFlowMap(final String flowName, final String jobIdPrefix,
+      final ExecutionOptions options, final Props azkabanProps) throws Exception {
     final Map<String, String> flowParams = new HashMap<>();
     flowParams.put(InteractiveTestJob.JOB_ID_PREFIX, jobIdPrefix);
-    return createFromFlowMap(eventCollector, flowName, options, flowParams, azkabanProps);
+    return createFromFlowMap(new EventCollectorListener(), flowName, options, flowParams,
+        azkabanProps);
   }
 
   private FlowRunner createFromExecutableFlow(final EventCollectorListener eventCollector,
@@ -194,12 +244,22 @@ public class FlowRunnerTestUtil {
       exFlow.setExecutionOptions(options);
     }
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
+    this.executorLoader.uploadExecutableFlow(exFlow);
     final FlowRunner runner =
-        new FlowRunner(exFlow, this.fakeExecutorLoader, mock(ProjectLoader.class),
+        new FlowRunner(exFlow, this.executorLoader, mock(ProjectLoader.class),
             this.jobtypeManager, azkabanProps, null);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }
     return runner;
   }
+
+  public ExecutorLoader getExecutorLoader() {
+    return this.executorLoader;
+  }
+
+  public void setExecutorLoader(final MockExecutorLoader executorLoader) {
+    this.executorLoader = executorLoader;
+  }
+
 }
