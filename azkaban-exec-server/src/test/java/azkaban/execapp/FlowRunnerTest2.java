@@ -91,8 +91,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testBasicRun() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-
     final Map<String, String> flowParams = new HashMap<>();
     flowParams.put("param4", "override.4");
     flowParams.put("param10", "override.10");
@@ -101,8 +99,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     final ExecutionOptions options = new ExecutionOptions();
     options.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
 
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", options, flowParams, new Props());
+    this.runner = this.testUtil.createFromFlowMap("jobf", options, flowParams, new Props());
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -243,9 +240,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testDisabledNormal() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("jobb").setStatus(Status.DISABLED);
     ((ExecutableFlowBase) flow.getExecutableNode("jobd")).getExecutableNode(
@@ -302,9 +297,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testNormalFailure1() throws Exception {
     // Test propagation of KILLED status to embedded flows.
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -341,9 +334,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testNormalFailure2() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -390,9 +381,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testNormalFailure3() throws Exception {
     // Test propagation of CANCELLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -448,9 +437,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testFailedFinishingFailure3() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
-        FailureAction.FINISH_ALL_POSSIBLE);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_ALL_POSSIBLE);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -510,9 +497,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
-        FailureAction.CANCEL_ALL);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -559,9 +544,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testRetryOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("joba").setStatus(Status.DISABLED);
     ((ExecutableFlowBase) flow.getExecutableNode("jobb")).getExecutableNode(
@@ -648,9 +631,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testCancel() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
-        FailureAction.CANCEL_ALL);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -698,9 +679,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
   @Test
   public void testManualCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -751,9 +730,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testPause() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -836,9 +813,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testPauseKill() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil
-        .createFromFlowMap(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -886,9 +861,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testPauseFail() throws Exception {
-    this.eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(this.eventCollector, "jobf",
-        FailureAction.FINISH_CURRENTLY_RUNNING);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner.addListener(eventCollector);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -918,7 +893,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     // Now, ensure that jobd:innerJobA has completely finished as failed before resuming.
     // If we would resume before the job failure has been completely processed, FlowRunner would be
     // able to start some new jobs instead of cancelling everything.
-    waitEventFired("jobd:innerJobA", Status.FAILED);
+    FlowRunnerTestUtil.waitEventFired(eventCollector, "jobd:innerJobA", Status.FAILED);
     waitForAndAssertFlowStatus(Status.PAUSED);
 
     this.runner.resume("me");
@@ -946,9 +921,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testPauseFailFinishAll() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
-        FailureAction.FINISH_ALL_POSSIBLE);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_ALL_POSSIBLE);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -1005,9 +978,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testFlowKilledByJobLevelSLA() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf",
-        FailureAction.CANCEL_ALL);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.CANCEL_ALL);
 
     FlowRunnerTestUtil.startThread(this.runner);
     assertStatus("joba", Status.RUNNING);
@@ -1030,8 +1001,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
    */
   @Test
   public void testPauseFailKill() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    this.runner = this.testUtil.createFromFlowMap(eventCollector, "jobf", FailureAction.CANCEL_ALL);
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.CANCEL_ALL);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);

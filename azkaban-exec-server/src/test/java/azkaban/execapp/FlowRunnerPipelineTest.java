@@ -46,17 +46,14 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   @Test
   public void testBasicPipelineLevel1RunDisabledJobs() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    final FlowRunner previousRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "jobf", "prev");
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("jobf", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(1);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    final FlowRunner pipelineRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "jobf", "pipe", options);
+    final FlowRunner pipelineRunner = this.testUtil.createFromFlowMap("jobf", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
@@ -165,17 +162,14 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   @Test
   public void testBasicPipelineLevel1Run() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    final FlowRunner previousRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "jobf", "prev");
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("jobf", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(1);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    final FlowRunner pipelineRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "jobf", "pipe", options);
+    final FlowRunner pipelineRunner = this.testUtil.createFromFlowMap("jobf", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
@@ -286,17 +280,15 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   @Test
   public void testBasicPipelineLevel2Run() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    final FlowRunner previousRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "pipelineFlow", "prev");
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("pipelineFlow", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(2);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    final FlowRunner pipelineRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "pipelineFlow", "pipe", options);
+    final FlowRunner pipelineRunner = this.testUtil
+        .createFromFlowMap("pipelineFlow", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW
@@ -418,17 +410,15 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
   @Test
   public void testBasicPipelineLevel2Run2() throws Exception {
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    final FlowRunner previousRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "pipeline1_2", "prev");
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("pipeline1_2", "prev");
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setPipelineExecutionId(previousRunner.getExecutableFlow()
         .getExecutionId());
     options.setPipelineLevel(2);
     final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
-    final FlowRunner pipelineRunner =
-        this.testUtil.createFromFlowMap(eventCollector, "pipeline1_2", "pipe", options);
+    final FlowRunner pipelineRunner = this.testUtil
+        .createFromFlowMap("pipeline1_2", "pipe", options);
     pipelineRunner.setFlowWatcher(watcher);
 
     // 1. START FLOW

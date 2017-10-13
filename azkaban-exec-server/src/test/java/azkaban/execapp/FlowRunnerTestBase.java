@@ -18,9 +18,7 @@ package azkaban.execapp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
-import azkaban.event.Event;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -37,7 +35,6 @@ public class FlowRunnerTestBase {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   protected FlowRunner runner;
-  protected EventCollectorListener eventCollector;
 
   public static boolean isStarted(final Status status) {
     if (status == Status.QUEUED) {
@@ -102,22 +99,6 @@ public class FlowRunnerTestBase {
 
   public void waitJobsStarted(final FlowRunner runner, final String... jobs) {
     waitJobStatuses(FlowRunnerTest::isStarted, jobs);
-  }
-
-  protected void waitEventFired(final String nestedId, final Status status)
-      throws InterruptedException {
-    for (int i = 0; i < 1000; i++) {
-      for (final Event event : this.eventCollector.getEventList()) {
-        if (event.getData().getStatus() == status && event.getData().getNestedId()
-            .equals(nestedId)) {
-          return;
-        }
-      }
-      synchronized (EventCollectorListener.handleEvent) {
-        EventCollectorListener.handleEvent.wait(10L);
-      }
-    }
-    fail("Event wasn't fired with [" + nestedId + "], " + status);
   }
 
   public boolean checkJobStatuses(final Function<Status, Boolean> statusCheck,
