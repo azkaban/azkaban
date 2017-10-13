@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 
 public class InteractiveTestJob extends AbstractProcessJob {
 
+  public static final String JOB_ID_PREFIX = "InteractiveTestJob.jobIdPrefix";
   private static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
       new ConcurrentHashMap<>();
   private static volatile boolean quickSuccess = false;
@@ -83,10 +84,10 @@ public class InteractiveTestJob extends AbstractProcessJob {
   public void run() throws Exception {
     final String nestedFlowPath =
         this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
-    final String groupName = this.getJobProps().getString("group", null);
+    final String jobIdPrefix = this.getJobProps().getString(JOB_ID_PREFIX, null);
     String id = nestedFlowPath == null ? this.getId() : nestedFlowPath;
-    if (groupName != null) {
-      id = groupName + ":" + id;
+    if (jobIdPrefix != null) {
+      id = jobIdPrefix + ":" + id;
     }
     testJobs.put(id, this);
     synchronized (testJobs) {
