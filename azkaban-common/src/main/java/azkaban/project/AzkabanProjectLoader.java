@@ -184,35 +184,39 @@ class AzkabanProjectLoader {
   private void persistProject(final Project project, final FlowLoader loader, final File archive,
       final User uploader) throws ProjectManagerException {
     synchronized (project) {
+      final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
+      final Map<String, Flow> flows = loader.getFlowMap();
+      for (final Flow flow : flows.values()) {
+        flow.setProjectId(project.getId());
+        flow.setVersion(newVersion);
+      }
+
+      this.storageManager.uploadProject(project, newVersion, archive, uploader);
+
+      log.info("Uploading flow to db " + archive.getName());
+      this.projectLoader.uploadFlows(project, newVersion, flows.values());
+      log.info("Changing project versions " + archive.getName());
+      this.projectLoader.changeProjectVersion(project, newVersion,
+          uploader.getUserId());
+      project.setFlows(flows);
+
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
-        final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
-        final Map<String, Flow> flows = directoryFlowLoader.getFlowMap();
-        for (final Flow flow : flows.values()) {
-          flow.setProjectId(project.getId());
-          flow.setVersion(newVersion);
-        }
-
-        this.storageManager.uploadProject(project, newVersion, archive, uploader);
-
-        log.info("Uploading flow to db " + archive.getName());
-        this.projectLoader.uploadFlows(project, newVersion, flows.values());
-        log.info("Changing project versions " + archive.getName());
-        this.projectLoader.changeProjectVersion(project, newVersion,
-            uploader.getUserId());
-        project.setFlows(flows);
         log.info("Uploading Job properties");
         this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
             directoryFlowLoader.getJobPropsMap().values()));
         log.info("Uploading Props properties");
         this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
-        this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
-            "Uploaded project files zip " + archive.getName());
+
       } else if (loader instanceof DirectoryYamlFlowLoader) {
         // Todo jamiesjc: upload yaml file to DB as a blob
+
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
+
+      this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
+          "Uploaded project files zip " + archive.getName());
     }
   }
 

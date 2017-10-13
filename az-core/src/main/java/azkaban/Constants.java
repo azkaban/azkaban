@@ -33,11 +33,15 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
-  public static final String AZKABAN_FLOW_VERSION_2_0 = "2.0";
+  public static final String AZKABAN_FLOW_VERSION = "Azkaban-Flow-Version";
+  public static final Double VERSION_2_0 = 2.0;
 
   // Flow 2.0 file suffix
   public static final String PROJECT_FILE_SUFFIX = ".project";
   public static final String FLOW_FILE_SUFFIX = ".flow";
+
+  // Flow 2.0 node type
+  public static final String NODE_TYPE_FLOW = "flow";
 
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";

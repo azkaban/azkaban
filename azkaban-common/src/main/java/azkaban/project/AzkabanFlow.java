@@ -17,6 +17,7 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +37,7 @@ public class AzkabanFlow extends AzkabanNode {
 
   private AzkabanFlow(final String name, final Props props,
       final Map<String, AzkabanNode> nodes, final List<String> dependsOn) {
-    super(name, props, dependsOn);
+    super(name, Constants.NODE_TYPE_FLOW, props, dependsOn);
     this.nodes = nodes;
   }
 
