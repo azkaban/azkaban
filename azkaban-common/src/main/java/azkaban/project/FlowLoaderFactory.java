@@ -69,12 +69,13 @@ public class FlowLoaderFactory {
         throw new ProjectManagerException("Error reading project YAML file.", e);
       }
 
-      if (!projectYamlParser.containsKey(Constants.AZKABAN_FLOW_VERSION)) {
+      if (!projectYamlParser.containsKey(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION)) {
         throw new ProjectManagerException("Azkaban-Flow-Version is not specified in the project "
             + "YAML file.");
       }
 
-      if (projectYamlParser.get(Constants.AZKABAN_FLOW_VERSION).equals(Constants.VERSION_2_0)) {
+      if (projectYamlParser.get(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION).equals
+          (Constants.VERSION_2_0)) {
         return new DirectoryYamlFlowLoader(this.props);
       } else {
         throw new ProjectManagerException("Invalid Azkaban-Flow-Version in the project YAML file.");

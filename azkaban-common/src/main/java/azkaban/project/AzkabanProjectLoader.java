@@ -193,9 +193,9 @@ class AzkabanProjectLoader {
 
       this.storageManager.uploadProject(project, newVersion, archive, uploader);
 
-      log.info("Uploading flow to db " + archive.getName());
+      log.info("Uploading flow to db for project " + archive.getName());
       this.projectLoader.uploadFlows(project, newVersion, flows.values());
-      log.info("Changing project versions " + archive.getName());
+      log.info("Changing project versions for project " + archive.getName());
       this.projectLoader.changeProjectVersion(project, newVersion,
           uploader.getUserId());
       project.setFlows(flows);

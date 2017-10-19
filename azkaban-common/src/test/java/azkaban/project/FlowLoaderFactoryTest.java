@@ -16,10 +16,12 @@
 
 package azkaban.project;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class FlowLoaderFactoryTest {
@@ -34,7 +36,7 @@ public class FlowLoaderFactoryTest {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final File projectDir = ExecutionsTestUtil.getFlowDir(FLOW_10_TEST_DIRECTORY);
     final FlowLoader loader = loaderFactory.createFlowLoader(projectDir);
-    Assert.assertTrue(loader instanceof DirectoryFlowLoader);
+    assertThat(loader instanceof DirectoryFlowLoader).isTrue();
   }
 
   @Test
@@ -42,20 +44,25 @@ public class FlowLoaderFactoryTest {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final File projectDir = ExecutionsTestUtil.getFlowDir(FLOW_20_TEST_DIRECTORY);
     final FlowLoader loader = loaderFactory.createFlowLoader(projectDir);
-    Assert.assertTrue(loader instanceof DirectoryYamlFlowLoader);
+    assertThat(loader instanceof DirectoryYamlFlowLoader).isTrue();
   }
 
-  @Test(expected = ProjectManagerException.class)
+  @Test
   public void testDuplicateProjectYamlFilesException() {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final File projectDir = ExecutionsTestUtil.getFlowDir(DUPLICATE_PROJECT_DIRECTORY);
-    loaderFactory.createFlowLoader(projectDir);
+    assertThatThrownBy(() -> loaderFactory.createFlowLoader(projectDir))
+        .isInstanceOf(ProjectManagerException.class)
+        .hasMessageContaining(
+            "Duplicate project YAML files found in the project directory. Only one is allowed.");
   }
 
-  @Test(expected = ProjectManagerException.class)
+  @Test
   public void testInvalidFlowVersionException() {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final File projectDir = ExecutionsTestUtil.getFlowDir(INVALID_FLOW_VERSION_DIRECTORY);
-    loaderFactory.createFlowLoader(projectDir);
+    assertThatThrownBy(() -> loaderFactory.createFlowLoader(projectDir))
+        .isInstanceOf(ProjectManagerException.class)
+        .hasMessageContaining("Invalid Azkaban-Flow-Version in the project YAML file.");
   }
 }

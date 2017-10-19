@@ -138,7 +138,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     final Node node = new Node(azkabanNode.getName());
     node.setType(azkabanNode.getType());
 
-    if (azkabanNode.getType().equals(Constants.NODE_TYPE_FLOW)) {
+    if (azkabanNode.getType().equals(Constants.FLOW_NODE_TYPE)) {
       node.setEmbeddedFlowId(azkabanNode.getName());
       final Flow flow_node = convertAzkabanFlowToFlow((AzkabanFlow) azkabanNode);
       this.flowMap.put(flow_node.getId(), flow_node);

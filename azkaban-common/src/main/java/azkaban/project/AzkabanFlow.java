@@ -37,7 +37,7 @@ public class AzkabanFlow extends AzkabanNode {
 
   private AzkabanFlow(final String name, final Props props,
       final Map<String, AzkabanNode> nodes, final List<String> dependsOn) {
-    super(name, Constants.NODE_TYPE_FLOW, props, dependsOn);
+    super(name, Constants.FLOW_NODE_TYPE, props, dependsOn);
     this.nodes = nodes;
   }
 

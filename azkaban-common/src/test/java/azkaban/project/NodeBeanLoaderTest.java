@@ -51,7 +51,7 @@ public class NodeBeanLoaderTest {
         BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
 
     assertThat(nodeBean.getName()).isEqualTo(BASIC_FLOW_NAME);
-    assertThat(nodeBean.getType()).isEqualTo(Constants.NODE_TYPE_FLOW);
+    assertThat(nodeBean.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
     assertThat(nodeBean.getConfig().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
     assertThat(nodeBean.getNodes().size()).isEqualTo(4);
 
@@ -74,7 +74,7 @@ public class NodeBeanLoaderTest {
         EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
 
     assertThat(nodeBean.getName()).isEqualTo(EMBEDDED_FLOW_NAME);
-    assertThat(nodeBean.getType()).isEqualTo(Constants.NODE_TYPE_FLOW);
+    assertThat(nodeBean.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
     assertThat(nodeBean.getConfig().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
     assertThat(nodeBean.getNodes().size()).isEqualTo(4);
 
@@ -91,7 +91,7 @@ public class NodeBeanLoaderTest {
 
     final NodeBean node3 = nodeBean.getNodes().get(3);
     assertThat(node3.getName()).isEqualTo(EMBEDDED_FLOW1);
-    assertThat(node3.getType()).isEqualTo(Constants.NODE_TYPE_FLOW);
+    assertThat(node3.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
     assertThat(node3.getNodes().size()).isEqualTo(4);
 
     // Verify nodes in embedded_flow1 are loaded correctly.
@@ -103,7 +103,7 @@ public class NodeBeanLoaderTest {
 
     final NodeBean node3_2 = node3.getNodes().get(2);
     assertThat(node3_2.getName()).isEqualTo(EMBEDDED_FLOW2);
-    assertThat(node3_2.getType()).isEqualTo(Constants.NODE_TYPE_FLOW);
+    assertThat(node3_2.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
     assertThat(node3_2.getDependsOn()).contains(SHELL_BASH);
     assertThat(node3_2.getNodes().size()).isEqualTo(2);
 
