@@ -17,7 +17,6 @@
 package azkaban.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,36 +26,11 @@ public class QuartzJobDescriptionTest {
 
   @Test
   public void testCreateQuartzJobDescription() throws Exception{
-    final SampleService sampleService = new SampleService("first field", "second field");
     final Map<String, SampleService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
     assertThatCode(() -> {
           new QuartzJobDescription<>(SampleQuartzJob.class,
           "SampleService",
           contextMap);
     }).doesNotThrowAnyException();
-  }
-
-
-  @Test
-  public void testCreateQuartzJobDescriptionRawType1() throws Exception{
-    final SampleService sampleService = new SampleService("first field", "second field");
-    final Map<String, SampleService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
-    assertThatCode(() -> {new QuartzJobDescription(SampleQuartzJob.class, "SampleService",
-        contextMap);
-    }).doesNotThrowAnyException();
-  }
-
-  @Test
-  public void testCreateQuartzJobDescriptionRawType2() throws Exception{
-    final SampleService sampleService = new SampleService("first field", "second field");
-    final Map<String, SampleService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
-    assertThatThrownBy(
-        () -> new QuartzJobDescription(SampleService.class, "SampleService",
-            contextMap))
-        .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("jobClass must extend AbstractQuartzJob class");
   }
 }
