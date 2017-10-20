@@ -63,6 +63,6 @@ public class FlowLoaderFactoryTest {
     final File projectDir = ExecutionsTestUtil.getFlowDir(INVALID_FLOW_VERSION_DIRECTORY);
     assertThatThrownBy(() -> loaderFactory.createFlowLoader(projectDir))
         .isInstanceOf(ProjectManagerException.class)
-        .hasMessageContaining("Invalid Azkaban-Flow-Version in the project YAML file.");
+        .hasMessageContaining("Invalid azkaban-flow-version in the project YAML file.");
   }
 }

@@ -23,9 +23,10 @@ import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Map;
 import javax.inject.Inject;
+import org.apache.commons.lang.ArrayUtils;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -55,30 +56,35 @@ public class FlowLoaderFactory {
 
     final File[] projectFileList = projectDir.listFiles(new SuffixFilter(Constants
         .PROJECT_FILE_SUFFIX));
-    if (projectFileList != null && projectFileList.length > 0) {
+
+    if (projectFileList == null) {
+      throw new ProjectManagerException("Error reading project directory. Input is not a "
+          + "directory or IO error happens.");
+    }
+
+    if (ArrayUtils.isNotEmpty(projectFileList)) {
       if (projectFileList.length > 1) {
         throw new ProjectManagerException("Duplicate project YAML files found in the project "
             + "directory. Only one is allowed.");
       }
 
-      final Map<String, Object> projectYamlParser;
-      try {
-        projectYamlParser = (Map<String, Object>) new Yaml()
-            .load(new FileInputStream(projectFileList[0]));
-      } catch (final FileNotFoundException e) {
+      final Map<String, Object> azkabanProject;
+      try (FileInputStream fis = new FileInputStream(projectFileList[0])) {
+        azkabanProject = (Map<String, Object>) new Yaml().load(fis);
+      } catch (final IOException e) {
         throw new ProjectManagerException("Error reading project YAML file.", e);
       }
 
-      if (!projectYamlParser.containsKey(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION)) {
-        throw new ProjectManagerException("Azkaban-Flow-Version is not specified in the project "
+      if (!azkabanProject.containsKey(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION)) {
+        throw new ProjectManagerException("azkaban-flow-version is not specified in the project "
             + "YAML file.");
       }
 
-      if (projectYamlParser.get(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION).equals
-          (Constants.VERSION_2_0)) {
+      if (azkabanProject.get(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION).equals
+          (Constants.AZKABAN_FLOW_VERSION_2_0)) {
         return new DirectoryYamlFlowLoader(this.props);
       } else {
-        throw new ProjectManagerException("Invalid Azkaban-Flow-Version in the project YAML file.");
+        throw new ProjectManagerException("Invalid azkaban-flow-version in the project YAML file.");
       }
     } else {
       return new DirectoryFlowLoader(this.props);

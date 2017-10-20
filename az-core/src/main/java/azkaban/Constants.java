@@ -33,7 +33,7 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
-  public static final double VERSION_2_0 = 2.0;
+  public static final double AZKABAN_FLOW_VERSION_2_0 = 2.0;
 
   // Flow 2.0 file suffix
   public static final String PROJECT_FILE_SUFFIX = ".project";
@@ -68,8 +68,8 @@ public class Constants {
 
   public static class ConfigurationKeys {
 
-    // Configures Azkaban Flow Version
-    public static final String AZKABAN_FLOW_VERSION = "Azkaban-Flow-Version";
+    // Configures Azkaban Flow Version in project YAML file
+    public static final String AZKABAN_FLOW_VERSION = "azkaban-flow-version";
 
     // These properties are configurable through azkaban.properties
     public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";
