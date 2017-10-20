@@ -16,13 +16,15 @@
 
 package azkaban.flowtrigger;
 
-/**
- * Defines the action to take when dependency check instance is successfully finished.
- */
-public interface SuccessCallback {
+public interface DependencyInstanceCallback {
 
   /**
    * action to invoke when dependency check instance is successfully finished.
    */
   void onSuccess(DependencyInstanceContext dependencyInstance);
+
+  /**
+   * action to invoke when dependency check instance is successfully killed.
+   */
+  void onKilled(DependencyInstanceContext dependencyInstance);
 }
