@@ -16,6 +16,7 @@
 
 package azkaban.scheduler;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ConfigurationKeys;
@@ -56,6 +57,10 @@ public class QuartzScheduler {
     final StdSchedulerFactory schedulerFactory =
         new StdSchedulerFactory(azProps.toProperties());
     this.scheduler = schedulerFactory.getScheduler();
+
+    // Currently Quartz only support internal job schedules. When we migrate to User Production
+    // flows, we need to construct a Guice-Free JobFactory for use.
+    this.scheduler.setJobFactory(SERVICE_PROVIDER.getInstance(SchedulerJobFactory.class));
   }
 
   public void start() {

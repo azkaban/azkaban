@@ -16,18 +16,21 @@
 
 package azkaban.scheduler;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import azkaban.AzkabanCommonModule;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzDBTestUtility;
 import azkaban.db.DatabaseOperator;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
+import azkaban.webapp.AzkabanWebServerModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import java.io.File;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,9 +53,20 @@ public class QuartzSchedulerTest {
     final String quartzPropsPath =
         new File("../azkaban-web-server/src/test/resources/quartz.test.properties")
             .getCanonicalPath();
-    final Props quartzProps = new Props(null, quartzPropsPath);
-    quartzProps.put(ConfigurationKeys.ENABLE_QUARTZ, "true");
-    scheduler = new QuartzScheduler(quartzProps);
+    final Props props = new Props(null, quartzPropsPath);
+    props.put(ConfigurationKeys.ENABLE_QUARTZ, "true");
+
+    props.put("database.type", "h2");
+    props.put("h2.path", "./h2");
+    final Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule()
+    );
+
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(injector);
+
+    scheduler = new QuartzScheduler(props);
     scheduler.start();
   }
 
@@ -124,11 +138,6 @@ public class QuartzSchedulerTest {
   }
 
   private QuartzJobDescription createJobDescription() {
-    final SampleService sampleService = new SampleService("first field", "second field");
-    final Map<String, SampleService> contextMap = new HashMap<>();
-    contextMap.put(SampleQuartzJob.DELEGATE_CLASS_NAME, sampleService);
-
-    return new QuartzJobDescription<>(SampleQuartzJob.class, "SampleService",
-        contextMap);
+    return new QuartzJobDescription<>(SampleQuartzJob.class, "SampleService");
   }
 }

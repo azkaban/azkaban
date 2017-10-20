@@ -16,41 +16,48 @@
 
 package azkaban.scheduler;
 
+import azkaban.utils.Props;
 import java.io.Serializable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.quartz.JobExecutionContext;
 
 public class SampleQuartzJob extends AbstractQuartzJob{
 
   public static final String DELEGATE_CLASS_NAME = "SampleService";
   public static int COUNT_EXECUTION = 0;
+  private final SampleService sampleService;
 
-  public SampleQuartzJob() {
+  @Inject
+  public SampleQuartzJob(final SampleService sampleService) {
+    this.sampleService = sampleService;
   }
 
   @Override
   public void execute(final JobExecutionContext context) {
-    final SampleService service = asT(getKey(context, DELEGATE_CLASS_NAME), SampleService.class);
+//    final SampleService service = asT(getKey(context, DELEGATE_CLASS_NAME), SampleService.class);
     COUNT_EXECUTION ++ ;
-    service.run();
+    this.sampleService.run();
   }
 }
 
+@Singleton
 class SampleService implements Serializable{
 
-  private final String field1;
-  private final String field2;
 
-  SampleService(final String field1, final String field2) {
-    this.field1 = field1;
-    this.field2 = field2;
+  private final Props props;
+
+  @Inject
+  SampleService(final Props props) {
+    this.props = props;
   }
 
   void run() {
-    System.out.println("field1: " + this.field1 + "==== field2: " + this.field2);
+    System.out.println(this.props.toString());
   }
 
   @Override
   public String toString() {
-    return "field1: " + this.field1 + ", field2: " + this.field2;
+    return this.props.toString();
   }
 }

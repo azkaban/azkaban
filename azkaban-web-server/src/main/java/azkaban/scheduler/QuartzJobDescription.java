@@ -17,6 +17,7 @@
 package azkaban.scheduler;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -42,6 +43,21 @@ public class QuartzJobDescription<T extends AbstractQuartzJob> {
     this.jobClass = jobClass;
     this.groupName = groupName;
     this.contextMap = contextMap;
+  }
+
+  public QuartzJobDescription(final Class<T> jobClass,
+      final String groupName) {
+
+    /**
+     * This check is necessary for raw type. Please see test
+     * {@link QuartzJobDescriptionTest#testCreateQuartzJobDescription2}
+     */
+    if (jobClass.getSuperclass() != AbstractQuartzJob.class) {
+      throw new ClassCastException("jobClass must extend AbstractQuartzJob class");
+    }
+    this.jobClass = jobClass;
+    this.groupName = groupName;
+    this.contextMap = new HashMap<String, String>();
   }
 
   public Class<? extends AbstractQuartzJob> getJobClass() {
