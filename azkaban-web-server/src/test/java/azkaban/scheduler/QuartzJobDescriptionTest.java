@@ -17,6 +17,7 @@
 package azkaban.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,5 +33,13 @@ public class QuartzJobDescriptionTest {
           "SampleService",
           contextMap);
     }).doesNotThrowAnyException();
+  }
+
+  @Test
+  public void testCreateQuartzJobDescriptionRawType2() throws Exception {
+    assertThatThrownBy(
+        () -> new QuartzJobDescription(SampleService.class, "SampleService"))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("jobClass must extend AbstractQuartzJob class");
   }
 }
