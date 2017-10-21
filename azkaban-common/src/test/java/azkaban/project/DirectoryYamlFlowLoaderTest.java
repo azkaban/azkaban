@@ -55,111 +55,64 @@ public class DirectoryYamlFlowLoaderTest {
   @Test
   public void testLoadBasicYamlFile() {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
-
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(BASIC_FLOW_YAML_DIR));
-    assertThat(loader.getErrors().size()).isEqualTo(0);
-    assertThat(loader.getFlowMap().size()).isEqualTo(1);
-    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_1)).isTrue();
-    final Flow flow = loader.getFlowMap().get(BASIC_FLOW_1);
-
-    assertThat(flow.getNodes().size()).isEqualTo(4);
-    assertThat(loader.getEdgeMap().size()).isEqualTo(1);
-    assertFlowEdgeNoError(loader, flow, 3, BASIC_FLOW_1);
+    checkFlowLoaderProperties(loader, 0, 1, 1);
+    checkFlowProperties(loader, BASIC_FLOW_1, 0, 4, 3, null);
   }
 
   @Test
   public void testLoadMultipleYamlFiles() {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
-
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(MULTIPLE_FLOW_YAML_DIR));
-    assertThat(loader.getErrors().size()).isEqualTo(0);
-    assertThat(loader.getFlowMap().size()).isEqualTo(2);
-    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_1)).isTrue();
-    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_2)).isTrue();
-
-    final Flow flow1 = loader.getFlowMap().get(BASIC_FLOW_1);
-    final Flow flow2 = loader.getFlowMap().get(BASIC_FLOW_2);
-    assertThat(flow2.getNodes().size()).isEqualTo(3);
-
-    // Verify flow edges
-    assertThat(loader.getEdgeMap().size()).isEqualTo(2);
-    assertFlowEdgeNoError(loader, flow1, 3, BASIC_FLOW_1);
-    assertFlowEdgeNoError(loader, flow2, 2, BASIC_FLOW_2);
+    checkFlowLoaderProperties(loader, 0, 2, 2);
+    checkFlowProperties(loader, BASIC_FLOW_1, 0, 4, 3, null);
+    checkFlowProperties(loader, BASIC_FLOW_2, 0, 3, 2, null);
   }
 
   @Test
   public void testLoadEmbeddedFlowYamlFile() {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
-
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(EMBEDDED_FLOW_YAML_DIR));
-    assertThat(loader.getErrors().size()).isEqualTo(0);
-    assertThat(loader.getFlowMap().size()).isEqualTo(3);
-    assertThat(loader.getFlowMap().containsKey(EMBEDDED_FLOW)).isTrue();
-
-    final Flow flow = loader.getFlowMap().get(EMBEDDED_FLOW);
-    assertThat(flow.getNodes().size()).isEqualTo(4);
-
-    assertThat(loader.getFlowMap().containsKey(EMBEDDED_FLOW_1)).isTrue();
-    final Flow flow1 = loader.getFlowMap().get(EMBEDDED_FLOW_1);
-    assertThat(flow1.getNodes().size()).isEqualTo(4);
-
-    assertThat(loader.getFlowMap().containsKey(EMBEDDED_FLOW_2)).isTrue();
-    final Flow flow2 = loader.getFlowMap().get(EMBEDDED_FLOW_2);
-    assertThat(flow2.getNodes().size()).isEqualTo(2);
-
-    // Verify flow edges
-    assertThat(loader.getEdgeMap().size()).isEqualTo(3);
-    assertFlowEdgeNoError(loader, flow, 3, EMBEDDED_FLOW);
-    assertFlowEdgeNoError(loader, flow1, 3, EMBEDDED_FLOW_1);
-    assertFlowEdgeNoError(loader, flow2, 1, EMBEDDED_FLOW_2);
+    checkFlowLoaderProperties(loader, 0, 3, 3);
+    checkFlowProperties(loader, EMBEDDED_FLOW, 0, 4, 3, null);
+    checkFlowProperties(loader, EMBEDDED_FLOW_1, 0, 4, 3, null);
+    checkFlowProperties(loader, EMBEDDED_FLOW_2, 0, 2, 1, null);
   }
 
   @Test
   public void testLoadInvalidFlowYamlFiles() {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
-
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(INVALID_FLOW_YAML_DIR));
-    assertThat(loader.getErrors().size()).isEqualTo(2);
-    assertThat(loader.getFlowMap().size()).isEqualTo(2);
-    assertThat(loader.getEdgeMap().size()).isEqualTo(2);
-
+    checkFlowLoaderProperties(loader, 2, 2, 2);
     // Invalid flow 1: Dependency not found.
-    assertThat(loader.getFlowMap().containsKey(INVALID_FLOW_1)).isTrue();
-    final Flow flow1 = loader.getFlowMap().get(INVALID_FLOW_1);
-
-    assertThat(flow1.getNodes().size()).isEqualTo(3);
-    assertThat(flow1.getErrors().size()).isEqualTo(1);
-    assertFlowEdgeHasError(loader, flow1, 3, INVALID_FLOW_1, DEPENDENCY_NOT_FOUND_ERROR);
-
+    checkFlowProperties(loader, INVALID_FLOW_1, 1, 3, 3, DEPENDENCY_NOT_FOUND_ERROR);
     // Invalid flow 2: Cycles found.
-    assertThat(loader.getFlowMap().containsKey(INVALID_FLOW_2)).isTrue();
-    final Flow flow2 = loader.getFlowMap().get(INVALID_FLOW_2);
-
-    assertThat(flow2.getNodes().size()).isEqualTo(4);
-    assertThat(flow2.getErrors().size()).isEqualTo(1);
-    assertFlowEdgeHasError(loader, flow2, 4, INVALID_FLOW_2, CYCLE_FOUND_ERROR);
+    checkFlowProperties(loader, INVALID_FLOW_2, 1, 4, 4, CYCLE_FOUND_ERROR);
   }
 
-  /* Helper method to verify there is no error in the flow edge. */
-  private void assertFlowEdgeNoError(final DirectoryYamlFlowLoader loader, final Flow flow,
-      final int num_edge, final String flow_name) {
-    assertThat(loader.getEdgeMap().get(flow_name).size()).isEqualTo(num_edge);
-    assertThat(flow.getEdges().size()).isEqualTo(num_edge);
-    for (final Edge edge : loader.getEdgeMap().get(flow_name)) {
-      this.logger.info(flow_name + ".flow has edge: " + edge.getId());
-      assertThat(edge.getError()).isNull();
+  private void checkFlowLoaderProperties(final DirectoryYamlFlowLoader loader, final int numError,
+      final int numFlowMap, final int numEdgeMap) {
+    assertThat(loader.getErrors().size()).isEqualTo(numError);
+    assertThat(loader.getFlowMap().size()).isEqualTo(numFlowMap);
+    assertThat(loader.getEdgeMap().size()).isEqualTo(numEdgeMap);
+  }
+
+  private void checkFlowProperties(final DirectoryYamlFlowLoader loader, final String flowName,
+      final int numError, final int numNode, final int numEdge, final String edgeError) {
+    assertThat(loader.getFlowMap().containsKey(flowName)).isTrue();
+    final Flow flow = loader.getFlowMap().get(flowName);
+    if (numError != 0) {
+      assertThat(flow.getErrors().size()).isEqualTo(numError);
     }
-  }
+    assertThat(flow.getNodes().size()).isEqualTo(numNode);
 
-  /* Helper method to verify there is an error in the flow edge. */
-  private void assertFlowEdgeHasError(final DirectoryYamlFlowLoader loader, final Flow flow,
-      final int num_edge, final String flow_name, final String error) {
-    assertThat(loader.getEdgeMap().get(flow_name).size()).isEqualTo(num_edge);
-    assertThat(flow.getEdges().size()).isEqualTo(num_edge);
-    for (final Edge edge : loader.getEdgeMap().get(flow_name)) {
-      this.logger.info(flow_name + ".flow has edge: " + edge.getId());
+    // Verify flow edges
+    assertThat(loader.getEdgeMap().get(flowName).size()).isEqualTo(numEdge);
+    assertThat(flow.getEdges().size()).isEqualTo(numEdge);
+    for (final Edge edge : loader.getEdgeMap().get(flowName)) {
+      this.logger.info(flowName + ".flow has edge: " + edge.getId());
       if (edge.getError() != null) {
-        assertThat(edge.getError()).isEqualTo(error);
+        assertThat(edge.getError()).isEqualTo(edgeError);
       }
     }
   }
