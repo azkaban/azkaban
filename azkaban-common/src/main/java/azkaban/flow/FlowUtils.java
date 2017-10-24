@@ -16,9 +16,14 @@
 
 package azkaban.flow;
 
+import static java.util.Objects.requireNonNull;
+
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
 import java.util.List;
 import java.util.Map;
@@ -86,5 +91,29 @@ public class FlowUtils {
         }
       }
     }
+  }
+
+  public static Project getProject(final ProjectManager projectManager, final int projectId) {
+    final Project project = projectManager.getProject(projectId);
+    if (project == null) {
+      throw new RuntimeException("Error finding the project to execute "
+          + projectId);
+    }
+    return project;
+  }
+
+  public static Flow getFlow(final Project project, final String flowName) {
+    final Project nonNullProj = requireNonNull(project);
+    final Flow flow = nonNullProj.getFlow(flowName);
+    if (flow == null) {
+      throw new RuntimeException("Error finding the flow to execute " + flowName);
+    }
+    return flow;
+  }
+
+  public static ExecutableFlow createExecutableFlow(final Project project, final Flow flow) {
+    final ExecutableFlow exflow = new ExecutableFlow(project, flow);
+    exflow.addAllProxyUsers(project.getProxyUsers());
+    return exflow;
   }
 }
