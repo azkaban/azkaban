@@ -24,11 +24,12 @@ import static azkaban.project.JdbcProjectHandlerSet.ProjectPropertiesResultsHand
 import static azkaban.project.JdbcProjectHandlerSet.ProjectResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectVersionResultHandler;
 
-import azkaban.db.EncodingType;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
+import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
 import azkaban.flow.Flow;
+import azkaban.project.JdbcProjectHandlerSet.FlowFileResultHandler;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -40,8 +41,6 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
 import com.google.common.io.Files;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -54,6 +53,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -69,6 +70,8 @@ public class JdbcProjectImpl implements ProjectLoader {
   private static final Logger logger = Logger.getLogger(JdbcProjectImpl.class);
 
   private static final int CHUCK_SIZE = 1024 * 1024 * 10;
+  // Flow yaml files are usually small, set size limitation to 10 MB should be sufficient for now.
+  private static final int MAX_FLOW_FILE_SIZE = 1024 * 1024 * 10;
   private final DatabaseOperator dbOperator;
   private final File tempDir;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
@@ -950,6 +953,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     final String DELETE_PROPERTIES = "DELETE FROM project_properties WHERE project_id=? AND version<?";
     final String DELETE_PROJECT_FILES = "DELETE FROM project_files WHERE project_id=? AND version<?";
     final String UPDATE_PROJECT_VERSIONS = "UPDATE project_versions SET num_chunks=0 WHERE project_id=? AND version<?";
+    // Todo jamiesjc: delete flow files
 
     final SQLTransaction<Integer> cleanOlderProjectTransaction = transOperator -> {
       transOperator.update(DELETE_FLOW, projectId, version);
@@ -967,5 +971,76 @@ public class JdbcProjectImpl implements ProjectLoader {
       logger.error("clean older project transaction failed", e);
       throw new ProjectManagerException("clean older project transaction failed", e);
     }
+  }
+
+  @Override
+  public void uploadFlowFile(final int projectId, final int projectVersion, final int flowVersion,
+      final File flowFile) throws ProjectManagerException {
+    logger.info(String
+        .format(
+            "Uploading flow file %s, version %d for project %d, version %d, file length is [%d bytes]",
+            flowFile.getName(), flowVersion, projectId, projectVersion, flowFile.length()));
+
+    if (flowFile.length() > MAX_FLOW_FILE_SIZE) {
+      throw new ProjectManagerException("Flow file length exceeds 10 MB limit.");
+    }
+
+    final byte[] buffer = new byte[MAX_FLOW_FILE_SIZE];
+    final String INSERT_FLOW_FILES =
+        "INSERT INTO project_flow_files (project_id, project_version, flow_name, flow_version, "
+            + "modified_time, "
+            + "flow_file) values (?,?,?,?,?,?)";
+
+    try (final FileInputStream input = new FileInputStream(flowFile);
+        final BufferedInputStream bufferedStream = new BufferedInputStream(input)) {
+      final int size = bufferedStream.read(buffer);
+      logger.info("Read bytes for " + flowFile.getName() + ", size:" + size);
+      final byte[] buf = Arrays.copyOfRange(buffer, 0, size);
+      try {
+        this.dbOperator
+            .update(INSERT_FLOW_FILES, projectId, projectVersion, flowFile.getName(), flowVersion,
+                System.currentTimeMillis(), buf);
+      } catch (final SQLException e) {
+        throw new ProjectManagerException(
+            "Error uploading flow file " + flowFile.getName() + ", version " + flowVersion + ".",
+            e);
+      }
+    } catch (final IOException e) {
+      throw new ProjectManagerException(
+          String.format(
+              "Error reading flow file %s, version: %d, length: [%d bytes].",
+              flowFile.getName(), flowVersion, flowFile.length()));
+    }
+  }
+
+  @Override
+  public File getUploadedFlowFile(final int projectId, final int projectVersion,
+      final String flowName, final int flowVersion) throws ProjectManagerException {
+    final FlowFileResultHandler handler = new FlowFileResultHandler();
+
+    final List<byte[]> data;
+    // Todo jamiesjc: delete the flow file after used.
+    final File file = new File(this.tempDir, flowName);
+    try (final FileOutputStream output = new FileOutputStream(file);
+        final BufferedOutputStream bufferedStream = new BufferedOutputStream(output)) {
+      try {
+        data = this.dbOperator
+            .query(FlowFileResultHandler.SELECT_FLOW_FILE, handler,
+                projectId, projectVersion, flowName, flowVersion);
+      } catch (final SQLException e) {
+        logger.error(e);
+        throw new ProjectManagerException("Failed to query uploaded flow file " + flowName + ".",
+            e);
+      }
+
+      try {
+        bufferedStream.write(data.get(0));
+      } catch (final IOException e) {
+        throw new ProjectManagerException("Error writing flow file" + flowName, e);
+      }
+    } catch (final IOException e) {
+      throw new ProjectManagerException("Error creating output stream for flow file" + flowName, e);
+    }
+    return file;
   }
 }

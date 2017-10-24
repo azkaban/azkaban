@@ -333,4 +333,26 @@ class JdbcProjectHandlerSet {
       return rs.getInt(1);
     }
   }
+
+  public static class FlowFileResultHandler implements ResultSetHandler<List<byte[]>> {
+
+    public static String SELECT_FLOW_FILE =
+        "SELECT flow_file FROM project_flow_files WHERE "
+            + "project_id=? AND project_version=? AND flow_name=? AND flow_version=?";
+
+    @Override
+    public List<byte[]> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      final ArrayList<byte[]> data = new ArrayList<>();
+      do {
+        final byte[] bytes = rs.getBytes(1);
+        data.add(bytes);
+      } while (rs.next());
+
+      return data;
+    }
+  }
 }
