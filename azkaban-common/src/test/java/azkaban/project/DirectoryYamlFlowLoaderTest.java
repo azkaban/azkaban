@@ -36,6 +36,7 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String MULTIPLE_FLOW_YAML_DIR = "multipleflowyamltest";
   private static final String EMBEDDED_FLOW_YAML_DIR = "embeddedflowyamltest";
   private static final String INVALID_FLOW_YAML_DIR = "invalidflowyamltest";
+  private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
   private static final String EMBEDDED_FLOW = "embedded_flow";
@@ -88,6 +89,13 @@ public class DirectoryYamlFlowLoaderTest {
     checkFlowProperties(loader, INVALID_FLOW_1, 1, 3, 3, DEPENDENCY_NOT_FOUND_ERROR);
     // Invalid flow 2: Cycles found.
     checkFlowProperties(loader, INVALID_FLOW_2, 1, 4, 4, CYCLE_FOUND_ERROR);
+  }
+
+  @Test
+  public void testLoadNoFlowYamlFile() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(NO_FLOW_YAML_DIR));
+    checkFlowLoaderProperties(loader, 0, 0, 0);
   }
 
   private void checkFlowLoaderProperties(final DirectoryYamlFlowLoader loader, final int numError,

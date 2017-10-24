@@ -30,6 +30,7 @@ public class FlowLoaderFactoryTest {
   private static final String FLOW_20_TEST_DIRECTORY = "basicflowyamltest";
   private static final String DUPLICATE_PROJECT_DIRECTORY = "duplicateprojectyamltest";
   private static final String INVALID_FLOW_VERSION_DIRECTORY = "invalidflowversiontest";
+  private static final String NO_FLOW_VERSION_DIRECTORY = "noflowversiontest";
 
   @Test
   public void testCreateDirectoryFlowLoader() {
@@ -55,6 +56,15 @@ public class FlowLoaderFactoryTest {
         .isInstanceOf(ProjectManagerException.class)
         .hasMessageContaining(
             "Duplicate project YAML files found in the project directory. Only one is allowed.");
+  }
+
+  @Test
+  public void testNoFlowVersionException() {
+    final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
+    final File projectDir = ExecutionsTestUtil.getFlowDir(NO_FLOW_VERSION_DIRECTORY);
+    assertThatThrownBy(() -> loaderFactory.createFlowLoader(projectDir))
+        .isInstanceOf(ProjectManagerException.class)
+        .hasMessageContaining("azkaban-flow-version is not specified in the project YAML file.");
   }
 
   @Test

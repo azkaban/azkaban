@@ -75,7 +75,8 @@ public class FlowLoaderFactory {
         throw new ProjectManagerException("Error reading project YAML file.", e);
       }
 
-      if (!azkabanProject.containsKey(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION)) {
+      if (azkabanProject == null || !azkabanProject
+          .containsKey(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION)) {
         throw new ProjectManagerException("azkaban-flow-version is not specified in the project "
             + "YAML file.");
       }
