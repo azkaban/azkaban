@@ -19,9 +19,15 @@ package azkaban.project;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.utils.Props;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Map;
 import javax.inject.Inject;
+import org.apache.commons.lang.ArrayUtils;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Factory class to generate flow loaders.
@@ -41,21 +47,48 @@ public class FlowLoaderFactory {
   }
 
   /**
-   * Creates flow loader based on manifest file inside project directory.
+   * Creates flow loader based on project YAML file inside project directory.
    *
    * @param projectDir the project directory
    * @return the flow loader
    */
   public FlowLoader createFlowLoader(final File projectDir) throws ProjectManagerException {
-    // Todo jamiesjc: need to check if manifest file exists in project directory,
-    // and create FlowLoader based on different flow versions specified in the manifest file.
-    final String flowVersion = null;
-    if (flowVersion == null) {
-      return new DirectoryFlowLoader(this.props);
-    } else if (flowVersion.equals(Constants.AZKABAN_FLOW_VERSION_2_0)) {
-      return new DirectoryYamlFlowLoader(this.props);
+
+    final File[] projectFileList = projectDir.listFiles(new SuffixFilter(Constants
+        .PROJECT_FILE_SUFFIX));
+
+    if (projectFileList == null) {
+      throw new ProjectManagerException("Error reading project directory. Input is not a "
+          + "directory or IO error happens.");
+    }
+
+    if (ArrayUtils.isNotEmpty(projectFileList)) {
+      if (projectFileList.length > 1) {
+        throw new ProjectManagerException("Duplicate project YAML files found in the project "
+            + "directory. Only one is allowed.");
+      }
+
+      final Map<String, Object> azkabanProject;
+      try (FileInputStream fis = new FileInputStream(projectFileList[0])) {
+        azkabanProject = (Map<String, Object>) new Yaml().load(fis);
+      } catch (final IOException e) {
+        throw new ProjectManagerException("Error reading project YAML file.", e);
+      }
+
+      if (azkabanProject == null || !azkabanProject
+          .containsKey(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION)) {
+        throw new ProjectManagerException("azkaban-flow-version is not specified in the project "
+            + "YAML file.");
+      }
+
+      if (azkabanProject.get(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION).equals
+          (Constants.AZKABAN_FLOW_VERSION_2_0)) {
+        return new DirectoryYamlFlowLoader(this.props);
+      } else {
+        throw new ProjectManagerException("Invalid azkaban-flow-version in the project YAML file.");
+      }
     } else {
-      throw new ProjectManagerException("Flow version " + flowVersion + "is invalid.");
+      return new DirectoryFlowLoader(this.props);
     }
   }
 }

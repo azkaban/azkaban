@@ -28,16 +28,9 @@ import java.util.List;
  */
 public class AzkabanJob extends AzkabanNode {
 
-  private final String type;
-
   private AzkabanJob(final String name, final String type, final Props props,
       final List<String> dependsOn) {
-    super(name, props, dependsOn);
-    this.type = type;
-  }
-
-  public String getType() {
-    return this.type;
+    super(name, type, props, dependsOn);
   }
 
   public static class AzkabanJobBuilder {

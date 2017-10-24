@@ -33,11 +33,14 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
-  public static final String AZKABAN_FLOW_VERSION_2_0 = "2.0";
+  public static final double AZKABAN_FLOW_VERSION_2_0 = 2.0;
 
   // Flow 2.0 file suffix
   public static final String PROJECT_FILE_SUFFIX = ".project";
   public static final String FLOW_FILE_SUFFIX = ".flow";
+
+  // Flow 2.0 node type
+  public static final String FLOW_NODE_TYPE = "flow";
 
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
@@ -64,6 +67,9 @@ public class Constants {
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
   public static class ConfigurationKeys {
+
+    // Configures Azkaban Flow Version in project YAML file
+    public static final String AZKABAN_FLOW_VERSION = "azkaban-flow-version";
 
     // These properties are configurable through azkaban.properties
     public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";

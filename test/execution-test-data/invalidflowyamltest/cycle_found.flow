@@ -1,0 +1,30 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: shell_end
+    type: noop
+    dependsOn:
+      - shell_echo
+
+  - name: shell_echo
+    type: command
+    dependsOn:
+      - shell_pwd
+    config:
+      command: echo "This is an echoed text."
+
+  - name: shell_pwd
+    type: command
+    dependsOn:
+      - shell_bash
+    config:
+      command: pwd
+
+  - name: shell_bash
+    type: command
+    dependsOn:
+      - shell_echo
+    config:
+      command: bash ./sample_script.sh
