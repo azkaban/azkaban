@@ -23,10 +23,12 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.Credentials;
 
 /**
- * This class is going to be moved to a separate MP.
+ * This class serves as an example how we implement Credential. The actual class should be checked
+ * in a separate jar (gradle product).
  */
 public class SampleCredential implements Credential {
 
+  // Sample secret key.
   private static final Text SECRET_KEY_NAME = new Text("azkaban.datavault.key");
   private final Credentials hadoopCrednetial;
 
