@@ -200,4 +200,17 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   void updateProjectSettings(Project project) throws ProjectManagerException;
+
+  /**
+   * Uploads flow file.
+   */
+  void uploadFlowFile(int projectId, int projectVersion, int flowVersion, File flowFile)
+      throws ProjectManagerException;
+
+  /**
+   * Gets flow file that's uploaded.
+   */
+  File getUploadedFlowFile(int projectId, int projectVersion, int flowVersion, String flowName)
+      throws ProjectManagerException;
+
 }
