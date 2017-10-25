@@ -359,7 +359,7 @@ public class JdbcProjectImplTest {
     this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile);
 
     final File file = this.loader
-        .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, BASIC_FLOW_FILE, FLOW_VERSION);
+        .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, BASIC_FLOW_FILE);
     Assert.assertEquals(BASIC_FLOW_FILE, file.getName());
     FileUtils.contentEquals(testYamlFile, file);
   }
@@ -390,14 +390,14 @@ public class JdbcProjectImplTest {
   @After
   public void clearDB() {
     try {
-      dbOperator.update("DELETE FROM projects");
-      dbOperator.update("DELETE FROM project_versions");
-      dbOperator.update("DELETE FROM project_properties");
-      dbOperator.update("DELETE FROM project_permissions");
-      dbOperator.update("DELETE FROM project_flows");
-      dbOperator.update("DELETE FROM project_files");
-      dbOperator.update("DELETE FROM project_events");
-      dbOperator.update("DELETE FROM project_flow_files");
+      dbOperator.update("TRUNCATE TABLE projects");
+      dbOperator.update("TRUNCATE TABLE project_versions");
+      dbOperator.update("TRUNCATE TABLE project_properties");
+      dbOperator.update("TRUNCATE TABLE project_permissions");
+      dbOperator.update("TRUNCATE TABLE project_flows");
+      dbOperator.update("TRUNCATE TABLE project_files");
+      dbOperator.update("TRUNCATE TABLE project_events");
+      dbOperator.update("TRUNCATE TABLE project_flow_files");
     } catch (final SQLException e) {
       e.printStackTrace();
     }

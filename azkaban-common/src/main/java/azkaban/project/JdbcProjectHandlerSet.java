@@ -346,7 +346,7 @@ class JdbcProjectHandlerSet {
         return Collections.emptyList();
       }
 
-      final ArrayList<byte[]> data = new ArrayList<>();
+      final List<byte[]> data = new ArrayList<>();
       do {
         final byte[] bytes = rs.getBytes(1);
         data.add(bytes);

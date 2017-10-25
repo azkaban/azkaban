@@ -204,13 +204,13 @@ public interface ProjectLoader {
   /**
    * Uploads flow file.
    */
-  void uploadFlowFile(int projectId, int projectVersion, int flowVersion,
-      File flowFile) throws ProjectManagerException;
+  void uploadFlowFile(int projectId, int projectVersion, int flowVersion, File flowFile)
+      throws ProjectManagerException;
 
   /**
    * Gets flow file that's uploaded.
    */
-  File getUploadedFlowFile(int projectId, int projectVersion, String flowName, int
-      flowVersion) throws ProjectManagerException;
+  File getUploadedFlowFile(int projectId, int projectVersion, int flowVersion, String flowName)
+      throws ProjectManagerException;
 
 }

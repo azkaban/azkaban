@@ -71,7 +71,7 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   private static final int CHUCK_SIZE = 1024 * 1024 * 10;
   // Flow yaml files are usually small, set size limitation to 10 MB should be sufficient for now.
-  private static final int MAX_FLOW_FILE_SIZE = 1024 * 1024 * 10;
+  private static final int MAX_FLOW_FILE_SIZE_IN_BYTES = 1024 * 1024 * 10;
   private final DatabaseOperator dbOperator;
   private final File tempDir;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
@@ -981,11 +981,11 @@ public class JdbcProjectImpl implements ProjectLoader {
             "Uploading flow file %s, version %d for project %d, version %d, file length is [%d bytes]",
             flowFile.getName(), flowVersion, projectId, projectVersion, flowFile.length()));
 
-    if (flowFile.length() > MAX_FLOW_FILE_SIZE) {
+    if (flowFile.length() > MAX_FLOW_FILE_SIZE_IN_BYTES) {
       throw new ProjectManagerException("Flow file length exceeds 10 MB limit.");
     }
 
-    final byte[] buffer = new byte[MAX_FLOW_FILE_SIZE];
+    final byte[] buffer = new byte[MAX_FLOW_FILE_SIZE_IN_BYTES];
     final String INSERT_FLOW_FILES =
         "INSERT INTO project_flow_files (project_id, project_version, flow_name, flow_version, "
             + "modified_time, "
@@ -1015,7 +1015,7 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public File getUploadedFlowFile(final int projectId, final int projectVersion,
-      final String flowName, final int flowVersion) throws ProjectManagerException {
+      final int flowVersion, final String flowName) throws ProjectManagerException {
     final FlowFileResultHandler handler = new FlowFileResultHandler();
 
     final List<byte[]> data;
