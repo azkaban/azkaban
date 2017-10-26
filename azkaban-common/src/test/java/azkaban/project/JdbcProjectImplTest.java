@@ -15,6 +15,7 @@
  */
 package azkaban.project;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
@@ -360,7 +361,7 @@ public class JdbcProjectImplTest {
 
     final File file = this.loader
         .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, BASIC_FLOW_FILE);
-    Assert.assertEquals(BASIC_FLOW_FILE, file.getName());
+    assertThat(file.getName()).isEqualTo(BASIC_FLOW_FILE);
     FileUtils.contentEquals(testYamlFile, file);
   }
 
@@ -385,6 +386,19 @@ public class JdbcProjectImplTest {
         .isInstanceOf(ProjectManagerException.class)
         .hasMessageContaining(
             "Flow file length exceeds 10 MB limit.");
+  }
+
+  @Test
+  public void testGetLatestFlowVersion() throws Exception {
+    final File testYamlFile = ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YAML_DIR, BASIC_FLOW_FILE);
+
+    assertThat(
+        this.loader.getLatestFlowVersion(PROJECT_ID, PROJECT_VERSION, testYamlFile.getName()))
+        .isEqualTo(0);
+    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile);
+    assertThat(
+        this.loader.getLatestFlowVersion(PROJECT_ID, PROJECT_VERSION, testYamlFile.getName()))
+        .isEqualTo(FLOW_VERSION);
   }
 
   @After

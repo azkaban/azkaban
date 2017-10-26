@@ -323,6 +323,8 @@ class JdbcProjectHandlerSet {
   public static class IntHandler implements ResultSetHandler<Integer> {
 
     public static String SELECT_LATEST_VERSION = "SELECT MAX(version) FROM project_versions WHERE project_id=?";
+    public static String SELECT_LATEST_FLOW_VERSION = "SELECT MAX(flow_version) FROM "
+        + "project_flow_files WHERE project_id=? AND project_version=? AND flow_name=?";
 
     @Override
     public Integer handle(final ResultSet rs) throws SQLException {

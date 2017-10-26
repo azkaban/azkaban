@@ -1043,4 +1043,19 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
     return file;
   }
+
+  @Override
+  public int getLatestFlowVersion(final int projectId, final int projectVersion,
+      final String flowName) throws ProjectManagerException {
+    final IntHandler handler = new IntHandler();
+    try {
+      return this.dbOperator.query(IntHandler.SELECT_LATEST_FLOW_VERSION, handler, projectId,
+          projectVersion, flowName);
+    } catch (final SQLException e) {
+      logger.error(e);
+      throw new ProjectManagerException(
+          "Error selecting latest flow version from project " + projectId + ", version " +
+              projectVersion + ", flow " + flowName + ".", e);
+    }
+  }
 }
