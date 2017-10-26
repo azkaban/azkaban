@@ -37,7 +37,7 @@ public class TestUtils {
   }
 
   /* Helper method to create an ExecutableFlow from serialized description */
-  public static ExecutableFlow createExecutableFlow(final String projectName,
+  public static ExecutableFlow createTestExecutableFlow(final String projectName,
       final String flowName) throws IOException {
     final File jsonFlowFile = ExecutionsTestUtil.getFlowFile(projectName, flowName + ".flow");
     final HashMap<String, Object> flowObj =

@@ -32,7 +32,7 @@ public class QueuedExecutionsTest {
    */
   private Pair<ExecutionReference, ExecutableFlow> createExecutablePair(
       final String flowName, final int execId) throws IOException {
-    final ExecutableFlow execFlow = TestUtils.createExecutableFlow("exectest1", flowName);
+    final ExecutableFlow execFlow = TestUtils.createTestExecutableFlow("exectest1", flowName);
     execFlow.setExecutionId(execId);
     final ExecutionReference ref = new ExecutionReference(execId);
     return new Pair<>(ref, execFlow);

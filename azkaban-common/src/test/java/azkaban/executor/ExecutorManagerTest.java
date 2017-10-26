@@ -207,9 +207,9 @@ public class ExecutorManagerTest {
   @Test
   public void testQueuedFlows() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow1.setExecutionId(1);
-    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     flow2.setExecutionId(2);
 
     final User testUser = TestUtils.getTestUser();
@@ -241,7 +241,7 @@ public class ExecutorManagerTest {
   @Test(expected = ExecutorManagerException.class)
   public void testDuplicateQueuedFlows() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow1.getExecutionOptions().setConcurrentOption(
         ExecutionOptions.CONCURRENT_OPTION_SKIP);
 
@@ -257,7 +257,7 @@ public class ExecutorManagerTest {
   @Test
   public void testKillQueuedFlow() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     final User testUser = TestUtils.getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
 
@@ -273,7 +273,7 @@ public class ExecutorManagerTest {
   @Test
   public void testNotFoundFlows() throws Exception {
     testSetUpForRunningFlows();
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
 
     mockUpdateResponse(ImmutableMap.of(ConnectorParams.RESPONSE_UPDATED_FLOWS,
@@ -302,7 +302,7 @@ public class ExecutorManagerTest {
   @Test
   public void testSubmitFlows() throws Exception {
     testSetUpForRunningFlows();
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.manager.submitExecutableFlow(flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(flow1);
     verify(this.loader).addActiveExecutableReference(any());
@@ -374,8 +374,8 @@ public class ExecutorManagerTest {
     when(this.loader.fetchActiveExecutors()).thenReturn(executors);
     this.manager = createExecutorManager();
 
-    this.flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
-    this.flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     final ExecutionReference ref1 =

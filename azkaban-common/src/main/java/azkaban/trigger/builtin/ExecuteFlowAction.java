@@ -21,6 +21,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.sla.SlaOption;
@@ -201,24 +202,12 @@ public class ExecuteFlowAction implements TriggerAction {
       throw new Exception("ExecuteFlowAction not properly initialized!");
     }
 
-    final Project project = projectManager.getProject(this.projectId);
-    if (project == null) {
-      logger.error("Project to execute " + this.projectId + " does not exist!");
-      throw new RuntimeException("Error finding the project to execute "
-          + this.projectId);
-    }
+    final Project project = FlowUtils.getProject(projectManager, this.projectId);
+    final Flow flow = FlowUtils.getFlow(project, this.flowName);
 
-    final Flow flow = project.getFlow(this.flowName);
-    if (flow == null) {
-      logger.error("Flow " + this.flowName + " cannot be found in project "
-          + project.getName());
-      throw new RuntimeException("Error finding the flow to execute "
-          + this.flowName);
-    }
+    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
 
-    final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.setSubmitUser(this.submitUser);
-    exflow.addAllProxyUsers(project.getProxyUsers());
 
     if (this.executionOptions == null) {
       this.executionOptions = new ExecutionOptions();

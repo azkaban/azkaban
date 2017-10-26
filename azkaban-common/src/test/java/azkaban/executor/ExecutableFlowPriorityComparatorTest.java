@@ -34,7 +34,7 @@ public class ExecutableFlowPriorityComparatorTest {
   private ExecutableFlow createExecutableFlow(final String flowName, final int priority,
       final long updateTime, final int executionId) throws IOException {
     final ExecutableFlow execFlow =
-        TestUtils.createExecutableFlow("exectest1", flowName);
+        TestUtils.createTestExecutableFlow("exectest1", flowName);
 
     execFlow.setUpdateTime(updateTime);
     execFlow.setExecutionId(executionId);
