@@ -37,7 +37,7 @@ public final class HttpRequestUtilsTest {
 
   /* Helper method to get a test flow and add required properties */
   public static ExecutableFlow createExecutableFlow() throws IOException {
-    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow.getExecutionOptions().getFlowParameters()
         .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()

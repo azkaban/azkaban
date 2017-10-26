@@ -86,7 +86,7 @@ public class ExecutionFlowDaoTest {
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
-    return TestUtils.createExecutableFlow("exectest1", "exec1");
+    return TestUtils.createTestExecutableFlow("exectest1", "exec1");
   }
 
   @Test
@@ -178,7 +178,7 @@ public class ExecutionFlowDaoTest {
     final ExecutableFlow flow = createTestFlow();
     flow.setStatus(Status.PREPARING);
     this.executionFlowDao.uploadExecutableFlow(flow);
-    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     flow2.setStatus(Status.PREPARING);
     this.executionFlowDao.uploadExecutableFlow(flow2);
 
@@ -197,7 +197,7 @@ public class ExecutionFlowDaoTest {
     final String host = "localhost";
     final int port = 12345;
     final Executor executor = this.executorDao.addExecutor(host, port);
-    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow);
     this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
 
@@ -212,7 +212,7 @@ public class ExecutionFlowDaoTest {
   /* Test exception when assigning a non-existent executor to a flow */
   @Test
   public void testAssignExecutorInvalidExecutor() throws Exception {
-    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow);
 
     // Since we haven't inserted any executors, 1 should be non-existent executor id.
@@ -241,13 +241,13 @@ public class ExecutionFlowDaoTest {
   public void testFetchActiveFlowsExecutorAssigned() throws Exception {
 
     // Upload flow1, executor assigned
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow1);
     final Executor executor = this.executorDao.addExecutor("test", 1);
     this.assignExecutor.assignExecutor(executor.getId(), flow1.getExecutionId());
 
     // Upload flow2, executor not assigned
-    final ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     this.executionFlowDao.uploadExecutableFlow(flow2);
 
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
@@ -262,7 +262,7 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFetchActiveFlowsStatusChanged() throws Exception {
-    final ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow1);
     final Executor executor = this.executorDao.addExecutor("test", 1);
     this.assignExecutor.assignExecutor(executor.getId(), flow1.getExecutionId());
@@ -306,7 +306,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testUploadAndFetchExecutableNode() throws Exception {
 
-    final ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow.setExecutionId(10);
 
     final File jobFile = ExecutionsTestUtil.getFlowFile("exectest1", "job10.job");
