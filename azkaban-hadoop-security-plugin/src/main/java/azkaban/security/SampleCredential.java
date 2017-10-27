@@ -17,16 +17,20 @@
 
 package azkaban.security;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.Credentials;
-
+import org.apache.log4j.Logger;
 /**
  * This class serves as an example how we implement Credential. The actual class should be checked
  * in a separate jar (gradle product).
  */
 public class SampleCredential implements Credential {
+
+  private final static Logger logger = Logger.getLogger(SampleCredential.class);
 
   // Sample secret key.
   private static final Text SECRET_KEY_NAME = new Text("azkaban.datavault.key");
@@ -43,7 +47,17 @@ public class SampleCredential implements Credential {
 
   private byte[] getSecretKey(final String user) {
     // would call out to service
-    final Random r = new Random();
-    return (String.valueOf(r.nextInt(10000)) + user).getBytes(StandardCharsets.UTF_8);
+    final byte[] buffer = new byte[1024 * 1024];
+    try {
+      final FileInputStream input = new FileInputStream("/export/home/latang/identity.p12");
+      final BufferedInputStream bufferedStream = new BufferedInputStream(input);
+      final int size = bufferedStream.read(buffer);
+      logger.info("Read bytes for " + ", size:" + size);
+      return Arrays.copyOfRange(buffer, 0, size);
+
+    } catch (final IOException e) {
+      logger.error("one IO Exception.", e);
+    }
+    return null;
   }
 }
