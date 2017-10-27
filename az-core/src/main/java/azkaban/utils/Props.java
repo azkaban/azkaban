@@ -45,6 +45,7 @@ import org.apache.log4j.Logger;
 public class Props {
 
   private final Map<String, String> _current;
+  private boolean isPrivate;
   private Props _parent;
   private String source = null;
 
@@ -59,8 +60,13 @@ public class Props {
    * Constructor for empty Props with parent override.
    */
   public Props(final Props parent) {
+    this(parent, false);
+  }
+
+  public Props(final Props parent, final boolean isPrivate) {
     this._current = new HashMap<>();
     this._parent = parent;
+    this.isPrivate = isPrivate;
   }
 
   /**
@@ -154,7 +160,11 @@ public class Props {
    * Clones the Props p object and all of its parents.
    */
   public static Props clone(final Props p) {
-    return copyNext(p);
+    return Props.clone(p, false);
+  }
+
+  public static Props clone(final Props p, final boolean onlyPublic) {
+    return copyNext(p, onlyPublic);
   }
 
   /**
@@ -162,17 +172,34 @@ public class Props {
    * @param source
    * @return
    */
-  private static Props copyNext(final Props source) {
-    Props priorNodeCopy = null;
-    if (source.getParent() != null) {
-      priorNodeCopy = copyNext(source.getParent());
+  private static Props copyNext(final Props source, final boolean onlyPublic) {
+    Props parent = source.getParent();
+    while (parent != null && onlyPublic && parent.isPrivate) {
+      parent = parent.getParent();
     }
-    final Props dest = new Props(priorNodeCopy);
+
+    Props priorNodeCopy = null;
+    if (parent != null) {
+      priorNodeCopy = copyNext(parent, onlyPublic);
+    }
+
+    final Props dest = new Props(priorNodeCopy, source.isPrivate);
+    if (onlyPublic && source.isPrivate) {
+      return dest;
+    }
+
     for (final String key : source.localKeySet()) {
       dest.put(key, source.get(key));
     }
 
     return dest;
+  }
+
+  public void makePrivate() {
+    this.isPrivate = true;
+    if (this._parent != null) {
+      this._parent.makePrivate();
+    }
   }
 
   /**
@@ -254,8 +281,8 @@ public class Props {
   }
 
   /**
-   * Put the given string value for the string key. This method performs any variable substitution
-   * in the value replacing any occurance of ${name} with the value of get("name").
+   * Put the given string value for the string key. This method *does not* perform any variable
+   * substitution; this is done by PropsUtils.resolveProps; any ${name} variable will be kept.
    *
    * @param key The key to put the value to
    * @param value The value to do substitution on and store
@@ -267,9 +294,8 @@ public class Props {
   }
 
   /**
-   * Put the given Properties into the Props. This method performs any variable substitution in the
-   * value replacing any occurrence of ${name} with the value of get("name"). get() is called first
-   * on the Props and next on the Properties object.
+   * Put the given Properties into the Props. This method *does not* perform any variable
+   * substitution; this is done by PropsUtils.resolveProps; any ${name} variable will be kept.
    *
    * @param properties The properties to put
    * @throws IllegalArgumentException If the variable given for substitution is not a valid key in
@@ -436,10 +462,10 @@ public class Props {
    * we will get ["thrift://hcat1:port,thrift://hcat2:port", "thrift://hcat3:port,thrift://hcat4:port"] as output
    */
   public List<String> getStringListFromCluster(final String key) {
-    List<String> curlist = getStringList(key, "\\s*;\\s*");
+    final List<String> curlist = getStringList(key, "\\s*;\\s*");
     // remove empty elements in the array
-    for (Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
-      String a = iter.next();
+    for (final Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
+      final String a = iter.next();
       if (a.length() == 0) {
         iter.remove();
       }
@@ -753,6 +779,23 @@ public class Props {
 
     if (this._parent != null) {
       keySet.addAll(this._parent.getKeySet());
+    }
+
+    return keySet;
+  }
+
+  /**
+   * Returns a set of all keys, including the parents
+   */
+  public Set<String> getPublicKeySet() {
+    final HashSet<String> keySet = new HashSet<>();
+
+    if (!this.isPrivate) {
+      keySet.addAll(localKeySet());
+    }
+
+    if (this._parent != null) {
+      keySet.addAll(this._parent.getPublicKeySet());
     }
 
     return keySet;

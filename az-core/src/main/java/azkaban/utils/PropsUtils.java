@@ -155,7 +155,7 @@ public class PropsUtils {
     final Props resolvedProps = new Props();
 
     final LinkedHashSet<String> visitedVariables = new LinkedHashSet<>();
-    for (final String key : props.getKeySet()) {
+    for (final String key : props.getPublicKeySet()) {
       String value = props.get(key);
       if (value == null) {
         logger.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
@@ -170,7 +170,7 @@ public class PropsUtils {
       resolvedProps.put(key, replacedValue);
     }
 
-    for (final String key : resolvedProps.getKeySet()) {
+    for (final String key : resolvedProps.getPublicKeySet()) {
       final String value = resolvedProps.get(key);
       final String expressedValue = resolveVariableExpression(value);
       resolvedProps.put(key, expressedValue);

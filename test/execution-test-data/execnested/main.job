@@ -1,0 +1,2 @@
+type=noop
+dependencies=do-echo-a,do-echo-b
