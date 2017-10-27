@@ -33,7 +33,7 @@ public class SampleCredential implements Credential {
   private final static Logger logger = Logger.getLogger(SampleCredential.class);
 
   // Sample secret key.
-  private static final Text SECRET_KEY_NAME = new Text("azkaban.datavault.key");
+  private static final Text SECRET_KEY_NAME = new Text("li.datavault.identity");
   private final Credentials hadoopCrednetial;
 
   public SampleCredential(final Credentials hadoopCrednetial) {
@@ -49,7 +49,7 @@ public class SampleCredential implements Credential {
     // would call out to service
     final byte[] buffer = new byte[1024 * 1024];
     try {
-      final FileInputStream input = new FileInputStream("/export/home/latang/identity.p12");
+      final FileInputStream input = new FileInputStream("/export/home/azkaban/identity.p12");
       final BufferedInputStream bufferedStream = new BufferedInputStream(input);
       final int size = bufferedStream.read(buffer);
       logger.info("Read bytes for " + ", size:" + size);
