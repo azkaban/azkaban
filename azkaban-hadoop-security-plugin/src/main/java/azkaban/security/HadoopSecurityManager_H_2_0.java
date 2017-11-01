@@ -21,6 +21,7 @@ import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_LOCATION;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
+import azkaban.Constants;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
@@ -30,6 +31,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
@@ -343,6 +345,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * Gets hadoop tokens for a user to run mapred/pig jobs on a secured cluster
    */
   @Override
+  @Deprecated
   public synchronized void prefetchToken(final File tokenFile,
       final String userToProxy, final Logger logger)
       throws HadoopSecurityManagerException {
@@ -391,7 +394,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           jc.getCredentials().addToken(mrdt.getService(), mrdt);
           jc.getCredentials().addToken(fsToken.getService(), fsToken);
-
           prepareTokenFile(userToProxy, jc.getCredentials(), tokenFile, logger);
           // stash them to cancel after use.
           logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
@@ -494,6 +496,28 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     logger.info("Token kind: " + hcatToken.getKind());
     logger.info("Token service: " + hcatToken.getService());
     return hcatToken;
+  }
+
+  private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
+  String userToProxy) {
+    if (props.containsKey(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME)) {
+      // new custom Credential object here.
+      final String credentialClassName = props
+          .get(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+      try {
+        logger.info("custom credential class name: " + credentialClassName);
+        final Class metricsClass = Class.forName(credentialClassName);
+
+        final Constructor[] constructors = metricsClass.getConstructors();
+        final Credential customCredential = (Credential) constructors[0].newInstance(hadoopCred);
+        customCredential.register(userToProxy);
+      } catch (final Exception e) {
+        logger.error("Encountered error while loading and instantiating "
+            + credentialClassName, e);
+        throw new IllegalStateException("Encountered error while loading and instantiating "
+            + credentialClassName, e);
+      }
+    }
   }
 
   /*
@@ -609,6 +633,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             IOException, HadoopSecurityManagerException {
           logger.info("Here is the props for " + OBTAIN_NAMENODE_TOKEN + ": "
               + props.getBoolean(OBTAIN_NAMENODE_TOKEN));
+
+          // Register user secrets by custom credential Object
+          registerCustomCredential(props, cred, userToProxy);
+
           if (props.getBoolean(OBTAIN_NAMENODE_TOKEN, false)) {
             final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
             // check if we get the correct FS, and most importantly, the
@@ -802,20 +830,21 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   /**
    * Method to create a metastore client that retries on failures
    */
-  private IMetaStoreClient createRetryingMetaStoreClient(HiveConf hiveConf) throws MetaException {
+  private IMetaStoreClient createRetryingMetaStoreClient(final HiveConf hiveConf)
+      throws MetaException {
     // Custom hook-loader to return a HiveMetaHook if the table is configured with a custom storage handler
-    HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
+    final HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
       @Override
-      public HiveMetaHook getHook(Table tbl) throws MetaException {
+      public HiveMetaHook getHook(final Table tbl) throws MetaException {
         if (tbl == null) {
           return null;
         }
 
         try {
-          HiveStorageHandler storageHandler =
+          final HiveStorageHandler storageHandler =
               HiveUtils.getStorageHandler(hiveConf, tbl.getParameters().get(META_TABLE_STORAGE));
           return storageHandler == null ? null : storageHandler.getMetaHook();
-        } catch (HiveException e) {
+        } catch (final HiveException e) {
           logger.error(e.toString());
           throw new MetaException("Failed to get storage handler: " + e);
         }

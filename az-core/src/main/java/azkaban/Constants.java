@@ -167,6 +167,8 @@ public class Constants {
 
     // enable Quartz Scheduler if true.
     public static final String ENABLE_QUARTZ= "azkaban.server.schedule.enable_quartz";
+
+    public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.custom.credential";
   }
 
   public static class FlowProperties {
