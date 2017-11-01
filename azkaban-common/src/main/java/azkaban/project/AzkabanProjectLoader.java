@@ -19,8 +19,10 @@ package azkaban.project;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.flow.Flow;
+import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
@@ -102,17 +104,18 @@ class AzkabanProjectLoader {
       loader = this.flowLoaderFactory.createFlowLoader(file);
       reports.put(DIRECTORY_FLOW_REPORT_KEY, loader.loadProjectFlow(project, file));
 
+      // Check the validation report.
+      if (!isReportStatusValid(reports, project)) {
+        cleanUpProjectTempDir(file);
+        return reports;
+      }
+
+      // Upload the project to DB and storage.
+      persistProject(project, loader, archive, file, uploader);
+
     } finally {
       cleanUpProjectTempDir(file);
     }
-
-    // Check the validation report.
-    if (!isReportStatusValid(reports, project)) {
-      return reports;
-    }
-
-    // Upload the project to DB and storage.
-    persistProject(project, loader, archive, uploader);
 
     // Clean up project old installations after new project is uploaded successfully.
     cleanUpProjectOldInstallations(project);
@@ -182,21 +185,21 @@ class AzkabanProjectLoader {
   }
 
   private void persistProject(final Project project, final FlowLoader loader, final File archive,
-      final User uploader) throws ProjectManagerException {
+      final File projectDir, final User uploader) throws ProjectManagerException {
     synchronized (project) {
-      final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
+      final int newProjectVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
       final Map<String, Flow> flows = loader.getFlowMap();
       for (final Flow flow : flows.values()) {
         flow.setProjectId(project.getId());
-        flow.setVersion(newVersion);
+        flow.setVersion(newProjectVersion);
       }
 
-      this.storageManager.uploadProject(project, newVersion, archive, uploader);
+      this.storageManager.uploadProject(project, newProjectVersion, archive, uploader);
 
       log.info("Uploading flow to db for project " + archive.getName());
-      this.projectLoader.uploadFlows(project, newVersion, flows.values());
+      this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
       log.info("Changing project versions for project " + archive.getName());
-      this.projectLoader.changeProjectVersion(project, newVersion,
+      this.projectLoader.changeProjectVersion(project, newProjectVersion,
           uploader.getUserId());
       project.setFlows(flows);
 
@@ -209,8 +212,13 @@ class AzkabanProjectLoader {
         this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
 
       } else if (loader instanceof DirectoryYamlFlowLoader) {
-        // Todo jamiesjc: upload yaml file to DB as a blob
-
+        final File[] flowFiles = projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX));
+        for (final File file : flowFiles) {
+          final int newFlowVersion = this.projectLoader
+              .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
+          this.projectLoader
+              .uploadFlowFile(project.getId(), newProjectVersion, newFlowVersion, file);
+        }
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
