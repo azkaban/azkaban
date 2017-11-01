@@ -47,6 +47,7 @@ public class Flow {
   private Map<String, Object> metadata = new HashMap<>();
 
   private boolean isLayedOut = false;
+  private boolean isEmbeddedFlow = false;
 
   public Flow(final String id) {
     this.id = id;
@@ -57,10 +58,16 @@ public class Flow {
 
     final String id = (String) flowObject.get("id");
     final Boolean layedout = (Boolean) flowObject.get("layedout");
+    final Boolean isEmbeddedFlow = (Boolean) flowObject.get("embeddedFlow");
     final Flow flow = new Flow(id);
     if (layedout != null) {
       flow.setLayedOut(layedout);
     }
+
+    if (isEmbeddedFlow != null) {
+      flow.setEmbeddedFlow(isEmbeddedFlow);
+    }
+
     final int projId = (Integer) flowObject.get("project.id");
     flow.setProjectId(projId);
 
@@ -320,6 +327,7 @@ public class Flow {
     flowObj.put("success.email", this.successEmail);
     flowObj.put("mailCreator", this.mailCreator);
     flowObj.put("layedout", this.isLayedOut);
+    flowObj.put("embeddedFlow", this.isEmbeddedFlow);
     if (this.errors != null) {
       flowObj.put("errors", this.errors);
     }
@@ -367,6 +375,14 @@ public class Flow {
 
   public void setLayedOut(final boolean layedOut) {
     this.isLayedOut = layedOut;
+  }
+
+  public boolean isEmbeddedFlow() {
+    return this.isEmbeddedFlow;
+  }
+
+  public void setEmbeddedFlow(final boolean embeddedFlow) {
+    this.isEmbeddedFlow = embeddedFlow;
   }
 
   public Map<String, Object> getMetadata() {

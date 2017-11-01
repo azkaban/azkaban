@@ -757,9 +757,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final ArrayList<Map<String, Object>> flowList =
         new ArrayList<>();
     for (final Flow flow : project.getFlows()) {
-      final HashMap<String, Object> flowObj = new HashMap<>();
-      flowObj.put("flowId", flow.getId());
-      flowList.add(flowObj);
+      if (!flow.isEmbeddedFlow()) {
+        final HashMap<String, Object> flowObj = new HashMap<>();
+        flowObj.put("flowId", flow.getId());
+        flowList.add(flowObj);
+      }
     }
 
     ret.put("flows", flowList);
@@ -1585,7 +1587,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           page.add("exec", false);
         }
 
-        final List<Flow> flows = project.getFlows();
+        final List<Flow> flows = new ArrayList<>();
+        for (final Flow flow : project.getFlows()) {
+          if (!flow.isEmbeddedFlow()) {
+            flows.add(flow);
+          }
+        }
         if (!flows.isEmpty()) {
           Collections.sort(flows, FLOW_ID_COMPARATOR);
           page.add("flows", flows);
