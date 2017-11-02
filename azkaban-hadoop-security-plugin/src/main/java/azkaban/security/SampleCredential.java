@@ -34,6 +34,7 @@ public class SampleCredential implements Credential {
 
   // Sample secret key.
   private static final Text SECRET_KEY_NAME = new Text("li.datavault.identity");
+  private static final Text EI_TRUSTSTORE = new Text("li.datavault.truststore");
   private final Credentials hadoopCrednetial;
 
   public SampleCredential(final Credentials hadoopCrednetial) {
@@ -43,6 +44,7 @@ public class SampleCredential implements Credential {
   @Override
   public void register(final String user) {
     this.hadoopCrednetial.addSecretKey(SECRET_KEY_NAME, getSecretKey(user));
+    this.hadoopCrednetial.addSecretKey(EI_TRUSTSTORE, getTrustStore());
   }
 
   private byte[] getSecretKey(final String user) {
@@ -50,6 +52,21 @@ public class SampleCredential implements Credential {
     final byte[] buffer = new byte[1024 * 1024];
     try {
       final FileInputStream input = new FileInputStream("/export/home/azkaban/identity.p12");
+      final BufferedInputStream bufferedStream = new BufferedInputStream(input);
+      final int size = bufferedStream.read(buffer);
+      logger.info("Read bytes for " + ", size:" + size);
+      return Arrays.copyOfRange(buffer, 0, size);
+
+    } catch (final IOException e) {
+      logger.error("one IO Exception.", e);
+    }
+    return null;
+  }
+
+  private byte[] getTrustStore() {
+    final byte[] buffer = new byte[1024 * 1024];
+    try {
+      final FileInputStream input = new FileInputStream("/export/home/azkaban/EI_cacerts");
       final BufferedInputStream bufferedStream = new BufferedInputStream(input);
       final int size = bufferedStream.read(buffer);
       logger.info("Read bytes for " + ", size:" + size);
