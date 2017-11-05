@@ -19,7 +19,6 @@ package azkaban.webapp.servlet;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
@@ -38,7 +37,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManager;
   private ProjectManager projectManager;
-  private ExecutorVMHelper vmHelper;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -46,7 +44,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.executorManager = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
-    this.vmHelper = new ExecutorVMHelper();
   }
 
   @Override
@@ -91,7 +88,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
             "azkaban/webapp/servlet/velocity/historypage.vm");
     int pageNum = getIntParam(req, "page", 1);
     final int pageSize = getIntParam(req, "size", 16);
-    page.add("vmutils", this.vmHelper);
+    page.add("vmutils", new ServletUtil(this.projectManager));
 
     if (pageNum < 0) {
       pageNum = 1;
@@ -235,18 +232,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
     public void setSelected(final boolean selected) {
       this.selected = selected;
-    }
-  }
-
-  public class ExecutorVMHelper {
-
-    public String getProjectName(final int id) {
-      final Project project = HistoryServlet.this.projectManager.getProject(id);
-      if (project == null) {
-        return String.valueOf(id);
-      }
-
-      return project.getName();
     }
   }
 }
