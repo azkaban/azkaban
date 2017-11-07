@@ -23,7 +23,7 @@ package azkaban.security;
 public interface CredentialProvider {
 
   /**
-   * register custom secret keys on behalf of an user into Credentials.
+   * register custom secret keys on behalf of an user into credentials.
    *
    * @param user find out the user's credential and register it.
    */
