@@ -15,21 +15,81 @@
 */
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utils to help load flows.
  */
 public class FlowLoaderUtils {
+
+  private static final Logger logger = LoggerFactory.getLogger(FlowLoaderUtils.class);
+
+  /**
+   * Gets flow or job props from flow yaml file.
+   *
+   * @param path the flow or job path delimited by ":", e.g. "flow:subflow1:subflow2:job3"
+   * @param flowFile the flow yaml file
+   * @return the props from yaml file
+   */
+  public static Props getPropsFromYamlFile(final String path, final File flowFile) {
+    final List<Props> propsList = new ArrayList<>();
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    try {
+      final NodeBean nodeBean = loader.load(flowFile);
+      final String[] pathList = path.split(Constants.PATH_DELIMITER);
+      if (findPropsFromNodeBean(loader, nodeBean, pathList, 0, propsList)) {
+        if (!propsList.isEmpty()) {
+          return propsList.get(0);
+        } else {
+          logger.error("Error getting props for " + path);
+        }
+      }
+    } catch (final FileNotFoundException e) {
+      logger.error("Failed to get props, error loading flow YAML file " + flowFile);
+    }
+    return null;
+  }
+
+  /**
+   * Helper method to recursively find props from node bean.
+   *
+   * @param loader the loader
+   * @param nodeBean the node bean
+   * @param pathList the path list
+   * @param idx the idx
+   * @param propsList the props list
+   * @return the boolean
+   */
+  public static boolean findPropsFromNodeBean(final NodeBeanLoader loader, final NodeBean nodeBean,
+      final String[] pathList, final int idx, final List<Props> propsList) {
+    if (idx < pathList.length && nodeBean.getName().equals(pathList[idx])) {
+      if (idx == pathList.length - 1) {
+        propsList.add(loader.getNodeProps(nodeBean));
+        return true;
+      }
+      for (final NodeBean bean : nodeBean.getNodes()) {
+        if (findPropsFromNodeBean(loader, bean, pathList, idx + 1, propsList)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   /**
    * Adds email properties to a flow.

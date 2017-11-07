@@ -42,6 +42,9 @@ public class Constants {
   // Flow 2.0 node type
   public static final String FLOW_NODE_TYPE = "flow";
 
+  // Flow 2.0 flow and job path delimiter
+  public static final String PATH_DELIMITER = ":";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";

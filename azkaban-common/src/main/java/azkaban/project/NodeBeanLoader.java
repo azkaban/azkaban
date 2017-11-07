@@ -85,6 +85,10 @@ public class NodeBeanLoader {
     }
   }
 
+  public Props getNodeProps(final NodeBean nodeBean) {
+    return new Props(null, nodeBean.getConfig());
+  }
+
   public String getFlowName(final File flowFile) {
     checkArgument(flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));

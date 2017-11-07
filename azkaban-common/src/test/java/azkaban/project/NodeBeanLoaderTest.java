@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.utils.Props;
 import org.junit.Test;
 
 public class NodeBeanLoaderTest {
@@ -38,6 +39,8 @@ public class NodeBeanLoaderTest {
   private static final String SHELL_BASH = "shell_bash";
   private static final String SHELL_PWD = "shell_pwd";
   private static final String ECHO_COMMAND = "echo \"This is an echoed text.\"";
+  private static final String ECHO_COMMAND_1 = "echo \"This is an echoed text from embedded_flow1.\"";
+  private static final String PWD_COMMAND = "pwd";
   private static final String EMBEDDED_FLOW1 = "embedded_flow1";
   private static final String EMBEDDED_FLOW2 = "embedded_flow2";
   private static final String TYPE_NOOP = "noop";
@@ -177,8 +180,57 @@ public class NodeBeanLoaderTest {
   }
 
   @Test
-  public void testGetFlowName() throws Exception {
+  public void testGetFlowName() {
     assertThat(new NodeBeanLoader().getFlowName(ExecutionsTestUtil.getFlowFile(
         BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE))).isEqualTo(BASIC_FLOW_NAME);
+  }
+
+  @Test
+  public void testGetFlowProps() {
+    final Props flowProps = FlowLoaderUtils.getPropsFromYamlFile(BASIC_FLOW_NAME,
+        ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
+    assertThat(flowProps.size()).isEqualTo(1);
+    assertThat(flowProps.get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
+  }
+
+  @Test
+  public void testGetJobPropsFromBasicFlow() {
+    final Props jobProps = FlowLoaderUtils
+        .getPropsFromYamlFile(BASIC_FLOW_NAME + Constants.PATH_DELIMITER + SHELL_ECHO,
+            ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
+    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
+  }
+
+  @Test
+  public void testGetJobPropsWithInvalidPath() {
+    final Props jobProps = FlowLoaderUtils
+        .getPropsFromYamlFile(BASIC_FLOW_NAME + Constants.PATH_DELIMITER + EMBEDDED_FLOW_NAME,
+            ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
+    assertThat(jobProps).isNull();
+  }
+
+  @Test
+  public void testGetJobPropsFromEmbeddedFlow() {
+    // Get job props from parent flow
+    String jobPrefix = EMBEDDED_FLOW_NAME + Constants.PATH_DELIMITER;
+    Props jobProps = FlowLoaderUtils.getPropsFromYamlFile(jobPrefix + SHELL_ECHO,
+        ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
+    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
+
+    // Get job props from first level embedded flow
+    jobPrefix = jobPrefix + EMBEDDED_FLOW1 + Constants.PATH_DELIMITER;
+    jobProps = FlowLoaderUtils.getPropsFromYamlFile(jobPrefix + SHELL_ECHO,
+        ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
+    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND_1);
+
+    // Get job props from second level embedded flow
+    jobPrefix = jobPrefix + EMBEDDED_FLOW2 + Constants.PATH_DELIMITER;
+    jobProps = FlowLoaderUtils.getPropsFromYamlFile(jobPrefix + SHELL_PWD,
+        ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
+    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(PWD_COMMAND);
   }
 }
