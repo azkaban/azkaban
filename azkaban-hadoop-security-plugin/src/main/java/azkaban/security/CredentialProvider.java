@@ -18,9 +18,9 @@
 package azkaban.security;
 
 /**
- * Facilitate to register user secret key into custom credential object.
+ * Fetch and inject user secret key into custom credential object.
  */
-public interface Credential {
+public interface CredentialProvider {
 
   /**
    * register custom secret keys on behalf of an user into Credentials.
