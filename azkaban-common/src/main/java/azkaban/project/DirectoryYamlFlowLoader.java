@@ -24,6 +24,7 @@ import azkaban.flow.Node;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -121,9 +122,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     FlowLoaderUtils.addEmailPropsToFlow(flow, props);
     props.setSource(flowFile.getName());
 
-    final List<FlowProps> flowPropsList = new ArrayList<>();
-    flowPropsList.add(new FlowProps(props));
-    flow.addAllFlowProperties(flowPropsList);
+    flow.addAllFlowProperties(ImmutableList.of(new FlowProps(props)));
 
     // Convert azkabanNodes to nodes inside the flow.
     azkabanFlow.getNodes().values().stream()
@@ -151,10 +150,10 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     if (azkabanNode.getType().equals(Constants.FLOW_NODE_TYPE)) {
       final String embeddedFlowId = flowName + Constants.PATH_DELIMITER + node.getId();
       node.setEmbeddedFlowId(embeddedFlowId);
-      final Flow flow_node = convertAzkabanFlowToFlow((AzkabanFlow) azkabanNode, embeddedFlowId,
+      final Flow flowNode = convertAzkabanFlowToFlow((AzkabanFlow) azkabanNode, embeddedFlowId,
           flowFile);
-      flow_node.setEmbeddedFlow(true);
-      this.flowMap.put(flow_node.getId(), flow_node);
+      flowNode.setEmbeddedFlow(true);
+      this.flowMap.put(flowNode.getId(), flowNode);
     }
     return node;
   }

@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -1587,12 +1588,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           page.add("exec", false);
         }
 
-        final List<Flow> flows = new ArrayList<>();
-        for (final Flow flow : project.getFlows()) {
-          if (!flow.isEmbeddedFlow()) {
-            flows.add(flow);
-          }
-        }
+        final List<Flow> flows = project.getFlows().stream().filter(flow -> !flow.isEmbeddedFlow())
+            .collect(Collectors.toList());
+
         if (!flows.isEmpty()) {
           Collections.sort(flows, FLOW_ID_COMPARATOR);
           page.add("flows", flows);
