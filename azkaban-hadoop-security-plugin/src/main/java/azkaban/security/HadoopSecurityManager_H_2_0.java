@@ -802,20 +802,21 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   /**
    * Method to create a metastore client that retries on failures
    */
-  private IMetaStoreClient createRetryingMetaStoreClient(HiveConf hiveConf) throws MetaException {
+  private IMetaStoreClient createRetryingMetaStoreClient(final HiveConf hiveConf)
+      throws MetaException {
     // Custom hook-loader to return a HiveMetaHook if the table is configured with a custom storage handler
-    HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
+    final HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
       @Override
-      public HiveMetaHook getHook(Table tbl) throws MetaException {
+      public HiveMetaHook getHook(final Table tbl) throws MetaException {
         if (tbl == null) {
           return null;
         }
 
         try {
-          HiveStorageHandler storageHandler =
+          final HiveStorageHandler storageHandler =
               HiveUtils.getStorageHandler(hiveConf, tbl.getParameters().get(META_TABLE_STORAGE));
           return storageHandler == null ? null : storageHandler.getMetaHook();
-        } catch (HiveException e) {
+        } catch (final HiveException e) {
           logger.error(e.toString());
           throw new MetaException("Failed to get storage handler: " + e);
         }
