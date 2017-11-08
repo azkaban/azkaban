@@ -47,6 +47,7 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
 import com.google.common.collect.ImmutableSet;
 import java.io.File;
@@ -645,22 +646,26 @@ public class FlowRunner extends EventHandler implements Runnable {
       return;
     }
 
+    // The following is the hierarchical ordering of dependency resolution
     Props props = null;
+
     // 1. Shared properties (i.e. *.properties) for the jobs only. This takes
-    // the
-    // least precedence
-    if (!(node instanceof ExecutableFlowBase)) {
-      final String sharedProps = node.getPropsSource();
-      if (sharedProps != null) {
-        props = this.sharedProps.get(sharedProps);
+    // the least precedence
+    final String sharedProps = node.getPropsSource();
+    if (sharedProps != null) {
+      props = Props.clone(this.sharedProps.get(sharedProps));
+      if (node instanceof ExecutableFlowBase) {
+        props.makePrivate();
       }
     }
 
-    // The following is the hiearchical ordering of dependency resolution
     // 2. Parent Flow Properties
     final ExecutableFlowBase parentFlow = node.getParentFlow();
     if (parentFlow != null) {
-      final Props flowProps = Props.clone(parentFlow.getInputProps());
+      final Props flowProps = Props.clone(
+          PropsUtils.resolveProps(parentFlow.getInputProps()),
+          true
+      );
       flowProps.setEarliestAncestor(props);
       props = flowProps;
     }
