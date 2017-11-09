@@ -136,13 +136,15 @@ public class NodeBeanLoaderTest {
     final AzkabanJob shellEnd = (AzkabanJob) flow.getNode(SHELL_END);
     assertThat(shellEnd.getName()).isEqualTo(SHELL_END);
     assertThat(shellEnd.getType()).isEqualTo(TYPE_NOOP);
-    assertThat(shellEnd.getProps().size()).isEqualTo(0);
+    assertThat(shellEnd.getProps().size()).isEqualTo(1);
+    assertThat(shellEnd.getProps().get(Constants.NODE_TYPE)).isEqualTo(TYPE_NOOP);
     assertThat(shellEnd.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, SHELL_BASH);
 
     final AzkabanJob shellEcho = (AzkabanJob) flow.getNode(SHELL_ECHO);
     assertThat(shellEcho.getName()).isEqualTo(SHELL_ECHO);
     assertThat(shellEcho.getType()).isEqualTo(TYPE_COMMAND);
-    assertThat(shellEcho.getProps().size()).isEqualTo(1);
+    assertThat(shellEcho.getProps().size()).isEqualTo(2);
+    assertThat(shellEcho.getProps().get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
     assertThat(shellEcho.getProps().get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
   }
 
@@ -160,7 +162,8 @@ public class NodeBeanLoaderTest {
     final AzkabanJob shellEnd = (AzkabanJob) flow.getNode(SHELL_END);
     assertThat(shellEnd.getName()).isEqualTo(SHELL_END);
     assertThat(shellEnd.getType()).isEqualTo(TYPE_NOOP);
-    assertThat(shellEnd.getProps().size()).isEqualTo(0);
+    assertThat(shellEnd.getProps().size()).isEqualTo(1);
+    assertThat(shellEnd.getProps().get(Constants.NODE_TYPE)).isEqualTo(TYPE_NOOP);
     assertThat(shellEnd.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, EMBEDDED_FLOW1);
 
     final AzkabanFlow embeddedFlow1 = (AzkabanFlow) flow.getNode(EMBEDDED_FLOW1);
@@ -189,7 +192,8 @@ public class NodeBeanLoaderTest {
   public void testGetFlowProps() {
     final Props flowProps = FlowLoaderUtils.getPropsFromYamlFile(BASIC_FLOW_NAME,
         ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
-    assertThat(flowProps.size()).isEqualTo(1);
+    assertThat(flowProps.size()).isEqualTo(2);
+    assertThat(flowProps.get(Constants.NODE_TYPE)).isEqualTo(Constants.FLOW_NODE_TYPE);
     assertThat(flowProps.get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
   }
 
@@ -198,7 +202,8 @@ public class NodeBeanLoaderTest {
     final Props jobProps = FlowLoaderUtils
         .getPropsFromYamlFile(BASIC_FLOW_NAME + Constants.PATH_DELIMITER + SHELL_ECHO,
             ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
-    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.size()).isEqualTo(2);
+    assertThat(jobProps.get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
     assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
   }
 
@@ -216,21 +221,24 @@ public class NodeBeanLoaderTest {
     String jobPrefix = EMBEDDED_FLOW_NAME + Constants.PATH_DELIMITER;
     Props jobProps = FlowLoaderUtils.getPropsFromYamlFile(jobPrefix + SHELL_ECHO,
         ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
-    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.size()).isEqualTo(2);
+    assertThat(jobProps.get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
     assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
 
     // Get job props from first level embedded flow
     jobPrefix = jobPrefix + EMBEDDED_FLOW1 + Constants.PATH_DELIMITER;
     jobProps = FlowLoaderUtils.getPropsFromYamlFile(jobPrefix + SHELL_ECHO,
         ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
-    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.size()).isEqualTo(2);
+    assertThat(jobProps.get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
     assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND_1);
 
     // Get job props from second level embedded flow
     jobPrefix = jobPrefix + EMBEDDED_FLOW2 + Constants.PATH_DELIMITER;
     jobProps = FlowLoaderUtils.getPropsFromYamlFile(jobPrefix + SHELL_PWD,
         ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
-    assertThat(jobProps.size()).isEqualTo(1);
+    assertThat(jobProps.size()).isEqualTo(2);
+    assertThat(jobProps.get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
     assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(PWD_COMMAND);
   }
 }

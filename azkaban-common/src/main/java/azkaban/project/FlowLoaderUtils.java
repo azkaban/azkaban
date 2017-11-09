@@ -52,7 +52,7 @@ public class FlowLoaderUtils {
     try {
       final NodeBean nodeBean = loader.load(flowFile);
       final String[] pathList = path.split(Constants.PATH_DELIMITER);
-      if (findPropsFromNodeBean(loader, nodeBean, pathList, 0, propsList)) {
+      if (findPropsFromNodeBean(nodeBean, pathList, 0, propsList)) {
         if (!propsList.isEmpty()) {
           return propsList.get(0);
         } else {
@@ -68,22 +68,21 @@ public class FlowLoaderUtils {
   /**
    * Helper method to recursively find props from node bean.
    *
-   * @param loader the loader
    * @param nodeBean the node bean
    * @param pathList the path list
    * @param idx the idx
    * @param propsList the props list
    * @return the boolean
    */
-  public static boolean findPropsFromNodeBean(final NodeBeanLoader loader, final NodeBean nodeBean,
+  public static boolean findPropsFromNodeBean(final NodeBean nodeBean,
       final String[] pathList, final int idx, final List<Props> propsList) {
     if (idx < pathList.length && nodeBean.getName().equals(pathList[idx])) {
       if (idx == pathList.length - 1) {
-        propsList.add(loader.getNodeProps(nodeBean));
+        propsList.add(nodeBean.getProps());
         return true;
       }
       for (final NodeBean bean : nodeBean.getNodes()) {
-        if (findPropsFromNodeBean(loader, bean, pathList, idx + 1, propsList)) {
+        if (findPropsFromNodeBean(bean, pathList, idx + 1, propsList)) {
           return true;
         }
       }

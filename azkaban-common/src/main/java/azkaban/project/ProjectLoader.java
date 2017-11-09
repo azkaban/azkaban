@@ -219,4 +219,10 @@ public interface ProjectLoader {
   int getLatestFlowVersion(int projectId, int projectVersion, String flowName)
       throws ProjectManagerException;
 
+  /**
+   * Gets all flow files that's uploaded.
+   */
+  boolean isFlowFileUploaded(int projectId, int projectVersion)
+      throws ProjectManagerException;
+
 }
