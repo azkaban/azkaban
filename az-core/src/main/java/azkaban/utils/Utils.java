@@ -224,7 +224,7 @@ public class Utils {
     final StringBuffer buffer = new StringBuffer();
     for (final Object obj : collection) {
       buffer.append(obj.toString());
-      buffer.append(',');
+      buffer.append(delimiter);
     }
 
     if (buffer.length() > 0) {
