@@ -339,11 +339,13 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
   String userToProxy) {
-    if (props.containsKey(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME)) {
-      // new custom Credential object here.
-      final String credentialClassName = props
-          .get(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+    String credentialClassName = "unknown class";
       try {
+        if (!props.containsKey(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME)) {
+          throw new Exception("can not find settings for credential class");
+        }
+        credentialClassName = props
+            .get(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
         logger.info("custom credential class name: " + credentialClassName);
         final Class metricsClass = Class.forName(credentialClassName);
 
@@ -357,7 +359,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         throw new IllegalStateException("Encountered error while loading and instantiating "
             + credentialClassName, e);
       }
-    }
   }
 
   @Override
@@ -637,7 +638,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
               + props.getBoolean(OBTAIN_NAMENODE_TOKEN));
 
           // Register user secrets by custom credential Object
-          if (props.containsKey(JobProperties.ENABLE_JOB_SSL)) {
+          if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
             registerCustomCredential(props, cred, userToProxy);
           }
 
