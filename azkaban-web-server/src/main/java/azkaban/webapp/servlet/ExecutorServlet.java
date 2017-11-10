@@ -72,7 +72,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
-  private ExecutorVelocityHelper velocityHelper;
   private UserManager userManager;
 
   @Override
@@ -83,7 +82,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     this.projectManager = server.getProjectManager();
     this.executorManager = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
-    this.velocityHelper = new ExecutorVelocityHelper();
     // TODO: reallocf fully guicify
     this.webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   }
@@ -349,7 +347,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final List<ExecutableFlow> finishedFlows =
         this.executorManager.getRecentlyFinishedFlows();
     page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
-    page.add("vmutils", this.velocityHelper);
+    page.add("vmutils", new VelocityUtil(this.projectManager));
     page.render();
   }
 
@@ -949,17 +947,5 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     ret.put("execid", exflow.getExecutionId());
-  }
-
-  public class ExecutorVelocityHelper {
-
-    public String getProjectName(final int id) {
-      final Project project = ExecutorServlet.this.projectManager.getProject(id);
-      if (project == null) {
-        return String.valueOf(id);
-      }
-
-      return project.getName();
-    }
   }
 }
