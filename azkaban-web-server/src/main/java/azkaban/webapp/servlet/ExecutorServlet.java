@@ -347,7 +347,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final List<ExecutableFlow> finishedFlows =
         this.executorManager.getRecentlyFinishedFlows();
     page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
-    page.add("vmutils", new ServletUtil(this.projectManager));
+    page.add("vmutils", new VelocityUtil(this.projectManager));
     page.render();
   }
 

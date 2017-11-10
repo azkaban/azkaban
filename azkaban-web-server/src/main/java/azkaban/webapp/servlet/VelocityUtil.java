@@ -19,13 +19,12 @@ package azkaban.webapp.servlet;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 
-public class ServletUtil {
+public class VelocityUtil {
 
   ProjectManager projectManager;
 
-  public ServletUtil(final ProjectManager projectManager) {
+  public VelocityUtil(final ProjectManager projectManager) {
     this.projectManager = projectManager;
-
   }
 
   public String getProjectName(final int id) {
@@ -33,7 +32,6 @@ public class ServletUtil {
     if (project == null) {
       return String.valueOf(id);
     }
-
     return project.getName();
   }
 }
