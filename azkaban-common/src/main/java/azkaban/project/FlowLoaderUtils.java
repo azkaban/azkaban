@@ -90,6 +90,17 @@ public class FlowLoaderUtils {
     return false;
   }
 
+  public static FlowTrigger getFlowTriggerFromYamlFile(final File flowFile) {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+    try {
+      final NodeBean nodeBean = loader.load(flowFile);
+      return loader.toFlowTrigger(nodeBean.getTrigger());
+    } catch (final FileNotFoundException e) {
+      logger.error("Failed to get flow trigger, error loading flow YAML file " + flowFile);
+    }
+    return null;
+  }
+
   /**
    * Adds email properties to a flow.
    *

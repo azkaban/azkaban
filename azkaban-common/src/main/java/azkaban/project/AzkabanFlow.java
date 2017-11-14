@@ -34,11 +34,13 @@ import java.util.Map;
 public class AzkabanFlow extends AzkabanNode {
 
   private final Map<String, AzkabanNode> nodes;
+  private final FlowTrigger flowTrigger;
 
-  private AzkabanFlow(final String name, final Props props,
-      final Map<String, AzkabanNode> nodes, final List<String> dependsOn) {
+  private AzkabanFlow(final String name, final Props props, final Map<String, AzkabanNode> nodes,
+      final List<String> dependsOn, final FlowTrigger flowTrigger) {
     super(name, Constants.FLOW_NODE_TYPE, props, dependsOn);
     this.nodes = nodes;
+    this.flowTrigger = flowTrigger;
   }
 
   public Map<String, AzkabanNode> getNodes() {
@@ -49,12 +51,17 @@ public class AzkabanFlow extends AzkabanNode {
     return this.nodes.get(name);
   }
 
+  public FlowTrigger getFlowTrigger() {
+    return this.flowTrigger;
+  }
+
   public static class AzkabanFlowBuilder {
 
     private String name;
     private Props props;
     private List<String> dependsOn;
     private Map<String, AzkabanNode> nodes;
+    private FlowTrigger flowTrigger;
 
     public AzkabanFlowBuilder setName(final String name) {
       this.name = name;
@@ -82,8 +89,13 @@ public class AzkabanFlow extends AzkabanNode {
       return this;
     }
 
+    public AzkabanFlowBuilder setFlowTrigger(final FlowTrigger flowTrigger) {
+      this.flowTrigger = flowTrigger;
+      return this;
+    }
+
     public AzkabanFlow build() {
-      return new AzkabanFlow(this.name, this.props, this.nodes, this.dependsOn);
+      return new AzkabanFlow(this.name, this.props, this.nodes, this.dependsOn, this.flowTrigger);
     }
   }
 }

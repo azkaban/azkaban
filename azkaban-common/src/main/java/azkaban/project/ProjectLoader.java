@@ -220,7 +220,7 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Gets all flow files that's uploaded.
+   * Check if flow file has been uploaded.
    */
   boolean isFlowFileUploaded(int projectId, int projectVersion)
       throws ProjectManagerException;

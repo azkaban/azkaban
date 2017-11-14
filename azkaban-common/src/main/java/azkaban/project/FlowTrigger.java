@@ -100,4 +100,7 @@ public class FlowTrigger {
     return this.maxWaitDuration;
   }
 
+  public CronSchedule getSchedule() {
+    return this.schedule;
+  }
 }
