@@ -24,6 +24,7 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -71,6 +72,7 @@ public class NodeBeanLoader {
           .setDependsOn(nodeBean.getDependsOn())
           .setNodes(
               nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
+          .setFlowTrigger(toFlowTrigger(nodeBean.getTrigger()))
           .build();
     } else {
       return new AzkabanJob.AzkabanJobBuilder()
@@ -80,6 +82,17 @@ public class NodeBeanLoader {
           .setDependsOn(nodeBean.getDependsOn())
           .build();
     }
+  }
+
+  public FlowTrigger toFlowTrigger(final FlowTriggerBean flowTriggerBean) {
+    // Todo jamiesjc: need to validate flowTriggerBean
+    return flowTriggerBean == null ? null
+        : new FlowTrigger(
+            new CronSchedule(flowTriggerBean.getSchedule().get(Constants.SCHEDULE_VALUE)),
+            flowTriggerBean.getTriggerDependencies().stream()
+                .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
+                .collect(Collectors.toList()),
+            Duration.ofMinutes(flowTriggerBean.getMaxWaitMins()));
   }
 
   public String getFlowName(final File flowFile) {
