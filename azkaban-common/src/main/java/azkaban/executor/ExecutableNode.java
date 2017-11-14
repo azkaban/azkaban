@@ -63,7 +63,7 @@ public class ExecutableNode {
   private Set<String> outNodes = new HashSet<>();
   private Props inputProps;
   private Props outputProps;
-  private int attempt = 0;
+  private volatile int attempt = 0;
   private long delayExecution = 0;
   private ArrayList<ExecutionAttempt> pastAttempts = null;
 
@@ -235,7 +235,9 @@ public class ExecutableNode {
 
   public void resetForRetry() {
     final ExecutionAttempt pastAttempt = new ExecutionAttempt(this.attempt, this);
-    this.attempt++;
+    synchronized (this) {
+      this.attempt++;
+    }
 
     synchronized (this) {
       if (this.pastAttempts == null) {
