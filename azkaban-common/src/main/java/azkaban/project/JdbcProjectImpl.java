@@ -1058,4 +1058,22 @@ public class JdbcProjectImpl implements ProjectLoader {
               projectVersion + ", flow " + flowName + ".", e);
     }
   }
+
+  @Override
+  public boolean isFlowFileUploaded(final int projectId, final int projectVersion)
+      throws ProjectManagerException {
+    final FlowFileResultHandler handler = new FlowFileResultHandler();
+    final List<byte[]> data;
+
+    try {
+      data = this.dbOperator
+          .query(FlowFileResultHandler.SELECT_ALL_FLOW_FILES, handler,
+              projectId, projectVersion);
+    } catch (final SQLException e) {
+      logger.error(e);
+      throw new ProjectManagerException("Failed to query uploaded flow files ", e);
+    }
+
+    return !data.isEmpty();
+  }
 }

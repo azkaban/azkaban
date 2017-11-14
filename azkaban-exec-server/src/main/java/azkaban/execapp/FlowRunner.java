@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 
+import azkaban.Constants;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -41,6 +42,7 @@ import azkaban.flow.FlowUtils;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
+import azkaban.project.FlowLoaderUtils;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.sla.SlaOption;
@@ -48,6 +50,7 @@ import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
@@ -100,6 +103,8 @@ public class FlowRunner extends EventHandler implements Runnable {
   // Thread safe swap queue for finishedExecutions.
   private final SwapQueue<ExecutableNode> finishedNodes;
   private final AzkabanEventReporter azkabanEventReporter;
+  // Flag to indicate whether to interpret the flow as the new Flow 2.0 definition.
+  private boolean isAzkabanFlowVersion20 = false;
   private Logger logger;
   private Appender flowAppender;
   private File logFile;
@@ -166,6 +171,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     // where the uninitialized logger is used in flow preparing state
     createLogger(this.flow.getFlowId());
     this.azkabanEventReporter = azkabanEventReporter;
+
+    // Todo jamiesjc: Enable below check after DB change of project_flow_files table is rolled out.
+    // this.isAzkabanFlowVersion20 = checkAzkabanFlowVersion();
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -194,6 +202,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     return this.execDir;
   }
 
+  public void setAzkabanFlowVersion20(final boolean azkabanFlowVersion20) {
+    this.isAzkabanFlowVersion20 = azkabanFlowVersion20;
+  }
+
   @Override
   public void run() {
     try {
@@ -206,7 +218,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.logger.info("Updating initial flow directory.");
       updateFlow();
       this.logger.info("Fetching job and shared properties.");
-      loadAllProperties();
+      if (!this.isAzkabanFlowVersion20) {
+        loadAllProperties();
+      }
 
       this.fireEventListeners(
           Event.create(this, EventType.FLOW_STARTED, new EventData(this.getExecutableFlow())));
@@ -240,6 +254,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
   }
 
+  private boolean checkAzkabanFlowVersion() {
+    return this.projectLoader.isFlowFileUploaded(this.flow.getProjectId(), this.flow.getVersion());
+  }
+
   private void setupFlowExecution() {
     final int projectId = this.flow.getProjectId();
     final int version = this.flow.getVersion();
@@ -248,11 +266,19 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Add a bunch of common azkaban properties
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
-    if (this.flow.getJobSource() != null) {
-      final String source = this.flow.getJobSource();
-      final Props flowProps = this.sharedProps.get(source);
-      flowProps.setParent(commonFlowProps);
-      commonFlowProps = flowProps;
+    if (this.isAzkabanFlowVersion20) {
+      final Props flowProps = loadFlowPropsFromYamlFile();
+      if (flowProps != null) {
+        flowProps.setParent(commonFlowProps);
+        commonFlowProps = flowProps;
+      }
+    } else {
+      if (this.flow.getJobSource() != null) {
+        final String source = this.flow.getJobSource();
+        final Props flowProps = this.sharedProps.get(source);
+        flowProps.setParent(commonFlowProps);
+        commonFlowProps = flowProps;
+      }
     }
 
     // If there are flow overrides, we apply them now.
@@ -646,13 +672,16 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     Props props = null;
-    // 1. Shared properties (i.e. *.properties) for the jobs only. This takes
-    // the
-    // least precedence
-    if (!(node instanceof ExecutableFlowBase)) {
-      final String sharedProps = node.getPropsSource();
-      if (sharedProps != null) {
-        props = this.sharedProps.get(sharedProps);
+
+    if (!this.isAzkabanFlowVersion20) {
+      // 1. Shared properties (i.e. *.properties) for the jobs only. This takes
+      // the
+      // least precedence
+      if (!(node instanceof ExecutableFlowBase)) {
+        final String sharedProps = node.getPropsSource();
+        if (sharedProps != null) {
+          props = this.sharedProps.get(sharedProps);
+        }
       }
     }
 
@@ -693,42 +722,93 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private Props loadJobProps(final ExecutableNode node) throws IOException {
     Props props = null;
-    final String source = node.getJobSource();
-    if (source == null) {
-      return null;
-    }
+    if (this.isAzkabanFlowVersion20) {
+      props = loadJobPropsFromYamlFile(node);
+      if (props == null) {
+        this.logger.info("Job props loaded from yaml file is empty for job " + node.getId());
+        return props;
+      }
+    } else {
+      final String source = node.getJobSource();
+      if (source == null) {
+        return null;
+      }
 
-    // load the override props if any
-    try {
-      props =
-          this.projectLoader.fetchProjectProperty(this.flow.getProjectId(),
-              this.flow.getVersion(), node.getId() + ".jor");
-    } catch (final ProjectManagerException e) {
-      e.printStackTrace();
-      this.logger.error("Error loading job override property for job "
-          + node.getId());
-    }
-
-    final File path = new File(this.execDir, source);
-    if (props == null) {
-      // if no override prop, load the original one on disk
+      // load the override props if any
       try {
-        props = new Props(null, path);
-      } catch (final IOException e) {
+        props =
+            this.projectLoader.fetchProjectProperty(this.flow.getProjectId(),
+                this.flow.getVersion(), node.getId() + ".jor");
+      } catch (final ProjectManagerException e) {
         e.printStackTrace();
-        this.logger.error("Error loading job file " + source + " for job "
+        this.logger.error("Error loading job override property for job "
             + node.getId());
       }
-    }
-    // setting this fake source as this will be used to determine the location
-    // of log files.
-    if (path.getPath() != null) {
-      props.setSource(path.getPath());
+
+      final File path = new File(this.execDir, source);
+      if (props == null) {
+        // if no override prop, load the original one on disk
+        try {
+          props = new Props(null, path);
+        } catch (final IOException e) {
+          e.printStackTrace();
+          this.logger.error("Error loading job file " + source + " for job "
+              + node.getId());
+        }
+      }
+      // setting this fake source as this will be used to determine the location
+      // of log files.
+      if (path.getPath() != null) {
+        props.setSource(path.getPath());
+      }
     }
 
     customizeJobProperties(props);
 
     return props;
+  }
+
+  private Props loadFlowPropsFromYamlFile() {
+    final File flowFile = getFlowFile();
+    final Props flowProps = FlowLoaderUtils.getPropsFromYamlFile(this.flow.getId(), flowFile);
+    if (flowFile != null && flowFile.exists()) {
+      flowFile.delete();
+    }
+    return flowProps;
+  }
+
+  private Props loadJobPropsFromYamlFile(final ExecutableNode node) {
+    final File flowFile = getFlowFile();
+    final String jobPath =
+        node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
+    final Props props = FlowLoaderUtils.getPropsFromYamlFile(jobPath, flowFile);
+    if (flowFile != null && flowFile.exists()) {
+      flowFile.delete();
+    }
+    return props;
+  }
+
+  private File getFlowFile() {
+    File flowFile = null;
+    String source = null;
+    try {
+      final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
+      // There should be exact one source(file name) for each flow file.
+      if (!flowPropsList.isEmpty()) {
+        source = flowPropsList.get(0).getSource();
+      } else {
+        this.logger.error("Failed to get flow file source, flow props is empty.");
+        return null;
+      }
+      final int flowVersion = this.projectLoader
+          .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
+      flowFile = this.projectLoader
+          .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), flowVersion,
+              source);
+    } catch (final ProjectManagerException e) {
+      this.logger.error("Failed to get flow file " + source, e);
+    }
+    return flowFile;
   }
 
   @SuppressWarnings("FutureReturnValueIgnored")

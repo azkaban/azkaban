@@ -1,0 +1,50 @@
+---
+config:
+  props3: moo3
+  props4: moo4
+  props5: moo5
+  props1: shared1
+  props2: shared2
+  props6: shared6
+
+nodes:
+  - name: job2
+    type: test
+    config:
+      props4: shared4
+      props8: shared8
+      props2: job2
+      props7: job7
+
+  - name: innerflow
+    type: flow
+    dependsOn:
+      - job2
+    config:
+      props5: innerflow5
+      props6: innerflow6
+      props8: innerflow8
+
+    nodes:
+      - name: job4
+        type: test
+        dependsOn:
+          - job1
+        config:
+          props4: shared4
+          props8: job8
+          props9: job9
+
+      - name: job1
+        type: test
+        config:
+          props1: job1
+          props2: job2
+          props8: job8
+
+  - name: job3
+    type: test
+    dependsOn:
+      - innerflow
+    config:
+      props3: job3

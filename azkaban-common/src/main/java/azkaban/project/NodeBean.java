@@ -17,6 +17,8 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
+import azkaban.utils.Props;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +72,12 @@ public class NodeBean implements Serializable {
 
   public void setNodes(final List<NodeBean> nodes) {
     this.nodes = nodes;
+  }
+
+  public Props getProps() {
+    final Props props = new Props(null, this.getConfig());
+    props.put(Constants.NODE_TYPE, this.getType());
+    return props;
   }
 
   @Override

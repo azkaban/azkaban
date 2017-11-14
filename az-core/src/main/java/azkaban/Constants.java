@@ -40,6 +40,7 @@ public class Constants {
   public static final String FLOW_FILE_SUFFIX = ".flow";
 
   // Flow 2.0 node type
+  public static final String NODE_TYPE = "type";
   public static final String FLOW_NODE_TYPE = "flow";
 
   // Flow 2.0 flow and job path delimiter

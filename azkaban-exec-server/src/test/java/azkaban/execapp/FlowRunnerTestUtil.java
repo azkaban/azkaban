@@ -35,7 +35,8 @@ import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
-import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.FlowLoader;
+import azkaban.project.FlowLoaderFactory;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
@@ -58,6 +59,7 @@ public class FlowRunnerTestUtil {
   private final File workingDir;
   private final JobTypeManager jobtypeManager;
   private final File projectDir;
+  private final ProjectLoader projectLoader;
   private ExecutorLoader executorLoader;
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
@@ -68,9 +70,10 @@ public class FlowRunnerTestUtil {
     this.project = new Project(1, "testProject");
 
     this.flowMap = FlowRunnerTestUtil
-        .prepareProject(this.project, ExecutionsTestUtil.getFlowDir(flowName), this.workingDir);
+        .prepareProject(this.project, this.projectDir, this.workingDir);
 
     this.executorLoader = mock(ExecutorLoader.class);
+    this.projectLoader = mock(ProjectLoader.class);
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
 
     Utils.initServiceProvider();
@@ -97,7 +100,9 @@ public class FlowRunnerTestUtil {
   public static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
       final File workingDir)
       throws ProjectManagerException, IOException {
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
+    final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
+    final FlowLoader loader = loaderFactory.createFlowLoader(sourceDir);
+
     loader.loadProjectFlow(project, sourceDir);
     if (!loader.getErrors().isEmpty()) {
       for (final String error : loader.getErrors()) {
@@ -246,7 +251,7 @@ public class FlowRunnerTestUtil {
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
     this.executorLoader.uploadExecutableFlow(exFlow);
     final FlowRunner runner =
-        new FlowRunner(exFlow, this.executorLoader, mock(ProjectLoader.class),
+        new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
             this.jobtypeManager, azkabanProps, null);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
@@ -262,4 +267,11 @@ public class FlowRunnerTestUtil {
     this.executorLoader = executorLoader;
   }
 
+  public ProjectLoader getProjectLoader() {
+    return this.projectLoader;
+  }
+
+  public Project getProject() {
+    return this.project;
+  }
 }

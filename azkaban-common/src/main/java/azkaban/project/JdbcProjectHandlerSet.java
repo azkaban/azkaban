@@ -342,6 +342,10 @@ class JdbcProjectHandlerSet {
         "SELECT flow_file FROM project_flow_files WHERE "
             + "project_id=? AND project_version=? AND flow_name=? AND flow_version=?";
 
+    public static String SELECT_ALL_FLOW_FILES =
+        "SELECT flow_file FROM project_flow_files WHERE "
+            + "project_id=? AND project_version=?";
+
     @Override
     public List<byte[]> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {

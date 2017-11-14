@@ -16,16 +16,22 @@
 
 package azkaban.execapp;
 
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
+import azkaban.project.Project;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -45,23 +51,52 @@ import org.junit.Test;
  */
 public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
 
+  private static final String EXEC_FLOW_DIR = "execpropstest";
+  private static final String FLOW_YAML_DIR = "loadpropsflowyamltest";
+  private static final String FLOW_NAME = "job3";
+  private static final String FLOW_YAML_FILE = FLOW_NAME + ".flow";
   private FlowRunnerTestUtil testUtil;
-
-  @Before
-  public void setUp() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil("execpropstest", this.temporaryFolder);
-  }
 
   /**
    * Tests the basic flow resolution. Flow is defined in execpropstest
    */
   @Test
   public void testPropertyResolution() throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
+    assertProperties(false);
+  }
+
+  /**
+   * Tests the YAML flow resolution. Flow is defined in loadpropsflowyamltest
+   */
+  @Test
+  public void testYamlFilePropertyResolution() throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(FLOW_YAML_DIR, this.temporaryFolder);
+    final Project project = this.testUtil.getProject();
+    when(this.testUtil.getProjectLoader().isFlowFileUploaded(project.getId(), project.getVersion()))
+        .thenReturn(true);
+    when(this.testUtil.getProjectLoader()
+        .getLatestFlowVersion(project.getId(), project.getVersion(), FLOW_YAML_FILE)).thenReturn(1);
+    doAnswer(invocation -> {
+      final File flowFile = this.temporaryFolder.newFile(FLOW_YAML_FILE);
+      FileUtils.copyFile(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE), flowFile);
+      return flowFile;
+    }).when(this.testUtil.getProjectLoader())
+        .getUploadedFlowFile(project.getId(), project.getVersion(), 1, FLOW_YAML_FILE);
+    assertProperties(true);
+  }
+
+  /**
+   * Helper method to test the flow property resolution.
+   */
+  private void assertProperties(final boolean isAzkabanFlowVersion20) throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
     flowProps.put("props7", "flow7");
     flowProps.put("props6", "flow6");
     flowProps.put("props5", "flow5");
-    final FlowRunner runner = this.testUtil.createFromFlowMap("job3", flowProps);
+    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
+    // Todo jamiesjc: remove below line after project_flow_files DB change is rolled out.
+    runner.setAzkabanFlowVersion20(isAzkabanFlowVersion20);
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
     final ExecutableFlow flow = runner.getExecutableFlow();
@@ -134,7 +169,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     job4GeneratedProps.put("props6", "g4job6");
     InteractiveTestJob.getTestJob("innerflow:job4").succeedJob(
         job4GeneratedProps);
-    assertStatus(flow, "job3", Status.RUNNING);
+    assertStatus(flow, FLOW_NAME, Status.RUNNING);
     final Props job3Props = nodeMap.get("job3").getInputProps();
     Assert.assertEquals("job3", job3Props.get("props3"));
     Assert.assertEquals("g4job6", job3Props.get("props6"));
