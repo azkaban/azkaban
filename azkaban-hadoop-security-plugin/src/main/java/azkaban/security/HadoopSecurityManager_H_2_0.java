@@ -341,9 +341,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   String userToProxy) {
     String credentialClassName = "unknown class";
       try {
-        if (!props.containsKey(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME)) {
-          throw new Exception("can not find settings for credential class");
-        }
         credentialClassName = props
             .get(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
         logger.info("custom credential class name: " + credentialClassName);
