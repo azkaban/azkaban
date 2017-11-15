@@ -342,7 +342,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     String credentialClassName = "unknown class";
       try {
         credentialClassName = props
-            .get(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+            .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
         logger.info("custom credential class name: " + credentialClassName);
         final Class metricsClass = Class.forName(credentialClassName);
 
