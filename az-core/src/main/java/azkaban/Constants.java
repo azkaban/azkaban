@@ -208,6 +208,9 @@ public class Constants {
     @Deprecated
     public static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
 
+    // If true, AZ will fetches the jobs' certificate from remote Certificate Authority.
+    public static final String ENABLE_JOB_SSL = "azkaban.job.enable.ssl";
+
     // Job properties that indicate maximum memory size
     public static final String JOB_MAX_XMS = "job.max.Xms";
     public static final String MAX_XMS_DEFAULT = "1G";
