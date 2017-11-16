@@ -67,19 +67,18 @@ public class NodeBeanLoader {
   public AzkabanNode toAzkabanNode(final NodeBean nodeBean) {
     if (nodeBean.getType().equals(Constants.FLOW_NODE_TYPE)) {
       return new AzkabanFlow.AzkabanFlowBuilder()
-          .setName(nodeBean.getName())
-          .setProps(nodeBean.getProps())
-          .setDependsOn(nodeBean.getDependsOn())
-          .setNodes(
-              nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
-          .setFlowTrigger(toFlowTrigger(nodeBean.getTrigger()))
+          .name(nodeBean.getName())
+          .props(nodeBean.getProps())
+          .dependsOn(nodeBean.getDependsOn())
+          .nodes(nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
+          .flowTrigger(toFlowTrigger(nodeBean.getTrigger()))
           .build();
     } else {
       return new AzkabanJob.AzkabanJobBuilder()
-          .setName(nodeBean.getName())
-          .setProps(nodeBean.getProps())
-          .setType(nodeBean.getType())
-          .setDependsOn(nodeBean.getDependsOn())
+          .name(nodeBean.getName())
+          .props(nodeBean.getProps())
+          .type(nodeBean.getType())
+          .dependsOn(nodeBean.getDependsOn())
           .build();
     }
   }

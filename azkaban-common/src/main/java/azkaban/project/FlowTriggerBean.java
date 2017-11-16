@@ -25,15 +25,15 @@ import java.util.Map;
  */
 public class FlowTriggerBean {
 
-  private long maxWaitMins;
+  private int maxWaitMins;
   private Map<String, String> schedule;
   private List<TriggerDependencyBean> triggerDependencies;
 
-  public long getMaxWaitMins() {
+  public int getMaxWaitMins() {
     return this.maxWaitMins;
   }
 
-  public void setMaxWaitMins(final long maxWaitMins) {
+  public void setMaxWaitMins(final int maxWaitMins) {
     this.maxWaitMins = maxWaitMins;
   }
 

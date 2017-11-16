@@ -54,7 +54,7 @@ public class NodeBeanLoaderTest {
   private static final String EMBEDDED_FLOW2 = "embedded_flow2";
   private static final String TYPE_NOOP = "noop";
   private static final String TYPE_COMMAND = "command";
-  private static final long MAX_WAIT_MINS = 5;
+  private static final int MAX_WAIT_MINS = 5;
   private static final String CRON_EXPRESSION = "0 0 1 ? * *";
   private static final String TRIGGER_NAME_1 = "search-impression";
   private static final String TRIGGER_NAME_2 = "other-name";
@@ -317,7 +317,7 @@ public class NodeBeanLoaderTest {
     }
   }
 
-  private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean, final long
+  private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean, final int
       maxWaitMins, final Map<String, String> schedule, final int numDependencies) {
     assertThat(flowTriggerBean.getMaxWaitMins()).isEqualTo(maxWaitMins);
     assertThat(flowTriggerBean.getSchedule()).isEqualTo(schedule);
