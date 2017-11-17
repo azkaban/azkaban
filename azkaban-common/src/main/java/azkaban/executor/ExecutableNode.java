@@ -20,7 +20,6 @@ import azkaban.flow.Node;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.TypedMapWrapper;
-import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -228,11 +227,6 @@ public class ExecutableNode {
 
   public int getAttempt() {
     return this.attempt.get();
-  }
-
-  @VisibleForTesting
-  public void setAttempt(final int attempt) {
-    this.attempt.set(attempt);
   }
 
   public void resetForRetry() {
