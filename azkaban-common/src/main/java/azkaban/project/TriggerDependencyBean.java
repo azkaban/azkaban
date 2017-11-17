@@ -17,6 +17,7 @@
 
 package azkaban.project;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -45,7 +46,7 @@ public class TriggerDependencyBean {
   }
 
   public Map<String, String> getParams() {
-    return this.params;
+    return this.params == null ? Collections.emptyMap() : this.params;
   }
 
   public void setParams(final Map<String, String> params) {

@@ -17,6 +17,7 @@
 
 package azkaban.project;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ public class FlowTriggerBean {
   }
 
   public List<TriggerDependencyBean> getTriggerDependencies() {
-    return this.triggerDependencies;
+    return this.triggerDependencies == null ? Collections.emptyList() : this.triggerDependencies;
   }
 
   public void setTriggerDependencies(
