@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class NodeBeanLoaderTest {
@@ -40,6 +42,7 @@ public class NodeBeanLoaderTest {
   private static final String SHELL_PWD = "shell_pwd";
   private static final String ECHO_COMMAND = "echo \"This is an echoed text.\"";
   private static final String ECHO_COMMAND_1 = "echo \"This is an echoed text from embedded_flow1.\"";
+  private static final String ECHO_OVERRIDE = "echo \"Override job properties.\"";
   private static final String PWD_COMMAND = "pwd";
   private static final String EMBEDDED_FLOW1 = "embedded_flow1";
   private static final String EMBEDDED_FLOW2 = "embedded_flow2";
@@ -240,5 +243,37 @@ public class NodeBeanLoaderTest {
     assertThat(jobProps.size()).isEqualTo(2);
     assertThat(jobProps.get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
     assertThat(jobProps.get(TYPE_COMMAND)).isEqualTo(PWD_COMMAND);
+  }
+
+  @Test
+  public void testSetJobPropsInBasicFlow() throws Exception {
+    final String path = BASIC_FLOW_NAME + Constants.PATH_DELIMITER + SHELL_ECHO;
+    final Props overrideProps = new Props();
+    overrideProps.put(Constants.NODE_TYPE, TYPE_COMMAND);
+    overrideProps.put(TYPE_COMMAND, ECHO_OVERRIDE);
+
+    final File newFile = new File(ExecutionsTestUtil.getDataRootDir(), BASIC_FLOW_YML_FILE);
+    newFile.deleteOnExit();
+    FileUtils.copyFile(ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE),
+        newFile);
+    FlowLoaderUtils.setPropsInYamlFile(path, newFile, overrideProps);
+    assertThat(FlowLoaderUtils.getPropsFromYamlFile(path, newFile)).isEqualTo(overrideProps);
+  }
+
+  @Test
+  public void testSetJobPropsInEmbeddedFlow() throws Exception {
+    final String path = EMBEDDED_FLOW_NAME + Constants.PATH_DELIMITER + EMBEDDED_FLOW1 +
+        Constants.PATH_DELIMITER + EMBEDDED_FLOW2 + Constants.PATH_DELIMITER + SHELL_END;
+    final Props overrideProps = new Props();
+    overrideProps.put(Constants.NODE_TYPE, TYPE_COMMAND);
+    overrideProps.put(TYPE_COMMAND, ECHO_OVERRIDE);
+
+    final File newFile = new File(ExecutionsTestUtil.getDataRootDir(), EMBEDDED_FLOW_YML_FILE);
+    newFile.deleteOnExit();
+    FileUtils.copyFile(
+        ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE),
+        newFile);
+    FlowLoaderUtils.setPropsInYamlFile(path, newFile, overrideProps);
+    assertThat(FlowLoaderUtils.getPropsFromYamlFile(path, newFile)).isEqualTo(overrideProps);
   }
 }

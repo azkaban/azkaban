@@ -18,6 +18,7 @@ package azkaban.project;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
@@ -29,8 +30,6 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +38,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 
 
@@ -319,27 +320,67 @@ public class ProjectManager {
     return this.projectLoader.getProjectEvents(project, results, skip);
   }
 
-  public Props getProperties(final Project project, final String source)
-      throws ProjectManagerException {
-    return this.projectLoader.fetchProjectProperty(project, source);
+  public Props getPropertiesFromFlowFile(final Flow flow, final String jobName, final String source,
+      final int flowVersion) throws ProjectManagerException {
+    final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
+        .getVersion(), flowVersion, source);
+    final String path =
+        jobName == null ? flow.getId() : flow.getId() + Constants.PATH_DELIMITER + jobName;
+    final Props props = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
+    if (flowFile != null && flowFile.exists()) {
+      flowFile.delete();
+    }
+    return props;
   }
 
-  public Props getJobOverrideProperty(final Project project, final String jobName)
-      throws ProjectManagerException {
-    return this.projectLoader.fetchProjectProperty(project, jobName + ".jor");
-  }
-
-  public void setJobOverrideProperty(final Project project, final Props prop, final String jobName,
-      final User modifier)
-      throws ProjectManagerException {
-    prop.setSource(jobName + ".jor");
-    final Props oldProps =
-        this.projectLoader.fetchProjectProperty(project, prop.getSource());
-
-    if (oldProps == null) {
-      this.projectLoader.uploadProjectProperty(project, prop);
+  public Props getProperties(final Project project, final Flow flow, final String jobName,
+      final String source) throws ProjectManagerException {
+    if (flow.isAzkabanFlowVersion20()) {
+      // Return the properties from the original uploaded flow file.
+      return getPropertiesFromFlowFile(flow, jobName, source, 1);
     } else {
-      this.projectLoader.updateProjectProperty(project, prop);
+      return this.projectLoader.fetchProjectProperty(project, source);
+    }
+  }
+
+  public Props getJobOverrideProperty(final Project project, final Flow flow, final String jobName,
+      final String source) throws ProjectManagerException {
+    if (flow.isAzkabanFlowVersion20()) {
+      final int flowVersion = this.projectLoader
+          .getLatestFlowVersion(flow.getProjectId(), flow.getVersion(), source);
+      return getPropertiesFromFlowFile(flow, jobName, source, flowVersion);
+    } else {
+      return this.projectLoader.fetchProjectProperty(project, jobName + ".jor");
+    }
+  }
+
+  public void setJobOverrideProperty(final Project project, final Flow flow, final Props prop,
+      final String jobName, final String source, final User modifier)
+      throws ProjectManagerException {
+    final Props oldProps;
+    if (flow.isAzkabanFlowVersion20()) {
+      final int flowVersion = this.projectLoader.getLatestFlowVersion(flow.getProjectId(), flow
+          .getVersion(), source);
+      final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
+          .getVersion(), flowVersion, source);
+      final String path = flow.getId() + Constants.PATH_DELIMITER + jobName;
+      oldProps = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
+
+      FlowLoaderUtils.setPropsInYamlFile(path, flowFile, prop);
+      this.projectLoader
+          .uploadFlowFile(flow.getProjectId(), flow.getVersion(), flowVersion + 1, flowFile);
+      if (flowFile != null && flowFile.exists()) {
+        flowFile.delete();
+      }
+    } else {
+      prop.setSource(jobName + ".jor");
+      oldProps = this.projectLoader.fetchProjectProperty(project, prop.getSource());
+
+      if (oldProps == null) {
+        this.projectLoader.uploadProjectProperty(project, prop);
+      } else {
+        this.projectLoader.updateProjectProperty(project, prop);
+      }
     }
 
     final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);

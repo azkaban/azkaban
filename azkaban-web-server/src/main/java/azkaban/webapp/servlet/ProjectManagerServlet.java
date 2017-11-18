@@ -688,17 +688,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final Props prop;
+    Props prop;
     try {
-      prop = this.projectManager.getProperties(project, node.getJobSource());
+      prop = this.projectManager.getProperties(project, flow, jobName, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to retrieve job properties!");
       return;
     }
 
+    if (prop == null) {
+      prop = new Props();
+    }
+
     Props overrideProp;
     try {
-      overrideProp = this.projectManager.getJobOverrideProperty(project, jobName);
+      overrideProp = this.projectManager
+          .getJobOverrideProperty(project, flow, jobName, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to retrieve job override properties!");
       return;
@@ -745,7 +750,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Map<String, String> jobParamGroup = this.getParamGroup(req, "jobOverride");
     final Props overrideParams = new Props(null, jobParamGroup);
     try {
-      this.projectManager.setJobOverrideProperty(project, overrideParams, jobName, user);
+      this.projectManager
+          .setJobOverrideProperty(project, flow, overrideParams, jobName, node.getJobSource(),
+              user);
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property");
     }
@@ -834,7 +841,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final Props props;
     try {
-      props = this.projectManager.getProperties(project, node.getJobSource());
+      props = this.projectManager.getProperties(project, flow, nodeId, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property for " + nodeId);
       return;
@@ -1331,9 +1338,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props prop = this.projectManager.getProperties(project, node.getJobSource());
+      final Props prop = this.projectManager
+          .getProperties(project, flow, jobName, node.getJobSource());
       Props overrideProp =
-          this.projectManager.getJobOverrideProperty(project, jobName);
+          this.projectManager.getJobOverrideProperty(project, flow, jobName, node.getJobSource());
       if (overrideProp == null) {
         overrideProp = new Props();
       }
@@ -1445,7 +1453,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props prop = this.projectManager.getProperties(project, propSource);
+      final Props prop = this.projectManager.getProperties(project, flow, null, propSource);
       if (prop == null) {
         page.add("errorMsg", "Property " + propSource + " not found.");
         logger.info("Display project property. Project " + projectName +
