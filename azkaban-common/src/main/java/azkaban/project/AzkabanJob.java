@@ -40,22 +40,22 @@ public class AzkabanJob extends AzkabanNode {
     private Props props;
     private List<String> dependsOn;
 
-    public AzkabanJobBuilder setName(final String name) {
+    public AzkabanJobBuilder name(final String name) {
       this.name = name;
       return this;
     }
 
-    public AzkabanJobBuilder setType(final String type) {
+    public AzkabanJobBuilder type(final String type) {
       this.type = type;
       return this;
     }
 
-    public AzkabanJobBuilder setProps(final Props props) {
+    public AzkabanJobBuilder props(final Props props) {
       this.props = props;
       return this;
     }
 
-    public AzkabanJobBuilder setDependsOn(final List<String> dependsOn) {
+    public AzkabanJobBuilder dependsOn(final List<String> dependsOn) {
       // A node may or may not have dependencies.
       this.dependsOn = dependsOn == null
           ? Collections.emptyList()

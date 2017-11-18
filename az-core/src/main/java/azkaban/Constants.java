@@ -46,6 +46,11 @@ public class Constants {
   // Flow 2.0 flow and job path delimiter
   public static final String PATH_DELIMITER = ":";
 
+  // Flow trigger props
+  public static final String SCHEDULE_TYPE = "type";
+  public static final String CRON_SCHEDULE_TYPE = "cron";
+  public static final String SCHEDULE_VALUE = "value";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
