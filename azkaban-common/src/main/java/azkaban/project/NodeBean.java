@@ -33,6 +33,7 @@ public class NodeBean implements Serializable {
   private List<String> dependsOn;
   private String type;
   private List<NodeBean> nodes;
+  private FlowTriggerBean trigger;
 
   public String getName() {
     return this.name;
@@ -80,6 +81,14 @@ public class NodeBean implements Serializable {
     return props;
   }
 
+  public FlowTriggerBean getTrigger() {
+    return this.trigger;
+  }
+
+  public void setTrigger(final FlowTriggerBean trigger) {
+    this.trigger = trigger;
+  }
+
   @Override
   public String toString() {
     return "NodeBean{" +
@@ -88,6 +97,7 @@ public class NodeBean implements Serializable {
         ", dependsOn=" + this.dependsOn +
         ", type='" + this.type + '\'' +
         ", nodes=" + this.nodes +
+        ", trigger=" + this.trigger +
         '}';
   }
 }

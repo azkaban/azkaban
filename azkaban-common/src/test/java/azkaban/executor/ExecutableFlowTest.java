@@ -282,7 +282,9 @@ public class ExecutableFlowTest {
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     exFlow.setExecutionId(101);
-    exFlow.setAttempt(2);
+    // reset twice so that attempt = 2
+    exFlow.resetForRetry();
+    exFlow.resetForRetry();
     exFlow.setDelayedExecution(1000);
 
     final ExecutionOptions options = new ExecutionOptions();

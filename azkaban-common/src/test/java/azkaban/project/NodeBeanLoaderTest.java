@@ -24,6 +24,11 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
+import com.google.common.collect.ImmutableMap;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 
 public class NodeBeanLoaderTest {
@@ -34,6 +39,9 @@ public class NodeBeanLoaderTest {
   private static final String EMBEDDED_FLOW_YML_TEST_DIR = "embeddedflowyamltest";
   private static final String EMBEDDED_FLOW_NAME = "embedded_flow";
   private static final String EMBEDDED_FLOW_YML_FILE = EMBEDDED_FLOW_NAME + ".flow";
+  private static final String TRIGGER_FLOW_YML_TEST_DIR = "flowtriggeryamltest";
+  private static final String TRIGGER_FLOW_NAME = "flow_trigger";
+  private static final String TRIGGER_FLOW_YML_FILE = TRIGGER_FLOW_NAME + ".flow";
   private static final String FLOW_CONFIG_KEY = "flow-level-parameter";
   private static final String FLOW_CONFIG_VALUE = "value";
   private static final String SHELL_END = "shell_end";
@@ -44,85 +52,87 @@ public class NodeBeanLoaderTest {
   private static final String ECHO_COMMAND_1 = "echo \"This is an echoed text from embedded_flow1.\"";
   private static final String ECHO_OVERRIDE = "echo \"Override job properties.\"";
   private static final String PWD_COMMAND = "pwd";
+  private static final String BASH_COMMAND = "bash ./sample_script.sh";
   private static final String EMBEDDED_FLOW1 = "embedded_flow1";
   private static final String EMBEDDED_FLOW2 = "embedded_flow2";
   private static final String TYPE_NOOP = "noop";
   private static final String TYPE_COMMAND = "command";
+  private static final int MAX_WAIT_MINS = 5;
+  private static final String CRON_EXPRESSION = "0 0 1 ? * *";
+  private static final String TRIGGER_NAME_1 = "search-impression";
+  private static final String TRIGGER_NAME_2 = "other-name";
+  private static final String TRIGGER_TYPE = "dali-dataset";
+  private static final ImmutableMap<String, String> PARAMS_1 = ImmutableMap
+      .of("view", "search_mp_versioned.search_impression_event_0_0_47", "delay", "1", "window", "1",
+          "unit", "daily", "filter", "is_guest=0");
+  private static final ImmutableMap<String, String> PARAMS_2 = ImmutableMap
+      .of("view", "another dataset",
+          "delay", "1", "window", "7");
 
   @Test
   public void testLoadNodeBeanForBasicFlow() throws Exception {
-
     final NodeBeanLoader loader = new NodeBeanLoader();
     final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
         BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
 
-    assertThat(nodeBean.getName()).isEqualTo(BASIC_FLOW_NAME);
-    assertThat(nodeBean.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
-    assertThat(nodeBean.getConfig().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
-    assertThat(nodeBean.getNodes().size()).isEqualTo(4);
-
-    final NodeBean node0 = nodeBean.getNodes().get(0);
-    assertThat(node0.getName()).isEqualTo(SHELL_END);
-    assertThat(node0.getType()).isEqualTo(TYPE_NOOP);
-    assertThat(node0.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, SHELL_BASH);
-
-    final NodeBean node1 = nodeBean.getNodes().get(1);
-    assertThat(node1.getName()).isEqualTo(SHELL_ECHO);
-    assertThat(node1.getType()).isEqualTo(TYPE_COMMAND);
-    assertThat(node1.getConfig().get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
+    validateNodeBean(nodeBean, BASIC_FLOW_NAME, Constants.FLOW_NODE_TYPE, FLOW_CONFIG_KEY,
+        FLOW_CONFIG_VALUE, 4, null);
+    validateNodeBean(nodeBean.getNodes().get(0), SHELL_END, TYPE_NOOP, null,
+        null, 0, Arrays.asList(SHELL_PWD, SHELL_ECHO, SHELL_BASH));
+    validateNodeBean(nodeBean.getNodes().get(1), SHELL_ECHO, TYPE_COMMAND, TYPE_COMMAND,
+        ECHO_COMMAND, 0, null);
   }
 
   @Test
   public void testLoadNodeBeanForEmbeddedFlow() throws Exception {
-
     final NodeBeanLoader loader = new NodeBeanLoader();
     final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
         EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
 
-    assertThat(nodeBean.getName()).isEqualTo(EMBEDDED_FLOW_NAME);
-    assertThat(nodeBean.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
-    assertThat(nodeBean.getConfig().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
-    assertThat(nodeBean.getNodes().size()).isEqualTo(4);
-
-    final NodeBean node0 = nodeBean.getNodes().get(0);
-    assertThat(node0.getName()).isEqualTo(SHELL_END);
-    assertThat(node0.getType()).isEqualTo(TYPE_NOOP);
-    assertThat(node0.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, EMBEDDED_FLOW1);
-
-    final NodeBean node1 = nodeBean.getNodes().get(1);
-    assertThat(node1.getName()).isEqualTo(SHELL_PWD);
-
-    final NodeBean node2 = nodeBean.getNodes().get(2);
-    assertThat(node2.getName()).isEqualTo(SHELL_ECHO);
-
-    final NodeBean node3 = nodeBean.getNodes().get(3);
-    assertThat(node3.getName()).isEqualTo(EMBEDDED_FLOW1);
-    assertThat(node3.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
-    assertThat(node3.getNodes().size()).isEqualTo(4);
+    validateNodeBean(nodeBean, EMBEDDED_FLOW_NAME, Constants.FLOW_NODE_TYPE, FLOW_CONFIG_KEY,
+        FLOW_CONFIG_VALUE, 4, null);
+    validateNodeBean(nodeBean.getNodes().get(0), SHELL_END, TYPE_NOOP, null,
+        null, 0, Arrays.asList(SHELL_PWD, SHELL_ECHO, EMBEDDED_FLOW1));
+    validateNodeBean(nodeBean.getNodes().get(1), SHELL_PWD, TYPE_COMMAND, TYPE_COMMAND,
+        PWD_COMMAND, 0, null);
+    validateNodeBean(nodeBean.getNodes().get(2), SHELL_ECHO, TYPE_COMMAND, TYPE_COMMAND,
+        ECHO_COMMAND, 0, null);
+    validateNodeBean(nodeBean.getNodes().get(3), EMBEDDED_FLOW1, Constants.FLOW_NODE_TYPE,
+        FLOW_CONFIG_KEY, FLOW_CONFIG_VALUE, 4, null);
 
     // Verify nodes in embedded_flow1 are loaded correctly.
-    final NodeBean node3_0 = node3.getNodes().get(0);
-    assertThat(node3_0.getName()).isEqualTo(SHELL_END);
-
-    final NodeBean node3_1 = node3.getNodes().get(1);
-    assertThat(node3_1.getName()).isEqualTo(SHELL_ECHO);
-
-    final NodeBean node3_2 = node3.getNodes().get(2);
-    assertThat(node3_2.getName()).isEqualTo(EMBEDDED_FLOW2);
-    assertThat(node3_2.getType()).isEqualTo(Constants.FLOW_NODE_TYPE);
-    assertThat(node3_2.getDependsOn()).contains(SHELL_BASH);
-    assertThat(node3_2.getNodes().size()).isEqualTo(2);
-
-    final NodeBean node3_3 = node3.getNodes().get(3);
-    assertThat(node3_3.getName()).isEqualTo(SHELL_BASH);
+    final NodeBean embeddedNodeBean1 = nodeBean.getNodes().get(3);
+    validateNodeBean(embeddedNodeBean1.getNodes().get(0), SHELL_END, TYPE_NOOP, null, null, 0,
+        Arrays.asList(SHELL_ECHO, EMBEDDED_FLOW2));
+    validateNodeBean(embeddedNodeBean1.getNodes().get(1), SHELL_ECHO, TYPE_COMMAND, TYPE_COMMAND,
+        ECHO_COMMAND_1, 0, null);
+    validateNodeBean(embeddedNodeBean1.getNodes().get(2), EMBEDDED_FLOW2, Constants.FLOW_NODE_TYPE,
+        FLOW_CONFIG_KEY, FLOW_CONFIG_VALUE, 2, Arrays.asList(SHELL_BASH));
+    validateNodeBean(embeddedNodeBean1.getNodes().get(3), SHELL_BASH, TYPE_COMMAND, TYPE_COMMAND,
+        BASH_COMMAND, 0, null);
 
     // Verify nodes in embedded_flow2 are loaded correctly.
-    final NodeBean node3_2_0 = node3_2.getNodes().get(0);
-    assertThat(node3_2_0.getName()).isEqualTo(SHELL_END);
+    validateNodeBean(embeddedNodeBean1.getNodes().get(2).getNodes().get(0), SHELL_END, TYPE_NOOP,
+        null,
+        null, 0, Arrays.asList(SHELL_PWD));
+    validateNodeBean(embeddedNodeBean1.getNodes().get(2).getNodes().get(1), SHELL_PWD, TYPE_COMMAND,
+        TYPE_COMMAND, PWD_COMMAND, 0, null);
+  }
 
-    final NodeBean node3_2_1 = node3_2.getNodes().get(1);
-    assertThat(node3_2_1.getName()).isEqualTo(SHELL_PWD);
-
+  @Test
+  public void testLoadNodeBeanForFlowTrigger() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
+    final Map<String, String> schedule = ImmutableMap.of(Constants.SCHEDULE_TYPE, Constants
+        .CRON_SCHEDULE_TYPE, Constants.SCHEDULE_VALUE, CRON_EXPRESSION);
+    validateFlowTriggerBean(nodeBean.getTrigger(), MAX_WAIT_MINS, schedule, 2);
+    final List<TriggerDependencyBean> triggerDependencyBeans = nodeBean.getTrigger()
+        .getTriggerDependencies();
+    validateTriggerDependencyBean(triggerDependencyBeans.get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
+        PARAMS_1);
+    validateTriggerDependencyBean(triggerDependencyBeans.get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
+        PARAMS_2);
   }
 
   @Test
@@ -132,23 +142,22 @@ public class NodeBeanLoaderTest {
         BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE));
     final AzkabanFlow flow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
 
-    assertThat(flow.getName()).isEqualTo(BASIC_FLOW_NAME);
-    assertThat(flow.getProps().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
-    assertThat(flow.getNodes().size()).isEqualTo(4);
+    final Props props = new Props();
+    props.put(Constants.NODE_TYPE, Constants.FLOW_NODE_TYPE);
+    props.put(FLOW_CONFIG_KEY, FLOW_CONFIG_VALUE);
+    validateAzkabanNode(flow, BASIC_FLOW_NAME, Constants.FLOW_NODE_TYPE, props, Arrays.asList
+        (SHELL_END, SHELL_PWD, SHELL_ECHO, SHELL_BASH), null);
 
-    final AzkabanJob shellEnd = (AzkabanJob) flow.getNode(SHELL_END);
-    assertThat(shellEnd.getName()).isEqualTo(SHELL_END);
-    assertThat(shellEnd.getType()).isEqualTo(TYPE_NOOP);
-    assertThat(shellEnd.getProps().size()).isEqualTo(1);
-    assertThat(shellEnd.getProps().get(Constants.NODE_TYPE)).isEqualTo(TYPE_NOOP);
-    assertThat(shellEnd.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, SHELL_BASH);
+    final Props props1 = new Props();
+    props1.put(Constants.NODE_TYPE, TYPE_NOOP);
+    validateAzkabanNode(flow.getNode(SHELL_END), SHELL_END, TYPE_NOOP, props1, null,
+        Arrays.asList(SHELL_PWD, SHELL_ECHO, SHELL_BASH));
 
-    final AzkabanJob shellEcho = (AzkabanJob) flow.getNode(SHELL_ECHO);
-    assertThat(shellEcho.getName()).isEqualTo(SHELL_ECHO);
-    assertThat(shellEcho.getType()).isEqualTo(TYPE_COMMAND);
-    assertThat(shellEcho.getProps().size()).isEqualTo(2);
-    assertThat(shellEcho.getProps().get(Constants.NODE_TYPE)).isEqualTo(TYPE_COMMAND);
-    assertThat(shellEcho.getProps().get(TYPE_COMMAND)).isEqualTo(ECHO_COMMAND);
+    final Props props2 = new Props();
+    props2.put(Constants.NODE_TYPE, TYPE_COMMAND);
+    props2.put(TYPE_COMMAND, ECHO_COMMAND);
+    validateAzkabanNode(flow.getNode(SHELL_ECHO), SHELL_ECHO, TYPE_COMMAND, props2, null,
+        null);
   }
 
   @Test
@@ -158,31 +167,56 @@ public class NodeBeanLoaderTest {
         EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE));
     final AzkabanFlow flow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
 
-    assertThat(flow.getName()).isEqualTo(EMBEDDED_FLOW_NAME);
-    assertThat(flow.getProps().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
-    assertThat(flow.getNodes().size()).isEqualTo(4);
+    final Props props = new Props();
+    props.put(Constants.NODE_TYPE, Constants.FLOW_NODE_TYPE);
+    props.put(FLOW_CONFIG_KEY, FLOW_CONFIG_VALUE);
+    validateAzkabanNode(flow, EMBEDDED_FLOW_NAME, Constants.FLOW_NODE_TYPE, props, Arrays.asList
+        (SHELL_END, SHELL_PWD, SHELL_ECHO, EMBEDDED_FLOW1), null);
 
-    final AzkabanJob shellEnd = (AzkabanJob) flow.getNode(SHELL_END);
-    assertThat(shellEnd.getName()).isEqualTo(SHELL_END);
-    assertThat(shellEnd.getType()).isEqualTo(TYPE_NOOP);
-    assertThat(shellEnd.getProps().size()).isEqualTo(1);
-    assertThat(shellEnd.getProps().get(Constants.NODE_TYPE)).isEqualTo(TYPE_NOOP);
-    assertThat(shellEnd.getDependsOn()).contains(SHELL_PWD, SHELL_ECHO, EMBEDDED_FLOW1);
+    final Props props1 = new Props();
+    props1.put(Constants.NODE_TYPE, TYPE_NOOP);
+    validateAzkabanNode(flow.getNode(SHELL_END), SHELL_END, TYPE_NOOP, props1, null,
+        Arrays.asList(SHELL_PWD, SHELL_ECHO, EMBEDDED_FLOW1));
 
+    final Props props2 = new Props();
+    props2.put(Constants.NODE_TYPE, Constants.FLOW_NODE_TYPE);
+    props2.put(FLOW_CONFIG_KEY, FLOW_CONFIG_VALUE);
     final AzkabanFlow embeddedFlow1 = (AzkabanFlow) flow.getNode(EMBEDDED_FLOW1);
-    assertThat(embeddedFlow1.getName()).isEqualTo(EMBEDDED_FLOW1);
-    assertThat(flow.getProps().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
-    assertThat(embeddedFlow1.getNodes().size()).isEqualTo(4);
-    assertThat(embeddedFlow1.getNodes().containsKey(EMBEDDED_FLOW2)).isTrue();
+    validateAzkabanNode(embeddedFlow1, EMBEDDED_FLOW1, Constants.FLOW_NODE_TYPE, props2,
+        Arrays.asList
+            (SHELL_END, SHELL_BASH, SHELL_ECHO, EMBEDDED_FLOW2), null);
 
     final AzkabanFlow embeddedFlow2 = (AzkabanFlow) embeddedFlow1.getNode(EMBEDDED_FLOW2);
-    assertThat(embeddedFlow2.getName()).isEqualTo(EMBEDDED_FLOW2);
-    assertThat(flow.getProps().get(FLOW_CONFIG_KEY)).isEqualTo(FLOW_CONFIG_VALUE);
-    assertThat(embeddedFlow2.getDependsOn()).contains(SHELL_BASH);
-    assertThat(embeddedFlow2.getNodes().size()).isEqualTo(2);
-    assertThat(embeddedFlow2.getNodes().containsKey(SHELL_END)).isTrue();
-    assertThat(embeddedFlow2.getNodes().containsKey(SHELL_PWD)).isTrue();
+    validateAzkabanNode(embeddedFlow2, EMBEDDED_FLOW2, Constants.FLOW_NODE_TYPE,
+        props2, Arrays.asList(SHELL_END, SHELL_PWD), Arrays.asList(SHELL_BASH));
+  }
 
+  @Test
+  public void testToFlowTrigger() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
+    final FlowTrigger flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
+    validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
+    validateTriggerDependency(flowTrigger.getDependencies().get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
+        PARAMS_1);
+    validateTriggerDependency(flowTrigger.getDependencies().get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
+        PARAMS_2);
+  }
+
+  @Test
+  public void testToAzkabanFlowWithFlowTrigger() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
+    final AzkabanFlow flow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
+    validateFlowTrigger(flow.getFlowTrigger(), MAX_WAIT_MINS, CRON_EXPRESSION, 2);
+    validateTriggerDependency(flow.getFlowTrigger().getDependencies().get(0), TRIGGER_NAME_1,
+        TRIGGER_TYPE,
+        PARAMS_1);
+    validateTriggerDependency(flow.getFlowTrigger().getDependencies().get(1), TRIGGER_NAME_2,
+        TRIGGER_TYPE,
+        PARAMS_2);
   }
 
   @Test
@@ -275,5 +309,73 @@ public class NodeBeanLoaderTest {
         newFile);
     FlowLoaderUtils.setPropsInYamlFile(path, newFile, overrideProps);
     assertThat(FlowLoaderUtils.getPropsFromYamlFile(path, newFile)).isEqualTo(overrideProps);
+
+  @Test
+  public void testGetFlowTrigger() {
+    final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(
+        ExecutionsTestUtil.getFlowFile(TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
+    validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
+    validateTriggerDependency(flowTrigger.getDependencies().get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
+        PARAMS_1);
+    validateTriggerDependency(flowTrigger.getDependencies().get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
+        PARAMS_2);
+  }
+
+  private void validateNodeBean(final NodeBean nodeBean, final String name, final String type,
+      final String configKey,
+      final String configValue, final int numNodes, final List<String> dependsOn) {
+    assertThat(nodeBean.getName()).isEqualTo(name);
+    assertThat(nodeBean.getType()).isEqualTo(type);
+    if (configKey != null) {
+      assertThat(nodeBean.getConfig().get(configKey)).isEqualTo(configValue);
+    }
+    if (numNodes != 0) {
+      assertThat(nodeBean.getNodes().size()).isEqualTo(numNodes);
+    }
+    if (dependsOn != null) {
+      assertThat(nodeBean.getDependsOn()).containsOnlyElementsOf(dependsOn);
+    }
+  }
+
+  private void validateAzkabanNode(final AzkabanNode azkabanNode, final String name,
+      final String type, final Props props, final List<String> nodeList, final List<String>
+      dependsOn) {
+    assertThat(azkabanNode.getName()).isEqualTo(name);
+    assertThat(azkabanNode.getType()).isEqualTo(type);
+    assertThat(azkabanNode.getProps()).isEqualTo(props);
+    if (azkabanNode instanceof AzkabanFlow) {
+      assertThat(((AzkabanFlow) azkabanNode).getNodes().keySet()).containsOnlyElementsOf(nodeList);
+    }
+    if (dependsOn != null) {
+      assertThat(azkabanNode.getDependsOn()).containsOnlyElementsOf(dependsOn);
+    }
+  }
+
+  private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean, final int
+      maxWaitMins, final Map<String, String> schedule, final int numDependencies) {
+    assertThat(flowTriggerBean.getMaxWaitMins()).isEqualTo(maxWaitMins);
+    assertThat(flowTriggerBean.getSchedule()).isEqualTo(schedule);
+    assertThat(flowTriggerBean.getTriggerDependencies().size()).isEqualTo(numDependencies);
+  }
+
+  private void validateTriggerDependencyBean(final TriggerDependencyBean triggerDependencyBean,
+      final String name, final String type, final Map<String, String> params) {
+    assertThat(triggerDependencyBean.getName()).isEqualTo(name);
+    assertThat(triggerDependencyBean.getType()).isEqualTo(type);
+    assertThat(triggerDependencyBean.getParams()).isEqualTo(params);
+  }
+
+  private void validateFlowTrigger(final FlowTrigger flowTrigger, final long maxWaitMins, final
+  String cronExpression, final int numDependencies) {
+    assertThat(flowTrigger.getMaxWaitDuration()).isEqualTo(Duration.ofMinutes(maxWaitMins));
+    assertThat(flowTrigger.getSchedule().getCronExpression()).isEqualTo(cronExpression);
+    assertThat(flowTrigger.getDependencies().size()).isEqualTo(numDependencies);
+  }
+
+  private void validateTriggerDependency(final FlowTriggerDependency flowTriggerDependency, final
+  String name, final String type, final Map<String, String> params) {
+    assertThat(flowTriggerDependency.getName()).isEqualTo(name);
+    assertThat(flowTriggerDependency.getType()).isEqualTo(type);
+    assertThat(flowTriggerDependency.getProps()).isEqualTo(params);
   }
 }
