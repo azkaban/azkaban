@@ -309,6 +309,7 @@ public class NodeBeanLoaderTest {
         newFile);
     FlowLoaderUtils.setPropsInYamlFile(path, newFile, overrideProps);
     assertThat(FlowLoaderUtils.getPropsFromYamlFile(path, newFile)).isEqualTo(overrideProps);
+  }
 
   @Test
   public void testGetFlowTrigger() {
