@@ -119,7 +119,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   private Flow convertAzkabanFlowToFlow(final AzkabanFlow azkabanFlow, final String flowName,
       final File flowFile) {
     final Flow flow = new Flow(flowName);
-    flow.setAzkabanFlowVersion20(true);
+    flow.setAzkabanFlowVersion(Constants.AZKABAN_FLOW_VERSION_2_0);
     final Props props = azkabanFlow.getProps();
     FlowLoaderUtils.addEmailPropsToFlow(flow, props);
     props.setSource(flowFile.getName());

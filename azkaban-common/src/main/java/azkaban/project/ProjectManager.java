@@ -335,7 +335,7 @@ public class ProjectManager {
 
   public Props getProperties(final Project project, final Flow flow, final String jobName,
       final String source) throws ProjectManagerException {
-    if (flow.isAzkabanFlowVersion20()) {
+    if (Double.compare(flow.getAzkabanFlowVersion(), Constants.AZKABAN_FLOW_VERSION_2_0) == 0) {
       // Return the properties from the original uploaded flow file.
       return getPropertiesFromFlowFile(flow, jobName, source, 1);
     } else {
@@ -345,7 +345,7 @@ public class ProjectManager {
 
   public Props getJobOverrideProperty(final Project project, final Flow flow, final String jobName,
       final String source) throws ProjectManagerException {
-    if (flow.isAzkabanFlowVersion20()) {
+    if (Double.compare(flow.getAzkabanFlowVersion(), Constants.AZKABAN_FLOW_VERSION_2_0) == 0) {
       final int flowVersion = this.projectLoader
           .getLatestFlowVersion(flow.getProjectId(), flow.getVersion(), source);
       return getPropertiesFromFlowFile(flow, jobName, source, flowVersion);
@@ -358,7 +358,7 @@ public class ProjectManager {
       final String jobName, final String source, final User modifier)
       throws ProjectManagerException {
     final Props oldProps;
-    if (flow.isAzkabanFlowVersion20()) {
+    if (Double.compare(flow.getAzkabanFlowVersion(), Constants.AZKABAN_FLOW_VERSION_2_0) == 0) {
       final int flowVersion = this.projectLoader.getLatestFlowVersion(flow.getProjectId(), flow
           .getVersion(), source);
       final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
