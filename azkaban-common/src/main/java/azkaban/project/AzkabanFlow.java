@@ -34,11 +34,13 @@ import java.util.Map;
 public class AzkabanFlow extends AzkabanNode {
 
   private final Map<String, AzkabanNode> nodes;
+  private final FlowTrigger flowTrigger;
 
-  private AzkabanFlow(final String name, final Props props,
-      final Map<String, AzkabanNode> nodes, final List<String> dependsOn) {
+  private AzkabanFlow(final String name, final Props props, final Map<String, AzkabanNode> nodes,
+      final List<String> dependsOn, final FlowTrigger flowTrigger) {
     super(name, Constants.FLOW_NODE_TYPE, props, dependsOn);
     this.nodes = nodes;
+    this.flowTrigger = flowTrigger;
   }
 
   public Map<String, AzkabanNode> getNodes() {
@@ -49,31 +51,36 @@ public class AzkabanFlow extends AzkabanNode {
     return this.nodes.get(name);
   }
 
+  public FlowTrigger getFlowTrigger() {
+    return this.flowTrigger;
+  }
+
   public static class AzkabanFlowBuilder {
 
     private String name;
     private Props props;
     private List<String> dependsOn;
     private Map<String, AzkabanNode> nodes;
+    private FlowTrigger flowTrigger;
 
-    public AzkabanFlowBuilder setName(final String name) {
+    public AzkabanFlowBuilder name(final String name) {
       this.name = name;
       return this;
     }
 
-    public AzkabanFlowBuilder setProps(final Props props) {
+    public AzkabanFlowBuilder props(final Props props) {
       this.props = props;
       return this;
     }
 
-    public AzkabanFlowBuilder setDependsOn(final List<String> dependsOn) {
+    public AzkabanFlowBuilder dependsOn(final List<String> dependsOn) {
       this.dependsOn = dependsOn == null
           ? Collections.emptyList()
           : ImmutableList.copyOf(dependsOn);
       return this;
     }
 
-    public AzkabanFlowBuilder setNodes(final Collection<? extends AzkabanNode> azkabanNodes) {
+    public AzkabanFlowBuilder nodes(final Collection<? extends AzkabanNode> azkabanNodes) {
       final Map<String, AzkabanNode> tempNodes = new HashMap<>();
       for (final AzkabanNode node : azkabanNodes) {
         tempNodes.put(node.getName(), node);
@@ -82,8 +89,13 @@ public class AzkabanFlow extends AzkabanNode {
       return this;
     }
 
+    public AzkabanFlowBuilder flowTrigger(final FlowTrigger flowTrigger) {
+      this.flowTrigger = flowTrigger;
+      return this;
+    }
+
     public AzkabanFlow build() {
-      return new AzkabanFlow(this.name, this.props, this.nodes, this.dependsOn);
+      return new AzkabanFlow(this.name, this.props, this.nodes, this.dependsOn, this.flowTrigger);
     }
   }
 }

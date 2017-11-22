@@ -46,6 +46,11 @@ public class Constants {
   // Flow 2.0 flow and job path delimiter
   public static final String PATH_DELIMITER = ":";
 
+  // Flow trigger props
+  public static final String SCHEDULE_TYPE = "type";
+  public static final String CRON_SCHEDULE_TYPE = "cron";
+  public static final String SCHEDULE_VALUE = "value";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -207,6 +212,9 @@ public class Constants {
     // Use EXTRA_HCAT_CLUSTERS instead
     @Deprecated
     public static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
+
+    // If true, AZ will fetches the jobs' certificate from remote Certificate Authority.
+    public static final String ENABLE_JOB_SSL = "azkaban.job.enable.ssl";
 
     // Job properties that indicate maximum memory size
     public static final String JOB_MAX_XMS = "job.max.Xms";
