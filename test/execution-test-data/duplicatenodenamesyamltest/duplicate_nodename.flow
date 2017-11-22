@@ -1,0 +1,28 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: shell_end
+    type: noop
+    dependsOn:
+      - shell_echo
+
+  - name: shell_echo
+    type: command
+    dependsOn:
+      - shell_pwd
+    config:
+      command: echo "This is an echoed text."
+
+  - name: shell_echo
+    type: command
+    dependsOn:
+      - shell_pwd
+    config:
+      command: echo "This is a duplicate echoed text."
+
+  - name: shell_pwd
+    type: command
+    config:
+      command: pwd

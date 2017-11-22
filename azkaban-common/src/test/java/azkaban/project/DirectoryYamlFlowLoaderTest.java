@@ -37,7 +37,10 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String MULTIPLE_FLOW_YAML_DIR = "multipleflowyamltest";
   private static final String EMBEDDED_FLOW_YAML_DIR = "embeddedflowyamltest";
   private static final String MULTIPLE_EMBEDDED_FLOW_YAML_DIR = "multipleembeddedflowyamltest";
-  private static final String INVALID_FLOW_YAML_DIR = "invalidflowyamltest";
+  private static final String CYCLE_FOUND_YAML_DIR = "cyclefoundyamltest";
+  private static final String DUPLICATE_NODENAME_YAML_DIR = "duplicatenodenamesyamltest";
+  private static final String DEPENDENCY_UNDEFINED_YAML_DIR = "dependencyundefinedyamltest";
+  private static final String INVALID_JOBPROPS_YAML_DIR = "invalidjobpropsyamltest";
   private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
@@ -53,10 +56,11 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String EMBEDDED_FLOW_B2 =
       "embedded_flow_b" + Constants.PATH_DELIMITER + "embedded_flow1" + Constants.PATH_DELIMITER
           + "embedded_flow2";
-  private static final String INVALID_FLOW_1 = "dependency_not_found";
-  private static final String INVALID_FLOW_2 = "cycle_found";
-  private static final String DEPENDENCY_NOT_FOUND_ERROR = "Dependency not found.";
+  private static final String DUPLICATE_NODENAME_FLOW_FILE = "duplicate_nodename.flow";
+  private static final String DEPENDENCY_UNDEFINED_FLOW_FILE = "dependency_undefined.flow";
+  private static final String CYCLE_FOUND_FLOW = "cycle_found";
   private static final String CYCLE_FOUND_ERROR = "Cycles found.";
+  private static final String SHELL_PWD = "invalid_jobprops:shell_pwd";
   private Project project;
 
   @Before
@@ -106,14 +110,44 @@ public class DirectoryYamlFlowLoaderTest {
   }
 
   @Test
-  public void testLoadInvalidFlowYamlFiles() {
+  public void testLoadInvalidFlowYamlFileWithDuplicateNodeNames() {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(INVALID_FLOW_YAML_DIR));
-    checkFlowLoaderProperties(loader, 2, 2, 2);
-    // Invalid flow 1: Dependency not found.
-    checkFlowProperties(loader, INVALID_FLOW_1, 1, 3, 1, 3, DEPENDENCY_NOT_FOUND_ERROR);
-    // Invalid flow 2: Cycles found.
-    checkFlowProperties(loader, INVALID_FLOW_2, 1, 4, 1, 4, CYCLE_FOUND_ERROR);
+    loader.loadProjectFlow(this.project,
+        ExecutionsTestUtil.getFlowDir(DUPLICATE_NODENAME_YAML_DIR));
+    checkFlowLoaderProperties(loader, 1, 0, 0);
+    assertThat(loader.getErrors()).containsExactly(
+        "Failed to validate nodeBean for " + DUPLICATE_NODENAME_FLOW_FILE
+            + ". Duplicate nodes found or dependency undefined.");
+  }
+
+  @Test
+  public void testLoadInvalidFlowYamlFileWithUndefinedDependency() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project,
+        ExecutionsTestUtil.getFlowDir(DEPENDENCY_UNDEFINED_YAML_DIR));
+    checkFlowLoaderProperties(loader, 1, 0, 0);
+    assertThat(loader.getErrors()).containsExactly(
+        "Failed to validate nodeBean for " + DEPENDENCY_UNDEFINED_FLOW_FILE
+            + ". Duplicate nodes found or dependency undefined.");
+  }
+
+  @Test
+  public void testLoadInvalidFlowYamlFileWithCycle() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(CYCLE_FOUND_YAML_DIR));
+    checkFlowLoaderProperties(loader, 1, 1, 1);
+    checkFlowProperties(loader, CYCLE_FOUND_FLOW, 1, 4, 1, 4, CYCLE_FOUND_ERROR);
+  }
+
+  @Test
+  public void testLoadFlowYamlFileWithInvalidJobProps() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project,
+        ExecutionsTestUtil.getFlowDir(INVALID_JOBPROPS_YAML_DIR));
+    checkFlowLoaderProperties(loader, 1, 1, 1);
+    assertThat(loader.getErrors()).containsExactly(
+        SHELL_PWD + ": Xms value has exceeded the allowed limit (max Xms = "
+            + Constants.JobProperties.MAX_XMS_DEFAULT + ")");
   }
 
   @Test
