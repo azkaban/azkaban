@@ -229,6 +229,14 @@ public class AzkabanDatabaseSetup {
         final String[] nameSplit = name.split("\\.");
         final String tableName = nameSplit[1];
 
+        // TODO temporary fix for Issue #1569:
+        // "Startup fails: missing tables that need to be installed: quartz-tables-all"
+        // this doesn't work because the file actually contains multiple tables and the file name
+        // pattern doesn't match with any of those. Until this new file the convention has been that
+        // each file has a single table and the file name matches the table name.
+        if ("quartz-tables-all".equals(tableName)) {
+          continue;
+        }
         if (!this.tables.containsKey(tableName)) {
           this.missingTables.add(tableName);
         }
