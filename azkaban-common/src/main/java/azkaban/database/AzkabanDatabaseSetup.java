@@ -39,6 +39,10 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+/**
+ * @deprecated in favor of {@link azkaban.db.DatabaseSetup}.
+ */
+@Deprecated
 public class AzkabanDatabaseSetup {
 
   public static final String DATABASE_CHECK_VERSION = "database.check.version";
