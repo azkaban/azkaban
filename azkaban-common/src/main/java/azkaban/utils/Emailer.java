@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.mail.MessagingException;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -114,18 +113,19 @@ public class Emailer extends AbstractMailer implements Alerter {
       if (!this.testMode) {
         try {
           message.sendEmail();
+          logger.info("Sent SLA email message " + slaMessage);
           this.commonMetrics.markSendEmailSuccess();
-        } catch (final MessagingException e) {
-          logger.error("Failed to send SLA email message" + slaMessage, e);
+        } catch (final Exception e) {
+          logger.error("Failed to send SLA email message " + slaMessage, e);
           this.commonMetrics.markSendEmailFail();
         }
       }
     }
   }
 
-  private String getJobOrFlowName(SlaOption slaOption) {
-    String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
-    String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+  private String getJobOrFlowName(final SlaOption slaOption) {
+    final String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+    final String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
     if (org.apache.commons.lang.StringUtils.isNotBlank(jobName)) {
       return flowName + ":" + jobName;
     } else {
@@ -155,8 +155,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated && !this.testMode) {
       try {
         message.sendEmail();
+        logger.info("Sent first error email message for execution " + flow.getExecutionId());
         this.commonMetrics.markSendEmailSuccess();
-      } catch (final MessagingException e) {
+      } catch (final Exception e) {
         logger.error(
             "Failed to send first error email message for execution " + flow.getExecutionId(), e);
         this.commonMetrics.markSendEmailFail();
@@ -185,8 +186,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated && !this.testMode) {
       try {
         message.sendEmail();
+        logger.info("Sent error email message for execution " + flow.getExecutionId());
         this.commonMetrics.markSendEmailSuccess();
-      } catch (final MessagingException e) {
+      } catch (final Exception e) {
         logger
             .error("Failed to send error email message for execution " + flow.getExecutionId(), e);
         this.commonMetrics.markSendEmailFail();
@@ -215,8 +217,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated && !this.testMode) {
       try {
         message.sendEmail();
+        logger.info("Sent success email message for execution " + flow.getExecutionId());
         this.commonMetrics.markSendEmailSuccess();
-      } catch (final MessagingException e) {
+      } catch (final Exception e) {
         logger.error("Failed to send success email message for execution " + flow.getExecutionId(),
             e);
         this.commonMetrics.markSendEmailFail();
