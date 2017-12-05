@@ -357,21 +357,21 @@ public class JdbcProjectImplTest {
   @Test
   public void testUploadFlowFile() throws Exception {
     final File testYamlFile = ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YAML_DIR, BASIC_FLOW_FILE);
-    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile);
+    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, testYamlFile, FLOW_VERSION);
 
     final File file = this.loader
-        .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, BASIC_FLOW_FILE);
+        .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, BASIC_FLOW_FILE, FLOW_VERSION);
     assertThat(file.getName()).isEqualTo(BASIC_FLOW_FILE);
-    FileUtils.contentEquals(testYamlFile, file);
+    assertThat(FileUtils.contentEquals(testYamlFile, file)).isTrue();
   }
 
   @Test
   public void testDuplicateUploadFlowFileException() throws Exception {
     final File testYamlFile = ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YAML_DIR, BASIC_FLOW_FILE);
-    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile);
+    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, testYamlFile, FLOW_VERSION);
 
     assertThatThrownBy(
-        () -> this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile))
+        () -> this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, testYamlFile, FLOW_VERSION))
         .isInstanceOf(ProjectManagerException.class)
         .hasMessageContaining(
             "Error uploading flow file " + BASIC_FLOW_FILE + ", version " + FLOW_VERSION + ".");
@@ -382,7 +382,7 @@ public class JdbcProjectImplTest {
     final File testYamlFile = ExecutionsTestUtil.getFlowFile(LARGE_FLOW_YAML_DIR, LARGE_FLOW_FILE);
 
     assertThatThrownBy(
-        () -> this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile))
+        () -> this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, testYamlFile, FLOW_VERSION))
         .isInstanceOf(ProjectManagerException.class)
         .hasMessageContaining(
             "Flow file length exceeds 10 MB limit.");
@@ -395,7 +395,7 @@ public class JdbcProjectImplTest {
     assertThat(
         this.loader.getLatestFlowVersion(PROJECT_ID, PROJECT_VERSION, testYamlFile.getName()))
         .isEqualTo(0);
-    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, FLOW_VERSION, testYamlFile);
+    this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, testYamlFile, FLOW_VERSION);
     assertThat(
         this.loader.getLatestFlowVersion(PROJECT_ID, PROJECT_VERSION, testYamlFile.getName()))
         .isEqualTo(FLOW_VERSION);

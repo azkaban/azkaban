@@ -113,7 +113,7 @@ public class AzkabanProjectLoaderTest {
     verify(this.storageManager)
         .uploadProject(this.project, this.VERSION + 1, projectZipFile, uploader);
     verify(this.projectLoader)
-        .uploadFlowFile(eq(this.ID), eq(this.VERSION + 1), eq(flowVersion + 1), any(File.class));
+        .uploadFlowFile(eq(this.ID), eq(this.VERSION + 1), any(File.class), eq(flowVersion + 1));
 
   }
 

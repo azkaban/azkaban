@@ -82,7 +82,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
       FileUtils.copyFile(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE), flowFile);
       return flowFile;
     }).when(this.testUtil.getProjectLoader())
-        .getUploadedFlowFile(project.getId(), project.getVersion(), 1, FLOW_YAML_FILE);
+        .getUploadedFlowFile(project.getId(), project.getVersion(), FLOW_YAML_FILE, 1);
     assertProperties(true);
   }
 

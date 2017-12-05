@@ -803,9 +803,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       final int flowVersion = this.projectLoader
           .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
       flowFile = this.projectLoader
-          .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), flowVersion,
-              source);
-    } catch (final ProjectManagerException e) {
+          .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), source,
+              flowVersion);
+    } catch (final Exception e) {
       this.logger.error("Failed to get flow file " + source, e);
     }
     return flowFile;
