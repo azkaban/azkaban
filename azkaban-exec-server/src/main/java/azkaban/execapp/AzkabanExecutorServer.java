@@ -140,7 +140,7 @@ public class AzkabanExecutorServer {
     }
 
     /* Initialize Guice Injector */
-    final Injector injector = Guice .createInjector (
+    final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanExecServerModule()
     );
@@ -188,7 +188,7 @@ public class AzkabanExecutorServer {
       public void logTopMemoryConsumers() throws Exception, IOException {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          logger.info("logging top memeory consumer");
+          logger.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
