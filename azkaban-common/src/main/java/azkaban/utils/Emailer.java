@@ -111,6 +111,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     sendEmail(emailList, subject, slaMessage);
   }
 
+  /**
+   * Send an email to the specified email list
+   */
   public void sendEmail(final List<String> emailList, final String subject, final String body) {
     if (emailList != null && !emailList.isEmpty()) {
       final EmailMessage message =
