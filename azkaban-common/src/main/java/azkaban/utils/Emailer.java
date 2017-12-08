@@ -121,10 +121,10 @@ public class Emailer extends AbstractMailer implements Alerter {
       if (!this.testMode) {
         try {
           message.sendEmail();
-          logger.info("Sent SLA email message " + body);
+          logger.info("Sent email message " + body);
           this.commonMetrics.markSendEmailSuccess();
         } catch (final Exception e) {
-          logger.error("Failed to send SLA email message " + body, e);
+          logger.error("Failed to send email message " + body, e);
           this.commonMetrics.markSendEmailFail();
         }
       }
