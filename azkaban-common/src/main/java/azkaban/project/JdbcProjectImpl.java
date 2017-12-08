@@ -40,7 +40,6 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
-import azkaban.utils.Utils;
 import com.google.common.io.Files;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -56,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -1017,12 +1015,14 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public File getUploadedFlowFile(final int projectId, final int projectVersion,
-      final String flowFileName,
-      final int flowVersion) throws ProjectManagerException, IOException {
+      final String flowFileName, final int flowVersion, final File tempDir)
+      throws ProjectManagerException, IOException {
     final FlowFileResultHandler handler = new FlowFileResultHandler();
 
     final List<byte[]> data;
-    final File tempDir = Utils.createTempDir(this.tempDir);
+    // Created separate temp directory for each flow file to avoid overwriting the same file by
+    // multiple threads concurrently. Flow file name will be interpret as the flow name when
+    // parsing the yaml flow file, so it has to be specific.
     final File file = new File(tempDir, flowFileName);
     try (final FileOutputStream output = new FileOutputStream(file);
         final BufferedOutputStream bufferedStream = new BufferedOutputStream(output)) {
@@ -1031,23 +1031,21 @@ public class JdbcProjectImpl implements ProjectLoader {
             .query(FlowFileResultHandler.SELECT_FLOW_FILE, handler,
                 projectId, projectVersion, flowFileName, flowVersion);
       } catch (final SQLException e) {
-        logger.error(e);
-        if (tempDir.exists()) {
-          FileUtils.deleteDirectory(tempDir);
-        }
         throw new ProjectManagerException(
-            "Failed to query uploaded flow file " + flowFileName + ".", e);
+            "Failed to query uploaded flow file for project " + projectId + " version "
+                + projectVersion + ", flow file " + flowFileName + " version " + flowVersion, e);
       }
 
-      if (data != null && !data.isEmpty()) {
-        bufferedStream.write(data.get(0));
+      if (data == null || data.isEmpty()) {
+        throw new ProjectManagerException(
+            "No flow file could be found in DB table for project " + projectId + " version " +
+                projectVersion + ", flow file " + flowFileName + " version " + flowVersion);
       }
+      bufferedStream.write(data.get(0));
     } catch (final IOException e) {
-      if (tempDir.exists()) {
-        FileUtils.deleteDirectory(tempDir);
-      }
       throw new ProjectManagerException(
-          "Error writing to output stream for flow file" + flowFileName, e);
+          "Error writing to output stream for project " + projectId + " version " + projectVersion
+              + ", flow file " + flowFileName + " version " + flowVersion, e);
     }
     return file;
   }

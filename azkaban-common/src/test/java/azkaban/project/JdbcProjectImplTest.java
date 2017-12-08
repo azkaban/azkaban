@@ -27,6 +27,7 @@ import azkaban.user.User;
 import azkaban.utils.Md5Hasher;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
+import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -358,9 +359,10 @@ public class JdbcProjectImplTest {
   public void testUploadFlowFile() throws Exception {
     final File testYamlFile = ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YAML_DIR, BASIC_FLOW_FILE);
     this.loader.uploadFlowFile(PROJECT_ID, PROJECT_VERSION, testYamlFile, FLOW_VERSION);
-
+    final File tempDir = Files.createTempDir();
+    tempDir.deleteOnExit();
     final File file = this.loader
-        .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, BASIC_FLOW_FILE, FLOW_VERSION);
+        .getUploadedFlowFile(PROJECT_ID, PROJECT_VERSION, BASIC_FLOW_FILE, FLOW_VERSION, tempDir);
     assertThat(file.getName()).isEqualTo(BASIC_FLOW_FILE);
     assertThat(FileUtils.contentEquals(testYamlFile, file)).isTrue();
   }

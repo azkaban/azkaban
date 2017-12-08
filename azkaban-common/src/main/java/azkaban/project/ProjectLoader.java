@@ -211,7 +211,8 @@ public interface ProjectLoader {
   /**
    * Gets flow file that's uploaded.
    */
-  File getUploadedFlowFile(int projectId, int projectVersion, String flowFileName, int flowVersion)
+  File getUploadedFlowFile(int projectId, int projectVersion, String flowFileName, int
+      flowVersion, final File tempDir)
       throws ProjectManagerException, IOException;
 
   /**
