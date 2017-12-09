@@ -108,6 +108,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
     final List<String> emailList =
         (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
+    logger.info("Sending SLA email " + slaMessage);
     sendEmail(emailList, subject, slaMessage);
   }
 
