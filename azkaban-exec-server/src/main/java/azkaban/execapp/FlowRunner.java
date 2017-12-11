@@ -269,7 +269,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
     if (this.isAzkabanFlowVersion20) {
-      final Props flowProps = loadPropsFromYamlFileUtil(this.flow.getId());
+      final Props flowProps = loadPropsFromYamlFile(this.flow.getId());
       if (flowProps != null) {
         flowProps.setParent(commonFlowProps);
         commonFlowProps = flowProps;
@@ -727,7 +727,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (this.isAzkabanFlowVersion20) {
       final String jobPath =
           node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
-      props = loadPropsFromYamlFileUtil(jobPath);
+      props = loadPropsFromYamlFile(jobPath);
       if (props == null) {
         this.logger.info("Job props loaded from yaml file is empty for job " + node.getId());
         return props;
@@ -772,16 +772,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     return props;
   }
 
-  private Props loadPropsFromYamlFileUtil(final String path) {
-    final File tempDir;
+  private Props loadPropsFromYamlFile(final String path) {
+    File tempDir = null;
     Props props = null;
     try {
       tempDir = Files.createTempDir();
-    } catch (final IllegalStateException e) {
-      this.logger.error("Failed to create temp directory. " + e);
-      return props;
-    }
-    try {
       props = FlowLoaderUtils.getPropsFromYamlFile(path, getFlowFile(tempDir));
     } catch (final Exception e) {
       this.logger.error("Failed to get props from flow file. " + e);

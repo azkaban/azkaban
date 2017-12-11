@@ -35,8 +35,7 @@ import org.yaml.snakeyaml.Yaml;
 public class NodeBeanLoader {
 
   public NodeBean load(final File flowFile) throws Exception {
-    checkArgument(flowFile != null);
-    checkArgument(flowFile.exists());
+    checkArgument(flowFile != null && flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
     final NodeBean nodeBean = new Yaml().loadAs(new FileInputStream(flowFile), NodeBean.class);
@@ -99,8 +98,7 @@ public class NodeBeanLoader {
   }
 
   public String getFlowName(final File flowFile) {
-    checkArgument(flowFile != null);
-    checkArgument(flowFile.exists());
+    checkArgument(flowFile != null && flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
     return Files.getNameWithoutExtension(flowFile.getName());
