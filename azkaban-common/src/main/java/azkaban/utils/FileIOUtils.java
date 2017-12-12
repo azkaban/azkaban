@@ -16,6 +16,8 @@
 
 package azkaban.utils;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -87,7 +89,7 @@ public class FileIOUtils {
   }
 
   /**
-   * Run a unix command that will hard link files and recurse into directories.
+   * Use NIO to create symlink files, and recurse into directories.
    */
 
   public static void createDeepHardlink(final File sourceDir, final File destDir)
@@ -105,49 +107,22 @@ public class FileIOUtils {
     final Set<String> paths = new HashSet<>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
-    final StringBuffer buffer = new StringBuffer();
     for (String path : paths) {
-      final File sourceLink = new File(sourceDir, path);
-      path = "." + path;
+      File sourceLink = new File(sourceDir, path);
+      path = destDir + path;
 
-      buffer.append("ln ").append(sourceLink.getAbsolutePath()).append("/*")
-          .append(" ").append(path).append(";");
-    }
+      File[] targetFiles = sourceLink.listFiles();
+      for (File targetFile : targetFiles) {
+        if (targetFile.isFile()) {
+          File linkFile = new File(path, targetFile.getName());
 
-    runShellCommand(buffer.toString(), destDir);
-  }
-
-  private static void runShellCommand(final String command, final File workingDir)
-      throws IOException {
-    final ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
-    builder.directory(workingDir);
-
-    // XXX what about stopping threads ??
-    final Process process = builder.start();
-    try {
-      final NullLogger errorLogger = new NullLogger(process.getErrorStream());
-      final NullLogger inputLogger = new NullLogger(process.getInputStream());
-      errorLogger.start();
-      inputLogger.start();
-
-      try {
-        if (process.waitFor() < 0) {
-          // Assume that the error will be in standard out. Otherwise it'll be
-          // in standard in.
-          String errorMessage = errorLogger.getLastMessages();
-          if (errorMessage.isEmpty()) {
-            errorMessage = inputLogger.getLastMessages();
+          try {
+            Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
+          } catch (IOException e) {
+            e.printStackTrace();
           }
-
-          throw new IOException(errorMessage);
-        }
-      } catch (final InterruptedException e) {
-        logger.error(e);
+	    }
       }
-    } finally {
-      IOUtils.closeQuietly(process.getInputStream());
-      IOUtils.closeQuietly(process.getOutputStream());
-      IOUtils.closeQuietly(process.getErrorStream());
     }
 
   }
