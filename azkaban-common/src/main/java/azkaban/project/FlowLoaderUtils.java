@@ -233,6 +233,16 @@ public class FlowLoaderUtils {
   }
 
   /**
+   * Check if azkaban flow version is 2.0.
+   *
+   * @param azkabanFlowVersion the azkaban flow version
+   * @return the boolean
+   */
+  public static boolean isAzkabanFlowVersion20(final double azkabanFlowVersion) {
+    return Double.compare(azkabanFlowVersion, Constants.AZKABAN_FLOW_VERSION_2_0) == 0;
+  }
+
+  /**
    * Implements Suffix filter.
    */
   public static class SuffixFilter implements FileFilter {
