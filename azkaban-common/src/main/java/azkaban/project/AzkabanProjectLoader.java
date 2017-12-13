@@ -217,7 +217,7 @@ class AzkabanProjectLoader {
           final int newFlowVersion = this.projectLoader
               .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
           this.projectLoader
-              .uploadFlowFile(project.getId(), newProjectVersion, newFlowVersion, file);
+              .uploadFlowFile(project.getId(), newProjectVersion, file, newFlowVersion);
         }
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");

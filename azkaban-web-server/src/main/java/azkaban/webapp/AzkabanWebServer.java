@@ -256,7 +256,7 @@ public class AzkabanWebServer extends AzkabanServer {
       public void logTopMemoryConsumers() throws Exception {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          logger.info("logging top memeory consumer");
+          logger.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",

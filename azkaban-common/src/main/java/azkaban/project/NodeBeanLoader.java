@@ -23,7 +23,6 @@ import azkaban.Constants;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,11 +34,15 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class NodeBeanLoader {
 
-  public NodeBean load(final File flowFile) throws FileNotFoundException {
-    checkArgument(flowFile.exists());
+  public NodeBean load(final File flowFile) throws Exception {
+    checkArgument(flowFile != null && flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
     final NodeBean nodeBean = new Yaml().loadAs(new FileInputStream(flowFile), NodeBean.class);
+    if (nodeBean == null) {
+      throw new ProjectManagerException(
+          "Failed to load flow file " + flowFile.getName() + ". Node bean is null .");
+    }
     nodeBean.setName(getFlowName(flowFile));
     nodeBean.setType(Constants.FLOW_NODE_TYPE);
     return nodeBean;
@@ -95,7 +98,7 @@ public class NodeBeanLoader {
   }
 
   public String getFlowName(final File flowFile) {
-    checkArgument(flowFile.exists());
+    checkArgument(flowFile != null && flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
     return Files.getNameWithoutExtension(flowFile.getName());

@@ -142,8 +142,8 @@ public class FlowLoaderUtils {
           logger.error("Error getting props for " + path);
         }
       }
-    } catch (final FileNotFoundException e) {
-      logger.error("Failed to get props, error loading flow YAML file " + flowFile);
+    } catch (final Exception e) {
+      logger.error("Failed to get props, error loading flow YAML file. ", e);
     }
     return null;
   }
@@ -178,8 +178,8 @@ public class FlowLoaderUtils {
     try {
       final NodeBean nodeBean = loader.load(flowFile);
       return loader.toFlowTrigger(nodeBean.getTrigger());
-    } catch (final FileNotFoundException e) {
-      logger.error("Failed to get flow trigger, error loading flow YAML file " + flowFile);
+    } catch (final Exception e) {
+      logger.error("Failed to get flow trigger, error loading flow YAML file. ", e);
     }
     return null;
   }

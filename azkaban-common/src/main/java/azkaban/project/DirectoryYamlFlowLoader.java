@@ -26,7 +26,6 @@ import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,8 +109,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
         final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
         final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
         this.flowMap.put(flow.getId(), flow);
-      } catch (final FileNotFoundException e) {
-        logger.error("Error loading flow yaml files", e);
+      } catch (final Exception e) {
+        logger.error("Error loading flow yaml file. ", e);
       }
     }
   }
