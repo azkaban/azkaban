@@ -89,7 +89,7 @@ public class FileIOUtils {
   }
 
   /**
-   * Run a unix command that will hard link files and recurse into directories.
+   * Hard link files and recurse into directories.
    */
 
   public static void createDeepHardlink(final File sourceDir, final File destDir)
@@ -120,42 +120,6 @@ public class FileIOUtils {
       }
     }
   }
-
-  private static void runShellCommand(final String command, final File workingDir)
-      throws IOException {
-    final ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
-    builder.directory(workingDir);
-
-    // XXX what about stopping threads ??
-    final Process process = builder.start();
-    try {
-      final NullLogger errorLogger = new NullLogger(process.getErrorStream());
-      final NullLogger inputLogger = new NullLogger(process.getInputStream());
-      errorLogger.start();
-      inputLogger.start();
-
-      try {
-        if (process.waitFor() < 0) {
-          // Assume that the error will be in standard out. Otherwise it'll be
-          // in standard in.
-          String errorMessage = errorLogger.getLastMessages();
-          if (errorMessage.isEmpty()) {
-            errorMessage = inputLogger.getLastMessages();
-          }
-
-          throw new IOException(errorMessage);
-        }
-      } catch (final InterruptedException e) {
-        logger.error(e);
-      }
-    } finally {
-      IOUtils.closeQuietly(process.getInputStream());
-      IOUtils.closeQuietly(process.getOutputStream());
-      IOUtils.closeQuietly(process.getErrorStream());
-    }
-
-  }
-
 
   private static void createDirsFindFiles(final File baseDir, final File sourceDir,
       final File destDir, final Set<String> paths) {
