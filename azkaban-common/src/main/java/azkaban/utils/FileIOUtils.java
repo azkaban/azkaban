@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -105,16 +107,18 @@ public class FileIOUtils {
     final Set<String> paths = new HashSet<>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
-    final StringBuffer buffer = new StringBuffer();
     for (String path : paths) {
       final File sourceLink = new File(sourceDir, path);
-      path = "." + path;
+      path = destDir + path;
 
-      buffer.append("ln ").append(sourceLink.getAbsolutePath()).append("/*")
-          .append(" ").append(path).append(";");
+      final File[] targetFiles = sourceLink.listFiles();
+      for (final File targetFile : targetFiles) {
+        if (targetFile.isFile()) {
+          final File linkFile = new File(path, targetFile.getName());
+          Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
+        }
+      }
     }
-
-    runShellCommand(buffer.toString(), destDir);
   }
 
   private static void runShellCommand(final String command, final File workingDir)
@@ -151,6 +155,7 @@ public class FileIOUtils {
     }
 
   }
+
 
   private static void createDirsFindFiles(final File baseDir, final File sourceDir,
       final File destDir, final Set<String> paths) {
