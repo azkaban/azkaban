@@ -30,6 +30,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import com.google.common.io.Files;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -322,13 +323,19 @@ public class ProjectManager {
 
   public Props getPropertiesFromFlowFile(final Flow flow, final String jobName, final String
       flowFileName, final int flowVersion) throws ProjectManagerException {
-    final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
-        .getVersion(), flowVersion, flowFileName);
-    final String path =
-        jobName == null ? flow.getId() : flow.getId() + Constants.PATH_DELIMITER + jobName;
-    final Props props = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
-    if (flowFile != null && flowFile.exists()) {
-      flowFile.delete();
+    File tempDir = null;
+    Props props = null;
+    try {
+      tempDir = Files.createTempDir();
+      final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
+          .getVersion(), flowFileName, flowVersion, tempDir);
+      final String path =
+          jobName == null ? flow.getId() : flow.getId() + Constants.PATH_DELIMITER + jobName;
+      props = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
+    } catch (final Exception e) {
+      this.logger.error("Failed to get props from flow file. " + e);
+    } finally {
+      FlowLoaderUtils.cleanUpTempDir(tempDir);
     }
     return props;
   }
@@ -358,20 +365,25 @@ public class ProjectManager {
   public void setJobOverrideProperty(final Project project, final Flow flow, final Props prop,
       final String jobName, final String source, final User modifier)
       throws ProjectManagerException {
-    final Props oldProps;
+    File tempDir = null;
+    Props oldProps = null;
     if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
-      final int flowVersion = this.projectLoader.getLatestFlowVersion(flow.getProjectId(), flow
-          .getVersion(), source);
-      final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
-          .getVersion(), flowVersion, source);
-      final String path = flow.getId() + Constants.PATH_DELIMITER + jobName;
-      oldProps = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
+      try {
+        tempDir = Files.createTempDir();
+        final int flowVersion = this.projectLoader.getLatestFlowVersion(flow.getProjectId(), flow
+            .getVersion(), source);
+        final File flowFile = this.projectLoader.getUploadedFlowFile(flow.getProjectId(), flow
+            .getVersion(), source, flowVersion, tempDir);
+        final String path = flow.getId() + Constants.PATH_DELIMITER + jobName;
+        oldProps = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
 
-      FlowLoaderUtils.setPropsInYamlFile(path, flowFile, prop);
-      this.projectLoader
-          .uploadFlowFile(flow.getProjectId(), flow.getVersion(), flowVersion + 1, flowFile);
-      if (flowFile != null && flowFile.exists()) {
-        flowFile.delete();
+        FlowLoaderUtils.setPropsInYamlFile(path, flowFile, prop);
+        this.projectLoader
+            .uploadFlowFile(flow.getProjectId(), flow.getVersion(), flowFile, flowVersion + 1);
+      } catch (final Exception e) {
+        this.logger.error("Failed to set job override property. " + e);
+      } finally {
+        FlowLoaderUtils.cleanUpTempDir(tempDir);
       }
     } else {
       prop.setSource(jobName + Constants.JOB_OVERRIDE_SUFFIX);

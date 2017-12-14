@@ -23,7 +23,6 @@ import azkaban.utils.Props;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -85,7 +85,7 @@ public class FlowLoaderUtils {
       } else {
         logger.error("Error setting props for " + path);
       }
-    } catch (final FileNotFoundException e) {
+    } catch (final Exception e) {
       logger.error("Failed to set props, error loading flow YAML file " + flowFile);
     }
     return null;
@@ -230,6 +230,23 @@ public class FlowLoaderUtils {
     final ValidationReport report = new ValidationReport();
     report.addErrorMsgs(errors);
     return report;
+  }
+
+  /**
+   * Clean up temp dir.
+   *
+   * @param tempDir the temp dir
+   */
+  public static void cleanUpTempDir(final File tempDir) {
+    logger.info("Cleaning up temp directory.");
+    try {
+      if (tempDir != null && tempDir.exists()) {
+        FileUtils.deleteDirectory(tempDir);
+      }
+    } catch (final IOException e) {
+      logger.error("Failed to delete temp directory", e);
+      tempDir.deleteOnExit();
+    }
   }
 
   /**
