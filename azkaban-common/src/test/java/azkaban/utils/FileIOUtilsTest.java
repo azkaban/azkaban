@@ -39,6 +39,10 @@ public class FileIOUtilsTest {
   public TemporaryFolder temp = new TemporaryFolder();
   private File sourceDir, destDir, baseDir;
 
+  /**
+   * Create a very big dir which would cause linux shell command to hard link the dir to
+   * exceed the allowed limit.
+   */
   private void createBigDir(final String path) throws IOException {
     final String verylongprefix =
         "123123123123123123123123123123123113123111111111111111111111111111111111111111111111111111"
