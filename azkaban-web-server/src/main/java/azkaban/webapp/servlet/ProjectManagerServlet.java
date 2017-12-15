@@ -778,6 +778,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void fillFlowInfo(final Project project, final String flowId,
       final HashMap<String, Object> ret) {
     final Flow flow = project.getFlow(flowId);
+    if (flow == null) {
+      ret.put("error",
+              "Flow " + flowId + " not found in project " + project.getName());
+      return;
+    }
 
     final ArrayList<Map<String, Object>> nodeList =
         new ArrayList<>();
