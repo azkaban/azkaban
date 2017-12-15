@@ -79,7 +79,6 @@ public class FileIOUtilsTest {
     file5.createNewFile();
     file6.createNewFile();
     file7.createNewFile();
-    createBigDir(this.baseDir.getAbsolutePath());
 
     byte[] fileData = new byte[]{1, 2, 3};
     FileOutputStream out = new FileOutputStream(file1);
@@ -112,6 +111,18 @@ public class FileIOUtilsTest {
     assertThat(areDirsEqual(this.sourceDir, this.destDir, true)).isTrue();
     FileUtils.deleteDirectory(this.destDir);
     assertThat(areDirsEqual(this.baseDir, this.sourceDir, true)).isTrue();
+  }
+
+  @Test
+  public void testHardlinkCopyOfBigDir() throws IOException {
+    final File bigDir = new File(this.baseDir.getAbsolutePath() + "/bigdir");
+    bigDir.mkdir();
+    createBigDir(bigDir.getAbsolutePath());
+
+    FileIOUtils.createDeepHardlink(bigDir, this.destDir);
+    assertThat(areDirsEqual(this.destDir, bigDir, true)).isTrue();
+    FileUtils.deleteDirectory(bigDir);
+
   }
 
   @Test
