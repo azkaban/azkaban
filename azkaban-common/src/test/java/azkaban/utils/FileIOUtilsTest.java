@@ -43,12 +43,12 @@ public class FileIOUtilsTest {
     final String verylongprefix =
         "123123123123123123123123123123123113123111111111111111111111111111111111111111111111111111"
             + "111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-            + "1123131231231231231231312";
+            + "11231312312312312312313121111111111111111111111111111111111111111111111111";
 
-    for (int i = 1; i <= 50; i++) {
+    for (int i = 1; i <= 400; i++) {
       final File tmpDir = new File(path + "/" + verylongprefix + "dir" + i);
       tmpDir.mkdir();
-      for (int j = 1; j <= 50; j++) {
+      for (int j = 1; j <= 100; j++) {
         final File tmp = new File(tmpDir.getAbsolutePath() + "/" + j);
         tmp.createNewFile();
       }
