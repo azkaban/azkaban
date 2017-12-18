@@ -24,6 +24,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
@@ -50,11 +53,11 @@ public class FileIOUtilsTest {
             + "11231312312312312312313121111111111111111111111111111111111111111111111111";
 
     for (int i = 1; i <= 400; i++) {
-      final File tmpDir = new File(path + "/" + verylongprefix + "dir" + i);
-      tmpDir.mkdir();
+      final Path tmpDirPath = Paths.get(path, verylongprefix + "dir" + i);
+      Files.createDirectory(tmpDirPath);
       for (int j = 1; j <= 100; j++) {
-        final File tmp = new File(tmpDir.getAbsolutePath() + "/" + j);
-        tmp.createNewFile();
+        final Path tmp = Paths.get(tmpDirPath.toAbsolutePath().toString(), String.valueOf(j));
+        Files.createFile(tmp);
       }
     }
   }
