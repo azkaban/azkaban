@@ -688,33 +688,38 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final Props prop;
+    Props jobProp;
     try {
-      prop = this.projectManager.getProperties(project, node.getJobSource());
+      jobProp = this.projectManager.getProperties(project, flow, jobName, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to retrieve job properties!");
       return;
     }
 
+    if (jobProp == null) {
+      jobProp = new Props();
+    }
+
     Props overrideProp;
     try {
-      overrideProp = this.projectManager.getJobOverrideProperty(project, jobName);
+      overrideProp = this.projectManager
+          .getJobOverrideProperty(project, flow, jobName, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to retrieve job override properties!");
       return;
     }
 
     ret.put("jobName", node.getId());
-    ret.put("jobType", prop.get("type"));
+    ret.put("jobType", jobProp.get("type"));
 
     if (overrideProp == null) {
-      overrideProp = new Props(prop);
+      overrideProp = new Props(jobProp);
     }
 
     final Map<String, String> generalParams = new HashMap<>();
     final Map<String, String> overrideParams = new HashMap<>();
-    for (final String ps : prop.getKeySet()) {
-      generalParams.put(ps, prop.getString(ps));
+    for (final String ps : jobProp.getKeySet()) {
+      generalParams.put(ps, jobProp.getString(ps));
     }
     for (final String ops : overrideProp.getKeySet()) {
       overrideParams.put(ops, overrideProp.getString(ops));
@@ -745,7 +750,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Map<String, String> jobParamGroup = this.getParamGroup(req, "jobOverride");
     final Props overrideParams = new Props(null, jobParamGroup);
     try {
-      this.projectManager.setJobOverrideProperty(project, overrideParams, jobName, user);
+      this.projectManager
+          .setJobOverrideProperty(project, flow, overrideParams, jobName, node.getJobSource(),
+              user);
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property");
     }
@@ -837,20 +844,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     ret.put("flow", flowId);
     ret.put("type", node.getType());
 
-    final Props props;
+    final Props jobProps;
     try {
-      props = this.projectManager.getProperties(project, node.getJobSource());
+      jobProps = this.projectManager.getProperties(project, flow, nodeId, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property for " + nodeId);
       return;
     }
 
-    if (props == null) {
+    if (jobProps == null) {
       ret.put("error", "Properties for " + nodeId + " isn't found.");
       return;
     }
 
-    final Map<String, String> properties = PropsUtils.toStringMap(props, true);
+    final Map<String, String> properties = PropsUtils.toStringMap(jobProps, true);
     ret.put("props", properties);
 
     if (node.getType().equals("flow")) {
@@ -1336,13 +1343,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props prop = this.projectManager.getProperties(project, node.getJobSource());
+      final Props jobProp = this.projectManager
+          .getProperties(project, flow, jobName, node.getJobSource());
       Props overrideProp =
-          this.projectManager.getJobOverrideProperty(project, jobName);
+          this.projectManager.getJobOverrideProperty(project, flow, jobName, node.getJobSource());
       if (overrideProp == null) {
         overrideProp = new Props();
       }
-      final Props comboProp = new Props(prop);
+      final Props comboProp = new Props(jobProp);
       for (final String key : overrideProp.getKeySet()) {
         comboProp.put(key, overrideProp.get(key));
       }
@@ -1450,7 +1458,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props prop = this.projectManager.getProperties(project, propSource);
+      final Props prop = this.projectManager.getProperties(project, flow, null, propSource);
       if (prop == null) {
         page.add("errorMsg", "Property " + propSource + " not found.");
         logger.info("Display project property. Project " + projectName +

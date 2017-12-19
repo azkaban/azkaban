@@ -30,6 +30,7 @@ import java.util.Map;
 /**
  * Flow level definition of the DAG.
  * Contains a list of AzkabanNodes and related flow properties.
+ * Introduced in Flow 2.0 design.
  */
 public class AzkabanFlow extends AzkabanNode {
 
