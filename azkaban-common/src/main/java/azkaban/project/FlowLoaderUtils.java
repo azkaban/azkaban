@@ -233,19 +233,18 @@ public class FlowLoaderUtils {
   }
 
   /**
-   * Clean up temp dir.
+   * Clean up the directory.
    *
-   * @param tempDir the temp dir
+   * @param dir the directory to be deleted
    */
-  public static void cleanUpTempDir(final File tempDir) {
-    logger.info("Cleaning up temp directory.");
+  public static void cleanUpDir(final File dir) {
     try {
-      if (tempDir != null && tempDir.exists()) {
-        FileUtils.deleteDirectory(tempDir);
+      if (dir != null && dir.exists()) {
+        FileUtils.deleteDirectory(dir);
       }
     } catch (final IOException e) {
-      logger.error("Failed to delete temp directory", e);
-      tempDir.deleteOnExit();
+      logger.error("Failed to delete the directory", e);
+      dir.deleteOnExit();
     }
   }
 

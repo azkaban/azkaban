@@ -335,7 +335,7 @@ public class ProjectManager {
     } catch (final Exception e) {
       this.logger.error("Failed to get props from flow file. " + e);
     } finally {
-      FlowLoaderUtils.cleanUpTempDir(tempDir);
+      FlowLoaderUtils.cleanUpDir(tempDir);
     }
     return props;
   }
@@ -383,7 +383,7 @@ public class ProjectManager {
       } catch (final Exception e) {
         this.logger.error("Failed to set job override property. " + e);
       } finally {
-        FlowLoaderUtils.cleanUpTempDir(tempDir);
+        FlowLoaderUtils.cleanUpDir(tempDir);
       }
     } else {
       prop.setSource(jobName + Constants.JOB_OVERRIDE_SUFFIX);

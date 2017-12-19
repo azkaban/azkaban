@@ -105,7 +105,7 @@ class AzkabanProjectLoader {
 
       // Check the validation report.
       if (!isReportStatusValid(reports, project)) {
-        FlowLoaderUtils.cleanUpTempDir(file);
+        FlowLoaderUtils.cleanUpDir(file);
         return reports;
       }
 
@@ -113,7 +113,7 @@ class AzkabanProjectLoader {
       persistProject(project, loader, archive, file, uploader);
 
     } finally {
-      FlowLoaderUtils.cleanUpTempDir(file);
+      FlowLoaderUtils.cleanUpDir(file);
     }
 
     // Clean up project old installations after new project is uploaded successfully.
