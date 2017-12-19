@@ -93,8 +93,6 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     flowProps.put("props6", "flow6");
     flowProps.put("props5", "flow5");
     final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
-    // Todo jamiesjc: remove below line after project_flow_files DB change is rolled out.
-    runner.setAzkabanFlowVersion20(isAzkabanFlowVersion20);
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
     final ExecutableFlow flow = runner.getExecutableFlow();

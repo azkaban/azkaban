@@ -91,6 +91,24 @@ public class TypedMapWrapper<K, V> {
     }
   }
 
+  public Double getDouble(final K key) {
+    return getDouble(key, -1.0d);
+  }
+
+  public Double getDouble(final K key, final Double defaultVal) {
+    final Object obj = this.map.get(key);
+    if (obj == null) {
+      return defaultVal;
+    }
+    if (obj instanceof Double) {
+      return (Double) obj;
+    } else if (obj instanceof String) {
+      return Double.valueOf((String) obj);
+    } else {
+      return defaultVal;
+    }
+  }
+
   public Collection<String> getStringCollection(final K key) {
     final Object obj = this.map.get(key);
     return (Collection<String>) obj;
