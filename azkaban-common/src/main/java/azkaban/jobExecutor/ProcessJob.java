@@ -218,7 +218,7 @@ public class ProcessJob extends AbstractProcessJob {
     // by default, run as effectiveUser
     String executeAsUserBinaryPath = null;
     String effectiveUser = null;
-    final boolean isExecuteAsUser = this.sysProps.getBoolean(EXECUTE_AS_USER, false);
+    final boolean isExecuteAsUser = this.sysProps.getBoolean(EXECUTE_AS_USER, true);
 
     //Get list of users we never execute flows as. (ie: root, azkaban)
     final Set<String> blackListedUsers = new HashSet<>(
