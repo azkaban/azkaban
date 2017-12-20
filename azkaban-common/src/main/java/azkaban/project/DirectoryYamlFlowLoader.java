@@ -26,7 +26,6 @@ import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -116,7 +115,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
           final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
           this.flowMap.put(flow.getId(), flow);
         }
-      } catch (final FileNotFoundException e) {
+      } catch (final Exception e) {
         this.errors.add("Error loading flow yaml file " + file.getName() + ":"
             + e.getMessage());
       }
@@ -126,6 +125,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   private Flow convertAzkabanFlowToFlow(final AzkabanFlow azkabanFlow, final String flowName,
       final File flowFile) {
     final Flow flow = new Flow(flowName);
+    flow.setAzkabanFlowVersion(Constants.AZKABAN_FLOW_VERSION_2_0);
     final Props props = azkabanFlow.getProps();
     FlowLoaderUtils.addEmailPropsToFlow(flow, props);
     props.setSource(flowFile.getName());

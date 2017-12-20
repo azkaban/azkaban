@@ -52,6 +52,7 @@ import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -267,7 +269,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
     if (this.isAzkabanFlowVersion20) {
-      final Props flowProps = loadFlowPropsFromYamlFile();
+      final Props flowProps = loadPropsFromYamlFile(this.flow.getId());
       if (flowProps != null) {
         flowProps.setParent(commonFlowProps);
         commonFlowProps = flowProps;
@@ -723,7 +725,9 @@ public class FlowRunner extends EventHandler implements Runnable {
   private Props loadJobProps(final ExecutableNode node) throws IOException {
     Props props = null;
     if (this.isAzkabanFlowVersion20) {
-      props = loadJobPropsFromYamlFile(node);
+      final String jobPath =
+          node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
+      props = loadPropsFromYamlFile(jobPath);
       if (props == null) {
         this.logger.info("Job props loaded from yaml file is empty for job " + node.getId());
         return props;
@@ -738,7 +742,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       try {
         props =
             this.projectLoader.fetchProjectProperty(this.flow.getProjectId(),
-                this.flow.getVersion(), node.getId() + ".jor");
+                this.flow.getVersion(), node.getId() + Constants.JOB_OVERRIDE_SUFFIX);
       } catch (final ProjectManagerException e) {
         e.printStackTrace();
         this.logger.error("Error loading job override property for job "
@@ -768,46 +772,41 @@ public class FlowRunner extends EventHandler implements Runnable {
     return props;
   }
 
-  private Props loadFlowPropsFromYamlFile() {
-    final File flowFile = getFlowFile();
-    final Props flowProps = FlowLoaderUtils.getPropsFromYamlFile(this.flow.getId(), flowFile);
-    if (flowFile != null && flowFile.exists()) {
-      flowFile.delete();
-    }
-    return flowProps;
-  }
-
-  private Props loadJobPropsFromYamlFile(final ExecutableNode node) {
-    final File flowFile = getFlowFile();
-    final String jobPath =
-        node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
-    final Props props = FlowLoaderUtils.getPropsFromYamlFile(jobPath, flowFile);
-    if (flowFile != null && flowFile.exists()) {
-      flowFile.delete();
+  private Props loadPropsFromYamlFile(final String path) {
+    File tempDir = null;
+    Props props = null;
+    try {
+      tempDir = Files.createTempDir();
+      props = FlowLoaderUtils.getPropsFromYamlFile(path, getFlowFile(tempDir));
+    } catch (final Exception e) {
+      this.logger.error("Failed to get props from flow file. " + e);
+    } finally {
+      if (tempDir != null && tempDir.exists()) {
+        try {
+          FileUtils.deleteDirectory(tempDir);
+        } catch (final IOException e) {
+          this.logger.error("Failed to delete temp directory." + e);
+          tempDir.deleteOnExit();
+        }
+      }
     }
     return props;
   }
 
-  private File getFlowFile() {
-    File flowFile = null;
-    String source = null;
-    try {
-      final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
-      // There should be exact one source(file name) for each flow file.
-      if (!flowPropsList.isEmpty()) {
-        source = flowPropsList.get(0).getSource();
-      } else {
-        this.logger.error("Failed to get flow file source, flow props is empty.");
-        return null;
-      }
-      final int flowVersion = this.projectLoader
-          .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
-      flowFile = this.projectLoader
-          .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), flowVersion,
-              source);
-    } catch (final ProjectManagerException e) {
-      this.logger.error("Failed to get flow file " + source, e);
+  private File getFlowFile(final File tempDir) throws Exception {
+    final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
+    // There should be exact one source (file name) for each flow file.
+    if (flowPropsList.isEmpty() || flowPropsList.get(0) == null) {
+      throw new ProjectManagerException(
+          "Failed to get flow file source. Flow props is empty for " + this.flow.getId());
     }
+    final String source = flowPropsList.get(0).getSource();
+    final int flowVersion = this.projectLoader
+        .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
+    final File flowFile = this.projectLoader
+        .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), source,
+            flowVersion, tempDir);
+
     return flowFile;
   }
 

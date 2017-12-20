@@ -51,6 +51,9 @@ public class Constants {
   public static final String CRON_SCHEDULE_TYPE = "cron";
   public static final String SCHEDULE_VALUE = "value";
 
+  // Job properties override suffix
+  public static final String JOB_OVERRIDE_SUFFIX = ".jor";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";

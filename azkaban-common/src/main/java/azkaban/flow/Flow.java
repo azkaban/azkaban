@@ -48,6 +48,7 @@ public class Flow {
 
   private boolean isLayedOut = false;
   private boolean isEmbeddedFlow = false;
+  private double azkabanFlowVersion;
 
   public Flow(final String id) {
     this.id = id;
@@ -59,6 +60,7 @@ public class Flow {
     final String id = (String) flowObject.get("id");
     final Boolean layedout = (Boolean) flowObject.get("layedout");
     final Boolean isEmbeddedFlow = (Boolean) flowObject.get("embeddedFlow");
+    final Double azkabanFlowVersion = (Double) flowObject.get("azkabanFlowVersion");
     final Flow flow = new Flow(id);
     if (layedout != null) {
       flow.setLayedOut(layedout);
@@ -66,6 +68,10 @@ public class Flow {
 
     if (isEmbeddedFlow != null) {
       flow.setEmbeddedFlow(isEmbeddedFlow);
+    }
+
+    if (azkabanFlowVersion != null) {
+      flow.setAzkabanFlowVersion(azkabanFlowVersion);
     }
 
     final int projId = (Integer) flowObject.get("project.id");
@@ -328,6 +334,7 @@ public class Flow {
     flowObj.put("mailCreator", this.mailCreator);
     flowObj.put("layedout", this.isLayedOut);
     flowObj.put("embeddedFlow", this.isEmbeddedFlow);
+    flowObj.put("azkabanFlowVersion", this.azkabanFlowVersion);
     if (this.errors != null) {
       flowObj.put("errors", this.errors);
     }
@@ -383,6 +390,14 @@ public class Flow {
 
   public void setEmbeddedFlow(final boolean embeddedFlow) {
     this.isEmbeddedFlow = embeddedFlow;
+  }
+
+  public double getAzkabanFlowVersion() {
+    return this.azkabanFlowVersion;
+  }
+
+  public void setAzkabanFlowVersion(final double azkabanFlowVersion) {
+    this.azkabanFlowVersion = azkabanFlowVersion;
   }
 
   public Map<String, Object> getMetadata() {
