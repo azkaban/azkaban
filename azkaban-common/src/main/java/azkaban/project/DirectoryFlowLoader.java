@@ -16,19 +16,15 @@
 
 package azkaban.project;
 
-import azkaban.Constants;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
-import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -50,8 +46,6 @@ public class DirectoryFlowLoader implements FlowLoader {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
-  private static final String XMS = "Xms";
-  private static final String XMX = "Xmx";
 
   private static final Logger logger = LoggerFactory.getLogger(DirectoryFlowLoader.class);
   private final Props props;
@@ -146,7 +140,7 @@ public class DirectoryFlowLoader implements FlowLoader {
     // Resolve embedded flows
     resolveEmbeddedFlows();
 
-    checkJobProperties(project);
+    FlowLoaderUtils.checkJobProperties(project.getId(), this.props, this.jobPropsMap, this.errors);
 
     return FlowLoaderUtils.generateFlowLoaderReport(this.errors);
 
@@ -381,44 +375,6 @@ public class DirectoryFlowLoader implements FlowLoader {
     }
 
     visited.remove(node.getId());
-  }
-
-  public void checkJobProperties(final Project project) {
-    // if project is in the memory check whitelist, then we don't need to check
-    // its memory settings
-    if (ProjectWhitelist.isProjectWhitelisted(project.getId(),
-        ProjectWhitelist.WhitelistType.MemoryCheck)) {
-      return;
-    }
-
-    final String maxXms = this.props.getString(
-        Constants.JobProperties.JOB_MAX_XMS, Constants.JobProperties.MAX_XMS_DEFAULT);
-    final String maxXmx = this.props.getString(
-        Constants.JobProperties.JOB_MAX_XMX, Constants.JobProperties.MAX_XMX_DEFAULT);
-    final long sizeMaxXms = Utils.parseMemString(maxXms);
-    final long sizeMaxXmx = Utils.parseMemString(maxXmx);
-
-    for (final String jobName : this.jobPropsMap.keySet()) {
-
-      final Props jobProps = this.jobPropsMap.get(jobName);
-      final String xms = jobProps.getString(XMS, null);
-      if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms)
-          && Utils.parseMemString(xms) > sizeMaxXms) {
-        this.errors.add(String.format(
-            "%s: Xms value has exceeded the allowed limit (max Xms = %s)",
-            jobName, maxXms));
-      }
-      final String xmx = jobProps.getString(XMX, null);
-      if (xmx != null && !PropsUtils.isVarialbeReplacementPattern(xmx)
-          && Utils.parseMemString(xmx) > sizeMaxXmx) {
-        this.errors.add(String.format(
-            "%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-            jobName, maxXmx));
-      }
-
-      // job callback properties check
-      JobCallbackValidator.validate(jobName, this.props, jobProps, this.errors);
-    }
   }
 
   private String getNameWithoutExtension(final File file) {

@@ -58,7 +58,7 @@ public class NodeBeanLoader {
     }
 
     for (final NodeBean n : nodeBean.getNodes()) {
-      if (!nodeNames.containsAll(n.getDependsOn())) {
+      if (n.getDependsOn() != null && !nodeNames.containsAll(n.getDependsOn())) {
         // Undefined reference to dependent job
         return false;
       }
