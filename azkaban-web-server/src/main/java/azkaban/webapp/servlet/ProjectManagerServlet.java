@@ -590,6 +590,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     try {
       for (final Schedule schedule : this.scheduleManager.getSchedules()) {
         if (schedule.getProjectId() == project.getId()) {
+          logger.info("removing schedule " + schedule.getScheduleId());
           this.scheduleManager.removeSchedule(schedule);
         }
       }
