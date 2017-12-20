@@ -105,8 +105,6 @@ public class FlowRunner extends EventHandler implements Runnable {
   // Thread safe swap queue for finishedExecutions.
   private final SwapQueue<ExecutableNode> finishedNodes;
   private final AzkabanEventReporter azkabanEventReporter;
-  // Flag to indicate whether to interpret the flow as the new Flow 2.0 definition.
-  private boolean isAzkabanFlowVersion20 = false;
   private Logger logger;
   private Appender flowAppender;
   private File logFile;
@@ -173,9 +171,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     // where the uninitialized logger is used in flow preparing state
     createLogger(this.flow.getFlowId());
     this.azkabanEventReporter = azkabanEventReporter;
-
-    // Todo jamiesjc: Enable below check after DB change of project_flow_files table is rolled out.
-    // this.isAzkabanFlowVersion20 = checkAzkabanFlowVersion();
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -204,10 +199,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     return this.execDir;
   }
 
-  public void setAzkabanFlowVersion20(final boolean azkabanFlowVersion20) {
-    this.isAzkabanFlowVersion20 = azkabanFlowVersion20;
-  }
-
   @Override
   public void run() {
     try {
@@ -220,7 +211,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.logger.info("Updating initial flow directory.");
       updateFlow();
       this.logger.info("Fetching job and shared properties.");
-      if (!this.isAzkabanFlowVersion20) {
+      if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
         loadAllProperties();
       }
 
@@ -256,10 +247,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
   }
 
-  private boolean checkAzkabanFlowVersion() {
-    return this.projectLoader.isFlowFileUploaded(this.flow.getProjectId(), this.flow.getVersion());
-  }
-
   private void setupFlowExecution() {
     final int projectId = this.flow.getProjectId();
     final int version = this.flow.getVersion();
@@ -268,7 +255,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Add a bunch of common azkaban properties
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
-    if (this.isAzkabanFlowVersion20) {
+    if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
       final Props flowProps = loadPropsFromYamlFile(this.flow.getId());
       if (flowProps != null) {
         flowProps.setParent(commonFlowProps);
@@ -675,7 +662,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     Props props = null;
 
-    if (!this.isAzkabanFlowVersion20) {
+    if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
       // 1. Shared properties (i.e. *.properties) for the jobs only. This takes
       // the
       // least precedence
@@ -724,7 +711,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private Props loadJobProps(final ExecutableNode node) throws IOException {
     Props props = null;
-    if (this.isAzkabanFlowVersion20) {
+    if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
       final String jobPath =
           node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
       props = loadPropsFromYamlFile(jobPath);

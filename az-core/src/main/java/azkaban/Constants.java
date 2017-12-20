@@ -33,6 +33,7 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
+  public static final double DEFAULT_AZKABAN_FLOW_VERSION = 1.0;
   public static final double AZKABAN_FLOW_VERSION_2_0 = 2.0;
 
   // Flow 2.0 file suffix

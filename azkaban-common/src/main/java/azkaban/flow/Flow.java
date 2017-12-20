@@ -16,6 +16,7 @@
 
 package azkaban.flow;
 
+import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +49,7 @@ public class Flow {
 
   private boolean isLayedOut = false;
   private boolean isEmbeddedFlow = false;
-  private double azkabanFlowVersion;
+  private double azkabanFlowVersion = Constants.DEFAULT_AZKABAN_FLOW_VERSION;
 
   public Flow(final String id) {
     this.id = id;
