@@ -259,14 +259,6 @@ public class FlowLoaderUtils {
   }
 
   /**
-   * Check if the project contains flow of flow version is 2.0.
-   */
-  public static boolean containsVersion20Flow(final Project project) {
-    return !project.getFlows().isEmpty() && isAzkabanFlowVersion20(project.getFlows().get(0)
-        .getAzkabanFlowVersion());
-  }
-
-  /**
    * Implements Suffix filter.
    */
   public static class SuffixFilter implements FileFilter {
