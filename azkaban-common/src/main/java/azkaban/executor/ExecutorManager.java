@@ -79,6 +79,7 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.activeexecutor.refresh.milisecinterval";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
       "azkaban.activeexecutor.refresh.flowinterval";
+  private static final int AZKABAN_MAX_NUM_CONCURRENT_FLOW = 30;
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
@@ -951,6 +952,7 @@ public class ExecutorManager extends EventHandler implements
         exflow.setSubmitUser(userId);
         exflow.setSubmitTime(System.currentTimeMillis());
 
+        // Get collection of running flows given a project and a specific flow name
         final List<Integer> running = getRunningFlows(projectId, flowId);
 
         ExecutionOptions options = exflow.getExecutionOptions();
@@ -977,6 +979,10 @@ public class ExecutorManager extends EventHandler implements
               ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
             throw new ExecutorManagerException("Flow " + flowId
                 + " is already running. Skipping execution.",
+                ExecutorManagerException.Reason.SkippedExecution);
+          } else if (running.size() > AZKABAN_MAX_NUM_CONCURRENT_FLOW) {
+            throw new ExecutorManagerException("Flow " + flowId
+                + " has more than 30 concurrent runs. Skipping",
                 ExecutorManagerException.Reason.SkippedExecution);
           } else {
             // The settings is to run anyways.
