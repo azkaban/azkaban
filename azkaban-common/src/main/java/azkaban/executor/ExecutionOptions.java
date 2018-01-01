@@ -16,7 +16,7 @@
 
 package azkaban.executor;
 
-import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.executor.mail.MailCreatorRegistry;
 import azkaban.utils.TypedMapWrapper;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
@@ -66,7 +66,7 @@ public class ExecutionOptions {
   private Integer pipelineExecId = null;
   private Integer queueLevel = 0;
   private String concurrentOption = CONCURRENT_OPTION_IGNORE;
-  private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+  private String mailCreator = MailCreatorRegistry.getRecommendedCreator().getName();
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;

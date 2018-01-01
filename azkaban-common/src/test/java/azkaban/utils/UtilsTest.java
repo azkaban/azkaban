@@ -60,12 +60,12 @@ public class UtilsTest {
 
     final DateTimeZone timezone = DateTimeZone.getDefault();
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * *", timezone));
-    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2018", timezone));
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2020", timezone));
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 * ? * *", timezone));
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 * ? * FRI", timezone));
 
     // This is a bug from Quartz Cron. It looks like Quartz will parse the preceding 7 fields of a String.
-    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2018 22", timezone));
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2020 22", timezone));
   }
 
   /* Test CronExpression invalid cases*/

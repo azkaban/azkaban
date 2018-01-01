@@ -95,9 +95,8 @@ public class HttpRequestUtils {
       execOptions.setPipelineLevel(queueLevel);
     }
 
-    String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
     if (hasParam(req, "mailCreator")) {
-      mailCreator = getParam(req, "mailCreator");
+      String mailCreator = getParam(req, "mailCreator");
       execOptions.setMailCreator(mailCreator);
     }
 

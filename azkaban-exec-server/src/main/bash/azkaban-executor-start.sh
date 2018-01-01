@@ -5,6 +5,7 @@ azkaban_dir=$(dirname $0)/..
 # Specifies location of azkaban.properties, log4j.properties files
 # Change if necessary
 conf=$azkaban_dir/conf
+email=$azkaban_dir/email
 
 if [[ -z "$tmpdir" ]]; then
 tmpdir=/tmp
@@ -57,7 +58,7 @@ else
 fi
 AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$serverpath"
 
-java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.execapp.AzkabanExecutorServer -conf $conf $@ &
+java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.execapp.AzkabanExecutorServer -conf $conf -email $email $@ &
 
 echo $! > $azkaban_dir/currentpid
 

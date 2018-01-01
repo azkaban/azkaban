@@ -27,6 +27,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
+import azkaban.executor.mail.MailCreatorRegistry;
 import azkaban.metrics.CommonMetrics;
 import azkaban.sla.SlaOption;
 import java.util.ArrayList;
@@ -146,16 +147,16 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendFirstErrorMessage(final ExecutableFlow flow) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
-    message.setAuth(super.hasMailAuth());
+    final EmailMessage message =
+        new EmailMessage(this.mailHost, this.mailPort, this.mailUser, this.mailPassword)
+            .setFromAddress(this.mailSender)
+            .setTLS(this.tls)
+            .setAuth(super.hasMailAuth());
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
     final MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
+        MailCreatorRegistry.getCreator(option.getMailCreator());
 
     logger.debug("ExecutorMailer using mail creator:"
         + mailCreator.getClass().getCanonicalName());
@@ -178,16 +179,16 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendErrorEmail(final ExecutableFlow flow, final String... extraReasons) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
-    message.setAuth(super.hasMailAuth());
+    final EmailMessage message =
+        new EmailMessage(this.mailHost, this.mailPort, this.mailUser, this.mailPassword)
+            .setFromAddress(this.mailSender)
+            .setTLS(this.tls)
+            .setAuth(super.hasMailAuth());
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
     final MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
+        MailCreatorRegistry.getCreator(option.getMailCreator());
     logger.debug("ExecutorMailer using mail creator:"
         + mailCreator.getClass().getCanonicalName());
 
@@ -209,17 +210,17 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendSuccessEmail(final ExecutableFlow flow) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
-    message.setAuth(super.hasMailAuth());
+    final EmailMessage message =
+        new EmailMessage(this.mailHost, this.mailPort, this.mailUser, this.mailPassword)
+            .setFromAddress(this.mailSender)
+            .setTLS(this.tls)
+            .setAuth(super.hasMailAuth());
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
     final MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
-    logger.debug("ExecutorMailer using mail creator:"
+        MailCreatorRegistry.getCreator(option.getMailCreator());
+    logger.debug("ExecutorMailer using mail creator "
         + mailCreator.getClass().getCanonicalName());
 
     final boolean mailCreated =

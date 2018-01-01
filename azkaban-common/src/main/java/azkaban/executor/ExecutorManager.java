@@ -1163,6 +1163,8 @@ public class ExecutorManager extends EventHandler implements
           } catch (final Exception e) {
             logger.error(e);
           }
+        } else {
+          logger.info("not sending failure email: no recipients");
         }
         if (options.getFlowParameters().containsKey("alert.type")) {
           final String alertType = options.getFlowParameters().get("alert.type");
@@ -1288,6 +1290,8 @@ public class ExecutorManager extends EventHandler implements
           e.printStackTrace();
           logger.error("Failed to send first error email." + e.getMessage());
         }
+      } else {
+        logger.info("notifyOnFirstFailure = false; not sending first error email");
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
