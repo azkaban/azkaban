@@ -586,6 +586,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.writeJSON(resp, ret);
   }
 
+  private void removeAssociatedSchedules(final Project project) throws ServletException {
+    try {
+      for (final Schedule schedule : this.scheduleManager.getSchedules()) {
+        if (schedule.getProjectId() == project.getId()) {
+          logger.info("removing schedule " + schedule.getScheduleId());
+          this.scheduleManager.removeSchedule(schedule);
+        }
+      }
+    } catch (final ScheduleManagerException e) {
+      throw new ServletException(e);
+    }
+  }
+
   private void handleRemoveProject(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
@@ -607,42 +620,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    // Check if scheduled
-    Schedule sflow = null;
-    try {
-      for (final Schedule flow : this.scheduleManager.getSchedules()) {
-
-        if (flow.getProjectId() == project.getId()) {
-          sflow = flow;
-          break;
-        }
-      }
-    } catch (final ScheduleManagerException e) {
-      throw new ServletException(e);
-    }
-
-    if (sflow != null) {
-      this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule "
-          + sflow.getScheduleName() + ".");
-
-      resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
-      return;
-    }
-
-    // Check if executing
-    ExecutableFlow exflow = null;
-    for (final ExecutableFlow flow : this.executorManager.getRunningFlows()) {
-      if (flow.getProjectId() == project.getId()) {
-        exflow = flow;
-        break;
-      }
-    }
-    if (exflow != null) {
-      this.setErrorMessageInCookie(resp, "Cannot delete. Executable flow "
-          + exflow.getExecutionId() + " is still running.");
-      resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
-      return;
-    }
+    removeAssociatedSchedules(project);
 
     try {
       this.projectManager.removeProject(project, user);
@@ -653,7 +631,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.setSuccessMessageInCookie(resp, "Project '" + projectName
-        + "' was successfully deleted.");
+        + "' was successfully deleted and associated schedules are removed.");
     resp.sendRedirect(req.getContextPath());
   }
 
@@ -787,7 +765,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Flow flow = project.getFlow(flowId);
     if (flow == null) {
       ret.put("error",
-              "Flow " + flowId + " not found in project " + project.getName());
+          "Flow " + flowId + " not found in project " + project.getName());
       return;
     }
 

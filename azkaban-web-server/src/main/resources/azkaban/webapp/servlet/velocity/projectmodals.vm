@@ -77,7 +77,9 @@
         <h4 class="modal-title">Delete Project</h4>
       </div>
       <div class="modal-body">
-        <p><strong>Warning:</strong> This project will be deleted and may not be recoverable.</p>
+        <p><strong>Warning:</strong> This project will be deleted and may not be recoverable.
+          All associated schedules will be removed but executing flows will remain running fine.
+        </p>
       </div>
       <div class="modal-footer">
         <form id="delete-form">
