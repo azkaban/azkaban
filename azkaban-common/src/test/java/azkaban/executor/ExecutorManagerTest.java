@@ -303,7 +303,9 @@ public class ExecutorManagerTest {
   public void testSubmitFlows() throws Exception {
     testSetUpForRunningFlows();
     final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    this.manager.submitExecutableFlow(flow2, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(flow1);
     verify(this.loader).addActiveExecutableReference(any());
   }
