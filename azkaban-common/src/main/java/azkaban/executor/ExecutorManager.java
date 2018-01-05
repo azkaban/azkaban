@@ -79,7 +79,8 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.activeexecutor.refresh.milisecinterval";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
       "azkaban.activeexecutor.refresh.flowinterval";
-  private static final int AZKABAN_MAX_NUM_CONCURRENT_FLOW = 30;
+  private static final String AZKABAN_MAX_NUM_CONCURRENT_FLOW =
+      "azkaban.max.concurrent.num.oneflow";
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
@@ -99,6 +100,7 @@ public class ExecutorManager extends EventHandler implements
       new ConcurrentHashMap<>();
   private final ExecutingManagerUpdaterThread executingManager;
   private final ExecutorApiGateway apiGateway;
+  private final int maxConcurrentRunsOneFlow;
   QueuedExecutions queuedFlows;
   File cacheDir;
   private QueueProcessorThread queueProcessor;
@@ -125,6 +127,7 @@ public class ExecutorManager extends EventHandler implements
     this.loadRunningFlows();
 
     this.queuedFlows = new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+    this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_NUM_CONCURRENT_FLOW, 30);
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
@@ -980,9 +983,9 @@ public class ExecutorManager extends EventHandler implements
             throw new ExecutorManagerException("Flow " + flowId
                 + " is already running. Skipping execution.",
                 ExecutorManagerException.Reason.SkippedExecution);
-          } else if (running.size() > AZKABAN_MAX_NUM_CONCURRENT_FLOW) {
+          } else if (running.size() > this.maxConcurrentRunsOneFlow) {
             throw new ExecutorManagerException("Flow " + flowId
-                + " has more than 30 concurrent runs. Skipping",
+                + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
                 ExecutorManagerException.Reason.SkippedExecution);
           } else {
             // The settings is to run anyways.

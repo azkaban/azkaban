@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
+import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
@@ -51,6 +52,20 @@ public class TestUtils {
     final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 
     return execFlow;
+  }
+
+  /* Helper method to create an ExecutableFlow from Yaml */
+  public static ExecutableFlow createTestExecutableFlowFromYaml(final String projectName,
+      final String flowName) throws IOException {
+
+    final Project project = new Project(11, projectName);
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(project, ExecutionsTestUtil.getFlowDir(projectName));
+    project.setFlows(loader.getFlowMap());
+    project.setVersion(123);
+
+    final Flow flow = project.getFlow(flowName);
+    return new ExecutableFlow(project, flow);
   }
 
   /* Helper method to create an XmlUserManager from XML_FILE_PARAM file */
