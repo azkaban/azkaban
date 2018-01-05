@@ -127,6 +127,9 @@ public class ExecutorManager extends EventHandler implements
     this.loadRunningFlows();
 
     this.queuedFlows = new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+
+    // The default threshold is set to 30 for now, in case some users are affected. We may
+    // decrease this number in future, to better prevent DDos attacks.
     this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_NUM_CONCURRENT_FLOW, 30);
     this.loadQueuedFlows();
 
@@ -968,7 +971,11 @@ public class ExecutorManager extends EventHandler implements
         }
 
         if (!running.isEmpty()) {
-          if (options.getConcurrentOption().equals(
+          if (running.size() > this.maxConcurrentRunsOneFlow) {
+            throw new ExecutorManagerException("Flow " + flowId
+                + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
+                ExecutorManagerException.Reason.SkippedExecution);
+          } else if (options.getConcurrentOption().equals(
               ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
             Collections.sort(running);
             final Integer runningExecId = running.get(running.size() - 1);
@@ -982,10 +989,6 @@ public class ExecutorManager extends EventHandler implements
               ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
             throw new ExecutorManagerException("Flow " + flowId
                 + " is already running. Skipping execution.",
-                ExecutorManagerException.Reason.SkippedExecution);
-          } else if (running.size() > this.maxConcurrentRunsOneFlow) {
-            throw new ExecutorManagerException("Flow " + flowId
-                + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
                 ExecutorManagerException.Reason.SkippedExecution);
           } else {
             // The settings is to run anyways.
