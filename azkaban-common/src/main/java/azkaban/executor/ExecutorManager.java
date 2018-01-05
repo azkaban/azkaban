@@ -79,8 +79,9 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.activeexecutor.refresh.milisecinterval";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
       "azkaban.activeexecutor.refresh.flowinterval";
-  private static final String AZKABAN_MAX_NUM_CONCURRENT_FLOW =
+  private static final String AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW =
       "azkaban.max.concurrent.runs.oneflow";
+  private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
@@ -130,7 +131,8 @@ public class ExecutorManager extends EventHandler implements
 
     // The default threshold is set to 30 for now, in case some users are affected. We may
     // decrease this number in future, to better prevent DDos attacks.
-    this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_NUM_CONCURRENT_FLOW, 30);
+    this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW,
+        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
