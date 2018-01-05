@@ -80,7 +80,7 @@ public class ExecutorManager extends EventHandler implements
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
       "azkaban.activeexecutor.refresh.flowinterval";
   private static final String AZKABAN_MAX_NUM_CONCURRENT_FLOW =
-      "azkaban.max.concurrent.num.oneflow";
+      "azkaban.max.concurrent.runs.oneflow";
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
