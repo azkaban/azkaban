@@ -338,18 +338,25 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
-  String userToProxy) {
+  String userToProxy, final Logger jobLogger) {
     String credentialClassName = "unknown class";
       try {
         credentialClassName = props
             .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
         logger.info("custom credential class name: " + credentialClassName);
-        final Class metricsClass = Class.forName(credentialClassName);
+        final Class credentialClass = Class.forName(credentialClassName);
 
-        final Constructor[] constructors = metricsClass.getConstructors();
-        final CredentialProvider customCredential = (CredentialProvider) constructors[0]
-            .newInstance(hadoopCred, props);
-        customCredential.register(userToProxy);
+        final Constructor[] constructors = credentialClass.getConstructors();
+        for (final Constructor constructor : constructors) {
+          if (constructor.getParameterCount() == 3) {
+            final CredentialProvider customCredential = (CredentialProvider) constructors[1]
+                .newInstance(hadoopCred, props, jobLogger);
+            customCredential.register(userToProxy);
+            return;
+          }
+        }
+        logger.error("cannot find the appropriate credential constructor.");
+        throw new Exception("launching credential instance failed.");
       } catch (final Exception e) {
         logger.error("Encountered error while loading and instantiating "
             + credentialClassName, e);
@@ -636,7 +643,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy);
+            registerCustomCredential(props, cred, userToProxy, logger);
           }
 
           if (props.getBoolean(OBTAIN_NAMENODE_TOKEN, false)) {
