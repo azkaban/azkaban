@@ -390,7 +390,7 @@ public class ExecutorManagerTest {
     this.props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "true");
 
     // allow two concurrent runs give one Flow
-    this.props.put("azkaban.max.concurrent.runs.oneflow", 2);
+    this.props.put(ExecutorManager.AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW, 2);
 
     final List<Executor> executors = new ArrayList<>();
     final Executor executor1 = new Executor(1, "localhost", 12345, true);

@@ -67,6 +67,8 @@ public class ExecutorManager extends EventHandler implements
 
   public static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
       "azkaban.use.multiple.executors";
+  public static final String AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW =
+      "azkaban.max.concurrent.runs.oneflow";
   static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
       "azkaban.executorselector.filters";
   static final String AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
@@ -79,8 +81,6 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.activeexecutor.refresh.milisecinterval";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
       "azkaban.activeexecutor.refresh.flowinterval";
-  private static final String AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW =
-      "azkaban.max.concurrent.runs.oneflow";
   private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
