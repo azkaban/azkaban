@@ -1321,17 +1321,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props jobProp = this.projectManager
-          .getProperties(project, flow, jobName, node.getJobSource());
-      Props overrideProp =
-          this.projectManager.getJobOverrideProperty(project, flow, jobName, node.getJobSource());
-      if (overrideProp == null) {
-        overrideProp = new Props();
+      Props jobProp = this.projectManager
+          .getJobOverrideProperty(project, flow, jobName, node.getJobSource());
+      if (jobProp == null) {
+        jobProp = this.projectManager.getProperties(project, flow, jobName, node.getJobSource());
       }
-      final Props comboProp = new Props(jobProp);
-      for (final String key : overrideProp.getKeySet()) {
-        comboProp.put(key, overrideProp.get(key));
-      }
+
       page.add("jobid", node.getId());
       page.add("jobtype", node.getType());
 
@@ -1375,8 +1370,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final ArrayList<Pair<String, String>> parameters =
           new ArrayList<>();
       // Parameter
-      for (final String key : comboProp.getKeySet()) {
-        final String value = comboProp.get(key);
+      for (final String key : jobProp.getKeySet()) {
+        final String value = jobProp.get(key);
         parameters.add(new Pair<>(key, value));
       }
 
