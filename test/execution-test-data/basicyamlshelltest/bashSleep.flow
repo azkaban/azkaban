@@ -1,0 +1,20 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: shell_end
+    type: noop
+    dependsOn:
+      - shell_sleep
+      - shell_echo
+
+  - name: shell_echo
+    type: command
+    config:
+      command: echo "This is an echoed text."
+
+  - name: shell_sleep
+    type: command
+    config:
+      command: sleep 5
