@@ -37,6 +37,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +81,7 @@ import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.hive.jdbc.HiveConnection;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
@@ -125,8 +129,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
       "obtain.jobhistoryserver.token";
+  private static final String OBTAIN_HIVESERVER2_TOKEN =
+          "obtain.hiverserver2.token";
   private final static Logger logger = Logger
       .getLogger(HadoopSecurityManager_H_2_0.class);
+  private static final String HIVESERVER2_URL = "hiveserver2.url";
   private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
@@ -619,6 +626,41 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       logger.info("Token service: " + jhsdt.getService());
 
       cred.addToken(jhsdt.getService(), jhsdt);
+    }
+
+    if(props.getBoolean(OBTAIN_HIVESERVER2_TOKEN)){
+      Connection conn = null;
+      try{
+        Class.forName("org.apache.hive.jdbc.HiveDriver");
+        HiveConf hiveConf = new HiveConf();
+        String principal = hiveConf.get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname);
+        logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ":" + principal);
+        String url = props.get(HIVESERVER2_URL) + ";principal=" + principal;
+        logger.info("final url:" + url);
+        conn = DriverManager.getConnection(url);
+        String tokenStr = ((HiveConnection) conn).getDelegationToken(userToProxy, principal);
+        Token<DelegationTokenIdentifier> hive2Token = new Token<DelegationTokenIdentifier>();
+        hive2Token.decodeFromUrlString(tokenStr);
+        /*
+        new Text(String.format("%s_%s_%d", hive2Token.getKind().toString(),
+                hive2Token.getService().toString(), System.currentTimeMillis())
+         */
+        cred.addToken(hive2Token.getService(), hive2Token);
+      } catch (ClassNotFoundException e) {
+        logger.error("could not load class", e);
+      } catch (SQLException e) {
+        logger.error("could not connect to hiveserver2", e);
+      } catch (IOException e) {
+        logger.error("could not get hiveserver2 token", e);
+      } finally {
+        if (conn != null) {
+          try {
+            conn.close();
+          } catch (SQLException e) {
+            logger.error("could not close connection", e);
+          }
+        }
+      }
     }
 
     try {

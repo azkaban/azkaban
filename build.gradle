@@ -79,6 +79,7 @@ ext.deps = [
         hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
         hiveExecCore        : "org.apache.hive:hive-exec:" + versions.hive + ":core",
         hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
+        hiveJdbc            : "org.apache.hive:hive-jdbc:" + versions.hive,
         httpclient          : 'org.apache.httpcomponents:httpclient:4.5.3',
         io                  : 'commons-io:commons-io:2.4',
         jacksonCoreAsl      : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
