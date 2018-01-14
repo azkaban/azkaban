@@ -23,6 +23,7 @@ import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
 import com.google.common.base.Charsets;
+import java.nio.file.Path;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -53,8 +54,8 @@ public class TemplateBasedMailCreator implements MailCreator {
     return IOUtils.toString(is, Charsets.UTF_8).trim();
   }
 
-  private static String readFile(final String file) throws Exception {
-    return new String(Files.readAllBytes(Paths.get(file)), Charset.defaultCharset());
+  private static String readFile(final String path, final String file) throws Exception {
+    return new String(Files.readAllBytes(Paths.get(path, file)), Charset.defaultCharset());
   }
 
   private String errorTemplate;
@@ -69,12 +70,16 @@ public class TemplateBasedMailCreator implements MailCreator {
     );
   }
 
-  public static TemplateBasedMailCreator fromPath(String emailTemplatesPath) throws Exception {
-    return new TemplateBasedMailCreator(
-        readFile(emailTemplatesPath + "/errorEmail.html"),
-        readFile(emailTemplatesPath + "/firstErrorEmail.html"),
-        readFile(emailTemplatesPath + "/successEmail.html")
-    );
+  public static Optional<TemplateBasedMailCreator> fromPath(Path emailTemplatesPath) {
+    try {
+      return Optional.of(new TemplateBasedMailCreator(
+          readFile(emailTemplatesPath.toString(), "errorEmail.html"),
+          readFile(emailTemplatesPath.toString(), "firstErrorEmail.html"),
+          readFile(emailTemplatesPath.toString(), "successEmail.html")
+      ));
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 
   public TemplateBasedMailCreator(String errorTemplate, String firstErrorTemplate,
