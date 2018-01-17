@@ -199,7 +199,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   public static void main(final String[] args) throws Exception {
     // Redirect all std out and err messages into log4j
-    StdOutErrRedirect.redirectOutAndErrToLog();
+    StdOutErrRedirect.bindStdOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Web Server...");
     final Props props = AzkabanServer.loadProps(args);
