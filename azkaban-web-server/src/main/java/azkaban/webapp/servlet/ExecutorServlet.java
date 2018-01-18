@@ -65,8 +65,7 @@ import org.apache.log4j.Logger;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ExecutorServlet.class.getName());
+  private static final Logger logger = Logger.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
   private WebMetrics webMetrics;
   private ProjectManager projectManager;
@@ -389,14 +388,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     if (execExternalLinkURL.length() > 0) {
       page.add("executionExternalLinkURL", execExternalLinkURL);
-      LOGGER.debug("Added an External analyzer to the page");
-      LOGGER.debug("External analyzer url: " + execExternalLinkURL);
+      logger.debug("Added an External analyzer to the page");
+      logger.debug("External analyzer url: " + execExternalLinkURL);
 
       final String execExternalLinkLabel =
           props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
               "External Analyzer");
       page.add("executionExternalLinkLabel", execExternalLinkLabel);
-      LOGGER.debug("External analyzer label set to : " + execExternalLinkLabel);
+      logger.debug("External analyzer label set to : " + execExternalLinkLabel);
     }
 
     page.add("projectId", project.getId());
@@ -839,7 +838,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
     final Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-    LOGGER.info("Fetching " + exFlow.getExecutionId());
+    logger.info("Fetching " + exFlow.getExecutionId());
 
     final Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -859,7 +858,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecutableFlow(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    LOGGER.info("Fetching " + exFlow.getExecutionId());
+    logger.info("Fetching " + exFlow.getExecutionId());
 
     final Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);

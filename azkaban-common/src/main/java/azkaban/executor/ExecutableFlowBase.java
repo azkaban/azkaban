@@ -36,8 +36,8 @@ public class ExecutableFlowBase extends ExecutableNode {
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
   public static final String INHERITED_PARAM = "inherited";
-  private static final Logger LOGGER =
-      Logger.getLogger(ExecutableFlowBase.class.getName());
+  private static final Logger logger = Logger.getLogger(ExecutableFlowBase.class.getName());
+
   private final HashMap<String, ExecutableNode> executableNodes =
       new HashMap<>();
   private final HashMap<String, FlowProps> flowProps =
@@ -136,7 +136,7 @@ public class ExecutableFlowBase extends ExecutableNode {
       final ExecutableNode targetNode = this.executableNodes.get(edge.getTargetId());
 
       if (sourceNode == null) {
-        LOGGER.info("Source node " + edge.getSourceId() + " doesn't exist");
+        logger.info("Source node " + edge.getSourceId() + " doesn't exist");
       }
       sourceNode.addOutNode(edge.getTargetId());
       targetNode.addInNode(edge.getSourceId());
