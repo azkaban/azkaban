@@ -139,7 +139,9 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
 
     // Add edges for the flow.
     buildFlowEdges(azkabanFlow, flowName);
-    flow.addAllEdges(this.edgeMap.get(flowName));
+    if (this.edgeMap.containsKey(flowName)) {
+      flow.addAllEdges(this.edgeMap.get(flowName));
+    }
 
     // Todo jamiesjc: deprecate startNodes, endNodes and numLevels, and remove below method finally.
     // Blow method will construct startNodes, endNodes and numLevels for the flow.
