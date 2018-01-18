@@ -128,7 +128,7 @@ public class AzkabanExecutorServer {
    */
   public static void main(final String[] args) throws Exception {
     // Redirect all std out and err messages into log4j
-    StdOutErrRedirect.bindStdOutAndErrToLog();
+    StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Executor...");
     final Props props = AzkabanServer.loadProps(args);

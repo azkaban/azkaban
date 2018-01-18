@@ -839,7 +839,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
     final Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-    System.out.println("Fetching " + exFlow.getExecutionId());
+    LOGGER.info("Fetching " + exFlow.getExecutionId());
 
     final Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -859,7 +859,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecutableFlow(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    System.out.println("Fetching " + exFlow.getExecutionId());
+    LOGGER.info("Fetching " + exFlow.getExecutionId());
 
     final Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);

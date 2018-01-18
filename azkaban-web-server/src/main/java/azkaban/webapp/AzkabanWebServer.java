@@ -199,7 +199,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   public static void main(final String[] args) throws Exception {
     // Redirect all std out and err messages into log4j
-    StdOutErrRedirect.bindStdOutAndErrToLog();
+    StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Web Server...");
     final Props props = AzkabanServer.loadProps(args);
@@ -662,12 +662,11 @@ public class AzkabanWebServer extends AzkabanServer {
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
-      System.out
-          .println(
-              "************* loginLoggerObjName is null, make sure there is a logger with name "
-                  + AZKABAN_ACCESS_LOGGER_NAME);
+      logger.info(
+          "************* loginLoggerObjName is null, make sure there is a logger with name "
+              + AZKABAN_ACCESS_LOGGER_NAME);
     } else {
-      System.out.println("******** loginLoggerObjName: "
+      logger.info("******** loginLoggerObjName: "
           + accessLogLoggerObjName.getCanonicalName());
     }
   }

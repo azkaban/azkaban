@@ -29,19 +29,12 @@ import org.apache.log4j.Logger;
 public class StdOutErrRedirect {
 
   private static final Logger logger = Logger.getLogger(StdOutErrRedirect.class);
-  private static final PrintStream sysout = System.out;
-  private static final PrintStream syserr = System.err;
   private static final PrintStream infoStream = createStream(System.out, Level.INFO);
   private static final PrintStream errorStream = createStream(System.out, Level.ERROR);
 
-  public static void bindStdOutAndErrToLog() {
+  public static void redirectOutAndErrToLog() {
     System.setOut(infoStream);
     System.setErr(errorStream);
-  }
-
-  public static void unbindStdOutAndErrToLog() {
-    System.setOut(sysout);
-    System.setErr(syserr);
   }
 
   private static PrintStream createStream(final PrintStream stream, final Level level) {
@@ -51,8 +44,6 @@ public class StdOutErrRedirect {
   private static class LogStream extends PrintStream {
 
     private final Level level;
-    private final String className = this.getClass().getName();
-    private final String outputMethod = "write";
 
     public LogStream(final OutputStream out, final Level level) {
       super(out);
@@ -61,40 +52,7 @@ public class StdOutErrRedirect {
 
     // Underlying mechanism to log to log4j - all print methods will use this
     private void write(final String string) {
-      // If logs are looping, write message to system's stderr then rebind.
-      if (logIsLooping()) {
-        unbindStdOutAndErrToLog();
-        System.err.println(string);
-        bindStdOutAndErrToLog();
-      } else {
-        logger.log(this.level, string);
-      }
-    }
-
-    /**
-     * If log4j is unable to output for whatever reason it will throw an error that goes to stderr.
-     * This class will then redirect back to log4j which will throw the error again, causing a loop.
-     *
-     * We determine that a loop is happening by looking at the stack trace.
-     * If the 'write' method for the class 'azkaban.utils.StdOutErrRedirect$LogStream' happens more
-     * than once then it is evidence of looping.
-     *
-     * If logs are looping, try to write to the system's stdout/stderr instead of log4j.
-     *
-     * @return boolean Whether or not logs are looping
-     */
-    private boolean logIsLooping() {
-      int outputMethodCount = 0;
-      for (final StackTraceElement elem : Thread.currentThread().getStackTrace()) {
-        if (elem.getClassName().equals(this.className) && elem.getMethodName().equals(
-            this.outputMethod)) {
-          outputMethodCount += 1;
-          if (outputMethodCount > 1) {
-            return true;
-          }
-        }
-      }
-      return false;
+      logger.log(this.level, string);
     }
 
     // String
