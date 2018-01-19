@@ -27,7 +27,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutableFlowBase extends ExecutableNode {
 
@@ -36,7 +37,7 @@ public class ExecutableFlowBase extends ExecutableNode {
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
   public static final String INHERITED_PARAM = "inherited";
-  private static final Logger logger = Logger.getLogger(ExecutableFlowBase.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(ExecutableFlowBase.class);
 
   private final HashMap<String, ExecutableNode> executableNodes =
       new HashMap<>();
