@@ -60,12 +60,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(ExecutorServlet.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
   private WebMetrics webMetrics;
   private ProjectManager projectManager;
