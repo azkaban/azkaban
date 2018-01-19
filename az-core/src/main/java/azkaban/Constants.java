@@ -225,6 +225,8 @@ public class Constants {
     public static final String MAX_XMS_DEFAULT = "1G";
     public static final String JOB_MAX_XMX = "job.max.Xmx";
     public static final String MAX_XMX_DEFAULT = "2G";
+    // The hadoop user the job should run under. If not specified, it will default to submit user.
+    public static final String USER_TO_PROXY = "user.to.proxy";
   }
 
   public static class JobCallbackProperties {
