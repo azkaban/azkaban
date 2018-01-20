@@ -586,6 +586,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.writeJSON(resp, ret);
   }
 
+  private void removeAssociatedSchedules(final Project project) throws ServletException {
+    try {
+      for (final Schedule schedule : this.scheduleManager.getSchedules()) {
+        if (schedule.getProjectId() == project.getId()) {
+          logger.info("removing schedule " + schedule.getScheduleId());
+          this.scheduleManager.removeSchedule(schedule);
+        }
+      }
+    } catch (final ScheduleManagerException e) {
+      throw new ServletException(e);
+    }
+  }
+
   private void handleRemoveProject(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
@@ -607,42 +620,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    // Check if scheduled
-    Schedule sflow = null;
-    try {
-      for (final Schedule flow : this.scheduleManager.getSchedules()) {
-
-        if (flow.getProjectId() == project.getId()) {
-          sflow = flow;
-          break;
-        }
-      }
-    } catch (final ScheduleManagerException e) {
-      throw new ServletException(e);
-    }
-
-    if (sflow != null) {
-      this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule "
-          + sflow.getScheduleName() + ".");
-
-      resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
-      return;
-    }
-
-    // Check if executing
-    ExecutableFlow exflow = null;
-    for (final ExecutableFlow flow : this.executorManager.getRunningFlows()) {
-      if (flow.getProjectId() == project.getId()) {
-        exflow = flow;
-        break;
-      }
-    }
-    if (exflow != null) {
-      this.setErrorMessageInCookie(resp, "Cannot delete. Executable flow "
-          + exflow.getExecutionId() + " is still running.");
-      resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
-      return;
-    }
+    removeAssociatedSchedules(project);
 
     try {
       this.projectManager.removeProject(project, user);
@@ -653,7 +631,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.setSuccessMessageInCookie(resp, "Project '" + projectName
-        + "' was successfully deleted.");
+        + "' was successfully deleted and associated schedules are removed.");
     resp.sendRedirect(req.getContextPath());
   }
 
@@ -688,33 +666,38 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final Props prop;
+    Props jobProp;
     try {
-      prop = this.projectManager.getProperties(project, node.getJobSource());
+      jobProp = this.projectManager.getProperties(project, flow, jobName, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to retrieve job properties!");
       return;
     }
 
+    if (jobProp == null) {
+      jobProp = new Props();
+    }
+
     Props overrideProp;
     try {
-      overrideProp = this.projectManager.getJobOverrideProperty(project, jobName);
+      overrideProp = this.projectManager
+          .getJobOverrideProperty(project, flow, jobName, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to retrieve job override properties!");
       return;
     }
 
     ret.put("jobName", node.getId());
-    ret.put("jobType", prop.get("type"));
+    ret.put("jobType", jobProp.get("type"));
 
     if (overrideProp == null) {
-      overrideProp = new Props(prop);
+      overrideProp = new Props(jobProp);
     }
 
     final Map<String, String> generalParams = new HashMap<>();
     final Map<String, String> overrideParams = new HashMap<>();
-    for (final String ps : prop.getKeySet()) {
-      generalParams.put(ps, prop.getString(ps));
+    for (final String ps : jobProp.getKeySet()) {
+      generalParams.put(ps, jobProp.getString(ps));
     }
     for (final String ops : overrideProp.getKeySet()) {
       overrideParams.put(ops, overrideProp.getString(ops));
@@ -745,7 +728,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Map<String, String> jobParamGroup = this.getParamGroup(req, "jobOverride");
     final Props overrideParams = new Props(null, jobParamGroup);
     try {
-      this.projectManager.setJobOverrideProperty(project, overrideParams, jobName, user);
+      this.projectManager
+          .setJobOverrideProperty(project, flow, overrideParams, jobName, node.getJobSource(),
+              user);
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property");
     }
@@ -778,6 +763,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void fillFlowInfo(final Project project, final String flowId,
       final HashMap<String, Object> ret) {
     final Flow flow = project.getFlow(flowId);
+    if (flow == null) {
+      ret.put("error",
+          "Flow " + flowId + " not found in project " + project.getName());
+      return;
+    }
 
     final ArrayList<Map<String, Object>> nodeList =
         new ArrayList<>();
@@ -832,20 +822,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     ret.put("flow", flowId);
     ret.put("type", node.getType());
 
-    final Props props;
+    final Props jobProps;
     try {
-      props = this.projectManager.getProperties(project, node.getJobSource());
+      jobProps = this.projectManager.getProperties(project, flow, nodeId, node.getJobSource());
     } catch (final ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property for " + nodeId);
       return;
     }
 
-    if (props == null) {
+    if (jobProps == null) {
       ret.put("error", "Properties for " + nodeId + " isn't found.");
       return;
     }
 
-    final Map<String, String> properties = PropsUtils.toStringMap(props, true);
+    final Map<String, String> properties = PropsUtils.toStringMap(jobProps, true);
     ret.put("props", properties);
 
     if (node.getType().equals("flow")) {
@@ -1331,16 +1321,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props prop = this.projectManager.getProperties(project, node.getJobSource());
-      Props overrideProp =
-          this.projectManager.getJobOverrideProperty(project, jobName);
-      if (overrideProp == null) {
-        overrideProp = new Props();
+      Props jobProp = this.projectManager
+          .getJobOverrideProperty(project, flow, jobName, node.getJobSource());
+      if (jobProp == null) {
+        jobProp = this.projectManager.getProperties(project, flow, jobName, node.getJobSource());
       }
-      final Props comboProp = new Props(prop);
-      for (final String key : overrideProp.getKeySet()) {
-        comboProp.put(key, overrideProp.get(key));
-      }
+
       page.add("jobid", node.getId());
       page.add("jobtype", node.getType());
 
@@ -1384,8 +1370,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final ArrayList<Pair<String, String>> parameters =
           new ArrayList<>();
       // Parameter
-      for (final String key : comboProp.getKeySet()) {
-        final String value = comboProp.get(key);
+      for (final String key : jobProp.getKeySet()) {
+        final String value = jobProp.get(key);
         parameters.add(new Pair<>(key, value));
       }
 
@@ -1445,7 +1431,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final Props prop = this.projectManager.getProperties(project, propSource);
+      final Props prop = this.projectManager.getProperties(project, flow, null, propSource);
       if (prop == null) {
         page.add("errorMsg", "Property " + propSource + " not found.");
         logger.info("Display project property. Project " + projectName +

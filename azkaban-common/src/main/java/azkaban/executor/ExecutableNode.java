@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Base Executable that nodes and flows are based.
@@ -47,6 +48,7 @@ public class ExecutableNode {
   public static final String OUTPUT_PROPS_PARAM = "outputProps";
   public static final String ATTEMPT_PARAM = "attempt";
   public static final String PASTATTEMPTS_PARAM = "pastAttempts";
+  private final AtomicInteger attempt = new AtomicInteger(0);
   private String id;
   private String type = null;
   private volatile Status status = Status.READY;
@@ -54,7 +56,6 @@ public class ExecutableNode {
   private volatile long endTime = -1;
   private long updateTime = -1;
   private volatile boolean killedBySLA = false;
-
   // Path to Job File
   private String jobSource;
   // Path to top level props file
@@ -63,7 +64,6 @@ public class ExecutableNode {
   private Set<String> outNodes = new HashSet<>();
   private Props inputProps;
   private Props outputProps;
-  private int attempt = 0;
   private long delayExecution = 0;
   private ArrayList<ExecutionAttempt> pastAttempts = null;
 
@@ -226,16 +226,12 @@ public class ExecutableNode {
   }
 
   public int getAttempt() {
-    return this.attempt;
-  }
-
-  public void setAttempt(final int attempt) {
-    this.attempt = attempt;
+    return this.attempt.get();
   }
 
   public void resetForRetry() {
-    final ExecutionAttempt pastAttempt = new ExecutionAttempt(this.attempt, this);
-    this.attempt++;
+    final ExecutionAttempt pastAttempt = new ExecutionAttempt(this.attempt.get(), this);
+    this.attempt.incrementAndGet();
 
     synchronized (this) {
       if (this.pastAttempts == null) {
@@ -326,7 +322,7 @@ public class ExecutableNode {
     this.startTime = wrappedMap.getLong(STARTTIME_PARAM);
     this.endTime = wrappedMap.getLong(ENDTIME_PARAM);
     this.updateTime = wrappedMap.getLong(UPDATETIME_PARAM);
-    this.attempt = wrappedMap.getInt(ATTEMPT_PARAM, 0);
+    this.attempt.set(wrappedMap.getInt(ATTEMPT_PARAM, 0));
 
     this.inNodes = new HashSet<>();
     this.inNodes.addAll(wrappedMap.getStringCollection(INNODES_PARAM,
@@ -395,8 +391,8 @@ public class ExecutableNode {
     this.endTime = updateData.getLong(ENDTIME_PARAM);
 
     if (updateData.containsKey(ATTEMPT_PARAM)) {
-      this.attempt = updateData.getInt(ATTEMPT_PARAM);
-      if (this.attempt > 0) {
+      this.attempt.set(updateData.getInt(ATTEMPT_PARAM));
+      if (this.attempt.get() > 0) {
         updatePastAttempts(updateData.<Object>getList(PASTATTEMPTS_PARAM,
             Collections.<Object>emptyList()));
       }

@@ -23,6 +23,7 @@ import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -204,14 +205,15 @@ public interface ProjectLoader {
   /**
    * Uploads flow file.
    */
-  void uploadFlowFile(int projectId, int projectVersion, int flowVersion, File flowFile)
+  void uploadFlowFile(int projectId, int projectVersion, File flowFile, int flowVersion)
       throws ProjectManagerException;
 
   /**
    * Gets flow file that's uploaded.
    */
-  File getUploadedFlowFile(int projectId, int projectVersion, int flowVersion, String flowName)
-      throws ProjectManagerException;
+  File getUploadedFlowFile(int projectId, int projectVersion, String flowFileName, int
+      flowVersion, final File tempDir)
+      throws ProjectManagerException, IOException;
 
   /**
    * Gets the latest flow version.
@@ -220,7 +222,7 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Gets all flow files that's uploaded.
+   * Check if flow file has been uploaded.
    */
   boolean isFlowFileUploaded(int projectId, int projectVersion)
       throws ProjectManagerException;

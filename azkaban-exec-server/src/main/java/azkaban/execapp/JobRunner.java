@@ -609,11 +609,15 @@ public class JobRunner extends EventHandler implements Runnable {
         "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
             + " with status " + this.node.getStatus());
 
-    fireEvent(Event.create(this, EventType.JOB_FINISHED,
-        new EventData(finalStatus, this.node.getNestedId())), false);
-    finalizeLogFile(this.node.getAttempt());
-    finalizeAttachmentFile();
-    writeStatus();
+    try {
+      finalizeLogFile(this.node.getAttempt());
+      finalizeAttachmentFile();
+      writeStatus();
+    } finally {
+      // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
+      fireEvent(Event.create(this, EventType.JOB_FINISHED,
+          new EventData(finalStatus, this.node.getNestedId())), false);
+    }
   }
 
   private String getNodeRetryLog() {

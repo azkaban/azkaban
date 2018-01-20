@@ -67,6 +67,8 @@ public class ExecutorManager extends EventHandler implements
 
   public static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
       "azkaban.use.multiple.executors";
+  public static final String AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW =
+      "azkaban.max.concurrent.runs.oneflow";
   static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
       "azkaban.executorselector.filters";
   static final String AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
@@ -79,6 +81,7 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.activeexecutor.refresh.milisecinterval";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
       "azkaban.activeexecutor.refresh.flowinterval";
+  private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
@@ -98,6 +101,7 @@ public class ExecutorManager extends EventHandler implements
       new ConcurrentHashMap<>();
   private final ExecutingManagerUpdaterThread executingManager;
   private final ExecutorApiGateway apiGateway;
+  private final int maxConcurrentRunsOneFlow;
   QueuedExecutions queuedFlows;
   File cacheDir;
   private QueueProcessorThread queueProcessor;
@@ -124,6 +128,11 @@ public class ExecutorManager extends EventHandler implements
     this.loadRunningFlows();
 
     this.queuedFlows = new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+
+    // The default threshold is set to 30 for now, in case some users are affected. We may
+    // decrease this number in future, to better prevent DDos attacks.
+    this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW,
+        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
@@ -951,6 +960,7 @@ public class ExecutorManager extends EventHandler implements
         exflow.setSubmitUser(userId);
         exflow.setSubmitTime(System.currentTimeMillis());
 
+        // Get collection of running flows given a project and a specific flow name
         final List<Integer> running = getRunningFlows(projectId, flowId);
 
         ExecutionOptions options = exflow.getExecutionOptions();
@@ -963,7 +973,11 @@ public class ExecutorManager extends EventHandler implements
         }
 
         if (!running.isEmpty()) {
-          if (options.getConcurrentOption().equals(
+          if (running.size() > this.maxConcurrentRunsOneFlow) {
+            throw new ExecutorManagerException("Flow " + flowId
+                + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
+                ExecutorManagerException.Reason.SkippedExecution);
+          } else if (options.getConcurrentOption().equals(
               ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
             Collections.sort(running);
             final Integer runningExecId = running.get(running.size() - 1);

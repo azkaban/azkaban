@@ -308,6 +308,30 @@ public class ExecutorManagerTest {
     verify(this.loader).addActiveExecutableReference(any());
   }
 
+  // Too many concurrent flows will fail job submission
+  @Test(expected = ExecutorManagerException.class)
+  public void testTooManySubmitFlows() throws Exception {
+    testSetUpForRunningFlows();
+    final ExecutableFlow flow1 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow1.setExecutionId(101);
+    final ExecutableFlow flow2 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow2.setExecutionId(102);
+    final ExecutableFlow flow3 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow3.setExecutionId(103);
+    final ExecutableFlow flow4 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow4.setExecutionId(104);
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow1);
+    this.manager.submitExecutableFlow(flow2, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow2);
+    this.manager.submitExecutableFlow(flow3, this.user.getUserId());
+    this.manager.submitExecutableFlow(flow4, this.user.getUserId());
+  }
+
   @Ignore
   @Test
   public void testFetchAllActiveFlows() throws Exception {
@@ -364,6 +388,9 @@ public class ExecutorManagerTest {
     //To test runningFlows, AZKABAN_QUEUEPROCESSING_ENABLED should be set to true
     //so that flows will be dispatched to executors.
     this.props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "true");
+
+    // allow two concurrent runs give one Flow
+    this.props.put(ExecutorManager.AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW, 2);
 
     final List<Executor> executors = new ArrayList<>();
     final Executor executor1 = new Executor(1, "localhost", 12345, true);

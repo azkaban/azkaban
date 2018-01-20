@@ -33,6 +33,7 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
+  public static final double DEFAULT_AZKABAN_FLOW_VERSION = 1.0;
   public static final double AZKABAN_FLOW_VERSION_2_0 = 2.0;
 
   // Flow 2.0 file suffix
@@ -45,6 +46,14 @@ public class Constants {
 
   // Flow 2.0 flow and job path delimiter
   public static final String PATH_DELIMITER = ":";
+
+  // Flow trigger props
+  public static final String SCHEDULE_TYPE = "type";
+  public static final String CRON_SCHEDULE_TYPE = "cron";
+  public static final String SCHEDULE_VALUE = "value";
+
+  // Job properties override suffix
+  public static final String JOB_OVERRIDE_SUFFIX = ".jor";
 
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
@@ -207,6 +216,9 @@ public class Constants {
     // Use EXTRA_HCAT_CLUSTERS instead
     @Deprecated
     public static final String EXTRA_HCAT_LOCATION = "other_hcat_location";
+
+    // If true, AZ will fetches the jobs' certificate from remote Certificate Authority.
+    public static final String ENABLE_JOB_SSL = "azkaban.job.enable.ssl";
 
     // Job properties that indicate maximum memory size
     public static final String JOB_MAX_XMS = "job.max.Xms";

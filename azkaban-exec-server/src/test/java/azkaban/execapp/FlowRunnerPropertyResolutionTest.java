@@ -16,7 +16,8 @@
 
 package azkaban.execapp;
 
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
@@ -30,7 +31,6 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -77,12 +77,10 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         .thenReturn(true);
     when(this.testUtil.getProjectLoader()
         .getLatestFlowVersion(project.getId(), project.getVersion(), FLOW_YAML_FILE)).thenReturn(1);
-    doAnswer(invocation -> {
-      final File flowFile = this.temporaryFolder.newFile(FLOW_YAML_FILE);
-      FileUtils.copyFile(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE), flowFile);
-      return flowFile;
-    }).when(this.testUtil.getProjectLoader())
-        .getUploadedFlowFile(project.getId(), project.getVersion(), 1, FLOW_YAML_FILE);
+    when(this.testUtil.getProjectLoader()
+        .getUploadedFlowFile(eq(project.getId()), eq(project.getVersion()), eq(FLOW_YAML_FILE),
+            eq(1), any(File.class)))
+        .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE));
     assertProperties(true);
   }
 
@@ -95,8 +93,6 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     flowProps.put("props6", "flow6");
     flowProps.put("props5", "flow5");
     final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
-    // Todo jamiesjc: remove below line after project_flow_files DB change is rolled out.
-    runner.setAzkabanFlowVersion20(isAzkabanFlowVersion20);
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
     final ExecutableFlow flow = runner.getExecutableFlow();

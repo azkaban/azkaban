@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +105,7 @@ class AzkabanProjectLoader {
 
       // Check the validation report.
       if (!isReportStatusValid(reports, project)) {
-        cleanUpProjectTempDir(file);
+        FlowLoaderUtils.cleanUpDir(file);
         return reports;
       }
 
@@ -114,7 +113,7 @@ class AzkabanProjectLoader {
       persistProject(project, loader, archive, file, uploader);
 
     } finally {
-      cleanUpProjectTempDir(file);
+      FlowLoaderUtils.cleanUpDir(file);
     }
 
     // Clean up project old installations after new project is uploaded successfully.
@@ -217,7 +216,7 @@ class AzkabanProjectLoader {
           final int newFlowVersion = this.projectLoader
               .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
           this.projectLoader
-              .uploadFlowFile(project.getId(), newProjectVersion, newFlowVersion, file);
+              .uploadFlowFile(project.getId(), newProjectVersion, file, newFlowVersion);
         }
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");
@@ -237,18 +236,6 @@ class AzkabanProjectLoader {
 
     // Clean up storage
     this.storageManager.cleanupProjectArtifacts(project.getId());
-  }
-
-  private void cleanUpProjectTempDir(final File file) {
-    log.info("Cleaning up temp files.");
-    try {
-      if (file != null) {
-        FileUtils.deleteDirectory(file);
-      }
-    } catch (final IOException e) {
-      log.error("Failed to delete temp directory", e);
-      file.deleteOnExit();
-    }
   }
 
   private File unzipFile(final File archiveFile) throws IOException {

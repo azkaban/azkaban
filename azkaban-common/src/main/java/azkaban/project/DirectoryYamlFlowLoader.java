@@ -26,7 +26,6 @@ import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +46,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   private final Set<String> errors = new HashSet<>();
   private final Map<String, Flow> flowMap = new HashMap<>();
   private final Map<String, List<Edge>> edgeMap = new HashMap<>();
+  private final Map<String, Props> jobPropsMap = new HashMap<>();
 
   /**
    * Creates a new DirectoryYamlFlowLoader.
@@ -96,7 +96,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   @Override
   public ValidationReport loadProjectFlow(final Project project, final File projectDir) {
     convertYamlFiles(projectDir);
-    checkJobProperties(project);
+    FlowLoaderUtils.checkJobProperties(project.getId(), this.props, this.jobPropsMap, this.errors);
     return FlowLoaderUtils.generateFlowLoaderReport(this.errors);
   }
 
@@ -107,11 +107,17 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       final NodeBeanLoader loader = new NodeBeanLoader();
       try {
         final NodeBean nodeBean = loader.load(file);
-        final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
-        final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
-        this.flowMap.put(flow.getId(), flow);
-      } catch (final FileNotFoundException e) {
-        logger.error("Error loading flow yaml files", e);
+        if (!loader.validate(nodeBean)) {
+          this.errors.add("Failed to validate nodeBean for " + file.getName()
+              + ". Duplicate nodes found or dependency undefined.");
+        } else {
+          final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
+          final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
+          this.flowMap.put(flow.getId(), flow);
+        }
+      } catch (final Exception e) {
+        this.errors.add("Error loading flow yaml file " + file.getName() + ":"
+            + e.getMessage());
       }
     }
   }
@@ -119,6 +125,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   private Flow convertAzkabanFlowToFlow(final AzkabanFlow azkabanFlow, final String flowName,
       final File flowFile) {
     final Flow flow = new Flow(flowName);
+    flow.setAzkabanFlowVersion(Constants.AZKABAN_FLOW_VERSION_2_0);
     final Props props = azkabanFlow.getProps();
     FlowLoaderUtils.addEmailPropsToFlow(flow, props);
     props.setSource(flowFile.getName());
@@ -132,7 +139,9 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
 
     // Add edges for the flow.
     buildFlowEdges(azkabanFlow, flowName);
-    flow.addAllEdges(this.edgeMap.get(flowName));
+    if (this.edgeMap.containsKey(flowName)) {
+      flow.addAllEdges(this.edgeMap.get(flowName));
+    }
 
     // Todo jamiesjc: deprecate startNodes, endNodes and numLevels, and remove below method finally.
     // Blow method will construct startNodes, endNodes and numLevels for the flow.
@@ -156,6 +165,9 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       flowNode.setEmbeddedFlow(true);
       this.flowMap.put(flowNode.getId(), flowNode);
     }
+
+    this.jobPropsMap
+        .put(flowName + Constants.PATH_DELIMITER + node.getId(), azkabanNode.getProps());
     return node;
   }
 
@@ -186,11 +198,6 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
           // Cycles found, including self cycle.
           edge.setError("Cycles found.");
           this.errors.add("Cycles found at " + edge.getId());
-        } else if (!azkabanFlow.getNodes().containsKey(parent)) {
-          // Dependency not found.
-          edge.setError("Dependency not found.");
-          this.errors.add(node.getName() + " cannot find dependency "
-              + parent);
         } else {
           // Valid edge. Continue to process the parent node recursively.
           addEdges(azkabanFlow.getNode(parent), azkabanFlow, flowName, recStack, visited);
@@ -198,10 +205,6 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       }
       recStack.remove(node.getName());
     }
-  }
-
-  public void checkJobProperties(final Project project) {
-    // Todo jamiesjc: implement the check later
   }
 
 }

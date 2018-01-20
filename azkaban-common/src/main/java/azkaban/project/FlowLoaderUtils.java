@@ -18,18 +18,29 @@ package azkaban.project;
 import azkaban.Constants;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
+import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.Utils;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.DumperOptions.FlowStyle;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Utils to help load flows.
@@ -37,6 +48,82 @@ import org.slf4j.LoggerFactory;
 public class FlowLoaderUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(FlowLoaderUtils.class);
+  private static final String XMS = "Xms";
+  private static final String XMX = "Xmx";
+  /**
+   * Sets props in flow yaml file.
+   *
+   * @param path the flow or job path delimited by ":", e.g. "flow:subflow1:subflow2:job3"
+   * @param flowFile the flow yaml file
+   * @param prop the props to set
+   */
+  public static void setPropsInYamlFile(final String path, final File flowFile, final Props prop) {
+    final DumperOptions options = new DumperOptions();
+    options.setDefaultFlowStyle(FlowStyle.BLOCK);
+    final NodeBean nodeBean = FlowLoaderUtils.setPropsInNodeBean(path, flowFile, prop);
+    try (final BufferedWriter writer = Files
+        .newBufferedWriter(flowFile.toPath(), StandardCharsets.UTF_8)) {
+      new Yaml(options).dump(nodeBean, writer);
+    } catch (final IOException e) {
+      throw new ProjectManagerException(
+          "Failed to set properties in flow file " + flowFile.getName());
+    }
+  }
+
+  /**
+   * Sets props in node bean.
+   *
+   * @param path the flow or job path delimited by ":", e.g. "flow:subflow1:subflow2:job3"
+   * @param flowFile the flow yaml file
+   * @param prop the props to set
+   * @return the node bean
+   */
+  public static NodeBean setPropsInNodeBean(final String path, final File flowFile,
+      final Props prop) {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+    try {
+      final NodeBean nodeBean = loader.load(flowFile);
+      final String[] pathList = path.split(Constants.PATH_DELIMITER);
+      if (overridePropsInNodeBean(nodeBean, pathList, 0, prop)) {
+        return nodeBean;
+      } else {
+        logger.error("Error setting props for " + path);
+      }
+    } catch (final Exception e) {
+      logger.error("Failed to set props, error loading flow YAML file " + flowFile);
+    }
+    return null;
+  }
+
+  /**
+   * Helper method to recursively find the node to override props.
+   *
+   * @param nodeBean the node bean
+   * @param pathList the path list
+   * @param idx the idx
+   * @param prop the props to override
+   * @return the boolean
+   */
+  private static boolean overridePropsInNodeBean(final NodeBean nodeBean, final String[] pathList,
+      final int idx, final Props prop) {
+    if (idx < pathList.length && nodeBean.getName().equals(pathList[idx])) {
+      if (idx == pathList.length - 1) {
+        if (prop.containsKey(Constants.NODE_TYPE)) {
+          nodeBean.setType(prop.get(Constants.NODE_TYPE));
+        }
+        final Map<String, String> config = prop.getFlattened();
+        config.remove(Constants.NODE_TYPE);
+        nodeBean.setConfig(config);
+        return true;
+      }
+      for (final NodeBean bean : nodeBean.getNodes()) {
+        if (overridePropsInNodeBean(bean, pathList, idx + 1, prop)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   /**
    * Gets flow or job props from flow yaml file.
@@ -59,8 +146,8 @@ public class FlowLoaderUtils {
           logger.error("Error getting props for " + path);
         }
       }
-    } catch (final FileNotFoundException e) {
-      logger.error("Failed to get props, error loading flow YAML file " + flowFile);
+    } catch (final Exception e) {
+      logger.error("Failed to get props, error loading flow YAML file. ", e);
     }
     return null;
   }
@@ -74,7 +161,7 @@ public class FlowLoaderUtils {
    * @param propsList the props list
    * @return the boolean
    */
-  public static boolean findPropsFromNodeBean(final NodeBean nodeBean,
+  private static boolean findPropsFromNodeBean(final NodeBean nodeBean,
       final String[] pathList, final int idx, final List<Props> propsList) {
     if (idx < pathList.length && nodeBean.getName().equals(pathList[idx])) {
       if (idx == pathList.length - 1) {
@@ -88,6 +175,17 @@ public class FlowLoaderUtils {
       }
     }
     return false;
+  }
+
+  public static FlowTrigger getFlowTriggerFromYamlFile(final File flowFile) {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+    try {
+      final NodeBean nodeBean = loader.load(flowFile);
+      return loader.toFlowTrigger(nodeBean.getTrigger());
+    } catch (final Exception e) {
+      logger.error("Failed to get flow trigger, error loading flow YAML file. ", e);
+    }
+    return null;
   }
 
   /**
@@ -136,6 +234,78 @@ public class FlowLoaderUtils {
     final ValidationReport report = new ValidationReport();
     report.addErrorMsgs(errors);
     return report;
+  }
+
+  /**
+   * Check job properties.
+   *
+   * @param projectId the project id
+   * @param props the server props
+   * @param jobPropsMap the job props map
+   * @param errors the errors
+   */
+  public static void checkJobProperties(final int projectId, final Props props,
+      final Map<String, Props> jobPropsMap, final Set<String> errors) {
+    // if project is in the memory check whitelist, then we don't need to check
+    // its memory settings
+    if (ProjectWhitelist.isProjectWhitelisted(projectId,
+        ProjectWhitelist.WhitelistType.MemoryCheck)) {
+      return;
+    }
+
+    final String maxXms = props.getString(
+        Constants.JobProperties.JOB_MAX_XMS, Constants.JobProperties.MAX_XMS_DEFAULT);
+    final String maxXmx = props.getString(
+        Constants.JobProperties.JOB_MAX_XMX, Constants.JobProperties.MAX_XMX_DEFAULT);
+    final long sizeMaxXms = Utils.parseMemString(maxXms);
+    final long sizeMaxXmx = Utils.parseMemString(maxXmx);
+
+    for (final String jobName : jobPropsMap.keySet()) {
+      final Props jobProps = jobPropsMap.get(jobName);
+      final String xms = jobProps.getString(XMS, null);
+      if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms)
+          && Utils.parseMemString(xms) > sizeMaxXms) {
+        errors.add(String.format(
+            "%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+            jobName, maxXms));
+      }
+      final String xmx = jobProps.getString(XMX, null);
+      if (xmx != null && !PropsUtils.isVarialbeReplacementPattern(xmx)
+          && Utils.parseMemString(xmx) > sizeMaxXmx) {
+        errors.add(String.format(
+            "%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+            jobName, maxXmx));
+      }
+
+      // job callback properties check
+      JobCallbackValidator.validate(jobName, props, jobProps, errors);
+    }
+  }
+
+  /**
+   * Clean up the directory.
+   *
+   * @param dir the directory to be deleted
+   */
+  public static void cleanUpDir(final File dir) {
+    try {
+      if (dir != null && dir.exists()) {
+        FileUtils.deleteDirectory(dir);
+      }
+    } catch (final IOException e) {
+      logger.error("Failed to delete the directory", e);
+      dir.deleteOnExit();
+    }
+  }
+
+  /**
+   * Check if azkaban flow version is 2.0.
+   *
+   * @param azkabanFlowVersion the azkaban flow version
+   * @return the boolean
+   */
+  public static boolean isAzkabanFlowVersion20(final double azkabanFlowVersion) {
+    return Double.compare(azkabanFlowVersion, Constants.AZKABAN_FLOW_VERSION_2_0) == 0;
   }
 
   /**

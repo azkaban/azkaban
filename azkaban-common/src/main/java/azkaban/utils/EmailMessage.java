@@ -40,7 +40,7 @@ import org.apache.log4j.Logger;
 public class EmailMessage {
 
   private static final String protocol = "smtp";
-  private static final int MAX_EMAIL_RETRY_COUNT = 3;
+  private static final int MAX_EMAIL_RETRY_COUNT = 5;
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
   private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
@@ -251,8 +251,8 @@ public class EmailMessage {
       try {
         connectToSMTPServer(t);
         return;
-      } catch (final MessagingException ste) {
-        this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, ste);
+      } catch (final Exception e) {
+        this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, e);
       }
     }
     t.close();
@@ -267,8 +267,8 @@ public class EmailMessage {
       try {
         t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
         return;
-      } catch (final MessagingException sme) {
-        this.logger.error("Sending email messages failed, attempt: " + attempt, sme);
+      } catch (final Exception e) {
+        this.logger.error("Sending email messages failed, attempt: " + attempt, e);
       }
     }
     t.close();
