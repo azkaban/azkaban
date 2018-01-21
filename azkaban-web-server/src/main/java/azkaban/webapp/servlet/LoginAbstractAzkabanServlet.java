@@ -20,6 +20,7 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.project.Project;
 import azkaban.server.session.Session;
+import azkaban.server.session.SessionCache;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
@@ -412,9 +413,11 @@ public abstract class LoginAbstractAzkabanServlet extends
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
       cookie.setPath("/");
       resp.addCookie(cookie);
-      getApplication().getSessionCache().addSession(session);
+      SessionCache cache = getApplication().getSessionCache();
+      cache.addSession(session);
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
+      ret.put("session.ttl", String.valueOf(cache.getEffectiveSessionTimeToLive()));
     } else {
       ret.put("error", "Incorrect Login.");
     }

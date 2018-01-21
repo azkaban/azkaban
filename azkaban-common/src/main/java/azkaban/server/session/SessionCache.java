@@ -25,28 +25,32 @@ import java.util.concurrent.TimeUnit;
 /**
  * Cache for web session.
  *
- * The following global azkaban properties can be used: max.num.sessions - used to determine the
- * number of live sessions that azkaban will handle. Default is 10000 session.time.to.live -Number
- * of seconds before session expires. Default set to 10 hours.
+ * The following global Azkaban properties are used:
+ * <ul>
+ *   <li>{@code max.num.sessions} - number of live sessions that Azkaban handles, default is 10000
+ *   <li>{@code session.time.to.live} - number of milliseconds before the session expires,
+ *   default 36000000 ms, i.e. 10 hours.
+ * </ul>
  */
 public class SessionCache {
 
   private static final int MAX_NUM_SESSIONS = 10000;
-  private static final long SESSION_TIME_TO_LIVE = 10 * 60 * 60 * 1000L;
+  private static final long DEFAULT_SESSION_TIME_TO_LIVE = 10 * 60 * 60 * 1000L; // 10 hours
 
-  // private CacheManager manager = CacheManager.create();
   private final Cache<String, Session> cache;
+
+  private final long effectiveSessionTimeToLive;
 
   /**
    * Constructor taking global props.
    */
   @Inject
   public SessionCache(final Props props) {
+    this.effectiveSessionTimeToLive = props.getLong("session.time.to.live",
+        DEFAULT_SESSION_TIME_TO_LIVE);
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))
-        .expireAfterAccess(
-            props.getLong("session.time.to.live", SESSION_TIME_TO_LIVE),
-            TimeUnit.MILLISECONDS)
+        .expireAfterAccess(effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -56,6 +60,10 @@ public class SessionCache {
   public Session getSession(final String sessionId) {
     final Session elem = this.cache.getIfPresent(sessionId);
     return elem;
+  }
+
+  public long getEffectiveSessionTimeToLive() {
+    return effectiveSessionTimeToLive;
   }
 
   /**
