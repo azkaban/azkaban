@@ -263,14 +263,14 @@ public class FlowLoaderUtils {
     for (final String jobName : jobPropsMap.keySet()) {
       final Props jobProps = jobPropsMap.get(jobName);
       final String xms = jobProps.getString(XMS, null);
-      if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms)
+      if (xms != null && !PropsUtils.isVariableReplacementPattern(xms)
           && Utils.parseMemString(xms) > sizeMaxXms) {
         errors.add(String.format(
             "%s: Xms value has exceeded the allowed limit (max Xms = %s)",
             jobName, maxXms));
       }
       final String xmx = jobProps.getString(XMX, null);
-      if (xmx != null && !PropsUtils.isVarialbeReplacementPattern(xmx)
+      if (xmx != null && !PropsUtils.isVariableReplacementPattern(xmx)
           && Utils.parseMemString(xmx) > sizeMaxXmx) {
         errors.add(String.format(
             "%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
