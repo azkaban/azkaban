@@ -286,7 +286,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   @Override
   public UserGroupInformation getProxiedUser(final Props userProp)
       throws HadoopSecurityManagerException {
-    final String userToProxy = verifySecureProperty(userProp, USER_TO_PROXY);
+    final String userToProxy = verifySecureProperty(userProp, JobProperties.USER_TO_PROXY);
     final UserGroupInformation user = getProxiedUser(userToProxy);
     if (user == null) {
       throw new HadoopSecurityManagerException(
@@ -528,7 +528,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final Props props, final Logger logger)
       throws HadoopSecurityManagerException {
 
-    final String userToProxy = props.getString(USER_TO_PROXY);
+    final String userToProxy = props.getString(JobProperties.USER_TO_PROXY);
 
     logger.info("Getting hadoop tokens based on props for " + userToProxy);
 

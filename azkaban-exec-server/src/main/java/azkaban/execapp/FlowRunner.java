@@ -19,6 +19,7 @@ package azkaban.execapp;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 
 import azkaban.Constants;
+import azkaban.Constants.JobProperties;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -1241,7 +1242,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("jobType", String.valueOf(node.getType()));
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
       metaData.put("jobProxyUser",
-          jobRunner.getProps().getString("user.to.proxy", null));
+          jobRunner.getProps().getString(JobProperties.USER_TO_PROXY, null));
       return metaData;
     }
 

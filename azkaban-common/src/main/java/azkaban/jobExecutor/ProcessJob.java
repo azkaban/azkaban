@@ -21,6 +21,7 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLD
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants;
+import azkaban.Constants.JobProperties;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
@@ -54,7 +55,6 @@ public class ProcessJob extends AbstractProcessJob {
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   public static final String EXECUTE_AS_USER = "execute.as.user";
-  public static final String USER_TO_PROXY = "user.to.proxy";
   public static final String KRB5CCNAME = "KRB5CCNAME";
   private static final Duration KILL_TIME = Duration.ofSeconds(30);
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
@@ -354,8 +354,8 @@ public class ProcessJob extends AbstractProcessJob {
    */
   private String getEffectiveUser(final Props jobProps) {
     String effectiveUser = null;
-    if (jobProps.containsKey(USER_TO_PROXY)) {
-      effectiveUser = jobProps.getString(USER_TO_PROXY);
+    if (jobProps.containsKey(JobProperties.USER_TO_PROXY)) {
+      effectiveUser = jobProps.getString(JobProperties.USER_TO_PROXY);
     } else if (jobProps.containsKey(CommonJobProperties.SUBMIT_USER)) {
       effectiveUser = jobProps.getString(CommonJobProperties.SUBMIT_USER);
     } else {

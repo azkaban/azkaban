@@ -16,6 +16,7 @@
 
 package azkaban.security.commons;
 
+import azkaban.Constants.JobProperties;
 import azkaban.utils.Props;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -40,7 +41,6 @@ public class SecurityUtils {
   public static final String ENABLE_PROXYING = "azkaban.should.proxy"; // boolean
   public static final String PROXY_KEYTAB_LOCATION = "proxy.keytab.location";
   public static final String PROXY_USER = "proxy.user";
-  public static final String TO_PROXY = "user.to.proxy";
   public static final String OBTAIN_BINARY_TOKEN = "obtain.binary.token";
   public static final String MAPREDUCE_JOB_CREDENTIALS_BINARY =
       "mapreduce.job.credentials.binary";
@@ -84,7 +84,7 @@ public class SecurityUtils {
    */
   public static UserGroupInformation getProxiedUser(final Properties prop,
       final Logger log, final Configuration conf) throws IOException {
-    final String toProxy = verifySecureProperty(prop, TO_PROXY, log);
+    final String toProxy = verifySecureProperty(prop, JobProperties.USER_TO_PROXY, log);
     final UserGroupInformation user = getProxiedUser(toProxy, prop, log, conf);
     if (user == null) {
       throw new IOException(
@@ -118,7 +118,7 @@ public class SecurityUtils {
       IOException {
 
     final Configuration conf = new Configuration();
-    logger.info("Getting proxy user for " + p.getString(TO_PROXY));
+    logger.info("Getting proxy user for " + p.getString(JobProperties.USER_TO_PROXY));
     logger.info("Getting proxy user for " + p.toString());
 
     getProxiedUser(p.toProperties(), logger, conf).doAs(
@@ -138,7 +138,7 @@ public class SecurityUtils {
               logger.info("Pre-fetching fs token");
               final FileSystem fs = FileSystem.get(conf);
               final Token<?> fsToken =
-                  fs.getDelegationToken(p.getString("user.to.proxy"));
+                  fs.getDelegationToken(p.getString(JobProperties.USER_TO_PROXY));
               logger.info("Created token: " + fsToken.toString());
 
               final Job job =
