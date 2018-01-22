@@ -54,7 +54,7 @@ public class FlowTriggerTest {
     final Duration invalidDuration = Duration.ofMinutes(-1);
 
     assertThatThrownBy(() -> new FlowTrigger(validSchedule, invalidDependencyList, validDuration))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(NullPointerException.class);
 
     assertThatThrownBy(() -> new FlowTrigger(validSchedule, validDependencyList, invalidDuration))
         .isInstanceOf(IllegalArgumentException.class);
