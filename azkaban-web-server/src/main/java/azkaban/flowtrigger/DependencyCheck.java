@@ -24,12 +24,8 @@ public interface DependencyCheck {
    *
    * @return context of the running dependency.
    */
-  DependencyInstanceContext run(DependencyInstanceConfig config);
-
-  /**
-   * Kill the dependency instance
-   */
-  void kill(DependencyInstanceContext depContext);
+  DependencyInstanceContext run(DependencyInstanceConfig config,
+      DependencyInstanceRuntimeProps runtimeProps, DependencyInstanceCallback callback);
 
   /**
    * Shutdown the dependency plugin. Clean up resource if needed.
@@ -40,7 +36,6 @@ public interface DependencyCheck {
    * Initialize the dependency plugin.
    *
    * @param config dependency plugin config.
-   * @param successCallback callback to invoke when the check succeeds.
    */
-  void init(DependencyPluginConfig config, SuccessCallback successCallback);
+  void init(DependencyPluginConfig config);
 }

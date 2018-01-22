@@ -16,11 +16,15 @@
 
 package azkaban.flowtrigger;
 
-/**
- * Implementing class should hold context information for a running dependency
- * instance.
- */
-public interface DependencyInstanceContext {
+public interface DependencyInstanceCallback {
 
-  void cancel();
+  /**
+   * action to invoke when dependency check instance is successfully finished.
+   */
+  void onSuccess(DependencyInstanceContext depContext);
+
+  /**
+   * action to invoke when dependency check instance is cancelled.
+   */
+  void onCancel(DependencyInstanceContext depContext);
 }
