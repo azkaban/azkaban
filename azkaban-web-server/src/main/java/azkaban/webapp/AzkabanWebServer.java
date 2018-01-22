@@ -662,12 +662,11 @@ public class AzkabanWebServer extends AzkabanServer {
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
-      System.out
-          .println(
-              "************* loginLoggerObjName is null, make sure there is a logger with name "
-                  + AZKABAN_ACCESS_LOGGER_NAME);
+      logger.info(
+          "************* loginLoggerObjName is null, make sure there is a logger with name "
+              + AZKABAN_ACCESS_LOGGER_NAME);
     } else {
-      System.out.println("******** loginLoggerObjName: "
+      logger.info("******** loginLoggerObjName: "
           + accessLogLoggerObjName.getCanonicalName());
     }
   }
