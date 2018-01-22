@@ -22,5 +22,8 @@ package azkaban.flowtrigger;
  */
 public interface DependencyInstanceContext {
 
+  /**
+   * cancel the instance context.
+   */
   void cancel();
 }
