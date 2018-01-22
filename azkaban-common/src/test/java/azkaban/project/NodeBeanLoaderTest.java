@@ -20,7 +20,7 @@ package azkaban.project;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.Constants;
-import azkaban.testplugin.executions.ExecutionsTestUtil;
+import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
