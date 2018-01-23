@@ -1295,6 +1295,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
+      logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
+          + ", reference is " + System.identityHashCode(project));
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
         page.render();
@@ -1644,6 +1646,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
     final Project project = this.projectManager.getProject(projectName);
+    logger.info(
+        "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
+
     final String autoFix = (String) multipart.get("fix");
     final Props props = new Props();
     if (autoFix != null && autoFix.equals("off")) {
@@ -1764,6 +1769,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
+      logger.info("Upload: project " + projectName + " version is " + project.getVersion()
+          + ", reference is " + System.identityHashCode(project));
       ret.put("version", String.valueOf(project.getVersion()));
     }
   }
