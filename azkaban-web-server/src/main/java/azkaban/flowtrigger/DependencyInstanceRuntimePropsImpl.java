@@ -16,14 +16,26 @@
 
 package azkaban.flowtrigger;
 
-/**
- * Implementing class should hold context information for a running dependency
- * instance.
- */
-public interface DependencyInstanceContext {
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 
-  /**
-   * cancel the instance context.
-   */
-  void cancel();
+public class DependencyInstanceRuntimePropsImpl implements DependencyInstanceRuntimeProps {
+
+  private final Map<String, String> props;
+
+  public DependencyInstanceRuntimePropsImpl(final Map<String, String> props) {
+    this.props = ImmutableMap.copyOf(props);
+  }
+
+  @Override
+  public String toString() {
+    return "DependencyInstanceRuntimePropsImpl{" +
+        "props=" + this.props +
+        '}';
+  }
+
+  @Override
+  public String get(final String key) {
+    return this.props.get(key);
+  }
 }

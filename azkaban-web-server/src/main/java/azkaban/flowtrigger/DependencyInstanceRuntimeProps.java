@@ -17,13 +17,13 @@
 package azkaban.flowtrigger;
 
 /**
- * Implementing class should hold context information for a running dependency
- * instance.
+ * Defines the dependency instance runtime props.
  */
-public interface DependencyInstanceContext {
+public interface DependencyInstanceRuntimeProps {
 
   /**
-   * cancel the instance context.
+   * @return value for the property key,
+   * null if the key doesn't exist.
    */
-  void cancel();
+  String get(final String key);
 }

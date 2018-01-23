@@ -16,13 +16,26 @@
 
 package azkaban.flowtrigger;
 
-/**
- * Defines the action to take when dependency check instance is successfully finished.
- */
-public interface SuccessCallback {
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 
-  /**
-   * action to invoke when dependency check instance is successfully finished.
-   */
-  void onSuccess(DependencyInstanceContext dependencyInstance);
+public class DependencyInstanceConfigImpl implements DependencyInstanceConfig {
+
+  private final Map<String, String> props;
+
+  public DependencyInstanceConfigImpl(final Map<String, String> props) {
+    this.props = ImmutableMap.copyOf(props);
+  }
+
+  @Override
+  public String toString() {
+    return "DependencyInstanceConfigImpl{" +
+        "props=" + this.props +
+        '}';
+  }
+
+  @Override
+  public String get(final String key) {
+    return this.props.get(key);
+  }
 }

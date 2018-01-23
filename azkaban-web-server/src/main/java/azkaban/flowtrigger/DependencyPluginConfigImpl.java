@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,14 +16,26 @@
 
 package azkaban.flowtrigger;
 
-/**
- * Implementing class should hold context information for a running dependency
- * instance.
- */
-public interface DependencyInstanceContext {
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 
-  /**
-   * cancel the instance context.
-   */
-  void cancel();
+public class DependencyPluginConfigImpl implements DependencyPluginConfig {
+
+  private final Map<String, String> props;
+
+  public DependencyPluginConfigImpl(final Map<String, String> props) {
+    this.props = ImmutableMap.copyOf(props);
+  }
+
+  @Override
+  public String toString() {
+    return "DependencyPluginConfigImpl{" +
+        "props=" + this.props +
+        '}';
+  }
+
+  @Override
+  public String get(final String key) {
+    return this.props.get(key);
+  }
 }
