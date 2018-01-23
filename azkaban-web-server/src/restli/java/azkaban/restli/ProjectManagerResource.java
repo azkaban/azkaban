@@ -62,6 +62,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
     final User user = ResourceUtils.getUserFromSessionId(sessionId);
     final ProjectManager projectManager = getAzkaban().getProjectManager();
     final Project project = projectManager.getProject(projectName);
+    logger.info("Deploy: reference of project " + projectName + " is " + System.identityHashCode
+        (project));
     if (project == null) {
       final String errorMsg = "Project '" + projectName + "' not found.";
       throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
@@ -115,6 +117,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
       final Map<String, ValidationReport> reports = projectManager
           .uploadProject(project, archiveFile, "zip", user, props);
       checkReports(reports);
+      logger.info("Deploy: project " + projectName + " version is " + project.getVersion()
+          + ", reference is " + System.identityHashCode(project));
       return Integer.toString(project.getVersion());
     } catch (final ProjectManagerException e) {
       final String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";

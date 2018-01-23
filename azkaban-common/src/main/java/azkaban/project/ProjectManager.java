@@ -213,6 +213,7 @@ public class ProjectManager {
       fetchedProject = this.projectsByName.get(name);
     } else {
       try {
+        logger.info("Project " + name + " doesn't exist in cache, fetching from DB now.");
         fetchedProject = this.projectLoader.fetchProjectByName(name);
       } catch (final ProjectManagerException e) {
         logger.error("Could not load project from store.", e);
