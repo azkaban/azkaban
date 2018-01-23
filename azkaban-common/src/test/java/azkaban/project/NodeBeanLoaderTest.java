@@ -22,13 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-import java.io.File;
-import org.apache.commons.io.FileUtils;
 import com.google.common.collect.ImmutableMap;
+import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class NodeBeanLoaderTest {
@@ -198,10 +198,8 @@ public class NodeBeanLoaderTest {
         TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
     final FlowTrigger flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
     validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
-    validateTriggerDependency(flowTrigger.getDependencies().get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
-        PARAMS_1);
-    validateTriggerDependency(flowTrigger.getDependencies().get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
-        PARAMS_2);
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_1, TRIGGER_TYPE, PARAMS_1);
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_2, TRIGGER_TYPE, PARAMS_2);
   }
 
   @Test
@@ -211,10 +209,10 @@ public class NodeBeanLoaderTest {
         TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
     final AzkabanFlow flow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
     validateFlowTrigger(flow.getFlowTrigger(), MAX_WAIT_MINS, CRON_EXPRESSION, 2);
-    validateTriggerDependency(flow.getFlowTrigger().getDependencies().get(0), TRIGGER_NAME_1,
+    validateTriggerDependency(flow.getFlowTrigger(), TRIGGER_NAME_1,
         TRIGGER_TYPE,
         PARAMS_1);
-    validateTriggerDependency(flow.getFlowTrigger().getDependencies().get(1), TRIGGER_NAME_2,
+    validateTriggerDependency(flow.getFlowTrigger(), TRIGGER_NAME_2,
         TRIGGER_TYPE,
         PARAMS_2);
   }
@@ -316,9 +314,9 @@ public class NodeBeanLoaderTest {
     final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(
         ExecutionsTestUtil.getFlowFile(TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
     validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
-    validateTriggerDependency(flowTrigger.getDependencies().get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_1, TRIGGER_TYPE,
         PARAMS_1);
-    validateTriggerDependency(flowTrigger.getDependencies().get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_2, TRIGGER_TYPE,
         PARAMS_2);
   }
 
@@ -373,10 +371,10 @@ public class NodeBeanLoaderTest {
     assertThat(flowTrigger.getDependencies().size()).isEqualTo(numDependencies);
   }
 
-  private void validateTriggerDependency(final FlowTriggerDependency flowTriggerDependency, final
+  private void validateTriggerDependency(final FlowTrigger flowTrigger, final
   String name, final String type, final Map<String, String> params) {
-    assertThat(flowTriggerDependency.getName()).isEqualTo(name);
-    assertThat(flowTriggerDependency.getType()).isEqualTo(type);
-    assertThat(flowTriggerDependency.getProps()).isEqualTo(params);
+    assertThat(flowTrigger.getDependencyByName(name)).isNotNull();
+    assertThat(flowTrigger.getDependencyByName(name).getType()).isEqualTo(type);
+    assertThat(flowTrigger.getDependencyByName(name).getProps()).isEqualTo(params);
   }
 }
