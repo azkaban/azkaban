@@ -57,10 +57,9 @@ public class TriggerInstanceTest {
   }
 
   @Test
-  public void testTriggerInstanceStartTimeEndTime() throws Exception {
+  public void testTriggerInstanceStartTime() throws Exception {
     final List<DependencyInstance> dependencyInstanceList = new ArrayList<>();
     Date expectedStartTime = getDate(2, 2, 2);
-    Date expectedEndTime = getDate(2, 2, 3);
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
             2), getDate(2, 2, 3)));
@@ -69,40 +68,58 @@ public class TriggerInstanceTest {
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
     assertThat(ti.getStartTime()).isEqualTo(expectedStartTime);
-    assertThat(ti.getEndTime()).isEqualTo(expectedEndTime);
+    dependencyInstanceList.clear();
+
+    ti = new TriggerInstance("1", null, "1", 1,
+        "test", dependencyInstanceList, -1, null);
+    assertThat(ti.getStartTime()).isNull();
     dependencyInstanceList.clear();
 
     expectedStartTime = getDate(2, 2, 2);
-    expectedEndTime = getDate(2, 2, 3);
     dependencyInstanceList
-        .add(createTestDependencyInstance(Status.RUNNING, CancellationCause.NONE, getDate(2, 2,
+        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
+            4), getDate(2, 2, 3)));
+
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
+            3), getDate(2, 2, 3)));
+
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
             2), getDate(2, 2, 3)));
 
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
     assertThat(ti.getStartTime()).isEqualTo(expectedStartTime);
-    assertThat(ti.getEndTime()).isNull();
-    dependencyInstanceList.clear();
+  }
 
-    expectedStartTime = getDate(2, 2, 2);
+  @Test
+  public void testTriggerInstanceEndTime() throws Exception {
+    final List<DependencyInstance> dependencyInstanceList = new ArrayList<>();
+    Date expectedEndTime = getDate(3, 2, 3);
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
-            2), null));
-
-    dependencyInstanceList
-        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
-            2), null));
+            2), getDate(3, 2, 3)));
 
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
-            2), null));
+            2), getDate(2, 2, 3)));
+
+    TriggerInstance ti = null;
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStartTime()).isEqualTo(expectedStartTime);
+    assertThat(ti.getEndTime()).isEqualTo(expectedEndTime);
+    dependencyInstanceList.clear();
+
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.RUNNING, CancellationCause.NONE, getDate(2, 2,
+            2), null));
+
+    ti = new TriggerInstance("1", null, "1", 1,
+        "test", dependencyInstanceList, -1, null);
     assertThat(ti.getEndTime()).isNull();
     dependencyInstanceList.clear();
 
-    expectedStartTime = getDate(2, 2, 2);
     expectedEndTime = getDate(3, 2, 3);
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE, getDate(2, 2,
@@ -117,49 +134,71 @@ public class TriggerInstanceTest {
             2), expectedEndTime));
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStartTime()).isEqualTo(expectedStartTime);
     assertThat(ti.getEndTime()).isEqualTo(expectedEndTime);
     dependencyInstanceList.clear();
 
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStartTime()).isNull();
     assertThat(ti.getEndTime()).isNull();
     dependencyInstanceList.clear();
   }
 
   @Test
-  public void testTriggerInstanceStatus() throws Exception {
-
+  public void testTriggerInstanceRunningStatus() throws Exception {
     final List<DependencyInstance> dependencyInstanceList = new ArrayList<>();
     TriggerInstance ti = null;
     dependencyInstanceList
-        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
-    dependencyInstanceList
-        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
-    dependencyInstanceList
-        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
+        .add(createTestDependencyInstance(Status.RUNNING, CancellationCause.MANUAL));
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
 
-    ti = new TriggerInstance("1", null, "1", 1,
-        "test", dependencyInstanceList, -1, null);
-
-    assertThat(ti.getStatus()).isEqualTo(Status.CANCELLED);
+    ti = new TriggerInstance("1", null,
+        "1", 1, "test", dependencyInstanceList,
+        -1, null);
+    assertThat(ti.getStatus()).isEqualTo(Status.RUNNING);
     dependencyInstanceList.clear();
 
     dependencyInstanceList
-        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
-    dependencyInstanceList
-        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
+        .add(createTestDependencyInstance(Status.RUNNING, CancellationCause.MANUAL));
 
-    ti = new TriggerInstance("1", null, "1", 1,
-        "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStatus()).isEqualTo(Status.CANCELLED);
+    ti = new TriggerInstance("1", null,
+        "1", 1, "test", dependencyInstanceList,
+        -1, null);
+    assertThat(ti.getStatus()).isEqualTo(Status.RUNNING);
+    dependencyInstanceList.clear();
+  }
+
+  @Test
+  public void testTriggerInstanceSucceededStatus() throws Exception {
+    final List<DependencyInstance> dependencyInstanceList = new ArrayList<>();
+    TriggerInstance ti = null;
+
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
+
+    ti = new TriggerInstance("1", null,
+        "1", 1, "test", dependencyInstanceList,
+        -1, null);
+    assertThat(ti.getStatus()).isEqualTo(Status.SUCCEEDED);
     dependencyInstanceList.clear();
 
+    ti = new TriggerInstance("1", null,
+        "1", 1, "test", dependencyInstanceList,
+        -1, null);
+    assertThat(ti.getStatus()).isEqualTo(Status.SUCCEEDED);
+    dependencyInstanceList.clear();
+  }
+
+  @Test
+  public void testTriggerInstanceCancellingStatus() throws Exception {
+    final List<DependencyInstance> dependencyInstanceList = new ArrayList<>();
+    TriggerInstance ti = null;
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.CANCELLING, CancellationCause.MANUAL));
     dependencyInstanceList
@@ -230,9 +269,16 @@ public class TriggerInstanceTest {
         -1, null);
     assertThat(ti.getStatus()).isEqualTo(Status.CANCELLING);
     dependencyInstanceList.clear();
+  }
 
+  @Test
+  public void testTriggerInstanceCancelledStatus() throws Exception {
+    final List<DependencyInstance> dependencyInstanceList = new ArrayList<>();
+    TriggerInstance ti = null;
     dependencyInstanceList
-        .add(createTestDependencyInstance(Status.RUNNING, CancellationCause.MANUAL));
+        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
+    dependencyInstanceList
+        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
     dependencyInstanceList
@@ -240,29 +286,20 @@ public class TriggerInstanceTest {
     dependencyInstanceList
         .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
 
-    ti = new TriggerInstance("1", null,
-        "1", 1, "test", dependencyInstanceList,
-        -1, null);
-    assertThat(ti.getStatus()).isEqualTo(Status.RUNNING);
+    ti = new TriggerInstance("1", null, "1", 1,
+        "test", dependencyInstanceList, -1, null);
+
+    assertThat(ti.getStatus()).isEqualTo(Status.CANCELLED);
     dependencyInstanceList.clear();
 
     dependencyInstanceList
-        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
+        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
     dependencyInstanceList
-        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
-    dependencyInstanceList
-        .add(createTestDependencyInstance(Status.SUCCEEDED, CancellationCause.NONE));
+        .add(createTestDependencyInstance(Status.CANCELLED, CancellationCause.MANUAL));
 
-    ti = new TriggerInstance("1", null,
-        "1", 1, "test", dependencyInstanceList,
-        -1, null);
-    assertThat(ti.getStatus()).isEqualTo(Status.SUCCEEDED);
-    dependencyInstanceList.clear();
-
-    ti = new TriggerInstance("1", null,
-        "1", 1, "test", dependencyInstanceList,
-        -1, null);
-    assertThat(ti.getStatus()).isEqualTo(Status.SUCCEEDED);
+    ti = new TriggerInstance("1", null, "1", 1,
+        "test", dependencyInstanceList, -1, null);
+    assertThat(ti.getStatus()).isEqualTo(Status.CANCELLED);
     dependencyInstanceList.clear();
   }
 
