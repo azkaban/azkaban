@@ -40,6 +40,18 @@ public class DependencyInstance {
     this.cause = cause;
   }
 
+  @Override
+  public String toString() {
+    return "DependencyInstance{" +
+        "startTime=" + this.startTime.getTime() +
+        ", depName='" + this.depName + '\'' +
+        ", context=" + this.context +
+        ", endTime=" + (this.endTime == null ? null : this.endTime.getTime()) +
+        ", status=" + this.status +
+        ", cause=" + this.cause +
+        '}';
+  }
+
   public CancellationCause getCancellationCause() {
     return this.cause;
   }

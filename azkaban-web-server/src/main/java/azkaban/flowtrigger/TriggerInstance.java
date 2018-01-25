@@ -54,6 +54,20 @@ public class TriggerInstance {
     }
   }
 
+  @Override
+  public String toString() {
+    return "TriggerInstance{" +
+        "depInstances=" + depInstances +
+        ", id='" + id + '\'' +
+        ", submitUser='" + submitUser + '\'' +
+        ", project=" + project +
+        ", flowId='" + flowId + '\'' +
+        ", flowVersion=" + flowVersion +
+        ", flowTrigger=" + flowTrigger +
+        ", flowExecId=" + flowExecId +
+        '}';
+  }
+
   public Project getProject() {
     return this.project;
   }
