@@ -79,6 +79,9 @@ public class Constants {
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
+  // The flow exec id for a flow trigger instance which hasn't started a flow yet
+  public static final int UNASSIGNED_EXEC_ID = -1;
+
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file
@@ -179,7 +182,7 @@ public class Constants {
     public static final String AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION = "azkaban.storage.artifact.max.retention";
 
     // enable Quartz Scheduler if true.
-    public static final String ENABLE_QUARTZ= "azkaban.server.schedule.enable_quartz";
+    public static final String ENABLE_QUARTZ = "azkaban.server.schedule.enable_quartz";
 
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
   }
