@@ -31,9 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class TriggerProcessor {
+public class TriggerInstanceProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(TriggerProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for %s "
       + "cancelled from %s";
   private static final String FAILURE_EMAIL_BODY = "Your flow trigger cancelled [id: %s]";
@@ -43,7 +43,7 @@ public class TriggerProcessor {
   private final Emailer emailer;
 
   @Inject
-  public TriggerProcessor(final ExecutorManager executorManager,
+  public TriggerInstanceProcessor(final ExecutorManager executorManager,
       final FlowTriggerInstanceLoader dependencyLoader,
       final Emailer emailer) {
     Preconditions.checkNotNull(executorManager);

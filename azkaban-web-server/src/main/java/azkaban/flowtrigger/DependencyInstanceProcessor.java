@@ -23,13 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class DependencyProcessor {
+public class DependencyInstanceProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(DependencyProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(DependencyInstanceProcessor.class);
   private final FlowTriggerInstanceLoader dependencyLoader;
 
   @Inject
-  public DependencyProcessor(final FlowTriggerInstanceLoader depLoader) {
+  public DependencyInstanceProcessor(final FlowTriggerInstanceLoader depLoader) {
     this.dependencyLoader = depLoader;
   }
 
