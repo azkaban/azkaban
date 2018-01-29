@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -95,6 +95,7 @@ public class TriggerInstanceProcessor {
    */
   public void processSucceed(final TriggerInstance triggerInst) {
     logger.debug("process succeed for " + triggerInst);
+    //todo chengren311: publishing Trigger events to Azkaban Project Events page
     executeFlowAndUpdateExecID(triggerInst);
   }
 
