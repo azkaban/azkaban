@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
 public class DependencyInstanceProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(DependencyInstanceProcessor.class);
-  private final FlowTriggerInstanceLoader dependencyLoader;
+  private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
 
   @Inject
   public DependencyInstanceProcessor(final FlowTriggerInstanceLoader depLoader) {
-    this.dependencyLoader = depLoader;
+    this.flowTriggerInstanceLoader = depLoader;
   }
 
   /**
@@ -39,6 +39,6 @@ public class DependencyInstanceProcessor {
   public void processStatusUpdate(final DependencyInstance depInst) {
     logger.debug("process status update for " + depInst);
     //this is blocking call, might offload it to another thread if necessary.
-    this.dependencyLoader.updateDependencyExecutionStatus(depInst);
+    this.flowTriggerInstanceLoader.updateDependencyExecutionStatus(depInst);
   }
 }

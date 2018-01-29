@@ -39,19 +39,19 @@ public class TriggerInstanceProcessor {
   private static final String FAILURE_EMAIL_BODY = "Your flow trigger cancelled [id: %s]";
 
   private final ExecutorManager executorManager;
-  private final FlowTriggerInstanceLoader dependencyLoader;
+  private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final Emailer emailer;
 
   @Inject
   public TriggerInstanceProcessor(final ExecutorManager executorManager,
-      final FlowTriggerInstanceLoader dependencyLoader,
+      final FlowTriggerInstanceLoader flowTriggerInstanceLoader,
       final Emailer emailer) {
     Preconditions.checkNotNull(executorManager);
-    Preconditions.checkNotNull(dependencyLoader);
+    Preconditions.checkNotNull(flowTriggerInstanceLoader);
     Preconditions.checkNotNull(emailer);
     this.emailer = emailer;
     this.executorManager = executorManager;
-    this.dependencyLoader = dependencyLoader;
+    this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
   }
 
   private void executeFlowAndUpdateExecID(final TriggerInstance triggerInst) {
@@ -63,7 +63,7 @@ public class TriggerInstanceProcessor {
       // currently running")
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
-      this.dependencyLoader.updateAssociatedFlowExecId(triggerInst);
+      this.flowTriggerInstanceLoader.updateAssociatedFlowExecId(triggerInst);
     } catch (final Exception ex) {
       logger.error("exception when executing the associate flow and updating flow exec id", ex);
       //todo chengren311: should we swallow the exception or notify user
@@ -111,6 +111,6 @@ public class TriggerInstanceProcessor {
    */
   public void processNewInstance(final TriggerInstance triggerInst) {
     logger.debug("process new instance for " + triggerInst);
-    this.dependencyLoader.uploadTriggerInstance(triggerInst);
+    this.flowTriggerInstanceLoader.uploadTriggerInstance(triggerInst);
   }
 }
