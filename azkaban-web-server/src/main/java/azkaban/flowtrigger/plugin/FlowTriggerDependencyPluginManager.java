@@ -63,18 +63,6 @@ public class FlowTriggerDependencyPluginManager {
     this.loadAllDependencyPlugins();
   }
 
-  public static void main(final String[] args) throws Exception {
-    final FlowTriggerDependencyPluginManager depManager = new FlowTriggerDependencyPluginManager(
-        "/Users/chren/tmp/az_test/dependencyplugin");
-
-    final Map<String, String> props = depManager
-        .readConfig(new File("/Users/chren/tmp/azprops.properties"));
-
-    depManager.loadAllDependencyPlugins();
-
-    //System.out.println(props);
-  }
-
   private Map<String, String> readConfig(final File file) throws
       FlowTriggerDependencyPluginException {
     final Properties props = new Properties();
