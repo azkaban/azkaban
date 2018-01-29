@@ -29,15 +29,13 @@ public class MailCreatorRegistry {
 
   static {
     recommendedCreator = defaultCreator = new DefaultMailCreator();
-    registerCreator(defaultCreator, true);
+    registerCreator(defaultCreator);
   }
 
-  public static void registerCreator(final MailCreator creator, final boolean recommend) {
-    logger.info("registering mail creator " + creator.getName() + ", recommended = " + recommend);
+  public static void registerCreator(final MailCreator creator) {
+    logger.info("registering mail creator " + creator.getName());
     registeredCreators.put(creator.getName(), creator);
-    if (recommend) {
-      recommendedCreator = creator;
-    }
+    recommendedCreator = creator;
   }
 
   public static MailCreator getRecommendedCreator() {

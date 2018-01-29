@@ -109,13 +109,13 @@ public abstract class AzkabanServer {
       logger.info("Email parameter set, attempting to get value from " + emailHome);
       emailPath = azkabanPath("email template", emailHome);
     } else {
-      logger.info("Email parameter not set, attempting to get value from AZKABAN_HOME=" +
-          azkabanHome +", DEFAULT_EMAIL_TEMPLATE_PATH=" + Constants.DEFAULT_EMAIL_TEMPLATE_PATH + ".");
+      logger.info("Email parameter not set, attempting to get value from " + azkabanHome + "/" +
+          Constants.DEFAULT_EMAIL_TEMPLATE_PATH + ".");
       emailPath = azkabanPath("email template", azkabanHome, Constants.DEFAULT_EMAIL_TEMPLATE_PATH);
     }
     emailPath
       .flatMap(path -> TemplateBasedMailCreator.fromPath(path))
-      .ifPresent(creator -> MailCreatorRegistry.registerCreator(creator, true));
+      .ifPresent(creator -> MailCreatorRegistry.registerCreator(creator));
 
     azkabanSettings.ifPresent(settings -> updateDerivedConfigs(settings));
     return azkabanSettings.orElse(null);

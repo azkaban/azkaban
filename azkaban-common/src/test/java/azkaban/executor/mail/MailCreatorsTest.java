@@ -87,7 +87,7 @@ public class MailCreatorsTest {
 
     setTimeUTC();
 
-    MailCreatorRegistry.registerCreator(TemplateBasedMailCreator.fromResources("TemplateBasedMailCreator"), true);
+    MailCreatorRegistry.registerCreator(TemplateBasedMailCreator.fromResources("TemplateBasedMailCreator"));
 
     this.flow = new Flow("mail-creator-test");
     this.options = new ExecutionOptions();
