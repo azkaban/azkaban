@@ -50,7 +50,6 @@ public class TriggerInstanceProcessorTest {
   @BeforeClass
   public static void setup() throws Exception {
     triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
-    //doNothing().when(triggerInstLoader).updateDependencyExecutionStatus(any());
     executorManager = mock(ExecutorManager.class);
     when(executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
     emailer = mock(Emailer.class);
