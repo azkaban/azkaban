@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.flowtrigger.db;
+package azkaban.flowtrigger.database;
 
 import azkaban.Constants;
 import azkaban.db.DatabaseOperator;

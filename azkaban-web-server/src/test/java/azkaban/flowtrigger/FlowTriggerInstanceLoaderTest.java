@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.Constants;
 import azkaban.db.DatabaseOperator;
-import azkaban.flowtrigger.db.FlowTriggerInstanceLoader;
-import azkaban.flowtrigger.db.JdbcFlowTriggerInstanceLoaderImpl;
+import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
+import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.FlowLoaderUtils;
 import azkaban.project.FlowTrigger;
