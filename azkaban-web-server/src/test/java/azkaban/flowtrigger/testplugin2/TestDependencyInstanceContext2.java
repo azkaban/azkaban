@@ -14,16 +14,22 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package azkaban.flowtrigger.testplugin2;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'test'
-include 'az-flow-trigger-dependency-plugin'
+import azkaban.flowtrigger.DependencyInstanceCallback;
+import azkaban.flowtrigger.DependencyInstanceConfig;
+import azkaban.flowtrigger.DependencyInstanceContext;
+import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
+
+public class TestDependencyInstanceContext2 implements DependencyInstanceContext {
+
+
+  public TestDependencyInstanceContext2(final DependencyInstanceConfig config,
+      final DependencyInstanceRuntimeProps runtimeProps,
+      final DependencyInstanceCallback callback) {
+  }
+
+  @Override
+  public void cancel() {
+  }
+}

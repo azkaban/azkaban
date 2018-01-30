@@ -34,15 +34,18 @@ public class FlowTriggerDependencyPluginManagerTest {
     final URL url = FlowTriggerDependencyPluginManagerTest.class.getClassLoader()
         .getResource(pluginDir);
     pluginManager = new FlowTriggerDependencyPluginManager(url.getPath());
-//    final TriggerInstance triggerInstLoader = mock(FlowTrigger.class);
-//    doNothing().when(triggerInstLoader).updateDependencyExecutionStatus(any());
-//    processor = new DependencyInstanceProcessor(triggerInstLoader);
   }
 
 
   @Test
   public void testPluginLoading() {
     assertThat(pluginManager.getDependencyCheck("test")).isNotNull();
+    assertThat(pluginManager.getDependencyCheck("test2")).isNotNull();
+    //verify the dependency check contains the specified properties
+    assertThat(pluginManager.getDependencyCheck("test").toString()).contains("kafka.url=123");
+    assertThat(pluginManager.getDependencyCheck("test").toString()).contains("kafka.port=1234");
+    //verify the dependency check contains the specified private properties
+    assertThat(pluginManager.getDependencyCheck("test2").toString()).contains("password=1234");
   }
 }
 
