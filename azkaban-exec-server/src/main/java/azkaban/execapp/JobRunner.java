@@ -294,7 +294,9 @@ public class JobRunner extends EventHandler implements Runnable {
         .getExternalLogViewer(this.azkabanProps, this.jobId,
             this.props);
     if (!externalViewer.isEmpty()) {
-      this.logger.info("See logs at: " + externalViewer);
+      this.logger.info("If you want to leverage AZ ELK logging support, you need to follow the "
+          + "instructions: http://azkaban.github.io/azkaban/docs/latest/#how-to");
+      this.logger.info("If you did the above step, see logs at: " + externalViewer);
     }
   }
 
