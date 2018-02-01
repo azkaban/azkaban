@@ -18,13 +18,14 @@ package azkaban.executor;
 
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.TypedMapWrapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.codehaus.jettison.json.JSONObject;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -266,8 +267,9 @@ public class ExecutionOptions {
     return flowOptionObj;
   }
 
-  public JSONObject toJSON() {
-    return new JSONObject(toObject());
+  public String toJSON() {
+    final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    return gson.toJson(toObject());
   }
 
   public enum FailureAction {

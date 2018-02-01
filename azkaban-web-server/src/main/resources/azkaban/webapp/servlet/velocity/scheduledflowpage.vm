@@ -40,13 +40,6 @@
     $(document).ready(function () {
       var flowTable = $("#scheduledFlowsTbl");
       flowTable.tablesorter();
-
-    ## Converted the executionOptions to JSON strings for clearer readability purpose.
-      document.querySelectorAll('.executionOptions-json').forEach(
-          function (element) {
-            element.innerHTML = JSON.stringify(JSON.parse(element.innerText), null, 2);
-          });
-
     });
   </script>
 </head>
@@ -141,8 +134,7 @@
                               </div>
                               <div class="modal-body">
                               ## Used <pre> to display text with code format
-                                <pre
-                                    class="executionOptions-json">${sched.executionOptions.toJSON()}</pre>
+                                <pre>${sched.executionOptions.toJSON()}</pre>
                               </div>
                               <div class="modal-footer">
                                   <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
