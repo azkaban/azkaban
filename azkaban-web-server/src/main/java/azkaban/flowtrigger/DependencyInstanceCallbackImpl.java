@@ -16,11 +16,25 @@
 
 package azkaban.flowtrigger;
 
-public enum CancellationCause {
-  NONE, //no cancellation occurred
-  TIMEOUT, // cancellation is issued due to exceeding max wait time
-  MANUAL, // cancellation is issued by user
-  FAILURE, // cancellation is caused by dependency instance failure(e.x invalid input)
-  CASCADING // cancellation is caused by cascading failure(e.x one dependency instance failure
-  // leads to other dependency instances being cancelled)
+import com.google.common.base.Preconditions;
+
+public class DependencyInstanceCallbackImpl implements DependencyInstanceCallback {
+
+  private final FlowTriggerService service;
+
+  public DependencyInstanceCallbackImpl(final FlowTriggerService service) {
+    Preconditions.checkNotNull(service);
+    this.service = service;
+  }
+
+  @Override
+  public void onSuccess(final DependencyInstanceContext depContext) {
+    this.service.markDependencySuccess(depContext);
+  }
+
+  @Override
+  public void onCancel(final DependencyInstanceContext depContext) {
+    this.service.markDependencyCancelled(depContext);
+  }
+
 }
