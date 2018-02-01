@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.codehaus.jettison.json.JSONObject;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -263,6 +264,10 @@ public class ExecutionOptions {
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
     return flowOptionObj;
+  }
+
+  public JSONObject toJSON() {
+    return new JSONObject(toObject());
   }
 
   public enum FailureAction {
