@@ -18,7 +18,6 @@ package azkaban.executor;
 
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.TypedMapWrapper;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -268,8 +267,7 @@ public class ExecutionOptions {
   }
 
   public String toJSON() {
-    final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    return gson.toJson(toObject());
+    return new GsonBuilder().setPrettyPrinting().create().toJson(toObject());
   }
 
   public enum FailureAction {
