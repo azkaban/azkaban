@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("FutureReturnValueIgnored")
 public class TestDependencyInstanceContext implements DependencyInstanceContext {
 
   private static final ScheduledExecutorService scheduleSerivce = Executors
@@ -36,10 +37,10 @@ public class TestDependencyInstanceContext implements DependencyInstanceContext 
       final DependencyInstanceCallback callback) {
     final long expectedRunTime = Long.valueOf(config.get("runtime"));
     this.callback = callback;
-    scheduleSerivce.schedule(this::onSucccess, expectedRunTime, TimeUnit.SECONDS);
+    scheduleSerivce.schedule(this::onSuccess, expectedRunTime, TimeUnit.SECONDS);
   }
 
-  private void onSucccess() {
+  private void onSuccess() {
     this.callback.onSuccess(this);
   }
 

@@ -95,12 +95,12 @@ public class FlowTriggerServiceTest {
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
-        if (depInst.getDepName() == "10secs") {
+        if (depInst.getDepName().equals("10secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.SUCCEEDED);
-        } else if (depInst.getDepName() == "65secs") {
+        } else if (depInst.getDepName().equals("65secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
           assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.TIMEOUT);
-        } else if (depInst.getDepName() == "66secs") {
+        } else if (depInst.getDepName().equals("66secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
           assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.TIMEOUT);
         }
@@ -120,7 +120,7 @@ public class FlowTriggerServiceTest {
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
-        if (depInst.getDepName() == "15secs") {
+        if (depInst.getDepName().equals("15secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
           assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.FAILURE);
         } else {
