@@ -5,6 +5,21 @@ azkaban_dir=$(dirname $0)/..
 # Specifies location of azkaban.properties, log4j.properties files
 # Change if necessary
 conf=$azkaban_dir/conf
+azkaban_dir=$(pwd)
+function SearchCLib()
+{
+    cd $1
+    dirlist=$(ls)
+    for dirname in $dirlist
+    do
+        if [[ -d "$dirname" ]];then
+            hadoopClassPath=${hadoopClassPath}":"$(pwd)"/"${dirname}"/*"
+            cd $dirname
+            SearchCLib $(pwd)
+            cd ..
+        fi;
+    done;
+}
 
 if [[ -z "$tmpdir" ]]; then
 tmpdir=/tmp
@@ -27,7 +42,11 @@ done
 
 if [ "$HADOOP_HOME" != "" ]; then
         echo "Using Hadoop from $HADOOP_HOME"
-        CLASSPATH=$CLASSPATH:$HADOOP_HOME/conf:$HADOOP_HOME/*
+        beginDir=$HADOOP_HOME'/share/hadoop'
+        hadoopClassPath=$beginDir'/*'
+        SearchCLib $beginDir
+        cd $azkaban_dir
+        CLASSPATH=$CLASSPATH:$HADOOP_HOME/etc/hadoop:$hadoopClassPath
         JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native/Linux-amd64-64"
 else
         echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
