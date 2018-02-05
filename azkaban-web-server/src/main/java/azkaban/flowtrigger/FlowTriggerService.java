@@ -78,13 +78,13 @@ public class FlowTriggerService {
   private final ScheduledExecutorService timeoutService;
   private final FlowTriggerDependencyPluginManager triggerPluginManager;
   private final TriggerInstanceProcessor triggerProcessor;
-  private final FlowTriggerInstanceLoader dependencyLoader;
+  private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final DependencyInstanceProcessor dependencyProcessor;
 
   @Inject
   public FlowTriggerService(final FlowTriggerDependencyPluginManager pluginManager,
       final TriggerInstanceProcessor triggerProcessor, final DependencyInstanceProcessor
-      dependencyProcessor, final FlowTriggerInstanceLoader dependencyLoader) {
+      dependencyProcessor, final FlowTriggerInstanceLoader flowTriggerInstanceLoader) {
     // Give the thread a name to make debugging easier.
     final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
         .setNameFormat("FlowTrigger-service").build();
@@ -94,7 +94,7 @@ public class FlowTriggerService {
     this.triggerPluginManager = pluginManager;
     this.triggerProcessor = triggerProcessor;
     this.dependencyProcessor = dependencyProcessor;
-    this.dependencyLoader = dependencyLoader;
+    this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
   }
 
   private DependencyInstanceContext createDepContext(final FlowTriggerDependency dep, final long
@@ -179,11 +179,11 @@ public class FlowTriggerService {
    * @return the list of running trigger instances
    */
   public Collection<TriggerInstance> getRecentlyFinished() {
-    return this.dependencyLoader.getRecentlyFinished(RECENTLY_FINISHED_TRIGGER_LIMIT);
+    return this.flowTriggerInstanceLoader.getRecentlyFinished(RECENTLY_FINISHED_TRIGGER_LIMIT);
   }
 
   public TriggerInstance findTriggerInstanceById(final String triggerInstanceId) {
-    return this.dependencyLoader.getTriggerInstanceById(triggerInstanceId);
+    return this.flowTriggerInstanceLoader.getTriggerInstanceById(triggerInstanceId);
   }
 
   private boolean isDoneButFlowNotExecuted(final TriggerInstance triggerInstance) {
@@ -242,7 +242,7 @@ public class FlowTriggerService {
    * Resume executions of all incomplete trigger instances by recovering the state from db.
    */
   public void recoverIncompleteTriggerInstances() {
-    final Collection<TriggerInstance> unfinishedTriggerInstances = this.dependencyLoader
+    final Collection<TriggerInstance> unfinishedTriggerInstances = this.flowTriggerInstanceLoader
         .getIncompleteTriggerInstances();
     //todo chengren311: what if flow trigger is not found?
     for (final TriggerInstance triggerInstance : unfinishedTriggerInstances) {
