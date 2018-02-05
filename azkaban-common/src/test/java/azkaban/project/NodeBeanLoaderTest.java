@@ -378,3 +378,4 @@ public class NodeBeanLoaderTest {
     assertThat(flowTrigger.getDependencyByName(name).getProps()).isEqualTo(params);
   }
 }
+
