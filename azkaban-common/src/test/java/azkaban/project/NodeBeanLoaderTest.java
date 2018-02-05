@@ -203,6 +203,22 @@ public class NodeBeanLoaderTest {
   }
 
   @Test
+  public void testFlowTriggerMaxWaitMinValidation() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_no_max_wait_min.flow"));
+    final FlowTrigger flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
+    assertThat(flowTrigger.getMaxWaitDuration())
+        .isEqualTo(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME);
+
+    final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_no_max_wait_min.flow"));
+    assertThat(flowTrigger.getMaxWaitDuration())
+        .isEqualTo(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME);
+  }
+
+  @Test
   public void testToAzkabanFlowWithFlowTrigger() throws Exception {
     final NodeBeanLoader loader = new NodeBeanLoader();
     final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
