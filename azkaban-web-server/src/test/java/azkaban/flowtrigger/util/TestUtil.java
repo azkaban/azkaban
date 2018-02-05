@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.util.Lists;
 
 public class TestUtil {
 
@@ -41,21 +40,6 @@ public class TestUtil {
           maxWaitDuration) {
     final FlowTrigger flowTrigger = new FlowTrigger(
         new CronSchedule("* * * * ? *"), deps, maxWaitDuration);
-    return flowTrigger;
-//    Lists.newArrayList(createTestDependency("10secs", 10, false), createTestDependency
-//        ("65secs", 65, false), createTestDependency("66secs",
-//        66, false)), maxWaitDuration
-//    )
-//    return flowTrigger;
-  }
-
-  public static FlowTrigger createFailedTestFlowTrigger(final Duration maxWaitDuration) {
-    final FlowTrigger flowTrigger = new FlowTrigger(
-        new CronSchedule("* * * * ? *"),
-        Lists.newArrayList(createTestDependency("10secs", 10, false), createTestDependency
-                ("65secs", 65, false), createTestDependency("66secs", 66, false),
-            createTestDependency("15secs", 15, true)), maxWaitDuration
-    );
     return flowTrigger;
   }
 }
