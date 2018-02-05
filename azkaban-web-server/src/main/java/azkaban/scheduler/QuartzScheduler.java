@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class QuartzScheduler {
 
   //Unless specified, all Quartz jobs's identities comes with the default job name.
-  private static final String DEFAULT_JOB_NAME = "job1";
+  public static final String DEFAULT_JOB_NAME = "job1";
   private static final Logger logger = LoggerFactory.getLogger(QuartzScheduler.class);
   private Scheduler scheduler = null;
 
@@ -108,7 +108,11 @@ public class QuartzScheduler {
     }
   }
 
-  public void unregisterJob(final String groupName) throws SchedulerException {
+  /**
+   * Unregister a job given the groupname. Since unregister might be called when
+   * concurrently removing projects, so synchronized is added to ensure thread safety.
+   */
+  public synchronized void unregisterJob(final String groupName) throws SchedulerException {
     if (!ifJobExist(groupName)) {
       logger.warn("can not find job with " + groupName + " in quartz.");
     } else {
@@ -117,18 +121,20 @@ public class QuartzScheduler {
   }
 
   /**
-   * Only cron schedule register is supported.
+   * Only cron schedule register is supported. Since register might be called when
+   * concurrently uploading projects, so synchronized is added to ensure thread safety.
    *
    * @param cronExpression the cron schedule for this job
    * @param jobDescription Regarding QuartzJobDescription#groupName, in order to guarantee no
    * duplicate quartz schedules, we design the naming convention depending on use cases: <ul>
-   * <li>User flow schedule: we use {@link org.quartz.JobKey#JobKey} to represent the identity of a
+   * <li>User flow schedule: we use {@link JobKey#JobKey} to represent the identity of a
    * flow's schedule. The format follows "$projectID_$flowName" to guarantee no duplicates.
-   * <li>Quartz schedule for AZ internal use: the groupName should start with letters,
-   * rather than
+   * <li>Quartz schedule for AZ internal use: the groupName should startTrigger with letters, rather
+   * than
    * number, which is the first case.</ul>
    */
-  public void registerJob(final String cronExpression, final QuartzJobDescription jobDescription)
+  public synchronized void registerJob(final String cronExpression, final QuartzJobDescription
+      jobDescription)
       throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
@@ -144,7 +150,7 @@ public class QuartzScheduler {
           "The cron expression string <" + cronExpression + "> is not valid.");
     }
 
-    // TODO kunkun-tang: we will modify this when we start supporting multi schedules per flow.
+    // TODO kunkun-tang: we will modify this when we startTrigger supporting multi schedules per flow.
     final JobDetail job = JobBuilder.newJob(jobDescription.getJobClass())
         .withIdentity(DEFAULT_JOB_NAME, jobDescription.getGroupName()).build();
 

@@ -42,7 +42,6 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.FetchActiveFlowDao;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
-import azkaban.scheduler.QuartzScheduler;
 import azkaban.spi.Storage;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
