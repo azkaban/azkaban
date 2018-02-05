@@ -29,12 +29,16 @@ import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
 import azkaban.flowtrigger.testplugin.TestDependencyCheck;
 import azkaban.flowtrigger.util.TestUtil;
 import azkaban.project.FlowTrigger;
+import azkaban.project.FlowTriggerDependency;
 import azkaban.project.Project;
 import azkaban.utils.Emailer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
@@ -43,7 +47,6 @@ import org.mockito.Mockito;
 
 public class FlowTriggerServiceTest {
 
-  private static final String pluginDir = "dependencyplugin";
   private static final FlowTriggerInstanceLoader flowTriggerInstanceLoader = new
       MockFlowTriggerInstanceLoader();
   private static TestDependencyCheck testDepCheck;
@@ -73,6 +76,11 @@ public class FlowTriggerServiceTest {
         triggerInstProcessor, depInstProcessor, flowTriggerInstanceLoader);
   }
 
+  @Before
+  public void cleanup() {
+    ((MockFlowTriggerInstanceLoader) flowTriggerInstanceLoader).clear();
+  }
+
   private Project createProject() {
     final Project project = new Project(1, "project1");
     project.setVersion(1);
@@ -85,22 +93,27 @@ public class FlowTriggerServiceTest {
 
   @Test
   public void testStartTriggerCancelledByTimeout() throws InterruptedException {
-    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(1);
+
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    deps.add(TestUtil.createTestDependency("2secs", 2, false));
+    deps.add(TestUtil.createTestDependency("8secs", 8, false));
+    deps.add(TestUtil.createTestDependency("9secs", 9, false));
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(5));
     for (int i = 0; i < 10; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
-    Thread.sleep(Duration.ofMinutes(1).toMillis() + Duration.ofSeconds(3).toMillis());
+    Thread.sleep(Duration.ofSeconds(6).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(10);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
-        if (depInst.getDepName().equals("10secs")) {
+        if (depInst.getDepName().equals("2secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.SUCCEEDED);
-        } else if (depInst.getDepName().equals("65secs")) {
+        } else if (depInst.getDepName().equals("8secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
           assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.TIMEOUT);
-        } else if (depInst.getDepName().equals("66secs")) {
+        } else if (depInst.getDepName().equals("9secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
           assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.TIMEOUT);
         }
@@ -110,17 +123,21 @@ public class FlowTriggerServiceTest {
 
   @Test
   public void testStartTriggerCancelledByFailure() throws InterruptedException {
-    final FlowTrigger flowTrigger = TestUtil.createFailedTestFlowTrigger(1);
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    deps.add(TestUtil.createTestDependency("2secs", 2, true));
+    deps.add(TestUtil.createTestDependency("8secs", 8, false));
+    deps.add(TestUtil.createTestDependency("9secs", 9, false));
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
     for (int i = 0; i < 10; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
-    Thread.sleep(Duration.ofSeconds(2).toMillis());
+    Thread.sleep(Duration.ofSeconds(1).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(10);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
-        if (depInst.getDepName().equals("15secs")) {
+        if (depInst.getDepName().equals("2secs")) {
           assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
           assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.FAILURE);
         } else {
@@ -133,11 +150,15 @@ public class FlowTriggerServiceTest {
 
   @Test
   public void testStartTriggerSuccess() throws InterruptedException {
-    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(5);
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    deps.add(TestUtil.createTestDependency("2secs", 2, false));
+    deps.add(TestUtil.createTestDependency("3secs", 3, false));
+    deps.add(TestUtil.createTestDependency("4secs", 4, false));
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
     for (int i = 0; i < 10; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
-    Thread.sleep(Duration.ofMinutes(1).toMillis() + Duration.ofSeconds(8).toMillis());
+    Thread.sleep(Duration.ofSeconds(5).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(10);
     for (final TriggerInstance inst : triggerInstances) {
@@ -147,7 +168,11 @@ public class FlowTriggerServiceTest {
 
   @Test
   public void testRecovery() throws Exception {
-    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(5);
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    deps.add(TestUtil.createTestDependency("2secs", 2, false));
+    deps.add(TestUtil.createTestDependency("3secs", 3, false));
+    deps.add(TestUtil.createTestDependency("4secs", 4, false));
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
     for (int i = 0; i < 10; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
@@ -155,7 +180,7 @@ public class FlowTriggerServiceTest {
     flowTriggerService.shutdown();
     setup();
     flowTriggerService.recoverIncompleteTriggerInstances();
-    Thread.sleep(Duration.ofMinutes(1).toMillis() + Duration.ofSeconds(8).toMillis());
+    Thread.sleep(Duration.ofSeconds(5).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(10);
     for (final TriggerInstance inst : triggerInstances) {

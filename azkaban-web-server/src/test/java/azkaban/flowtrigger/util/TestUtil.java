@@ -22,6 +22,7 @@ import azkaban.project.FlowTrigger;
 import azkaban.project.FlowTriggerDependency;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.assertj.core.util.Lists;
 
@@ -35,23 +36,25 @@ public class TestUtil {
     return new FlowTriggerDependency(name, "TestDependencyCheck", props);
   }
 
-  public static FlowTrigger createTestFlowTrigger(final int maxWaitMin) {
+  public static FlowTrigger createTestFlowTrigger(final List<FlowTriggerDependency> deps,
+      final Duration
+          maxWaitDuration) {
     final FlowTrigger flowTrigger = new FlowTrigger(
-        new CronSchedule("* * * * ? *"),
-        Lists.newArrayList(createTestDependency("10secs", 10, false), createTestDependency
-            ("65secs", 65, false), createTestDependency("66secs", 66, false)),
-        Duration.ofMinutes(maxWaitMin)
-    );
+        new CronSchedule("* * * * ? *"), deps, maxWaitDuration);
     return flowTrigger;
+//    Lists.newArrayList(createTestDependency("10secs", 10, false), createTestDependency
+//        ("65secs", 65, false), createTestDependency("66secs",
+//        66, false)), maxWaitDuration
+//    )
+//    return flowTrigger;
   }
 
-  public static FlowTrigger createFailedTestFlowTrigger(final int maxWaitMin) {
+  public static FlowTrigger createFailedTestFlowTrigger(final Duration maxWaitDuration) {
     final FlowTrigger flowTrigger = new FlowTrigger(
         new CronSchedule("* * * * ? *"),
         Lists.newArrayList(createTestDependency("10secs", 10, false), createTestDependency
                 ("65secs", 65, false), createTestDependency("66secs", 66, false),
-            createTestDependency("15secs", 15, true)),
-        Duration.ofMinutes(maxWaitMin)
+            createTestDependency("15secs", 15, true)), maxWaitDuration
     );
     return flowTrigger;
   }

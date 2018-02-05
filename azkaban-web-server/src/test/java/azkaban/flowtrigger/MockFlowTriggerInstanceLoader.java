@@ -27,6 +27,10 @@ public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader 
   private final List<TriggerInstance> triggerInstances = Collections.synchronizedList(new
       ArrayList<TriggerInstance>());
 
+  public void clear() {
+    this.triggerInstances.clear();
+  }
+
   @Override
   public void uploadTriggerInstance(final TriggerInstance triggerInstance) {
     this.triggerInstances.add(triggerInstance);
