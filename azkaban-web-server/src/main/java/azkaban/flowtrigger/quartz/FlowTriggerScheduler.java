@@ -25,6 +25,7 @@ import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.scheduler.QuartzJobDescription;
+import azkaban.scheduler.QuartzScheduler;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import java.io.File;
@@ -100,6 +101,9 @@ public class FlowTriggerScheduler {
     }
   }
 
+  /**
+   * Retrieve the list of scheduled flow triggers from quartz database
+   */
   public List<ScheduledFlowTrigger> getScheduledFlowTriggerJobs() {
     final Scheduler quartzScheduler = this.scheduler.getScheduler();
     try {
