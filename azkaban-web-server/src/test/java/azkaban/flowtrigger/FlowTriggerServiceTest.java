@@ -122,6 +122,33 @@ public class FlowTriggerServiceTest {
   }
 
   @Test
+  public void testStartTriggerCancelledManually() throws InterruptedException {
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    deps.add(TestUtil.createTestDependency("2secs", 2, false));
+    deps.add(TestUtil.createTestDependency("8secs", 8, false));
+    deps.add(TestUtil.createTestDependency("9secs", 9, false));
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(5));
+    for (int i = 0; i < 10; i++) {
+      flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
+    }
+
+    Thread.sleep(Duration.ofMillis(500).toMillis());
+    for (final TriggerInstance runningTrigger : flowTriggerService.getRunningTriggers()) {
+      flowTriggerService.cancel(runningTrigger, CancellationCause.MANUAL);
+    }
+    Thread.sleep(Duration.ofMillis(500).toMillis());
+    final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
+    assertThat(triggerInstances).hasSize(10);
+    for (final TriggerInstance inst : triggerInstances) {
+      assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
+      for (final DependencyInstance depInst : inst.getDepInstances()) {
+        assertThat(depInst.getStatus()).isEqualTo(Status.CANCELLED);
+        assertThat(depInst.getCancellationCause()).isEqualTo(CancellationCause.MANUAL);
+      }
+    }
+  }
+
+  @Test
   public void testStartTriggerCancelledByFailure() throws InterruptedException {
     final List<FlowTriggerDependency> deps = new ArrayList<>();
     deps.add(TestUtil.createTestDependency("2secs", 2, true));
