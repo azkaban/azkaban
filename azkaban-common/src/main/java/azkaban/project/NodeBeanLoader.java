@@ -97,11 +97,11 @@ public class NodeBeanLoader {
 
     Preconditions.checkArgument(
         scheduleMap.containsKey(Constants.SCHEDULE_TYPE) && scheduleMap.get(Constants.SCHEDULE_TYPE)
-            .equals(Constants.SCHEDULE_VALUE), "flow trigger schedule type must be cron");
+            .equals(Constants.CRON_SCHEDULE_TYPE), "flow trigger schedule type must be cron");
 
     Preconditions.checkArgument(scheduleMap.containsKey(Constants.SCHEDULE_VALUE) && CronExpression
-        .isValidExpression(Constants.SCHEDULE_VALUE), "flow trigger schedule value must be a "
-        + "valid cron expression");
+            .isValidExpression(scheduleMap.get(Constants.SCHEDULE_VALUE)),
+        "flow trigger schedule value must be a valid cron expression");
 
     Preconditions.checkArgument(scheduleMap.size() == 2, "flow trigger schedule must "
         + "contain type and value only");
