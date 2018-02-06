@@ -16,9 +16,9 @@
 
 package azkaban.flowtrigger.testplugin;
 
-import azkaban.flowtrigger.DependencyInstanceContext;
 import flowtrigger.DependencyInstanceCallback;
 import flowtrigger.DependencyInstanceConfig;
+import flowtrigger.DependencyInstanceContext;
 import flowtrigger.DependencyInstanceRuntimeProps;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

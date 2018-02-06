@@ -16,10 +16,10 @@
 
 package azkaban.flowtrigger.testplugin;
 
-import azkaban.flowtrigger.DependencyInstanceContext;
 import flowtrigger.DependencyCheck;
 import flowtrigger.DependencyInstanceCallback;
 import flowtrigger.DependencyInstanceConfig;
+import flowtrigger.DependencyInstanceContext;
 import flowtrigger.DependencyInstanceRuntimeProps;
 import flowtrigger.DependencyPluginConfig;
 

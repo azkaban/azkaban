@@ -32,6 +32,7 @@ import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import flowtrigger.DependencyInstanceContext;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
