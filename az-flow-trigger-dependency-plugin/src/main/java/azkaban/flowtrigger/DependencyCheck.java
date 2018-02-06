@@ -14,7 +14,7 @@
  * the License.
  */
 
-package flowtrigger;
+package azkaban.flowtrigger;
 
 public interface DependencyCheck {
 

@@ -17,8 +17,6 @@
 package azkaban.flowtrigger;
 
 import com.google.common.base.Preconditions;
-import flowtrigger.DependencyInstanceCallback;
-import flowtrigger.DependencyInstanceContext;
 
 public class DependencyInstanceCallbackImpl implements DependencyInstanceCallback {
 

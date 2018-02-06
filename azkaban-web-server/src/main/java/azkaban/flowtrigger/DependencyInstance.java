@@ -16,7 +16,6 @@
 
 package azkaban.flowtrigger;
 
-import flowtrigger.DependencyInstanceContext;
 import java.util.Date;
 
 public class DependencyInstance {

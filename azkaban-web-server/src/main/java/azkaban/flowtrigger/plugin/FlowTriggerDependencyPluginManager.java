@@ -16,11 +16,11 @@
 
 package azkaban.flowtrigger.plugin;
 
+import azkaban.flowtrigger.DependencyCheck;
+import azkaban.flowtrigger.DependencyPluginConfig;
 import azkaban.flowtrigger.DependencyPluginConfigImpl;
 import azkaban.utils.Utils;
 import com.google.common.collect.Maps;
-import flowtrigger.DependencyCheck;
-import flowtrigger.DependencyPluginConfig;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;

@@ -16,12 +16,12 @@
 
 package azkaban.flowtrigger.testplugin;
 
-import flowtrigger.DependencyCheck;
-import flowtrigger.DependencyInstanceCallback;
-import flowtrigger.DependencyInstanceConfig;
-import flowtrigger.DependencyInstanceContext;
-import flowtrigger.DependencyInstanceRuntimeProps;
-import flowtrigger.DependencyPluginConfig;
+import azkaban.flowtrigger.DependencyCheck;
+import azkaban.flowtrigger.DependencyInstanceCallback;
+import azkaban.flowtrigger.DependencyInstanceConfig;
+import azkaban.flowtrigger.DependencyInstanceContext;
+import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
+import azkaban.flowtrigger.DependencyPluginConfig;
 
 public class FakeDependencyCheck1 implements DependencyCheck {
 

@@ -16,10 +16,10 @@
 
 package azkaban.flowtrigger.testplugin;
 
-import flowtrigger.DependencyInstanceCallback;
-import flowtrigger.DependencyInstanceConfig;
-import flowtrigger.DependencyInstanceContext;
-import flowtrigger.DependencyInstanceRuntimeProps;
+import azkaban.flowtrigger.DependencyInstanceCallback;
+import azkaban.flowtrigger.DependencyInstanceConfig;
+import azkaban.flowtrigger.DependencyInstanceContext;
+import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
 
 @SuppressWarnings("FutureReturnValueIgnored")
 public class FakeDependencyInstanceContext1 implements DependencyInstanceContext {
