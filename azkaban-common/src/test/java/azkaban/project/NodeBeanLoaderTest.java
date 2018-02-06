@@ -238,6 +238,23 @@ public class NodeBeanLoaderTest {
   }
 
   @Test
+  public void testFlowTriggerRequireDepNameAndType() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_without_dep_name.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
+        .isInstanceOf(NullPointerException.class);
+
+    final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_without_dep_type.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
   public void testFlowTriggerScheduleValidation() throws Exception {
     final NodeBeanLoader loader = new NodeBeanLoader();
 

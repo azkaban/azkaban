@@ -146,7 +146,18 @@ public class NodeBeanLoader {
     }
   }
 
+  /**
+   * validate name and type are present
+   */
+  private void validateNameAndTypeArePresent(final List<TriggerDependencyBean> dependencies) {
+    for (final TriggerDependencyBean dep : dependencies) {
+      Preconditions.checkNotNull(dep.getName(), "dependency name is required");
+      Preconditions.checkNotNull(dep.getType(), "dependency type is required for " + dep.getName());
+    }
+  }
+
   private void validateTriggerDependencies(final List<TriggerDependencyBean> dependencies) {
+    validateNameAndTypeArePresent(dependencies);
     validateDepNameUniqueness(dependencies);
     validateDepDefinitionUniqueness(dependencies);
     validateDepType(dependencies);
