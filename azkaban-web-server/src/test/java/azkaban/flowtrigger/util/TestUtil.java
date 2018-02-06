@@ -36,10 +36,8 @@ public class TestUtil {
   }
 
   public static FlowTrigger createTestFlowTrigger(final List<FlowTriggerDependency> deps,
-      final Duration
-          maxWaitDuration) {
-    final FlowTrigger flowTrigger = new FlowTrigger(
+      final Duration maxWaitDuration) {
+    return new FlowTrigger(
         new CronSchedule("* * * * ? *"), deps, maxWaitDuration);
-    return flowTrigger;
   }
 }
