@@ -99,12 +99,12 @@ public class FlowTriggerServiceTest {
     deps.add(TestUtil.createTestDependency("8secs", 8, false));
     deps.add(TestUtil.createTestDependency("9secs", 9, false));
     final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(5));
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 30; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(6).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
-    assertThat(triggerInstances).hasSize(10);
+    assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
@@ -128,7 +128,7 @@ public class FlowTriggerServiceTest {
     deps.add(TestUtil.createTestDependency("8secs", 8, false));
     deps.add(TestUtil.createTestDependency("9secs", 9, false));
     final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(5));
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 30; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
 
@@ -138,7 +138,7 @@ public class FlowTriggerServiceTest {
     }
     Thread.sleep(Duration.ofMillis(500).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
-    assertThat(triggerInstances).hasSize(10);
+    assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
@@ -155,12 +155,12 @@ public class FlowTriggerServiceTest {
     deps.add(TestUtil.createTestDependency("8secs", 8, false));
     deps.add(TestUtil.createTestDependency("9secs", 9, false));
     final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 30; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(1).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
-    assertThat(triggerInstances).hasSize(10);
+    assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.CANCELLED);
       for (final DependencyInstance depInst : inst.getDepInstances()) {
@@ -182,12 +182,12 @@ public class FlowTriggerServiceTest {
     deps.add(TestUtil.createTestDependency("3secs", 3, false));
     deps.add(TestUtil.createTestDependency("4secs", 4, false));
     final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 30; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(5).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
-    assertThat(triggerInstances).hasSize(10);
+    assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.SUCCEEDED);
     }
@@ -200,7 +200,7 @@ public class FlowTriggerServiceTest {
     deps.add(TestUtil.createTestDependency("3secs", 3, false));
     deps.add(TestUtil.createTestDependency("4secs", 4, false));
     final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 30; i++) {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(1).toMillis());
@@ -209,7 +209,7 @@ public class FlowTriggerServiceTest {
     flowTriggerService.recoverIncompleteTriggerInstances();
     Thread.sleep(Duration.ofSeconds(5).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
-    assertThat(triggerInstances).hasSize(10);
+    assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.SUCCEEDED);
     }
