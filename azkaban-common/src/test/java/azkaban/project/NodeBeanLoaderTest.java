@@ -227,6 +227,17 @@ public class NodeBeanLoaderTest {
   }
 
   @Test
+  public void testFlowTriggerDepDuplicationValidation() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_duplicate_dep_props.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   public void testToAzkabanFlowWithFlowTrigger() throws Exception {
     final NodeBeanLoader loader = new NodeBeanLoader();
     final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(

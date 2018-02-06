@@ -131,14 +131,16 @@ public class NodeBeanLoader {
    * check uniqueness of dependency type and params
    */
   private void validateDepDefinitionUniqueness(final List<TriggerDependencyBean> dependencies) {
-    final Set<String> seen = new HashSet<>();
-    for (final TriggerDependencyBean dep : dependencies) {
-      final Map<String, String> props = dep.getParams();
-      // set.add() returns false when there exists duplicate
-      Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
-          ("duplicate "
-              + "dependency"
-              + "config %s found, dependency config should be unique", dep.getName()));
+    for (int i = 0; i < dependencies.size(); i++) {
+      for (int j = i + 1; j < dependencies.size(); j++) {
+        final boolean duplicateDepDefFound =
+            dependencies.get(i).getType().equals(dependencies.get(j)
+                .getType()) && dependencies.get(i).getParams()
+                .equals(dependencies.get(j).getParams());
+        Preconditions.checkArgument(!duplicateDepDefFound, String.format("duplicate dependency"
+                + "config %s found, dependency config should be unique",
+            dependencies.get(i).getName()));
+      }
     }
   }
 
