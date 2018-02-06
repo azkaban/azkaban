@@ -432,7 +432,7 @@ public class FlowTriggerService {
   /**
    * Mark the dependency instance context as success
    */
-  void markDependencySuccess(final DependencyInstanceContext context) {
+  public void markDependencySuccess(final DependencyInstanceContext context) {
     this.executorService.submit(() -> {
       final DependencyInstance depInst = findDependencyInstanceByContext(context);
       if (depInst != null) {
@@ -477,7 +477,7 @@ public class FlowTriggerService {
         == CancellationCause.NONE);
   }
 
-  void markDependencyCancelled(final DependencyInstanceContext context) {
+  public void markDependencyCancelled(final DependencyInstanceContext context) {
     this.executorService.submit(() -> {
       final DependencyInstance depInst = findDependencyInstanceByContext(context);
       if (depInst != null) {
