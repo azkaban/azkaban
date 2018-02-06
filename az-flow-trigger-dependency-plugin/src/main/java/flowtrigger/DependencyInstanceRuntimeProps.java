@@ -14,16 +14,16 @@
  * the License.
  */
 
-package azkaban.flowtrigger;
+package flowtrigger;
 
 /**
- * Defines the dependency instance level configuration.
+ * Defines the dependency instance runtime props.
  */
-public interface DependencyInstanceConfig {
+public interface DependencyInstanceRuntimeProps {
 
   /**
-   * @return value for the configuration key,
-   * null if the key doesn't exist in the configuration.
+   * @return value for the property key,
+   * null if the key doesn't exist.
    */
   String get(final String key);
 }

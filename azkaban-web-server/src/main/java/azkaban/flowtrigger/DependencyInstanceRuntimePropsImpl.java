@@ -17,6 +17,7 @@
 package azkaban.flowtrigger;
 
 import com.google.common.collect.ImmutableMap;
+import flowtrigger.DependencyInstanceRuntimeProps;
 import java.util.Map;
 
 public class DependencyInstanceRuntimePropsImpl implements DependencyInstanceRuntimeProps {

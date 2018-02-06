@@ -14,16 +14,16 @@
  * the License.
  */
 
-package azkaban.flowtrigger;
+package flowtrigger;
 
 /**
- * Implementing class should hold context information for a running dependency
- * instance.
+ * Defines the dependency plugin level configuration
  */
-public interface DependencyInstanceContext {
+public interface DependencyPluginConfig {
 
   /**
-   * cancel the instance context.
+   * @return value for the configuration key,
+   * null if the key doesn't exist in the configuration.
    */
-  void cancel();
+  String get(final String key);
 }

@@ -16,6 +16,10 @@
 
 package azkaban.flowtrigger;
 
+import flowtrigger.DependencyInstanceCallback;
+import flowtrigger.DependencyInstanceConfig;
+import flowtrigger.DependencyInstanceRuntimeProps;
+
 public class TestDependencyInstanceContext implements DependencyInstanceContext {
 
   private final DependencyInstanceCallback callback;

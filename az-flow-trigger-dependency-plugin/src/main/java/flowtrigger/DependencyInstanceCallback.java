@@ -14,16 +14,17 @@
  * the License.
  */
 
-package azkaban.flowtrigger;
+package flowtrigger;
 
-/**
- * Defines the dependency instance runtime props.
- */
-public interface DependencyInstanceRuntimeProps {
+public interface DependencyInstanceCallback {
 
   /**
-   * @return value for the property key,
-   * null if the key doesn't exist.
+   * action to invoke when dependency check instance is successfully finished.
    */
-  String get(final String key);
+  void onSuccess(DependencyInstanceContext depContext);
+
+  /**
+   * action to invoke when dependency check instance is cancelled.
+   */
+  void onCancel(DependencyInstanceContext depContext);
 }

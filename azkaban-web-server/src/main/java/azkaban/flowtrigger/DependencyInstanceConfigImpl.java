@@ -17,6 +17,7 @@
 package azkaban.flowtrigger;
 
 import com.google.common.collect.ImmutableMap;
+import flowtrigger.DependencyInstanceConfig;
 import java.util.Map;
 
 public class DependencyInstanceConfigImpl implements DependencyInstanceConfig {

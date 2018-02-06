@@ -18,6 +18,9 @@ package azkaban.flowtrigger;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import flowtrigger.DependencyInstanceConfig;
+import flowtrigger.DependencyInstanceRuntimeProps;
+import flowtrigger.DependencyPluginConfig;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;

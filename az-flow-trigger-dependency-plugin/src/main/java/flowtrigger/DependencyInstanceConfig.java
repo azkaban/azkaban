@@ -14,17 +14,16 @@
  * the License.
  */
 
-package azkaban.flowtrigger;
+package flowtrigger;
 
-public interface DependencyInstanceCallback {
-
-  /**
-   * action to invoke when dependency check instance is successfully finished.
-   */
-  void onSuccess(DependencyInstanceContext depContext);
+/**
+ * Defines the dependency instance level configuration.
+ */
+public interface DependencyInstanceConfig {
 
   /**
-   * action to invoke when dependency check instance is cancelled.
+   * @return value for the configuration key,
+   * null if the key doesn't exist in the configuration.
    */
-  void onCancel(DependencyInstanceContext depContext);
+  String get(final String key);
 }
