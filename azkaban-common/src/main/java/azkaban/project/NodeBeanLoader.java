@@ -20,13 +20,17 @@ package azkaban.project;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import azkaban.Constants;
+import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileInputStream;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.quartz.CronExpression;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -86,15 +90,99 @@ public class NodeBeanLoader {
     }
   }
 
+  private void validateSchedule(final FlowTriggerBean flowTriggerBean) {
+    final Map<String, String> scheduleMap = flowTriggerBean.getSchedule();
+
+    Preconditions.checkNotNull(scheduleMap, "flow trigger schedule must not be null");
+
+    Preconditions.checkArgument(
+        scheduleMap.containsKey(Constants.SCHEDULE_TYPE) && scheduleMap.get(Constants.SCHEDULE_TYPE)
+            .equals(Constants.CRON_SCHEDULE_TYPE), "flow trigger schedule type must be cron");
+
+    Preconditions.checkArgument(scheduleMap.containsKey(Constants.SCHEDULE_VALUE) && CronExpression
+            .isValidExpression(scheduleMap.get(Constants.SCHEDULE_VALUE)),
+        "flow trigger schedule value must be a valid cron expression");
+
+    Preconditions.checkArgument(scheduleMap.size() == 2, "flow trigger schedule must "
+        + "contain type and value only");
+  }
+
+  private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean) {
+    // validate max wait mins
+    Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
+        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be longer than " + Constants
+        .MIN_FLOW_TRIGGER_WAIT_TIME + " min ");
+
+    validateSchedule(flowTriggerBean);
+    validateTriggerDependencies(flowTriggerBean.getTriggerDependencies());
+  }
+
+  /**
+   * check uniqueness of dependency.name
+   */
+  private void validateDepNameUniqueness(final List<TriggerDependencyBean> dependencies) {
+    final Set<String> seen = new HashSet<>();
+    for (final TriggerDependencyBean dep : dependencies) {
+      // set.add() returns false when there exists duplicate
+      Preconditions.checkArgument(seen.add(dep.getName()), String.format("duplicate dependency"
+          + ".name %s found, dependency.name should be unique", dep.getName()));
+    }
+  }
+
+  /**
+   * check uniqueness of dependency type and params
+   */
+  private void validateDepDefinitionUniqueness(final List<TriggerDependencyBean> dependencies) {
+    for (int i = 0; i < dependencies.size(); i++) {
+      for (int j = i + 1; j < dependencies.size(); j++) {
+        final boolean duplicateDepDefFound =
+            dependencies.get(i).getType().equals(dependencies.get(j)
+                .getType()) && dependencies.get(i).getParams()
+                .equals(dependencies.get(j).getParams());
+        Preconditions.checkArgument(!duplicateDepDefFound, String.format("duplicate dependency"
+                + "config %s found, dependency config should be unique",
+            dependencies.get(i).getName()));
+      }
+    }
+  }
+
+  /**
+   * validate name and type are present
+   */
+  private void validateNameAndTypeArePresent(final List<TriggerDependencyBean> dependencies) {
+    for (final TriggerDependencyBean dep : dependencies) {
+      Preconditions.checkNotNull(dep.getName(), "dependency name is required");
+      Preconditions.checkNotNull(dep.getType(), "dependency type is required for " + dep.getName());
+    }
+  }
+
+  private void validateTriggerDependencies(final List<TriggerDependencyBean> dependencies) {
+    validateNameAndTypeArePresent(dependencies);
+    validateDepNameUniqueness(dependencies);
+    validateDepDefinitionUniqueness(dependencies);
+    validateDepType(dependencies);
+  }
+
+  private void validateDepType(final List<TriggerDependencyBean> dependencies) {
+    //todo chengren311: validate dependencies are of valid dependency type
+  }
+
   public FlowTrigger toFlowTrigger(final FlowTriggerBean flowTriggerBean) {
-    // Todo jamiesjc: need to validate flowTriggerBean
-    return flowTriggerBean == null ? null
-        : new FlowTrigger(
-            new CronSchedule(flowTriggerBean.getSchedule().get(Constants.SCHEDULE_VALUE)),
-            flowTriggerBean.getTriggerDependencies().stream()
-                .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
-                .collect(Collectors.toList()),
-            Duration.ofMinutes(flowTriggerBean.getMaxWaitMins()));
+    if (flowTriggerBean == null) {
+      return null;
+    } else {
+      validateFlowTriggerBean(flowTriggerBean);
+      if (flowTriggerBean.getMaxWaitMins() > Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME
+          .toMinutes()) {
+        flowTriggerBean.setMaxWaitMins(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME.toMinutes());
+      }
+      return new FlowTrigger(
+          new CronSchedule(flowTriggerBean.getSchedule().get(Constants.SCHEDULE_VALUE)),
+          flowTriggerBean.getTriggerDependencies().stream()
+              .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
+              .collect(Collectors.toList()),
+          Duration.ofMinutes(flowTriggerBean.getMaxWaitMins()));
+    }
   }
 
   public String getFlowName(final File flowFile) {
