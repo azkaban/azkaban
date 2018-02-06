@@ -25,13 +25,19 @@ import azkaban.flowtrigger.DependencyPluginConfig;
 
 public class TestDependencyCheck implements DependencyCheck {
 
+  public static final String FAILURE_FLAG = "failure";
+  public static final String RUN_TIME = "runtime";
   private DependencyPluginConfig config;
 
   @Override
   public DependencyInstanceContext run(final DependencyInstanceConfig config,
       final DependencyInstanceRuntimeProps runtimeProps,
       final DependencyInstanceCallback callback) {
-    return new TestDependencyInstanceContext(config, runtimeProps, callback);
+    if (config.get(FAILURE_FLAG).equals("true")) {
+      throw new RuntimeException("dependency instance creation failure");
+    } else {
+      return new TestDependencyInstanceContext(config, runtimeProps, callback);
+    }
   }
 
   @Override

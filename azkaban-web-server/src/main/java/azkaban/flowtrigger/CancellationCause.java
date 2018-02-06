@@ -20,6 +20,7 @@ public enum CancellationCause {
   NONE, //no cancellation occurred
   TIMEOUT, // cancellation is issued due to exceeding max wait time
   MANUAL, // cancellation is issued by user
-  FAILURE, // cancellation is issued by dependency instance failure
-  CASCADING // cancelled by cascading failure
+  FAILURE, // cancellation is caused by dependency instance failure(e.x invalid input)
+  CASCADING // cancellation is caused by cascading failure(e.x one dependency instance failure
+  // leads to other dependency instances being cancelled)
 }

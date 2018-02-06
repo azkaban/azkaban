@@ -20,15 +20,32 @@ import azkaban.flowtrigger.DependencyInstanceCallback;
 import azkaban.flowtrigger.DependencyInstanceConfig;
 import azkaban.flowtrigger.DependencyInstanceContext;
 import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("FutureReturnValueIgnored")
 public class TestDependencyInstanceContext implements DependencyInstanceContext {
+
+  private static final ScheduledExecutorService scheduleSerivce = Executors
+      .newScheduledThreadPool(1);
+
+  private final DependencyInstanceCallback callback;
 
   public TestDependencyInstanceContext(final DependencyInstanceConfig config,
       final DependencyInstanceRuntimeProps runtimeProps,
       final DependencyInstanceCallback callback) {
+    final long expectedRunTime = Long.valueOf(config.get("runtime"));
+    this.callback = callback;
+    scheduleSerivce.schedule(this::onSuccess, expectedRunTime, TimeUnit.SECONDS);
+  }
+
+  private void onSuccess() {
+    this.callback.onSuccess(this);
   }
 
   @Override
   public void cancel() {
+    this.callback.onCancel(this);
   }
 }

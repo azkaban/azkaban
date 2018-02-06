@@ -14,22 +14,27 @@
  * the License.
  */
 
-package azkaban.flowtrigger.testplugin2;
+package azkaban.flowtrigger;
 
-import azkaban.flowtrigger.DependencyInstanceCallback;
-import azkaban.flowtrigger.DependencyInstanceConfig;
-import azkaban.flowtrigger.DependencyInstanceContext;
-import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
+import com.google.common.base.Preconditions;
 
-public class TestDependencyInstanceContext2 implements DependencyInstanceContext {
+public class DependencyInstanceCallbackImpl implements DependencyInstanceCallback {
 
+  private final FlowTriggerService service;
 
-  public TestDependencyInstanceContext2(final DependencyInstanceConfig config,
-      final DependencyInstanceRuntimeProps runtimeProps,
-      final DependencyInstanceCallback callback) {
+  public DependencyInstanceCallbackImpl(final FlowTriggerService service) {
+    Preconditions.checkNotNull(service);
+    this.service = service;
   }
 
   @Override
-  public void cancel() {
+  public void onSuccess(final DependencyInstanceContext depContext) {
+    this.service.markDependencySuccess(depContext);
   }
+
+  @Override
+  public void onCancel(final DependencyInstanceContext depContext) {
+    this.service.markDependencyCancelled(depContext);
+  }
+
 }

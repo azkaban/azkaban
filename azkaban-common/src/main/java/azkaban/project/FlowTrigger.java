@@ -45,11 +45,11 @@ public class FlowTrigger implements Serializable {
    */
   public FlowTrigger(final CronSchedule schedule, final List<FlowTriggerDependency> dependencies,
       final Duration maxWaitDuration) {
+    // will perform some basic validation here, and futher validation will be performed on
+    // parsing time when NodeBeanLoader parses the XML to flow trigger.
     Preconditions.checkNotNull(schedule, "schedule cannot be null");
     Preconditions.checkNotNull(dependencies, "dependency cannot be null");
     Preconditions.checkNotNull(maxWaitDuration, "max wait time cannot be null");
-    Preconditions.checkArgument(maxWaitDuration.toMinutes() >= 1, "max wait time should be "
-        + "longer than 1 min");
     validateDependencies(dependencies);
     this.schedule = schedule;
     final ImmutableMap.Builder builder = new Builder();
@@ -87,9 +87,8 @@ public class FlowTrigger implements Serializable {
       final Map<String, String> props = dep.getProps();
       // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
-          ("duplicate "
-              + "dependency"
-              + "config %s found, dependency config should be unique", dep.getName()));
+          ("duplicate dependency config %s found, dependency config should be unique",
+              dep.getName()));
     }
   }
 
