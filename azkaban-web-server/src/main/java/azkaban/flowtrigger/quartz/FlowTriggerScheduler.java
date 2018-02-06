@@ -130,8 +130,7 @@ public class FlowTriggerScheduler {
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0));
         } catch (final Exception ex) {
-          logger
-              .error(String.format("unable to get flow trigger by job key %s", jobKey, ex));
+          logger.error(String.format("unable to get flow trigger by job key %s", jobKey), ex);
           scheduledFlowTrigger = null;
         }
 
@@ -167,7 +166,7 @@ public class FlowTriggerScheduler {
     this.scheduler.shutdown();
   }
 
-  public class ScheduledFlowTrigger {
+  public static class ScheduledFlowTrigger {
 
     private final String projectName;
     private final String flowId;
