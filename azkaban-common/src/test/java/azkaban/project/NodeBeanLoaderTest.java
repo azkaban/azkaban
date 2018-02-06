@@ -18,6 +18,7 @@
 package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
@@ -217,6 +218,12 @@ public class NodeBeanLoaderTest {
     flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
     assertThat(flowTrigger.getMaxWaitDuration())
         .isEqualTo(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME);
+
+    final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_zero_max_wait_min.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
