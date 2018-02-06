@@ -30,6 +30,7 @@ import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.QuartzScheduler;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.session.SessionCache;
