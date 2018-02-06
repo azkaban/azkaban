@@ -25,6 +25,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
@@ -77,6 +78,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.quartz.SchedulerException;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
@@ -103,6 +105,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+  private FlowTriggerScheduler scheduler;
   private int downloadBufferSize;
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
@@ -116,6 +119,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.executorManager = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
+    this.scheduler = server.getScheduler();
     this.lockdownCreateProjects =
         server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
     if (this.lockdownCreateProjects) {
@@ -628,6 +632,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       this.setErrorMessageInCookie(resp, e.getMessage());
       resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
       return;
+    } finally {
+      try {
+        //unschedule the project regardless
+        this.scheduler.unscheduleAll(project);
+      } catch (final SchedulerException e) {
+        this.setErrorMessageInCookie(resp, e.getMessage());
+        resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
+      }
     }
 
     this.setSuccessMessageInCookie(resp, "Project '" + projectName
@@ -1295,8 +1307,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
-      logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
-          + ", reference is " + System.identityHashCode(project));
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
         page.render();
@@ -1499,6 +1509,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
+      logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
+          + ", reference is " + System.identityHashCode(project));
+
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
         page.render();
@@ -1650,6 +1663,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
 
     final String autoFix = (String) multipart.get("fix");
+
     final Props props = new Props();
     if (autoFix != null && autoFix.equals("off")) {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "false");
@@ -1701,9 +1715,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         IOUtils.copy(item.getInputStream(), out);
         out.close();
 
+        //unscheduleall/scheduleall should only work with flow which has defined flow trigger
+        //unschedule all flows within the old project
+        this.scheduler.unscheduleAll(project);
         final Map<String, ValidationReport> reports =
             this.projectManager.uploadProject(project, archiveFile, type, user,
                 props);
+
+        //schedule the new project
+        this.scheduler.scheduleAll(project, user.getUserId());
         final StringBuffer errorMsgs = new StringBuffer();
         final StringBuffer warnMsgs = new StringBuffer();
         for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
