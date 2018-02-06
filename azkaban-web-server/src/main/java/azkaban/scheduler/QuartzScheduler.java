@@ -150,7 +150,7 @@ public class QuartzScheduler {
           "The cron expression string <" + cronExpression + "> is not valid.");
     }
 
-    // TODO kunkun-tang: we will modify this when we startTrigger supporting multi schedules per flow.
+    // TODO kunkun-tang: we will modify this when we start supporting multi schedules per flow.
     final JobDetail job = JobBuilder.newJob(jobDescription.getJobClass())
         .withIdentity(DEFAULT_JOB_NAME, jobDescription.getGroupName()).build();
 
