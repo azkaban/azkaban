@@ -1307,6 +1307,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
+      logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
+          + ", reference is " + System.identityHashCode(project));
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
         page.render();
@@ -1509,8 +1511,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
-      logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
-          + ", reference is " + System.identityHashCode(project));
 
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
