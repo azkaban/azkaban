@@ -193,7 +193,6 @@ public class Constants {
     public static final String ENABLE_QUARTZ = "azkaban.server.schedule.enable_quartz";
 
     // enable Flow trigger if true.
-    //todo chengren311: remove the flag when come out of beta
     public static final String ENABLE_FLOW_TRIGGER = "azkaban.server.flowtrigger.enabled";
 
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
