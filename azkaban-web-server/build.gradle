@@ -64,7 +64,7 @@ dependencies {
     generateRestli deps.restliGenerator
     generateRestli deps.restliTools
 
-    //testcompile project(':az-flow-trigger-dependency-plugin')
+    testCompile(project(path: ':az-flow-trigger-dependency-plugin', configuration: 'testCompile'))
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
     testRuntime deps.h2
