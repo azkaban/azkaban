@@ -23,6 +23,17 @@ import azkaban.flowtrigger.DependencyInstanceContext;
 import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
 import azkaban.flowtrigger.DependencyPluginConfig;
 
+/**
+ * todo chengren311:
+ * az-flow-trigger-dependency-plugin.jar in resource folder is generated from
+ *
+ * @see azkaban.flowtrigger.testplugin.FakeDependencyCheck1
+ * @see azkaban.flowtrigger.testplugin.FakeDependencyCheck2
+ * @see azkaban.flowtrigger.testplugin.FakeDependencyInstanceContext1
+ * @see azkaban.flowtrigger.testplugin.FakeDependencyInstanceContext2
+ *
+ * But we need to find out a way to auto generate this jar while building.
+ */
 public class FakeDependencyCheck1 implements DependencyCheck {
 
   private DependencyPluginConfig config;
