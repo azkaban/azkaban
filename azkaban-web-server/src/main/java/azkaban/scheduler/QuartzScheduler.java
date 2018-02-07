@@ -124,7 +124,8 @@ public class QuartzScheduler {
    * duplicate quartz schedules, we design the naming convention depending on use cases: <ul>
    * <li>User flow schedule: we use {@link org.quartz.JobKey#JobKey} to represent the identity of a
    * flow's schedule. The format follows "$projectID_$flowName" to guarantee no duplicates.
-   * <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather than
+   * <li>Quartz schedule for AZ internal use: the groupName should start with letters,
+   * rather than
    * number, which is the first case.</ul>
    */
   public void registerJob(final String cronExpression, final QuartzJobDescription jobDescription)

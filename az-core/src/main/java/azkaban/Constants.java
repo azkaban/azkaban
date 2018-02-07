@@ -89,6 +89,7 @@ public class Constants {
   // The flow exec id for a flow trigger instance which hasn't started a flow yet
   public static final int UNASSIGNED_EXEC_ID = -1;
 
+
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file
@@ -191,7 +192,13 @@ public class Constants {
     // enable Quartz Scheduler if true.
     public static final String ENABLE_QUARTZ = "azkaban.server.schedule.enable_quartz";
 
+    // enable Flow trigger if true.
+    public static final String ENABLE_FLOW_TRIGGER = "azkaban.server.flowtrigger.enabled";
+
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
+
+    // dir to keep dependency plugins
+    public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
   }
 
   public static class FlowProperties {

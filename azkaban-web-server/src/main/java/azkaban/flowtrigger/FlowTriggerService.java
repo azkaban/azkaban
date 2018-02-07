@@ -18,6 +18,7 @@ package azkaban.flowtrigger;
 
 import azkaban.Constants;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
+import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
 import azkaban.project.FlowTrigger;
 import azkaban.project.FlowTriggerDependency;
@@ -95,6 +96,11 @@ public class FlowTriggerService {
     this.triggerProcessor = triggerProcessor;
     this.dependencyProcessor = dependencyProcessor;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
+  }
+
+  public void start() throws FlowTriggerDependencyPluginException {
+    this.triggerPluginManager.loadAllPlugins();
+    this.recoverIncompleteTriggerInstances();
   }
 
   private DependencyInstanceContext createDepContext(final FlowTriggerDependency dep, final long
@@ -241,7 +247,7 @@ public class FlowTriggerService {
   /**
    * Resume executions of all incomplete trigger instances by recovering the state from db.
    */
-  public void recoverIncompleteTriggerInstances() {
+  private void recoverIncompleteTriggerInstances() {
     final Collection<TriggerInstance> unfinishedTriggerInstances = this.flowTriggerInstanceLoader
         .getIncompleteTriggerInstances();
     //todo chengren311: what if flow trigger is not found?
