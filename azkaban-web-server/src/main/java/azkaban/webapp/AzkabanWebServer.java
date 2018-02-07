@@ -143,7 +143,6 @@ public class AzkabanWebServer extends AzkabanServer {
   private final Props props;
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
-  private final FlowTriggerService flowTriggerService;
   private final FlowTriggerScheduler scheduler;
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
@@ -172,7 +171,6 @@ public class AzkabanWebServer extends AzkabanServer {
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
-    this.flowTriggerService = requireNonNull(flowTriggerService, "flowTriggerService is null.");
     this.statusService = statusService;
     this.scheduler = requireNonNull(scheduler, "scheduler is null.");
 
@@ -661,10 +659,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
   public TriggerManager getTriggerManager() {
     return this.triggerManager;
-  }
-
-  public FlowTriggerService getFlowTriggerService() {
-    return this.flowTriggerService;
   }
 
   /**
