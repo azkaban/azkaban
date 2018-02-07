@@ -17,16 +17,23 @@
 
 package azkaban.webapp;
 
+import static java.util.Objects.requireNonNull;
+
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
+import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
+import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
+import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
-import javax.inject.Inject;
 import com.google.inject.Provides;
-import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
@@ -45,10 +52,20 @@ public class AzkabanWebServerModule extends AbstractModule {
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
 
+  @Provides
+  @Singleton
+  public FlowTriggerDependencyPluginManager getDependencyPluginManager(final Props props)
+      throws FlowTriggerDependencyPluginException {
+    final String dependencyPluginDir = requireNonNull(props.getString(ConfigurationKeys
+        .DEPENDENCY_PLUGIN_DIR));
+    return new FlowTriggerDependencyPluginManager(dependencyPluginDir);
+  }
+
   @Override
   protected void configure() {
     bind(Server.class).toProvider(WebServerProvider.class);
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
+    bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
   }
 
   @Inject

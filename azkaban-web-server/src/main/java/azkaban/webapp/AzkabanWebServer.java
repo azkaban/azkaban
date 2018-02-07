@@ -24,6 +24,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
+import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
@@ -142,7 +143,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
   private final QuartzScheduler quartzScheduler;
-
+  private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
 
@@ -158,6 +159,7 @@ public class AzkabanWebServer extends AzkabanServer {
       final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
       final QuartzScheduler quartzScheduler,
+      final FlowTriggerService flowTriggerService,
       final StatusService statusService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
@@ -170,6 +172,7 @@ public class AzkabanWebServer extends AzkabanServer {
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
     this.quartzScheduler = requireNonNull(quartzScheduler, "quartzScheduler is null.");
+    this.flowTriggerService = requireNonNull(flowTriggerService, "flowTriggerService is null.");
     this.statusService = statusService;
 
     loadBuiltinCheckersAndActions();
@@ -236,6 +239,14 @@ public class AzkabanWebServer extends AzkabanServer {
           }
         } catch (final Exception e) {
           logger.error(("Exception while shutting down quartz scheduler."), e);
+        }
+
+        try {
+          if (webServer.flowTriggerService != null) {
+            webServer.flowTriggerService.shutdown();
+          }
+        } catch (final Exception e) {
+          logger.error(("Exception while shutting down flow trigger service."), e);
         }
 
         try {
@@ -442,6 +453,10 @@ public class AzkabanWebServer extends AzkabanServer {
     ve.addProperty("jar.resource.loader.path", jarResourcePath);
   }
 
+  public FlowTriggerService getFlowTriggerService() {
+    return this.flowTriggerService;
+  }
+
   private void validateDatabaseVersion()
       throws IOException, SQLException {
     final boolean checkDB = this.props
@@ -524,6 +539,10 @@ public class AzkabanWebServer extends AzkabanServer {
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       this.quartzScheduler.start();
+    }
+
+    if (this.props.getBoolean(ConfigurationKeys.ENABLE_FLOW_TRIGGER, false)) {
+      this.flowTriggerService.recoverIncompleteTriggerInstances();
     }
 
     try {
