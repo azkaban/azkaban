@@ -148,7 +148,7 @@ public class FlowTriggerScheduler {
    */
   public void unscheduleAll(final Project project) throws SchedulerException {
     for (final Flow flow : project.getFlows()) {
-      logger.info("unscheduling flow" + flow.getProjectId() + "." + flow.getId() + "if it has "
+      logger.info("unscheduling flow" + flow.getProjectId() + "." + flow.getId() + " if it has "
           + " schedule");
       this.scheduler.unregisterJob(generateGroupName(flow));
     }
