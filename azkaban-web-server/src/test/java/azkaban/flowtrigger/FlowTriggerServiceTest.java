@@ -74,6 +74,7 @@ public class FlowTriggerServiceTest {
 
     flowTriggerService = new FlowTriggerService(pluginManager,
         triggerInstProcessor, depInstProcessor, flowTriggerInstanceLoader);
+    flowTriggerService.start();
   }
 
   @Before
@@ -206,7 +207,7 @@ public class FlowTriggerServiceTest {
     Thread.sleep(Duration.ofSeconds(1).toMillis());
     flowTriggerService.shutdown();
     setup();
-    flowTriggerService.recoverIncompleteTriggerInstances();
+    flowTriggerService.start();
     Thread.sleep(Duration.ofSeconds(5).toMillis());
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);

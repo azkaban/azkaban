@@ -542,7 +542,11 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_FLOW_TRIGGER, false)) {
-      this.flowTriggerService.recoverIncompleteTriggerInstances();
+      // flow trigger service throws exception when any dependency plugin fails to be initialized
+      // (e.x if it's kafka dependency and kafka is down). In this case azkaban admin still wish
+      // to start azkaban web server, she can disable flow trigger in the az config file and
+      // restart web server so that regular scheduled flows are not affected.
+      this.flowTriggerService.start();
     }
 
     try {

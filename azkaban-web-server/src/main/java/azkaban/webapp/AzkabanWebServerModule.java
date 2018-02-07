@@ -17,8 +17,6 @@
 
 package azkaban.webapp;
 
-import static java.util.Objects.requireNonNull;
-
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
@@ -56,8 +54,14 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Singleton
   public FlowTriggerDependencyPluginManager getDependencyPluginManager(final Props props)
       throws FlowTriggerDependencyPluginException {
-    final String dependencyPluginDir = requireNonNull(props.getString(ConfigurationKeys
-        .DEPENDENCY_PLUGIN_DIR));
+    //todo chengren311: disable requireNonNull for now in beta since dependency plugin dir is not
+    // required. Add it back when flow trigger feature is enabled in production
+    String dependencyPluginDir;
+    try {
+      dependencyPluginDir = props.getString(ConfigurationKeys.DEPENDENCY_PLUGIN_DIR);
+    } catch (final Exception ex) {
+      dependencyPluginDir = null;
+    }
     return new FlowTriggerDependencyPluginManager(dependencyPluginDir);
   }
 

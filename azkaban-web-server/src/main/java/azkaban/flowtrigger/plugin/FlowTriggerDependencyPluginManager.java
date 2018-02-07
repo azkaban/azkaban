@@ -60,7 +60,6 @@ public class FlowTriggerDependencyPluginManager {
       FlowTriggerDependencyPluginException {
     this.dependencyTypeMap = new ConcurrentHashMap<>();
     this.pluginDir = pluginDir;
-    this.loadAllDependencyPlugins();
   }
 
   private Map<String, String> readConfig(final File file) throws
@@ -159,7 +158,14 @@ public class FlowTriggerDependencyPluginManager {
     }
   }
 
-  private void loadAllDependencyPlugins() throws FlowTriggerDependencyPluginException {
+  /**
+   * Initialize all dependency plugins.
+   * todo chengren311: Current design aborts loadAllPlugins if any of the plugin fails to be
+   * initialized.
+   * However, this might not be the optimal design. Suppose we have two dependency plugin types
+   * - MySQL and Kafka, if MySQL is down, then kafka dependency type will also be unavailable.
+   */
+  public void loadAllPlugins() throws FlowTriggerDependencyPluginException {
     final File pluginDir = new File(this.pluginDir);
     for (final File dir : pluginDir.listFiles()) {
       loadDependencyPlugin(dir);

@@ -34,6 +34,7 @@ public class FlowTriggerDependencyPluginManagerTest {
     final URL url = FlowTriggerDependencyPluginManagerTest.class.getClassLoader()
         .getResource(pluginDir);
     pluginManager = new FlowTriggerDependencyPluginManager(url.getPath());
+    pluginManager.loadAllPlugins();
   }
 
 
