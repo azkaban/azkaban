@@ -114,9 +114,18 @@
                 #else
                   <td>Not Applicable</td>
                 #end
-                <td><button type="button" data-toggle="modal" data-target="#executionOptions">show</button></td>
+                <td>
+                ## Changed the style of "Show" button to be consistent with other buttons.
+                  <button type="button" class="btn btn-sm btn-info" data-toggle="modal"
+                          data-target="#executionOptions-${velocityCount}">Show
+                  </button>
+                </td>
 
-                  <div class="modal fade" id="executionOptions" tabindex="-1" role="dialog" aria-labelledby="executionOptionsLabel">
+              ## Distinguished executionOptions of each schedule with unique count number to fix
+              ## the issue of same display for all schedules
+                <div class="modal fade" id="executionOptions-${velocityCount}" tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="executionOptionsLabel">
                       <div class="modal-dialog" role="document">
                           <div class="modal-content">
                               <div class="modal-header">
@@ -124,7 +133,8 @@
                                   <h4 class="modal-title" id="executionOptionsLabel">Execution Options</h4>
                               </div>
                               <div class="modal-body">
-                                  ${sched.executionOptions.toObject()}
+                              ## Used <pre> to display text with code format
+                                <pre>${sched.executionOptions.toJSON()}</pre>
                               </div>
                               <div class="modal-footer">
                                   <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
