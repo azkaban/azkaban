@@ -26,10 +26,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +62,7 @@ public class MetricsManager {
    */
   public Meter addMeter(final String name) {
     final Meter curr = this.registry.meter(name);
-    this.registry.register(name + "-gauge", (Gauge<Double>) curr::getFifteenMinuteRate);
+    this.registry.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
     return curr;
   }
 
