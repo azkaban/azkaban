@@ -268,7 +268,7 @@ public class ExecutionFlowDao {
       ResultSetHandler<List<ExecutableFlow>> {
 
     static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
+        "SELECT exec_id, ef.enc_type, flow_data FROM execution_flows ";
     static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE exec_id=?";
