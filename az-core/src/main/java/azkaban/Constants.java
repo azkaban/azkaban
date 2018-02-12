@@ -192,9 +192,6 @@ public class Constants {
     // enable Quartz Scheduler if true.
     public static final String ENABLE_QUARTZ = "azkaban.server.schedule.enable_quartz";
 
-    // enable Flow trigger if true.
-    public static final String ENABLE_FLOW_TRIGGER = "azkaban.server.flowtrigger.enabled";
-
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
 
     // dir to keep dependency plugins

@@ -24,6 +24,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
+import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
@@ -143,6 +144,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
   private final FlowTriggerScheduler scheduler;
+  private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
 
@@ -172,6 +174,7 @@ public class AzkabanWebServer extends AzkabanServer {
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
     this.statusService = statusService;
     this.scheduler = requireNonNull(scheduler, "scheduler is null.");
+    this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
 
     loadBuiltinCheckersAndActions();
 
@@ -231,11 +234,10 @@ public class AzkabanWebServer extends AzkabanServer {
 
       @Override
       public void run() {
-        try {
-          if (webServer.scheduler != null) {
-            logger.info("Shutting down quartz scheduler...");
-            webServer.scheduler.shutdown();
-          }
+        if (webServer.scheduler != null) {
+          logger.info("Shutting down flow trigger scheduler...");
+          webServer.scheduler.shutdown();
+        }
 
         try {
           if (webServer.flowTriggerService != null) {
@@ -246,11 +248,6 @@ public class AzkabanWebServer extends AzkabanServer {
         }
 
         try {
-          if (webServer.flowTriggerService != null) {
-            logger.info("Shutting down flow trigger service...");
-            webServer.flowTriggerService.shutdown();
-          }
-
           logger.info("Logging top memory consumers...");
           logTopMemoryConsumers();
 
@@ -544,17 +541,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       this.scheduler.start();
-    }
-
-    if (this.props.getBoolean(ConfigurationKeys.ENABLE_FLOW_TRIGGER, false)) {
       this.flowTriggerService.recoverIncompleteTriggerInstances();
-    }
-
-    if (this.props.getBoolean(ConfigurationKeys.ENABLE_FLOW_TRIGGER, false)) {
-      // flow trigger service throws exception when any dependency plugin fails to be initialized
-      // (e.x if it's kafka dependency and kafka is down). In this case if azkaban admin still
-      // wishes to start azkaban web server, she can disable flow trigger in the az config file and
-      // restart web server so that regular scheduled flows are not affected.
       this.flowTriggerService.start();
     }
 
