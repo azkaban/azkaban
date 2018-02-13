@@ -24,12 +24,12 @@ import azkaban.project.FlowLoaderUtils;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.scheduler.QuartzJobDescription;
 import azkaban.scheduler.QuartzScheduler;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +61,7 @@ public class FlowTriggerScheduler {
    * Schedule flows containing flow triggers
    */
   public void scheduleAll(final Project project, final String submitUser)
-      throws SchedulerException {
+      throws SchedulerException, ProjectManagerException {
     //todo chengren311: schedule on uploading via CRT
 
     for (final Flow flow : project.getFlows()) {
@@ -92,7 +92,7 @@ public class FlowTriggerScheduler {
                 .registerJob(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
                     (FlowTriggerQuartzJob.class, generateGroupName(flow), contextMap));
           }
-        } catch (final IOException ex) {
+        } catch (final Exception ex) {
           logger.error("error in getting flow file", ex);
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);

@@ -541,7 +541,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       this.scheduler.start();
-      this.flowTriggerService.recoverIncompleteTriggerInstances();
       this.flowTriggerService.start();
     }
 

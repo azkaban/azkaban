@@ -85,7 +85,7 @@ public class ProjectManager {
   }
 
   public boolean hasFlowTrigger(final Project project, final Flow flow)
-      throws IOException {
+      throws IOException, ProjectManagerException {
     final String flowFileName = flow.getId() + ".flow";
     final int latestFlowVersion = this.projectLoader.getLatestFlowVersion(project.getId(), flow
         .getVersion(), flowFileName);
@@ -99,7 +99,7 @@ public class ProjectManager {
 
         final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(flowFile);
         return flowTrigger != null;
-      } catch (final IOException ex) {
+      } catch (final Exception ex) {
         logger.error("error in getting flow file", ex);
         throw ex;
       } finally {
