@@ -41,6 +41,10 @@ public class WebUtils {
     return DateTimeFormat.forPattern(DATE_TIME_STRING).print(timeMS);
   }
 
+  public long currentTimestamp() {
+    return System.currentTimeMillis();
+  }
+
   public String formatDuration(final long startTime, final long endTime) {
     if (startTime == -1) {
       return "-";
