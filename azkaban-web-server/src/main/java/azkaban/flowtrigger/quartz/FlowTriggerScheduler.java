@@ -65,6 +65,11 @@ public class FlowTriggerScheduler {
     //todo chengren311: schedule on uploading via CRT
 
     for (final Flow flow : project.getFlows()) {
+      //todo chengren311: we should validate embedded flow shouldn't have flow trigger defined.
+      if (flow.isEmbeddedFlow()) {
+        // skip scheduling embedded flow
+        continue;
+      }
       final String flowFileName = flow.getId() + ".flow";
       final int latestFlowVersion = this.projectLoader
           .getLatestFlowVersion(flow.getProjectId(), flow
@@ -150,7 +155,9 @@ public class FlowTriggerScheduler {
     for (final Flow flow : project.getFlows()) {
       logger.info("unscheduling flow" + flow.getProjectId() + "." + flow.getId() + " if it has "
           + " schedule");
-      this.scheduler.unregisterJob(generateGroupName(flow));
+      if (!flow.isEmbeddedFlow()) {
+        this.scheduler.unregisterJob(generateGroupName(flow));
+      }
     }
   }
 

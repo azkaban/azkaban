@@ -594,6 +594,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void removeAssociatedSchedules(final Project project) throws ServletException {
+    // remove regular schedules
     try {
       for (final Schedule schedule : this.scheduleManager.getSchedules()) {
         if (schedule.getProjectId() == project.getId()) {
@@ -602,6 +603,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
     } catch (final ScheduleManagerException e) {
+      throw new ServletException(e);
+    }
+
+    // remove flow trigger schedules
+    try {
+      if (this.enableQuartz) {
+        this.scheduler.unscheduleAll(project);
+      }
+    } catch (final SchedulerException e) {
       throw new ServletException(e);
     }
   }
@@ -635,16 +645,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       this.setErrorMessageInCookie(resp, e.getMessage());
       resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
       return;
-    } finally {
-      try {
-        //unschedule the project regardless
-        if (this.enableQuartz) {
-          this.scheduler.unscheduleAll(project);
-        }
-      } catch (final SchedulerException e) {
-        this.setErrorMessageInCookie(resp, e.getMessage());
-        resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
-      }
     }
 
     this.setSuccessMessageInCookie(resp, "Project '" + projectName
