@@ -209,6 +209,12 @@ public class FlowTriggerInstanceLoaderTest {
     }
   }
 
+  private void finalizeTriggerInstanceWithCancelling(final TriggerInstance triggerInst) {
+    for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+      depInst.setStatus(Status.CANCELLING);
+    }
+  }
+
   @Test
   public void testGetIncompleteTriggerInstancesReturnsEmpty() {
     final List<TriggerInstance> all = new ArrayList<>();
@@ -308,7 +314,7 @@ public class FlowTriggerInstanceLoaderTest {
   public void testGetRecentlyFinished() {
 
     final List<TriggerInstance> all = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 15; i++) {
       all.add(this.createTriggerInstance(this.flowTrigger, this
           .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
           + i * 10000));
@@ -316,6 +322,8 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithCancelled(all.get(i));
       } else if (i <= 6) {
         finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
+      } else if (i <= 9) {
+        finalizeTriggerInstanceWithCancelling(all.get(i));
       }
     }
 

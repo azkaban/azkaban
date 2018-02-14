@@ -101,7 +101,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           + "project_json, flow_exec_id \n"
           + "FROM execution_dependencies JOIN (\n"
           + "SELECT trigger_instance_id FROM execution_dependencies WHERE trigger_instance_id not in (\n"
-          + "SELECT distinct(trigger_instance_id)  FROM execution_dependencies WHERE dep_status =  0 or dep_status = 4)\n"
+          + "SELECT distinct(trigger_instance_id)  FROM execution_dependencies WHERE dep_status ="
+          + "  0 or dep_status = 3)\n"
           + "GROUP BY trigger_instance_id\n"
           + "ORDER BY  min(starttime) desc limit %s) temp on execution_dependencies"
           + ".trigger_instance_id in (temp.trigger_instance_id);";
