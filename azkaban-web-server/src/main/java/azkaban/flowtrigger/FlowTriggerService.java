@@ -117,9 +117,6 @@ public class FlowTriggerService {
   private TriggerInstance createTriggerInstance(final FlowTrigger flowTrigger, final String flowId,
       final int flowVersion, final String submitUser, final Project project) {
     final String triggerInstId = generateId();
-    logger.info(
-        String.format("Starting the flow trigger %s[execId %s] by %s", flowTrigger, triggerInstId,
-            submitUser));
     final long startTime = System.currentTimeMillis();
     // create a list of dependency instances
     final List<DependencyInstance> depInstList = new ArrayList<>();
@@ -343,26 +340,29 @@ public class FlowTriggerService {
     this.executorService.submit(() -> {
       final TriggerInstance triggerInst = createTriggerInstance(flowTrigger, flowId, flowVersion,
           submitUser, project);
+      if (triggerInst.getDepInstances().isEmpty()) {
+        this.triggerProcessor.processSucceed(triggerInst);
+      }
 
-      logger.info(String.format("Starting trigger instance[id: %s]", triggerInst.getId()));
+      logger.info(
+          String.format("Starting the flow trigger %s[execId %s] by %s", flowTrigger, triggerInst
+              .getId(), submitUser));
 
       this.triggerProcessor.processNewInstance(triggerInst);
       if (triggerInst.getStatus() == Status.CANCELLED) {
         // all dependency instances failed
         logger.info(String.format("Trigger instance[id: %s] is cancelled since all dependency "
-                + "instances failed to be created",
-            triggerInst.getId()));
+                + "instances fail to be created", triggerInst.getId()));
         this.triggerProcessor.processTermination(triggerInst);
       } else if (triggerInst.getStatus() == Status.CANCELLING) {
         // some of the dependency instances failed
         logger.info(
-            String.format("Trigger instance[id: %s] is being cancelled ", triggerInst.getId()));
+            String.format("Trigger instance[id: %s] is being cancelled since some dependency "
+                + "instances fail to be created", triggerInst.getId()));
         addToRunningListAndCancel(triggerInst);
       } else {
         // todo chengren311: it's possible web server restarts before the db update, then
         // new instance will not be recoverable from db.
-        logger.info(
-            String.format("Trigger instance[id: %s] is successfully created", triggerInst.getId()));
         addToRunningListAndScheduleKill(triggerInst, triggerInst.getFlowTrigger()
             .getMaxWaitDuration(), CancellationCause.TIMEOUT);
       }

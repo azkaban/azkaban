@@ -195,6 +195,21 @@ public class FlowTriggerServiceTest {
   }
 
   @Test
+  public void testStartZeroDependencyTriggerSuccess() throws InterruptedException {
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
+    for (int i = 0; i < 30; i++) {
+      flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
+    }
+    Thread.sleep(Duration.ofSeconds(1).toMillis());
+    final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
+    assertThat(triggerInstances).hasSize(30);
+    for (final TriggerInstance inst : triggerInstances) {
+      assertThat(inst.getStatus()).isEqualTo(Status.SUCCEEDED);
+    }
+  }
+
+  @Test
   public void testRecovery() throws Exception {
     final List<FlowTriggerDependency> deps = new ArrayList<>();
     deps.add(TestUtil.createTestDependency("2secs", 2, false));
