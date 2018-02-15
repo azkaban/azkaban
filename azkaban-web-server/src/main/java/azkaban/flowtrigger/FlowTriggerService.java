@@ -340,8 +340,11 @@ public class FlowTriggerService {
     this.executorService.submit(() -> {
       final TriggerInstance triggerInst = createTriggerInstance(flowTrigger, flowId, flowVersion,
           submitUser, project);
+
       if (triggerInst.getDepInstances().isEmpty()) {
+        // zero dependency trigger instance will start the flow immediately
         this.triggerProcessor.processSucceed(triggerInst);
+        return;
       }
 
       logger.info(
@@ -352,7 +355,7 @@ public class FlowTriggerService {
       if (triggerInst.getStatus() == Status.CANCELLED) {
         // all dependency instances failed
         logger.info(String.format("Trigger instance[id: %s] is cancelled since all dependency "
-                + "instances fail to be created", triggerInst.getId()));
+            + "instances fail to be created", triggerInst.getId()));
         this.triggerProcessor.processTermination(triggerInst);
       } else if (triggerInst.getStatus() == Status.CANCELLING) {
         // some of the dependency instances failed
