@@ -24,12 +24,16 @@ import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
 @SuppressWarnings("FutureReturnValueIgnored")
 public class FakeDependencyInstanceContext1 implements DependencyInstanceContext {
 
+  private final DependencyInstanceCallback callback;
+
   public FakeDependencyInstanceContext1(final DependencyInstanceConfig config,
       final DependencyInstanceRuntimeProps runtimeProps,
       final DependencyInstanceCallback callback) {
+    this.callback = callback;
   }
 
   @Override
   public void cancel() {
+    this.callback.onCancel(this);
   }
 }

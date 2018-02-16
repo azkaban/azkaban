@@ -32,6 +32,7 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.common.io.Files;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +58,7 @@ public class ProjectManager {
   private final ConcurrentHashMap<String, Project> projectsByName =
       new ConcurrentHashMap<>();
 
+
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
@@ -80,6 +82,32 @@ public class ProjectManager {
     new XmlValidatorManager(prop);
     loadAllProjects();
     loadProjectWhiteList();
+  }
+
+  public boolean hasFlowTrigger(final Project project, final Flow flow)
+      throws IOException, ProjectManagerException {
+    final String flowFileName = flow.getId() + ".flow";
+    final int latestFlowVersion = this.projectLoader.getLatestFlowVersion(project.getId(), flow
+        .getVersion(), flowFileName);
+    if (latestFlowVersion > 0) {
+      final File tempDir = com.google.common.io.Files.createTempDir();
+      final File flowFile;
+      try {
+        flowFile = this.projectLoader
+            .getUploadedFlowFile(project.getId(), project.getVersion(),
+                flowFileName, latestFlowVersion, tempDir);
+
+        final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(flowFile);
+        return flowTrigger != null;
+      } catch (final Exception ex) {
+        logger.error("error in getting flow file", ex);
+        throw ex;
+      } finally {
+        FlowLoaderUtils.cleanUpDir(tempDir);
+      }
+    } else {
+      return false;
+    }
   }
 
   private void loadAllProjects() {

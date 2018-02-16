@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -25,6 +26,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
@@ -77,6 +79,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.quartz.SchedulerException;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
@@ -103,9 +106,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+  private FlowTriggerScheduler scheduler;
   private int downloadBufferSize;
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
+  private boolean enableQuartz = false;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -116,8 +121,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.executorManager = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
+    this.scheduler = server.getScheduler();
     this.lockdownCreateProjects =
         server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+    this.enableQuartz = server.getServerProps().getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false);
     if (this.lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
@@ -587,6 +594,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void removeAssociatedSchedules(final Project project) throws ServletException {
+    // remove regular schedules
     try {
       for (final Schedule schedule : this.scheduleManager.getSchedules()) {
         if (schedule.getProjectId() == project.getId()) {
@@ -595,6 +603,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
     } catch (final ScheduleManagerException e) {
+      throw new ServletException(e);
+    }
+
+    // remove flow trigger schedules
+    try {
+      if (this.enableQuartz) {
+        this.scheduler.unscheduleAll(project);
+      }
+    } catch (final SchedulerException e) {
       throw new ServletException(e);
     }
   }
@@ -1499,6 +1516,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
+
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
         page.render();
@@ -1650,6 +1668,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
 
     final String autoFix = (String) multipart.get("fix");
+
     final Props props = new Props();
     if (autoFix != null && autoFix.equals("off")) {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "false");
@@ -1701,9 +1720,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         IOUtils.copy(item.getInputStream(), out);
         out.close();
 
+        //unscheduleall/scheduleall should only work with flow which has defined flow trigger
+        //unschedule all flows within the old project
+        if (this.enableQuartz) {
+          this.scheduler.unscheduleAll(project);
+        }
         final Map<String, ValidationReport> reports =
             this.projectManager.uploadProject(project, archiveFile, type, user,
                 props);
+
+        if (this.enableQuartz) {
+          //schedule the new project
+          this.scheduler.scheduleAll(project, user.getUserId());
+        }
         final StringBuffer errorMsgs = new StringBuffer();
         final StringBuffer warnMsgs = new StringBuffer();
         for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {

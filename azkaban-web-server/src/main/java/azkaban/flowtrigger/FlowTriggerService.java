@@ -247,7 +247,7 @@ public class FlowTriggerService {
   /**
    * Resume executions of all incomplete trigger instances by recovering the state from db.
    */
-  private void recoverIncompleteTriggerInstances() {
+  public void recoverIncompleteTriggerInstances() {
     final Collection<TriggerInstance> unfinishedTriggerInstances = this.flowTriggerInstanceLoader
         .getIncompleteTriggerInstances();
     //todo chengren311: what if flow trigger is not found?
