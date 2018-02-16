@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * FlowTriggerService will be leveraged by Quartz scheduler, our new AZ scheduler to schedule
  * triggers.
  *
- * After construction, call {@link #start() start} to start the service.
+ * After construction, call {@link #start()} to start the service.
  */
 
 @SuppressWarnings("FutureReturnValueIgnored")
