@@ -39,6 +39,9 @@ public class DatabaseOperator {
 
   private final QueryRunner queryRunner;
 
+  @Inject
+  private DBMetrics dbMetrics;
+
   /**
    * Note: this queryRunner should include a concrete {@link AzkabanDataSource} inside.
    */
@@ -66,6 +69,9 @@ public class DatabaseOperator {
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("query failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailQuery();
+      }
       throw ex;
     }
   }
@@ -92,6 +98,9 @@ public class DatabaseOperator {
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("transaction failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailTransaction();
+      }
       throw ex;
     } finally {
       DbUtils.closeQuietly(conn);
@@ -113,6 +122,9 @@ public class DatabaseOperator {
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("update failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailUpdate();
+      }
       throw ex;
     }
   }
