@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,6 +85,7 @@ public class FlowTriggerServiceTest {
   @Before
   public void cleanup() {
     ((MockFlowTriggerInstanceLoader) flowTriggerInstanceLoader).clear();
+    reset(executorManager);
   }
 
   private Project createProject() {
@@ -108,6 +110,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(6).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -142,6 +145,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.cancel(runningTrigger, CancellationCause.MANUAL);
     }
     Thread.sleep(Duration.ofMillis(500).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -164,6 +168,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(1).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -191,6 +196,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(5).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -226,8 +232,8 @@ public class FlowTriggerServiceTest {
     Thread.sleep(Duration.ofSeconds(1).toMillis());
     flowTriggerService.shutdown();
     setup();
-    flowTriggerService.start();
     Thread.sleep(Duration.ofSeconds(5).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
