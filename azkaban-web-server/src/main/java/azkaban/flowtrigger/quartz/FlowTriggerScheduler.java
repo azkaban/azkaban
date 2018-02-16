@@ -67,7 +67,7 @@ public class FlowTriggerScheduler {
     for (final Flow flow : project.getFlows()) {
       //todo chengren311: we should validate embedded flow shouldn't have flow trigger defined.
       if (flow.isEmbeddedFlow()) {
-        // skip scheduling embedded flow
+        // skip scheduling embedded flow since embedded flow are not allowed to have flow trigger
         continue;
       }
       final String flowFileName = flow.getId() + ".flow";
