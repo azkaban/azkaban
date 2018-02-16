@@ -153,12 +153,9 @@ public class Emailer extends AbstractMailer implements Alerter {
             .setTLS(this.tls)
             .setAuth(super.hasMailAuth());
 
-    final ExecutionOptions option = flow.getExecutionOptions();
+    final MailCreator mailCreator = MailCreatorRegistry.getRecommendedCreator();
 
-    final MailCreator mailCreator =
-        MailCreatorRegistry.getCreator(option.getMailCreator());
-
-    logger.debug("ExecutorMailer using mail creator:"
+    logger.debug("ExecutorMailer using mail creator: "
         + mailCreator.getClass().getCanonicalName());
 
     final boolean mailCreated =
@@ -185,11 +182,8 @@ public class Emailer extends AbstractMailer implements Alerter {
             .setTLS(this.tls)
             .setAuth(super.hasMailAuth());
 
-    final ExecutionOptions option = flow.getExecutionOptions();
-
-    final MailCreator mailCreator =
-        MailCreatorRegistry.getCreator(option.getMailCreator());
-    logger.debug("ExecutorMailer using mail creator:"
+    final MailCreator mailCreator = MailCreatorRegistry.getRecommendedCreator();
+    logger.debug("ExecutorMailer using mail creator: "
         + mailCreator.getClass().getCanonicalName());
 
     final boolean mailCreated =
@@ -216,11 +210,8 @@ public class Emailer extends AbstractMailer implements Alerter {
             .setTLS(this.tls)
             .setAuth(super.hasMailAuth());
 
-    final ExecutionOptions option = flow.getExecutionOptions();
-
-    final MailCreator mailCreator =
-        MailCreatorRegistry.getCreator(option.getMailCreator());
-    logger.debug("ExecutorMailer using mail creator "
+    final MailCreator mailCreator = MailCreatorRegistry.getRecommendedCreator();
+    logger.debug("ExecutorMailer using mail creator: "
         + mailCreator.getClass().getCanonicalName());
 
     final boolean mailCreated =

@@ -154,7 +154,7 @@ public class TemplateBasedMailCreator implements MailCreator {
         .replaceAll(regexVar("concurrentOption"), option.getConcurrentOption().toUpperCase())
         .replaceAll(regexVar("failureAction"), option.getFailureAction().toString())
         .replaceAll(regexVar("failureActionMessage"), failureActionMessage)
-        .replaceAll(regexVar("mailCreator"), option.getMailCreator());
+        .replaceAll(regexVar("mailCreator"), NAME);
 
     // stage II: lists
     partiallySubstituted = substituteList(

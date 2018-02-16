@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.executor.mail.MailCreatorRegistry;
 import azkaban.utils.TypedMapWrapper;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
@@ -52,7 +51,6 @@ public class ExecutionOptions {
   private static final String DISABLE = "disabled";
   private static final String FAILURE_EMAILS_OVERRIDE = "failureEmailsOverride";
   private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
-  private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
 
   private boolean notifyOnFirstFailure = true;
@@ -66,7 +64,6 @@ public class ExecutionOptions {
   private Integer pipelineExecId = null;
   private Integer queueLevel = 0;
   private String concurrentOption = CONCURRENT_OPTION_IGNORE;
-  private String mailCreator = MailCreatorRegistry.getRecommendedCreator().getName();
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
@@ -97,10 +94,6 @@ public class ExecutionOptions {
 
     if (wrapper.containsKey(DISABLE)) {
       options.initiallyDisabledJobs = wrapper.<Object>getList(DISABLE);
-    }
-
-    if (optionsMap.containsKey(MAIL_CREATOR)) {
-      options.mailCreator = (String) optionsMap.get(MAIL_CREATOR);
     }
 
     // Failure action
@@ -201,14 +194,6 @@ public class ExecutionOptions {
     this.concurrentOption = concurrentOption;
   }
 
-  public String getMailCreator() {
-    return this.mailCreator;
-  }
-
-  public void setMailCreator(final String mailCreator) {
-    this.mailCreator = mailCreator;
-  }
-
   public Integer getPipelineLevel() {
     return this.pipelineLevel;
   }
@@ -261,7 +246,6 @@ public class ExecutionOptions {
     flowOptionObj.put(DISABLE, this.initiallyDisabledJobs);
     flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, this.failureEmailsOverride);
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, this.successEmailsOverride);
-    flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
     return flowOptionObj;
   }
