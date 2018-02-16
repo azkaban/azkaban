@@ -154,9 +154,8 @@ public class FlowTriggerService {
   private void scheduleKill(final TriggerInstance triggerInst, final Duration duration, final
   CancellationCause cause) {
     logger
-        .info(String.format("Cancel trigger instance %s in %s secs", triggerInst.getId(), duration
-            .getSeconds
-                ()));
+        .debug(String.format("Cancel trigger instance %s in %s secs", triggerInst.getId(), duration
+            .getSeconds()));
     this.timeoutService.schedule(() -> {
       cancel(triggerInst, cause);
     }, duration.toMillis(), TimeUnit.MILLISECONDS);
@@ -252,7 +251,7 @@ public class FlowTriggerService {
       if (triggerInstance.getFlowTrigger() != null) {
         recover(triggerInstance);
       } else {
-        logger.info(String.format("cannot recover the trigger instance %s, flow trigger is null ",
+        logger.error(String.format("cannot recover the trigger instance %s, flow trigger is null ",
             triggerInstance.getId()));
       }
     }
@@ -342,8 +341,8 @@ public class FlowTriggerService {
           submitUser, project);
 
       logger.info(
-          String.format("Starting the flow trigger %s[execId %s] by %s", flowTrigger, triggerInst
-              .getId(), submitUser));
+          String.format("Starting the flow trigger %s[trigger instance id: %s] by %s", flowTrigger,
+              triggerInst.getId(), submitUser));
 
       this.triggerProcessor.processNewInstance(triggerInst);
       if (triggerInst.getStatus() == Status.CANCELLED) {
@@ -433,20 +432,19 @@ public class FlowTriggerService {
     this.executorService.submit(() -> {
       final DependencyInstance depInst = findDependencyInstanceByContext(context);
       if (depInst != null) {
-        logger.info(
-            String.format("setting dependency instance[id: %s, name: %s] status to success",
-                depInst.getTriggerInstance().getId(), depInst.getDepName()));
-
         if (Status.isDone(depInst.getStatus())) {
           logger.warn(String.format("OnSuccess of dependency instance[id: %s, name: %s] is ignored",
               depInst.getTriggerInstance().getId(), depInst.getDepName()));
           return;
         }
 
+        logger.info(
+            String.format("setting dependency instance[id: %s, name: %s] status to succeeded",
+                depInst.getTriggerInstance().getId(), depInst.getDepName()));
         processStatusUpdate(depInst, Status.SUCCEEDED);
         // if associated trigger instance becomes success, then remove it from running list
         if (depInst.getTriggerInstance().getStatus() == Status.SUCCEEDED) {
-          logger.info(String.format("trigger instance with execId %s succeeded",
+          logger.info(String.format("trigger instance[id: %s] succeeded",
               depInst.getTriggerInstance().getId()));
           this.triggerProcessor.processSucceed(depInst.getTriggerInstance());
           this.runningTriggers.remove(depInst.getTriggerInstance());
