@@ -540,8 +540,12 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-      this.scheduler.start();
+      // flowTriggerService needs to be started first before scheduler starts to schedule
+      // existing flow triggers
+      logger.info("starting flow trigger service");
       this.flowTriggerService.start();
+      logger.info("starting flow trigger scheduler");
+      this.scheduler.start();
     }
 
     try {
