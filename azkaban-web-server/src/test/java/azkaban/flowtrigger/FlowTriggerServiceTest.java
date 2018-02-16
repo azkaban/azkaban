@@ -20,9 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
@@ -51,6 +55,7 @@ public class FlowTriggerServiceTest {
       MockFlowTriggerInstanceLoader();
   private static TestDependencyCheck testDepCheck;
   private static FlowTriggerService flowTriggerService;
+  private static ExecutorManager executorManager;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -60,7 +65,7 @@ public class FlowTriggerServiceTest {
     when(pluginManager.getDependencyCheck(ArgumentMatchers.eq("TestDependencyCheck")))
         .thenReturn(testDepCheck);
 
-    final ExecutorManager executorManager = mock(ExecutorManager.class);
+    executorManager = mock(ExecutorManager.class);
     when(executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
 
     final Emailer emailer = mock(Emailer.class);
@@ -80,6 +85,7 @@ public class FlowTriggerServiceTest {
   @Before
   public void cleanup() {
     ((MockFlowTriggerInstanceLoader) flowTriggerInstanceLoader).clear();
+    reset(executorManager);
   }
 
   private Project createProject() {
@@ -104,6 +110,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(6).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -138,6 +145,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.cancel(runningTrigger, CancellationCause.MANUAL);
     }
     Thread.sleep(Duration.ofMillis(500).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -160,6 +168,7 @@ public class FlowTriggerServiceTest {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(1).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
@@ -187,11 +196,27 @@ public class FlowTriggerServiceTest {
       flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
     }
     Thread.sleep(Duration.ofSeconds(5).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
       assertThat(inst.getStatus()).isEqualTo(Status.SUCCEEDED);
     }
+  }
+
+  @Test
+  public void testStartZeroDependencyTrigger()
+      throws InterruptedException, ExecutorManagerException {
+    final List<FlowTriggerDependency> deps = new ArrayList<>();
+    final FlowTrigger flowTrigger = TestUtil.createTestFlowTrigger(deps, Duration.ofSeconds(10));
+    for (int i = 0; i < 30; i++) {
+      flowTriggerService.startTrigger(flowTrigger, "testflow", 1, "test", createProject());
+    }
+    Thread.sleep(Duration.ofSeconds(1).toMillis());
+    // zero dependency trigger will launch associated flow immediately
+    final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRunningTriggers();
+    assertThat(triggerInstances).isEmpty();
+    verify(executorManager, times(30)).submitExecutableFlow(any(), anyString());
   }
 
   @Test
@@ -207,8 +232,8 @@ public class FlowTriggerServiceTest {
     Thread.sleep(Duration.ofSeconds(1).toMillis());
     flowTriggerService.shutdown();
     setup();
-    flowTriggerService.start();
     Thread.sleep(Duration.ofSeconds(5).toMillis());
+    assertThat(flowTriggerService.getRunningTriggers()).isEmpty();
     final Collection<TriggerInstance> triggerInstances = flowTriggerService.getRecentlyFinished();
     assertThat(triggerInstances).hasSize(30);
     for (final TriggerInstance inst : triggerInstances) {
