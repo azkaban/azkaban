@@ -29,7 +29,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -341,12 +340,6 @@ public class FlowTriggerService {
       final TriggerInstance triggerInst = createTriggerInstance(flowTrigger, flowId, flowVersion,
           submitUser, project);
 
-      if (triggerInst.getDepInstances().isEmpty()) {
-        // zero dependency trigger instance will start the flow immediately
-        this.triggerProcessor.processSucceed(triggerInst);
-        return;
-      }
-
       logger.info(
           String.format("Starting the flow trigger %s[execId %s] by %s", flowTrigger, triggerInst
               .getId(), submitUser));
@@ -363,6 +356,8 @@ public class FlowTriggerService {
             String.format("Trigger instance[id: %s] is being cancelled since some dependency "
                 + "instances fail to be created", triggerInst.getId()));
         addToRunningListAndCancel(triggerInst);
+      } else if (triggerInst.getStatus() == Status.SUCCEEDED) {
+        this.triggerProcessor.processSucceed(triggerInst);
       } else {
         // todo chengren311: it's possible web server restarts before the db update, then
         // new instance will not be recoverable from db.
@@ -390,14 +385,6 @@ public class FlowTriggerService {
     } catch (final Exception e) {
       logger.error("exception when finding trigger instance by id" + triggerInstId, e);
       return null;
-    }
-  }
-
-  private void removeRunningTriggerInstById(final String triggerInstId) {
-    for (final Iterator<TriggerInstance> it = this.runningTriggers.iterator(); it.hasNext(); ) {
-      if (triggerInstId.equals(it.next().getId())) {
-        it.remove();
-      }
     }
   }
 
@@ -509,7 +496,7 @@ public class FlowTriggerService {
               String.format("trigger instance with execId %s is cancelled",
                   depInst.getTriggerInstance().getId()));
           this.triggerProcessor.processTermination(depInst.getTriggerInstance());
-          removeRunningTriggerInstById(depInst.getTriggerInstance().getId());
+          this.runningTriggers.remove(depInst.getTriggerInstance());
         }
       } else {
         logger.warn(String.format("unable to find trigger instance with context %s when marking "
