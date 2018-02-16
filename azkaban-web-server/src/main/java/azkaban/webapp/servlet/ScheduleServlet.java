@@ -599,15 +599,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (final Exception ex) {
       logger.error(ex);
       ret.put("status", "error");
-      ret.put("message", String.format("Flow %s.%s cannot be scheduled: %s", projectName,
-          flowName, ex));
+      ret.put("message", String.format("Error looking for flow trigger of flow: %s.%s ",
+          projectName, flowName));
       return;
     }
 
     if (hasFlowTrigger) {
       ret.put("status", "error");
-      ret.put("message", String.format("Flow %s.%s is already associated with flow trigger, "
-          + "cannot be scheduled", projectName, flowName));
+      ret.put("message", String.format("<font color=\"red\"> Error: Flow %s.%s is already "
+              + "associated with flow trigger, so schedule has to be defined in flow trigger config </font>",
+          projectName, flowName));
       return;
     }
 
