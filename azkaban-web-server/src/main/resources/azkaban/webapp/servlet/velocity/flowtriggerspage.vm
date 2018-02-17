@@ -107,6 +107,7 @@
               <td>${trigger.getFlowTrigger().getMaxWaitDuration().toMinutes()}</td>
 
 
+            ## adopted from template to show executionOption in scheduledflowpage.vm
               <td>
               ## Changed the style of "Show" button to be consistent with other buttons.
                 <button type="button" class="btn btn-sm btn-info" data-toggle="modal"
@@ -114,8 +115,6 @@
                 </button>
               </td>
 
-            ## Distinguished executionOptions of each schedule with unique count number to fix
-            ## the issue of same display for all schedules
               <div class="modal fade" id="dependencyList-${velocityCount}" tabindex="-1"
                    role="dialog"
                    aria-labelledby="dependencyLabel">
