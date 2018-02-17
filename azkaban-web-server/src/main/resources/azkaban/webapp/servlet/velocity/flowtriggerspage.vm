@@ -107,9 +107,9 @@
               <td>${trigger.getFlowTrigger().getMaxWaitDuration().toMinutes()}</td>
 
               <td>
-                <button type="button" id="showTriggerProperties" class="btn btn-danger btn-sm"
+                <button type="button" id="showTriggerProperties" class="btn btn-sm btn-info"
                         onclick="alert(`${trigger.getFlowTrigger().getDependencies()}`);">
-                  Trigger Config
+                  Show
                 </button>
               </td>
             </tr>
