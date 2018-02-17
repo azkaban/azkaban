@@ -79,7 +79,7 @@
           <th>Next Execution Time</th>
           <th>Schedule</th>
           <th>Max Wait Mins</th>
-          <th>Flow Trigger Details</th>
+          <th>Dependencies</th>
         </tr>
         </thead>
         <tbody>
