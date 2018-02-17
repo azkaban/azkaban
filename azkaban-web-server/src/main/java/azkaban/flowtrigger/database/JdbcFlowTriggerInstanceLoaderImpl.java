@@ -95,17 +95,18 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
               Status.SUCCEEDED.ordinal(),
               Constants.UNASSIGNED_EXEC_ID);
 
-  private static final String SELECT_RECENTLY_FINISHED =
+  private static final String SELECT_RECENTLY_FINISHED = String.format(
       "SELECT execution_dependencies.trigger_instance_id,dep_name,starttime,endtime,dep_status,"
           + "cancelleation_cause,project_id,project_version,flow_id,flow_version,"
           + "project_json, flow_exec_id \n"
           + "FROM execution_dependencies JOIN (\n"
           + "SELECT trigger_instance_id FROM execution_dependencies WHERE trigger_instance_id not in (\n"
-          + "SELECT distinct(trigger_instance_id)  FROM execution_dependencies WHERE dep_status ="
-          + "  0 or dep_status = 3)\n"
+          + "SELECT distinct(trigger_instance_id) FROM execution_dependencies WHERE dep_status = "
+          + "  %s or dep_status = %s)\n"
           + "GROUP BY trigger_instance_id\n"
-          + "ORDER BY  min(starttime) desc limit %s) temp on execution_dependencies"
-          + ".trigger_instance_id in (temp.trigger_instance_id);";
+          + "ORDER BY  min(starttime) desc limit %%s) temp on execution_dependencies"
+          + ".trigger_instance_id in (temp.trigger_instance_id);", Status.RUNNING.ordinal(),
+      Status.CANCELLING.ordinal());
 
   private static final String UPDATE_DEPENDENCY_FLOW_EXEC_ID = String.format("UPDATE %s SET "
       + "flow_exec_id "
