@@ -138,6 +138,18 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
+  public void testAdvancedFilter() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory("exectest1", "", "", 0, -1, -1, 0, 16);
+    assertThat(flowList1.size()).isEqualTo(1);
+
+    final ExecutableFlow fetchFlow =
+            this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
+    assertTwoFlowSame(flowList1.get(0), fetchFlow);
+  }
+
+  @Test
   public void testFetchRecentlyFinishedFlows() throws Exception {
     final ExecutableFlow flow1 = createTestFlow();
     this.executionFlowDao.uploadExecutableFlow(flow1);
