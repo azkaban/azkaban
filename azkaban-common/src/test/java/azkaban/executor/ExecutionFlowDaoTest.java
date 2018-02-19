@@ -97,7 +97,7 @@ public class ExecutionFlowDaoTest {
   }
 
   private void createTestProject() {
-    String projectName = "flow";
+    String projectName = "exectest1";
     String projectDescription = "This is my new project";
     User user = new User("testUser1");
     this.loader.createNewProject(projectName, projectDescription, user);
@@ -156,7 +156,7 @@ public class ExecutionFlowDaoTest {
     createTestProject();
     final ExecutableFlow flow = createTestFlow();
     this.executionFlowDao.uploadExecutableFlow(flow);
-    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory("flow", "", "",0, -1, -1, 0, 16);
+    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory("exectest1", "", "",0, -1, -1, 0, 16);
     assertThat(flowList1.size()).isEqualTo(1);
 
     final ExecutableFlow fetchFlow =
