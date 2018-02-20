@@ -175,9 +175,9 @@
               #end
 
               <td>
-                <button type="button" id="showTriggerProperties" class="btn btn-danger btn-sm"
+                <button type="button" id="showTriggerProperties" class="btn btn-sm btn-info"
                         onclick="showTriggerProperties('${trigger.getId()}')">
-                  Trigger Config
+                  Show
                 </button>
               </td>
 
@@ -320,9 +320,10 @@
               #end
 
               <td>
-                <button type="button" id="showTriggerProperties" class="btn btn-danger btn-sm"
-                        onclick="showTriggerProperties('${trigger.getId()}')">
-                  Trigger Config
+                <button type="button" id="showTriggerProperties" class="btn btn-sm btn-info"
+                "
+                onclick="showTriggerProperties('${trigger.getId()}')">
+                Show
                 </button>
               </td>
 
