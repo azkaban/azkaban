@@ -346,17 +346,14 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         logger.info("custom credential class name: " + credentialClassName);
         final Class credentialClass = Class.forName(credentialClassName);
 
-        final Constructor[] constructors = credentialClass.getConstructors();
-        for (final Constructor constructor : constructors) {
-          if (constructor.getParameterCount() == 3) {
-            final CredentialProvider customCredential = (CredentialProvider) constructors[1]
-                .newInstance(hadoopCred, props, jobLogger);
-            customCredential.register(userToProxy);
-            return;
-          }
-        }
-        logger.error("cannot find the appropriate credential constructor.");
-        throw new Exception("launching credential instance failed.");
+        // The credential class must have a constructor accepting 3 parameters, Credentials,
+        // Props, and Logger in order.
+        Constructor constructor = credentialClass.getConstructor (new Class[]
+            {Credentials.class, Props.class, Logger.class});
+        final CredentialProvider customCredential = (CredentialProvider) constructor
+              .newInstance(hadoopCred, props, jobLogger);
+        customCredential.register(userToProxy);
+
       } catch (final Exception e) {
         logger.error("Encountered error while loading and instantiating "
             + credentialClassName, e);
