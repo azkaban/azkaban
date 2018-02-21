@@ -29,6 +29,7 @@ import azkaban.scheduler.QuartzJobDescription;
 import azkaban.scheduler.QuartzScheduler;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
+import com.google.gson.GsonBuilder;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -201,6 +202,11 @@ public class FlowTriggerScheduler {
 
     public FlowTrigger getFlowTrigger() {
       return this.flowTrigger;
+    }
+
+    public String getDependencyListJson() {
+      return new GsonBuilder().setPrettyPrinting().create()
+          .toJson(this.flowTrigger.getDependencies());
     }
 
     public Trigger getQuartzTrigger() {
