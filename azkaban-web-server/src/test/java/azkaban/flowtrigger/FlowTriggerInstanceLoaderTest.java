@@ -228,7 +228,8 @@ public class FlowTriggerInstanceLoaderTest {
       }
     }
 
-    all.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    final List<TriggerInstance> shuffled = new ArrayList<>(all);
+    shuffled.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
 
     final List<TriggerInstance> actual = new ArrayList<>(this.triggerInstLoader
         .getIncompleteTriggerInstances());
@@ -252,7 +253,8 @@ public class FlowTriggerInstanceLoaderTest {
     // been started
     finalizeTriggerInstanceWithSuccess(allInstances.get(2), -1);
 
-    allInstances.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    final List<TriggerInstance> shuffled = new ArrayList<>(allInstances);
+    shuffled.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
 
     final List<TriggerInstance> expected = allInstances.subList(2, allInstances.size());
     final List<TriggerInstance> actual = new ArrayList<>(this.triggerInstLoader
@@ -303,7 +305,8 @@ public class FlowTriggerInstanceLoaderTest {
           .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()));
     }
 
-    all.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    final List<TriggerInstance> shuffled = new ArrayList<>(all);
+    shuffled.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
 
     final Collection<TriggerInstance> recentlyFinished = this.triggerInstLoader
         .getRecentlyFinished(10);
@@ -327,7 +330,8 @@ public class FlowTriggerInstanceLoaderTest {
       }
     }
 
-    all.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    final List<TriggerInstance> shuffled = new ArrayList<>(all);
+    shuffled.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
 
     final List<TriggerInstance> expected = all.subList(0, 7);
     expected.sort(Comparator.comparing(TriggerInstance::getStartTime));
