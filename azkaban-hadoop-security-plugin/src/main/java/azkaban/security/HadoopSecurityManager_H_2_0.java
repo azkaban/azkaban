@@ -338,18 +338,22 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
-  String userToProxy) {
+  String userToProxy, final Logger jobLogger) {
     String credentialClassName = "unknown class";
       try {
         credentialClassName = props
             .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
         logger.info("custom credential class name: " + credentialClassName);
-        final Class metricsClass = Class.forName(credentialClassName);
+        final Class credentialClass = Class.forName(credentialClassName);
 
-        final Constructor[] constructors = metricsClass.getConstructors();
-        final CredentialProvider customCredential = (CredentialProvider) constructors[0]
-            .newInstance(hadoopCred, props);
+        // The credential class must have a constructor accepting 3 parameters, Credentials,
+        // Props, and Logger in order.
+        Constructor constructor = credentialClass.getConstructor (new Class[]
+            {Credentials.class, Props.class, Logger.class});
+        final CredentialProvider customCredential = (CredentialProvider) constructor
+              .newInstance(hadoopCred, props, jobLogger);
         customCredential.register(userToProxy);
+
       } catch (final Exception e) {
         logger.error("Encountered error while loading and instantiating "
             + credentialClassName, e);
@@ -636,7 +640,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy);
+            registerCustomCredential(props, cred, userToProxy, logger);
           }
 
           if (props.getBoolean(OBTAIN_NAMENODE_TOKEN, false)) {
