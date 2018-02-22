@@ -667,7 +667,9 @@ public class Props {
   }
 
   /**
-   * Returns a java.util.Properties file populated with the stuff in here.
+   * Returns a java.util.Properties file populated with the current Properties in here.
+   * Note: if you want to import parent properties (e.g., database credentials), please use
+   * toAllProperties
    */
   public Properties toProperties() {
     final Properties p = new Properties();
@@ -676,6 +678,21 @@ public class Props {
     }
 
     return p;
+  }
+
+  /**
+   * Returns a java.util.Properties file populated with both current and parent properties.
+   */
+  public Properties toAllProperties() {
+    Properties allProp = new Properties();
+    // import local properties
+    allProp.putAll(toProperties());
+
+    // import parent properties
+    if(_parent != null)
+      allProp.putAll(_parent.toProperties());
+
+    return allProp;
   }
 
   /**

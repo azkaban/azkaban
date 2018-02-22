@@ -54,8 +54,11 @@ public class QuartzScheduler {
     if (!azProps.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       return;
     }
+    // TODO kunkun-tang: Many quartz properties should be defaulted such that not necessarily being
+    // checked into azkaban.properties. Also, we need to only assemble Quartz related properties
+    // here, which should be done in Azkaban WebServer Guice Module.
     final StdSchedulerFactory schedulerFactory =
-        new StdSchedulerFactory(azProps.toProperties());
+        new StdSchedulerFactory(azProps.toAllProperties());
     this.scheduler = schedulerFactory.getScheduler();
 
     // Currently Quartz only support internal job schedules. When we migrate to User Production
