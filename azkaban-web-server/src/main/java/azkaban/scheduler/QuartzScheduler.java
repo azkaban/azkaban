@@ -55,7 +55,7 @@ public class QuartzScheduler {
       return;
     }
     final StdSchedulerFactory schedulerFactory =
-        new StdSchedulerFactory(azProps.toProperties());
+        new StdSchedulerFactory(azProps.toAllProperties());
     this.scheduler = schedulerFactory.getScheduler();
 
     // Currently Quartz only support internal job schedules. When we migrate to User Production
