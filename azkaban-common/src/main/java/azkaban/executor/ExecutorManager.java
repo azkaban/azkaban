@@ -32,6 +32,12 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -52,11 +58,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 /**
  * Executor manager used to manage the client side job.
@@ -86,6 +87,8 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
       "azkaban.maxDispatchingErrors";
+  private static final String AZKABAN_EVICT_EXECUTIONS =
+      "azkaban.evictExecutions";
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
@@ -233,6 +236,10 @@ public class ExecutorManager extends EventHandler implements
 
   private boolean isMultiExecutorMode() {
     return this.azkProps.getBoolean(AZKABAN_USE_MULTIPLE_EXECUTORS, false);
+  }
+
+  private boolean isEvictExecutions() {
+    return this.azkProps.getBoolean(AZKABAN_EVICT_EXECUTIONS, true);
   }
 
   /**
@@ -1493,7 +1500,7 @@ public class ExecutorManager extends EventHandler implements
                       ref.setNextCheckTime(System.currentTimeMillis()
                           + this.errorThreshold);
                       ref.setNumErrors(++numErrors);
-                    } else {
+                    } else if (isEvictExecutions()) {
                       logger.error("Evicting flow " + flow.getExecutionId()
                           + ". The executor is unresponsive.");
                       // TODO should send out an unresponsive email here.
