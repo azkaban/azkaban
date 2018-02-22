@@ -28,6 +28,7 @@ import azkaban.storage.StorageManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.CaseInsensitiveConcurrentHashMap;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.common.io.Files;
@@ -55,8 +56,8 @@ public class ProjectManager {
   private final boolean creatorDefaultPermissions;
   private final ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, Project> projectsByName =
-      new ConcurrentHashMap<>();
+  private final CaseInsensitiveConcurrentHashMap<Project> projectsByName =
+      new CaseInsensitiveConcurrentHashMap<>();
 
 
   @Inject
@@ -139,10 +140,6 @@ public class ProjectManager {
     } catch (final ProjectManagerException e) {
       throw new RuntimeException("Could not load projects flows from store.", e);
     }
-  }
-
-  public List<String> getProjectNames() {
-    return new ArrayList<>(this.projectsByName.keySet());
   }
 
   public Props getProps() {
