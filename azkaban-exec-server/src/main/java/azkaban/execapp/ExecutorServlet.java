@@ -81,66 +81,86 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   @Override
   public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
+    handleRequest(req, resp, (respMap, action) -> {
+      if (action.equals(UPDATE_ACTION)) {
+        // logger.info("Updated called");
+        handleAjaxUpdateRequest(req, respMap);
+      } else if (action.equals(PING_ACTION)) {
+        respMap.put("status", "alive");
+      } else if (action.equals(RELOAD_JOBTYPE_PLUGINS_ACTION)) {
+        logger.info("Reloading Jobtype plugins");
+        handleReloadJobTypePlugins(respMap);
+      } else if (action.equals(ACTIVATE)) {
+        logger.warn("Setting ACTIVE flag to true");
+        setActive(true, respMap);
+      } else if (action.equals(GET_STATUS)) {
+        logger.debug("Get Executor Status: ");
+        getStatus(respMap);
+      } else if (action.equals(DEACTIVATE)) {
+        logger.warn("Setting ACTIVE flag to false");
+        setActive(false, respMap);
+      } else if (action.equals(SHUTDOWN)) {
+        shutdown(respMap);
+      } else {
+        final int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
+        final String user = getParam(req, USER_PARAM, null);
+
+        logger.info("User " + user + " has called action " + action + " on "
+            + execid);
+        if (action.equals(METADATA_ACTION)) {
+          handleFetchMetaDataEvent(execid, req, resp, respMap);
+        } else if (action.equals(LOG_ACTION)) {
+          handleFetchLogEvent(execid, req, resp, respMap);
+        } else if (action.equals(ATTACHMENTS_ACTION)) {
+          handleFetchAttachmentsEvent(execid, req, resp, respMap);
+        } else if (action.equals(EXECUTE_ACTION)) {
+          handleAjaxExecute(req, respMap, execid);
+        } else if (action.equals(STATUS_ACTION)) {
+          handleAjaxFlowStatus(respMap, execid);
+        } else if (action.equals(CANCEL_ACTION)) {
+          logger.info("Cancel called.");
+          handleAjaxCancel(respMap, execid, user);
+        } else if (action.equals(PAUSE_ACTION)) {
+          logger.info("Paused called.");
+          handleAjaxPause(respMap, execid, user);
+        } else if (action.equals(RESUME_ACTION)) {
+          logger.info("Resume called.");
+          handleAjaxResume(respMap, execid, user);
+        } else if (action.equals(MODIFY_EXECUTION_ACTION)) {
+          logger.info("Modify Execution Action");
+          handleModifyExecutionRequest(respMap, execid, user, req);
+        } else {
+          logger.error("action: '" + action + "' not supported.");
+          respMap.put("error", "action: '" + action + "' not supported.");
+        }
+      }
+    });
+  }
+
+  @Override
+  public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+    handleRequest(req, resp, (respMap, action) -> {
+      if (action.equals(UPDATE_ACTION)) {
+        handleAjaxUpdateRequest(req, respMap);
+      } else {
+        logger.error("action: '" + action + "' not supported.");
+        respMap.put("error", "action: '" + action + "' not supported.");
+      }
+    });
+  }
+
+  private void handleRequest(final HttpServletRequest req, final HttpServletResponse resp,
+      final RequestProcessor processor)
+      throws ServletException, IOException {
     final HashMap<String, Object> respMap = new HashMap<>();
-    // logger.info("ExecutorServer called by " + req.getRemoteAddr());
     try {
       if (!hasParam(req, ACTION_PARAM)) {
         logger.error("Parameter action not set");
         respMap.put("error", "Parameter action not set");
       } else {
         final String action = getParam(req, ACTION_PARAM);
-        if (action.equals(UPDATE_ACTION)) {
-          // logger.info("Updated called");
-          handleAjaxUpdateRequest(req, respMap);
-        } else if (action.equals(PING_ACTION)) {
-          respMap.put("status", "alive");
-        } else if (action.equals(RELOAD_JOBTYPE_PLUGINS_ACTION)) {
-          logger.info("Reloading Jobtype plugins");
-          handleReloadJobTypePlugins(respMap);
-        } else if (action.equals(ACTIVATE)) {
-          logger.warn("Setting ACTIVE flag to true");
-          setActive(true, respMap);
-        } else if (action.equals(GET_STATUS)) {
-          logger.debug("Get Executor Status: ");
-          getStatus(respMap);
-        } else if (action.equals(DEACTIVATE)) {
-          logger.warn("Setting ACTIVE flag to false");
-          setActive(false, respMap);
-        } else if (action.equals(SHUTDOWN)) {
-          shutdown(respMap);
-        } else {
-          final int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
-          final String user = getParam(req, USER_PARAM, null);
-
-          logger.info("User " + user + " has called action " + action + " on "
-              + execid);
-          if (action.equals(METADATA_ACTION)) {
-            handleFetchMetaDataEvent(execid, req, resp, respMap);
-          } else if (action.equals(LOG_ACTION)) {
-            handleFetchLogEvent(execid, req, resp, respMap);
-          } else if (action.equals(ATTACHMENTS_ACTION)) {
-            handleFetchAttachmentsEvent(execid, req, resp, respMap);
-          } else if (action.equals(EXECUTE_ACTION)) {
-            handleAjaxExecute(req, respMap, execid);
-          } else if (action.equals(STATUS_ACTION)) {
-            handleAjaxFlowStatus(respMap, execid);
-          } else if (action.equals(CANCEL_ACTION)) {
-            logger.info("Cancel called.");
-            handleAjaxCancel(respMap, execid, user);
-          } else if (action.equals(PAUSE_ACTION)) {
-            logger.info("Paused called.");
-            handleAjaxPause(respMap, execid, user);
-          } else if (action.equals(RESUME_ACTION)) {
-            logger.info("Resume called.");
-            handleAjaxResume(respMap, execid, user);
-          } else if (action.equals(MODIFY_EXECUTION_ACTION)) {
-            logger.info("Modify Execution Action");
-            handleModifyExecutionRequest(respMap, execid, user, req);
-          } else {
-            logger.error("action: '" + action + "' not supported.");
-            respMap.put("error", "action: '" + action + "' not supported.");
-          }
-        }
+        processor.process(respMap, action);
       }
     } catch (final Exception e) {
       logger.error(e.getMessage(), e);
@@ -412,12 +432,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
-  }
-
-  @Override
-  public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
-      throws ServletException, IOException {
-
   }
 
   /**

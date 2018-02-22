@@ -19,6 +19,8 @@ package azkaban.utils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -38,9 +40,6 @@ import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- *
- */
 public class RestfulApiClientTest {
 
   @Test
@@ -83,12 +82,12 @@ public class RestfulApiClientTest {
 
     final String content = "123456789";
 
-    final String result = mockClient.httpPost(uri, headerItems, content);
+    final String result = mockClient.httpPost(uri, headerItems, toPairList(content));
     Assert.assertTrue(result != null && result.contains(uri.toString()));
     Assert.assertTrue(result.contains("METHOD = POST"));
     Assert.assertTrue(result.contains("h1 = v1"));
     Assert.assertTrue(result.contains("h2 = v2"));
-    Assert.assertTrue(result.contains(String.format("%s = %s;", "BODY", content)));
+    Assert.assertTrue(result.contains(String.format("%s = value=%s;", "BODY", content)));
   }
 
   @Test
@@ -116,12 +115,12 @@ public class RestfulApiClientTest {
 
     final String content = "123456789";
 
-    final String result = mockClient.httpPut(uri, headerItems, content);
+    final String result = mockClient.httpPut(uri, headerItems, toPairList(content));
     Assert.assertTrue(result != null && result.contains(uri.toString()));
     Assert.assertTrue(result.contains("METHOD = PUT"));
     Assert.assertTrue(result.contains("h1 = v1"));
     Assert.assertTrue(result.contains("h2 = v2"));
-    Assert.assertTrue(result.contains(String.format("%s = %s;", "BODY", content)));
+    Assert.assertTrue(result.contains(String.format("%s = value=%s;", "BODY", content)));
   }
 
   @Test
@@ -132,9 +131,9 @@ public class RestfulApiClientTest {
 
     final String content = "123456789";
 
-    final String result = mockClient.httpPut(uri, null, content);
+    final String result = mockClient.httpPut(uri, null, toPairList(content));
     Assert.assertTrue(result != null && result.contains(uri.toString()));
-    Assert.assertTrue(result.contains("Content-Length = " + Integer.toString(content.length())));
+    Assert.assertTrue(result.contains("Content-Length = " + getExpectedLength(content)));
   }
 
   @Test
@@ -148,10 +147,10 @@ public class RestfulApiClientTest {
 
     final String content = "123456789";
 
-    final String result = mockClient.httpPut(uri, headerItems, content);
+    final String result = mockClient.httpPut(uri, headerItems, toPairList(content));
     Assert.assertTrue(result != null && result.contains(uri.toString()));
     Assert.assertEquals(result.lastIndexOf("Content-Length"), result.indexOf("Content-Length"));
-    Assert.assertTrue(result.contains("Content-Length = " + Integer.toString(content.length())));
+    Assert.assertTrue(result.contains("Content-Length = " + getExpectedLength(content)));
   }
 
   @Test
@@ -169,6 +168,14 @@ public class RestfulApiClientTest {
     Assert.assertTrue(result.contains("METHOD = DELETE"));
     Assert.assertTrue(result.contains("h1 = v1"));
     Assert.assertTrue(result.contains("h2 = v2"));
+  }
+
+  private List<Pair<String, String>> toPairList(final String content) {
+    return Collections.singletonList(new Pair<>("value", content));
+  }
+
+  private String getExpectedLength(final String content) {
+    return Integer.toString("value=".length() + content.length());
   }
 
   static class MockRestfulApiClient extends RestfulApiClient<String> {
