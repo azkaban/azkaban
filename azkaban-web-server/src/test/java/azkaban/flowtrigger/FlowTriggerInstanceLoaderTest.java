@@ -36,6 +36,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
@@ -209,6 +210,18 @@ public class FlowTriggerInstanceLoaderTest {
     }
   }
 
+  private void finalizeTriggerInstanceWithCancelling(final TriggerInstance triggerInst) {
+    for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+      depInst.setStatus(Status.CANCELLING);
+    }
+  }
+
+  private void shuffleAndUpload(final List<TriggerInstance> all) {
+    final List<TriggerInstance> shuffled = new ArrayList<>(all);
+    Collections.shuffle(shuffled);
+    shuffled.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+  }
+
   @Test
   public void testGetIncompleteTriggerInstancesReturnsEmpty() {
     final List<TriggerInstance> all = new ArrayList<>();
@@ -221,9 +234,7 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
       }
     }
-
-    all.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
-
+    this.shuffleAndUpload(all);
     final List<TriggerInstance> actual = new ArrayList<>(this.triggerInstLoader
         .getIncompleteTriggerInstances());
     all.sort(Comparator.comparing(TriggerInstance::getId));
@@ -246,7 +257,7 @@ public class FlowTriggerInstanceLoaderTest {
     // been started
     finalizeTriggerInstanceWithSuccess(allInstances.get(2), -1);
 
-    allInstances.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    this.shuffleAndUpload(allInstances);
 
     final List<TriggerInstance> expected = allInstances.subList(2, allInstances.size());
     final List<TriggerInstance> actual = new ArrayList<>(this.triggerInstLoader
@@ -297,7 +308,7 @@ public class FlowTriggerInstanceLoaderTest {
           .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()));
     }
 
-    all.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    this.shuffleAndUpload(all);
 
     final Collection<TriggerInstance> recentlyFinished = this.triggerInstLoader
         .getRecentlyFinished(10);
@@ -308,7 +319,7 @@ public class FlowTriggerInstanceLoaderTest {
   public void testGetRecentlyFinished() {
 
     final List<TriggerInstance> all = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 15; i++) {
       all.add(this.createTriggerInstance(this.flowTrigger, this
           .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
           + i * 10000));
@@ -316,10 +327,12 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithCancelled(all.get(i));
       } else if (i <= 6) {
         finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
+      } else if (i <= 9) {
+        finalizeTriggerInstanceWithCancelling(all.get(i));
       }
     }
 
-    all.forEach(triggerInst -> this.triggerInstLoader.uploadTriggerInstance(triggerInst));
+    this.shuffleAndUpload(all);
 
     final List<TriggerInstance> expected = all.subList(0, 7);
     expected.sort(Comparator.comparing(TriggerInstance::getStartTime));
