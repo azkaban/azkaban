@@ -88,7 +88,7 @@ public class SleepJavaJob {
     System.out.println("Sec " + sec);
     synchronized (this) {
       try {
-        this.wait(sec * 1000);
+        this.wait(sec * 1000 + 1);
       } catch (final InterruptedException e) {
         System.out.println("Interrupted " + this.fail);
       }

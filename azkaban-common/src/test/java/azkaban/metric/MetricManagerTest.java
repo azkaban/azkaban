@@ -11,6 +11,7 @@ import azkaban.utils.Props;
 import java.util.Date;
 import java.util.List;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -72,6 +73,7 @@ public class MetricManagerTest {
   /**
    * Test metric reporting methods, including InMemoryMetricEmitter methods
    */
+  @Ignore("TODO replace sleep with something better")
   @Test
   public void managerEmitterHandlingTest() throws Exception {
     this.emitter.purgeAllData();

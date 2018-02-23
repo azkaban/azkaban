@@ -126,7 +126,7 @@ public class JavaProcessJobTest {
     // initialize the Props
     this.props.put(JavaProcessJob.JAVA_CLASS,
         "azkaban.executor.SleepJavaJob");
-    this.props.put("seconds", 1);
+    this.props.put("seconds", 0);
     this.props.put("input", inputFile);
     this.props.put("output", outputFile);
     this.props.put("classpath", classPaths);
