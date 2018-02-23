@@ -17,24 +17,16 @@
 package azkaban.utils;
 
 import com.sun.mail.smtp.SMTPTransport;
-import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 import org.apache.log4j.Logger;
 
 public class EmailMessage {
@@ -43,22 +35,17 @@ public class EmailMessage {
   private static final int MAX_EMAIL_RETRY_COUNT = 5;
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
-  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
   private final Logger logger = Logger.getLogger(EmailMessage.class);
   private final List<String> _toAddress = new ArrayList<>();
   private final int _mailPort;
-  // GB
-  private final ArrayList<BodyPart> _attachments = new ArrayList<>();
-  private String _mailHost;
-  private String _mailUser;
-  private String _mailPassword;
+  private final String _mailHost;
+  private final String _mailUser;
+  private final String _mailPassword;
   private String _subject;
   private String _fromAddress;
   private String _mimeType = "text/plain";
   private String _tls;
-  private long _totalAttachmentSizeSoFar;
   private boolean _usesAuth = true;
-  private boolean _enableAttachementEmbedment = true;
   private StringBuffer _body = new StringBuffer();
 
   public EmailMessage() {
@@ -78,34 +65,6 @@ public class EmailMessage {
 
   public static void setConnectionTimeout(final int timeoutMillis) {
     _connectionTimeout = timeoutMillis;
-  }
-
-  public static void setTotalAttachmentMaxSize(final long sizeInBytes) {
-    if (sizeInBytes < 1) {
-      throw new IllegalArgumentException(
-          "attachment max size can't be 0 or negative");
-    }
-    _totalAttachmentMaxSizeInByte = sizeInBytes;
-  }
-
-  public EmailMessage setMailHost(final String host) {
-    this._mailHost = host;
-    return this;
-  }
-
-  public EmailMessage setMailUser(final String user) {
-    this._mailUser = user;
-    return this;
-  }
-
-  public EmailMessage enableAttachementEmbedment(final boolean toEnable) {
-    this._enableAttachementEmbedment = toEnable;
-    return this;
-  }
-
-  public EmailMessage setMailPassword(final String password) {
-    this._mailPassword = password;
-    return this;
   }
 
   public EmailMessage addAllToAddress(final Collection<? extends String> addresses) {
@@ -130,38 +89,6 @@ public class EmailMessage {
 
   public EmailMessage setAuth(final boolean auth) {
     this._usesAuth = auth;
-    return this;
-  }
-
-  public EmailMessage addAttachment(final File file) throws MessagingException {
-    return addAttachment(file.getName(), file);
-  }
-
-  public EmailMessage addAttachment(final String attachmentName, final File file)
-      throws MessagingException {
-
-    this._totalAttachmentSizeSoFar += file.length();
-
-    if (this._totalAttachmentSizeSoFar > _totalAttachmentMaxSizeInByte) {
-      throw new MessageAttachmentExceededMaximumSizeException(
-          "Adding attachment '" + attachmentName
-              + "' will exceed the allowed maximum size of "
-              + _totalAttachmentMaxSizeInByte);
-    }
-
-    final BodyPart attachmentPart = new MimeBodyPart();
-    final DataSource fileDataSource = new FileDataSource(file);
-    attachmentPart.setDataHandler(new DataHandler(fileDataSource));
-    attachmentPart.setFileName(attachmentName);
-    this._attachments.add(attachmentPart);
-    return this;
-  }
-
-  public EmailMessage addAttachment(final String attachmentName, final InputStream stream)
-      throws MessagingException {
-    final BodyPart attachmentPart = new MimeBodyPart(stream);
-    attachmentPart.setFileName(attachmentName);
-    this._attachments.add(attachmentPart);
     return this;
   }
 
@@ -211,24 +138,7 @@ public class EmailMessage {
     message.setSubject(this._subject);
     message.setSentDate(new Date());
 
-    if (this._attachments.size() > 0) {
-      final MimeMultipart multipart =
-          this._enableAttachementEmbedment ? new MimeMultipart("related")
-              : new MimeMultipart();
-
-      final BodyPart messageBodyPart = new MimeBodyPart();
-      messageBodyPart.setContent(this._body.toString(), this._mimeType);
-      multipart.addBodyPart(messageBodyPart);
-
-      // Add attachments
-      for (final BodyPart part : this._attachments) {
-        multipart.addBodyPart(part);
-      }
-
-      message.setContent(multipart);
-    } else {
-      message.setContent(this._body.toString(), this._mimeType);
-    }
+    message.setContent(this._body.toString(), this._mimeType);
 
     final SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
 
