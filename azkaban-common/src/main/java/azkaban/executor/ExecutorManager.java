@@ -32,6 +32,12 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -52,11 +58,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 /**
  * Executor manager used to manage the client side job.
@@ -1080,7 +1081,7 @@ public class ExecutorManager extends EventHandler implements
         .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
 
     return this.apiGateway.callForJsonObjectMap(executor.getHost(), executor.getPort(),
-        "/stats", paramList);
+        "GET", "/stats", paramList);
   }
 
 
@@ -1097,7 +1098,7 @@ public class ExecutorManager extends EventHandler implements
 
     final String[] hostPortSplit = hostPort.split(":");
     return this.apiGateway.callForJsonObjectMap(hostPortSplit[0],
-        Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
+        Integer.valueOf(hostPortSplit[1]), "GET", "/jmx", paramList);
   }
 
   @Override
@@ -1473,7 +1474,7 @@ public class ExecutorManager extends EventHandler implements
               Map<String, Object> results = null;
               try {
                 results =
-                    ExecutorManager.this.apiGateway.callWithExecutionId(executor.getHost(),
+                    ExecutorManager.this.apiGateway.postWithExecutionId(executor.getHost(),
                         executor.getPort(), ConnectorParams.UPDATE_ACTION,
                         null, null, executionIds, updateTimes);
               } catch (final ExecutorManagerException e) {

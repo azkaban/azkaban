@@ -60,6 +60,18 @@ public class ExecutorApiGateway {
   Map<String, Object> callWithExecutionId(final String host, final int port,
       final String action, final Integer executionId, final String user,
       final Pair<String, String>... params) throws ExecutorManagerException {
+    return callWithExecutionId(host, port, action, executionId, user, "GET", params);
+  }
+
+  Map<String, Object> postWithExecutionId(final String host, final int port,
+      final String action, final Integer executionId, final String user,
+      final Pair<String, String>... params) throws ExecutorManagerException {
+    return callWithExecutionId(host, port, action, executionId, user, "POST", params);
+  }
+
+  private Map<String, Object> callWithExecutionId(final String host, final int port,
+      final String action, final Integer executionId, final String user, final String method,
+      final Pair<String, String>... params) throws ExecutorManagerException {
     try {
       final List<Pair<String, String>> paramList = new ArrayList<>();
 
@@ -73,7 +85,7 @@ public class ExecutorApiGateway {
           .valueOf(executionId)));
       paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
 
-      return callForJsonObjectMap(host, port, "/executor", paramList);
+      return callForJsonObjectMap(host, port, method, "/executor", paramList);
     } catch (final IOException e) {
       throw new ExecutorManagerException(e);
     }
@@ -84,7 +96,7 @@ public class ExecutorApiGateway {
    */
   <T> T callForJsonType(final String host, final int port, final String path,
       final List<Pair<String, String>> paramList, final Class<T> valueType) throws IOException {
-    final String responseString = callForJsonString(host, port, path, paramList);
+    final String responseString = callForJsonString(host, port, "GET", path, paramList);
     if (null == responseString || responseString.length() == 0) {
       return null;
     }
@@ -94,10 +106,10 @@ public class ExecutorApiGateway {
   /*
    * Call executor and return json object map.
    */
-  Map<String, Object> callForJsonObjectMap(final String host, final int port,
+  Map<String, Object> callForJsonObjectMap(final String host, final int port, final String method,
       final String path, final List<Pair<String, String>> paramList) throws IOException {
     final String responseString =
-        callForJsonString(host, port, path, paramList);
+        callForJsonString(host, port, method, path, paramList);
 
     @SuppressWarnings("unchecked") final Map<String, Object> jsonResponse =
         (Map<String, Object>) JSONUtils.parseJSONFromString(responseString);
@@ -111,17 +123,27 @@ public class ExecutorApiGateway {
   /*
    * Call executor and return raw json string.
    */
-  private String callForJsonString(final String host, final int port, final String path,
-      List<Pair<String, String>> paramList) throws IOException {
+  private String callForJsonString(final String host, final int port, final String method,
+      final String path, List<Pair<String, String>> paramList) throws IOException {
     if (paramList == null) {
       paramList = new ArrayList<>();
     }
 
-    @SuppressWarnings("unchecked") final URI uri =
-        ExecutorApiClient.buildUri(host, port, path, true,
-            paramList.toArray(new Pair[0]));
+    switch (method) {
+      case "POST": {
+        @SuppressWarnings("unchecked") final URI uri =
+            ExecutorApiClient.buildUri(host, port, path, true);
+        return this.apiClient.httpPost(uri, null, paramList);
+      }
+      case "GET": {
+        @SuppressWarnings("unchecked") final URI uri =
+            ExecutorApiClient.buildUri(host, port, path, true,
+                paramList.toArray(new Pair[0]));
 
-    return this.apiClient.httpGet(uri, null);
+        return this.apiClient.httpGet(uri, null);
+      }
+    }
+    throw new IllegalArgumentException("Unsupported method: " + method);
   }
 
 }

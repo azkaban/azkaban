@@ -291,7 +291,7 @@ public class ExecutorManagerTest {
   @SuppressWarnings("unchecked")
   private void mockUpdateResponse(
       final Map<String, List<Map<String, Object>>> map) throws Exception {
-    doReturn(map).when(this.apiGateway).callWithExecutionId(
+    doReturn(map).when(this.apiGateway).postWithExecutionId(
         any(), anyInt(), eq(ConnectorParams.UPDATE_ACTION), any(), any(), any(), any());
   }
 
