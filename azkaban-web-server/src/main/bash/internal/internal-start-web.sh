@@ -1,6 +1,6 @@
 #!/bin/bash
 
-azkaban_dir=$(dirname $0)/..
+azkaban_dir=$(dirname $0)/../..
 
 # Specifies location of azkaban.properties, log4j.properties files
 # Change if necessary
