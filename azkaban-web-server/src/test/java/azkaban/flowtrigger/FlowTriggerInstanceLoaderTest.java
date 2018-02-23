@@ -199,6 +199,7 @@ public class FlowTriggerInstanceLoaderTest {
     for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
       depInst.setStatus(Status.SUCCEEDED);
       depInst.getTriggerInstance().setFlowExecId(associateFlowExecId);
+      depInst.setEndTime(new Date());
     }
   }
 
@@ -316,7 +317,7 @@ public class FlowTriggerInstanceLoaderTest {
   }
 
   @Test
-  public void testGetRecentlyFinished() {
+  public void testGetRecentlyFinished() throws InterruptedException {
 
     final List<TriggerInstance> all = new ArrayList<>();
     for (int i = 0; i < 15; i++) {
@@ -330,15 +331,29 @@ public class FlowTriggerInstanceLoaderTest {
       } else if (i <= 9) {
         finalizeTriggerInstanceWithCancelling(all.get(i));
       }
+      //sleep for a while to ensure endtime is different for each trigger instance
+      Thread.sleep(1000);
     }
 
     this.shuffleAndUpload(all);
 
-    final List<TriggerInstance> expected = all.subList(0, 7);
+    final List<TriggerInstance> finished = all.subList(0, 7);
+    finished.sort((o1, o2) -> -1 * (o1.getEndTime().compareTo(o2.getEndTime())));
+
+    List<TriggerInstance> expected = new ArrayList<>(finished);
     expected.sort(Comparator.comparing(TriggerInstance::getStartTime));
 
-    final Collection<TriggerInstance> recentlyFinished = this.triggerInstLoader
+    Collection<TriggerInstance> recentlyFinished = this.triggerInstLoader
         .getRecentlyFinished(10);
+    assertTwoTriggerInstanceListsEqual(new ArrayList<>(recentlyFinished), expected, true, true);
+
+    expected = new ArrayList<>(finished.subList(0, 3));
+    expected.sort(Comparator.comparing(TriggerInstance::getStartTime));
+    recentlyFinished = this.triggerInstLoader.getRecentlyFinished(3);
+    assertTwoTriggerInstanceListsEqual(new ArrayList<>(recentlyFinished), expected, true, true);
+
+    expected = new ArrayList<>(finished.subList(0, 1));
+    recentlyFinished = this.triggerInstLoader.getRecentlyFinished(1);
     assertTwoTriggerInstanceListsEqual(new ArrayList<>(recentlyFinished), expected, true, true);
   }
 
