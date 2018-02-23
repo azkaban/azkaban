@@ -100,10 +100,10 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           + "cancelleation_cause,project_id,"
           + "project_version,flow_id,flow_version,project_json, flow_exec_id \n"
           + "FROM execution_dependencies JOIN (\n"
-          + "SELECT distinct(trigger_instance_id)  FROM execution_dependencies WHERE dep_status ="
-          + " %s or dep_status = %s\n"
-          + "GROUP BY trigger_instance_id\n"
-          + " limit %%s) temp on execution_dependencies"
+          + "SELECT distinct(trigger_instance_id), max(endtime) FROM execution_dependencies "
+          + "WHERE dep_status = %s or dep_status = %s\n"
+          + "GROUP BY trigger_instance_id ORDER BY max(endtime) DESC \n"
+          + " limit %%s ) temp on execution_dependencies"
           + ".trigger_instance_id in (temp.trigger_instance_id);",
       Status.SUCCEEDED.ordinal(),
       Status.CANCELLED.ordinal());
