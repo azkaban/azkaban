@@ -78,11 +78,25 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     mapper.writeValue(stream, obj);
   }
 
+  /**
+   * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
+   */
+  @Deprecated
   @Override
   public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
+    handleRequest(req, resp);
+  }
+
+  @Override
+  public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+    handleRequest(req, resp);
+  }
+
+  public void handleRequest(final HttpServletRequest req, final HttpServletResponse resp)
+      throws IOException {
     final HashMap<String, Object> respMap = new HashMap<>();
-    // logger.info("ExecutorServer called by " + req.getRemoteAddr());
     try {
       if (!hasParam(req, ACTION_PARAM)) {
         logger.error("Parameter action not set");
@@ -90,7 +104,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       } else {
         final String action = getParam(req, ACTION_PARAM);
         if (action.equals(UPDATE_ACTION)) {
-          // logger.info("Updated called");
           handleAjaxUpdateRequest(req, respMap);
         } else if (action.equals(PING_ACTION)) {
           respMap.put("status", "alive");
@@ -412,12 +425,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
-  }
-
-  @Override
-  public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
-      throws ServletException, IOException {
-
   }
 
   /**
