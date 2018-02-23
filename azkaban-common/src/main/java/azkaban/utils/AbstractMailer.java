@@ -20,39 +20,20 @@ import java.util.Collection;
 
 public class AbstractMailer {
 
-  public static final int DEFAULT_SMTP_PORT = 25;
-  private final boolean usesAuth;
-
-  private final String mailHost;
-  private final int mailPort;
-  private final String mailUser;
-  private final String mailPassword;
-  private final String mailSender;
+  protected final EmailMessageCreator messageCreator;
   private final String azkabanName;
-  private final String tls;
 
-  public AbstractMailer(final Props props) {
+  public AbstractMailer(final Props props, final EmailMessageCreator messageCreator) {
     this.azkabanName = props.getString("azkaban.name", "azkaban");
-    this.mailHost = props.getString("mail.host", "localhost");
-    this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
-    this.mailUser = props.getString("mail.user", "");
-    this.mailPassword = props.getString("mail.password", "");
-    this.tls = props.getString("mail.tls", "false");
-    this.mailSender = props.getString("mail.sender", "");
-    this.usesAuth = props.getBoolean("mail.useAuth", true);
+    this.messageCreator = messageCreator;
   }
 
   protected EmailMessage createEmailMessage(final String subject, final String mimetype,
       final Collection<String> emailList) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
+    final EmailMessage message = this.messageCreator.createMessage();
     message.addAllToAddress(emailList);
     message.setMimeType(mimetype);
     message.setSubject(subject);
-    message.setAuth(this.usesAuth);
-    message.setTLS(this.tls);
-
     return message;
   }
 
@@ -60,7 +41,4 @@ public class AbstractMailer {
     return this.azkabanName;
   }
 
-  public boolean hasMailAuth() {
-    return this.usesAuth;
-  }
 }

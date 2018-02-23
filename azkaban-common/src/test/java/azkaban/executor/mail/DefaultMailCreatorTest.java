@@ -12,6 +12,7 @@ import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
+import azkaban.utils.EmailMessageCreator;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import java.io.InputStream;
@@ -44,6 +45,11 @@ public class DefaultMailCreatorTest {
   private String clientPortNumber;
   private TimeZone defaultTz;
 
+  public static String read(final String file) throws Exception {
+    final InputStream is = DefaultMailCreatorTest.class.getResourceAsStream(file);
+    return IOUtils.toString(is, Charsets.UTF_8).trim();
+  }
+
   @Before
   public void setUp() throws Exception {
     this.defaultTz = TimeZone.getDefault();
@@ -57,7 +63,8 @@ public class DefaultMailCreatorTest {
     this.flow = new Flow("mail-creator-test");
     this.project = new Project(1, "test-project");
     this.options = new ExecutionOptions();
-    this.message = new EmailMessage();
+    this.message = new EmailMessage("localhost", EmailMessageCreator.DEFAULT_SMTP_PORT, "", "",
+        null);
 
     this.azkabanName = "unit-tests";
     this.scheme = "http";
@@ -122,11 +129,6 @@ public class DefaultMailCreatorTest {
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", this.message.getSubject());
     assertThat(read("successEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
-  }
-
-  private String read(final String file) throws Exception {
-    final InputStream is = DefaultMailCreatorTest.class.getResourceAsStream(file);
-    return IOUtils.toString(is, Charsets.UTF_8).trim();
   }
 
 }
