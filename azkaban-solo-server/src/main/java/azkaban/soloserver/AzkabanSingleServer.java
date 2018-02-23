@@ -94,7 +94,7 @@ public class AzkabanSingleServer {
       log.info("Copied local conf templates from " + templateFolder.getAbsolutePath());
     }
     log.info("Using conf at " + localConfFolder.getAbsolutePath());
-    return new String[]{"-conf", "local/conf"};
+    return new String[]{"-conf", "local/conf", "-email", "local/email"};
   }
 
   private void launch() throws Exception {

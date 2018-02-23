@@ -184,6 +184,7 @@ public class EmailMessage {
   }
 
   public void sendEmail() throws MessagingException {
+    logger.debug("sending:\n" + _body.toString());
     checkSettings();
     final Properties props = new Properties();
     if (this._usesAuth) {

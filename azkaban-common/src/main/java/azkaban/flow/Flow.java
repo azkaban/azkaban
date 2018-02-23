@@ -18,6 +18,9 @@ package azkaban.flow;
 
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.executor.mail.MailCreatorRegistry;
+import azkaban.executor.mail.TemplateBasedMailCreator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,7 +45,7 @@ public class Flow {
   private int numLevels = -1;
   private List<String> failureEmail = new ArrayList<>();
   private List<String> successEmail = new ArrayList<>();
-  private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+  private String mailCreator = MailCreatorRegistry.getRecommendedCreator().getName();
   private ArrayList<String> errors;
   private int version = -1;
   private Map<String, Object> metadata = new HashMap<>();

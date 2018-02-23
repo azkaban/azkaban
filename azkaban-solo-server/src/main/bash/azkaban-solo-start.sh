@@ -18,6 +18,7 @@ fi
 # Specifies location of azkaban.properties, log4j.properties files
 # Change if necessary
 conf="${installdir}/conf"
+email="${installdir}/email"
 
 if [[ -z "${tmpdir:-}" ]]; then
   tmpdir="/tmp"
@@ -56,7 +57,7 @@ if [[ -f "${conf}/log4j.properties" ]]; then
       -Dlog4j.log.dir=${installdir}/logs"
 fi
 
-java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} $@ &
+java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} -email ${email} $@ &
 
 echo $! > $currentpidfile
 

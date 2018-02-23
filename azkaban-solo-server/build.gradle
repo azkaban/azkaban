@@ -27,6 +27,9 @@ distributions {
             from('src/main/resources/conf') {
                 into 'conf'
             }
+            from('src/main/resources/email') {
+                into 'email'
+            }
             from('src/main/resources/commonprivate.properties') {
                 into 'plugins/jobtypes'
             }

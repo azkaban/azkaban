@@ -20,13 +20,19 @@ import static azkaban.Constants.DEFAULT_PORT_NUMBER;
 import static azkaban.Constants.DEFAULT_SSL_PORT_NUMBER;
 
 import azkaban.Constants;
+import azkaban.executor.mail.MailCreatorRegistry;
+import azkaban.executor.mail.TemplateBasedMailCreator;
 import azkaban.server.session.SessionCache;
 import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Optional;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
@@ -48,38 +54,71 @@ public abstract class AzkabanServer {
     return azkabanProperties;
   }
 
-  public static Props loadProps(final String[] args, final OptionParser parser) {
-    final OptionSpec<String> configDirectory = parser.acceptsAll(
-        Arrays.asList("c", "conf"), "The conf directory for Azkaban.")
-        .withRequiredArg()
-        .describedAs("conf")
-        .ofType(String.class);
+  private static Optional<Path> azkabanPath(String scope, String pathBase, String... pathSegments) {
+    logger.info(scope + ": loading from path " + pathBase);
+    final Path path = Paths.get(pathBase, pathSegments);
+    if (!Files.exists(path)) {
+      logger.error(scope + ": path " + path + " does not exist.");
+    } else if (!Files.isDirectory(path) || !Files.isReadable(path)) {
+      logger.error(scope + ": path " + path + " is not a readable directory.");
+    } else {
+      return Optional.of(path);
+    }
+    return Optional.empty();
+  }
 
-    // Grabbing the azkaban settings from the conf directory.
-    Props azkabanSettings = null;
+  public static Props loadProps(final String[] args, final OptionParser parser) {
+    logger.info("loading properties...");
+
+    final OptionSpec<String> configDirectory =
+        parser
+            .acceptsAll(Arrays.asList("c", "conf"), "The conf directory for Azkaban.")
+            .withRequiredArg()
+            .describedAs("conf")
+            .ofType(String.class);
+
+    final OptionSpec<String> emailDirectory =
+        parser
+            .acceptsAll(Arrays.asList("e", "email"),
+                "The path to email templates for " + TemplateBasedMailCreator.class.getSimpleName()
+                    + ".")
+            .withOptionalArg()
+            .describedAs("email")
+            .ofType(String.class);
     final OptionSet options = parser.parse(args);
 
-    if (options.has(configDirectory)) {
-      final String path = options.valueOf(configDirectory);
-      logger.info("Loading azkaban settings file from " + path);
-      final File dir = new File(path);
-      if (!dir.exists()) {
-        logger.error("Conf directory " + path + " doesn't exist.");
-      } else if (!dir.isDirectory()) {
-        logger.error("Conf directory " + path + " isn't a directory.");
-      } else {
-        azkabanSettings = loadAzkabanConfigurationFromDirectory(dir);
-      }
-    } else {
-      logger
-          .info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
-      azkabanSettings = loadConfigurationFromAzkabanHome();
-    }
+    final String azkabanHome = System.getenv("AZKABAN_HOME");
 
-    if (azkabanSettings != null) {
-      updateDerivedConfigs(azkabanSettings);
+    // Grabbing the Azkaban settings from the conf directory.
+    final Optional<Path> configPath;
+    if (options.has(configDirectory)) {
+      final String confHome = options.valueOf(configDirectory);
+      logger.info("Conf parameter set, attempting to get value from " + confHome);
+      configPath = azkabanPath("configuration", confHome);
+    } else {
+      logger.info("Conf parameter not set, attempting to get value from AZKABAN_HOME=" +
+        azkabanHome +", DEFAULT_CONF_PATH=" + Constants.DEFAULT_CONF_PATH + ".");
+      configPath = azkabanPath("configuration", azkabanHome, Constants.DEFAULT_CONF_PATH);
     }
-    return azkabanSettings;
+    final Optional<Props> azkabanSettings = configPath.map(path ->
+        loadConfigurationFromPath(path));
+
+    final Optional<Path> emailPath;
+    if (options.has(emailDirectory)) {
+      final String emailHome = options.valueOf(emailDirectory);
+      logger.info("Email parameter set, attempting to get value from " + emailHome);
+      emailPath = azkabanPath("email template", emailHome);
+    } else {
+      logger.info("Email parameter not set, attempting to get value from " + azkabanHome + "/" +
+          Constants.DEFAULT_EMAIL_TEMPLATE_PATH + ".");
+      emailPath = azkabanPath("email template", azkabanHome, Constants.DEFAULT_EMAIL_TEMPLATE_PATH);
+    }
+    emailPath
+      .flatMap(path -> TemplateBasedMailCreator.fromPath(path))
+      .ifPresent(creator -> MailCreatorRegistry.registerCreator(creator));
+
+    azkabanSettings.ifPresent(settings -> updateDerivedConfigs(settings));
+    return azkabanSettings.orElse(null);
   }
 
   private static void updateDerivedConfigs(final Props azkabanSettings) {
@@ -95,7 +134,8 @@ public abstract class AzkabanServer {
     azkabanSettings.put("server.useSSL", String.valueOf(isSslEnabled));
   }
 
-  public static Props loadAzkabanConfigurationFromDirectory(final File dir) {
+  public static Props loadConfigurationFromPath(final Path path) {
+    File dir = path.toFile();
     final File azkabanPrivatePropsFile = new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
     final File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
 
@@ -117,32 +157,6 @@ public abstract class AzkabanServer {
       logger.error("File found, but error reading. Could not load azkaban config file", e);
     }
     return props;
-  }
-
-  /**
-   * Loads the Azkaban property file from the AZKABAN_HOME conf directory
-   *
-   * @return Props instance
-   */
-  private static Props loadConfigurationFromAzkabanHome() {
-    final String azkabanHome = System.getenv("AZKABAN_HOME");
-
-    if (azkabanHome == null) {
-      logger.error("AZKABAN_HOME not set. Will try default.");
-      return null;
-    }
-    if (!new File(azkabanHome).isDirectory() || !new File(azkabanHome).canRead()) {
-      logger.error(azkabanHome + " is not a readable directory.");
-      return null;
-    }
-
-    final File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
-    if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
-      logger.error(azkabanHome + " does not contain a readable conf directory.");
-      return null;
-    }
-
-    return loadAzkabanConfigurationFromDirectory(confPath);
   }
 
   public abstract Props getServerProps();

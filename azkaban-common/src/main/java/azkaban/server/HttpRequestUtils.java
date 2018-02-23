@@ -95,12 +95,6 @@ public class HttpRequestUtils {
       execOptions.setPipelineLevel(queueLevel);
     }
 
-    String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
-    if (hasParam(req, "mailCreator")) {
-      mailCreator = getParam(req, "mailCreator");
-      execOptions.setMailCreator(mailCreator);
-    }
-
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
     execOptions.addAllFlowParameters(flowParamGroup);
 

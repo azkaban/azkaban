@@ -21,6 +21,8 @@ import azkaban.utils.EmailMessage;
 
 public interface MailCreator {
 
+  public String getName();
+
   public boolean createFirstErrorMessage(ExecutableFlow flow,
       EmailMessage message, String azkabanName, String scheme,
       String clientHostname, String clientPortNumber, String... vars);

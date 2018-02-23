@@ -25,33 +25,13 @@ import azkaban.utils.Utils;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 public class DefaultMailCreator implements MailCreator {
 
-  public static final String DEFAULT_MAIL_CREATOR = "default";
+  public static final String NAME = "default";
   private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
       "yyyy/MM/dd HH:mm:ss z");
-  private static final HashMap<String, MailCreator> registeredCreators = new HashMap<>();
-  private static final MailCreator defaultCreator;
-
-  static {
-    defaultCreator = new DefaultMailCreator();
-    registerCreator(DEFAULT_MAIL_CREATOR, defaultCreator);
-  }
-
-  public static void registerCreator(final String name, final MailCreator creator) {
-    registeredCreators.put(name, creator);
-  }
-
-  public static MailCreator getCreator(final String name) {
-    MailCreator creator = registeredCreators.get(name);
-    if (creator == null) {
-      creator = defaultCreator;
-    }
-    return creator;
-  }
 
   private static String convertMSToString(final long timeInMS) {
     if (timeInMS < 0) {
@@ -216,5 +196,10 @@ public class DefaultMailCreator implements MailCreator {
       return true;
     }
     return false;
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
   }
 }

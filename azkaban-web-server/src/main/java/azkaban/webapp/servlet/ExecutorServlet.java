@@ -933,7 +933,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (!options.isSuccessEmailsOverridden()) {
       options.setSuccessEmails(flow.getSuccessEmails());
     }
-    options.setMailCreator(flow.getMailCreator());
 
     try {
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, options, user);

@@ -297,6 +297,8 @@ public class Utils {
     }
   }
 
+  @Deprecated
+  // "sec" is not a SI symbol for second; commonly used symbol of minute is "min"; arguments are not actual duration; way forward: use formatDurationSI
   public static String formatDuration(final long startTime, final long endTime) {
     if (startTime == -1) {
       return "-";
@@ -329,6 +331,46 @@ public class Utils {
     final long days = hours / 24;
     hours %= 24;
     return days + "d " + hours + "h " + minutes + "m";
+  }
+
+  public static String formatDurationSI(final long durationMs) {
+
+    assert (durationMs >= 0);
+
+    long seconds = durationMs / 1000;
+    if (seconds < 1) {
+      return durationMs + "ms";
+    } else if (seconds < 60) {
+      return seconds + "s";
+    }
+
+    long minutes = seconds / 60;
+    seconds %= 60;
+    if (minutes < 60) {
+      return minutes + "min " + seconds + "s";
+    }
+
+    long hours = minutes / 60;
+    minutes %= 60;
+    if (hours < 24) {
+      return hours + "h " + minutes + "min " + seconds + "s";
+    }
+
+    final long days = hours / 24;
+    hours %= 24;
+    return days + "d " + hours + "h " + minutes + "min";
+  }
+
+  public static String formatTimeDiffSI(final long startTimestampMs, final long endTimestampMs) {
+    final long durationMS;
+    if (startTimestampMs == -1) {
+      return "-";
+    } else if (endTimestampMs == -1) {
+      durationMS = DateTime.now().getMillis() - startTimestampMs;
+    } else {
+      durationMS = endTimestampMs - startTimestampMs;
+    }
+    return formatDurationSI(durationMS);
   }
 
   public static Object invokeStaticMethod(final ClassLoader loader, final String className,
