@@ -1,7 +1,13 @@
--- DB Migration from release 3.20.0 to 3.22.0
+-- DB Migration from release 3.42.0 to 3.43.0
+-- PR #1657 changes project cache to case insensitive.
 --
--- Release 3.21.0 is broken
--- PR #1024 introduces a new column to 'project_versions' table.
+-- 1. When creating new database,
+-- use below query to explicitly set the COLLATION to case insensitive for the entire database:
 --
-ALTER TABLE project_versions
-  ADD resource_id VARCHAR(512);
+ALTER DATABASE <database_name> CHARACTER SET utf8 COLLATE utf8_general_ci;
+--
+-- 2. For existing database,
+-- use below query to explicitly set the COLLATION to case insensitive for "name" column in
+-- "projects" table:
+--
+ALTER TABLE projects MODIFY name VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_general_ci;
