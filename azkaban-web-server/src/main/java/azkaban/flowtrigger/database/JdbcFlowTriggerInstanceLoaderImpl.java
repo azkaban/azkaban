@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -216,7 +217,9 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
         transOperator
             .update(INSERT_DEPENDENCY, triggerInst.getId(), depInst.getDepName(),
-                depInst.getStartTime(), depInst.getEndTime(), depInst.getStatus().ordinal(),
+                new Timestamp(depInst.getStartTime().getTime()),
+                depInst.getEndTime() == null ? null : new Timestamp(depInst.getEndTime().getTime()),
+                depInst.getStatus().ordinal(),
                 depInst.getCancellationCause().ordinal(),
                 triggerInst.getProject().getId(),
                 triggerInst.getProject().getVersion(),
@@ -233,9 +236,10 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   @Override
   public void updateDependencyExecutionStatus(final DependencyInstance depInst) {
-    executeUpdate(UPDATE_DEPENDENCY_STATUS_ENDTIME_AND_CANCELLEATION_CAUSE, depInst.getStatus()
-            .ordinal(),
-        depInst.getEndTime(), depInst.getCancellationCause().ordinal(),
+    executeUpdate(UPDATE_DEPENDENCY_STATUS_ENDTIME_AND_CANCELLEATION_CAUSE,
+        depInst.getStatus().ordinal(),
+        depInst.getEndTime() == null ? null : new Timestamp(depInst.getEndTime().getTime()),
+        depInst.getCancellationCause().ordinal(),
         depInst.getTriggerInstance().getId(),
         depInst.getDepName());
   }
@@ -311,8 +315,12 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       while (rs.next()) {
         final String triggerInstId = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[0]);
         final String depName = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[1]);
-        final Date startTime = rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[2]);
-        final Date endTime = rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[3]);
+        final Date startTime = new Date(
+            rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[2]).getTime());
+        Date endTime = null;
+        if (rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[3]) != null) {
+          endTime = new Date(rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[3]).getTime());
+        }
         final Status status = Status.values()[rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[4])];
         final CancellationCause cause = CancellationCause.values()[rs.getInt
             (DEPENDENCY_EXECUTIONS_COLUMNS[5])];

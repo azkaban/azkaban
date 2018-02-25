@@ -154,7 +154,7 @@
             #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
               <td>$utils.formatDate(${trigger.getStartTime().getTime()})</td>
               #if (${trigger.getEndTime()})
-                <td>${trigger.getEndTime()}</td>
+                <td>$utils.formatDate(${trigger.getEndTime()})</td>
               #else
                 <td>-</td>
               #end
@@ -205,7 +205,7 @@
                 <td>${dep.getDepName()}</td>
                 <td>$utils.formatDate(${dep.getStartTime().getTime()})</td>
                 #if (${dep.getEndTime()})
-                  <td>${dep.getEndTime()}</td>
+                  <td>$utils.formatDate(${dep.getEndTime().getTime()})</td>
                 #else
                   <td>-</td>
                 #end
@@ -299,7 +299,7 @@
             #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
               <td>$utils.formatDate(${trigger.getStartTime().getTime()})</td>
               #if (${trigger.getEndTime()})
-                <td>${trigger.getEndTime()}</td>
+                <td>$utils.formatDate(${trigger.getEndTime().getTime()})</td>
               #else
                 <td>-</td>
               #end
@@ -346,7 +346,7 @@
                 <td>${dep.getDepName()}</td>
                 <td>$utils.formatDate(${dep.getStartTime().getTime()})</td>
                 #if (${dep.getEndTime()})
-                  <td>${dep.getEndTime()}</td>
+                  <td>$utils.formatDate(${dep.getEndTime().getTime()})</td>
                 #else
                   <td>-</td>
                 #end
