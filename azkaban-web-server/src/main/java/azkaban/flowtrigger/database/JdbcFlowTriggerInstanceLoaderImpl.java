@@ -34,11 +34,9 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -217,8 +215,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
         transOperator
             .update(INSERT_DEPENDENCY, triggerInst.getId(), depInst.getDepName(),
-                new Timestamp(depInst.getStartTime().getTime()),
-                depInst.getEndTime() == null ? null : new Timestamp(depInst.getEndTime().getTime()),
+                depInst.getStartTime(),
+                depInst.getEndTime(),
                 depInst.getStatus().ordinal(),
                 depInst.getCancellationCause().ordinal(),
                 triggerInst.getProject().getId(),
@@ -238,7 +236,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   public void updateDependencyExecutionStatus(final DependencyInstance depInst) {
     executeUpdate(UPDATE_DEPENDENCY_STATUS_ENDTIME_AND_CANCELLEATION_CAUSE,
         depInst.getStatus().ordinal(),
-        depInst.getEndTime() == null ? null : new Timestamp(depInst.getEndTime().getTime()),
+        depInst.getEndTime(),
         depInst.getCancellationCause().ordinal(),
         depInst.getTriggerInstance().getId(),
         depInst.getDepName());
@@ -315,12 +313,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       while (rs.next()) {
         final String triggerInstId = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[0]);
         final String depName = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[1]);
-        final Date startTime = new Date(
-            rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[2]).getTime());
-        Date endTime = null;
-        if (rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[3]) != null) {
-          endTime = new Date(rs.getTimestamp(DEPENDENCY_EXECUTIONS_COLUMNS[3]).getTime());
-        }
+        final long startTime = rs.getLong(DEPENDENCY_EXECUTIONS_COLUMNS[2]);
+        final long endTime = rs.getLong(DEPENDENCY_EXECUTIONS_COLUMNS[3]);
         final Status status = Status.values()[rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[4])];
         final CancellationCause cause = CancellationCause.values()[rs.getInt
             (DEPENDENCY_EXECUTIONS_COLUMNS[5])];
@@ -355,12 +349,12 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
       //sort on start time in ascending order
       Collections.sort(res, (o1, o2) -> {
-        if (o1.getStartTime() == null && o2.getStartTime() == null) {
-          return 0;
-        } else if (o1.getStartTime() != null && o2.getStartTime() != null) {
-          return o1.getStartTime().compareTo(o2.getStartTime());
+        if (o1.getStartTime() < o2.getStartTime()) {
+          return -1;
+        } else if (o1.getStartTime() > o2.getStartTime()) {
+          return 1;
         } else {
-          return o1.getStartTime() == null ? -1 : 1;
+          return 0;
         }
       });
 

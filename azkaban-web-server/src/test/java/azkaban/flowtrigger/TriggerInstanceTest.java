@@ -40,7 +40,7 @@ public class TriggerInstanceTest {
 
   private DependencyInstance createTestDependencyInstance(final Status status,
       final CancellationCause killingCause) {
-    final DependencyInstance depInst = new DependencyInstance(null, null, null, null, null,
+    final DependencyInstance depInst = new DependencyInstance(null, 0, 0, null, null,
         null);
     depInst.setStatus(status);
     depInst.setCancellationCause(killingCause);
@@ -49,8 +49,8 @@ public class TriggerInstanceTest {
 
   private DependencyInstance createTestDependencyInstance(final Status status,
       final CancellationCause cancelCause, final Date startTime, final Date endTime) {
-    final DependencyInstance depInst = new DependencyInstance(null, startTime, endTime, null,
-        status, cancelCause);
+    final DependencyInstance depInst = new DependencyInstance(null, startTime.getTime(), endTime
+        == null ? 0 : endTime.getTime(), null, status, cancelCause);
     depInst.setStatus(status);
     depInst.setCancellationCause(cancelCause);
     return depInst;
@@ -67,12 +67,12 @@ public class TriggerInstanceTest {
     TriggerInstance ti = null;
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStartTime()).isEqualTo(expectedStartTime);
+    assertThat(ti.getStartTime()).isEqualTo(expectedStartTime.getTime());
     dependencyInstanceList.clear();
 
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStartTime()).isNull();
+    assertThat(ti.getStartTime()).isEqualTo(0);
     dependencyInstanceList.clear();
 
     expectedStartTime = getDate(2, 2, 2);
@@ -90,7 +90,7 @@ public class TriggerInstanceTest {
 
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getStartTime()).isEqualTo(expectedStartTime);
+    assertThat(ti.getStartTime()).isEqualTo(expectedStartTime.getTime());
   }
 
   @Test
@@ -108,7 +108,7 @@ public class TriggerInstanceTest {
     TriggerInstance ti = null;
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getEndTime()).isEqualTo(expectedEndTime);
+    assertThat(ti.getEndTime()).isEqualTo(expectedEndTime.getTime());
     dependencyInstanceList.clear();
 
     dependencyInstanceList
@@ -117,7 +117,7 @@ public class TriggerInstanceTest {
 
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getEndTime()).isNull();
+    assertThat(ti.getEndTime()).isEqualTo(0);
     dependencyInstanceList.clear();
 
     expectedEndTime = getDate(3, 2, 3);
@@ -134,12 +134,12 @@ public class TriggerInstanceTest {
             2), expectedEndTime));
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getEndTime()).isEqualTo(expectedEndTime);
+    assertThat(ti.getEndTime()).isEqualTo(expectedEndTime.getTime());
     dependencyInstanceList.clear();
 
     ti = new TriggerInstance("1", null, "1", 1,
         "test", dependencyInstanceList, -1, null);
-    assertThat(ti.getEndTime()).isNull();
+    assertThat(ti.getEndTime()).isEqualTo(0);
     dependencyInstanceList.clear();
   }
 
