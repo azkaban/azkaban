@@ -223,7 +223,8 @@ public class NodeBeanLoaderTest {
         TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_zero_max_wait_min.flow"));
 
     assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class).hasMessage("max wait min must be at least 1"
+        + " min(s)");
   }
 
   @Test

@@ -110,8 +110,8 @@ public class NodeBeanLoader {
   private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean) {
     // validate max wait mins
     Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
-        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be longer than " + Constants
-        .MIN_FLOW_TRIGGER_WAIT_TIME + " min ");
+        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be at least " + Constants
+        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes() + " min(s)");
 
     validateSchedule(flowTriggerBean);
     validateTriggerDependencies(flowTriggerBean.getTriggerDependencies());
