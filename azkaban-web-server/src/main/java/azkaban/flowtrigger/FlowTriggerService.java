@@ -162,6 +162,7 @@ public class FlowTriggerService {
    * @return the list of running trigger instances
    */
   public Collection<TriggerInstance> getRunningTriggers() {
+    logger.info("chengren get running triggers1");
     final List<TriggerInstance> triggerInstanceList = new ArrayList<>();
     final Future future = this.executorService.submit(
         () -> FlowTriggerService.this.runningTriggers.stream()
@@ -169,7 +170,9 @@ public class FlowTriggerService {
     );
 
     try {
+      logger.info("chengren get running triggers2");
       future.get();
+      logger.info("chengren get running triggers3");
     } catch (final Exception ex) {
       logger.error("error in getting running triggers", ex);
     }
