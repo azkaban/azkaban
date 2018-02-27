@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -163,12 +162,14 @@ public class FlowTriggerService {
    * @return the list of running trigger instances
    */
   public Collection<TriggerInstance> getRunningTriggers() {
+    final List<TriggerInstance> triggerInstanceList = new ArrayList<>();
     final Future future = this.executorService.submit(
-        (Callable) () -> FlowTriggerService.this.runningTriggers);
+        () -> FlowTriggerService.this.runningTriggers.stream()
+            .filter(inst -> !Status.isDone(inst.getStatus())).forEach(triggerInstanceList::add)
+    );
 
-    List<TriggerInstance> triggerInstanceList = new ArrayList<>();
     try {
-      triggerInstanceList = (List<TriggerInstance>) future.get();
+      future.get();
     } catch (final Exception ex) {
       logger.error("error in getting running triggers", ex);
     }
