@@ -22,23 +22,24 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <V> the value type
  */
-public class CaseInsensitiveConcurrentHashMap<V> extends ConcurrentHashMap<String, V> {
+public class CaseInsensitiveConcurrentHashMap<V> {
 
-  @Override
+  private final ConcurrentHashMap<String, V> map = new ConcurrentHashMap<>();
+
   public V put(final String key, final V value) {
-    return super.put(key.toLowerCase(), value);
+    return this.map.put(key.toLowerCase(), value);
   }
 
   public V get(final String key) {
-    return super.get(key.toLowerCase());
+    return this.map.get(key.toLowerCase());
   }
 
   public boolean containsKey(final String key) {
-    return super.get(key.toLowerCase()) != null;
+    return this.map.containsKey(key.toLowerCase());
   }
 
   public V remove(final String key) {
-    return super.remove(key.toLowerCase());
+    return this.map.remove(key.toLowerCase());
   }
 
 }
