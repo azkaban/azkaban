@@ -162,38 +162,7 @@ public class FlowTriggerService {
    * @return the list of running trigger instances
    */
   public Collection<TriggerInstance> getRunningTriggers() {
-    logger.info("chengren get running triggers1");
-    final List<TriggerInstance> triggerInstanceList = new ArrayList<>();
-    final Future future = this.executorService.submit(
-        () -> {
-          for (final TriggerInstance inst : FlowTriggerService.this.runningTriggers) {
-            if (!Status.isDone(inst.getStatus())) {
-              final List<DependencyInstance> dependencyInstancesCopy = new ArrayList<>();
-              for (final DependencyInstance depInst : inst.getDepInstances()) {
-                final DependencyInstance depInstCopy = new DependencyInstance(depInst.getDepName(),
-                    new Date(depInst.getStartTime().getTime()),
-                    new Date(depInst.getEndTime().getTime()),
-                    depInst.getContext(), depInst.getStatus(), depInst.getCancellationCause());
-                dependencyInstancesCopy.add(depInstCopy);
-              }
-
-              final TriggerInstance copy = new TriggerInstance(inst.getId(), inst.getFlowTrigger
-                  (), inst.getFlowId(), inst.getFlowVersion(), inst.getSubmitUser(), inst
-                  .getDepInstances(), inst.getFlowExecId(), inst.getProject());
-              triggerInstanceList.add(copy);
-            }
-          }
-        }
-    );
-
-    try {
-      logger.info("chengren get running triggers2");
-      future.get();
-      logger.info("chengren get running triggers3");
-    } catch (final Exception ex) {
-      logger.error("error in getting running triggers", ex);
-    }
-    return triggerInstanceList;
+    return this.flowTriggerInstanceLoader.getRunning();
   }
 
   /**

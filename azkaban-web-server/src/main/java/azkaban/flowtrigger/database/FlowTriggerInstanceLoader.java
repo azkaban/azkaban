@@ -52,6 +52,11 @@ public interface FlowTriggerInstanceLoader {
    */
   Collection<TriggerInstance> getRecentlyFinished(int limit);
 
+  /**
+   * Retrieve running trigger instances.
+   */
+  Collection<TriggerInstance> getRunning();
+
   TriggerInstance getTriggerInstanceById(String triggerInstanceId);
 
 }
