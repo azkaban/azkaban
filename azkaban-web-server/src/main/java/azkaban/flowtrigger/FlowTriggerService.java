@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +73,6 @@ public class FlowTriggerService {
   private static final String START_TIME = "starttime";
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerService.class);
   private final ExecutorService executorService;
-  //todo chengren311: remove runningTriggers
   private final List<TriggerInstance> runningTriggers;
   private final ScheduledExecutorService timeoutService;
   private final FlowTriggerDependencyPluginManager triggerPluginManager;
@@ -363,7 +363,18 @@ public class FlowTriggerService {
   }
 
   public TriggerInstance findRunningTriggerInstById(final String triggerInstId) {
-    return this.flowTriggerInstanceLoader.getTriggerInstanceById(triggerInstId);
+    //todo chengren311: make the method single threaded
+    final Future<TriggerInstance> future = this.executorService.submit(
+        () -> this.runningTriggers.stream()
+            .filter(triggerInst -> triggerInst.getId().equals(triggerInstId)).findFirst()
+            .orElse(null)
+    );
+    try {
+      return future.get();
+    } catch (final Exception e) {
+      logger.error("exception when finding trigger instance by id" + triggerInstId, e);
+      return null;
+    }
   }
 
   /**
