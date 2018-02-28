@@ -152,18 +152,18 @@
 
               <td>${trigger.getSubmitUser()}</td>
             #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
-              <td>$utils.formatDate(${trigger.getStartTime().getTime()})</td>
-              #if (${trigger.getEndTime()})
-                <td>${trigger.getEndTime()}</td>
+              <td>$utils.formatDate(${trigger.getStartTime()})</td>
+              #if (${trigger.getEndTime()} != "0")
+                <td>$utils.formatDate(${trigger.getEndTime()})</td>
               #else
                 <td>-</td>
               #end
               <td>${trigger.getStatus()}</td>
               #if (${trigger.getStatus()} != "RUNNING" && ${trigger.getStatus()} != "CANCELLING")
-                <td>$utils.formatDuration(${trigger.getStartTime().getTime()}, ${trigger.getEndTime().getTime()})
+                <td>$utils.formatDuration(${trigger.getStartTime()}, ${trigger.getEndTime()})
                 </td>
               #else
-                <td>$utils.formatDuration(${trigger.getStartTime().getTime()}, ${utils.currentTimestamp()})
+                <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
                 </td>
               #end
               #if (${trigger.getFlowExecId()} != "-1")
@@ -203,18 +203,18 @@
               <tr class="child-${trigger.getId()}">
                 <td>&nbsp;</td>
                 <td>${dep.getDepName()}</td>
-                <td>$utils.formatDate(${dep.getStartTime().getTime()})</td>
-                #if (${dep.getEndTime()})
-                  <td>${dep.getEndTime()}</td>
+                <td>$utils.formatDate(${dep.getStartTime()})</td>
+                #if (${dep.getEndTime()} != "0")
+                  <td>$utils.formatDate(${dep.getEndTime()})</td>
                 #else
                   <td>-</td>
                 #end
                 <td>${dep.getStatus()}</td>
-                #if (${dep.getEndTime()})
-                  <td>$utils.formatDuration(${dep.getStartTime().getTime()}, ${dep.getEndTime().getTime()})
+                #if (${dep.getEndTime()} != "0")
+                  <td>$utils.formatDuration(${dep.getStartTime()}, ${dep.getEndTime()})
                   </td>
                 #else
-                  <td>$utils.formatDuration(${dep.getStartTime().getTime()}, ${utils.currentTimestamp()})
+                  <td>$utils.formatDuration(${dep.getStartTime()}, ${utils.currentTimestamp()})
                   </td>
                 #end
               </tr>
@@ -297,18 +297,18 @@
 
               <td>${trigger.getSubmitUser()}</td>
             #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
-              <td>$utils.formatDate(${trigger.getStartTime().getTime()})</td>
-              #if (${trigger.getEndTime()})
-                <td>${trigger.getEndTime()}</td>
+              <td>$utils.formatDate(${trigger.getStartTime()})</td>
+              #if (${trigger.getEndTime()} != "0")
+                <td>$utils.formatDate(${trigger.getEndTime()})</td>
               #else
                 <td>-</td>
               #end
               <td>${trigger.getStatus()}</td>
               #if (${trigger.getStatus()} != "RUNNING" && ${trigger.getStatus()} != "CANCELLING")
-                <td>$utils.formatDuration(${trigger.getStartTime().getTime()}, ${trigger.getEndTime().getTime()})
+                <td>$utils.formatDuration(${trigger.getStartTime()}, ${trigger.getEndTime()})
                 </td>
               #else
-                <td>$utils.formatDuration(${trigger.getStartTime().getTime()}, ${utils.currentTimestamp()})
+                <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
                 </td>
               #end
               #if (${trigger.getFlowExecId()} != "-1")
@@ -344,19 +344,19 @@
               <tr class="child-${trigger.getId()}">
                 <td>&nbsp;</td>
                 <td>${dep.getDepName()}</td>
-                <td>$utils.formatDate(${dep.getStartTime().getTime()})</td>
-                #if (${dep.getEndTime()})
-                  <td>${dep.getEndTime()}</td>
+                <td>$utils.formatDate(${dep.getStartTime()})</td>
+                #if (${dep.getEndTime()} != "0")
+                  <td>$utils.formatDate(${dep.getEndTime()})</td>
                 #else
                   <td>-</td>
                 #end
                 <td>${dep.getStatus()}</td>
                 <td>${dep.getCancellationCause()}</td>
-                #if (${dep.getEndTime()})
-                  <td>$utils.formatDuration(${dep.getStartTime().getTime()}, ${dep.getEndTime().getTime()})
+                #if (${dep.getEndTime()} != "0")
+                  <td>$utils.formatDuration(${dep.getStartTime()}, ${dep.getEndTime()})
                   </td>
                 #else
-                  <td>$utils.formatDuration(${dep.getStartTime().getTime()}, ${utils.currentTimestamp()})
+                  <td>$utils.formatDuration(${dep.getStartTime()}, ${utils.currentTimestamp()})
                   </td>
                 #end
               </tr>

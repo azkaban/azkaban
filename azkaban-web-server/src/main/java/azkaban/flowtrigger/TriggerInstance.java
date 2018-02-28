@@ -20,7 +20,6 @@ import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,14 +56,14 @@ public class TriggerInstance {
   @Override
   public String toString() {
     return "TriggerInstance{" +
-        "depInstances=" + depInstances +
-        ", id='" + id + '\'' +
-        ", submitUser='" + submitUser + '\'' +
-        ", project=" + project +
-        ", flowId='" + flowId + '\'' +
-        ", flowVersion=" + flowVersion +
-        ", flowTrigger=" + flowTrigger +
-        ", flowExecId=" + flowExecId +
+        "depInstances=" + this.depInstances +
+        ", id='" + this.id + '\'' +
+        ", submitUser='" + this.submitUser + '\'' +
+        ", project=" + this.project +
+        ", flowId='" + this.flowId + '\'' +
+        ", flowVersion=" + this.flowVersion +
+        ", flowTrigger=" + this.flowTrigger +
+        ", flowExecId=" + this.flowExecId +
         '}';
   }
 
@@ -170,20 +169,20 @@ public class TriggerInstance {
     }
   }
 
-  public Date getStartTime() {
-    final List<Date> startTimeList = this.depInstances.stream()
+  public long getStartTime() {
+    final List<Long> startTimeList = this.depInstances.stream()
         .map(DependencyInstance::getStartTime).collect(Collectors.toList());
-    return startTimeList.isEmpty() ? null : Collections.min(startTimeList);
+    return startTimeList.isEmpty() ? 0 : Collections.min(startTimeList);
   }
 
-  public Date getEndTime() {
+  public long getEndTime() {
     if (Status.isDone(this.getStatus())) {
-      final List<Date> endTimeList = this.depInstances.stream()
-          .map(DependencyInstance::getEndTime).filter(endTime -> endTime != null)
+      final List<Long> endTimeList = this.depInstances.stream()
+          .map(DependencyInstance::getEndTime).filter(endTime -> endTime != 0)
           .collect(Collectors.toList());
-      return endTimeList.isEmpty() ? null : Collections.max(endTimeList);
+      return endTimeList.isEmpty() ? 0 : Collections.max(endTimeList);
     } else {
-      return null;
+      return 0;
     }
   }
 }

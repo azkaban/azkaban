@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
-import java.util.Date;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,8 +41,8 @@ public class DependencyInstanceProcessorTest {
 
   @Test
   public void testStatusUpdate() {
-    final DependencyInstance depInst = new DependencyInstance("dep1", new Date(), null, null, Status
-        .RUNNING, CancellationCause.NONE);
+    final DependencyInstance depInst = new DependencyInstance("dep1", System.currentTimeMillis()
+        , 0, null, Status.RUNNING, CancellationCause.NONE);
     processor.processStatusUpdate(depInst);
     verify(triggerInstLoader).updateDependencyExecutionStatus(depInst);
   }

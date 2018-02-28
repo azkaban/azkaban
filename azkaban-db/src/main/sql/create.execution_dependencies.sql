@@ -1,8 +1,8 @@
 CREATE TABLE execution_dependencies(
   trigger_instance_id varchar(64),
   dep_name varchar(128),
-  starttime datetime not null,
-  endtime datetime,
+  starttime bigint(20) not null,
+  endtime bigint(20),
   dep_status tinyint not null,
   cancelleation_cause tinyint not null,
 

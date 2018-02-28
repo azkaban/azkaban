@@ -28,7 +28,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -122,7 +121,6 @@ public class FlowTriggerService {
     final List<DependencyInstance> depInstList = new ArrayList<>();
     for (final FlowTriggerDependency dep : flowTrigger.getDependencies()) {
       final String depName = dep.getName();
-      final Date startDate = new Date(startTime);
       DependencyInstanceContext context = null;
       try {
         context = createDepContext(dep, startTime);
@@ -135,8 +133,8 @@ public class FlowTriggerService {
       final Status status = context == null ? Status.CANCELLED : Status.RUNNING;
       final CancellationCause cause =
           context == null ? CancellationCause.FAILURE : CancellationCause.NONE;
-      final Date endTime = context == null ? new Date() : null;
-      final DependencyInstance depInst = new DependencyInstance(depName, startDate, endTime,
+      final long endTime = context == null ? System.currentTimeMillis() : 0;
+      final DependencyInstance depInst = new DependencyInstance(depName, startTime, endTime,
           context, status, cause);
       depInstList.add(depInst);
     }
@@ -202,7 +200,7 @@ public class FlowTriggerService {
         DependencyInstanceContext context = null;
         try {
           //recreate dependency instance context
-          context = createDepContext(dependency, depInst.getStartTime().getTime());
+          context = createDepContext(dependency, depInst.getStartTime());
         } catch (final Exception ex) {
           logger
               .error(
@@ -307,7 +305,7 @@ public class FlowTriggerService {
   private void updateDepInstStatus(final DependencyInstance depInst, final Status newStatus) {
     depInst.setStatus(newStatus);
     if (Status.isDone(depInst.getStatus())) {
-      depInst.setEndTime(new Date());
+      depInst.setEndTime(System.currentTimeMillis());
     }
   }
 
@@ -327,8 +325,9 @@ public class FlowTriggerService {
 
   private long remainingTimeBeforeTimeout(final TriggerInstance triggerInst) {
     final long now = System.currentTimeMillis();
-    return Math.max(0, triggerInst.getFlowTrigger().getMaxWaitDuration().toMillis() - (now -
-        triggerInst.getStartTime().getTime()));
+    return Math.max(0,
+        triggerInst.getFlowTrigger().getMaxWaitDuration().toMillis() - (now - triggerInst
+            .getStartTime()));
   }
 
   /**

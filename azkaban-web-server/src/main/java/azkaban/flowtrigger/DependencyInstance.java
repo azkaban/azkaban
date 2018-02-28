@@ -16,21 +16,20 @@
 
 package azkaban.flowtrigger;
 
-import java.util.Date;
 
 public class DependencyInstance {
 
-  private final Date startTime;
+  private final long startTime;
   private final String depName;
   private TriggerInstance triggerInstance;
   private DependencyInstanceContext context;
-  private volatile Date endTime;
+  private volatile long endTime;
   private volatile Status status;
   private volatile CancellationCause cause;
 
   //todo chengren311: convert it to builder
-  public DependencyInstance(final String depName, final Date startTime,
-      final Date endTime, final DependencyInstanceContext context, final Status status,
+  public DependencyInstance(final String depName, final long startTime,
+      final long endTime, final DependencyInstanceContext context, final Status status,
       final CancellationCause cause) {
     this.status = status;
     this.depName = depName;
@@ -43,10 +42,10 @@ public class DependencyInstance {
   @Override
   public String toString() {
     return "DependencyInstance{" +
-        "startTime=" + this.startTime.getTime() +
+        "startTime=" + this.startTime +
         ", depName='" + this.depName + '\'' +
         ", context=" + this.context +
-        ", endTime=" + (this.endTime == null ? null : this.endTime.getTime()) +
+        ", endTime=" + this.endTime +
         ", status=" + this.status +
         ", cause=" + this.cause +
         '}';
@@ -72,15 +71,15 @@ public class DependencyInstance {
     this.context = context;
   }
 
-  public Date getStartTime() {
+  public long getStartTime() {
     return this.startTime;
   }
 
-  public Date getEndTime() {
+  public long getEndTime() {
     return this.endTime;
   }
 
-  public void setEndTime(final Date endTime) {
+  public void setEndTime(final long endTime) {
     this.endTime = endTime;
   }
 
