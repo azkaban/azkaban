@@ -216,13 +216,6 @@ public class ProjectManager {
   }
 
   /**
-   * Checks if a project is active using project_name
-   */
-  public Boolean isActiveProject(final String name) {
-    return this.projectsByName.containsKey(name);
-  }
-
-  /**
    * Checks if a project is active using project_id
    */
   public Boolean isActiveProject(final int id) {
@@ -233,10 +226,8 @@ public class ProjectManager {
    * fetch active project from cache and inactive projects from db by project_name
    */
   public Project getProject(final String name) {
-    Project fetchedProject = null;
-    if (isActiveProject(name)) {
-      fetchedProject = this.projectsByName.get(name);
-    } else {
+    Project fetchedProject = this.projectsByName.get(name);
+    if (fetchedProject == null) {
       try {
         logger.info("Project " + name + " doesn't exist in cache, fetching from DB now.");
         fetchedProject = this.projectLoader.fetchProjectByName(name);
@@ -251,10 +242,8 @@ public class ProjectManager {
    * fetch active project from cache and inactive projects from db by project_id
    */
   public Project getProject(final int id) {
-    Project fetchedProject = null;
-    if (isActiveProject(id)) {
-      fetchedProject = this.projectsById.get(id);
-    } else {
+    Project fetchedProject = this.projectsById.get(id);
+    if (fetchedProject == null) {
       try {
         fetchedProject = this.projectLoader.fetchProjectById(id);
       } catch (final ProjectManagerException e) {
@@ -277,16 +266,18 @@ public class ProjectManager {
           "Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
     }
 
-    if (this.projectsByName.containsKey(projectName)) {
-      throw new ProjectManagerException("Project already exists.");
-    }
+    final Project newProject;
+    synchronized (this) {
+      if (this.projectsByName.containsKey(projectName)) {
+        throw new ProjectManagerException("Project already exists.");
+      }
 
-    logger.info("Trying to create " + projectName + " by user "
-        + creator.getUserId());
-    final Project newProject =
-        this.projectLoader.createNewProject(projectName, description, creator);
-    this.projectsByName.put(newProject.getName(), newProject);
-    this.projectsById.put(newProject.getId(), newProject);
+      logger.info("Trying to create " + projectName + " by user "
+          + creator.getUserId());
+      newProject = this.projectLoader.createNewProject(projectName, description, creator);
+      this.projectsByName.put(newProject.getName(), newProject);
+      this.projectsById.put(newProject.getId(), newProject);
+    }
 
     if (this.creatorDefaultPermissions) {
       // Add permission to project
