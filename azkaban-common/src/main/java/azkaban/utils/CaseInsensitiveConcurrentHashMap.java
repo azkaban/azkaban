@@ -17,6 +17,11 @@ package azkaban.utils;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * A concurrent hash map with a case-insensitive string key.
+ *
+ * @param <V> the value type
+ */
 public class CaseInsensitiveConcurrentHashMap<V> extends ConcurrentHashMap<String, V> {
 
   @Override
