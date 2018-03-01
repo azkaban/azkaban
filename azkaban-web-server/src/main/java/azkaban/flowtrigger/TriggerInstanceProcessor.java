@@ -25,11 +25,14 @@ import azkaban.project.Project;
 import azkaban.utils.Emailer;
 import com.google.common.base.Preconditions;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
 public class TriggerInstanceProcessor {
 
@@ -37,10 +40,11 @@ public class TriggerInstanceProcessor {
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for %s "
       + "cancelled from %s";
   private static final String FAILURE_EMAIL_BODY = "Your flow trigger cancelled [id: %s]";
-
+  private final static int THREAD_POOL_SIZE = 16;
   private final ExecutorManager executorManager;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final Emailer emailer;
+  private final ExecutorService executorService;
 
   @Inject
   public TriggerInstanceProcessor(final ExecutorManager executorManager,
@@ -52,6 +56,7 @@ public class TriggerInstanceProcessor {
     this.emailer = emailer;
     this.executorManager = executorManager;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
+    this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
   }
 
   private void executeFlowAndUpdateExecID(final TriggerInstance triggerInst) {
@@ -104,7 +109,8 @@ public class TriggerInstanceProcessor {
    */
   public void processTermination(final TriggerInstance triggerInst) {
     logger.debug("process termination for " + triggerInst);
-    sendFailureEmailIfConfigured(triggerInst);
+    //sendFailureEmailIfConfigured takes 1/3 secs
+    this.executorService.submit(() -> sendFailureEmailIfConfigured(triggerInst));
   }
 
   /**
