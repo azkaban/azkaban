@@ -438,7 +438,9 @@ public class FlowTriggerService {
         logger.info(
             String.format("setting dependency instance[id: %s, name: %s] status to succeeded",
                 depInst.getTriggerInstance().getId(), depInst.getDepName()));
-        processStatusUpdate(depInst, Status.SUCCEEDED);
+        // if the status transits from cancelling to succeeded, then cancellation cause was set,
+        // we need to unset cancellation cause.
+        this.processStatusAndCancelCauseUpdate(depInst, Status.SUCCEEDED, CancellationCause.NONE);
         // if associated trigger instance becomes success, then remove it from running list
         if (depInst.getTriggerInstance().getStatus() == Status.SUCCEEDED) {
           logger.info(String.format("trigger instance[id: %s] succeeded",
