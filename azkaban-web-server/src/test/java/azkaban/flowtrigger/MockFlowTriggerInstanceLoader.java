@@ -86,6 +86,17 @@ public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader 
   }
 
   @Override
+  public Collection<TriggerInstance> getRunning() {
+    final List<TriggerInstance> res = new ArrayList<>();
+    for (final TriggerInstance inst : this.triggerInstances) {
+      if (!Status.isDone(inst.getStatus())) {
+        res.add(inst);
+      }
+    }
+    return res;
+  }
+
+  @Override
   public TriggerInstance getTriggerInstanceById(final String triggerInstanceId) {
     for (final TriggerInstance inst : this.triggerInstances) {
       if (inst.getId().equals(triggerInstanceId)) {

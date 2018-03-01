@@ -264,6 +264,51 @@ public class FlowTriggerInstanceLoaderTest {
     assertTwoTriggerInstanceListsEqual(actual, expected, false, false);
   }
 
+  @Test
+  public void testGetRunningTriggerInstancesReturnsEmpty() throws InterruptedException {
+    final List<TriggerInstance> all = new ArrayList<>();
+    for (int i = 0; i < 15; i++) {
+      all.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 10000));
+      finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
+    }
+
+    this.shuffleAndUpload(all);
+
+    final Collection<TriggerInstance> running = this.triggerInstLoader.getRunning();
+    assertThat(running).isEmpty();
+  }
+
+  @Test
+  public void testGetRunningTriggerInstances() throws InterruptedException {
+    final List<TriggerInstance> all = new ArrayList<>();
+    for (int i = 0; i < 15; i++) {
+      all.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 10000));
+      if (i <= 3) {
+        finalizeTriggerInstanceWithCancelled(all.get(i));
+      } else if (i <= 6) {
+        finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
+      } else if (i <= 9) {
+        finalizeTriggerInstanceWithCancelling(all.get(i));
+      }
+      //sleep for a while to ensure endtime is different for each trigger instance
+      Thread.sleep(1000);
+    }
+
+    this.shuffleAndUpload(all);
+
+    final List<TriggerInstance> finished = all.subList(7, all.size());
+
+    final List<TriggerInstance> expected = new ArrayList<>(finished);
+    expected.sort(Comparator.comparing(TriggerInstance::getStartTime));
+
+    final Collection<TriggerInstance> running = this.triggerInstLoader.getRunning();
+    assertTwoTriggerInstanceListsEqual(new ArrayList<>(running), expected, true, true);
+  }
+
   private void assertTwoTriggerInstanceListsEqual(final List<TriggerInstance> actual,
       final List<TriggerInstance> expected, final boolean ignoreFlowTrigger,
       final boolean keepOriginalOrder) {

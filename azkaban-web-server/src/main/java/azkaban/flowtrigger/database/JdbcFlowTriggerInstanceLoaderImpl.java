@@ -94,6 +94,12 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
               Status.SUCCEEDED.ordinal(),
               Constants.UNASSIGNED_EXEC_ID);
 
+  private static final String SELECT_ALL_RUNNING_EXECUTIONS =
+      String.format("SELECT %s FROM %s WHERE dep_status = %s or dep_status = %s",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+          DEPENDENCY_EXECUTION_TABLE,
+          Status.RUNNING.ordinal(), Status.CANCELLING.ordinal());
+
   private static final String SELECT_RECENTLY_FINISHED = String.format(
       "SELECT execution_dependencies.trigger_instance_id,dep_name,starttime,endtime,dep_status,"
           + "cancelleation_cause,project_id,"
@@ -252,6 +258,19 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     final String query = String.format(SELECT_RECENTLY_FINISHED, limit);
     try {
       return this.dbOperator.query(query, new TriggerInstanceHandler());
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+    }
+    return Collections.emptyList();
+  }
+
+  @Override
+  public Collection<TriggerInstance> getRunning() {
+    try {
+      //todo chengren311:
+      // 1. add index for the execution_dependencies table to accelerate selection.
+      // 2. implement purging mechanism to keep reasonable amount of historical executions in db.
+      return this.dbOperator.query(SELECT_ALL_RUNNING_EXECUTIONS, new TriggerInstanceHandler());
     } catch (final SQLException ex) {
       handleSQLException(ex);
     }
