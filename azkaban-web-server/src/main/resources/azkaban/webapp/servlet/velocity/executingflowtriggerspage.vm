@@ -166,12 +166,15 @@
                 <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
                 </td>
               #end
-              #if (${trigger.getFlowExecId()} != "-1" && ${trigger.getFlowExecId()} != "-2")
+
+              #if (${trigger.getFlowExecId()} == "-1")
+                <td>Flow not triggered yet</td>
+              #elseif (${trigger.getFlowExecId()} == "-2")
+                <td>Flow failed to be triggered</td>
+              #else
                 <td><a
                     href="${context}/executor?execid=${trigger.getFlowExecId()}">${trigger.getFlowExecId()}</a>
                 </td>
-              #else
-                <td>-</td>
               #end
 
               <td>
@@ -311,12 +314,14 @@
                 <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
                 </td>
               #end
-              #if (${trigger.getFlowExecId()} != "-1" && ${trigger.getFlowExecId()} != "-2")
+              #if (${trigger.getFlowExecId()} == "-1")
+                <td>Flow not triggered yet</td>
+              #elseif (${trigger.getFlowExecId()} == "-2")
+                <td>Flow failed to be triggered</td>
+              #else
                 <td><a
                     href="${context}/executor?execid=${trigger.getFlowExecId()}">${trigger.getFlowExecId()}</a>
                 </td>
-              #else
-                <td>-</td>
               #end
 
               <td>
