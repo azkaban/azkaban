@@ -40,7 +40,7 @@ public class TriggerInstanceProcessor {
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for %s "
       + "cancelled from %s";
   private static final String FAILURE_EMAIL_BODY = "Your flow trigger cancelled [id: %s]";
-  private final static int THREAD_POOL_SIZE = 16;
+  private final static int THREAD_POOL_SIZE = 32;
   private final ExecutorManager executorManager;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final Emailer emailer;
