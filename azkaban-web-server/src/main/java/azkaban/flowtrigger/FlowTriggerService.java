@@ -71,6 +71,7 @@ public class FlowTriggerService {
   private static final Duration CANCELLING_GRACE_PERIOD_AFTER_RESTART = Duration.ofMinutes(1);
   private static final int RECENTLY_FINISHED_TRIGGER_LIMIT = 20;
   private static final String START_TIME = "starttime";
+  private static final int CANCEL_EXECUTOR_POOL_SIZE = 32;
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerService.class);
   private final ExecutorService singleThreadExecutorService;
   private final ExecutorService multiThreadsExecutorService;
@@ -89,7 +90,8 @@ public class FlowTriggerService {
     final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
         .setNameFormat("FlowTrigger-service").build();
     this.singleThreadExecutorService = Executors.newSingleThreadExecutor(namedThreadFactory);
-    this.multiThreadsExecutorService = Executors.newFixedThreadPool(8, namedThreadFactory);
+    this.multiThreadsExecutorService = Executors
+        .newFixedThreadPool(CANCEL_EXECUTOR_POOL_SIZE, namedThreadFactory);
     this.timeoutService = Executors.newScheduledThreadPool(8);
     this.runningTriggers = new ArrayList<>();
     this.triggerPluginManager = pluginManager;
