@@ -166,7 +166,7 @@
                 <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
                 </td>
               #end
-              #if (${trigger.getFlowExecId()} != "-1")
+              #if (${trigger.getFlowExecId()} != "-1" && ${trigger.getFlowExecId()} != "-2")
                 <td><a
                     href="${context}/executor?execid=${trigger.getFlowExecId()}">${trigger.getFlowExecId()}</a>
                 </td>
@@ -311,7 +311,7 @@
                 <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
                 </td>
               #end
-              #if (${trigger.getFlowExecId()} != "-1")
+              #if (${trigger.getFlowExecId()} != "-1" && ${trigger.getFlowExecId()} != "-2")
                 <td><a
                     href="${context}/executor?execid=${trigger.getFlowExecId()}">${trigger.getFlowExecId()}</a>
                 </td>
