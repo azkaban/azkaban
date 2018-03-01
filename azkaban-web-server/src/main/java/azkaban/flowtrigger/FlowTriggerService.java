@@ -223,7 +223,7 @@ public class FlowTriggerService {
       logger.info(String.format("recovering pending trigger instance %s", triggerInstance.getId
           ()));
       if (isDoneButFlowNotExecuted(triggerInstance)) {
-        // if trigger instance succeeds but the associated flow hasn't been started, then start
+        // if trigger instance succeeds but the associated flow hasn't been started yet, then start
         // the flow
         this.triggerProcessor.processSucceed(triggerInstance);
       } else {

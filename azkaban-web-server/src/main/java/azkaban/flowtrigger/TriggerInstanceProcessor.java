@@ -16,6 +16,7 @@
 
 package azkaban.flowtrigger;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.flow.Flow;
@@ -68,11 +69,17 @@ public class TriggerInstanceProcessor {
       // currently running")
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
-      this.flowTriggerInstanceLoader.updateAssociatedFlowExecId(triggerInst);
     } catch (final Exception ex) {
-      logger.error("exception when executing the associate flow and updating flow exec id", ex);
-      //todo chengren311: should we swallow the exception or notify user
+      logger.error(String.format(
+          "exception when executing the associated flow and updating flow exec id for trigger instance[id: %s]",
+          triggerInst.getId()), ex);
+      // if flow fails to be executed(e.g. running execution exceeds the allowed concurrent run
+      // limit), set associated flow exec id to Constants.FAILED_EXEC_ID. Upon web server
+      // restart, recovery process will skip those flows.
+      triggerInst.setFlowExecId(Constants.FAILED_EXEC_ID);
     }
+
+    this.flowTriggerInstanceLoader.updateAssociatedFlowExecId(triggerInst);
   }
 
   private String generateFailureEmailSubject(final TriggerInstance triggerInstance) {
