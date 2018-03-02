@@ -16,6 +16,7 @@
 
 package azkaban.database;
 
+import azkaban.Constants;
 import java.sql.Connection;
 import org.apache.commons.dbutils.DbUtils;
 import org.junit.Assert;
@@ -78,7 +79,7 @@ public class AzkabanConnectionPoolTest {
 
     public EmbeddedH2BasicDataSource() {
       super();
-      final String url = "jdbc:h2:mem:test";
+      final String url = "jdbc:h2:mem:test" + Constants.H2_DB_CASE_INSENSITIVE;
       setDriverClassName("org.h2.Driver");
       setUrl(url);
     }
