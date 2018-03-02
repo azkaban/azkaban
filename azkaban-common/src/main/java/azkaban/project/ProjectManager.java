@@ -54,8 +54,8 @@ public class ProjectManager {
   private final ProjectLoader projectLoader;
   private final Props props;
   private final boolean creatorDefaultPermissions;
-  // Both projectsById and projectsByName cache should use the concurrent data structure to
-  // ensure every single operation on the map is thread safe without external synchronization.
+  // Both projectsById and projectsByName cache need to be thread safe since they are accessed
+  // from multiple threads concurrently without external synchronization for performance.
   private final ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<>();
   private final CaseInsensitiveConcurrentHashMap<Project> projectsByName =

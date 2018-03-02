@@ -89,9 +89,6 @@ public class Constants {
   // The flow exec id for a flow trigger instance which hasn't started a flow yet
   public static final int UNASSIGNED_EXEC_ID = -1;
 
-  // The URL setting in H2 database to create tables with case insensitive texts.
-  public static final String H2_DB_CASE_INSENSITIVE = ";IGNORECASE=TRUE";
-
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file

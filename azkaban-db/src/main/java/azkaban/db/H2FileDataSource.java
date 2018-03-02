@@ -15,7 +15,6 @@
  */
 package azkaban.db;
 
-import azkaban.Constants;
 import azkaban.utils.Props;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,7 +29,7 @@ public class H2FileDataSource extends AzkabanDataSource {
     super();
     final String filePath = props.getString("h2.path");
     final Path h2DbPath = Paths.get(filePath).toAbsolutePath();
-    final String url = "jdbc:h2:file:" + h2DbPath + Constants.H2_DB_CASE_INSENSITIVE;
+    final String url = "jdbc:h2:file:" + h2DbPath + ";IGNORECASE=TRUE";
     setDriverClassName("org.h2.Driver");
     setUrl(url);
   }
