@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowTriggerProps;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
@@ -125,8 +126,9 @@ public class NodeBeanLoaderTest {
     final NodeBeanLoader loader = new NodeBeanLoader();
     final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
         TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
-    final Map<String, String> schedule = ImmutableMap.of(Constants.SCHEDULE_TYPE, Constants
-        .CRON_SCHEDULE_TYPE, Constants.SCHEDULE_VALUE, CRON_EXPRESSION);
+    final Map<String, String> schedule = ImmutableMap
+        .of(FlowTriggerProps.SCHEDULE_TYPE, FlowTriggerProps
+            .CRON_SCHEDULE_TYPE, FlowTriggerProps.SCHEDULE_VALUE, CRON_EXPRESSION);
     validateFlowTriggerBean(nodeBean.getTrigger(), MAX_WAIT_MINS, schedule, 2);
     final List<TriggerDependencyBean> triggerDependencyBeans = nodeBean.getTrigger()
         .getTriggerDependencies();
