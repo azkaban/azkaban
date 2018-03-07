@@ -3,13 +3,13 @@
   "name": "azkaban",
   "description": "Azkaban 3 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban) ========",
   "dependencies": {
-    "mocha": "3.0.2",
+    "mocha": "5.0.4",
     "rewire": "2.5.2",
     "chai": "3.5.0",
-    "later": "1.2.0",
-    "eonasdan-bootstrap-datetimepicker": "4.17.47",
-    "moment-timezone": "0.5.5",
-    "moment": "2.14.1"
+    "moment-timezone": "0.5.14",
+    "moment": "2.21.0",
+    "ycssmin": "1.0.1",
+    "underscore": "1.8.3"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -22,5 +22,8 @@
     "url": "https://github.com/azkaban/azkaban/issues"
   },
   "homepage": "https://azkaban.github.io/",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "check-dependencies": "1.1.0"
+  }
 }
