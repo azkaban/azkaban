@@ -24,12 +24,13 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
+import azkaban.flowtrigger.FlowTriggerService;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectManager;
-import azkaban.scheduler.QuartzScheduler;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.session.SessionCache;
@@ -53,6 +54,8 @@ import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.FlowTriggerInstanceServlet;
+import azkaban.webapp.servlet.FlowTriggerServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexRedirectServlet;
 import azkaban.webapp.servlet.JMXHttpServlet;
@@ -141,8 +144,8 @@ public class AzkabanWebServer extends AzkabanServer {
   private final Props props;
   private final SessionCache sessionCache;
   private final List<ObjectName> registeredMBeans = new ArrayList<>();
-  private final QuartzScheduler quartzScheduler;
-
+  private final FlowTriggerScheduler scheduler;
+  private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
 
@@ -157,7 +160,8 @@ public class AzkabanWebServer extends AzkabanServer {
       final UserManager userManager,
       final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
-      final QuartzScheduler quartzScheduler,
+      final FlowTriggerScheduler scheduler,
+      final FlowTriggerService flowTriggerService,
       final StatusService statusService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
@@ -169,8 +173,9 @@ public class AzkabanWebServer extends AzkabanServer {
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
-    this.quartzScheduler = requireNonNull(quartzScheduler, "quartzScheduler is null.");
     this.statusService = statusService;
+    this.scheduler = requireNonNull(scheduler, "scheduler is null.");
+    this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
 
     loadBuiltinCheckersAndActions();
 
@@ -230,26 +235,30 @@ public class AzkabanWebServer extends AzkabanServer {
 
       @Override
       public void run() {
+        if (webServer.scheduler != null) {
+          logger.info("Shutting down flow trigger scheduler...");
+          webServer.scheduler.shutdown();
+        }
+
         try {
-          if (webServer.quartzScheduler != null) {
-            webServer.quartzScheduler.shutdown();
+          if (webServer.flowTriggerService != null) {
+            webServer.flowTriggerService.shutdown();
           }
         } catch (final Exception e) {
-          logger.error(("Exception while shutting down quartz scheduler."), e);
+          logger.error(("Exception while shutting down flow trigger service."), e);
         }
 
         try {
+          logger.info("Logging top memory consumers...");
           logTopMemoryConsumers();
+
+          logger.info("Shutting down http server...");
+          webServer.close();
+
         } catch (final Exception e) {
-          logger.error(("Exception when logging top memory consumers"), e);
+          logger.error(("Exception while shutting down web server."), e);
         }
 
-        logger.info("Shutting down http server...");
-        try {
-          webServer.close();
-        } catch (final Exception e) {
-          logger.error("Error while shutting down http server.", e);
-        }
         logger.info("kk thx bye.");
       }
 
@@ -442,6 +451,14 @@ public class AzkabanWebServer extends AzkabanServer {
     ve.addProperty("jar.resource.loader.path", jarResourcePath);
   }
 
+  public FlowTriggerService getFlowTriggerService() {
+    return this.flowTriggerService;
+  }
+
+  public FlowTriggerScheduler getScheduler() {
+    return this.scheduler;
+  }
+
   private void validateDatabaseVersion()
       throws IOException, SQLException {
     final boolean checkDB = this.props
@@ -491,6 +508,8 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
     root.addServlet(new ServletHolder(new StatusServlet(this.statusService)), "/status");
     root.addServlet(new ServletHolder(new NoteServlet()), "/notes");
+    root.addServlet(new ServletHolder(new FlowTriggerInstanceServlet()), "/flowtriggerinstance");
+    root.addServlet(new ServletHolder(new FlowTriggerServlet()), "/flowtrigger");
 
     final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
@@ -523,7 +542,12 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-      this.quartzScheduler.start();
+      // flowTriggerService needs to be started first before scheduler starts to schedule
+      // existing flow triggers
+      logger.info("starting flow trigger service");
+      this.flowTriggerService.start();
+      logger.info("starting flow trigger scheduler");
+      this.scheduler.start();
     }
 
     try {
@@ -662,12 +686,11 @@ public class AzkabanWebServer extends AzkabanServer {
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
-      System.out
-          .println(
-              "************* loginLoggerObjName is null, make sure there is a logger with name "
-                  + AZKABAN_ACCESS_LOGGER_NAME);
+      logger.info(
+          "************* loginLoggerObjName is null, make sure there is a logger with name "
+              + AZKABAN_ACCESS_LOGGER_NAME);
     } else {
-      System.out.println("******** loginLoggerObjName: "
+      logger.info("******** loginLoggerObjName: "
           + accessLogLoggerObjName.getCanonicalName());
     }
   }

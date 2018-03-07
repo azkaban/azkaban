@@ -17,6 +17,7 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,15 +27,15 @@ import java.util.Map;
  */
 public class FlowTriggerBean {
 
-  private int maxWaitMins;
+  private long maxWaitMins = Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME.toMinutes();
   private Map<String, String> schedule;
   private List<TriggerDependencyBean> triggerDependencies;
 
-  public int getMaxWaitMins() {
+  public long getMaxWaitMins() {
     return this.maxWaitMins;
   }
 
-  public void setMaxWaitMins(final int maxWaitMins) {
+  public void setMaxWaitMins(final long maxWaitMins) {
     this.maxWaitMins = maxWaitMins;
   }
 

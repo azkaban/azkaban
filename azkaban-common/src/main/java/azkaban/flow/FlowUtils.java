@@ -25,6 +25,7 @@ import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
+import com.google.gson.Gson;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -115,5 +116,16 @@ public class FlowUtils {
     final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.addAllProxyUsers(project.getProxyUsers());
     return exflow;
+  }
+
+  public static String toJson(final Project proj) {
+    final Gson gson = new Gson();
+    final String jsonStr = gson.toJson(proj);
+    return jsonStr;
+  }
+
+  public static Project toProject(final String json) {
+    final Gson gson = new Gson();
+    return gson.fromJson(json, Project.class);
   }
 }

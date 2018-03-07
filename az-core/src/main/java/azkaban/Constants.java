@@ -17,6 +17,8 @@
 
 package azkaban;
 
+import java.time.Duration;
+
 /**
  * Constants used in configuration files or shared among classes.
  *
@@ -33,6 +35,7 @@ package azkaban;
 public class Constants {
 
   // Azkaban Flow Versions
+  public static final double DEFAULT_AZKABAN_FLOW_VERSION = 1.0;
   public static final double AZKABAN_FLOW_VERSION_2_0 = 2.0;
 
   // Flow 2.0 file suffix
@@ -50,6 +53,9 @@ public class Constants {
   public static final String SCHEDULE_TYPE = "type";
   public static final String CRON_SCHEDULE_TYPE = "cron";
   public static final String SCHEDULE_VALUE = "value";
+
+  // Job properties override suffix
+  public static final String JOB_OVERRIDE_SUFFIX = ".jor";
 
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
@@ -74,6 +80,15 @@ public class Constants {
 
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
+
+  // Default flow trigger max wait time
+  public static final Duration DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME = Duration.ofDays(10);
+
+  public static final Duration MIN_FLOW_TRIGGER_WAIT_TIME = Duration.ofMinutes(1);
+
+  // The flow exec id for a flow trigger instance which hasn't started a flow yet
+  public static final int UNASSIGNED_EXEC_ID = -1;
+
 
   public static class ConfigurationKeys {
 
@@ -174,10 +189,13 @@ public class Constants {
      **/
     public static final String AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION = "azkaban.storage.artifact.max.retention";
 
-    // enable Quartz Scheduler if true.
-    public static final String ENABLE_QUARTZ= "azkaban.server.schedule.enable_quartz";
+    // enable quartz scheduler and flow trigger if true.
+    public static final String ENABLE_QUARTZ = "azkaban.server.schedule.enable_quartz";
 
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
+
+    // dir to keep dependency plugins
+    public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
   }
 
   public static class FlowProperties {
@@ -221,6 +239,8 @@ public class Constants {
     public static final String MAX_XMS_DEFAULT = "1G";
     public static final String JOB_MAX_XMX = "job.max.Xmx";
     public static final String MAX_XMX_DEFAULT = "2G";
+    // The hadoop user the job should run under. If not specified, it will default to submit user.
+    public static final String USER_TO_PROXY = "user.to.proxy";
   }
 
   public static class JobCallbackProperties {

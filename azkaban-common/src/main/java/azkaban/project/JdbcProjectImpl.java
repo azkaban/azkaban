@@ -974,8 +974,8 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   @Override
-  public void uploadFlowFile(final int projectId, final int projectVersion, final int flowVersion,
-      final File flowFile) throws ProjectManagerException {
+  public void uploadFlowFile(final int projectId, final int projectVersion, final File flowFile,
+      final int flowVersion) throws ProjectManagerException {
     logger.info(String
         .format(
             "Uploading flow file %s, version %d for project %d, version %d, file length is [%d bytes]",
@@ -1015,31 +1015,37 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public File getUploadedFlowFile(final int projectId, final int projectVersion,
-      final int flowVersion, final String flowName) throws ProjectManagerException {
+      final String flowFileName, final int flowVersion, final File tempDir)
+      throws ProjectManagerException, IOException {
     final FlowFileResultHandler handler = new FlowFileResultHandler();
 
     final List<byte[]> data;
-    // Todo jamiesjc: delete the flow file after used.
-    final File file = new File(this.tempDir, flowName);
+    // Created separate temp directory for each flow file to avoid overwriting the same file by
+    // multiple threads concurrently. Flow file name will be interpret as the flow name when
+    // parsing the yaml flow file, so it has to be specific.
+    final File file = new File(tempDir, flowFileName);
     try (final FileOutputStream output = new FileOutputStream(file);
         final BufferedOutputStream bufferedStream = new BufferedOutputStream(output)) {
       try {
         data = this.dbOperator
             .query(FlowFileResultHandler.SELECT_FLOW_FILE, handler,
-                projectId, projectVersion, flowName, flowVersion);
+                projectId, projectVersion, flowFileName, flowVersion);
       } catch (final SQLException e) {
-        logger.error(e);
-        throw new ProjectManagerException("Failed to query uploaded flow file " + flowName + ".",
-            e);
+        throw new ProjectManagerException(
+            "Failed to query uploaded flow file for project " + projectId + " version "
+                + projectVersion + ", flow file " + flowFileName + " version " + flowVersion, e);
       }
 
-      try {
-        bufferedStream.write(data.get(0));
-      } catch (final IOException e) {
-        throw new ProjectManagerException("Error writing flow file" + flowName, e);
+      if (data == null || data.isEmpty()) {
+        throw new ProjectManagerException(
+            "No flow file could be found in DB table for project " + projectId + " version " +
+                projectVersion + ", flow file " + flowFileName + " version " + flowVersion);
       }
+      bufferedStream.write(data.get(0));
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error creating output stream for flow file" + flowName, e);
+      throw new ProjectManagerException(
+          "Error writing to output stream for project " + projectId + " version " + projectVersion
+              + ", flow file " + flowFileName + " version " + flowVersion, e);
     }
     return file;
   }

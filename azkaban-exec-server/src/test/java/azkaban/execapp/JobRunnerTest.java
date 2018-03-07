@@ -20,6 +20,7 @@ import static java.lang.Thread.State.TIMED_WAITING;
 import static java.lang.Thread.State.WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
@@ -46,6 +47,7 @@ import org.junit.Test;
 
 public class JobRunnerTest {
 
+  public static final String SUBMIT_USER = "testUser";
   private final Logger logger = Logger.getLogger("JobRunnerTest");
   private File workingDir;
   private JobTypeManager jobtypeManager;
@@ -102,6 +104,8 @@ public class JobRunnerTest {
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps != null);
     Assert.assertTrue(logFile.exists());
+    // Verify that user.to.proxy is default to submit user.
+    Assert.assertEquals(SUBMIT_USER, runner.getProps().get(JobProperties.USER_TO_PROXY));
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
@@ -333,6 +337,7 @@ public class JobRunnerTest {
     final Props azkabanProps = new Props();
     final ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(execId);
+    flow.setSubmitUser(SUBMIT_USER);
     final ExecutableNode node = new ExecutableNode();
     node.setId(name);
     node.setParentFlow(flow);

@@ -44,6 +44,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String LASTMODIFIEDTIME_PARAM = "lastModfiedTime";
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
   public static final String SLAOPTIONS_PARAM = "slaOptions";
+  public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
@@ -57,6 +58,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private List<SlaOption> slaOptions = new ArrayList<>();
+  private double azkabanFlowVersion;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -65,6 +67,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.scheduleId = -1;
     this.lastModifiedTimestamp = project.getLastModifiedTimestamp();
     this.lastModifiedUser = project.getLastModifiedUser();
+    setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
     this.setFlow(project, flow);
   }
 
@@ -209,6 +212,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.submitTime = submitTime;
   }
 
+  public double getAzkabanFlowVersion() {
+    return this.azkabanFlowVersion;
+  }
+
+  public void setAzkabanFlowVersion(final double azkabanFlowVersion) {
+    this.azkabanFlowVersion = azkabanFlowVersion;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -227,9 +238,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(VERSION_PARAM, this.version);
     flowObj.put(LASTMODIFIEDTIME_PARAM, this.lastModifiedTimestamp);
     flowObj.put(LASTMODIFIEDUSER_PARAM, this.lastModifiedUser);
+    flowObj.put(AZKABANFLOWVERSION_PARAM, this.azkabanFlowVersion);
 
     flowObj.put(EXECUTIONOPTIONS_PARAM, this.executionOptions.toObject());
-    flowObj.put(VERSION_PARAM, this.version);
 
     final ArrayList<String> proxyUserList = new ArrayList<>(this.proxyUsers);
     flowObj.put(PROXYUSERS_PARAM, proxyUserList);
@@ -260,6 +271,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.lastModifiedTimestamp = flowObj.getLong(LASTMODIFIEDTIME_PARAM);
     this.lastModifiedUser = flowObj.getString(LASTMODIFIEDUSER_PARAM);
     this.submitTime = flowObj.getLong(SUBMITTIME_PARAM);
+    this.azkabanFlowVersion = flowObj.getDouble(AZKABANFLOWVERSION_PARAM);
 
     if (flowObj.containsKey(EXECUTIONOPTIONS_PARAM)) {
       this.executionOptions =

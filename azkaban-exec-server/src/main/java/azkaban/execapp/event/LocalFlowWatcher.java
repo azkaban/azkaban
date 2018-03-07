@@ -69,7 +69,7 @@ public class LocalFlowWatcher extends FlowWatcher {
           // A job runner is finished
           final JobRunner runner = (JobRunner) event.getRunner();
           final ExecutableNode node = runner.getNode();
-          System.out.println(node + " looks like " + node.getStatus());
+          getLogger().info(node + " looks like " + node.getStatus());
           handleJobStatusChange(node.getNestedId(), node.getStatus());
         }
       } else if (event.getType() == EventType.FLOW_FINISHED) {

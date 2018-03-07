@@ -61,6 +61,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private ScheduleManager scheduleManager;
   private UserManager userManager;
 
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
@@ -90,7 +91,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ajaxSlaInfo(req, ret, session.getUser());
     } else if (ajaxName.equals("setSla")) {
       ajaxSetSla(req, ret, session.getUser());
-    // alias loadFlow is preserved for backward compatibility
+      // alias loadFlow is preserved for backward compatibility
     } else if (ajaxName.equals("fetchSchedules") || ajaxName.equals("loadFlow")) {
       ajaxFetchSchedules(ret);
     } else if (ajaxName.equals("scheduleFlow")) {
@@ -475,6 +476,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     return;
   }
 
+  @Deprecated
   private void ajaxScheduleFlow(final HttpServletRequest req,
       final HashMap<String, Object> ret, final User user) throws ServletException {
     final String projectName = getParam(req, "projectName");
@@ -588,6 +590,25 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put("status", "error");
       ret.put("message", "Flow " + flowName + " cannot be found in project "
           + projectName);
+      return;
+    }
+
+    final boolean hasFlowTrigger;
+    try {
+      hasFlowTrigger = this.projectManager.hasFlowTrigger(project, flow);
+    } catch (final Exception ex) {
+      logger.error(ex);
+      ret.put("status", "error");
+      ret.put("message", String.format("Error looking for flow trigger of flow: %s.%s ",
+          projectName, flowName));
+      return;
+    }
+
+    if (hasFlowTrigger) {
+      ret.put("status", "error");
+      ret.put("message", String.format("<font color=\"red\"> Error: Flow %s.%s is already "
+              + "associated with flow trigger, so schedule has to be defined in flow trigger config </font>",
+          projectName, flowName));
       return;
     }
 

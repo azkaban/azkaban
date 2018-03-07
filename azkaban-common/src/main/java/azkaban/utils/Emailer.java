@@ -74,16 +74,20 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
-    this.clientHostname = props.getString(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME, props.getString("jetty.hostname", "localhost"));
+    this.clientHostname = props.getString(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+        props.getString("jetty.hostname", "localhost"));
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
-      this.clientPortNumber = Integer.toString(props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT, props.getInt("jetty.ssl.port",
-          Constants.DEFAULT_SSL_PORT_NUMBER)));
+      this.clientPortNumber = Integer.toString(props
+          .getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT,
+              props.getInt("jetty.ssl.port",
+                  Constants.DEFAULT_SSL_PORT_NUMBER)));
     } else {
       this.scheme = HTTP;
-      this.clientPortNumber = Integer.toString(props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT, props.getInt("jetty.port",
-          Constants.DEFAULT_PORT_NUMBER)));
+      this.clientPortNumber = Integer.toString(
+          props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT, props.getInt("jetty.port",
+              Constants.DEFAULT_PORT_NUMBER)));
     }
 
     this.testMode = props.getBoolean("test.mode", false);
@@ -100,10 +104,18 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   private void sendSlaAlertEmail(final SlaOption slaOption, final String slaMessage) {
-    final String subject = "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
-    final String body = slaMessage;
+    final String subject =
+        "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
     final List<String> emailList =
         (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
+    logger.info("Sending SLA email " + slaMessage);
+    sendEmail(emailList, subject, slaMessage);
+  }
+
+  /**
+   * Send an email to the specified email list
+   */
+  public void sendEmail(final List<String> emailList, final String subject, final String body) {
     if (emailList != null && !emailList.isEmpty()) {
       final EmailMessage message =
           super.createEmailMessage(subject, "text/html", emailList);
@@ -113,10 +125,10 @@ public class Emailer extends AbstractMailer implements Alerter {
       if (!this.testMode) {
         try {
           message.sendEmail();
-          logger.info("Sent SLA email message " + slaMessage);
+          logger.info("Sent email message " + body);
           this.commonMetrics.markSendEmailSuccess();
         } catch (final Exception e) {
-          logger.error("Failed to send SLA email message " + slaMessage, e);
+          logger.error("Failed to send email message " + body, e);
           this.commonMetrics.markSendEmailFail();
         }
       }

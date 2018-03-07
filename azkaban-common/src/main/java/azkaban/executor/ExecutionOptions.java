@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.TypedMapWrapper;
+import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -263,6 +264,10 @@ public class ExecutionOptions {
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
     return flowOptionObj;
+  }
+
+  public String toJSON() {
+    return new GsonBuilder().setPrettyPrinting().create().toJson(toObject());
   }
 
   public enum FailureAction {

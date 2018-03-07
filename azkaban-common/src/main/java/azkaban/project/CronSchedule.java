@@ -17,14 +17,17 @@
 package azkaban.project;
 
 import com.google.common.base.Preconditions;
+import java.io.Serializable;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * FlowTriggerSchedule is the logical representation of a cron-based schedule.
  * It couldn't be changed once gets constructed.
  * It will be used to schedule a trigger.
  */
-public class CronSchedule {
+public class CronSchedule implements Serializable {
 
   private final String cronExpression;
 
@@ -39,5 +42,29 @@ public class CronSchedule {
 
   public String getCronExpression() {
     return this.cronExpression;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final CronSchedule that = (CronSchedule) o;
+
+    return new EqualsBuilder()
+        .append(this.cronExpression, that.cronExpression)
+        .isEquals();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(this.cronExpression)
+        .toHashCode();
   }
 }

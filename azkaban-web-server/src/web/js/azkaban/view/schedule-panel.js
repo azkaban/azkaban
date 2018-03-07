@@ -66,7 +66,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     } else if (retSignal == "DOW_DOM_STAR_ERROR") {
       messageDialogView.show(
           "Cron Syntax Error", "Currently Quartz doesn't support specifying both a day-of-week and a day-of-month value"
-          + "(you must use the ‘?’ character in one of these fields). <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\">Detailed Explanation</a>");
+          + "(you must use the ‘?’ character in one of these fields). <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\" target=\"_blank\">Detailed Explanation</a>");
       return;
     }
 

@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
+import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
@@ -293,7 +294,9 @@ public class JobRunner extends EventHandler implements Runnable {
         .getExternalLogViewer(this.azkabanProps, this.jobId,
             this.props);
     if (!externalViewer.isEmpty()) {
-      this.logger.info("See logs at: " + externalViewer);
+      this.logger.info("If you want to leverage AZ ELK logging support, you need to follow the "
+          + "instructions: http://azkaban.github.io/azkaban/docs/latest/#how-to");
+      this.logger.info("If you did the above step, see logs at: " + externalViewer);
     }
   }
 
@@ -669,13 +672,22 @@ public class JobRunner extends EventHandler implements Runnable {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
 
-      if (this.props.containsKey("user.to.proxy")) {
-        final String jobProxyUser = this.props.getString("user.to.proxy");
+      if (this.props.containsKey(JobProperties.USER_TO_PROXY)) {
+        final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
         if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
+          final String permissionsPageURL = getProjectPermissionsURL();
           this.logger.error("User " + jobProxyUser
-              + " has no permission to execute this job " + this.jobId + "!");
+              + " has no permission to execute this job " + this.jobId + "!"
+              + " If you want to execute this flow as " + jobProxyUser
+              + ", please add it to Proxy Users under project permissions page: " +
+              permissionsPageURL);
           return null;
         }
+      } else {
+        final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
+        this.props.put(JobProperties.USER_TO_PROXY, submitUser);
+        this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
+            submitUser);
       }
 
       try {
@@ -687,6 +699,20 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return finalStatus;
+  }
+
+  /**
+   * Get project permissions page URL
+   */
+  private String getProjectPermissionsURL() {
+    String projectPermissionsURL = null;
+    final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
+    if (baseURL != null) {
+      final String projectName = this.node.getParentFlow().getProjectName();
+      projectPermissionsURL = String
+          .format("%s/manager?project=%s&permissions", baseURL, projectName);
+    }
+    return projectPermissionsURL;
   }
 
   /**

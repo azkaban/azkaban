@@ -18,15 +18,18 @@
 package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.Constants;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
+import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class NodeBeanLoaderTest {
@@ -48,6 +51,7 @@ public class NodeBeanLoaderTest {
   private static final String SHELL_PWD = "shell_pwd";
   private static final String ECHO_COMMAND = "echo \"This is an echoed text.\"";
   private static final String ECHO_COMMAND_1 = "echo \"This is an echoed text from embedded_flow1.\"";
+  private static final String ECHO_OVERRIDE = "echo \"Override job properties.\"";
   private static final String PWD_COMMAND = "pwd";
   private static final String BASH_COMMAND = "bash ./sample_script.sh";
   private static final String EMBEDDED_FLOW1 = "embedded_flow1";
@@ -195,10 +199,77 @@ public class NodeBeanLoaderTest {
         TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
     final FlowTrigger flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
     validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
-    validateTriggerDependency(flowTrigger.getDependencies().get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
-        PARAMS_1);
-    validateTriggerDependency(flowTrigger.getDependencies().get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
-        PARAMS_2);
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_1, TRIGGER_TYPE, PARAMS_1);
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_2, TRIGGER_TYPE, PARAMS_2);
+  }
+
+  @Test
+  public void testFlowTriggerMaxWaitMinValidation() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_no_max_wait_min.flow"));
+    FlowTrigger flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
+    assertThat(flowTrigger.getMaxWaitDuration())
+        .isEqualTo(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME);
+
+    nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_large_max_wait_min.flow"));
+    flowTrigger = loader.toFlowTrigger(nodeBean.getTrigger());
+    assertThat(flowTrigger.getMaxWaitDuration())
+        .isEqualTo(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME);
+
+    final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_zero_max_wait_min.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
+        .isInstanceOf(IllegalArgumentException.class).hasMessage("max wait min must be at least 1"
+        + " min(s)");
+  }
+
+  @Test
+  public void testFlowTriggerDepDuplicationValidation() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_duplicate_dep_props.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void testFlowTriggerRequireDepNameAndType() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_without_dep_name.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
+        .isInstanceOf(NullPointerException.class);
+
+    final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_without_dep_type.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  public void testFlowTriggerScheduleValidation() throws Exception {
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    final NodeBean nodeBean = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_invalid_cron_expression.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_no_schedule.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
+        .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -208,10 +279,10 @@ public class NodeBeanLoaderTest {
         TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
     final AzkabanFlow flow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
     validateFlowTrigger(flow.getFlowTrigger(), MAX_WAIT_MINS, CRON_EXPRESSION, 2);
-    validateTriggerDependency(flow.getFlowTrigger().getDependencies().get(0), TRIGGER_NAME_1,
+    validateTriggerDependency(flow.getFlowTrigger(), TRIGGER_NAME_1,
         TRIGGER_TYPE,
         PARAMS_1);
-    validateTriggerDependency(flow.getFlowTrigger().getDependencies().get(1), TRIGGER_NAME_2,
+    validateTriggerDependency(flow.getFlowTrigger(), TRIGGER_NAME_2,
         TRIGGER_TYPE,
         PARAMS_2);
   }
@@ -277,13 +348,45 @@ public class NodeBeanLoaderTest {
   }
 
   @Test
+  public void testSetJobPropsInBasicFlow() throws Exception {
+    final String path = BASIC_FLOW_NAME + Constants.PATH_DELIMITER + SHELL_ECHO;
+    final Props overrideProps = new Props();
+    overrideProps.put(Constants.NODE_TYPE, TYPE_COMMAND);
+    overrideProps.put(TYPE_COMMAND, ECHO_OVERRIDE);
+
+    final File newFile = new File(ExecutionsTestUtil.getDataRootDir(), BASIC_FLOW_YML_FILE);
+    newFile.deleteOnExit();
+    FileUtils.copyFile(ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YML_TEST_DIR, BASIC_FLOW_YML_FILE),
+        newFile);
+    FlowLoaderUtils.setPropsInYamlFile(path, newFile, overrideProps);
+    assertThat(FlowLoaderUtils.getPropsFromYamlFile(path, newFile)).isEqualTo(overrideProps);
+  }
+
+  @Test
+  public void testSetJobPropsInEmbeddedFlow() throws Exception {
+    final String path = EMBEDDED_FLOW_NAME + Constants.PATH_DELIMITER + EMBEDDED_FLOW1 +
+        Constants.PATH_DELIMITER + EMBEDDED_FLOW2 + Constants.PATH_DELIMITER + SHELL_END;
+    final Props overrideProps = new Props();
+    overrideProps.put(Constants.NODE_TYPE, TYPE_COMMAND);
+    overrideProps.put(TYPE_COMMAND, ECHO_OVERRIDE);
+
+    final File newFile = new File(ExecutionsTestUtil.getDataRootDir(), EMBEDDED_FLOW_YML_FILE);
+    newFile.deleteOnExit();
+    FileUtils.copyFile(
+        ExecutionsTestUtil.getFlowFile(EMBEDDED_FLOW_YML_TEST_DIR, EMBEDDED_FLOW_YML_FILE),
+        newFile);
+    FlowLoaderUtils.setPropsInYamlFile(path, newFile, overrideProps);
+    assertThat(FlowLoaderUtils.getPropsFromYamlFile(path, newFile)).isEqualTo(overrideProps);
+  }
+
+  @Test
   public void testGetFlowTrigger() {
     final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(
         ExecutionsTestUtil.getFlowFile(TRIGGER_FLOW_YML_TEST_DIR, TRIGGER_FLOW_YML_FILE));
     validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
-    validateTriggerDependency(flowTrigger.getDependencies().get(0), TRIGGER_NAME_1, TRIGGER_TYPE,
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_1, TRIGGER_TYPE,
         PARAMS_1);
-    validateTriggerDependency(flowTrigger.getDependencies().get(1), TRIGGER_NAME_2, TRIGGER_TYPE,
+    validateTriggerDependency(flowTrigger, TRIGGER_NAME_2, TRIGGER_TYPE,
         PARAMS_2);
   }
 
@@ -338,10 +441,11 @@ public class NodeBeanLoaderTest {
     assertThat(flowTrigger.getDependencies().size()).isEqualTo(numDependencies);
   }
 
-  private void validateTriggerDependency(final FlowTriggerDependency flowTriggerDependency, final
+  private void validateTriggerDependency(final FlowTrigger flowTrigger, final
   String name, final String type, final Map<String, String> params) {
-    assertThat(flowTriggerDependency.getName()).isEqualTo(name);
-    assertThat(flowTriggerDependency.getType()).isEqualTo(type);
-    assertThat(flowTriggerDependency.getProps()).isEqualTo(params);
+    assertThat(flowTrigger.getDependencyByName(name)).isNotNull();
+    assertThat(flowTrigger.getDependencyByName(name).getType()).isEqualTo(type);
+    assertThat(flowTrigger.getDependencyByName(name).getProps()).isEqualTo(params);
   }
 }
+
