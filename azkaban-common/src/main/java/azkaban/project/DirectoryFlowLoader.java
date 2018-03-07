@@ -317,7 +317,6 @@ public class DirectoryFlowLoader implements FlowLoader {
     }
 
     // Now create flows. Bad flows are marked invalid
-    final Set<String> visitedNodes = new HashSet<>();
     for (final Node base : this.nodeMap.values()) {
       // Root nodes can be discovered when parsing jobs
       if (this.rootNodes.contains(base.getId())
@@ -329,15 +328,20 @@ public class DirectoryFlowLoader implements FlowLoader {
         FlowLoaderUtils.addEmailPropsToFlow(flow, jobProp);
 
         flow.addAllFlowProperties(this.flowPropsList);
-        constructFlow(flow, base, visitedNodes);
+        final Set<String> visitedNodesOnPath = new HashSet<>();
+        final Set<String> visitedNodesEver = new HashSet<>();
+        constructFlow(flow, base, visitedNodesOnPath, visitedNodesEver);
+
         flow.initialize();
         this.flowMap.put(base.getId(), flow);
       }
     }
   }
 
-  private void constructFlow(final Flow flow, final Node node, final Set<String> visited) {
-    visited.add(node.getId());
+  private void constructFlow(final Flow flow, final Node node, final Set<String> visitedOnPath,
+      final Set<String> visitedEver) {
+    visitedOnPath.add(node.getId());
+    visitedEver.add(node.getId());
 
     flow.addNode(node);
     if (SpecialJobTypes.EMBEDDED_FLOW_TYPE.equals(node.getType())) {
@@ -359,22 +363,25 @@ public class DirectoryFlowLoader implements FlowLoader {
       for (Edge edge : dependencies.values()) {
         if (edge.hasError()) {
           flow.addEdge(edge);
-        } else if (visited.contains(edge.getSourceId())) {
+        } else if (visitedOnPath.contains(edge.getSourceId())) {
           // We have a cycle. We set it as an error edge
           edge = new Edge(edge.getSourceId(), node.getId());
           edge.setError("Cyclical dependencies found.");
           this.errors.add("Cyclical dependency found at " + edge.getId());
           flow.addEdge(edge);
+        } else if (visitedEver.contains(edge.getSourceId())) {
+          // this node was already checked, don't need to check further
+          flow.addEdge(edge);
         } else {
           // This should not be null
           flow.addEdge(edge);
           final Node sourceNode = this.nodeMap.get(edge.getSourceId());
-          constructFlow(flow, sourceNode, visited);
+          constructFlow(flow, sourceNode, visitedOnPath, visitedEver);
         }
       }
     }
 
-    visited.remove(node.getId());
+    visitedOnPath.remove(node.getId());
   }
 
   private String getNameWithoutExtension(final File file) {
