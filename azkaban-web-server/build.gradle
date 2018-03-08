@@ -39,6 +39,10 @@ node {
     nodeModulesDir = file("${project.projectDir}")
 }
 
+npm_cache_clean {
+    args = ['--force']
+}
+
 apply plugin: 'lesscss'
 apply plugin: 'dustjs'
 apply plugin: 'distribution'
