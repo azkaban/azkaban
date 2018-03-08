@@ -89,7 +89,6 @@ public class Constants {
   // The flow exec id for a flow trigger instance which hasn't started a flow yet
   public static final int UNASSIGNED_EXEC_ID = -1;
 
-
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file

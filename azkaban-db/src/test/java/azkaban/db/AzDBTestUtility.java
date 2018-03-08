@@ -36,7 +36,7 @@ public class AzDBTestUtility {
 
     public EmbeddedH2BasicDataSource() {
       super();
-      final String url = "jdbc:h2:mem:test";
+      final String url = "jdbc:h2:mem:test;IGNORECASE=TRUE";
       setDriverClassName("org.h2.Driver");
       setUrl(url);
     }
