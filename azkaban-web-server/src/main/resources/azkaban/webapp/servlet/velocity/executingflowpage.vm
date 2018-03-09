@@ -110,6 +110,7 @@
 
     <ul class="nav nav-tabs nav-sm" id="headertabs">
       <li id="graphViewLink"><a href="#graph">Graph</a></li>
+      <li id="flowTriggerlistViewLink"><a href="#triggerslist">Flow Trigger List</a></li>
       <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
       <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
       <li id="statsViewLink"><a href="#stats">Stats</a></li>
@@ -141,6 +142,31 @@
   ## Graph View
 
     #parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
+
+  ## Flow Trigger List View
+
+  <div class="container-full" id="flowTriggerListView">
+    <div class="row">
+      <div class="col-xs-12">
+        <table class="table table-bordered table-condensed table-hover executions-table">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th class="triggertype">Type</th>
+            <th class="date">Start Time</th>
+            <th class="date">End Time</th>
+            <th class="elapse">Elapsed</th>
+            <th class="status">Status</th>
+            <th class="status">Cancellation Cause</th>
+            <th class="props">Props</th>
+          </tr>
+          </thead>
+          <tbody id="triggerExecutableBody">
+          </tbody>
+        </table>
+      </div><!-- /.col-xs-12 -->
+    </div><!-- /.row -->
+  </div><!-- /.container-full -->
 
   ## Job List View
 

@@ -95,7 +95,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 
-
       if (node.status == 'READY') {
         continue;
       }
@@ -113,11 +112,11 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
       var startTimeTd = $(row).find("> td.startTime");
       if (node.startTime == -1) {
-          $(startTimeTd).text("-");
+        $(startTimeTd).text("-");
       }
       else {
-          var startdate = new Date(node.startTime);
-          $(startTimeTd).text(getDateFormat(startdate));
+        var startdate = new Date(node.startTime);
+        $(startTimeTd).text(getDateFormat(startdate));
       }
 
       var endTimeTd = $(row).find("> td.endTime");

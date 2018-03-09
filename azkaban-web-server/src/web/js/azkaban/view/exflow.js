@@ -125,9 +125,11 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#jobslistViewLink").removeClass("active");
     $("#graphViewLink").addClass("active");
     $("#flowLogViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#jobListView").hide();
+    $("#flowTriggerListView").hide();
     $("#graphView").show();
     $("#flowLogView").hide();
     $("#statsView").hide();
@@ -422,33 +424,33 @@ var updateStatus = function (updateTime) {
 }
 
 function updatePastAttempts(data, update) {
-	if (!update.pastAttempts) {
-	    return;
-	}
+  if (!update.pastAttempts) {
+    return;
+  }
 
-	if (data.pastAttempts) {
-		for (var i = 0; i < update.pastAttempts.length; ++i) {
-			var updatedAttempt = update.pastAttempts[i];
-			var found = false;
-			for (var j = 0; j < data.pastAttempts.length; ++j) {
-				var attempt = data.pastAttempts[j];
-				if (attempt.attempt == updatedAttempt.attempt) {
-					attempt.startTime = updatedAttempt.startTime;
-					attempt.endTime = updatedAttempt.endTime;
-					attempt.status = updatedAttempt.status;
-					found = true;
-					break;
-				}
-			}
+  if (data.pastAttempts) {
+    for (var i = 0; i < update.pastAttempts.length; ++i) {
+      var updatedAttempt = update.pastAttempts[i];
+      var found = false;
+      for (var j = 0; j < data.pastAttempts.length; ++j) {
+        var attempt = data.pastAttempts[j];
+        if (attempt.attempt == updatedAttempt.attempt) {
+          attempt.startTime = updatedAttempt.startTime;
+          attempt.endTime = updatedAttempt.endTime;
+          attempt.status = updatedAttempt.status;
+          found = true;
+          break;
+        }
+      }
 
-			if (!found) {
-				data.pastAttempts.push(updatedAttempt);
-			}
-		}
-	}
-	else {
-		data.pastAttempts = update.pastAttempts;
-	}
+      if (!found) {
+        data.pastAttempts.push(updatedAttempt);
+      }
+    }
+  }
+  else {
+    data.pastAttempts = update.pastAttempts;
+  }
 }
 
 var updateGraph = function (data, update) {
