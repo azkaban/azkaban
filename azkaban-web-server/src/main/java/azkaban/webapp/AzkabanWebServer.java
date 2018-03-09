@@ -241,7 +241,7 @@ public class AzkabanWebServer extends AzkabanServer {
             webServer.scheduler.shutdown();
           }
         } catch (final Exception e) {
-          logger.error(("Exception while shutting down flow trigger service."), e);
+          logger.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
@@ -250,7 +250,7 @@ public class AzkabanWebServer extends AzkabanServer {
             webServer.flowTriggerService.shutdown();
           }
         } catch (final Exception e) {
-          logger.error(("Exception while shutting down flow trigger service."), e);
+          logger.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
@@ -261,7 +261,7 @@ public class AzkabanWebServer extends AzkabanServer {
           webServer.close();
 
         } catch (final Exception e) {
-          logger.error(("Exception while shutting down web server."), e);
+          logger.error("Exception while shutting down web server.", e);
         }
 
         logger.info("kk thx bye.");
