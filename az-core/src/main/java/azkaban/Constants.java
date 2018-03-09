@@ -195,6 +195,21 @@ public class Constants {
 
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
+
+    public static final String USE_MULTIPLE_EXECUTORS = "azkaban.use.multiple.executors";
+    public static final String MAX_CONCURRENT_RUNS_ONEFLOW = "azkaban.max.concurrent.runs.oneflow";
+    public static final String WEBSERVER_QUEUE_SIZE = "azkaban.webserver.queue.size";
+    public static final String ACTIVE_EXECUTOR_REFRESH_IN_MS =
+        "azkaban.activeexecutor.refresh.milisecinterval";
+    public static final String ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
+        "azkaban.activeexecutor.refresh.flowinterval";
+    public static final String EXECUTORINFO_REFRESH_MAX_THREADS =
+        "azkaban.executorinfo.refresh.maxThreads";
+    public static final String MAX_DISPATCHING_ERRORS_PERMITTED = "azkaban.maxDispatchingErrors";
+    public static final String EXECUTOR_SELECTOR_FILTERS = "azkaban.executorselector.filters";
+    public static final String EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
+        "azkaban.executorselector.comparator.";
+    public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
   }
 
   public static class FlowProperties {
