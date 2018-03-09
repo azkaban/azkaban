@@ -31,15 +31,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.joda.time.DateTime;
+import java.io.File;
 
 public class FlowUtils {
 
   public static Props addCommonFlowProperties(final Props parentProps,
-      final ExecutableFlowBase flow) {
+      final ExecutableFlow flow) {
     final Props props = new Props(parentProps);
 
     props.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
     props.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
+    props.put(CommonJobProperties.FLOW_EXECUTION_DIR , new File(flow.getExecutionPath()).getAbsolutePath());
     props.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
     props.put(CommonJobProperties.PROJECT_NAME, flow.getProjectName());
     props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
