@@ -49,11 +49,6 @@ public class Constants {
   // Flow 2.0 flow and job path delimiter
   public static final String PATH_DELIMITER = ":";
 
-  // Flow trigger props
-  public static final String SCHEDULE_TYPE = "type";
-  public static final String CRON_SCHEDULE_TYPE = "cron";
-  public static final String SCHEDULE_VALUE = "value";
-
   // Job properties override suffix
   public static final String JOB_OVERRIDE_SUFFIX = ".jor";
 
@@ -264,5 +259,18 @@ public class Constants {
     public static final String JOBCALLBACK_SOCKET_TIMEOUT = "jobcallback.socket.timeout";
     public static final String JOBCALLBACK_RESPONSE_WAIT_TIMEOUT = "jobcallback.response.wait.timeout";
     public static final String JOBCALLBACK_THREAD_POOL_SIZE = "jobcallback.thread.pool.size";
+  }
+
+  public static class FlowTriggerProps {
+
+    // Flow trigger props
+    public static final String SCHEDULE_TYPE = "type";
+    public static final String CRON_SCHEDULE_TYPE = "cron";
+    public static final String SCHEDULE_VALUE = "value";
+    public static final String DEP_NAME = "name";
+
+    // Flow trigger dependency run time props
+    public static final String START_TIME = "startTime";
+    public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
   }
 }
