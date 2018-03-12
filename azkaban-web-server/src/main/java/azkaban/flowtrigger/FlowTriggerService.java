@@ -509,6 +509,8 @@ public class FlowTriggerService {
   public void shutdown() {
     this.singleThreadExecutorService.shutdown(); // Disable new tasks from being submitted
     this.singleThreadExecutorService.shutdownNow(); // Cancel currently executing tasks
+    this.multiThreadsExecutorService.shutdown();
+    this.multiThreadsExecutorService.shutdownNow();
     this.triggerPluginManager.shutdown();
   }
 }
