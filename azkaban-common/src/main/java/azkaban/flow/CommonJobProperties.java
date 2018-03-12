@@ -116,7 +116,7 @@ public class CommonJobProperties {
   public static final String EXEC_ID = "azkaban.flow.execid";
 
   /**
-   * Root directory of the the flow execution.
+   * Root directory of the execution.
    */
   public static final String FLOW_EXECUTION_DIR = "azkaban.flow.execution.dir";
 
