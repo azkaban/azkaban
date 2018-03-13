@@ -65,27 +65,7 @@ import org.joda.time.DateTime;
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
-  public static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
-      "azkaban.use.multiple.executors";
-  public static final String AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW =
-      "azkaban.max.concurrent.runs.oneflow";
-  static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
-      "azkaban.executorselector.filters";
-  static final String AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
-      "azkaban.executorselector.comparator.";
-  static final String AZKABAN_QUEUEPROCESSING_ENABLED =
-      "azkaban.queueprocessing.enabled";
-  private static final String AZKABAN_WEBSERVER_QUEUE_SIZE =
-      "azkaban.webserver.queue.size";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS =
-      "azkaban.activeexecutor.refresh.milisecinterval";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
-      "azkaban.activeexecutor.refresh.flowinterval";
   private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
-  private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
-      "azkaban.executorinfo.refresh.maxThreads";
-  private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
-      "azkaban.maxDispatchingErrors";
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
@@ -127,12 +107,14 @@ public class ExecutorManager extends EventHandler implements
     this.setupExecutors();
     this.loadRunningFlows();
 
-    this.queuedFlows = new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+    this.queuedFlows = new QueuedExecutions(
+        azkProps.getLong(Constants.ConfigurationKeys.WEBSERVER_QUEUE_SIZE, 100000));
 
     // The default threshold is set to 30 for now, in case some users are affected. We may
     // decrease this number in future, to better prevent DDos attacks.
-    this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW,
-        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
+    this.maxConcurrentRunsOneFlow = azkProps
+        .getInt(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
+            DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
@@ -155,15 +137,16 @@ public class ExecutorManager extends EventHandler implements
 
   private void setupMultiExecutorMode() {
     // initliatize hard filters for executor selector from azkaban.properties
-    final String filters = this.azkProps.getString(AZKABAN_EXECUTOR_SELECTOR_FILTERS, "");
+    final String filters = this.azkProps
+        .getString(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_FILTERS, "");
     if (filters != null) {
       this.filterList = Arrays.asList(StringUtils.split(filters, ","));
     }
 
     // initliatize comparator feature weights for executor selector from
     // azkaban.properties
-    final Map<String, String> compListStrings =
-        this.azkProps.getMapByPrefix(AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
+    final Map<String, String> compListStrings = this.azkProps
+        .getMapByPrefix(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
     if (compListStrings != null) {
       this.comparatorWeightsMap = new TreeMap<>();
       for (final Map.Entry<String, String> entry : compListStrings.entrySet()) {
@@ -173,15 +156,18 @@ public class ExecutorManager extends EventHandler implements
 
     this.executorInforRefresherService =
         Executors.newFixedThreadPool(this.azkProps.getInt(
-            AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS, 5));
+            Constants.ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5));
 
     // configure queue processor
     this.queueProcessor =
-        new QueueProcessorThread(this.azkProps.getBoolean(
-            AZKABAN_QUEUEPROCESSING_ENABLED, true), this.azkProps.getLong(
-            AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000), this.azkProps.getInt(
-            AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5), this.azkProps.getInt(
-            AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED, this.activeExecutors.size()));
+        new QueueProcessorThread(
+            this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true),
+            this.azkProps.getLong(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000),
+            this.azkProps.getInt(
+                Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
+            this.azkProps.getInt(
+                Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
+                this.activeExecutors.size()));
 
     this.queueProcessor.start();
   }
@@ -232,7 +218,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private boolean isMultiExecutorMode() {
-    return this.azkProps.getBoolean(AZKABAN_USE_MULTIPLE_EXECUTORS, false);
+    return this.azkProps.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false);
   }
 
   /**

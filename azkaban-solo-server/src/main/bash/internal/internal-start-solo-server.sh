@@ -5,7 +5,7 @@ set -o errexit   # exit the script if any statement returns a non-true return va
 
 source "$(dirname $0)/util.sh"
 
-installdir="$(dirname $0)/.."
+installdir="$(dirname $0)/../.."
 currentpidfile="${installdir}/currentpid"
 
 if [[ -f "$currentpidfile" ]] ; then

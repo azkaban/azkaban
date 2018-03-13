@@ -28,6 +28,7 @@ import azkaban.storage.StorageManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.CaseInsensitiveConcurrentHashMap;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.common.io.Files;
@@ -53,10 +54,12 @@ public class ProjectManager {
   private final ProjectLoader projectLoader;
   private final Props props;
   private final boolean creatorDefaultPermissions;
+  // Both projectsById and projectsByName cache need to be thread safe since they are accessed
+  // from multiple threads concurrently without external synchronization for performance.
   private final ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, Project> projectsByName =
-      new ConcurrentHashMap<>();
+  private final CaseInsensitiveConcurrentHashMap<Project> projectsByName =
+      new CaseInsensitiveConcurrentHashMap<>();
 
 
   @Inject
@@ -141,10 +144,6 @@ public class ProjectManager {
     }
   }
 
-  public List<String> getProjectNames() {
-    return new ArrayList<>(this.projectsByName.keySet());
-  }
-
   public Props getProps() {
     return this.props;
   }
@@ -219,13 +218,6 @@ public class ProjectManager {
   }
 
   /**
-   * Checks if a project is active using project_name
-   */
-  public Boolean isActiveProject(final String name) {
-    return this.projectsByName.containsKey(name);
-  }
-
-  /**
    * Checks if a project is active using project_id
    */
   public Boolean isActiveProject(final int id) {
@@ -236,10 +228,8 @@ public class ProjectManager {
    * fetch active project from cache and inactive projects from db by project_name
    */
   public Project getProject(final String name) {
-    Project fetchedProject = null;
-    if (isActiveProject(name)) {
-      fetchedProject = this.projectsByName.get(name);
-    } else {
+    Project fetchedProject = this.projectsByName.get(name);
+    if (fetchedProject == null) {
       try {
         logger.info("Project " + name + " doesn't exist in cache, fetching from DB now.");
         fetchedProject = this.projectLoader.fetchProjectByName(name);
@@ -254,10 +244,8 @@ public class ProjectManager {
    * fetch active project from cache and inactive projects from db by project_id
    */
   public Project getProject(final int id) {
-    Project fetchedProject = null;
-    if (isActiveProject(id)) {
-      fetchedProject = this.projectsById.get(id);
-    } else {
+    Project fetchedProject = this.projectsById.get(id);
+    if (fetchedProject == null) {
       try {
         fetchedProject = this.projectLoader.fetchProjectById(id);
       } catch (final ProjectManagerException e) {
@@ -280,16 +268,18 @@ public class ProjectManager {
           "Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
     }
 
-    if (this.projectsByName.containsKey(projectName)) {
-      throw new ProjectManagerException("Project already exists.");
-    }
+    final Project newProject;
+    synchronized (this) {
+      if (this.projectsByName.containsKey(projectName)) {
+        throw new ProjectManagerException("Project already exists.");
+      }
 
-    logger.info("Trying to create " + projectName + " by user "
-        + creator.getUserId());
-    final Project newProject =
-        this.projectLoader.createNewProject(projectName, description, creator);
-    this.projectsByName.put(newProject.getName(), newProject);
-    this.projectsById.put(newProject.getId(), newProject);
+      logger.info("Trying to create " + projectName + " by user "
+          + creator.getUserId());
+      newProject = this.projectLoader.createNewProject(projectName, description, creator);
+      this.projectsByName.put(newProject.getName(), newProject);
+      this.projectsById.put(newProject.getId(), newProject);
+    }
 
     if (this.creatorDefaultPermissions) {
       // Add permission to project

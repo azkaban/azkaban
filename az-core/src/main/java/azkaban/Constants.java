@@ -49,11 +49,6 @@ public class Constants {
   // Flow 2.0 flow and job path delimiter
   public static final String PATH_DELIMITER = ":";
 
-  // Flow trigger props
-  public static final String SCHEDULE_TYPE = "type";
-  public static final String CRON_SCHEDULE_TYPE = "cron";
-  public static final String SCHEDULE_VALUE = "value";
-
   // Job properties override suffix
   public static final String JOB_OVERRIDE_SUFFIX = ".jor";
 
@@ -199,6 +194,21 @@ public class Constants {
 
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
+
+    public static final String USE_MULTIPLE_EXECUTORS = "azkaban.use.multiple.executors";
+    public static final String MAX_CONCURRENT_RUNS_ONEFLOW = "azkaban.max.concurrent.runs.oneflow";
+    public static final String WEBSERVER_QUEUE_SIZE = "azkaban.webserver.queue.size";
+    public static final String ACTIVE_EXECUTOR_REFRESH_IN_MS =
+        "azkaban.activeexecutor.refresh.milisecinterval";
+    public static final String ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
+        "azkaban.activeexecutor.refresh.flowinterval";
+    public static final String EXECUTORINFO_REFRESH_MAX_THREADS =
+        "azkaban.executorinfo.refresh.maxThreads";
+    public static final String MAX_DISPATCHING_ERRORS_PERMITTED = "azkaban.maxDispatchingErrors";
+    public static final String EXECUTOR_SELECTOR_FILTERS = "azkaban.executorselector.filters";
+    public static final String EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
+        "azkaban.executorselector.comparator.";
+    public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
   }
 
   public static class FlowProperties {
@@ -253,5 +263,18 @@ public class Constants {
     public static final String JOBCALLBACK_SOCKET_TIMEOUT = "jobcallback.socket.timeout";
     public static final String JOBCALLBACK_RESPONSE_WAIT_TIMEOUT = "jobcallback.response.wait.timeout";
     public static final String JOBCALLBACK_THREAD_POOL_SIZE = "jobcallback.thread.pool.size";
+  }
+
+  public static class FlowTriggerProps {
+
+    // Flow trigger props
+    public static final String SCHEDULE_TYPE = "type";
+    public static final String CRON_SCHEDULE_TYPE = "cron";
+    public static final String SCHEDULE_VALUE = "value";
+    public static final String DEP_NAME = "name";
+
+    // Flow trigger dependency run time props
+    public static final String START_TIME = "startTime";
+    public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
   }
 }

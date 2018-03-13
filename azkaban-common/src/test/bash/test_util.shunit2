@@ -1,9 +1,11 @@
 #!/usr/bin/env shunit2
 # Make sure to "brew install shunit2" or use your favorite package manager to install
 # before running tests
+# Run the test in the directory that contains this test.
+# see https://github.com/kward/shunit2
 
 function oneTimeSetUp() {
-  source ../../main/bash/util.sh
+  source ../../main/bash/internal/util.sh
 }
 
 function test_is_process_running() {
@@ -16,4 +18,3 @@ function test_kill_process_with_retry() {
   kill_process_with_retry $! sleep 3  2>&1 >/dev/null  #$! is pid for sleep process, sleep name, 3 times to loop
   assertEquals "$?" "0"                                #$? is exit code of function kill_process_with_retry
 }
-

@@ -1,5 +1,7 @@
 #!/bin/bash
 
-# pass along command line arguments to azkaban-executor-start.sh script
-bin/azkaban-executor-start.sh "$@" >logs/executorServerLog__`date +%F+%T`.out 2>&1 &
+script_dir=$(dirname $0)
+
+# pass along command line arguments to the internal launch script.
+${script_dir}/internal/internal-start-executor.sh "$@" >executorServerLog__`date +%F+%T`.out 2>&1 &
 
