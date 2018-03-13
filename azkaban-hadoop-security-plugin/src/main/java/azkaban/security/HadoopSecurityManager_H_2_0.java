@@ -634,28 +634,24 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
     if(props.getBoolean(OBTAIN_HIVESERVER2_TOKEN)){
       Connection conn = null;
-      try{
+      Token<DelegationTokenIdentifier> hive2Token = null;
+      try {
         Class.forName("org.apache.hive.jdbc.HiveDriver");
         HiveConf hiveConf = new HiveConf();
         String principal = hiveConf.get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname);
         logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ":" + principal);
         String url = props.get(HIVESERVER2_URL) + ";principal=" + principal;
-        logger.info("final url:" + url);
+        logger.info("final url for hiveserver2:" + url);
         conn = DriverManager.getConnection(url);
         String tokenStr = ((HiveConnection) conn).getDelegationToken(userToProxy, principal);
-        Token<DelegationTokenIdentifier> hive2Token = new Token<DelegationTokenIdentifier>();
+        hive2Token = new Token<DelegationTokenIdentifier>();
         hive2Token.decodeFromUrlString(tokenStr);
-        /*
-        new Text(String.format("%s_%s_%d", hive2Token.getKind().toString(),
-                hive2Token.getService().toString(), System.currentTimeMillis())
-         */
+
         cred.addToken(hive2Token.getService(), hive2Token);
-      } catch (ClassNotFoundException e) {
-        logger.error("could not load class", e);
-      } catch (SQLException e) {
-        logger.error("could not connect to hiveserver2", e);
-      } catch (IOException e) {
-        logger.error("could not get hiveserver2 token", e);
+      } catch (final Exception e )  {
+        logger.error("Failed to get hiveserver2 token", e);
+        throw new HadoopSecurityManagerException(
+                "Failed to get hiveserver2 token for " + userToProxy);
       } finally {
         if (conn != null) {
           try {
@@ -665,6 +661,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           }
         }
       }
+
+      logger.info("Created hive server2 token.");
+      logger.info("Token kind: " + hive2Token.getKind());
+      logger.info("Token service: " + hive2Token.getService());
     }
 
     try {
