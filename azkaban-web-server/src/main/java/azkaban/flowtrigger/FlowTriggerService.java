@@ -457,18 +457,14 @@ public class FlowTriggerService {
   }
 
   private boolean cancelledByAzkaban(final DependencyInstance depInst) {
-    return depInst.getStatus() == Status.CANCELLING && (
-        depInst.getCancellationCause() == CancellationCause
-            .MANUAL || depInst.getCancellationCause() == CancellationCause.TIMEOUT || depInst
-            .getCancellationCause() == CancellationCause.CASCADING);
+    return depInst.getStatus() == Status.CANCELLING;
   }
 
   private boolean cancelledByDependencyPlugin(final DependencyInstance depInst) {
     // When onKill is called by the dependency plugin not through flowTriggerService, we treat it
     // as cancelled by dependency due to failure on dependency side. In this case, cancel cause
     // remains unset.
-    return depInst.getStatus() == Status.CANCELLED && (depInst.getCancellationCause()
-        == CancellationCause.NONE);
+    return depInst.getStatus() == Status.RUNNING;
   }
 
   public void markDependencyCancelled(final DependencyInstanceContext context) {
