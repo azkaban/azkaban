@@ -471,11 +471,10 @@ public class FlowTriggerService {
     this.singleThreadExecutorService.submit(() -> {
       final DependencyInstance depInst = findDependencyInstanceByContext(context);
       if (depInst != null) {
-        logger.info(
-            String.format("setting dependency instance[id: %s, name: %s] status to cancelled",
-                depInst.getTriggerInstance().getId(), depInst.getDepName()));
+        logger.info(String.format("set dependency instance[id: %s, name: %s] status to "
+            + "cancelled", depInst.getTriggerInstance().getId(), depInst.getDepName()));
         if (cancelledByDependencyPlugin(depInst)) {
-          processStatusAndCancelCauseUpdate(depInst, Status.CANCELLING, CancellationCause.FAILURE);
+          processStatusAndCancelCauseUpdate(depInst, Status.CANCELLED, CancellationCause.FAILURE);
           cancelTriggerInstance(depInst.getTriggerInstance());
         } else if (cancelledByAzkaban(depInst)) {
           processStatusUpdate(depInst, Status.CANCELLED);
