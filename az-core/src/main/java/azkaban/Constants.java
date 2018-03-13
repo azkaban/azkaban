@@ -205,6 +205,8 @@ public class Constants {
     public static final String EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
         "azkaban.executorselector.comparator.";
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
+
+    public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
   }
 
   public static class FlowProperties {
