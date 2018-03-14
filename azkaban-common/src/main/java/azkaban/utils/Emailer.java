@@ -52,7 +52,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String mailSender;
   private final String azkabanName;
   private final String tls;
-  private boolean testMode = false;
+  private final boolean testMode;
 
   @Inject
   public Emailer(final Props props, final CommonMetrics commonMetrics) {
@@ -71,8 +71,6 @@ public class Emailer extends AbstractMailer implements Alerter {
     final int connectionTimeout =
         props.getInt("mail.connection.timeout.millis", 30000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
-
-    EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
     this.clientHostname = props.getString(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
         props.getString("jetty.hostname", "localhost"));
@@ -240,24 +238,22 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   @Override
-  public void alertOnSuccess(final ExecutableFlow exflow) throws Exception {
+  public void alertOnSuccess(final ExecutableFlow exflow) {
     sendSuccessEmail(exflow);
   }
 
   @Override
-  public void alertOnError(final ExecutableFlow exflow, final String... extraReasons)
-      throws Exception {
+  public void alertOnError(final ExecutableFlow exflow, final String... extraReasons) {
     sendErrorEmail(exflow, extraReasons);
   }
 
   @Override
-  public void alertOnFirstError(final ExecutableFlow exflow) throws Exception {
+  public void alertOnFirstError(final ExecutableFlow exflow) {
     sendFirstErrorMessage(exflow);
   }
 
   @Override
-  public void alertOnSla(final SlaOption slaOption, final String slaMessage)
-      throws Exception {
+  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
     sendSlaAlertEmail(slaOption, slaMessage);
   }
 }
