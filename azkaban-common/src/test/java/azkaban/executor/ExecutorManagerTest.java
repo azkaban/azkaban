@@ -29,8 +29,6 @@ import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
-import azkaban.utils.AbstractMailerTest;
-import azkaban.utils.Emailer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -70,8 +68,8 @@ public class ExecutorManagerTest {
 
   @Before
   public void setup() {
-    this.props = AbstractMailerTest.createMailProperties();
-    this.alertHolder = new AlerterHolder(this.props, new Emailer(this.props, this.commonMetrics));
+    this.props = new Props();
+    this.alertHolder = mock(AlerterHolder.class);
     this.loader = new MockExecutorLoader();
   }
 
