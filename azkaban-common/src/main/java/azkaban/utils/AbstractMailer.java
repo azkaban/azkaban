@@ -64,33 +64,8 @@ public class AbstractMailer {
     return message;
   }
 
-  public EmailMessage prepareEmailMessage(final String subject, final String mimetype,
-      final Collection<String> emailList) {
-    return createEmailMessage(subject, mimetype, emailList);
-  }
-
   public String getAzkabanName() {
     return this.azkabanName;
-  }
-
-  public String getMailHost() {
-    return this.mailHost;
-  }
-
-  public String getMailUser() {
-    return this.mailUser;
-  }
-
-  public String getMailPassword() {
-    return this.mailPassword;
-  }
-
-  public String getMailSender() {
-    return this.mailSender;
-  }
-
-  public int getMailPort() {
-    return this.mailPort;
   }
 
   /**

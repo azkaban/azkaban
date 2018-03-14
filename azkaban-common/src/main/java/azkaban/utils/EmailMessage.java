@@ -47,11 +47,10 @@ public class EmailMessage {
   private final Logger logger = Logger.getLogger(EmailMessage.class);
   private final List<String> _toAddress = new ArrayList<>();
   private final int _mailPort;
-  // GB
   private final ArrayList<BodyPart> _attachments = new ArrayList<>();
-  private String _mailHost;
-  private String _mailUser;
-  private String _mailPassword;
+  private final String _mailHost;
+  private final String _mailUser;
+  private final String _mailPassword;
   private String _subject;
   private String _fromAddress;
   private String _mimeType = "text/plain";
@@ -88,23 +87,8 @@ public class EmailMessage {
     _totalAttachmentMaxSizeInByte = sizeInBytes;
   }
 
-  public EmailMessage setMailHost(final String host) {
-    this._mailHost = host;
-    return this;
-  }
-
-  public EmailMessage setMailUser(final String user) {
-    this._mailUser = user;
-    return this;
-  }
-
   public EmailMessage enableAttachementEmbedment(final boolean toEnable) {
     this._enableAttachementEmbedment = toEnable;
-    return this;
-  }
-
-  public EmailMessage setMailPassword(final String password) {
-    this._mailPassword = password;
     return this;
   }
 
