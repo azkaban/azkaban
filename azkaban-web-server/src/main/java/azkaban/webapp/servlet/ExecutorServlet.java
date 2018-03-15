@@ -50,7 +50,6 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,7 +59,6 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.lang.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
