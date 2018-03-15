@@ -19,7 +19,6 @@ package azkaban.flowtrigger.database;
 import azkaban.Constants;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
-import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.CancellationCause;
 import azkaban.flowtrigger.DependencyException;
 import azkaban.flowtrigger.DependencyInstance;
@@ -29,6 +28,7 @@ import azkaban.project.FlowLoaderUtils;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   private static final String[] DEPENDENCY_EXECUTIONS_COLUMNS = {"trigger_instance_id", "dep_name",
       "starttime", "endtime", "dep_status", "cancelleation_cause", "project_id", "project_version",
-      "flow_id", "flow_version", "project_json", "flow_exec_id"};
+      "flow_id", "flow_version", "flow_exec_id"};
 
   private static final String DEPENDENCY_EXECUTION_TABLE = "execution_dependencies";
 
@@ -103,7 +103,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   private static final String SELECT_RECENTLY_FINISHED = String.format(
       "SELECT execution_dependencies.trigger_instance_id,dep_name,starttime,endtime,dep_status,"
           + "cancelleation_cause,project_id,"
-          + "project_version,flow_id,flow_version,project_json, flow_exec_id \n"
+          + "project_version,flow_id,flow_version, flow_exec_id \n"
           + "FROM execution_dependencies JOIN (\n"
           + "SELECT distinct(trigger_instance_id), max(endtime) FROM execution_dependencies "
           + "WHERE dep_status = %s or dep_status = %s\n"
@@ -120,12 +120,14 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   private final DatabaseOperator dbOperator;
   private final ProjectLoader projectLoader;
+  private final ProjectManager projectManager;
 
   @Inject
   public JdbcFlowTriggerInstanceLoaderImpl(final DatabaseOperator databaseOperator,
-      final ProjectLoader projectLoader) {
+      final ProjectLoader projectLoader, final ProjectManager projectManager) {
     this.dbOperator = databaseOperator;
     this.projectLoader = projectLoader;
+    this.projectManager = projectManager;
   }
 
   @Override
@@ -229,7 +231,6 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
                 triggerInst.getProject().getVersion(),
                 triggerInst.getFlowId(),
                 triggerInst.getFlowVersion(),
-                FlowUtils.toJson(triggerInst.getProject()),
                 triggerInst.getFlowExecId());
       }
       return null;
@@ -318,114 +319,6 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     return triggerInstance;
   }
 
-
-  private static class TriggerInstanceHandler implements
-      ResultSetHandler<Collection<TriggerInstance>> {
-
-    public TriggerInstanceHandler() {
-    }
-
-    @Override
-    public Collection<TriggerInstance> handle(final ResultSet rs) throws SQLException {
-      final Map<TriggerInstKey, List<DependencyInstance>> triggerInstMap = new HashMap<>();
-
-      while (rs.next()) {
-        final String triggerInstId = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[0]);
-        final String depName = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[1]);
-        final long startTime = rs.getLong(DEPENDENCY_EXECUTIONS_COLUMNS[2]);
-        final long endTime = rs.getLong(DEPENDENCY_EXECUTIONS_COLUMNS[3]);
-        final Status status = Status.values()[rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[4])];
-        final CancellationCause cause = CancellationCause.values()[rs.getInt
-            (DEPENDENCY_EXECUTIONS_COLUMNS[5])];
-        final int projId = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[6]);
-        final int projVersion = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[7]);
-        final String flowId = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[8]);
-        final int flowVersion = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[9]);
-        final Project project = FlowUtils
-            .toProject(rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[10]));
-        final int flowExecId = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[11]);
-
-        final TriggerInstKey key = new TriggerInstKey(triggerInstId, project.getLastModifiedUser(),
-            projId, projVersion, flowId, flowVersion, flowExecId, project);
-        List<DependencyInstance> dependencyInstanceList = triggerInstMap.get(key);
-        final DependencyInstance depInst = new DependencyInstance(depName, startTime, endTime,
-            null, status, cause);
-        if (dependencyInstanceList == null) {
-          dependencyInstanceList = new ArrayList<>();
-          triggerInstMap.put(key, dependencyInstanceList);
-        }
-
-        dependencyInstanceList.add(depInst);
-      }
-
-      final List<TriggerInstance> res = new ArrayList<>();
-      for (final Map.Entry<TriggerInstKey, List<DependencyInstance>> entry : triggerInstMap
-          .entrySet()) {
-        res.add(new TriggerInstance(entry.getKey().triggerInstId, null, entry.getKey()
-            .flowConfigID.flowId, entry.getKey().flowConfigID.flowVersion, entry.getKey()
-            .submitUser, entry.getValue(), entry.getKey().flowExecId, entry.getKey().project));
-      }
-
-      //sort on start time in ascending order
-      Collections.sort(res, (o1, o2) -> {
-        if (o1.getStartTime() < o2.getStartTime()) {
-          return -1;
-        } else if (o1.getStartTime() > o2.getStartTime()) {
-          return 1;
-        } else {
-          return 0;
-        }
-      });
-
-      return res;
-    }
-
-    private static class TriggerInstKey {
-
-      String triggerInstId;
-      FlowConfigID flowConfigID;
-      String submitUser;
-      int flowExecId;
-      Project project;
-
-      public TriggerInstKey(final String triggerInstId, final String submitUser, final int projId,
-          final int projVersion, final String flowId, final int flowVerion, final int flowExecId,
-          final Project project) {
-        this.triggerInstId = triggerInstId;
-        this.flowConfigID = new FlowConfigID(projId, projVersion, flowId, flowVerion);
-        this.submitUser = submitUser;
-        this.flowExecId = flowExecId;
-        this.project = project;
-      }
-
-      @Override
-      public boolean equals(final Object o) {
-        if (this == o) {
-          return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-          return false;
-        }
-
-        final TriggerInstKey that = (TriggerInstKey) o;
-
-        return new EqualsBuilder()
-            .append(this.triggerInstId, that.triggerInstId)
-            .append(this.flowConfigID, that.flowConfigID)
-            .isEquals();
-      }
-
-      @Override
-      public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-            .append(this.triggerInstId)
-            .append(this.flowConfigID)
-            .toHashCode();
-      }
-    }
-  }
-
   public static class FlowConfigID {
 
     private final int projectId;
@@ -485,6 +378,113 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
     public int getFlowVersion() {
       return this.flowVersion;
+    }
+  }
+
+  private class TriggerInstanceHandler implements
+      ResultSetHandler<Collection<TriggerInstance>> {
+
+    public TriggerInstanceHandler() {
+    }
+
+    @Override
+    public Collection<TriggerInstance> handle(final ResultSet rs) throws SQLException {
+      final Map<TriggerInstKey, List<DependencyInstance>> triggerInstMap = new HashMap<>();
+
+      while (rs.next()) {
+        final String triggerInstId = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[0]);
+        final String depName = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[1]);
+        final long startTime = rs.getLong(DEPENDENCY_EXECUTIONS_COLUMNS[2]);
+        final long endTime = rs.getLong(DEPENDENCY_EXECUTIONS_COLUMNS[3]);
+        final Status status = Status.values()[rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[4])];
+        final CancellationCause cause = CancellationCause.values()[rs.getInt
+            (DEPENDENCY_EXECUTIONS_COLUMNS[5])];
+        final int projId = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[6]);
+        final int projVersion = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[7]);
+        final String flowId = rs.getString(DEPENDENCY_EXECUTIONS_COLUMNS[8]);
+        final int flowVersion = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[9]);
+        final Project project = JdbcFlowTriggerInstanceLoaderImpl.this.projectManager
+            .getProject(projId);
+        final int flowExecId = rs.getInt(DEPENDENCY_EXECUTIONS_COLUMNS[10]);
+
+        final TriggerInstKey key = new TriggerInstKey(triggerInstId, project.getLastModifiedUser(),
+            projId, projVersion, flowId, flowVersion, flowExecId, project);
+        List<DependencyInstance> dependencyInstanceList = triggerInstMap.get(key);
+        final DependencyInstance depInst = new DependencyInstance(depName, startTime, endTime,
+            null, status, cause);
+        if (dependencyInstanceList == null) {
+          dependencyInstanceList = new ArrayList<>();
+          triggerInstMap.put(key, dependencyInstanceList);
+        }
+
+        dependencyInstanceList.add(depInst);
+      }
+
+      final List<TriggerInstance> res = new ArrayList<>();
+      for (final Map.Entry<TriggerInstKey, List<DependencyInstance>> entry : triggerInstMap
+          .entrySet()) {
+        res.add(new TriggerInstance(entry.getKey().triggerInstId, null, entry.getKey()
+            .flowConfigID.flowId, entry.getKey().flowConfigID.flowVersion, entry.getKey()
+            .submitUser, entry.getValue(), entry.getKey().flowExecId, entry.getKey().project));
+      }
+
+      //sort on start time in ascending order
+      Collections.sort(res, (o1, o2) -> {
+        if (o1.getStartTime() < o2.getStartTime()) {
+          return -1;
+        } else if (o1.getStartTime() > o2.getStartTime()) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+
+      return res;
+    }
+
+    private class TriggerInstKey {
+
+      String triggerInstId;
+      FlowConfigID flowConfigID;
+      String submitUser;
+      int flowExecId;
+      Project project;
+
+      public TriggerInstKey(final String triggerInstId, final String submitUser, final int projId,
+          final int projVersion, final String flowId, final int flowVerion, final int flowExecId,
+          final Project project) {
+        this.triggerInstId = triggerInstId;
+        this.flowConfigID = new FlowConfigID(projId, projVersion, flowId, flowVerion);
+        this.submitUser = submitUser;
+        this.flowExecId = flowExecId;
+        this.project = project;
+      }
+
+      @Override
+      public boolean equals(final Object o) {
+        if (this == o) {
+          return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
+
+        final TriggerInstKey that = (TriggerInstKey) o;
+
+        return new EqualsBuilder()
+            .append(this.triggerInstId, that.triggerInstId)
+            .append(this.flowConfigID, that.flowConfigID)
+            .isEquals();
+      }
+
+      @Override
+      public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+            .append(this.triggerInstId)
+            .append(this.flowConfigID)
+            .toHashCode();
+      }
     }
   }
 }
