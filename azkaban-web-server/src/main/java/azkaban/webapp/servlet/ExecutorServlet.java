@@ -884,10 +884,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         final String flowId = getParam(req, "flow");
 
         // check proxy
-        final Map<String, String> props = getParamGroup(req, "flowOverride");
-        if (props != null && props.keySet().size() != 0) {
-            for (String key : props.keySet()) {
-                if ("user.to.proxy".equals(key) && !userManager.validateProxyUser(props.get(key), user)) {
+        final  Map<String,String> props = getParamGroup(req, "flowOverride");
+        if (props != null && props.keySet().size() != 0){
+            for (String key : props.keySet()){
+                if ("user.to.proxy".equals(key) && !userManager.validateProxyUser(props.get(key), user)){
                     ret.put("error", String.format("User %s can not act as proxy for %s", user.getUserId(), props.get(key)));
                     return;
                 }
