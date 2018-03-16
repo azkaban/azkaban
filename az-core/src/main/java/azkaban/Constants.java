@@ -195,6 +195,16 @@ public class Constants {
 
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
+
+    /*
+     * Prefix used to construct Hadoop/Spark user job link.
+     * a) RM: resource manager
+     * b) JHS: Hadoop job history server
+     * c) SHS: spark job history server
+     * */
+    public static final String AZKABAN_RM_JOB_LINK = "azkaban.rm.job.link";
+    public static final String AZKABAN_JHS_JOB_LINK = "azkaban.jhs.job.link";
+    public static final String AZKABAN_SHS_JOB_LINK = "azkaban.shs.job.link";
   }
 
   public static class FlowProperties {

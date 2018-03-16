@@ -16,7 +16,10 @@
 
 package azkaban.executor;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
@@ -32,9 +35,16 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.Thread.State;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,9 +62,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
+import org.apache.hadoop.security.authentication.client.AuthenticatedURL.Token;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -75,6 +91,15 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.executorselector.comparator.";
   static final String AZKABAN_QUEUEPROCESSING_ENABLED =
       "azkaban.queueprocessing.enabled";
+  private static final String SPARK_JOB_TYPE = "spark";
+  // The regex to look for while fetching application ID from the Hadoop/Spark job log
+  private static final Pattern APPLICATION_ID_PATTERN = Pattern
+      .compile("application_\\d+_\\d+");
+  // The regex to look for while validating the content from RM job link
+  private static final Pattern FAILED_TO_READ_APPLICATION_PATTERN = Pattern
+      .compile("Failed to read the application");
+  private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
+      .compile("Invalid Application ID");
   private static final String AZKABAN_WEBSERVER_QUEUE_SIZE =
       "azkaban.webserver.queue.size";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS =
@@ -151,6 +176,16 @@ public class ExecutorManager extends EventHandler implements
     this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
     this.cleanerThread.start();
 
+  }
+
+  private String findApplicationIdFromLog(final String logData) {
+    final Matcher matcher = APPLICATION_ID_PATTERN.matcher(logData);
+    String appId = null;
+    if (matcher.find()) {
+      appId = matcher.group();
+    }
+    this.logger.info("Application ID is " + appId);
+    return appId;
   }
 
   private void setupMultiExecutorMode() {
@@ -755,6 +790,117 @@ public class ExecutorManager extends EventHandler implements
         .get("attachments");
 
     return jobStats;
+  }
+
+  @Override
+  public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
+    if (!this.azkProps.containsKey(ConfigurationKeys.AZKABAN_RM_JOB_LINK) || !this.azkProps
+        .containsKey(ConfigurationKeys.AZKABAN_JHS_JOB_LINK) || !this.azkProps
+        .containsKey(ConfigurationKeys.AZKABAN_SHS_JOB_LINK)) {
+      return null;
+    }
+
+    final String applicationId = getApplicationId(exFlow, jobId, attempt);
+    if (applicationId == null) {
+      return null;
+    }
+
+    final URL url;
+    final String jobLinkUrl;
+    boolean isRMJobLinkValid = true;
+
+    try {
+      url = new URL(this.azkProps.getString(ConfigurationKeys.AZKABAN_RM_JOB_LINK) + applicationId);
+      final HttpURLConnection connection = loginAuthenticatedURL(url);
+
+      try (final BufferedReader in = new BufferedReader(
+          new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+          if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()
+              || INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
+            this.logger.info(
+                "RM job link is invalid or has expired for " + applicationId);
+            isRMJobLinkValid = false;
+            break;
+          }
+        }
+      }
+    } catch (final Exception e) {
+      this.logger.error("Failed to get job link for " + applicationId, e);
+      return null;
+    }
+
+    if (isRMJobLinkValid) {
+      jobLinkUrl = url.toString();
+    } else {
+      // If RM job link is invalid or has expired, fetch the job link from JHS or SHS.
+      if (exFlow.getExecutableNode(jobId).getType().equals(SPARK_JOB_TYPE)) {
+        jobLinkUrl =
+            this.azkProps.get(ConfigurationKeys.AZKABAN_SHS_JOB_LINK) + applicationId + "/1/jobs";
+      } else {
+        jobLinkUrl =
+            this.azkProps.get(ConfigurationKeys.AZKABAN_JHS_JOB_LINK) + applicationId.substring(12);
+      }
+    }
+
+    this.logger.info(
+        "Job link url is " + jobLinkUrl + " for execution " + exFlow.getExecutionId() + ", job "
+            + jobId);
+    return jobLinkUrl;
+  }
+
+  private String getApplicationId(final ExecutableFlow exFlow, final String jobId,
+      final int attempt) {
+    String applicationId;
+    boolean finished = false;
+    int offset = 0;
+    try {
+      while (!finished) {
+        final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+        if (data != null) {
+          applicationId = findApplicationIdFromLog(data.getData());
+          if (applicationId != null) {
+            return applicationId;
+          }
+          offset = data.getOffset() + data.getLength();
+          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+              + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
+        } else {
+          finished = true;
+        }
+      }
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+          ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
+    }
+    return null;
+  }
+
+  private HttpURLConnection loginAuthenticatedURL(final URL url) throws Exception {
+    final List<URL> resources = new ArrayList<>();
+    resources.add(url);
+
+    final URLClassLoader ucl = new URLClassLoader(resources.toArray(new URL[resources.size()]));
+    final Configuration conf = new Configuration();
+    conf.setClassLoader(ucl);
+    UserGroupInformation.setConfiguration(conf);
+
+    final String keytabPath = requireNonNull(this.azkProps.getString(ConfigurationKeys
+        .AZKABAN_KEYTAB_PATH));
+    final String keytabPrincipal = requireNonNull(
+        this.azkProps.getString(ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL));
+    this.logger.info("Logging in using Principal: " + keytabPrincipal + ", Keytab: " + keytabPath);
+
+    UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
+
+    final HttpURLConnection connection = UserGroupInformation.getLoginUser().doAs(
+        (PrivilegedExceptionAction<HttpURLConnection>) () -> {
+          final Token token = new Token();
+          return new AuthenticatedURL().openConnection(url, token);
+        });
+
+    return connection;
   }
 
   @Override

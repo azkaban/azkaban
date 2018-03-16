@@ -291,6 +291,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ExecutableFlow flow = null;
     ExecutableNode node = null;
+    final String jobLinkUrl;
     try {
       flow = this.executorManager.getExecutableFlow(execId);
       if (flow == null) {
@@ -306,6 +307,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
             "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
         return;
       }
+
+      jobLinkUrl = this.executorManager.getJobLinkUrl(flow, jobId, attempt);
 
       final List<ViewerPlugin> jobViewerPlugins =
           PluginRegistry.getRegistry().getViewerPluginsForJobType(
@@ -329,6 +332,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("flowid", flow.getId());
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
+    page.add("jobLinkUrl", jobLinkUrl);
+    page.add("jobType", node.getType());
 
     page.render();
   }
