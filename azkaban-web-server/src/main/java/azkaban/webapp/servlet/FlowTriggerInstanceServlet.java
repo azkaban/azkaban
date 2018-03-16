@@ -99,6 +99,13 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       } else {
         ret.put("error", "please specify a valid running trigger instance id");
       }
+    } else if (ajaxName.equals("fetchTriggerStatus")) {
+      if (hasParam(req, "id")) {
+        final String triggerInstanceId = getParam(req, "id");
+        ajaxFetchTriggerInstance(triggerInstanceId, session, ret);
+      } else {
+        ret.put("error", "please specify a valid trigger instance id");
+      }
     }
 
     if (ret != null) {
@@ -115,6 +122,28 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     } else {
       ret.put("error", "the trigger instance doesn't exist");
     }
+  }
+
+  private void ajaxFetchTriggerInstance(final String triggerInstanceId, final Session session,
+      final HashMap<String, Object> ret) {
+    final TriggerInstance triggerInst = this.triggerService
+        .findTriggerInstanceById(triggerInstanceId);
+
+    final List<Map<String, Object>> dependencyOutput = new ArrayList<>();
+    for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+      final Map<String, Object> depMap = new HashMap<>();
+      depMap.put("dependencyName", depInst.getDepName());
+      depMap.put("dependencyType", depInst.getTriggerInstance().getFlowTrigger()
+          .getDependencyByName(depInst.getDepName()).getType());
+      depMap.put("dependencyStartTime", depInst.getStartTime());
+      depMap.put("dependencyEndTime", depInst.getEndTime());
+      depMap.put("dependencyStatus", depInst.getStatus());
+      depMap.put("dependencyCancelCause", depInst.getCancellationCause());
+      depMap.put("dependencyConfig", depInst.getTriggerInstance().getFlowTrigger()
+          .getDependencyByName(depInst.getDepName()));
+      dependencyOutput.add(depMap);
+    }
+    ret.put("items", dependencyOutput);
   }
 
   private void ajaxKillTriggerInstance(final String triggerInstanceId, final Session session,

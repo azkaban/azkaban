@@ -88,6 +88,7 @@ var flowTabView;
 azkaban.FlowTabView = Backbone.View.extend({
   events: {
     "click #graphViewLink": "handleGraphLinkClick",
+    "click #flowTriggerlistViewLink": "handleFlowTriggerLinkClick",
     "click #jobslistViewLink": "handleJobslistLinkClick",
     "click #flowLogViewLink": "handleLogLinkClick",
     "click #statsViewLink": "handleStatsLinkClick",
@@ -135,13 +136,29 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#statsView").hide();
   },
 
+  handleFlowTriggerLinkClick: function () {
+    $("#jobslistViewLink").removeClass("active");
+    $("#graphViewLink").removeClass("active");
+    $("#flowLogViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").addClass("active");
+    $("#statsViewLink").removeClass("active");
+
+    $("#jobListView").hide();
+    $("#flowTriggerListView").show();
+    $("#graphView").hide();
+    $("#flowLogView").hide();
+    $("#statsView").hide();
+  },
+
   handleJobslistLinkClick: function () {
     $("#graphViewLink").removeClass("active");
     $("#jobslistViewLink").addClass("active");
     $("#flowLogViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#graphView").hide();
+    $("#flowTriggerListView").hide();
     $("#jobListView").show();
     $("#flowLogView").hide();
     $("#statsView").hide();
@@ -149,11 +166,13 @@ azkaban.FlowTabView = Backbone.View.extend({
 
   handleLogLinkClick: function () {
     $("#graphViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").addClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#graphView").hide();
+    $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").show();
     $("#statsView").hide();
@@ -161,11 +180,13 @@ azkaban.FlowTabView = Backbone.View.extend({
 
   handleStatsLinkClick: function () {
     $("#graphViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").removeClass("active");
     $("#statsViewLink").addClass("active");
 
     $("#graphView").hide();
+    $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").hide();
     statsView.show();
