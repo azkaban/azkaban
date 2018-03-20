@@ -156,8 +156,7 @@ public class FlowTriggerDependencyPluginManager {
           (DEPENDENCY_CLASS));
       final Object obj = Utils.callConstructor(clazz);
 
-      final DependencyCheck dependencyCheck = (DependencyCheck) obj;
-      return dependencyCheck;
+      return (DependencyCheck) obj;
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
     }
