@@ -197,14 +197,15 @@ public class Constants {
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
 
     /*
-     * Prefix used to construct Hadoop/Spark user job link.
-     * a) RM: resource manager
-     * b) JHS: Hadoop job history server
-     * c) SHS: spark job history server
+     * Hadoop/Spark user job link.
+     * Example:
+     * a) azkaban.server.external.resource_manager_job_url=http://***rm***:8088/cluster/app/application_${application.id}
+     * b) azkaban.server.external.history_server_job_url=http://***jh***:19888/jobhistory/job/job_${application.id}
+     * c) azkaban.server.external.spark_history_server_job_url=http://***sh***:18080/history/application_${application.id}/1/jobs
      * */
-    public static final String AZKABAN_RM_JOB_LINK = "azkaban.rm.job.link";
-    public static final String AZKABAN_JHS_JOB_LINK = "azkaban.jhs.job.link";
-    public static final String AZKABAN_SHS_JOB_LINK = "azkaban.shs.job.link";
+    public static final String RESOURCE_MANAGER_JOB_URL = "azkaban.server.external.resource_manager_job_url";
+    public static final String HISTORY_SERVER_JOB_URL = "azkaban.server.external.history_server_job_url";
+    public static final String SPARK_HISTORY_SERVER_JOB_URL = "azkaban.server.external.spark_history_server_job_url";
   }
 
   public static class FlowProperties {

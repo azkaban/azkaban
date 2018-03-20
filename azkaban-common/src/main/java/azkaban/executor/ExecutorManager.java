@@ -29,6 +29,7 @@ import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
+import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
@@ -42,9 +43,7 @@ import java.io.InputStreamReader;
 import java.lang.Thread.State;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
-import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,10 +66,6 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
-import org.apache.hadoop.security.authentication.client.AuthenticatedURL.Token;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -92,6 +87,7 @@ public class ExecutorManager extends EventHandler implements
   static final String AZKABAN_QUEUEPROCESSING_ENABLED =
       "azkaban.queueprocessing.enabled";
   private static final String SPARK_JOB_TYPE = "spark";
+  private static final String APPLICATION_ID = "${application.id}";
   // The regex to look for while fetching application ID from the Hadoop/Spark job log
   private static final Pattern APPLICATION_ID_PATTERN = Pattern
       .compile("application_\\d+_\\d+");
@@ -182,7 +178,7 @@ public class ExecutorManager extends EventHandler implements
     final Matcher matcher = APPLICATION_ID_PATTERN.matcher(logData);
     String appId = null;
     if (matcher.find()) {
-      appId = matcher.group();
+      appId = matcher.group().substring(12);
     }
     this.logger.info("Application ID is " + appId);
     return appId;
@@ -794,9 +790,9 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
-    if (!this.azkProps.containsKey(ConfigurationKeys.AZKABAN_RM_JOB_LINK) || !this.azkProps
-        .containsKey(ConfigurationKeys.AZKABAN_JHS_JOB_LINK) || !this.azkProps
-        .containsKey(ConfigurationKeys.AZKABAN_SHS_JOB_LINK)) {
+    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
       return null;
     }
 
@@ -810,8 +806,14 @@ public class ExecutorManager extends EventHandler implements
     boolean isRMJobLinkValid = true;
 
     try {
-      url = new URL(this.azkProps.getString(ConfigurationKeys.AZKABAN_RM_JOB_LINK) + applicationId);
-      final HttpURLConnection connection = loginAuthenticatedURL(url);
+      url = new URL(this.azkProps.getString(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL)
+          .replace(APPLICATION_ID, applicationId));
+      final String keytabPrincipal = requireNonNull(
+          this.azkProps.getString(ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL));
+      final String keytabPath = requireNonNull(this.azkProps.getString(ConfigurationKeys
+          .AZKABAN_KEYTAB_PATH));
+      final HttpURLConnection connection = AuthenticationUtils.loginAuthenticatedURL(url,
+          keytabPrincipal, keytabPath);
 
       try (final BufferedReader in = new BufferedReader(
           new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
@@ -820,14 +822,14 @@ public class ExecutorManager extends EventHandler implements
           if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()
               || INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
             this.logger.info(
-                "RM job link is invalid or has expired for " + applicationId);
+                "RM job link is invalid or has expired for application_" + applicationId);
             isRMJobLinkValid = false;
             break;
           }
         }
       }
     } catch (final Exception e) {
-      this.logger.error("Failed to get job link for " + applicationId, e);
+      this.logger.error("Failed to get job link for application_" + applicationId, e);
       return null;
     }
 
@@ -837,10 +839,12 @@ public class ExecutorManager extends EventHandler implements
       // If RM job link is invalid or has expired, fetch the job link from JHS or SHS.
       if (exFlow.getExecutableNode(jobId).getType().equals(SPARK_JOB_TYPE)) {
         jobLinkUrl =
-            this.azkProps.get(ConfigurationKeys.AZKABAN_SHS_JOB_LINK) + applicationId + "/1/jobs";
+            this.azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL).replace
+                (APPLICATION_ID, applicationId);
       } else {
         jobLinkUrl =
-            this.azkProps.get(ConfigurationKeys.AZKABAN_JHS_JOB_LINK) + applicationId.substring(12);
+            this.azkProps.get(ConfigurationKeys.HISTORY_SERVER_JOB_URL).replace(APPLICATION_ID,
+                applicationId);
       }
     }
 
@@ -875,32 +879,6 @@ public class ExecutorManager extends EventHandler implements
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
     return null;
-  }
-
-  private HttpURLConnection loginAuthenticatedURL(final URL url) throws Exception {
-    final List<URL> resources = new ArrayList<>();
-    resources.add(url);
-
-    final URLClassLoader ucl = new URLClassLoader(resources.toArray(new URL[resources.size()]));
-    final Configuration conf = new Configuration();
-    conf.setClassLoader(ucl);
-    UserGroupInformation.setConfiguration(conf);
-
-    final String keytabPath = requireNonNull(this.azkProps.getString(ConfigurationKeys
-        .AZKABAN_KEYTAB_PATH));
-    final String keytabPrincipal = requireNonNull(
-        this.azkProps.getString(ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL));
-    this.logger.info("Logging in using Principal: " + keytabPrincipal + ", Keytab: " + keytabPath);
-
-    UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
-
-    final HttpURLConnection connection = UserGroupInformation.getLoginUser().doAs(
-        (PrivilegedExceptionAction<HttpURLConnection>) () -> {
-          final Token token = new Token();
-          return new AuthenticatedURL().openConnection(url, token);
-        });
-
-    return connection;
   }
 
   @Override
