@@ -20,9 +20,11 @@ import azkaban.flowtrigger.DependencyCheck;
 import azkaban.flowtrigger.DependencyPluginConfig;
 import azkaban.flowtrigger.DependencyPluginConfigImpl;
 import azkaban.utils.Utils;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +38,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,19 +50,29 @@ public class FlowTriggerDependencyPluginManager {
   public static final String PRIVATE_CONFIG_FILE = "private.properties";
   public static final String DEPENDENCY_CLASS = "dependency.class";
   public static final String CLASS_PATH = "dependency.classpath";
-
+  public static final String FLOW_TRIGGER_CLASS_PATH = "flowtrigger.dependency.plugin.classpath";
   private static final Logger logger = LoggerFactory
       .getLogger(FlowTriggerDependencyPluginManager.class);
-
   private final String pluginDir;
-
   private final Map<String, DependencyCheck> dependencyTypeMap;
 
   @Inject
-  public FlowTriggerDependencyPluginManager(final String pluginDir) throws
-      FlowTriggerDependencyPluginException {
+  public FlowTriggerDependencyPluginManager(final String pluginDir)
+      throws FlowTriggerDependencyPluginException {
     this.dependencyTypeMap = new ConcurrentHashMap<>();
     this.pluginDir = pluginDir;
+  }
+
+  private File[] getFilesMatchingPath(final String path) {
+    if (path.endsWith("*")) {
+      final File dir = new File(path.substring(0, path.lastIndexOf("/") + 1));
+      final FileFilter fileFilter = new WildcardFileFilter(path.substring(path.lastIndexOf("/")
+          + 1));
+      final File[] files = dir.listFiles(fileFilter);
+      return files;
+    } else {
+      return new File[]{new File(path)};
+    }
   }
 
   private Map<String, String> readConfig(final File file) throws
@@ -87,12 +100,12 @@ public class FlowTriggerDependencyPluginManager {
 
   private void validatePluginConfig(final DependencyPluginConfig pluginConfig)
       throws FlowTriggerDependencyPluginException {
-    if (StringUtils.isEmpty(pluginConfig.get(DEPENDENCY_CLASS))) {
-      throw new FlowTriggerDependencyPluginException("missing " + DEPENDENCY_CLASS + " in "
-          + "dependency plugin properties");
-    } else if (StringUtils.isEmpty(pluginConfig.get(CLASS_PATH))) {
-      throw new FlowTriggerDependencyPluginException("missing " + CLASS_PATH + " in "
-          + "dependency plugin properties");
+    for (final String requiredField : ImmutableSet
+        .of(DEPENDENCY_CLASS, CLASS_PATH, FLOW_TRIGGER_CLASS_PATH)) {
+      if (StringUtils.isEmpty(pluginConfig.get(requiredField))) {
+        throw new FlowTriggerDependencyPluginException("missing " + requiredField + " in "
+            + "dependency plugin properties");
+      }
     }
   }
 
@@ -108,34 +121,48 @@ public class FlowTriggerDependencyPluginManager {
     return new DependencyPluginConfigImpl(combined);
   }
 
-
   private DependencyCheck createDependencyCheck(final DependencyPluginConfig pluginConfig)
       throws FlowTriggerDependencyPluginException {
+    final String azDepPluginClassPath = pluginConfig.get(FLOW_TRIGGER_CLASS_PATH);
     final String classPath = pluginConfig.get(CLASS_PATH);
+
     final String[] cpList = classPath.split(",");
+    //final String[] azDepPluginClassPathList = azDepPluginClassPath.split(",");
+    final String[] allCpList = cpList;
+    //(String[]) ArrayUtils.addAll(cpList, azDepPluginClassPathList);
 
     final List<URL> resources = new ArrayList<>();
 
     try {
-      for (final String cp : cpList) {
-        final URL cpItem = new File(cp).toURI().toURL();
-        if (!resources.contains(cpItem)) {
-          logger.info("adding to classpath " + cpItem);
-          resources.add(cpItem);
+      for (final String cp : allCpList) {
+        final File[] files = getFilesMatchingPath(cp);
+        if (files != null) {
+          for (final File file : files) {
+            final URL cpItem = file.toURI().toURL();
+            if (!resources.contains(cpItem)) {
+              logger.info("adding to classpath " + cpItem);
+              resources.add(cpItem);
+            }
+          }
         }
       }
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
     }
 
-    final ClassLoader dependencyClassloader =
-        new URLClassLoader(resources.toArray(new URL[resources.size()]));
+    final ClassLoader dependencyClassloader
+        = new ParentLastURLClassLoader(resources.toArray(new URL[resources.size()]));
+    //= new URLClassLoader(resources.toArray(new URL[resources.size()]), this
+    // .parentClassLoader);
+    Thread.currentThread().setContextClassLoader(dependencyClassloader);
+
     Class<? extends DependencyCheck> clazz = null;
     try {
       clazz = (Class<? extends DependencyCheck>) dependencyClassloader.loadClass(pluginConfig.get
           (DEPENDENCY_CLASS));
-      final DependencyCheck dependencyCheck =
-          (DependencyCheck) Utils.callConstructor(clazz);
+      final Object obj = Utils.callConstructor(clazz);
+
+      final DependencyCheck dependencyCheck = (DependencyCheck) obj;
       return dependencyCheck;
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
@@ -226,6 +253,79 @@ public class FlowTriggerDependencyPluginManager {
         depCheck.shutdown();
       } catch (final Exception ex) {
         logger.error("failed to shutdown dependency check " + depCheck, ex);
+      }
+    }
+  }
+
+  /**
+   * A parent-last classloader that will try the child classloader first and then the parent.
+   */
+  private static class ParentLastURLClassLoader extends ClassLoader {
+
+    private final ChildURLClassLoader childClassLoader;
+
+    public ParentLastURLClassLoader(final URL[] urls) {
+      super(Thread.currentThread().getContextClassLoader());
+
+      this.childClassLoader = new ChildURLClassLoader(urls,
+          new FindClassClassLoader(this.getParent()));
+    }
+
+    @Override
+    protected synchronized Class<?> loadClass(final String name, final boolean resolve)
+        throws ClassNotFoundException {
+      try {
+        // first we try to find a class inside the child classloader
+        return this.childClassLoader.findClass(name);
+      } catch (final ClassNotFoundException e) {
+        // didn't find it, try the parent
+        return super.loadClass(name, resolve);
+      }
+    }
+
+    /**
+     * This class allows me to call findClass on a classloader
+     */
+    private static class FindClassClassLoader extends ClassLoader {
+
+      public FindClassClassLoader(final ClassLoader parent) {
+        super(parent);
+      }
+
+      @Override
+      public Class<?> findClass(final String name) throws ClassNotFoundException {
+        return super.findClass(name);
+      }
+    }
+
+    /**
+     * This class delegates (child then parent) for the findClass method for a URLClassLoader.
+     * We need this because findClass is protected in URLClassLoader
+     */
+    private static class ChildURLClassLoader extends URLClassLoader {
+
+      private final FindClassClassLoader realParent;
+
+      public ChildURLClassLoader(final URL[] urls, final FindClassClassLoader realParent) {
+        super(urls, null);
+
+        this.realParent = realParent;
+      }
+
+      @Override
+      public Class<?> findClass(final String name) throws ClassNotFoundException {
+        try {
+          final Class<?> loaded = super.findLoadedClass(name);
+          if (loaded != null) {
+            return loaded;
+          }
+
+          // first try to use the URLClassLoader findClass
+          return super.findClass(name);
+        } catch (final ClassNotFoundException e) {
+          // if that fails, we ask our real parent classloader to load the class (we give up)
+          return this.realParent.loadClass(name);
+        }
       }
     }
   }
