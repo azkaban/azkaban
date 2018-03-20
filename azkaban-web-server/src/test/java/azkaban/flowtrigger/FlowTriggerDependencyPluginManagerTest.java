@@ -43,6 +43,10 @@ public class FlowTriggerDependencyPluginManagerTest {
     assertThat(pluginManager.getDependencyCheck("test")).isNotNull();
     assertThat(pluginManager.getDependencyCheck("test2")).isNotNull();
 
+    // class loader of pluginManager.getDependencyCheck("test") is different from
+    // loader of FakeDependencyCheck1, so
+    // assertThat(pluginManager.getDependencyCheck("test")).isInstanceOf(FakeDependencyCheck1)
+    // will return false.
     assertThat(pluginManager.getDependencyCheck("test").getClass().getCanonicalName()).isEqualTo
         ("azkaban.flowtrigger.testplugin.FakeDependencyCheck1");
 

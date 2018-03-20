@@ -50,7 +50,6 @@ public class FlowTriggerDependencyPluginManager {
   public static final String PRIVATE_CONFIG_FILE = "private.properties";
   public static final String DEPENDENCY_CLASS = "dependency.class";
   public static final String CLASS_PATH = "dependency.classpath";
-  public static final String FLOW_TRIGGER_CLASS_PATH = "flowtrigger.dependency.plugin.classpath";
   private static final Logger logger = LoggerFactory
       .getLogger(FlowTriggerDependencyPluginManager.class);
   private final String pluginDir;
@@ -101,7 +100,7 @@ public class FlowTriggerDependencyPluginManager {
   private void validatePluginConfig(final DependencyPluginConfig pluginConfig)
       throws FlowTriggerDependencyPluginException {
     for (final String requiredField : ImmutableSet
-        .of(DEPENDENCY_CLASS, CLASS_PATH, FLOW_TRIGGER_CLASS_PATH)) {
+        .of(DEPENDENCY_CLASS, CLASS_PATH)) {
       if (StringUtils.isEmpty(pluginConfig.get(requiredField))) {
         throw new FlowTriggerDependencyPluginException("missing " + requiredField + " in "
             + "dependency plugin properties");
@@ -123,18 +122,14 @@ public class FlowTriggerDependencyPluginManager {
 
   private DependencyCheck createDependencyCheck(final DependencyPluginConfig pluginConfig)
       throws FlowTriggerDependencyPluginException {
-    final String azDepPluginClassPath = pluginConfig.get(FLOW_TRIGGER_CLASS_PATH);
     final String classPath = pluginConfig.get(CLASS_PATH);
 
     final String[] cpList = classPath.split(",");
-    //final String[] azDepPluginClassPathList = azDepPluginClassPath.split(",");
-    final String[] allCpList = cpList;
-    //(String[]) ArrayUtils.addAll(cpList, azDepPluginClassPathList);
 
     final List<URL> resources = new ArrayList<>();
 
     try {
-      for (final String cp : allCpList) {
+      for (final String cp : cpList) {
         final File[] files = getFilesMatchingPath(cp);
         if (files != null) {
           for (final File file : files) {
@@ -152,8 +147,7 @@ public class FlowTriggerDependencyPluginManager {
 
     final ClassLoader dependencyClassloader
         = new ParentLastURLClassLoader(resources.toArray(new URL[resources.size()]));
-    //= new URLClassLoader(resources.toArray(new URL[resources.size()]), this
-    // .parentClassLoader);
+
     Thread.currentThread().setContextClassLoader(dependencyClassloader);
 
     Class<? extends DependencyCheck> clazz = null;
