@@ -42,6 +42,13 @@ public class FlowTriggerDependencyPluginManagerTest {
   public void testPluginLoading() {
     assertThat(pluginManager.getDependencyCheck("test")).isNotNull();
     assertThat(pluginManager.getDependencyCheck("test2")).isNotNull();
+
+    assertThat(pluginManager.getDependencyCheck("test").getClass().getCanonicalName()).isEqualTo
+        ("azkaban.flowtrigger.testplugin.FakeDependencyCheck1");
+
+    assertThat(pluginManager.getDependencyCheck("test2").getClass().getCanonicalName()).isEqualTo
+        ("azkaban.flowtrigger.testplugin.FakeDependencyCheck2");
+
     //verify the dependency check contains the specified properties
     assertThat(pluginManager.getDependencyCheck("test").toString()).contains("kafka.url=123");
     assertThat(pluginManager.getDependencyCheck("test").toString()).contains("kafka.port=1234");
