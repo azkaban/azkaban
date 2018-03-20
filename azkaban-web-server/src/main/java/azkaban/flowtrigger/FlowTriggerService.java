@@ -17,6 +17,7 @@
 package azkaban.flowtrigger;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowTriggerProps;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
@@ -28,7 +29,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -70,7 +73,6 @@ public class FlowTriggerService {
 
   private static final Duration CANCELLING_GRACE_PERIOD_AFTER_RESTART = Duration.ofMinutes(1);
   private static final int RECENTLY_FINISHED_TRIGGER_LIMIT = 20;
-  private static final String START_TIME = "starttime";
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerService.class);
   private final ExecutorService executorService;
   private final List<TriggerInstance> runningTriggers;
@@ -102,13 +104,20 @@ public class FlowTriggerService {
   }
 
   private DependencyInstanceContext createDepContext(final FlowTriggerDependency dep, final long
-      starttimeInMills) throws Exception {
+      startTimeInMills, final String triggerInstId) throws Exception {
     final DependencyCheck dependencyCheck = this.triggerPluginManager
         .getDependencyCheck(dep.getType());
     final DependencyInstanceCallback callback = new DependencyInstanceCallbackImpl(this);
-    final DependencyInstanceConfigImpl config = new DependencyInstanceConfigImpl(dep.getProps());
+
+    final Map<String, String> depInstConfig = new HashMap<>();
+    depInstConfig.putAll(dep.getProps());
+    depInstConfig.put(FlowTriggerProps.DEP_NAME, dep.getName());
+
+    final DependencyInstanceConfigImpl config = new DependencyInstanceConfigImpl(depInstConfig);
     final DependencyInstanceRuntimeProps runtimeProps = new DependencyInstanceRuntimePropsImpl
-        (ImmutableMap.of(START_TIME, String.valueOf(starttimeInMills)));
+        (ImmutableMap
+            .of(FlowTriggerProps.START_TIME, String.valueOf(startTimeInMills), FlowTriggerProps
+                .TRIGGER_INSTANCE_ID, triggerInstId));
     return dependencyCheck.run(config, runtimeProps, callback);
   }
 
@@ -122,7 +131,7 @@ public class FlowTriggerService {
       final String depName = dep.getName();
       DependencyInstanceContext context = null;
       try {
-        context = createDepContext(dep, startTime);
+        context = createDepContext(dep, startTime, triggerInstId);
       } catch (final Exception ex) {
         logger.error(String.format("unable to create dependency context for trigger instance[id ="
             + " %s]", triggerInstId), ex);
@@ -190,7 +199,8 @@ public class FlowTriggerService {
         DependencyInstanceContext context = null;
         try {
           //recreate dependency instance context
-          context = createDepContext(dependency, depInst.getStartTime());
+          context = createDepContext(dependency, depInst.getStartTime(), depInst
+              .getTriggerInstance().getId());
         } catch (final Exception ex) {
           logger
               .error(

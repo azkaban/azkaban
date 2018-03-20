@@ -39,7 +39,7 @@ import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
 /**
- * Hashmap implementation of a hierarchitical properties with helpful converter functions and
+ * Hashmap implementation of a hierarchical properties with helpful converter functions and
  * Exception throwing. This class is not threadsafe.
  */
 public class Props {
