@@ -28,10 +28,11 @@
         <div class="pull-right header-form">
           #if ($jobLinkUrl)
             #if ($jobType == "spark")
-              <a href="$jobLinkUrl" target="_blank" class="btn btn-primary btn-sm">Spark Job Log</a>
+              <a href="$jobLinkUrl" target="_blank" class="btn btn-primary btn-sm"
+                 id="jobLinkUrl">Spark Job Log</a>
             #else
-              <a href="$jobLinkUrl" target="_blank" class="btn btn-primary btn-sm">Hadoop Job
-                Log</a>
+              <a href="$jobLinkUrl" target="_blank" class="btn btn-primary btn-sm"
+                 id="jobLinkUrl">Hadoop Job Log</a>
             #end
           #end
           <a href="${context}/manager?project=${projectName}&flow=${parentflowid}&job=$jobname"
