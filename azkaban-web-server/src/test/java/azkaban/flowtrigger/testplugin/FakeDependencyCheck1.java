@@ -25,7 +25,7 @@ import azkaban.flowtrigger.DependencyPluginConfig;
 
 /**
  * todo chengren311:
- * az-flow-trigger-dependency-plugin.jar in resource folder is generated from
+ * test-dependency-plugin.jar in resource folder is generated from
  *
  * @see azkaban.flowtrigger.testplugin.FakeDependencyCheck1
  * @see azkaban.flowtrigger.testplugin.FakeDependencyCheck2

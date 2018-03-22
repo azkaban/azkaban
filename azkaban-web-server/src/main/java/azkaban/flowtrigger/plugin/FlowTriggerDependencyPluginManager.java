@@ -54,12 +54,14 @@ public class FlowTriggerDependencyPluginManager {
       .getLogger(FlowTriggerDependencyPluginManager.class);
   private final String pluginDir;
   private final Map<String, DependencyCheck> dependencyTypeMap;
+  private final ClassLoader prevClassLoader;
 
   @Inject
   public FlowTriggerDependencyPluginManager(final String pluginDir)
       throws FlowTriggerDependencyPluginException {
     this.dependencyTypeMap = new ConcurrentHashMap<>();
     this.pluginDir = pluginDir;
+    this.prevClassLoader = Thread.currentThread().getContextClassLoader();
   }
 
   private File[] getFilesMatchingPath(final String path) {
@@ -145,8 +147,8 @@ public class FlowTriggerDependencyPluginManager {
       throw new FlowTriggerDependencyPluginException(ex);
     }
 
-    final ClassLoader dependencyClassloader
-        = new ParentLastURLClassLoader(resources.toArray(new URL[resources.size()]));
+    final ClassLoader dependencyClassloader = new ParentLastURLClassLoader(
+        resources.toArray(new URL[resources.size()]), this.getClass().getClassLoader());
 
     Thread.currentThread().setContextClassLoader(dependencyClassloader);
 
@@ -155,7 +157,6 @@ public class FlowTriggerDependencyPluginManager {
       clazz = (Class<? extends DependencyCheck>) dependencyClassloader.loadClass(pluginConfig.get
           (DEPENDENCY_CLASS));
       final Object obj = Utils.callConstructor(clazz);
-
       return (DependencyCheck) obj;
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
@@ -190,6 +191,9 @@ public class FlowTriggerDependencyPluginManager {
     for (final File dir : pluginDir.listFiles()) {
       loadDependencyPlugin(dir);
     }
+    //reset thread context loader so that other azkaban class will be loaded with the old
+    // classloader
+    Thread.currentThread().setContextClassLoader(this.prevClassLoader);
   }
 
   private String getPluginName(final File dependencyPluginDir) {
@@ -257,8 +261,8 @@ public class FlowTriggerDependencyPluginManager {
 
     private final ChildURLClassLoader childClassLoader;
 
-    public ParentLastURLClassLoader(final URL[] urls) {
-      super(Thread.currentThread().getContextClassLoader());
+    public ParentLastURLClassLoader(final URL[] urls, final ClassLoader parentCL) {
+      super(parentCL);
 
       this.childClassLoader = new ChildURLClassLoader(urls,
           new FindClassClassLoader(this.getParent()));
@@ -322,4 +326,6 @@ public class FlowTriggerDependencyPluginManager {
       }
     }
   }
+
+
 }
