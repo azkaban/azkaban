@@ -95,8 +95,11 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
               Constants.UNASSIGNED_EXEC_ID);
 
   private static final String SELECT_ALL_RUNNING_EXECUTIONS =
-      String.format("SELECT %s FROM %s WHERE dep_status = %s or dep_status = %s",
+      String.format(
+          "SELECT %s FROM %s WHERE trigger_instance_id in (SELECT trigger_instance_id FROM %s "
+              + "WHERE dep_status = %s or dep_status = %s)",
           StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+          DEPENDENCY_EXECUTION_TABLE,
           DEPENDENCY_EXECUTION_TABLE,
           Status.RUNNING.ordinal(), Status.CANCELLING.ordinal());
 
@@ -105,13 +108,14 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           + "cancelleation_cause,project_id,"
           + "project_version,flow_id,flow_version, flow_exec_id \n"
           + "FROM execution_dependencies JOIN (\n"
-          + "SELECT distinct(trigger_instance_id), max(endtime) FROM execution_dependencies "
-          + "WHERE dep_status = %s or dep_status = %s\n"
+          + "SELECT trigger_instance_id FROM execution_dependencies where "
+          + "trigger_instance_id not in (SELECT distinct(trigger_instance_id) FROM "
+          + "execution_dependencies WHERE dep_status = %s or dep_status = %s)\n"
           + "GROUP BY trigger_instance_id ORDER BY max(endtime) DESC \n"
           + " limit %%s ) temp on execution_dependencies"
           + ".trigger_instance_id in (temp.trigger_instance_id);",
-      Status.SUCCEEDED.ordinal(),
-      Status.CANCELLED.ordinal());
+      Status.RUNNING.ordinal(),
+      Status.CANCELLING.ordinal());
 
 
   private static final String UPDATE_DEPENDENCY_FLOW_EXEC_ID = String.format("UPDATE %s SET "

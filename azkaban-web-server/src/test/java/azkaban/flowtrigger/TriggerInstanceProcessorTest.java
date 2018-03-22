@@ -15,6 +15,7 @@
  */
 package azkaban.flowtrigger;
 
+import static java.lang.Thread.sleep;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -81,9 +82,10 @@ public class TriggerInstanceProcessorTest {
   }
 
   @Test
-  public void testProcessTermination() throws ExecutorManagerException {
+  public void testProcessTermination() throws ExecutorManagerException, InterruptedException {
     final TriggerInstance triggerInstance = createTriggerInstance();
     processor.processTermination(triggerInstance);
+    sleep(1000);
     verify(emailer).sendEmail(any(), any(), any());
   }
 
