@@ -19,11 +19,11 @@ package azkaban.flowtrigger.quartz;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.flow.Flow;
-import azkaban.flow.FlowUtils;
 import azkaban.project.FlowLoaderUtils;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.scheduler.QuartzJobDescription;
 import azkaban.scheduler.QuartzScheduler;
@@ -51,11 +51,14 @@ public class FlowTriggerScheduler {
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerScheduler.class);
   private final ProjectLoader projectLoader;
   private final QuartzScheduler scheduler;
+  private final ProjectManager projectManager;
 
   @Inject
-  public FlowTriggerScheduler(final ProjectLoader projectLoader, final QuartzScheduler scheduler) {
+  public FlowTriggerScheduler(final ProjectLoader projectLoader, final QuartzScheduler scheduler,
+      final ProjectManager projectManager) {
     this.projectLoader = requireNonNull(projectLoader);
     this.scheduler = requireNonNull(scheduler);
+    this.projectManager = requireNonNull(projectManager);
   }
 
   /**
@@ -86,13 +89,12 @@ public class FlowTriggerScheduler {
           final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(flowFile);
 
           if (flowTrigger != null) {
-            final String projectJson = FlowUtils.toJson(project);
             final Map<String, Object> contextMap = ImmutableMap
                 .of(FlowTriggerQuartzJob.SUBMIT_USER, submitUser,
                     FlowTriggerQuartzJob.FLOW_TRIGGER, flowTrigger,
                     FlowTriggerQuartzJob.FLOW_ID, flow.getId(),
                     FlowTriggerQuartzJob.FLOW_VERSION, latestFlowVersion,
-                    FlowTriggerQuartzJob.PROJECT, projectJson);
+                    FlowTriggerQuartzJob.PROJECT_ID, project.getId());
             logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
             this.scheduler
                 .registerJob(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
@@ -124,15 +126,13 @@ public class FlowTriggerScheduler {
           final JobDataMap jobDataMap = job.getJobDataMap();
 
           final String flowId = jobDataMap.getString(FlowTriggerQuartzJob.FLOW_ID);
-
-          final String projectJson = jobDataMap.getString(FlowTriggerQuartzJob.PROJECT);
-          final Project project = FlowUtils.toProject(projectJson);
+          final int projectId = jobDataMap.getInt(FlowTriggerQuartzJob.PROJECT_ID);
           final FlowTrigger flowTrigger = (FlowTrigger) jobDataMap
               .get(FlowTriggerQuartzJob.FLOW_TRIGGER);
           final String submitUser = jobDataMap.getString(FlowTriggerQuartzJob.SUBMIT_USER);
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
           scheduledFlowTrigger = new ScheduledFlowTrigger(
-              project.getName(),
+              this.projectManager.getProject(projectId).getName(),
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0));
         } catch (final Exception ex) {

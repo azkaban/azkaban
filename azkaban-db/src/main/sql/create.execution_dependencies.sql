@@ -10,7 +10,6 @@ CREATE TABLE execution_dependencies(
   project_version INT not null,
   flow_id varchar(128) not null,
   flow_version INT not null,
-  project_json MEDIUMTEXT not null,
   flow_exec_id INT not null,
   primary key(trigger_instance_id, dep_name)
 );
