@@ -29,8 +29,16 @@ public class ExecutorApiGatewaySystemTest {
 
   @Test
   public void update300Executions() throws Exception {
-    // this fails because the URL is too long
+    // used to fail because the URL is too long
+    // works after switching to HTTP POST
     updateExecutions(300);
+  }
+
+  @Test
+  public void update100kExecutions() throws Exception {
+    // used to fail because the URL is too long
+    // works after switching to HTTP POST
+    updateExecutions(100_000);
   }
 
   private void updateExecutions(int count) throws ExecutorManagerException {
@@ -54,7 +62,12 @@ public class ExecutorApiGatewaySystemTest {
     Map<String, Object> results = apiGateway.callWithExecutionId("localhost", 12321,
         ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
 
-    Assert.assertTrue(results != null && !results.isEmpty());
+    Assert.assertTrue(results != null);
+    final List<Map<String, Object>> executionUpdates =
+        (List<Map<String, Object>>) results
+            .get(ConnectorParams.RESPONSE_UPDATED_FLOWS);
+    Assert.assertEquals(count, executionUpdates.size());
+    System.out.println("executionUpdates.get(count - 1): " + executionUpdates.get(count - 1));
   }
 
 }
