@@ -38,8 +38,9 @@ public class TriggerInstance {
 
   //todo chengren311: convert it to builder
   public TriggerInstance(final String id, final FlowTrigger flowTrigger, final String flowId,
-      final int flowVersion, final String submitUser, final List<DependencyInstance> depInstances,
-      final int flowExecId, final Project project) {
+      final int flowVersion, final String submitUser, final List<DependencyInstance>
+      depInstances, final int flowExecId, final Project project) {
+
     this.depInstances = ImmutableList.copyOf(depInstances);
     this.id = id;
     this.flowTrigger = flowTrigger;
