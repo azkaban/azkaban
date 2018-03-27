@@ -703,6 +703,11 @@ $(function () {
     model: graphModel
   });
 
+  flowTriggerInstanceListView = new azkaban.FlowTriggerInstanceListView({
+    el: $('#flowTriggerListView'),
+    model: graphModel
+  });
+
   var requestURL = contextURL + "/executor";
   var requestData = {"execid": execId, "ajax": "fetchexecflow"};
   var successHandler = function (data) {

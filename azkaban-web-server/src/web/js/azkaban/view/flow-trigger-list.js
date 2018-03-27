@@ -18,8 +18,8 @@
  * List of executing jobs on executing flow page.
  */
 
-var executionListView;
-azkaban.ExecutionListView = Backbone.View.extend({
+var flowTriggerInstanceListView;
+azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
   events: {
     //"contextmenu .flow-progress-bar": "handleProgressBoxClick"
   },
@@ -44,26 +44,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
     var flowStartTime = data.startTime;
     this.updateProgressBar(data, flowStartTime, flowLastTime);
   },
-
-//
-//  handleProgressBoxClick: function(evt) {
-//    var target = evt.currentTarget;
-//    var job = target.job;
-//    var attempt = target.attempt;
-//
-//    var data = this.model.get("data");
-//    var node = data.nodes[job];
-//
-//    var jobId = event.currentTarget.jobid;
-//    var requestURL = contextURL + "/manager?project=" + projectName + "&execid=" + execId + "&job=" + job + "&attempt=" + attempt;
-//
-//    var menu = [
-//        {title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-//        {title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
-//    ];
-//
-//    contextMenuView.show(evt, menu);
-//  },
 
   updateJobs: function (evt) {
     var update = this.model.get("update");
