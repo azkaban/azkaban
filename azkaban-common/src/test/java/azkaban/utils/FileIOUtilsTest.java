@@ -117,7 +117,7 @@ public class FileIOUtilsTest {
     assertThat(areDirsEqual(this.baseDir, this.sourceDir, true)).isTrue();
   }
 
-  @Ignore("TODO too slow: over 30s - should this be deleted entirely?")
+  @Ignore("Slow test (over 30s) - run manually if need to touch createDeepHardlink()")
   @Test
   public void testHardlinkCopyOfBigDir() throws IOException {
     final File bigDir = new File(this.baseDir.getAbsolutePath() + "/bigdir");
