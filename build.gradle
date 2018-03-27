@@ -54,6 +54,7 @@ allprojects {
 ext.versions = [
         hadoop: '2.6.1',
         hive  : '1.1.0',
+        pig   : '0.15.0',
         restli: '1.15.7',
         slf4j : '1.7.18',
 ]
@@ -78,6 +79,7 @@ ext.deps = [
         hadoopHdfs          : "org.apache.hadoop:hadoop-hdfs:" + versions.hadoop,
         hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
         hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
+        hiveCli             : "org.apache.hive:hive-cli:" + versions.hive,
         hiveExecCore        : "org.apache.hive:hive-exec:" + versions.hive + ":core",
         hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
         httpclient          : 'org.apache.httpcomponents:httpclient:4.5.3',
@@ -99,6 +101,7 @@ ext.deps = [
         metricsJvm          : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
         mockito             : 'org.mockito:mockito-core:2.10.0',
         mysqlConnector      : 'mysql:mysql-connector-java:5.1.28',
+        pig                 : 'org.apache.pig:pig:' + versions.pig,
         quartz              : 'org.quartz-scheduler:quartz:2.2.1',
         restliGenerator     : 'com.linkedin.pegasus:generator:' + versions.restli,
         restliServer        : 'com.linkedin.pegasus:restli-server:' + versions.restli,
