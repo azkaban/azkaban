@@ -415,6 +415,7 @@ azkaban.StatsView = Backbone.View.extend({
 var graphModel;
 
 var logModel;
+var flowTriggerModel;
 azkaban.LogModel = Backbone.Model.extend({});
 
 var updateStatus = function (updateTime) {
@@ -653,6 +654,7 @@ $(function () {
   var selected;
 
   graphModel = new azkaban.GraphModel();
+  flowTriggerModel = new azkaban.FlowTriggerModel();
   logModel = new azkaban.LogModel();
 
   flowTabView = new azkaban.FlowTabView({
@@ -705,7 +707,7 @@ $(function () {
 
   flowTriggerInstanceListView = new azkaban.FlowTriggerInstanceListView({
     el: $('#flowTriggerListView'),
-    model: graphModel
+    model: flowTriggerModel
   });
 
   var requestURL = contextURL + "/executor";
@@ -736,6 +738,39 @@ $(function () {
     }
     updaterFunction();
     logUpdaterFunction();
+  };
+  ajaxCall(requestURL, requestData, successHandler);
+
+  requestURL = contextURL + "/flowtriggerinstance";
+  requestData = {"execid": execId, "ajax": "fetchTriggerStatus"};
+  successHandler = function (data) {
+    alert(data);
+    /*
+    console.log("data fetched");
+    graphModel.addFlow(data);
+    graphModel.trigger("change:graph");
+
+    updateTime = Math.max(updateTime, data.submitTime);
+    updateTime = Math.max(updateTime, data.startTime);
+    updateTime = Math.max(updateTime, data.endTime);
+
+    if (window.location.hash) {
+      var hash = window.location.hash;
+      if (hash == "#jobslist") {
+        flowTabView.handleJobslistLinkClick();
+      }
+      else if (hash == "#log") {
+        flowTabView.handleLogLinkClick();
+      }
+      else if (hash == "#stats") {
+        flowTabView.handleStatsLinkClick();
+      }
+    }
+    else {
+      flowTabView.handleGraphLinkClick();
+    }
+    updaterFunction();
+    logUpdaterFunction();*/
   };
   ajaxCall(requestURL, requestData, successHandler);
 });

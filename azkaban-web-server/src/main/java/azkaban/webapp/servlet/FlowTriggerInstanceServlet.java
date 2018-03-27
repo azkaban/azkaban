@@ -100,9 +100,13 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
         ret.put("error", "please specify a valid running trigger instance id");
       }
     } else if (ajaxName.equals("fetchTriggerStatus")) {
-      if (hasParam(req, "id")) {
-        final String triggerInstanceId = getParam(req, "id");
-        ajaxFetchTriggerInstance(triggerInstanceId, session, ret);
+      if (hasParam(req, "triggerinstid")) {
+        final String triggerInstanceId = getParam(req, "triggerinstid");
+        ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
+      } else if (hasParam(req, "execid")) {
+        final int execId = getIntParam(req, "execId");
+        ajaxFetchTriggerInstanceByExecId(execId, session, ret);
+        //ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
       } else {
         ret.put("error", "please specify a valid trigger instance id");
       }
@@ -124,11 +128,9 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxFetchTriggerInstance(final String triggerInstanceId, final Session session,
-      final HashMap<String, Object> ret) {
-    final TriggerInstance triggerInst = this.triggerService
-        .findTriggerInstanceById(triggerInstanceId);
 
+  private void wrapTriggerInst(final TriggerInstance triggerInst,
+      final HashMap<String, Object> ret) {
     final List<Map<String, Object>> dependencyOutput = new ArrayList<>();
     for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
       final Map<String, Object> depMap = new HashMap<>();
@@ -144,6 +146,20 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       dependencyOutput.add(depMap);
     }
     ret.put("items", dependencyOutput);
+  }
+
+  private void ajaxFetchTriggerInstanceByExecId(final int execId, final Session session,
+      final HashMap<String, Object> ret) {
+    final TriggerInstance triggerInst = this.triggerService
+        .findTriggerInstanceByExecId(execId);
+    wrapTriggerInst(triggerInst, ret);
+  }
+
+  private void ajaxFetchTriggerInstanceByTriggerInstId(final String triggerInstanceId,
+      final Session session, final HashMap<String, Object> ret) {
+    final TriggerInstance triggerInst = this.triggerService
+        .findTriggerInstanceById(triggerInstanceId);
+    wrapTriggerInst(triggerInst, ret);
   }
 
   private void ajaxKillTriggerInstance(final String triggerInstanceId, final Session session,

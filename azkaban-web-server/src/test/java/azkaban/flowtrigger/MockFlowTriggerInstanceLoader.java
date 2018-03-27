@@ -105,4 +105,14 @@ public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader 
     }
     return null;
   }
+
+  @Override
+  public TriggerInstance getTriggerInstanceByFlowExecId(final int execId) {
+    for (final TriggerInstance inst : this.triggerInstances) {
+      if (inst.getFlowExecId() == execId) {
+        return inst;
+      }
+    }
+    return null;
+  }
 }

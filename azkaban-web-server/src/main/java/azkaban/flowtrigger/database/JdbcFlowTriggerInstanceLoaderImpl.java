@@ -79,19 +79,24 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
           DEPENDENCY_EXECUTION_TABLE);
 
+
+  private static final String SELECT_EXECUTIONS_BY_EXEC_ID =
+      String.format("SELECT %s FROM %s WHERE flow_exec_id = ?",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+          DEPENDENCY_EXECUTION_TABLE);
+
   private static final String SELECT_ALL_PENDING_EXECUTIONS =
-      String
-          .format(
-              "SELECT %s FROM %s WHERE trigger_instance_id in (SELECT trigger_instance_id FROM %s "
-                  + "WHERE "
-                  + "dep_status = %s or dep_status = %s or (dep_status = %s and "
-                  + "flow_exec_id = %s))",
-              StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
-              DEPENDENCY_EXECUTION_TABLE,
-              DEPENDENCY_EXECUTION_TABLE,
-              Status.RUNNING.ordinal(), Status.CANCELLING.ordinal(),
-              Status.SUCCEEDED.ordinal(),
-              Constants.UNASSIGNED_EXEC_ID);
+      String.format(
+          "SELECT %s FROM %s WHERE trigger_instance_id in (SELECT trigger_instance_id FROM %s "
+              + "WHERE "
+              + "dep_status = %s or dep_status = %s or (dep_status = %s and "
+              + "flow_exec_id = %s))",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+          DEPENDENCY_EXECUTION_TABLE,
+          DEPENDENCY_EXECUTION_TABLE,
+          Status.RUNNING.ordinal(), Status.CANCELLING.ordinal(),
+          Status.SUCCEEDED.ordinal(),
+          Constants.UNASSIGNED_EXEC_ID);
 
   private static final String SELECT_ALL_RUNNING_EXECUTIONS =
       String.format(
@@ -288,20 +293,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     return Collections.emptyList();
   }
 
-  /**
-   * Retrieve a trigger instance given an instance id. Flow trigger properties will also be
-   * populated into the returned trigger instance.
-   */
-  @Override
-  public TriggerInstance getTriggerInstanceById(final String triggerInstanceId) {
-    TriggerInstance triggerInstance = null;
-    try {
-      final Collection<TriggerInstance> res = this.dbOperator
-          .query(SELECT_EXECUTIONS_BY_INSTANCE_ID, new TriggerInstanceHandler(), triggerInstanceId);
-      triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
-    } catch (final SQLException ex) {
-      handleSQLException(ex);
-    }
+  private void populateFlowTriggerProperties(final TriggerInstance triggerInstance) {
     if (triggerInstance != null) {
       final int projectId = triggerInstance.getProject().getId();
       final int projectVersion = triggerInstance.getProject().getVersion();
@@ -318,7 +310,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
             triggerInstance.setFlowTrigger(flowTrigger);
           }
         } else {
-          logger.error("Unable to find flow file for " + triggerInstanceId);
+          logger.error("Unable to find flow file for " + triggerInstance);
         }
       } catch (final Exception ex) {
         logger.error("error in getting flow file", ex);
@@ -326,6 +318,42 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
         FlowLoaderUtils.cleanUpDir(tempDir);
       }
     }
+  }
+
+  /**
+   * Retrieve a trigger instance given a flow execution id. Flow trigger properties will
+   * also be populated into the returned trigger instance. If flow exec id is -1 or -2, then
+   * null will be returned.
+   */
+  @Override
+  public TriggerInstance getTriggerInstanceByFlowExecId(final int flowExecId) {
+    TriggerInstance triggerInstance = null;
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_EXECUTIONS_BY_EXEC_ID, new TriggerInstanceHandler(), flowExecId);
+      triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+    }
+    populateFlowTriggerProperties(triggerInstance);
+    return triggerInstance;
+  }
+
+  /**
+   * Retrieve a trigger instance given an instance id. Flow trigger properties will also be
+   * populated into the returned trigger instance.
+   */
+  @Override
+  public TriggerInstance getTriggerInstanceById(final String triggerInstanceId) {
+    TriggerInstance triggerInstance = null;
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_EXECUTIONS_BY_INSTANCE_ID, new TriggerInstanceHandler(), triggerInstanceId);
+      triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+    }
+    populateFlowTriggerProperties(triggerInstance);
     return triggerInstance;
   }
 

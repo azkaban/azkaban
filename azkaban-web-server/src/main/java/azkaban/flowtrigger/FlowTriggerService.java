@@ -189,6 +189,10 @@ public class FlowTriggerService {
     return this.flowTriggerInstanceLoader.getTriggerInstanceById(triggerInstanceId);
   }
 
+  public TriggerInstance findTriggerInstanceByExecId(final int flowExecId) {
+    return this.flowTriggerInstanceLoader.getTriggerInstanceByFlowExecId(flowExecId);
+  }
+
   private boolean isDoneButFlowNotExecuted(final TriggerInstance triggerInstance) {
     return triggerInstance.getStatus() == Status.SUCCEEDED && triggerInstance.getFlowExecId() ==
         Constants.UNASSIGNED_EXEC_ID;
