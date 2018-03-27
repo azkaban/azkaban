@@ -17,17 +17,18 @@
 package azkaban.reportal.util;
 
 public class ReportalRunnerException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
-  public ReportalRunnerException(String s) {
+  public ReportalRunnerException(final String s) {
     super(s);
   }
 
-  public ReportalRunnerException(Exception e) {
+  public ReportalRunnerException(final Exception e) {
     super(e);
   }
 
-  public ReportalRunnerException(String s, Exception e) {
+  public ReportalRunnerException(final String s, final Exception e) {
     super(s, e);
   }
 }

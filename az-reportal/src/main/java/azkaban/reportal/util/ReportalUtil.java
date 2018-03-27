@@ -16,6 +16,9 @@
 
 package azkaban.reportal.util;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
+import azkaban.reportal.util.Reportal.Variable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,13 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.reportal.util.Reportal.Variable;
-import azkaban.utils.Props;
-
 public class ReportalUtil {
-  public static IStreamProvider getStreamProvider(String fileSystem) {
+
+  public static IStreamProvider getStreamProvider(final String fileSystem) {
     if (fileSystem.equalsIgnoreCase("hdfs")) {
       return new StreamProviderHDFS();
     }
@@ -43,19 +42,19 @@ public class ReportalUtil {
    * @param nodes
    * @return
    */
-  public static List<ExecutableNode> sortExecutableNodes(ExecutableFlow flow) {
-    List<ExecutableNode> sortedNodes = new ArrayList<ExecutableNode>();
+  public static List<ExecutableNode> sortExecutableNodes(final ExecutableFlow flow) {
+    final List<ExecutableNode> sortedNodes = new ArrayList<>();
 
     if (flow != null) {
-      List<String> startNodeIds = flow.getStartNodes();
+      final List<String> startNodeIds = flow.getStartNodes();
 
       String nextNodeId = startNodeIds.isEmpty() ? null : startNodeIds.get(0);
 
       while (nextNodeId != null) {
-        ExecutableNode node = flow.getExecutableNode(nextNodeId);
+        final ExecutableNode node = flow.getExecutableNode(nextNodeId);
         sortedNodes.add(node);
 
-        Set<String> outNodes = node.getOutNodes();
+        final Set<String> outNodes = node.getOutNodes();
         nextNodeId = outNodes.isEmpty() ? null : outNodes.iterator().next();
       }
     }
@@ -71,8 +70,8 @@ public class ReportalUtil {
    * @return
    */
   public static List<Variable> getRunTimeVariables(
-    Collection<Variable> variables) {
-    List<Variable> runtimeVariables =
+      final Collection<Variable> variables) {
+    final List<Variable> runtimeVariables =
       ReportalUtil.getVariablesByRegex(variables,
         Reportal.REPORTAL_CONFIG_PREFIX_NEGATION_REGEX);
 
@@ -88,10 +87,10 @@ public class ReportalUtil {
    * @return
    */
   public static List<Variable> getVariablesByRegex(
-    Collection<Variable> variables, String regex) {
-    List<Variable> shortlistedVariables = new ArrayList<Variable>();
+      final Collection<Variable> variables, final String regex) {
+    final List<Variable> shortlistedVariables = new ArrayList<>();
     if (variables != null && regex != null) {
-      for (Variable var : variables) {
+      for (final Variable var : variables) {
         if (var.getTitle().matches(regex)) {
           shortlistedVariables.add(var);
         }
@@ -111,10 +110,10 @@ public class ReportalUtil {
    * @return a map with shortlisted variables and prefix removed
    */
   public static Map<String, String> getVariableMapByPrefix(
-    Collection<Variable> variables, String prefix) {
-    Map<String, String> shortlistMap = new HashMap<String, String>();
+      final Collection<Variable> variables, final String prefix) {
+    final Map<String, String> shortlistMap = new HashMap<>();
     if (variables!=null && prefix != null) {
-      for (Variable var : getVariablesByRegex(variables,
+      for (final Variable var : getVariablesByRegex(variables,
         Reportal.REPORTAL_CONFIG_PREFIX_REGEX)) {
         shortlistMap
           .put(var.getTitle().replaceFirst(prefix, ""), var.getName());

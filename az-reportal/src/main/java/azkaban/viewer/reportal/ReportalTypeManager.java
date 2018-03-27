@@ -16,28 +16,28 @@
 
 package azkaban.viewer.reportal;
 
-import java.io.File;
-import java.util.Map;
-
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.reportal.util.Reportal;
 import azkaban.utils.Props;
+import java.io.File;
+import java.util.Map;
 
 public class ReportalTypeManager {
   public static final String DATA_COLLECTOR_JOB = "ReportalDataCollector";
   public static final String DATA_COLLECTOR_JOB_TYPE = "reportaldatacollector";
 
-  public static void createJobAndFiles(Reportal reportal, File jobFile,
-      String jobName, String queryTitle, String queryType, String queryScript,
-      String dependentJob, String userName, Map<String, String> extras)
+  public static void createJobAndFiles(final Reportal reportal, final File jobFile,
+      final String jobName, final String queryTitle, final String queryType,
+      final String queryScript,
+      final String dependentJob, final String userName, final Map<String, String> extras)
       throws Exception {
 
     // Create props for the job
-    Props propertiesFile = new Props();
+    final Props propertiesFile = new Props();
     propertiesFile.put("title", queryTitle);
 
-    ReportalType type = ReportalType.getTypeByName(queryType);
+    final ReportalType type = ReportalType.getTypeByName(queryType);
 
     if (type == null) {
       throw new Exception("Type " + queryType + " is invalid.");

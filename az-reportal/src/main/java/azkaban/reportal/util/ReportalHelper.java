@@ -16,6 +16,12 @@
 
 package azkaban.reportal.util;
 
+import azkaban.flow.Flow;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
+import azkaban.project.ProjectManagerException;
+import azkaban.user.User;
+import azkaban.webapp.AzkabanWebServer;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,26 +30,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-
 import org.apache.commons.lang.StringUtils;
 
-import azkaban.flow.Flow;
-import azkaban.project.Project;
-import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
-import azkaban.user.User;
-import azkaban.webapp.AzkabanWebServer;
-
 public class ReportalHelper {
-  public static List<Project> getReportalProjects(AzkabanWebServer server) {
-    List<Project> projects = server.getProjectManager().getProjects();
 
-    List<Project> reportalProjects = new ArrayList<Project>();
+  public static List<Project> getReportalProjects(final AzkabanWebServer server) {
+    final List<Project> projects = server.getProjectManager().getProjects();
 
-    for (Project project : projects) {
+    final List<Project> reportalProjects = new ArrayList<>();
+
+    for (final Project project : projects) {
       if (project.getMetadata().containsKey("reportal-user")) {
         reportalProjects.add(project);
       }
@@ -52,29 +50,29 @@ public class ReportalHelper {
     return reportalProjects;
   }
 
-  public static void bookmarkProject(AzkabanWebServer server, Project project,
-      User user) throws ProjectManagerException {
+  public static void bookmarkProject(final AzkabanWebServer server, final Project project,
+      final User user) throws ProjectManagerException {
     project.getMetadata().put("bookmark-" + user.getUserId(), true);
     server.getProjectManager().updateProjectSetting(project);
   }
 
-  public static void unBookmarkProject(AzkabanWebServer server,
-      Project project, User user) throws ProjectManagerException {
+  public static void unBookmarkProject(final AzkabanWebServer server,
+      final Project project, final User user) throws ProjectManagerException {
     project.getMetadata().remove("bookmark-" + user.getUserId());
     server.getProjectManager().updateProjectSetting(project);
   }
 
-  public static boolean isBookmarkProject(Project project, User user) {
+  public static boolean isBookmarkProject(final Project project, final User user) {
     return project.getMetadata().containsKey("bookmark-" + user.getUserId());
   }
 
-  public static void subscribeProject(AzkabanWebServer server, Project project,
-      User user, String email) throws ProjectManagerException {
+  public static void subscribeProject(final AzkabanWebServer server, final Project project,
+      final User user, final String email) throws ProjectManagerException {
     @SuppressWarnings("unchecked")
     Map<String, String> subscription =
         (Map<String, String>) project.getMetadata().get("subscription");
     if (subscription == null) {
-      subscription = new HashMap<String, String>();
+      subscription = new HashMap<>();
     }
 
     if (email != null && !email.isEmpty()) {
@@ -86,10 +84,9 @@ public class ReportalHelper {
     server.getProjectManager().updateProjectSetting(project);
   }
 
-  public static void unSubscribeProject(AzkabanWebServer server,
-      Project project, User user) throws ProjectManagerException {
-    @SuppressWarnings("unchecked")
-    Map<String, String> subscription =
+  public static void unSubscribeProject(final AzkabanWebServer server,
+      final Project project, final User user) throws ProjectManagerException {
+    @SuppressWarnings("unchecked") final Map<String, String> subscription =
         (Map<String, String>) project.getMetadata().get("subscription");
     if (subscription == null) {
       return;
@@ -100,9 +97,8 @@ public class ReportalHelper {
     server.getProjectManager().updateProjectSetting(project);
   }
 
-  public static boolean isSubscribeProject(Project project, User user) {
-    @SuppressWarnings("unchecked")
-    Map<String, String> subscription =
+  public static boolean isSubscribeProject(final Project project, final User user) {
+    @SuppressWarnings("unchecked") final Map<String, String> subscription =
         (Map<String, String>) project.getMetadata().get("subscription");
     if (subscription == null) {
       return false;
@@ -112,48 +108,43 @@ public class ReportalHelper {
 
   /**
    * Updates the email notifications saved in the project's flow.
-   *
-   * @param project
-   * @param pm
-   * @throws ProjectManagerException
    */
-  public static void updateProjectNotifications(Project project,
-      ProjectManager pm) throws ProjectManagerException {
-    Flow flow = project.getFlows().get(0);
+  public static void updateProjectNotifications(final Project project,
+      final ProjectManager pm) throws ProjectManagerException {
+    final Flow flow = project.getFlows().get(0);
 
     // Get all success emails.
-    ArrayList<String> successEmails = new ArrayList<String>();
-    String successNotifications =
+    final ArrayList<String> successEmails = new ArrayList<>();
+    final String successNotifications =
         (String) project.getMetadata().get("notifications");
-    String[] successEmailSplit =
+    final String[] successEmailSplit =
         successNotifications.split("\\s*,\\s*|\\s*;\\s*|\\s+");
     successEmails.addAll(Arrays.asList(successEmailSplit));
 
     // Get all failure emails.
-    ArrayList<String> failureEmails = new ArrayList<String>();
-    String failureNotifications =
+    final ArrayList<String> failureEmails = new ArrayList<>();
+    final String failureNotifications =
         (String) project.getMetadata().get("failureNotifications");
-    String[] failureEmailSplit =
+    final String[] failureEmailSplit =
         failureNotifications.split("\\s*,\\s*|\\s*;\\s*|\\s+");
     failureEmails.addAll(Arrays.asList(failureEmailSplit));
 
     // Add subscription emails to success emails list.
-    @SuppressWarnings("unchecked")
-    Map<String, String> subscription =
+    @SuppressWarnings("unchecked") final Map<String, String> subscription =
         (Map<String, String>) project.getMetadata().get("subscription");
     if (subscription != null) {
       successEmails.addAll(subscription.values());
     }
 
-    ArrayList<String> successEmailList = new ArrayList<String>();
-    for (String email : successEmails) {
+    final ArrayList<String> successEmailList = new ArrayList<>();
+    for (final String email : successEmails) {
       if (!email.trim().isEmpty()) {
         successEmailList.add(email);
       }
     }
 
-    ArrayList<String> failureEmailList = new ArrayList<String>();
-    for (String email : failureEmails) {
+    final ArrayList<String> failureEmailList = new ArrayList<>();
+    for (final String email : failureEmails) {
       if (!email.trim().isEmpty()) {
         failureEmailList.add(email);
       }
@@ -167,29 +158,29 @@ public class ReportalHelper {
     pm.updateFlow(project, flow);
   }
 
-  public static boolean isScheduledProject(Project project) {
-    Object schedule = project.getMetadata().get("schedule");
+  public static boolean isScheduledProject(final Project project) {
+    final Object schedule = project.getMetadata().get("schedule");
     if (schedule == null || !(schedule instanceof Boolean)) {
       return false;
     }
     return (boolean) (Boolean) schedule;
   }
 
-  public static boolean isScheduledRepeatingProject(Project project) {
-    Object schedule = project.getMetadata().get("scheduleRepeat");
+  public static boolean isScheduledRepeatingProject(final Project project) {
+    final Object schedule = project.getMetadata().get("scheduleRepeat");
     if (schedule == null || !(schedule instanceof Boolean)) {
       return false;
     }
     return (boolean) (Boolean) schedule;
   }
 
-  public static List<Project> getUserReportalProjects(AzkabanWebServer server,
-      String userName) throws ProjectManagerException {
-    ProjectManager projectManager = server.getProjectManager();
-    List<Project> projects = projectManager.getProjects();
-    List<Project> result = new ArrayList<Project>();
+  public static List<Project> getUserReportalProjects(final AzkabanWebServer server,
+      final String userName) throws ProjectManagerException {
+    final ProjectManager projectManager = server.getProjectManager();
+    final List<Project> projects = projectManager.getProjects();
+    final List<Project> result = new ArrayList<>();
 
-    for (Project project : projects) {
+    for (final Project project : projects) {
       if (userName.equals(project.getMetadata().get("reportal-user"))) {
         result.add(project);
       }
@@ -198,11 +189,11 @@ public class ReportalHelper {
     return result;
   }
 
-  public static Project createReportalProject(AzkabanWebServer server,
-      String title, String description, User user)
+  public static Project createReportalProject(final AzkabanWebServer server,
+      final String title, final String description, final User user)
       throws ProjectManagerException {
-    ProjectManager projectManager = server.getProjectManager();
-    String projectName =
+    final ProjectManager projectManager = server.getProjectManager();
+    final String projectName =
         "reportal-" + user.getUserId() + "-" + sanitizeText(title);
     Project project = projectManager.getProject(projectName);
     if (project != null) {
@@ -213,12 +204,12 @@ public class ReportalHelper {
     return project;
   }
 
-  public static String sanitizeText(String text) {
+  public static String sanitizeText(final String text) {
     return text.replaceAll("[^A-Za-z0-9]", "-");
   }
 
-  public static File findAvailableFileName(File parent, String name,
-      String extension) {
+  public static File findAvailableFileName(final File parent, String name,
+      final String extension) {
     if (name.isEmpty()) {
       name = "untitled";
     }
@@ -231,12 +222,12 @@ public class ReportalHelper {
     return file;
   }
 
-  public static String prepareStringForJS(Object object) {
+  public static String prepareStringForJS(final Object object) {
     return object.toString().replace("\r", "").replace("\n", "\\n");
   }
 
-  public static String[] filterCSVFile(String[] files) {
-    List<String> result = new ArrayList<String>();
+  public static String[] filterCSVFile(final String[] files) {
+    final List<String> result = new ArrayList<>();
     for (int i = 0; i < files.length; i++) {
       if (StringUtils.endsWithIgnoreCase(files[i], ".csv")) {
         result.add(files[i]);
@@ -249,20 +240,17 @@ public class ReportalHelper {
    * Given a string containing multiple emails, splits it based on the given
    * regular expression, and returns a set containing the unique, non-empty
    * emails.
-   *
-   * @param emailList
-   * @return
    */
-  public static Set<String> parseUniqueEmails(String emailList,
-      String splitRegex) {
-    Set<String> uniqueEmails = new HashSet<String>();
+  public static Set<String> parseUniqueEmails(final String emailList,
+      final String splitRegex) {
+    final Set<String> uniqueEmails = new HashSet<>();
 
     if (emailList == null) {
       return uniqueEmails;
     }
 
-    String[] emails = emailList.trim().split(splitRegex);
-    for (String email : emails) {
+    final String[] emails = emailList.trim().split(splitRegex);
+    for (final String email : emails) {
       if (!email.isEmpty()) {
         uniqueEmails.add(email);
       }
@@ -273,20 +261,17 @@ public class ReportalHelper {
 
   /**
    * Returns true if the given email is valid and false otherwise.
-   *
-   * @param email
-   * @return
    */
-  public static boolean isValidEmailAddress(String email) {
+  public static boolean isValidEmailAddress(final String email) {
     if (email == null) {
       return false;
     }
 
     boolean result = true;
     try {
-      InternetAddress emailAddr = new InternetAddress(email);
+      final InternetAddress emailAddr = new InternetAddress(email);
       emailAddr.validate();
-    } catch (AddressException ex) {
+    } catch (final AddressException ex) {
       result = false;
     }
     return result;
@@ -295,16 +280,13 @@ public class ReportalHelper {
   /**
    * Given an email string, returns the domain part if it exists, and null
    * otherwise.
-   *
-   * @param email
-   * @return
    */
-  public static String getEmailDomain(String email) {
+  public static String getEmailDomain(final String email) {
     if (email == null || email.isEmpty()) {
       return null;
     }
 
-    int atSignIndex = email.indexOf('@');
+    final int atSignIndex = email.indexOf('@');
     if (atSignIndex != -1) {
       return email.substring(atSignIndex + 1);
     }

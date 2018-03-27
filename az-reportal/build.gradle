@@ -17,7 +17,9 @@ dependencies {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
         exclude group: 'eigenbase', module: 'eigenbase-properties'
     }
-    compileOnly deps.pig
+    compileOnly(deps.pig) {
+        transitive = false
+    }
 }
 
 distributions {

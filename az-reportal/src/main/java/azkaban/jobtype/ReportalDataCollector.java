@@ -16,6 +16,11 @@
 
 package azkaban.jobtype;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.reportal.util.CompositeException;
+import azkaban.reportal.util.IStreamProvider;
+import azkaban.reportal.util.ReportalUtil;
+import azkaban.utils.Props;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,53 +31,46 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.commons.io.IOUtils;
-
-import azkaban.flow.CommonJobProperties;
-import azkaban.reportal.util.CompositeException;
-import azkaban.reportal.util.IStreamProvider;
-import azkaban.reportal.util.ReportalUtil;
-import azkaban.utils.Props;
 
 public class ReportalDataCollector extends ReportalAbstractRunner {
 
   Props prop;
 
-  public ReportalDataCollector(String jobName, Properties props) {
+  public ReportalDataCollector(final String jobName, final Properties props) {
     super(props);
-    prop = new Props();
-    prop.put(props);
+    this.prop = new Props();
+    this.prop.put(props);
   }
 
   @Override
   protected void runReportal() throws Exception {
     System.out.println("Reportal Data Collector: Initializing");
 
-    String outputFileSystem =
-        props.getString("reportal.output.filesystem", "local");
-    String outputBase = props.getString("reportal.output.dir", "/tmp/reportal");
-    String execId = props.getString(CommonJobProperties.EXEC_ID);
+    final String outputFileSystem =
+        this.props.getString("reportal.output.filesystem", "local");
+    final String outputBase = this.props.getString("reportal.output.dir", "/tmp/reportal");
+    final String execId = this.props.getString(CommonJobProperties.EXEC_ID);
 
-    int jobNumber = prop.getInt("reportal.job.number");
-    List<Exception> exceptions = new ArrayList<Exception>();
+    final int jobNumber = this.prop.getInt("reportal.job.number");
+    final List<Exception> exceptions = new ArrayList<>();
     for (int i = 0; i < jobNumber; i++) {
       InputStream tempStream = null;
       IStreamProvider outputProvider = null;
       OutputStream persistentStream = null;
       try {
-        String jobTitle = prop.getString("reportal.job." + i);
+        final String jobTitle = this.prop.getString("reportal.job." + i);
         System.out.println("Reportal Data Collector: Job name=" + jobTitle);
 
-        String tempFileName = jobTitle + ".csv";
+        final String tempFileName = jobTitle + ".csv";
         // We add the job index to the beginning of the job title to allow us to
         // sort the files correctly.
-        String persistentFileName = i + "-" + tempFileName;
+        final String persistentFileName = i + "-" + tempFileName;
 
-        String subPath = "/" + execId + "/" + persistentFileName;
-        String locationFull = (outputBase + subPath).replace("//", "/");
-        String locationTemp = ("./reportal/" + tempFileName).replace("//", "/");
-        File tempOutput = new File(locationTemp);
+        final String subPath = "/" + execId + "/" + persistentFileName;
+        final String locationFull = (outputBase + subPath).replace("//", "/");
+        final String locationTemp = ("./reportal/" + tempFileName).replace("//", "/");
+        final File tempOutput = new File(locationTemp);
         if (!tempOutput.exists()) {
           throw new FileNotFoundException("File: "
               + tempOutput.getAbsolutePath() + " does not exist.");
@@ -91,7 +89,7 @@ public class ReportalDataCollector extends ReportalAbstractRunner {
         // Copy it
         IOUtils.copy(tempStream, persistentStream);
 
-      } catch (Exception e) {
+      } catch (final Exception e) {
         System.out.println("Reportal Data Collector: Data collection failed. "
             + e.getMessage());
         e.printStackTrace();
@@ -102,7 +100,7 @@ public class ReportalDataCollector extends ReportalAbstractRunner {
 
         try {
           outputProvider.cleanUp();
-        } catch (IOException e) {
+        } catch (final IOException e) {
           e.printStackTrace();
         }
       }

@@ -20,13 +20,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class BoundedOutputStream extends OutputStream {
+
   OutputStream out;
   int totalCapacity;
   int remainingCapacity;
   boolean hasExceededSize = false;
   boolean havePrintedErrorMessage = false;
 
-  public BoundedOutputStream(OutputStream out, int size) {
+  public BoundedOutputStream(final OutputStream out, final int size) {
     this.out = out;
     this.totalCapacity = size;
     this.remainingCapacity = size;
@@ -34,69 +35,69 @@ public class BoundedOutputStream extends OutputStream {
 
   @Override
   public void flush() throws IOException {
-    out.flush();
+    this.out.flush();
   }
 
   @Override
   public void close() throws IOException {
-    out.close();
+    this.out.close();
   }
 
   @Override
-  public void write(byte[] b) throws IOException {
-    if (remainingCapacity <= 0) {
-      hasExceededSize = true;
-    } else if (remainingCapacity - b.length < 0) {
-      out.write(b, 0, remainingCapacity);
-      remainingCapacity = 0;
-      hasExceededSize = true;
+  public void write(final byte[] b) throws IOException {
+    if (this.remainingCapacity <= 0) {
+      this.hasExceededSize = true;
+    } else if (this.remainingCapacity - b.length < 0) {
+      this.out.write(b, 0, this.remainingCapacity);
+      this.remainingCapacity = 0;
+      this.hasExceededSize = true;
     } else {
-      out.write(b);
-      remainingCapacity -= b.length;
+      this.out.write(b);
+      this.remainingCapacity -= b.length;
     }
 
-    if (hasExceededSize && !havePrintedErrorMessage) {
+    if (this.hasExceededSize && !this.havePrintedErrorMessage) {
       System.err.println("Output has exceeded the max limit of "
-          + totalCapacity + " bytes. Truncating remaining output.");
-      havePrintedErrorMessage = true;
+          + this.totalCapacity + " bytes. Truncating remaining output.");
+      this.havePrintedErrorMessage = true;
     }
   }
 
   @Override
-  public void write(byte[] b, int off, int len) throws IOException {
-    if (remainingCapacity <= 0) {
-      hasExceededSize = true;
-    } else if (remainingCapacity - len < 0) {
-      out.write(b, off, remainingCapacity);
-      remainingCapacity = 0;
-      hasExceededSize = true;
+  public void write(final byte[] b, final int off, final int len) throws IOException {
+    if (this.remainingCapacity <= 0) {
+      this.hasExceededSize = true;
+    } else if (this.remainingCapacity - len < 0) {
+      this.out.write(b, off, this.remainingCapacity);
+      this.remainingCapacity = 0;
+      this.hasExceededSize = true;
     } else {
-      out.write(b, off, len);
-      remainingCapacity -= len;
+      this.out.write(b, off, len);
+      this.remainingCapacity -= len;
     }
 
-    if (hasExceededSize && !havePrintedErrorMessage) {
+    if (this.hasExceededSize && !this.havePrintedErrorMessage) {
       System.err.println("Output has exceeded the max limit of "
-          + totalCapacity + " bytes. Truncating remaining output.");
-      havePrintedErrorMessage = true;
+          + this.totalCapacity + " bytes. Truncating remaining output.");
+      this.havePrintedErrorMessage = true;
     }
   }
 
   @Override
-  public void write(int b) throws IOException {
-    if (remainingCapacity <= 0) {
-      hasExceededSize = true;
+  public void write(final int b) throws IOException {
+    if (this.remainingCapacity <= 0) {
+      this.hasExceededSize = true;
 
-      if (!havePrintedErrorMessage) {
+      if (!this.havePrintedErrorMessage) {
         System.err.println("Output has exceeded the max limit of "
-            + totalCapacity + " bytes. Truncating remaining output.");
-        havePrintedErrorMessage = true;
+            + this.totalCapacity + " bytes. Truncating remaining output.");
+        this.havePrintedErrorMessage = true;
       }
 
       return;
     }
-    out.write(b);
-    remainingCapacity--;
+    this.out.write(b);
+    this.remainingCapacity--;
   }
 
 }

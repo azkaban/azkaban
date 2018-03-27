@@ -16,37 +16,6 @@
 
 package azkaban.viewer.reportal;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.apache.log4j.Logger;
-import org.apache.velocity.tools.generic.EscapeTool;
-import org.joda.time.DateTime;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -77,101 +46,124 @@ import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.apache.log4j.Logger;
+import org.apache.velocity.tools.generic.EscapeTool;
+import org.joda.time.DateTime;
 
 public class ReportalServlet extends LoginAbstractAzkabanServlet {
+
   private static final String REPORTAL_VARIABLE_PREFIX = "reportal.variable.";
   private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM =
       "hadoop.security.manager.class";
   private static final long serialVersionUID = 1L;
-  private static Logger logger = Logger.getLogger(ReportalServlet.class);
-
+  private static final Logger logger = Logger.getLogger(ReportalServlet.class);
+  private final File reportalMailTempDirectory;
+  private final Props props;
+  private final String viewerName;
+  private final String reportalStorageUser;
+  private final File webResourcesFolder;
+  private final int max_allowed_schedule_dates;
+  private final int default_schedule_dates;
+  private final boolean showNav;
   private CleanerThread cleanerThread;
-
-  private File reportalMailTempDirectory;
-
   /**
    * A whitelist of allowed email domains (e.g.: example.com). If null, all
    * email domains are allowed.
    */
   private Set<String> allowedEmailDomains = null;
-
   private AzkabanWebServer server;
-  private Props props;
   private boolean shouldProxy;
-
-  private String viewerName;
-  private String reportalStorageUser;
-  private File webResourcesFolder;
   private int itemsPerPage = 20;
-  private int max_allowed_schedule_dates;
-  private int default_schedule_dates;
-  private boolean showNav;
-
   private HadoopSecurityManager hadoopSecurityManager;
 
-  public ReportalServlet(Props props) {
+  public ReportalServlet(final Props props) {
     this.props = props;
 
-    viewerName = props.getString("viewer.name");
-    reportalStorageUser = props.getString("reportal.storage.user", "reportal");
-    itemsPerPage = props.getInt("reportal.items_per_page", 20);
-    showNav = props.getBoolean("reportal.show.navigation", false);
+    this.viewerName = props.getString("viewer.name");
+    this.reportalStorageUser = props.getString("reportal.storage.user", "reportal");
+    this.itemsPerPage = props.getInt("reportal.items_per_page", 20);
+    this.showNav = props.getBoolean("reportal.show.navigation", false);
 
-    max_allowed_schedule_dates = props.getInt("reportal.max.allowed.schedule.dates", 180);
-    default_schedule_dates = props.getInt("reportal.default.schedule.dates", 30);
+    this.max_allowed_schedule_dates = props.getInt("reportal.max.allowed.schedule.dates", 180);
+    this.default_schedule_dates = props.getInt("reportal.default.schedule.dates", 30);
 
-    reportalMailTempDirectory =
+    this.reportalMailTempDirectory =
         new File(props.getString("reportal.mail.temp.dir", "/tmp/reportal"));
-    reportalMailTempDirectory.mkdirs();
-    ReportalMailCreator.reportalMailTempDirectory = reportalMailTempDirectory;
+    this.reportalMailTempDirectory.mkdirs();
+    ReportalMailCreator.reportalMailTempDirectory = this.reportalMailTempDirectory;
 
-    List<String> allowedDomains =
+    final List<String> allowedDomains =
         props.getStringList("reportal.allowed.email.domains",
             (List<String>) null);
     if (allowedDomains != null) {
-      allowedEmailDomains = new HashSet<String>(allowedDomains);
+      this.allowedEmailDomains = new HashSet<>(allowedDomains);
     }
 
     ReportalMailCreator.outputLocation =
         props.getString("reportal.output.dir", "/tmp/reportal");
     ReportalMailCreator.outputFileSystem =
         props.getString("reportal.output.filesystem", "local");
-    ReportalMailCreator.reportalStorageUser = reportalStorageUser;
+    ReportalMailCreator.reportalStorageUser = this.reportalStorageUser;
 
-    webResourcesFolder =
+    this.webResourcesFolder =
         new File(new File(props.getSource()).getParentFile().getParentFile(),
             "web");
-    webResourcesFolder.mkdirs();
-    setResourceDirectory(webResourcesFolder);
+    this.webResourcesFolder.mkdirs();
+    setResourceDirectory(this.webResourcesFolder);
     System.out.println("Reportal web resources: "
-        + webResourcesFolder.getAbsolutePath());
+        + this.webResourcesFolder.getAbsolutePath());
   }
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    server = (AzkabanWebServer) getApplication();
-    ReportalMailCreator.azkaban = server;
+    this.server = (AzkabanWebServer) getApplication();
+    ReportalMailCreator.azkaban = this.server;
 
-    shouldProxy = props.getBoolean("azkaban.should.proxy", false);
-    logger.info("Hdfs browser should proxy: " + shouldProxy);
+    this.shouldProxy = this.props.getBoolean("azkaban.should.proxy", false);
+    logger.info("Hdfs browser should proxy: " + this.shouldProxy);
     try {
-      hadoopSecurityManager = loadHadoopSecurityManager(props, logger);
-      ReportalMailCreator.hadoopSecurityManager = hadoopSecurityManager;
-    } catch (RuntimeException e) {
+      this.hadoopSecurityManager = loadHadoopSecurityManager(this.props, logger);
+      ReportalMailCreator.hadoopSecurityManager = this.hadoopSecurityManager;
+    } catch (final RuntimeException e) {
       e.printStackTrace();
       throw new RuntimeException("Failed to get hadoop security manager!"
           + e.getCause());
     }
 
-    cleanerThread = new CleanerThread();
-    cleanerThread.start();
+    this.cleanerThread = new CleanerThread();
+    this.cleanerThread.start();
   }
 
-  private HadoopSecurityManager loadHadoopSecurityManager(Props props,
-      Logger logger) throws RuntimeException {
+  private HadoopSecurityManager loadHadoopSecurityManager(final Props props,
+      final Logger logger) throws RuntimeException {
 
-    Class<?> hadoopSecurityManagerClass =
+    final Class<?> hadoopSecurityManagerClass =
         props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
             ReportalServlet.class.getClassLoader());
     logger.info("Initializing hadoop security manager "
@@ -179,16 +171,16 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     HadoopSecurityManager hadoopSecurityManager = null;
 
     try {
-      Method getInstanceMethod =
+      final Method getInstanceMethod =
           hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
       hadoopSecurityManager =
           (HadoopSecurityManager) getInstanceMethod.invoke(
               hadoopSecurityManagerClass, props);
-    } catch (InvocationTargetException e) {
+    } catch (final InvocationTargetException e) {
       logger.error("Could not instantiate Hadoop Security Manager "
           + hadoopSecurityManagerClass.getName() + e.getCause());
       throw new RuntimeException(e.getCause());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       throw new RuntimeException(e.getCause());
     }
@@ -197,15 +189,15 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
       if (hasParam(req, "view")) {
         try {
           handleViewReportal(req, resp, session);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           e.printStackTrace();
         }
       } else if (hasParam(req, "new")) {
@@ -220,16 +212,16 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAJAXAction(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleAJAXAction(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    HashMap<String, Object> ret = new HashMap<String, Object>();
-    String ajaxName = getParam(req, "ajax");
-    User user = session.getUser();
-    int id = getIntParam(req, "id");
-    ProjectManager projectManager = server.getProjectManager();
-    Project project = projectManager.getProject(id);
-    Reportal reportal = Reportal.loadFromProject(project);
+    final HashMap<String, Object> ret = new HashMap<>();
+    final String ajaxName = getParam(req, "ajax");
+    final User user = session.getUser();
+    final int id = getIntParam(req, "id");
+    final ProjectManager projectManager = this.server.getProjectManager();
+    final Project project = projectManager.getProject(id);
+    final Reportal reportal = Reportal.loadFromProject(project);
 
     // Delete report
     if (ajaxName.equals("delete")) {
@@ -237,10 +229,10 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         ret.put("error", "You do not have permissions to delete this reportal.");
       } else {
         try {
-          ScheduleManager scheduleManager = server.getScheduleManager();
+          final ScheduleManager scheduleManager = this.server.getScheduleManager();
           reportal.removeSchedules(scheduleManager);
           projectManager.removeProject(project, user);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           e.printStackTrace();
           ret.put("error", "An exception occured while deleting this reportal.");
         }
@@ -249,41 +241,41 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
     // Bookmark report
     else if (ajaxName.equals("bookmark")) {
-      boolean wasBookmarked = ReportalHelper.isBookmarkProject(project, user);
+      final boolean wasBookmarked = ReportalHelper.isBookmarkProject(project, user);
       try {
         if (wasBookmarked) {
-          ReportalHelper.unBookmarkProject(server, project, user);
+          ReportalHelper.unBookmarkProject(this.server, project, user);
           ret.put("result", "success");
           ret.put("bookmark", false);
         } else {
-          ReportalHelper.bookmarkProject(server, project, user);
+          ReportalHelper.bookmarkProject(this.server, project, user);
           ret.put("result", "success");
           ret.put("bookmark", true);
         }
-      } catch (ProjectManagerException e) {
+      } catch (final ProjectManagerException e) {
         e.printStackTrace();
         ret.put("error", "Error bookmarking reportal. " + e.getMessage());
       }
     }
     // Subscribe to report
     else if (ajaxName.equals("subscribe")) {
-      boolean wasSubscribed = ReportalHelper.isSubscribeProject(project, user);
+      final boolean wasSubscribed = ReportalHelper.isSubscribeProject(project, user);
       if (!wasSubscribed && reportal.getAccessViewers().size() > 0
           && !hasPermission(project, user, Type.READ)) {
         ret.put("error", "You do not have permissions to view this reportal.");
       } else {
         try {
           if (wasSubscribed) {
-            ReportalHelper.unSubscribeProject(server, project, user);
+            ReportalHelper.unSubscribeProject(this.server, project, user);
             ret.put("result", "success");
             ret.put("subscribe", false);
           } else {
-            ReportalHelper.subscribeProject(server, project, user,
+            ReportalHelper.subscribeProject(this.server, project, user,
                 user.getEmail());
             ret.put("result", "success");
             ret.put("subscribe", true);
           }
-        } catch (ProjectManagerException e) {
+        } catch (final ProjectManagerException e) {
           e.printStackTrace();
           ret.put("error", "Error subscribing to reportal. " + e.getMessage());
         }
@@ -291,25 +283,25 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
     // Get a portion of logs
     else if (ajaxName.equals("log")) {
-      int execId = getIntParam(req, "execId");
-      String jobId = getParam(req, "jobId");
-      int offset = getIntParam(req, "offset");
-      int length = getIntParam(req, "length");
-      ExecutableFlow exec;
-      ExecutorManagerAdapter executorManager = server.getExecutorManager();
+      final int execId = getIntParam(req, "execId");
+      final String jobId = getParam(req, "jobId");
+      final int offset = getIntParam(req, "offset");
+      final int length = getIntParam(req, "length");
+      final ExecutableFlow exec;
+      final ExecutorManagerAdapter executorManager = this.server.getExecutorManager();
       try {
         exec = executorManager.getExecutableFlow(execId);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         ret.put("error", "Log does not exist or isn't created yet.");
         return;
       }
 
-      LogData data;
+      final LogData data;
       try {
         data =
             executorManager.getExecutionJobLog(exec, jobId, offset, length,
                 exec.getExecutableNode(jobId).getAttempt());
-      } catch (Exception e) {
+      } catch (final Exception e) {
         e.printStackTrace();
         ret.put("error", "Log does not exist or isn't created yet.");
         return;
@@ -335,21 +327,21 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleListReportal(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleListReportal(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/reportal/reportallistpage.vm");
     preparePage(page, session);
 
-    List<Project> projects = ReportalHelper.getReportalProjects(server);
+    final List<Project> projects = ReportalHelper.getReportalProjects(this.server);
     page.add("ReportalHelper", ReportalHelper.class);
     page.add("user", session.getUser());
 
-    String startDate = DateTime.now().minusWeeks(1).toString("yyyy-MM-dd");
-    String endDate = DateTime.now().toString("yyyy-MM-dd");
+    final String startDate = DateTime.now().minusWeeks(1).toString("yyyy-MM-dd");
+    final String endDate = DateTime.now().toString("yyyy-MM-dd");
     page.add("startDate", startDate);
     page.add("endDate", endDate);
 
@@ -362,20 +354,20 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleViewReportal(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleViewReportal(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       Exception {
-    int id = getIntParam(req, "id");
-    Page page =
+    final int id = getIntParam(req, "id");
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/reportal/reportaldatapage.vm");
     preparePage(page, session);
 
-    ProjectManager projectManager = server.getProjectManager();
-    ExecutorManagerAdapter executorManager = server.getExecutorManager();
+    final ProjectManager projectManager = this.server.getProjectManager();
+    final ExecutorManagerAdapter executorManager = this.server.getExecutorManager();
 
-    Project project = projectManager.getProject(id);
-    Reportal reportal = Reportal.loadFromProject(project);
+    final Project project = projectManager.getProject(id);
+    final Reportal reportal = Reportal.loadFromProject(project);
 
     if (reportal == null) {
       page.add("errorMsg", "Report not found.");
@@ -394,14 +386,14 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("title", project.getMetadata().get("title"));
 
     if (hasParam(req, "execid")) {
-      int execId = getIntParam(req, "execid");
+      final int execId = getIntParam(req, "execid");
       page.add("execid", execId);
       // Show logs
       if (hasParam(req, "logs")) {
-        ExecutableFlow exec;
+        final ExecutableFlow exec;
         try {
           exec = executorManager.getExecutableFlow(execId);
-        } catch (ExecutorManagerException e) {
+        } catch (final ExecutorManagerException e) {
           e.printStackTrace();
           page.add("errorMsg", "ExecutableFlow not found. " + e.getMessage());
           page.render();
@@ -410,16 +402,16 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         // View single log
         if (hasParam(req, "log")) {
           page.add("view-log", true);
-          String jobId = getParam(req, "log");
+          final String jobId = getParam(req, "log");
           page.add("execid", execId);
           page.add("jobId", jobId);
         }
         // List files
         else {
           page.add("view-logs", true);
-          List<ExecutableNode> jobLogs = ReportalUtil.sortExecutableNodes(exec);
+          final List<ExecutableNode> jobLogs = ReportalUtil.sortExecutableNodes(exec);
 
-          boolean showDataCollector = hasParam(req, "debug");
+          final boolean showDataCollector = hasParam(req, "debug");
           if (!showDataCollector) {
             jobLogs.remove(jobLogs.size() - 1);
           }
@@ -433,25 +425,25 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       }
       // Show data files
       else {
-        String outputFileSystem = ReportalMailCreator.outputFileSystem;
-        String outputBase = ReportalMailCreator.outputLocation;
+        final String outputFileSystem = ReportalMailCreator.outputFileSystem;
+        final String outputBase = ReportalMailCreator.outputLocation;
 
-        String locationFull = (outputBase + "/" + execId).replace("//", "/");
+        final String locationFull = (outputBase + "/" + execId).replace("//", "/");
 
-        IStreamProvider streamProvider =
+        final IStreamProvider streamProvider =
             ReportalUtil.getStreamProvider(outputFileSystem);
 
         if (streamProvider instanceof StreamProviderHDFS) {
-          StreamProviderHDFS hdfsStreamProvider =
+          final StreamProviderHDFS hdfsStreamProvider =
               (StreamProviderHDFS) streamProvider;
-          hdfsStreamProvider.setHadoopSecurityManager(hadoopSecurityManager);
-          hdfsStreamProvider.setUser(reportalStorageUser);
+          hdfsStreamProvider.setHadoopSecurityManager(this.hadoopSecurityManager);
+          hdfsStreamProvider.setUser(this.reportalStorageUser);
         }
 
         try {
           if (hasParam(req, "download")) {
-            String fileName = getParam(req, "download");
-            String filePath = locationFull + "/" + fileName;
+            final String fileName = getParam(req, "download");
+            final String filePath = locationFull + "/" + fileName;
             InputStream csvInputStream = null;
             OutputStream out = null;
             try {
@@ -475,12 +467,12 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
               fileList = ReportalHelper.filterCSVFile(fileList);
               Arrays.sort(fileList);
 
-              List<Object> files =
+              final List<Object> files =
                   getFilePreviews(fileList, locationFull, streamProvider,
                       reportal.renderResultsAsHtml);
 
               page.add("files", files);
-            } catch (Exception e) {
+            } catch (final Exception e) {
               logger.error("Error encountered while processing files in "
                   + locationFull, e);
             }
@@ -488,7 +480,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         } finally {
           try {
             streamProvider.cleanUp();
-          } catch (IOException e) {
+          } catch (final IOException e) {
             e.printStackTrace();
           }
         }
@@ -497,7 +489,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     // List executions and their data
     else {
       page.add("view-executions", true);
-      ArrayList<ExecutableFlow> exFlows = new ArrayList<ExecutableFlow>();
+      final ArrayList<ExecutableFlow> exFlows = new ArrayList<>();
 
       int pageNumber = 0;
       boolean hasNextPage = false;
@@ -508,23 +500,23 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         pageNumber = 0;
       }
       try {
-        Flow flow = project.getFlows().get(0);
+        final Flow flow = project.getFlows().get(0);
         executorManager.getExecutableFlows(project.getId(), flow.getId(),
-            pageNumber * itemsPerPage, itemsPerPage, exFlows);
-        ArrayList<ExecutableFlow> tmp = new ArrayList<ExecutableFlow>();
+            pageNumber * this.itemsPerPage, this.itemsPerPage, exFlows);
+        final ArrayList<ExecutableFlow> tmp = new ArrayList<>();
         executorManager.getExecutableFlows(project.getId(), flow.getId(),
-            (pageNumber + 1) * itemsPerPage, 1, tmp);
+            (pageNumber + 1) * this.itemsPerPage, 1, tmp);
         if (!tmp.isEmpty()) {
           hasNextPage = true;
         }
-      } catch (ExecutorManagerException e) {
+      } catch (final ExecutorManagerException e) {
         page.add("error", "Error retrieving executable flows");
       }
 
       if (!exFlows.isEmpty()) {
-        ArrayList<Object> history = new ArrayList<Object>();
-        for (ExecutableFlow exFlow : exFlows) {
-          HashMap<String, Object> flowInfo = new HashMap<String, Object>();
+        final ArrayList<Object> history = new ArrayList<>();
+        for (final ExecutableFlow exFlow : exFlows) {
+          final HashMap<String, Object> flowInfo = new HashMap<>();
           flowInfo.put("execId", exFlow.getExecutionId());
           flowInfo.put("status", exFlow.getStatus().toString());
           flowInfo.put("startTime", exFlow.getStartTime());
@@ -549,34 +541,29 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
    * Returns a list of file Objects that contain a "name" property with the file
    * name, a "content" property with the lines in the file, and a "hasMore"
    * property if the file contains more than NUM_PREVIEW_ROWS lines.
-   *
-   * @param fileList
-   * @param locationFull
-   * @param streamProvider
-   * @return
    */
-  private List<Object> getFilePreviews(String[] fileList, String locationFull,
-      IStreamProvider streamProvider, boolean renderResultsAsHtml) {
-    List<Object> files = new ArrayList<Object>();
+  private List<Object> getFilePreviews(final String[] fileList, final String locationFull,
+      final IStreamProvider streamProvider, final boolean renderResultsAsHtml) {
+    final List<Object> files = new ArrayList<>();
     InputStream csvInputStream = null;
 
     try {
-      for (String fileName : fileList) {
-        Map<String, Object> file = new HashMap<String, Object>();
+      for (final String fileName : fileList) {
+        final Map<String, Object> file = new HashMap<>();
         file.put("name", fileName);
 
-        String filePath = locationFull + "/" + fileName;
+        final String filePath = locationFull + "/" + fileName;
         csvInputStream = streamProvider.getFileInputStream(filePath);
-        Scanner rowScanner = new Scanner(csvInputStream, StandardCharsets.UTF_8.toString());
+        final Scanner rowScanner = new Scanner(csvInputStream, StandardCharsets.UTF_8.toString());
 
-        List<Object> lines = new ArrayList<Object>();
+        final List<Object> lines = new ArrayList<>();
         int lineNumber = 0;
         while (rowScanner.hasNextLine()
             && lineNumber < ReportalMailCreator.NUM_PREVIEW_ROWS) {
-          String csvLine = rowScanner.nextLine();
-          String[] data = csvLine.split("\",\"");
-          List<String> line = new ArrayList<String>();
-          for (String item : data) {
+          final String csvLine = rowScanner.nextLine();
+          final String[] data = csvLine.split("\",\"");
+          final List<String> line = new ArrayList<>();
+          for (final String item : data) {
             String column = item.replace("\"", "");
             if (!renderResultsAsHtml) {
               column = StringEscapeUtils.escapeHtml(column);
@@ -596,7 +583,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         files.add(file);
         rowScanner.close();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.debug("Error encountered while processing files in "
           + locationFull, e);
     } finally {
@@ -606,18 +593,18 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     return files;
   }
 
-  private void handleRunReportal(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleRunReportal(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    int id = getIntParam(req, "id");
-    ProjectManager projectManager = server.getProjectManager();
-    Page page =
+    final int id = getIntParam(req, "id");
+    final ProjectManager projectManager = this.server.getProjectManager();
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/reportal/reportalrunpage.vm");
     preparePage(page, session);
 
-    Project project = projectManager.getProject(id);
-    Reportal reportal = Reportal.loadFromProject(project);
+    final Project project = projectManager.getProject(id);
+    final Reportal reportal = Reportal.loadFromProject(project);
 
     if (reportal == null) {
       page.add("errorMsg", "Report not found");
@@ -636,8 +623,8 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("title", reportal.title);
     page.add("description", reportal.description);
 
-    List<Variable> runtimeVariables =
-      ReportalUtil.getRunTimeVariables(reportal.variables);
+    final List<Variable> runtimeVariables =
+        ReportalUtil.getRunTimeVariables(reportal.variables);
     if (runtimeVariables.size() > 0) {
       page.add("variableNumber", runtimeVariables.size());
       page.add("variables", runtimeVariables);
@@ -646,11 +633,11 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleNewReportal(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleNewReportal(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/reportal/reportaleditpage.vm");
     preparePage(page, session);
@@ -660,10 +647,10 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
     page.add("queryNumber", 1);
 
-    List<Map<String, Object>> queryList = new ArrayList<Map<String, Object>>();
+    final List<Map<String, Object>> queryList = new ArrayList<>();
     page.add("queries", queryList);
 
-    Map<String, Object> query = new HashMap<String, Object>();
+    final Map<String, Object> query = new HashMap<>();
     queryList.add(query);
     query.put("title", "");
     query.put("type", "");
@@ -675,28 +662,28 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("notifications", "");
     page.add("failureNotifications", "");
 
-    page.add("max_allowed_schedule_dates", max_allowed_schedule_dates);
-    page.add("default_schedule_dates", default_schedule_dates);
+    page.add("max_allowed_schedule_dates", this.max_allowed_schedule_dates);
+    page.add("default_schedule_dates", this.default_schedule_dates);
 
     page.render();
   }
 
-  private void handleEditReportal(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleEditReportal(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    int id = getIntParam(req, "id");
-    ProjectManager projectManager = server.getProjectManager();
+    final int id = getIntParam(req, "id");
+    final ProjectManager projectManager = this.server.getProjectManager();
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/reportal/reportaleditpage.vm");
     preparePage(page, session);
     page.add("ReportalHelper", ReportalHelper.class);
 
-    Project project = projectManager.getProject(id);
-    Reportal reportal = Reportal.loadFromProject(project);
+    final Project project = projectManager.getProject(id);
+    final Reportal reportal = Reportal.loadFromProject(project);
 
-    List<String> errors = new ArrayList<String>();
+    final List<String> errors = new ArrayList<>();
 
     if (reportal == null) {
       errors.add("Report not found");
@@ -736,16 +723,16 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("accessExecutor", reportal.accessExecutor);
     page.add("accessOwner", reportal.accessOwner);
 
-    page.add("max_allowed_schedule_dates", max_allowed_schedule_dates);
-    page.add("default_schedule_dates", default_schedule_dates);
+    page.add("max_allowed_schedule_dates", this.max_allowed_schedule_dates);
+    page.add("default_schedule_dates", this.default_schedule_dates);
     page.render();
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
-      HashMap<String, Object> ret = new HashMap<String, Object>();
+      final HashMap<String, Object> ret = new HashMap<>();
 
       handleRunReportalWithVariables(req, ret, session);
 
@@ -757,15 +744,15 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleSaveReportal(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleSaveReportal(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    String projectId = validateAndSaveReport(req, resp, session);
+    final String projectId = validateAndSaveReport(req, resp, session);
 
     if (projectId != null) {
       this.setSuccessMessageInCookie(resp, "Report Saved.");
 
-      String submitType = getParam(req, "submit");
+      final String submitType = getParam(req, "submit");
       if (submitType.equals("Save")) {
         resp.sendRedirect(req.getRequestURI() + "?edit&id=" + projectId);
       } else {
@@ -778,34 +765,29 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
    * Validates and saves a report, returning the project id of the saved report
    * if successful, and null otherwise.
    *
-   * @param req
-   * @param resp
-   * @param session
    * @return The project id of the saved report if successful, and null
-   *         otherwise
-   * @throws ServletException
-   * @throws IOException
+   * otherwise
    */
-  private String validateAndSaveReport(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private String validateAndSaveReport(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
 
-    ProjectManager projectManager = server.getProjectManager();
-    User user = session.getUser();
+    final ProjectManager projectManager = this.server.getProjectManager();
+    final User user = session.getUser();
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/reportal/reportaleditpage.vm");
     preparePage(page, session);
     page.add("ReportalHelper", ReportalHelper.class);
 
-    boolean isEdit = hasParam(req, "id");
+    final boolean isEdit = hasParam(req, "id");
     if (isEdit) {
       page.add("projectId", getIntParam(req, "id"));
     }
 
     Project project = null;
-    Reportal report = new Reportal();
+    final Reportal report = new Reportal();
 
     report.title = getParam(req, "title");
     report.description = getParam(req, "description");
@@ -824,7 +806,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     report.scheduleInterval = getParam(req, "schedule-interval");
     report.renderResultsAsHtml = hasParam(req, "render-results-as-html");
 
-    boolean isEndSchedule = hasParam(req, "end-schedule-date");
+    final boolean isEndSchedule = hasParam(req, "end-schedule-date");
     if (isEndSchedule) {
       report.endSchedule = getParam(req, "end-schedule-date");
     }
@@ -840,8 +822,8 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("scheduleInterval", report.scheduleInterval);
     page.add("renderResultsAsHtml", report.renderResultsAsHtml);
     page.add("endSchedule", report.endSchedule);
-    page.add("max_allowed_schedule_dates", max_allowed_schedule_dates);
-    page.add("default_schedule_dates", default_schedule_dates);
+    page.add("max_allowed_schedule_dates", this.max_allowed_schedule_dates);
+    page.add("default_schedule_dates", this.default_schedule_dates);
 
     report.accessViewer = getParam(req, "access-viewer");
     report.accessExecutor = getParam(req, "access-executor");
@@ -853,11 +835,11 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     if (report.accessOwner == null || report.accessOwner.isEmpty()) {
       report.accessOwner = user.getUserId();
     } else {
-      String[] splittedOwners = report.accessOwner.toLowerCase()
-              .split(Reportal.ACCESS_LIST_SPLIT_REGEX);
+      final String[] splittedOwners = report.accessOwner.toLowerCase()
+          .split(Reportal.ACCESS_LIST_SPLIT_REGEX);
       if (!Arrays.asList(splittedOwners).contains(user.getUserId())) {
         report.accessOwner = String.format("%s,%s", user.getUserId(),
-                StringUtils.join(splittedOwners, ','));
+            StringUtils.join(splittedOwners, ','));
       } else {
         report.accessOwner = StringUtils.join(splittedOwners, ',');
       }
@@ -870,22 +852,22 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("notifications", report.notifications);
     page.add("failureNotifications", report.failureNotifications);
 
-    int numQueries = getIntParam(req, "queryNumber");
+    final int numQueries = getIntParam(req, "queryNumber");
     page.add("queryNumber", numQueries);
-    List<Query> queryList = new ArrayList<Query>(numQueries);
+    final List<Query> queryList = new ArrayList<>(numQueries);
     page.add("queries", queryList);
     report.queries = queryList;
 
-    List<String> errors = new ArrayList<String>();
+    final List<String> errors = new ArrayList<>();
     for (int i = 0; i < numQueries; i++) {
-      Query query = new Query();
+      final Query query = new Query();
 
       query.title = getParam(req, "query" + i + "title");
       query.type = getParam(req, "query" + i + "type");
       query.script = getParam(req, "query" + i + "script");
 
       // Type check
-      ReportalType type = ReportalType.getTypeByName(query.type);
+      final ReportalType type = ReportalType.getTypeByName(query.type);
       if (type == null) {
         errors.add("Type " + query.type + " is invalid.");
       }
@@ -897,18 +879,18 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       queryList.add(query);
     }
 
-    int variables = getIntParam(req, "variableNumber");
+    final int variables = getIntParam(req, "variableNumber");
     page.add("variableNumber", variables);
-    List<Variable> variableList = new ArrayList<Variable>(variables);
+    final List<Variable> variableList = new ArrayList<>(variables);
     page.add("variables", variableList);
     report.variables = variableList;
 
     String proxyUser = null;
 
     for (int i = 0; i < variables; i++) {
-      Variable variable =
-        new Variable(getParam(req, "variable" + i + "title"), getParam(req,
-          "variable" + i + "name"));
+      final Variable variable =
+          new Variable(getParam(req, "variable" + i + "title"), getParam(req,
+              "variable" + i + "name"));
 
       if (variable.title.isEmpty() || variable.name.isEmpty()) {
         errors.add("Variable title and name cannot be empty.");
@@ -958,10 +940,10 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
 
     // Validate access users
-    UserManager userManager = getApplication().getUserManager();
-    String[] accessLists =
-        new String[] { report.accessViewer, report.accessExecutor,
-            report.accessOwner };
+    final UserManager userManager = getApplication().getUserManager();
+    final String[] accessLists =
+        new String[]{report.accessViewer, report.accessExecutor,
+            report.accessOwner};
     for (String accessList : accessLists) {
       if (accessList == null) {
         continue;
@@ -969,8 +951,8 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
       accessList = accessList.trim();
       if (!accessList.isEmpty()) {
-        String[] users = accessList.split(Reportal.ACCESS_LIST_SPLIT_REGEX);
-        for (String accessUser : users) {
+        final String[] users = accessList.split(Reportal.ACCESS_LIST_SPLIT_REGEX);
+        for (final String accessUser : users) {
           if (!userManager.validateUser(accessUser)) {
             errors.add("User " + accessUser + " in access list is invalid.");
           }
@@ -980,26 +962,27 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
     // Validate proxy user
     if (proxyUser != null) {
-      if (!userManager.validateProxyUser(proxyUser,user)){
-        errors.add("User " + user.getUserId() + " has no permission to add " + proxyUser + " as proxy user.");
+      if (!userManager.validateProxyUser(proxyUser, user)) {
+        errors.add("User " + user.getUserId() + " has no permission to add " + proxyUser
+            + " as proxy user.");
       }
       proxyUser = null;
     }
 
     // Validate email addresses
-    Set<String> emails =
+    final Set<String> emails =
         ReportalHelper.parseUniqueEmails(report.notifications + ","
             + report.failureNotifications, Reportal.ACCESS_LIST_SPLIT_REGEX);
-    for (String email : emails) {
+    for (final String email : emails) {
       if (!ReportalHelper.isValidEmailAddress(email)) {
         errors.add("Invalid email address: " + email);
         continue;
       }
 
-      String domain = ReportalHelper.getEmailDomain(email);
-      if (allowedEmailDomains != null && !allowedEmailDomains.contains(domain)) {
+      final String domain = ReportalHelper.getEmailDomain(email);
+      if (this.allowedEmailDomains != null && !this.allowedEmailDomains.contains(domain)) {
         errors.add("Email address '" + email + "' has an invalid domain '"
-            + domain + "'. " + "Valid domains are: " + allowedEmailDomains);
+            + domain + "'. " + "Valid domains are: " + this.allowedEmailDomains);
       }
     }
 
@@ -1012,18 +995,18 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     // Attempt to get a project object
     if (isEdit) {
       // Editing mode, load project
-      int projectId = getIntParam(req, "id");
+      final int projectId = getIntParam(req, "id");
       project = projectManager.getProject(projectId);
       report.loadImmutableFromProject(project);
     } else {
       // Creation mode, create project
       try {
         project =
-            ReportalHelper.createReportalProject(server, report.title,
+            ReportalHelper.createReportalProject(this.server, report.title,
                 report.description, user);
         report.reportalUser = user.getUserId();
         report.ownerEmail = user.getEmail();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         e.printStackTrace();
         errors.add("Error while creating report. " + e.getMessage());
         page.add("errorMsgs", errors);
@@ -1051,8 +1034,8 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
 
     try {
-      report.createZipAndUpload(projectManager, user, reportalStorageUser);
-    } catch (Exception e) {
+      report.createZipAndUpload(projectManager, user, this.reportalStorageUser);
+    } catch (final Exception e) {
       e.printStackTrace();
       errors.add("Error while creating Azkaban jobs. " + e.getMessage());
       page.add("errorMsgs", errors);
@@ -1060,7 +1043,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       if (!isEdit) {
         try {
           projectManager.removeProject(project, user);
-        } catch (ProjectManagerException e1) {
+        } catch (final ProjectManagerException e1) {
           e1.printStackTrace();
         }
       }
@@ -1068,17 +1051,17 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
 
     // Prepare flow
-    Flow flow = project.getFlows().get(0);
+    final Flow flow = project.getFlows().get(0);
     project.getMetadata().put("flowName", flow.getId());
 
     // Set Reportal mailer
     flow.setMailCreator(ReportalMailCreator.REPORTAL_MAIL_CREATOR);
 
     // Create/Save schedule
-    ScheduleManager scheduleManager = server.getScheduleManager();
+    final ScheduleManager scheduleManager = this.server.getScheduleManager();
     try {
       report.updateSchedules(report, scheduleManager, user, flow);
-    } catch (ScheduleManagerException e) {
+    } catch (final ScheduleManagerException e) {
       e.printStackTrace();
       errors.add(e.getMessage());
       page.add("errorMsgs", errors);
@@ -1095,7 +1078,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
           .updateProjectDescription(project, report.description, user);
       updateProjectPermissions(project, projectManager, report, user);
       projectManager.updateFlow(project, flow);
-    } catch (ProjectManagerException e) {
+    } catch (final ProjectManagerException e) {
       e.printStackTrace();
       errors.add("Error while updating report. " + e.getMessage());
       page.add("errorMsgs", errors);
@@ -1103,7 +1086,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       if (!isEdit) {
         try {
           projectManager.removeProject(project, user);
-        } catch (ProjectManagerException e1) {
+        } catch (final ProjectManagerException e1) {
           e1.printStackTrace();
         }
       }
@@ -1113,14 +1096,14 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     return Integer.toString(project.getId());
   }
 
-  private void updateProjectPermissions(Project project,
-      ProjectManager projectManager, Reportal report, User currentUser)
+  private void updateProjectPermissions(final Project project,
+      final ProjectManager projectManager, final Reportal report, final User currentUser)
       throws ProjectManagerException {
     // Old permissions and users
-    List<Pair<String, Permission>> oldPermissions =
+    final List<Pair<String, Permission>> oldPermissions =
         project.getUserPermissions();
-    Set<String> oldUsers = new HashSet<String>();
-    for (Pair<String, Permission> userPermission : oldPermissions) {
+    final Set<String> oldUsers = new HashSet<>();
+    for (final Pair<String, Permission> userPermission : oldPermissions) {
       oldUsers.add(userPermission.getFirst());
     }
 
@@ -1128,15 +1111,15 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     report.updatePermissions();
 
     // New permissions and users
-    List<Pair<String, Permission>> newPermissions =
+    final List<Pair<String, Permission>> newPermissions =
         project.getUserPermissions();
-    Set<String> newUsers = new HashSet<String>();
-    for (Pair<String, Permission> userPermission : newPermissions) {
+    final Set<String> newUsers = new HashSet<>();
+    for (final Pair<String, Permission> userPermission : newPermissions) {
       newUsers.add(userPermission.getFirst());
     }
 
     // Save all new permissions
-    for (Pair<String, Permission> userPermission : newPermissions) {
+    for (final Pair<String, Permission> userPermission : newPermissions) {
       if (!oldPermissions.contains(userPermission)) {
         projectManager.updateProjectPermission(project,
             userPermission.getFirst(), userPermission.getSecond(), false,
@@ -1145,7 +1128,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
 
     // Remove permissions for any old users no longer in the new users
-    for (String oldUser : oldUsers) {
+    for (final String oldUser : oldUsers) {
       if (!newUsers.contains(oldUser)) {
         projectManager.removeProjectPermission(project, oldUser, false,
             currentUser);
@@ -1153,16 +1136,16 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleRunReportalWithVariables(HttpServletRequest req,
-      HashMap<String, Object> ret, Session session) throws ServletException,
+  private void handleRunReportalWithVariables(final HttpServletRequest req,
+      final HashMap<String, Object> ret, final Session session) throws ServletException,
       IOException {
-    boolean isTestRun = hasParam(req, "testRun");
+    final boolean isTestRun = hasParam(req, "testRun");
 
-    int id = getIntParam(req, "id");
-    ProjectManager projectManager = server.getProjectManager();
-    Project project = projectManager.getProject(id);
-    Reportal report = Reportal.loadFromProject(project);
-    User user = session.getUser();
+    final int id = getIntParam(req, "id");
+    final ProjectManager projectManager = this.server.getProjectManager();
+    final Project project = projectManager.getProject(id);
+    final Reportal report = Reportal.loadFromProject(project);
+    final User user = session.getUser();
 
     if (report.getAccessExecutors().size() > 0
         && !hasPermission(project, user, Type.EXECUTE)) {
@@ -1170,9 +1153,9 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    for (Query query : report.queries) {
-      String jobType = query.type;
-      ReportalType type = ReportalType.getTypeByName(jobType);
+    for (final Query query : report.queries) {
+      final String jobType = query.type;
+      final ReportalType type = ReportalType.getTypeByName(jobType);
       if (!type.checkPermission(user)) {
         ret.put(
             "error",
@@ -1182,16 +1165,16 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       }
     }
 
-    Flow flow = project.getFlows().get(0);
+    final Flow flow = project.getFlows().get(0);
 
-    ExecutableFlow exflow = new ExecutableFlow(project, flow);
+    final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
     exflow.addAllProxyUsers(project.getProxyUsers());
 
-    ExecutionOptions options = exflow.getExecutionOptions();
+    final ExecutionOptions options = exflow.getExecutionOptions();
 
     int i = 0;
-    for (Variable variable : ReportalUtil.getRunTimeVariables(report.variables)) {
+    for (final Variable variable : ReportalUtil.getRunTimeVariables(report.variables)) {
       options.getFlowParameters().put(REPORTAL_VARIABLE_PREFIX + i + ".from",
           variable.name);
       options.getFlowParameters().put(REPORTAL_VARIABLE_PREFIX + i + ".to",
@@ -1203,11 +1186,11 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         .put("reportal.execution.user", user.getUserId());
 
     // Add the execution user's email to the list of success and failure emails.
-    String email = user.getEmail();
+    final String email = user.getEmail();
 
     if (email != null && !email.isEmpty()) {
       if (isTestRun) { // Only email the executor
-        List<String> emails = new ArrayList<String>();
+        final List<String> emails = new ArrayList<>();
         emails.add(email);
         options.setSuccessEmails(emails);
         options.setFailureEmails(emails);
@@ -1223,70 +1206,68 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     options.getFlowParameters().put("reportal.unscheduled.run", "true");
 
     try {
-      String message =
-          server.getExecutorManager().submitExecutableFlow(exflow,
+      final String message =
+          this.server.getExecutorManager().submitExecutableFlow(exflow,
               session.getUser().getUserId())
               + ".";
       ret.put("message", message);
       ret.put("result", "success");
       ret.put("redirect", "/reportal?view&logs&id=" + project.getId()
           + "&execid=" + exflow.getExecutionId());
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       e.printStackTrace();
       ret.put("error",
           "Error running report " + report.title + ". " + e.getMessage());
     }
   }
 
-  private void preparePage(Page page, Session session) {
-    page.add("viewerName", viewerName);
-    page.add("hideNavigation", !showNav);
+  private void preparePage(final Page page, final Session session) {
+    page.add("viewerName", this.viewerName);
+    page.add("hideNavigation", !this.showNav);
     page.add("userid", session.getUser().getUserId());
     page.add("esc", new EscapeTool());
   }
 
   private class CleanerThread extends Thread {
+
+    private static final long DEFAULT_CLEAN_INTERVAL_MS = 24 * 60 * 60 * 1000;
+    private static final long DEFAULT_OUTPUT_DIR_RETENTION_MS = 7 * 24 * 60
+        * 60 * 1000;
+    private static final long DEFAULT_MAIL_TEMP_DIR_RETENTION_MS =
+        24 * 60 * 60 * 1000;
     // The frequency, in milliseconds, that the Reportal output
     // and mail temp directories should be cleaned
     private final long CLEAN_INTERVAL_MS;
-    private static final long DEFAULT_CLEAN_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
     // The duration, in milliseconds, that Reportal output should be retained
     // for
     private final long OUTPUT_DIR_RETENTION_MS;
-    private static final long DEFAULT_OUTPUT_DIR_RETENTION_MS = 7 * 24 * 60
-        * 60 * 1000;
-
     // The duration, in milliseconds, that Reportal mail temp files should be
     // retained for
     private final long MAIL_TEMP_DIR_RETENTION_MS;
-    private static final long DEFAULT_MAIL_TEMP_DIR_RETENTION_MS =
-        24 * 60 * 60 * 1000;
-
     private boolean shutdown = false;
 
     public CleanerThread() {
       this.setName("Reportal-Cleaner-Thread");
-      CLEAN_INTERVAL_MS =
-          props
+      this.CLEAN_INTERVAL_MS =
+          ReportalServlet.this.props
               .getLong("reportal.clean.interval.ms", DEFAULT_CLEAN_INTERVAL_MS);
-      OUTPUT_DIR_RETENTION_MS =
-          props.getLong("reportal.output.dir.retention.ms",
+      this.OUTPUT_DIR_RETENTION_MS =
+          ReportalServlet.this.props.getLong("reportal.output.dir.retention.ms",
               DEFAULT_OUTPUT_DIR_RETENTION_MS);
-      MAIL_TEMP_DIR_RETENTION_MS =
-          props.getLong("reportal.mail.temp.dir.retention.ms",
+      this.MAIL_TEMP_DIR_RETENTION_MS =
+          ReportalServlet.this.props.getLong("reportal.mail.temp.dir.retention.ms",
               DEFAULT_MAIL_TEMP_DIR_RETENTION_MS);
     }
 
     @SuppressWarnings("unused")
     public void shutdown() {
-      shutdown = true;
+      this.shutdown = true;
       this.interrupt();
     }
 
     @Override
     public void run() {
-      while (!shutdown) {
+      while (!this.shutdown) {
         synchronized (this) {
           logger.info("Cleaning old execution output dirs");
           cleanOldReportalOutputDirs();
@@ -1296,44 +1277,44 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         }
 
         try {
-          Thread.sleep(CLEAN_INTERVAL_MS);
-        } catch (InterruptedException e) {
+          Thread.sleep(this.CLEAN_INTERVAL_MS);
+        } catch (final InterruptedException e) {
           logger.error("CleanerThread's sleep was interrupted.", e);
         }
       }
     }
 
     private void cleanOldReportalOutputDirs() {
-      IStreamProvider streamProvider =
+      final IStreamProvider streamProvider =
           ReportalUtil.getStreamProvider(ReportalMailCreator.outputFileSystem);
 
       if (streamProvider instanceof StreamProviderHDFS) {
-        StreamProviderHDFS hdfsStreamProvider =
+        final StreamProviderHDFS hdfsStreamProvider =
             (StreamProviderHDFS) streamProvider;
-        hdfsStreamProvider.setHadoopSecurityManager(hadoopSecurityManager);
-        hdfsStreamProvider.setUser(reportalStorageUser);
+        hdfsStreamProvider.setHadoopSecurityManager(ReportalServlet.this.hadoopSecurityManager);
+        hdfsStreamProvider.setUser(ReportalServlet.this.reportalStorageUser);
       }
 
       final long pastTimeThreshold =
-          System.currentTimeMillis() - OUTPUT_DIR_RETENTION_MS;
+          System.currentTimeMillis() - this.OUTPUT_DIR_RETENTION_MS;
 
       String[] oldFiles = null;
       try {
         oldFiles =
             streamProvider.getOldFiles(ReportalMailCreator.outputLocation,
                 pastTimeThreshold);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         logger.error("Error getting old files from "
             + ReportalMailCreator.outputLocation + " on "
             + ReportalMailCreator.outputFileSystem + " file system.", e);
       }
 
       if (oldFiles != null) {
-        for (String file : oldFiles) {
-          String filePath = ReportalMailCreator.outputLocation + "/" + file;
+        for (final String file : oldFiles) {
+          final String filePath = ReportalMailCreator.outputLocation + "/" + file;
           try {
             streamProvider.deleteFile(filePath);
-          } catch (Exception e) {
+          } catch (final Exception e) {
             logger.error("Error deleting file " + filePath + " from "
                 + ReportalMailCreator.outputFileSystem + " file system.", e);
           }
@@ -1342,13 +1323,13 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
 
     private void cleanReportalMailTempDir() {
-      File dir = reportalMailTempDirectory;
+      final File dir = ReportalServlet.this.reportalMailTempDirectory;
       final long pastTimeThreshold =
-          System.currentTimeMillis() - MAIL_TEMP_DIR_RETENTION_MS;
+          System.currentTimeMillis() - this.MAIL_TEMP_DIR_RETENTION_MS;
 
-      File[] oldMailTempDirs = dir.listFiles(new FileFilter() {
+      final File[] oldMailTempDirs = dir.listFiles(new FileFilter() {
         @Override
-        public boolean accept(File path) {
+        public boolean accept(final File path) {
           if (path.isDirectory() && path.lastModified() < pastTimeThreshold) {
             return true;
           }
@@ -1356,10 +1337,10 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         }
       });
 
-      for (File tempDir : oldMailTempDirs) {
+      for (final File tempDir : oldMailTempDirs) {
         try {
           FileUtils.deleteDirectory(tempDir);
-        } catch (IOException e) {
+        } catch (final IOException e) {
           logger.error(
               "Error cleaning Reportal mail temp dir " + tempDir.getPath(), e);
         }

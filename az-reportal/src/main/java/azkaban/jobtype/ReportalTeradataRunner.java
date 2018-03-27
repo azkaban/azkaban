@@ -17,6 +17,7 @@
 package azkaban.jobtype;
 
 import azkaban.flow.CommonJobProperties;
+import azkaban.reportal.util.CompositeException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
@@ -29,42 +30,43 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
 import javax.sql.DataSource;
-
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.lang.StringUtils;
 
-import azkaban.reportal.util.CompositeException;
-
 public class ReportalTeradataRunner extends ReportalAbstractRunner {
 
-  public ReportalTeradataRunner(String jobName, Properties props) {
+  public ReportalTeradataRunner(final String jobName, final Properties props) {
     super(props);
   }
 
   @Override
   protected void runReportal() throws Exception {
     System.out.println("Reportal Teradata: Setting up Teradata");
-    List<Exception> exceptions = new ArrayList<Exception>();
+    final List<Exception> exceptions = new ArrayList<>();
 
     Class.forName("com.teradata.jdbc.TeraDriver");
-    String connectionString =
-        props.getString("reportal.teradata.connection.string", null);
+    final String connectionString =
+        this.props.getString("reportal.teradata.connection.string", null);
 
-    String user = props.getString("reportal.teradata.username", null);
-    String pass = props.getString("reportal.teradata.password", null);
+    final String user = this.props.getString("reportal.teradata.username", null);
+    final String pass = this.props.getString("reportal.teradata.password", null);
 
-    Map<String,String> queryBandProperties = new HashMap<>();
-    queryBandProperties.put("USER",proxyUser);
-    queryBandProperties.put(CommonJobProperties.EXEC_ID,props.getString(CommonJobProperties.EXEC_ID));
-    queryBandProperties.put(CommonJobProperties.PROJECT_NAME,props.getString(CommonJobProperties.PROJECT_NAME));
-    queryBandProperties.put(CommonJobProperties.FLOW_ID,props.getString(CommonJobProperties.FLOW_ID));
-    queryBandProperties.put(CommonJobProperties.JOB_ID,props.getString(CommonJobProperties.JOB_ID));
-    String attemptUrl = props.getString(CommonJobProperties.ATTEMPT_LINK);
-    queryBandProperties.put(CommonJobProperties.ATTEMPT_LINK,attemptUrl);
-    URI attemptUri = new URI(attemptUrl);
-    queryBandProperties.put("azkaban.server",attemptUri.getHost());
+    final Map<String, String> queryBandProperties = new HashMap<>();
+    queryBandProperties.put("USER", this.proxyUser);
+    queryBandProperties
+        .put(CommonJobProperties.EXEC_ID, this.props.getString(CommonJobProperties.EXEC_ID));
+    queryBandProperties
+        .put(CommonJobProperties.PROJECT_NAME,
+            this.props.getString(CommonJobProperties.PROJECT_NAME));
+    queryBandProperties
+        .put(CommonJobProperties.FLOW_ID, this.props.getString(CommonJobProperties.FLOW_ID));
+    queryBandProperties
+        .put(CommonJobProperties.JOB_ID, this.props.getString(CommonJobProperties.JOB_ID));
+    final String attemptUrl = this.props.getString(CommonJobProperties.ATTEMPT_LINK);
+    queryBandProperties.put(CommonJobProperties.ATTEMPT_LINK, attemptUrl);
+    final URI attemptUri = new URI(attemptUrl);
+    queryBandProperties.put("azkaban.server", attemptUri.getHost());
 
     if (user == null) {
       System.out.println("Reportal Teradata: Configuration incomplete");
@@ -77,38 +79,38 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
           "The reportal.teradata.password variable was not defined.");
     }
 
-    DataSource teraDataSource =
+    final DataSource teraDataSource =
         new TeradataDataSource(connectionString, user, pass);
-    Connection conn = teraDataSource.getConnection();
+    final Connection conn = teraDataSource.getConnection();
 
-    String sqlQueries[] = cleanAndGetQueries(jobQuery, queryBandProperties);
+    final String[] sqlQueries = cleanAndGetQueries(this.jobQuery, queryBandProperties);
 
-    int numQueries = sqlQueries.length;
+    final int numQueries = sqlQueries.length;
 
     for (int i = 0; i < numQueries; i++) {
       try {
-        String queryLine = sqlQueries[i];
+        final String queryLine = sqlQueries[i];
 
         // Only store results from the last statement
         if (i == numQueries - 1) {
-          PreparedStatement stmt = prepareStatement(conn, queryLine);
+          final PreparedStatement stmt = prepareStatement(conn, queryLine);
           stmt.execute();
-          ResultSet rs = stmt.getResultSet();
-          outputQueryResult(rs, outputStream);
+          final ResultSet rs = stmt.getResultSet();
+          outputQueryResult(rs, this.outputStream);
           stmt.close();
         } else {
           try {
-            PreparedStatement stmt = prepareStatement(conn, queryLine);
+            final PreparedStatement stmt = prepareStatement(conn, queryLine);
             stmt.execute();
             stmt.close();
-          } catch (NullPointerException e) {
+          } catch (final NullPointerException e) {
             // An empty query (or comment) throws a NPE in JDBC. Yay!
             System.err
                 .println("Caught NPE in execute call because report has a NOOP query: "
                     + queryLine);
           }
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         // Catch and continue. Delay exception throwing until we've run all
         // queries in this task.
         System.out.println("Reportal Teradata: SQL query failed. "
@@ -125,7 +127,8 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
     System.out.println("Reportal Teradata: Ended successfully");
   }
 
-  protected String[] cleanAndGetQueries(String sqlQuery, Map<String, String> queryBandProperties) {
+  protected String[] cleanAndGetQueries(final String sqlQuery,
+      final Map<String, String> queryBandProperties) {
 
     /**
      * Teradata's SET Query_Band allows use to "proxy" to an LDAP user. This
@@ -136,18 +139,18 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
      * Best we could do.
      */
 
-    StringBuilder queryBandBuilder = new StringBuilder();
-    for(Map.Entry<String,String> pair : queryBandProperties.entrySet()){
-      queryBandBuilder.append(""+pair.getKey()+"=" + pair.getValue() + ";");
+    final StringBuilder queryBandBuilder = new StringBuilder();
+    for (final Map.Entry<String, String> pair : queryBandProperties.entrySet()) {
+      queryBandBuilder.append("" + pair.getKey() + "=" + pair.getValue() + ";");
     }
 
-    String queryBand =
+    final String queryBand =
         "SET Query_Band = '" + queryBandBuilder.toString()
             + "' FOR SESSION;";
-    ArrayList<String> injectedQueries = new ArrayList<String>();
+    final ArrayList<String> injectedQueries = new ArrayList<>();
 
     injectedQueries.add(queryBand);
-    String[] queries = StringUtils.split(sqlQuery.trim(), ";");
+    final String[] queries = StringUtils.split(sqlQuery.trim(), ";");
     for (String query : queries) {
       query = cleanQueryLine(query);
       if (query == null || query.isEmpty()) {
@@ -156,30 +159,30 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
       injectedQueries.add(query);
     }
 
-    return injectedQueries.toArray(new String[] {});
+    return injectedQueries.toArray(new String[]{});
   }
 
-  private String cleanQueryLine(String line) {
+  private String cleanQueryLine(final String line) {
     if (line != null) {
       return line.trim();
     }
     return null;
   }
 
-  private void outputQueryResult(ResultSet result, OutputStream outputStream)
+  private void outputQueryResult(final ResultSet result, final OutputStream outputStream)
       throws SQLException {
     final PrintStream outFile = new PrintStream(outputStream);
     final String delim = ",";
     boolean isHeaderPending = true;
     if (result != null) {
       while (result.next()) {
-        int numColumns = result.getMetaData().getColumnCount();
-        StringBuilder dataString = new StringBuilder();
+        final int numColumns = result.getMetaData().getColumnCount();
+        final StringBuilder dataString = new StringBuilder();
 
         if (isHeaderPending) {
-          StringBuilder headerString = new StringBuilder();
+          final StringBuilder headerString = new StringBuilder();
           for (int j = 1; j <= numColumns; j++) {
-            String colName = formatValue(result.getMetaData().getColumnName(j));
+            final String colName = formatValue(result.getMetaData().getColumnName(j));
             if (j > 1) {
               headerString.append(delim).append(colName);
             } else {
@@ -212,11 +215,11 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
     outFile.close();
   }
 
-  private String formatValue(String value) {
+  private String formatValue(final String value) {
     return "\"" + value.replace("\"", "") + "\"";
   }
 
-  private PreparedStatement prepareStatement(Connection conn, String line)
+  private PreparedStatement prepareStatement(final Connection conn, String line)
       throws SQLException {
     line = injectVariables(line);
 
@@ -234,7 +237,7 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
     // }
 
     // StringBuilder sb = new StringBuilder();
-    PreparedStatement stmt = conn.prepareStatement(line);
+    final PreparedStatement stmt = conn.prepareStatement(line);
     // for (int i = 0; i < variableReplacements.size(); i++) {
     // stmt.setString(i + 1, variableReplacements.get(i));
     // sb.append(variableReplacements.get(i)).append(",");
@@ -246,8 +249,9 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
   }
 
   private static class TeradataDataSource extends BasicDataSource {
-    private TeradataDataSource(String connectionString, String user,
-        String password) {
+
+    private TeradataDataSource(final String connectionString, final String user,
+        final String password) {
       super();
       setDriverClassName("com.teradata.jdbc.TeraDriver");
       setUrl(connectionString);

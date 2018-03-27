@@ -16,6 +16,10 @@
 
 package azkaban.jobtype;
 
+import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
+import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
+
+import azkaban.reportal.util.BoundedOutputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -31,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.cli.CliDriver;
 import org.apache.hadoop.hive.cli.CliSessionState;
@@ -40,44 +43,74 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
-import azkaban.reportal.util.BoundedOutputStream;
-
-import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
-import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
-
 public class ReportalHiveRunner extends ReportalAbstractRunner {
 
-  public ReportalHiveRunner(String jobName, Properties props) {
+  public ReportalHiveRunner(final String jobName, final Properties props) {
     super(props);
+  }
+
+  /**
+   * Normally hive.aux.jars.path is expanded from just being a path to the full
+   * list of files in the directory by the hive shell script. Since we normally
+   * won't be running from the script, it's up to us to do that work here. We
+   * use a heuristic that if there is no occurrence of ".jar" in the original,
+   * it needs expansion. Otherwise it's already been done for us. Also, surround
+   * the files with uri niceities.
+   */
+  static String expandHiveAuxJarsPath(final String original) throws IOException {
+    if (original == null || original.endsWith(".jar")) {
+      return original;
+    }
+
+    final File[] files = new File(original).listFiles();
+
+    if (files == null || files.length == 0) {
+      return original;
+    }
+
+    return filesToURIString(files);
+
+  }
+
+  static String filesToURIString(final File[] files) throws IOException {
+    final StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < files.length; i++) {
+      sb.append("file:///").append(files[i].getCanonicalPath());
+      if (i != files.length - 1) {
+        sb.append(",");
+      }
+    }
+
+    return sb.toString();
   }
 
   @Override
   protected void runReportal() throws Exception {
     System.out.println("Reportal Hive: Setting up Hive");
-    HiveConf conf = new HiveConf(SessionState.class);
+    final HiveConf conf = new HiveConf(SessionState.class);
 
     if (System.getenv(HADOOP_TOKEN_FILE_LOCATION) != null) {
       conf.set(MAPREDUCE_JOB_CREDENTIALS_BINARY,
           System.getenv(HADOOP_TOKEN_FILE_LOCATION));
     }
 
-    File tempTSVFile = new File("./temp.tsv");
-    OutputStream tsvTempOutputStream =
+    final File tempTSVFile = new File("./temp.tsv");
+    final OutputStream tsvTempOutputStream =
         new BoundedOutputStream(new BufferedOutputStream(new FileOutputStream(
-            tempTSVFile)), outputCapacity);
-    PrintStream logOut = System.out;
+            tempTSVFile)), this.outputCapacity);
+    final PrintStream logOut = System.out;
 
-    String orig = HiveConf.getVar(conf, HiveConf.ConfVars.HIVEAUXJARS);
+    final String orig = HiveConf.getVar(conf, HiveConf.ConfVars.HIVEAUXJARS);
 
-    CliSessionState sessionState = new CliSessionState(conf);
+    final CliSessionState sessionState = new CliSessionState(conf);
     sessionState.in = System.in;
     sessionState.out = new PrintStream(tsvTempOutputStream, true, "UTF-8");
     sessionState.err = new PrintStream(logOut, true, "UTF-8");
 
-    OptionsProcessor oproc = new OptionsProcessor();
+    final OptionsProcessor oproc = new OptionsProcessor();
 
     // Feed in Hive Args
-    String[] args = buildHiveArgs();
+    final String[] args = buildHiveArgs();
     if (!oproc.process_stage1(args)) {
       throw new Exception("unable to parse options stage 1");
     }
@@ -87,13 +120,13 @@ public class ReportalHiveRunner extends ReportalAbstractRunner {
     }
 
     // Set all properties specified via command line
-    for (Map.Entry<Object, Object> item : sessionState.cmdProperties.entrySet()) {
+    for (final Map.Entry<Object, Object> item : sessionState.cmdProperties.entrySet()) {
       conf.set((String) item.getKey(), (String) item.getValue());
     }
 
     SessionState.start(sessionState);
 
-    String expanded = expandHiveAuxJarsPath(orig);
+    final String expanded = expandHiveAuxJarsPath(orig);
     if (orig == null || orig.equals(expanded)) {
       System.out.println("Hive aux jars variable not expanded");
     } else {
@@ -106,7 +139,7 @@ public class ReportalHiveRunner extends ReportalAbstractRunner {
     // components
     // see also: code in ExecDriver.java
     ClassLoader loader = conf.getClassLoader();
-    String auxJars = HiveConf.getVar(conf, HiveConf.ConfVars.HIVEAUXJARS);
+    final String auxJars = HiveConf.getVar(conf, HiveConf.ConfVars.HIVEAUXJARS);
 
     System.out.println("Got auxJars = " + auxJars);
 
@@ -116,12 +149,12 @@ public class ReportalHiveRunner extends ReportalAbstractRunner {
     conf.setClassLoader(loader);
     Thread.currentThread().setContextClassLoader(loader);
 
-    CliDriver cli = new CliDriver();
+    final CliDriver cli = new CliDriver();
     int returnValue = 0;
     String prefix = "";
 
     returnValue = cli.processLine("set hive.cli.print.header=true;");
-    String[] queries = jobQuery.split("\n");
+    final String[] queries = this.jobQuery.split("\n");
     for (String line : queries) {
       if (!prefix.isEmpty()) {
         prefix += '\n';
@@ -142,12 +175,12 @@ public class ReportalHiveRunner extends ReportalAbstractRunner {
 
     // convert tsv to csv and write it do disk
     System.out.println("Reportal Hive: Converting output");
-    InputStream tsvTempInputStream =
+    final InputStream tsvTempInputStream =
         new BufferedInputStream(new FileInputStream(tempTSVFile));
-    Scanner rowScanner = new Scanner(tsvTempInputStream, StandardCharsets.UTF_8.toString());
-    PrintStream csvOutputStream = new PrintStream(outputStream);
+    final Scanner rowScanner = new Scanner(tsvTempInputStream, StandardCharsets.UTF_8.toString());
+    final PrintStream csvOutputStream = new PrintStream(this.outputStream);
     while (rowScanner.hasNextLine()) {
-      String tsvLine = rowScanner.nextLine();
+      final String tsvLine = rowScanner.nextLine();
       // strip all quotes, and then quote the columns
       csvOutputStream.println("\""
           + tsvLine.replace("\"", "").replace("\t", "\",\"") + "\"");
@@ -166,19 +199,19 @@ public class ReportalHiveRunner extends ReportalAbstractRunner {
   }
 
   private String[] buildHiveArgs() {
-    List<String> confBuilder = new ArrayList<String>();
+    final List<String> confBuilder = new ArrayList<>();
 
-    if (proxyUser != null) {
-      confBuilder.add("hive.exec.scratchdir=/tmp/hive-" + proxyUser);
+    if (this.proxyUser != null) {
+      confBuilder.add("hive.exec.scratchdir=/tmp/hive-" + this.proxyUser);
     }
 
-    if (jobTitle != null) {
-      confBuilder.add("mapred.job.name=\"Reportal: " + jobTitle + "\"");
+    if (this.jobTitle != null) {
+      confBuilder.add("mapred.job.name=\"Reportal: " + this.jobTitle + "\"");
     }
 
     confBuilder.add("mapreduce.job.complete.cancel.delegation.tokens=false");
 
-    String[] args = new String[confBuilder.size() * 2];
+    final String[] args = new String[confBuilder.size() * 2];
 
     for (int i = 0; i < confBuilder.size(); i++) {
       args[i * 2] = "--hiveconf";
@@ -186,38 +219,5 @@ public class ReportalHiveRunner extends ReportalAbstractRunner {
     }
 
     return args;
-  }
-
-  /**
-   * Normally hive.aux.jars.path is expanded from just being a path to the full
-   * list of files in the directory by the hive shell script. Since we normally
-   * won't be running from the script, it's up to us to do that work here. We
-   * use a heuristic that if there is no occurrence of ".jar" in the original,
-   * it needs expansion. Otherwise it's already been done for us. Also, surround
-   * the files with uri niceities.
-   */
-  static String expandHiveAuxJarsPath(String original) throws IOException {
-    if (original == null || original.endsWith(".jar"))
-      return original;
-
-    File[] files = new File(original).listFiles();
-
-    if (files == null || files.length == 0) {
-      return original;
-    }
-
-    return filesToURIString(files);
-
-  }
-
-  static String filesToURIString(File[] files) throws IOException {
-    StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < files.length; i++) {
-      sb.append("file:///").append(files[i].getCanonicalPath());
-      if (i != files.length - 1)
-        sb.append(",");
-    }
-
-    return sb.toString();
   }
 }

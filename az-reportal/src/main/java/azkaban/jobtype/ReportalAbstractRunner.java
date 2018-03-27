@@ -16,6 +16,13 @@
 
 package azkaban.jobtype;
 
+import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
+import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
+
+import azkaban.flow.CommonJobProperties;
+import azkaban.reportal.util.BoundedOutputStream;
+import azkaban.reportal.util.ReportalRunnerException;
+import azkaban.utils.Props;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,19 +33,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.Map.Entry;
 import java.util.Properties;
-
+import java.util.TimeZone;
 import org.apache.hadoop.conf.Configuration;
-
-import azkaban.flow.CommonJobProperties;
-import azkaban.reportal.util.BoundedOutputStream;
-import azkaban.reportal.util.ReportalRunnerException;
-import azkaban.utils.Props;
-
-import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
-import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 public abstract class ReportalAbstractRunner {
 
@@ -51,10 +49,10 @@ public abstract class ReportalAbstractRunner {
   protected String reportalTitle;
   protected String reportalStorageUser;
   protected int outputCapacity;
-  protected Map<String, String> variables = new HashMap<String, String>();
+  protected Map<String, String> variables = new HashMap<>();
 
-  public ReportalAbstractRunner(Properties props) {
-    Props prop = new Props();
+  public ReportalAbstractRunner(final Properties props) {
+    final Props prop = new Props();
     prop.put(props);
     this.props = prop;
   }
@@ -63,93 +61,93 @@ public abstract class ReportalAbstractRunner {
     System.out.println("Reportal: Setting up environment");
 
     // Check the properties file
-    if (props == null) {
+    if (this.props == null) {
       throw new ReportalRunnerException("Properties file not loaded correctly.");
     }
 
     // Get the hadoop token
-    Configuration conf = new Configuration();
+    final Configuration conf = new Configuration();
     if (System.getenv(HADOOP_TOKEN_FILE_LOCATION) != null) {
       conf.set(MAPREDUCE_JOB_CREDENTIALS_BINARY,
           System.getenv(HADOOP_TOKEN_FILE_LOCATION));
     }
 
     // Get properties
-    String execId = props.getString(CommonJobProperties.EXEC_ID);
-    outputCapacity = props.getInt("reportal.output.capacity", 10 * 1024 * 1024);
-    proxyUser = props.getString("reportal.proxy.user");
-    jobQuery = props.getString("reportal.job.query");
-    jobTitle = props.getString("reportal.job.title");
-    reportalTitle = props.getString("reportal.title");
-    reportalStorageUser = props.getString("reportal.storage.user", "reportal");
-    Map<String, String> reportalVariables =
-        props.getMapByPrefix(REPORTAL_VARIABLE_PREFIX);
+    final String execId = this.props.getString(CommonJobProperties.EXEC_ID);
+    this.outputCapacity = this.props.getInt("reportal.output.capacity", 10 * 1024 * 1024);
+    this.proxyUser = this.props.getString("reportal.proxy.user");
+    this.jobQuery = this.props.getString("reportal.job.query");
+    this.jobTitle = this.props.getString("reportal.job.title");
+    this.reportalTitle = this.props.getString("reportal.title");
+    this.reportalStorageUser = this.props.getString("reportal.storage.user", "reportal");
+    final Map<String, String> reportalVariables =
+        this.props.getMapByPrefix(REPORTAL_VARIABLE_PREFIX);
 
     // Parse variables
-    for (Entry<String, String> entry : reportalVariables.entrySet()) {
+    for (final Entry<String, String> entry : reportalVariables.entrySet()) {
       if (entry.getKey().endsWith("from")) {
-        String fromValue = entry.getValue();
-        String toKey =
+        final String fromValue = entry.getValue();
+        final String toKey =
             entry.getKey().substring(0, entry.getKey().length() - 4) + "to";
-        String toValue = reportalVariables.get(toKey);
+        final String toValue = reportalVariables.get(toKey);
         if (toValue != null) {
-          variables.put(fromValue, toValue);
+          this.variables.put(fromValue, toValue);
         }
       }
     }
 
     // Built-in variables
-    variables.put("run_id", execId);
-    variables.put("sys_date", Long.toString(System.currentTimeMillis() / 1000));
+    this.variables.put("run_id", execId);
+    this.variables.put("sys_date", Long.toString(System.currentTimeMillis() / 1000));
 
-    Calendar cal = Calendar.getInstance();
-    Date date = new Date();
+    final Calendar cal = Calendar.getInstance();
+    final Date date = new Date();
     cal.setTime(date);
 
-    String timeZone = props.getString("reportal.default.timezone", "UTC");
+    final String timeZone = this.props.getString("reportal.default.timezone", "UTC");
     TimeZone.setDefault(TimeZone.getTimeZone(timeZone));
 
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    SimpleDateFormat hourFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
+    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    final SimpleDateFormat hourFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
 
-    variables.put("hive_current_hour", hourFormat.format(cal.getTime()));
-    variables.put("hive_current_day", dateFormat.format(cal.getTime()));
+    this.variables.put("hive_current_hour", hourFormat.format(cal.getTime()));
+    this.variables.put("hive_current_day", dateFormat.format(cal.getTime()));
     cal.add(Calendar.HOUR, -1);
-    variables.put("hive_last_hour", hourFormat.format(cal.getTime()));
+    this.variables.put("hive_last_hour", hourFormat.format(cal.getTime()));
     cal.add(Calendar.HOUR, 1);
     cal.add(Calendar.DATE, -1);
-    variables.put("hive_yesterday", dateFormat.format(cal.getTime()));
+    this.variables.put("hive_yesterday", dateFormat.format(cal.getTime()));
     cal.add(Calendar.DATE, -6);
-    variables.put("hive_last_seven_days", dateFormat.format(cal.getTime()));
+    this.variables.put("hive_last_seven_days", dateFormat.format(cal.getTime()));
     cal.add(Calendar.DATE, -1);
-    variables.put("hive_last_eight_days", dateFormat.format(cal.getTime()));
-    variables.put("owner", proxyUser);
-    variables.put("title", reportalTitle);
+    this.variables.put("hive_last_eight_days", dateFormat.format(cal.getTime()));
+    this.variables.put("owner", this.proxyUser);
+    this.variables.put("title", this.reportalTitle);
 
     // Props debug
     System.out.println("Reportal Variables:");
-    for (Entry<String, String> data : variables.entrySet()) {
+    for (final Entry<String, String> data : this.variables.entrySet()) {
       System.out.println(data.getKey() + " -> " + data.getValue());
     }
 
     if (requiresOutput()) {
       // Get output stream to data
-      String locationTemp =
-          ("./reportal/" + jobTitle + ".csv").replace("//", "/");
-      File tempOutput = new File(locationTemp);
+      final String locationTemp =
+          ("./reportal/" + this.jobTitle + ".csv").replace("//", "/");
+      final File tempOutput = new File(locationTemp);
       tempOutput.getParentFile().mkdirs();
       tempOutput.createNewFile();
-      outputStream =
+      this.outputStream =
           new BoundedOutputStream(new BufferedOutputStream(
-              new FileOutputStream(tempOutput)), outputCapacity);
+              new FileOutputStream(tempOutput)), this.outputCapacity);
 
       // Run the reportal
       runReportal();
 
       // Cleanup the reportal
       try {
-        outputStream.close();
-      } catch (IOException e) {
+        this.outputStream.close();
+      } catch (final IOException e) {
         // We can safely ignore this exception since we're just making sure the
         // stream is closed.
       }
@@ -165,14 +163,14 @@ public abstract class ReportalAbstractRunner {
   }
 
   protected String injectVariables(String line) {
-    for (Entry<String, String> entry : variables.entrySet()) {
+    for (final Entry<String, String> entry : this.variables.entrySet()) {
       line =
           line.replace(":" + entry.getKey(), sanitizeVariable(entry.getValue()));
     }
     return line;
   }
 
-  private String sanitizeVariable(String variable) {
+  private String sanitizeVariable(final String variable) {
     return variable.replace("'", "\\'").replace("\"", "\\\"");
   }
 }

@@ -16,6 +16,9 @@
 
 package azkaban.viewer.reportal;
 
+import azkaban.reportal.util.Reportal;
+import azkaban.user.User;
+import azkaban.utils.Props;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,37 +27,33 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
-import azkaban.reportal.util.Reportal;
-import azkaban.user.User;
-import azkaban.utils.Props;
-
 public enum ReportalType {
 
   PigJob("ReportalPig", "reportalpig", "hadoop") {
     @Override
-    public void buildJobFiles(Reportal reportal, Props propertiesFile,
-        File jobFile, String jobName, String queryScript, String proxyUser) {
-      File resFolder = new File(jobFile.getParentFile(), "res");
+    public void buildJobFiles(final Reportal reportal, final Props propertiesFile,
+        final File jobFile, final String jobName, final String queryScript,
+        final String proxyUser) {
+      final File resFolder = new File(jobFile.getParentFile(), "res");
       resFolder.mkdirs();
-      File scriptFile = new File(resFolder, jobName + ".pig");
+      final File scriptFile = new File(resFolder, jobName + ".pig");
 
       OutputStream fileOutput = null;
       try {
         scriptFile.createNewFile();
         fileOutput = new BufferedOutputStream(new FileOutputStream(scriptFile));
         fileOutput.write(queryScript.getBytes(Charset.forName("UTF-8")));
-      } catch (IOException e) {
+      } catch (final IOException e) {
         e.printStackTrace();
       } finally {
         if (fileOutput != null) {
           try {
             fileOutput.close();
-          } catch (IOException e) {
+          } catch (final IOException e) {
             e.printStackTrace();
           }
         }
       }
-
       propertiesFile.put("reportal.pig.script", "res/" + jobName + ".pig");
     }
   },
@@ -63,51 +62,52 @@ public enum ReportalType {
       ReportalTypeManager.DATA_COLLECTOR_JOB,
       ReportalTypeManager.DATA_COLLECTOR_JOB_TYPE, "") {
     @Override
-    public void buildJobFiles(Reportal reportal, Props propertiesFile,
-        File jobFile, String jobName, String queryScript, String proxyUser) {
+    public void buildJobFiles(final Reportal reportal, final Props propertiesFile,
+        final File jobFile, final String jobName, final String queryScript,
+        final String proxyUser) {
       propertiesFile.put("user.to.proxy", proxyUser);
     }
   };
+
+  private static final HashMap<String, ReportalType> reportalTypes =
+      new HashMap<>();
+
+  static {
+    for (final ReportalType type : ReportalType.values()) {
+      reportalTypes.put(type.typeName, type);
+    }
+  }
 
   private final String typeName;
   private final String jobTypeName;
   private final String permissionName;
 
-  private ReportalType(String typeName, String jobTypeName,
-      String permissionName) {
+  private ReportalType(final String typeName, final String jobTypeName,
+      final String permissionName) {
     this.typeName = typeName;
     this.jobTypeName = jobTypeName;
     this.permissionName = permissionName;
   }
 
-  public void buildJobFiles(Reportal reportal, Props propertiesFile,
-      File jobFile, String jobName, String queryScript, String proxyUser) {
+  public static ReportalType getTypeByName(final String typeName) {
+    return reportalTypes.get(typeName);
+  }
+
+  public void buildJobFiles(final Reportal reportal, final Props propertiesFile,
+      final File jobFile, final String jobName, final String queryScript, final String proxyUser) {
 
   }
 
   public String getJobTypeName() {
-    return jobTypeName;
+    return this.jobTypeName;
   }
 
-  private static HashMap<String, ReportalType> reportalTypes =
-      new HashMap<String, ReportalType>();
-
-  static {
-    for (ReportalType type : ReportalType.values()) {
-      reportalTypes.put(type.typeName, type);
-    }
-  }
-
-  public static ReportalType getTypeByName(String typeName) {
-    return reportalTypes.get(typeName);
-  }
-
-  public boolean checkPermission(User user) {
-    return user.hasPermission(permissionName);
+  public boolean checkPermission(final User user) {
+    return user.hasPermission(this.permissionName);
   }
 
   @Override
   public String toString() {
-    return typeName;
+    return this.typeName;
   }
 }
