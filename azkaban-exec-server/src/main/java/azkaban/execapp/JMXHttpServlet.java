@@ -56,8 +56,18 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
     return HttpRequestUtils.getParam(request, name);
   }
 
+  /**
+   * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
+   */
+  @Deprecated
   @Override
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+    doPost(req, resp);
+  }
+
+  @Override
+  protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     final Map<String, Object> ret = new HashMap<>();
 

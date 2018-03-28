@@ -47,13 +47,20 @@ public class ServerStatisticsServlet extends HttpServlet {
   protected static ExecutorInfo cachedstats = null;
 
   /**
-   * Handle all get request to Statistics Servlet {@inheritDoc}
-   *
-   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
-   * javax.servlet.http.HttpServletResponse)
+   * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
    */
+  @Deprecated
   @Override
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+    doPost(req, resp);
+  }
+
+  /**
+   * Handle all requests to Statistics Servlet {@inheritDoc}
+   */
+  @Override
+  protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
     final boolean noCache = null != req && Boolean.valueOf(req.getParameter(noCacheParamName));
