@@ -241,6 +241,9 @@ public class Constants {
     public static final String MAX_XMX_DEFAULT = "2G";
     // The hadoop user the job should run under. If not specified, it will default to submit user.
     public static final String USER_TO_PROXY = "user.to.proxy";
+    
+    public static final String OBTAIN_HIVESERVER2_TOKEN =
+        "obtain.hiveserver2.token";
   }
 
   public static class JobCallbackProperties {

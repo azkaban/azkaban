@@ -85,7 +85,7 @@ import org.apache.hive.jdbc.HiveConnection;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
-public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
+public class _HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
@@ -129,8 +129,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
       "obtain.jobhistoryserver.token";
-  private static final String OBTAIN_HIVESERVER2_TOKEN =
-          "obtain.hiverserver2.token";
   private final static Logger logger = Logger
       .getLogger(HadoopSecurityManager_H_2_0.class);
   private static final String HIVESERVER2_URL = "hiveserver2.url";
@@ -632,39 +630,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       cred.addToken(jhsdt.getService(), jhsdt);
     }
 
-    if (props.getBoolean(OBTAIN_HIVESERVER2_TOKEN, false)) {
-      Connection conn = null;
-      Token<DelegationTokenIdentifier> hive2Token = null;
-      try {
-        final HiveConf hiveConf = new HiveConf();
-        final String principal = hiveConf
-            .get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname);
-        logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ":" + principal);
-        final String url = props.get(HIVESERVER2_URL) + ";principal=" + principal;
-        logger.info("final url for hiveserver2:" + url);
-        conn = DriverManager.getConnection(url);
-        final String tokenStr = ((HiveConnection) conn).getDelegationToken(userToProxy, principal);
-        hive2Token = new Token<>();
-        hive2Token.decodeFromUrlString(tokenStr);
-
-        cred.addToken(hive2Token.getService(), hive2Token);
-      } catch (final Exception e) {
-        logger.error("Failed to get hiveserver2 token", e);
-        throw new HadoopSecurityManagerException(
-                "Failed to get hiveserver2 token for " + userToProxy);
-      } finally {
-        if (conn != null) {
-          try {
-            conn.close();
-          } catch (final SQLException e) {
-            logger.error("could not close connection", e);
-          }
-        }
-      }
-
-      logger.info("Created hive server2 token.");
-      logger.info("Token kind: " + hive2Token.getKind());
-      logger.info("Token service: " + hive2Token.getService());
+    if (props.getBoolean(Constants.JobProperties.OBTAIN_HIVESERVER2_TOKEN, false)) {
+      obtainHiveServer2Token(props, logger, userToProxy, cred);
     }
 
     try {
@@ -756,6 +723,43 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           + t.getMessage() + t.getCause(), t);
     }
 
+  }
+
+  private void obtainHiveServer2Token(final Props props, final Logger logger,
+      final String userToProxy,
+      final Credentials cred) throws HadoopSecurityManagerException {
+    Connection conn = null;
+    Token<DelegationTokenIdentifier> hive2Token = null;
+    try {
+      final HiveConf hiveConf = new HiveConf();
+      final String principal = hiveConf
+          .get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname);
+      logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ":" + principal);
+      final String url = props.get(HIVESERVER2_URL) + ";principal=" + principal;
+      logger.info("final url for hiveserver2:" + url);
+      conn = DriverManager.getConnection(url);
+      final String tokenStr = ((HiveConnection) conn).getDelegationToken(userToProxy, principal);
+      hive2Token = new Token<>();
+      hive2Token.decodeFromUrlString(tokenStr);
+
+      cred.addToken(hive2Token.getService(), hive2Token);
+    } catch (final Exception e) {
+      logger.error("Failed to get hiveserver2 token", e);
+      throw new HadoopSecurityManagerException(
+          "Failed to get hiveserver2 token for " + userToProxy);
+    } finally {
+      if (conn != null) {
+        try {
+          conn.close();
+        } catch (final SQLException e) {
+          logger.error("could not close connection", e);
+        }
+      }
+    }
+
+    logger.info("Created hive server2 token.");
+    logger.info("Token kind: " + hive2Token.getKind());
+    logger.info("Token service: " + hive2Token.getService());
   }
 
   /**
