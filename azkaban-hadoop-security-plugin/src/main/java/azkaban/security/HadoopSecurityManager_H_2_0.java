@@ -85,7 +85,7 @@ import org.apache.hive.jdbc.HiveConnection;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
-public class _HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
+public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
