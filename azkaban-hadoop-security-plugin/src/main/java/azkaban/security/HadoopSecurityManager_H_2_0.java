@@ -131,7 +131,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       "obtain.jobhistoryserver.token";
   private final static Logger logger = Logger
       .getLogger(HadoopSecurityManager_H_2_0.class);
-  private static final String HIVESERVER2_URL = "hiveserver2.url";
   private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
@@ -735,7 +734,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final String principal = hiveConf
           .get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname);
       logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ":" + principal);
-      final String url = props.get(HIVESERVER2_URL) + ";principal=" + principal;
+      final String url = props.get(Constants.JobProperties.HIVESERVER2_URL) + ";principal=" +
+          principal;
       logger.info("final url for hiveserver2:" + url);
       conn = DriverManager.getConnection(url);
       final String tokenStr = ((HiveConnection) conn).getDelegationToken(userToProxy, principal);
