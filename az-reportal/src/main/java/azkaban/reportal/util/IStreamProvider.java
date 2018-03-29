@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -33,7 +33,7 @@ public interface IStreamProvider {
   public String[] getOldFiles(String pathString, long thresholdTime)
       throws Exception;
 
-  
+
   /**
    * Deletes the file denoted by the specified path. If the file is a directory,
    * this method recursively deletes the files in the directory and the
