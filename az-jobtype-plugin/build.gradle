@@ -1,0 +1,39 @@
+apply plugin: 'distribution'
+
+dependencies {
+    compile project(':az-core')
+    compile project(":azkaban-common")
+    compile project(":azkaban-hadoop-security-plugin")
+
+    compileOnly deps.hadoopCommon
+    compileOnly deps.hadoopMRClientCommon
+    compileOnly deps.hadoopMRClientCore
+    compileOnly(deps.hiveCli) {
+        transitive = false
+    }
+    compileOnly deps.hiveMetastore
+    compileOnly(deps.hiveExecCore) {
+        exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
+        exclude group: 'eigenbase', module: 'eigenbase-properties'
+    }
+    compileOnly(deps.pig) {
+        transitive = false
+    }
+}
+
+/**
+ * TODO spyne: remove after fixing internal build.
+ *
+ * Just package the jar.
+ * Since, rest of the dependencies are just hadoop and hive. They are not packaged inside the plugin.
+ * It is assumed that classpaths of hadoop, hive, pig, etc will be externally fed into the application.
+ */
+distributions {
+    main {
+        contents {
+            from(jar) {
+                into 'lib'
+            }
+        }
+    }
+}
