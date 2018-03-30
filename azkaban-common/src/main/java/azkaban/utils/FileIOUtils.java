@@ -115,6 +115,8 @@ public class FileIOUtils {
       for (final File targetFile : targetFiles) {
         if (targetFile.isFile()) {
           final File linkFile = new File(path, targetFile.getName());
+          // NOTE!! If modifying this, you must run this ignored test manually to validate:
+          // FileIOUtilsTest#testHardlinkCopyOfBigDir
           Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
         }
       }

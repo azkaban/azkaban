@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -116,6 +117,7 @@ public class FileIOUtilsTest {
     assertThat(areDirsEqual(this.baseDir, this.sourceDir, true)).isTrue();
   }
 
+  @Ignore("Slow test (over 30s) - run manually if need to touch createDeepHardlink()")
   @Test
   public void testHardlinkCopyOfBigDir() throws IOException {
     final File bigDir = new File(this.baseDir.getAbsolutePath() + "/bigdir");
