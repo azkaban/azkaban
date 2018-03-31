@@ -142,6 +142,7 @@ public class ExecutionFlowDao {
 
     boolean first = true;
     if (projContain != null && !projContain.isEmpty()) {
+      query = query.replace("enc_type","ef.enc_type");
       query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
       params.add('%' + projContain + '%');
       first = false;
