@@ -49,7 +49,7 @@ import com.teradata.hadoop.tool.TeradataExportTool;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 public class HdfsToTeradataJobRunnerMain {
-  private static final List<String> ERR_TABLE_SUFFIXES = ImmutableList.<String>builder().add("_ERR_1", "_ERR_2").build();
+  private static final ImmutableList<String> ERR_TABLE_SUFFIXES = ImmutableList.<String>builder().add("_ERR_1", "_ERR_2").build();
 
   private final Properties _jobProps;
   private final TdchParameters _params;

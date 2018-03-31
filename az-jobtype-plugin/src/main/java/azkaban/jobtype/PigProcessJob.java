@@ -17,7 +17,7 @@
 package azkaban.jobtype;
 
 import azkaban.jobExecutor.JavaProcessJob;
-
+import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.SecurityUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
@@ -44,8 +44,29 @@ public class PigProcessJob extends JavaProcessJob {
   public static final String SECURE_PIG_WRAPPER =
       "azkaban.jobtype.SecurePigWrapper";
 
-  public PigProcessJob(String jobid, Props sysProps, Props jobProps, Logger log) {
+  public PigProcessJob(final String jobid, final Props sysProps, final Props jobProps,
+      final Logger log) {
     super(jobid, sysProps, new Props(sysProps, jobProps), log);
+  }
+
+  private static String getSourcePathFromClass(final Class<?> containedClass) {
+    File file =
+        new File(containedClass.getProtectionDomain().getCodeSource()
+            .getLocation().getPath());
+
+    if (!file.isDirectory() && file.getName().endsWith(".class")) {
+      final String name = containedClass.getName();
+      final StringTokenizer tokenizer = new StringTokenizer(name, ".");
+      while (tokenizer.hasMoreTokens()) {
+        tokenizer.nextElement();
+        file = file.getParentFile();
+      }
+
+      return file.getPath();
+    } else {
+      return containedClass.getProtectionDomain().getCodeSource().getLocation()
+          .getPath();
+    }
   }
 
   @Override
@@ -58,25 +79,25 @@ public class PigProcessJob extends JavaProcessJob {
   @Override
   protected String getJVMArguments() {
     String args = super.getJVMArguments();
-    String typeGlobalJVMArgs =
+    final String typeGlobalJVMArgs =
         getSysProps().getString("jobtype.global.jvm.args", null);
     if (typeGlobalJVMArgs != null) {
       args += " " + typeGlobalJVMArgs;
     }
 
-    List<String> udfImport = getUDFImportList();
+    final List<String> udfImport = getUDFImportList();
     if (udfImport != null) {
       args += " -Dudf.import.list=" + super.createArguments(udfImport, ":");
     }
 
-    List<String> additionalJars = getAdditionalJarsList();
+    final List<String> additionalJars = getAdditionalJarsList();
     if (additionalJars.size() > 0) {
       args +=
           " -Dpig.additional.jars="
               + super.createArguments(additionalJars, ":");
     }
 
-    String hadoopUGI = getHadoopUGI();
+    final String hadoopUGI = getHadoopUGI();
     if (hadoopUGI != null) {
       args += " -Dhadoop.job.ugi=" + hadoopUGI;
     }
@@ -84,7 +105,7 @@ public class PigProcessJob extends JavaProcessJob {
     if (SecurityUtils.shouldProxy(getSysProps().toProperties())) {
       info("Setting up secure proxy info for child process");
       String secure;
-      Properties p = getSysProps().toProperties();
+      final Properties p = getSysProps().toProperties();
       secure =
           " -D" + SecurityUtils.PROXY_USER + "="
               + p.getProperty(SecurityUtils.PROXY_USER);
@@ -93,10 +114,10 @@ public class PigProcessJob extends JavaProcessJob {
               + p.getProperty(SecurityUtils.PROXY_KEYTAB_LOCATION);
 
       secure +=
-          " -D" + SecurityUtils.TO_PROXY + "="
-              + getJobProps().get(SecurityUtils.TO_PROXY);
+          " -D" + HadoopSecurityManager.USER_TO_PROXY + "="
+              + getJobProps().get(HadoopSecurityManager.USER_TO_PROXY);
 
-      String extraToken = p.getProperty(SecurityUtils.OBTAIN_BINARY_TOKEN);
+      final String extraToken = p.getProperty(SecurityUtils.OBTAIN_BINARY_TOKEN);
       if (extraToken != null) {
         secure += " -D" + SecurityUtils.OBTAIN_BINARY_TOKEN + "=" + extraToken;
       }
@@ -111,19 +132,19 @@ public class PigProcessJob extends JavaProcessJob {
 
   @Override
   protected String getMainArguments() {
-    ArrayList<String> list = new ArrayList<String>();
-    Map<String, String> map = getPigParams();
+    final ArrayList<String> list = new ArrayList<>();
+    final Map<String, String> map = getPigParams();
     if (map != null) {
-      for (Map.Entry<String, String> entry : map.entrySet()) {
+      for (final Map.Entry<String, String> entry : map.entrySet()) {
         list.add("-param "
             + StringUtils.shellQuote(entry.getKey() + "=" + entry.getValue(),
                 StringUtils.SINGLE_QUOTE));
       }
     }
 
-    List<String> paramFiles = getPigParamFiles();
+    final List<String> paramFiles = getPigParamFiles();
     if (paramFiles != null) {
-      for (String paramFile : paramFiles) {
+      for (final String paramFile : paramFiles) {
         list.add("-param_file " + paramFile);
       }
     }
@@ -139,10 +160,10 @@ public class PigProcessJob extends JavaProcessJob {
 
   @Override
   protected List<String> getClassPaths() {
-    List<String> classPath = super.getClassPaths();
+    final List<String> classPath = super.getClassPaths();
 
     // Add hadoop home setting.
-    String hadoopHome = System.getenv("HADOOP_HOME");
+    final String hadoopHome = System.getenv("HADOOP_HOME");
     if (hadoopHome == null) {
       info("HADOOP_HOME not set, using default hadoop config.");
     } else {
@@ -155,12 +176,12 @@ public class PigProcessJob extends JavaProcessJob {
       classPath.add(getSourcePathFromClass(SecurePigWrapper.class));
     }
 
-    List<String> typeClassPath =
+    final List<String> typeClassPath =
         getSysProps().getStringList("jobtype.classpath", null, ",");
     if (typeClassPath != null) {
       // fill in this when load this jobtype
-      String pluginDir = getSysProps().get("plugin.dir");
-      for (String jar : typeClassPath) {
+      final String pluginDir = getSysProps().get("plugin.dir");
+      for (final String jar : typeClassPath) {
         File jarFile = new File(jar);
         if (!jarFile.isAbsolute()) {
           jarFile = new File(pluginDir + File.separatorChar + jar);
@@ -172,10 +193,10 @@ public class PigProcessJob extends JavaProcessJob {
       }
     }
 
-    List<String> typeGlobalClassPath =
+    final List<String> typeGlobalClassPath =
         getSysProps().getStringList("jobtype.global.classpath", null, ",");
     if (typeGlobalClassPath != null) {
-      for (String jar : typeGlobalClassPath) {
+      for (final String jar : typeGlobalClassPath) {
         if (!classPath.contains(jar)) {
           classPath.add(jar);
         }
@@ -193,10 +214,10 @@ public class PigProcessJob extends JavaProcessJob {
   }
 
   protected List<String> getUDFImportList() {
-    List<String> udfImports = new ArrayList<String>();
-    List<String> typeImports =
+    final List<String> udfImports = new ArrayList<>();
+    final List<String> typeImports =
         getSysProps().getStringList(UDF_IMPORT, null, ",");
-    List<String> jobImports =
+    final List<String> jobImports =
         getJobProps().getStringList(UDF_IMPORT, null, ",");
     if (typeImports != null) {
       udfImports.addAll(typeImports);
@@ -208,10 +229,10 @@ public class PigProcessJob extends JavaProcessJob {
   }
 
   protected List<String> getAdditionalJarsList() {
-    List<String> additionalJars = new ArrayList<String>();
-    List<String> typeJars =
+    final List<String> additionalJars = new ArrayList<>();
+    final List<String> typeJars =
         getSysProps().getStringList(PIG_ADDITIONAL_JARS, null, ",");
-    List<String> jobJars =
+    final List<String> jobJars =
         getJobProps().getStringList(PIG_ADDITIONAL_JARS, null, ",");
     if (typeJars != null) {
       additionalJars.addAll(typeJars);
@@ -232,25 +253,5 @@ public class PigProcessJob extends JavaProcessJob {
 
   protected List<String> getPigParamFiles() {
     return getJobProps().getStringList(PIG_PARAM_FILES, null, ",");
-  }
-
-  private static String getSourcePathFromClass(Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      String name = containedClass.getName();
-      StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
   }
 }

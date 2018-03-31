@@ -11,7 +11,12 @@ dependencies {
     compileOnly(deps.hiveCli) {
         transitive = false
     }
-    compileOnly deps.hiveMetastore
+    compileOnly("org.apache.hive:hive-metastore:0.12.0") {
+        force = true
+    }
+    compileOnly("org.apache.hive:hive-shims:0.12.0") {
+        force = true
+    }
     compileOnly(deps.hiveExecCore) {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
         exclude group: 'eigenbase', module: 'eigenbase-properties'
@@ -19,6 +24,11 @@ dependencies {
     compileOnly(deps.pig) {
         transitive = false
     }
+    compileOnly deps.sparkCore
+    compileOnly deps.jasypt
+    compileOnly deps.bcpg
+    compileOnly deps.commonsCli
+    compileOnly files('lib/teradata-connector-1.4.2.jar')
 }
 
 /**

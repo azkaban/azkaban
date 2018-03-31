@@ -43,7 +43,7 @@ import azkaban.utils.Props;
 public class GobblinHadoopJob extends HadoopJavaJob {
   private static final String GOBBLIN_PRESET_COMMON_PROPERTIES_FILE_NAME = "common.properties";
   private static final String GOBBLIN_QUERY_KEY = "source.querybased.query";
-  private static Map<GobblinPresets, Properties> gobblinPresets;
+  private static volatile Map<GobblinPresets, Properties> gobblinPresets;
 
 
   public GobblinHadoopJob(String jobid, Props sysProps, Props jobProps, Logger log) {
