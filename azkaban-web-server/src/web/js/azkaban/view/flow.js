@@ -297,6 +297,7 @@ azkaban.SummaryView = Backbone.View.extend({
 
     this.fetchDetails();
     this.fetchSchedule();
+    this.fetchFlowTrigger();
     this.model.trigger('render');
   },
 
@@ -380,6 +381,22 @@ azkaban.SummaryView = Backbone.View.extend({
     $.get(requestURL, requestData, successHandler, 'json');
   },
 
+  fetchFlowTrigger: function () {
+    var requestURL = contextURL + "/flowtrigger"
+    var requestData = {
+      'ajax': 'fetchTrigger',
+      'projectId': projectId,
+      'flowId': flowId
+    };
+    var model = this.model;
+    var view = this;
+    var successHandler = function (data) {
+      model.set({'flowtrigger': data.flowTrigger});
+      model.trigger('render');
+    };
+    $.get(requestURL, requestData, successHandler, 'json');
+  },
+
   handleChangeView: function (evt) {
   },
 
@@ -389,7 +406,11 @@ azkaban.SummaryView = Backbone.View.extend({
       flowName: flowId,
       jobTypes: this.model.get('jobTypes'),
       schedule: this.model.get('schedule'),
+      flowtrigger: this.model.get('flowtrigger'),
     };
+    if (typeof data.flowtrigger !== 'undefined') {
+      alert(data.flowtrigger.cronExpression);
+    }
     dust.render("flowsummary", data, function (err, out) {
       $('#summary-view-content').html(out);
     });

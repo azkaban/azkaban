@@ -732,6 +732,9 @@ $(function () {
       else if (hash == "#stats") {
         flowTabView.handleStatsLinkClick();
       }
+      else if (hash == "#triggerslist") {
+        flowTabView.handleFlowTriggerLinkClick();
+      }
     }
     else {
       flowTabView.handleGraphLinkClick();
@@ -744,7 +747,8 @@ $(function () {
   requestURL = contextURL + "/flowtriggerinstance";
   requestData = {"execid": execId, "ajax": "fetchTriggerStatus"};
   successHandler = function (data) {
-    alert(data);
+    flowTriggerModel.addTrigger(data)
+    flowTriggerModel.trigger("change:trigger");
     /*
     console.log("data fetched");
     graphModel.addFlow(data);

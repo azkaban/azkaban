@@ -152,6 +152,7 @@
         <table class="table table-bordered table-condensed table-hover executions-table">
           <thead>
           <tr>
+            <th>Trigger Instance Id</th>
             <th>Name</th>
             <th class="triggertype">Type</th>
             <th class="date">Start Time</th>

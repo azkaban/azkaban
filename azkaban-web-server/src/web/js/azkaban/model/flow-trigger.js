@@ -24,7 +24,7 @@ azkaban.FlowTriggerModel = Backbone.Model.extend({
   /*
    * Process and add data from JSON.
    */
-  addFlow: function (data) {
+  addTrigger: function (data) {
     this.set({'data': data});
   }
 

@@ -327,6 +327,9 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
    */
   @Override
   public TriggerInstance getTriggerInstanceByFlowExecId(final int flowExecId) {
+    if (flowExecId == Constants.FAILED_EXEC_ID || flowExecId == Constants.UNASSIGNED_EXEC_ID) {
+      return null;
+    }
     TriggerInstance triggerInstance = null;
     try {
       final Collection<TriggerInstance> res = this.dbOperator

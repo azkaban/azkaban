@@ -25,9 +25,10 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
   },
 
   initialize: function (settings) {
-    this.model.bind('change:graph', this.renderJobs, this);
-    this.model.bind('change:update', this.updateJobs, this);
+    this.model.bind("change:trigger", this.renderJobs, this);
+    this.model.bind("change:update", this.updateJobs, this);
 
+//    alert(JSON.stringify(this.model));
     // This is for tabbing. Blah, hacky
     var executingBody = $("#triggerExecutableBody")[0];
     executingBody.level = 0;
@@ -37,7 +38,7 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var data = this.model.get("data");
     var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
     var executingBody = $("#triggerExecutableBody");
-    this.updateJobRow(data.nodes, executingBody);
+    this.updateJobRow(data.items, executingBody);
 
     var flowLastTime = data.endTime == -1 ? (new Date()).getTime()
         : data.endTime;
@@ -50,7 +51,7 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var lastTime = update.endTime == -1
         ? (new Date()).getTime()
         : update.endTime;
-    var executingBody = $("#executableBody");
+    var executingBody = $("#triggerExecutableBody");
 
     if (update.nodes) {
       this.updateJobRow(update.nodes, executingBody);
@@ -70,91 +71,93 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     }
 
     nodes.sort(function (a, b) {
-      return a.startTime - b.startTime;
+      return a.dependencyStartTime - b.dependencyStartTime;
     });
     for (var i = 0; i < nodes.length; ++i) {
-      var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
+      this.addNodeRow(nodes[i], body);
 
-      if (node.status == 'READY') {
-        continue;
-      }
-
-      //var nodeId = node.id.replace(".", "\\\\.");
-      var row = node.joblistrow;
-      if (!row) {
-        this.addNodeRow(node, body);
-      }
-
-      row = node.joblistrow;
-      var statusDiv = $(row).find("> td.statustd > .status");
-      statusDiv.text(statusStringMap[node.status]);
-      $(statusDiv).attr("class", "status " + node.status);
-
-      var startTimeTd = $(row).find("> td.startTime");
-      if (node.startTime == -1) {
-        $(startTimeTd).text("-");
-      }
-      else {
-        var startdate = new Date(node.startTime);
-        $(startTimeTd).text(getDateFormat(startdate));
-      }
-
-      var endTimeTd = $(row).find("> td.endTime");
-      if (node.endTime == -1) {
-        $(endTimeTd).text("-");
-      }
-      else {
-        var enddate = new Date(node.endTime);
-        $(endTimeTd).text(getDateFormat(enddate));
-      }
-
-      var progressBar = $(row).find(
-          "> td.timeline > .flow-progress > .main-progress");
-      if (!progressBar.hasClass(node.status)) {
-        for (var j = 0; j < statusList.length; ++j) {
-          var status = statusList[j];
-          progressBar.removeClass(status);
-        }
-        progressBar.addClass(node.status);
-      }
-
-      // Create past attempts
-      if (node.pastAttempts) {
-        for (var a = 0; a < node.pastAttempts.length; ++a) {
-          var attempt = node.pastAttempts[a];
-          var attemptBox = attempt.attemptBox;
-
-          if (!attemptBox) {
-            var attemptBox = document.createElement("div");
-            attempt.attemptBox = attemptBox;
-
-            $(attemptBox).addClass("flow-progress-bar");
-            $(attemptBox).addClass("attempt");
-
-            $(attemptBox).css("float", "left");
-            $(attemptBox).bind("contextmenu", attemptRightClick);
-
-            $(progressBar).before(attemptBox);
-            attemptBox.job = node.nestedId;
-            attemptBox.attempt = a;
-          }
-        }
-      }
-
-      var elapsedTime = $(row).find("> td.elapsedTime");
-      if (node.endTime == -1) {
-        $(elapsedTime).text(
-            getDuration(node.startTime, (new Date()).getTime()));
-      }
-      else {
-        $(elapsedTime).text(getDuration(node.startTime, node.endTime));
-      }
-
-      if (node.nodes) {
-        var subtableBody = $(row.subflowrow).find("> td > table");
-        subtableBody[0].level = $(body)[0].level + 1;
-        this.updateJobRow(node.nodes, subtableBody);
-      }
+      // var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
+      //
+      // if (node.status == 'READY') {
+      //   continue;
+      // }
+      //
+      // //var nodeId = node.id.replace(".", "\\\\.");
+      // var row = node.joblistrow;
+      // if (!row) {
+      //   this.addNodeRow(node, body);
+      // }
+      //
+      // row = node.joblistrow;
+      // var statusDiv = $(row).find("> td.statustd > .status");
+      // statusDiv.text(statusStringMap[node.status]);
+      // $(statusDiv).attr("class", "status " + node.status);
+      //
+      // var startTimeTd = $(row).find("> td.startTime");
+      // if (node.startTime == -1) {
+      //   $(startTimeTd).text("-");
+      // }
+      // else {
+      //   var startdate = new Date(node.startTime);
+      //   $(startTimeTd).text(getDateFormat(startdate));
+      // }
+      //
+      // var endTimeTd = $(row).find("> td.endTime");
+      // if (node.endTime == -1) {
+      //   $(endTimeTd).text("-");
+      // }
+      // else {
+      //   var enddate = new Date(node.endTime);
+      //   $(endTimeTd).text(getDateFormat(enddate));
+      // }
+      //
+      // var progressBar = $(row).find(
+      //     "> td.timeline > .flow-progress > .main-progress");
+      // if (!progressBar.hasClass(node.status)) {
+      //   for (var j = 0; j < statusList.length; ++j) {
+      //     var status = statusList[j];
+      //     progressBar.removeClass(status);
+      //   }
+      //   progressBar.addClass(node.status);
+      // }
+      //
+      // // Create past attempts
+      // if (node.pastAttempts) {
+      //   for (var a = 0; a < node.pastAttempts.length; ++a) {
+      //     var attempt = node.pastAttempts[a];
+      //     var attemptBox = attempt.attemptBox;
+      //
+      //     if (!attemptBox) {
+      //       var attemptBox = document.createElement("div");
+      //       attempt.attemptBox = attemptBox;
+      //
+      //       $(attemptBox).addClass("flow-progress-bar");
+      //       $(attemptBox).addClass("attempt");
+      //
+      //       $(attemptBox).css("float", "left");
+      //       $(attemptBox).bind("contextmenu", attemptRightClick);
+      //
+      //       $(progressBar).before(attemptBox);
+      //       attemptBox.job = node.nestedId;
+      //       attemptBox.attempt = a;
+      //     }
+      //   }
+      // }
+      //
+      // var elapsedTime = $(row).find("> td.elapsedTime");
+      // if (node.endTime == -1) {
+      //   $(elapsedTime).text(
+      //       getDuration(node.startTime, (new Date()).getTime()));
+      // }
+      // else {
+      //   $(elapsedTime).text(getDuration(node.startTime, node.endTime));
+      // }
+      //
+      // if (node.nodes) {
+      //   var subtableBody = $(row.subflowrow).find("> td > table");
+      //   subtableBody[0].level = $(body)[0].level + 1;
+      //   this.updateJobRow(node.nodes, subtableBody);
+      // }
     }
   },
 
@@ -271,42 +274,69 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
   addNodeRow: function (node, body) {
     var self = this;
     var tr = document.createElement("tr");
+    var tdId = document.createElement("td");
     var tdName = document.createElement("td");
     var tdType = document.createElement("td");
-    var tdTimeline = document.createElement("td");
+    //var tdTimeline = document.createElement("td");
     var tdStart = document.createElement("td");
     var tdEnd = document.createElement("td");
     var tdElapse = document.createElement("td");
     var tdStatus = document.createElement("td");
+    var tdCancelCause = document.createElement("td");
     var tdDetails = document.createElement("td");
-    node.joblistrow = tr;
-    tr.node = node;
+    //node.joblistrow = tr;
+    //tr.node = node;
     var padding = 15 * $(body)[0].level;
 
+    $(tr).append(tdId);
     $(tr).append(tdName);
     $(tr).append(tdType);
-    $(tr).append(tdTimeline);
     $(tr).append(tdStart);
     $(tr).append(tdEnd);
     $(tr).append(tdElapse);
     $(tr).append(tdStatus);
+    $(tr).append(tdCancelCause);
     $(tr).append(tdDetails);
-    $(tr).addClass("jobListRow");
+    $(tr).addClass("depListRow");
 
-    $(tdName).addClass("jobname");
-    $(tdType).addClass("jobtype");
+    $(tdName).addClass("depname");
+    $(tdType).addClass("deptype");
     if (padding) {
       $(tdName).css("padding-left", padding);
     }
-    $(tdTimeline).addClass("timeline");
     $(tdStart).addClass("startTime");
     $(tdEnd).addClass("endTime");
     $(tdElapse).addClass("elapsedTime");
     $(tdStatus).addClass("statustd");
     $(tdDetails).addClass("details");
 
-    $(tdType).text(node.type);
+    alert(node.triggerInstanceId);
+    $(tdId).text(node.triggerInstanceId);
+    $(tdName).text(node.dependencyName);
+    $(tdType).text(node.dependencyType);
+    $(tdStatus).text(node.dependencyStatus);
+    $(tdCancelCause).text(node.dependencyCancelCause);
+    var startTime = node.dependencyStartTime == -1 ? (new Date()).getTime()
+        : node.dependencyStartTime;
 
+    var endTime = node.dependencyEndTime == -1 ? (new Date()).getTime()
+        : node.dependencyEndTime;
+
+    $(tdStart).text(getDateFormat(new Date(startTime)));
+    $(tdEnd).text(getDateFormat(new Date(endTime)));
+
+    if (node.dependencyEndTime == -1) {
+      $(tdElapse).text(
+          getDuration(node.dependencyStartTime, (new Date()).getTime()));
+    }
+    else {
+      $(tdElapse).text(
+          getDuration(node.dependencyStartTime, node.dependencyEndTime));
+    }
+
+    $(body).append(tr);
+
+    /*
     var outerProgressBar = document.createElement("div");
     //$(outerProgressBar).attr("id", node.id + "-outerprogressbar");
     $(outerProgressBar).addClass("flow-progress");
@@ -374,7 +404,7 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
       $(subtable).attr("class", parentClasses);
       $(subtable).addClass("subtable");
       $(subFlowCell).append(subtable);
-    }
+    }*/
   }
 });
 

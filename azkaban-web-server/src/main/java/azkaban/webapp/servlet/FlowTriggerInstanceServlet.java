@@ -104,7 +104,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
         final String triggerInstanceId = getParam(req, "triggerinstid");
         ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
       } else if (hasParam(req, "execid")) {
-        final int execId = getIntParam(req, "execId");
+        final int execId = getIntParam(req, "execid");
         ajaxFetchTriggerInstanceByExecId(execId, session, ret);
         //ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
       } else {
@@ -134,6 +134,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     final List<Map<String, Object>> dependencyOutput = new ArrayList<>();
     for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
       final Map<String, Object> depMap = new HashMap<>();
+      depMap.put("triggerInstanceId", depInst.getTriggerInstance().getId());
       depMap.put("dependencyName", depInst.getDepName());
       depMap.put("dependencyType", depInst.getTriggerInstance().getFlowTrigger()
           .getDependencyByName(depInst.getDepName()).getType());
@@ -152,14 +153,18 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> ret) {
     final TriggerInstance triggerInst = this.triggerService
         .findTriggerInstanceByExecId(execId);
-    wrapTriggerInst(triggerInst, ret);
+    if (triggerInst != null) {
+      wrapTriggerInst(triggerInst, ret);
+    }
   }
 
   private void ajaxFetchTriggerInstanceByTriggerInstId(final String triggerInstanceId,
       final Session session, final HashMap<String, Object> ret) {
     final TriggerInstance triggerInst = this.triggerService
         .findTriggerInstanceById(triggerInstanceId);
-    wrapTriggerInst(triggerInst, ret);
+    if (triggerInst != null) {
+      wrapTriggerInst(triggerInst, ret);
+    }
   }
 
   private void ajaxKillTriggerInstance(final String triggerInstanceId, final Session session,
