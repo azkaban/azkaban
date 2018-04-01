@@ -1,5 +1,9 @@
 #!/bin/bash
 
 script_dir=$(dirname $0)
+source "${script_dir}/internal/startup-shared.sh"
 
-${script_dir}/internal/internal-start-web.sh >webServerLog_`date +%F+%T`.out 2>&1 &
+log_file="webServerLog__$(date +%F+%T).out"
+startup_cmd="${script_dir}/internal/internal-start-web.sh $@"
+
+launch "${startup_cmd}" "${log_file}"
