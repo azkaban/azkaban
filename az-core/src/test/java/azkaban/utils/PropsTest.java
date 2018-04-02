@@ -18,19 +18,22 @@ package azkaban.utils;
 
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /**
  * Test class for azkaban.utils.Props
  */
 public class PropsTest {
-  Props p = new Props();
   private static final String EXTRA_HCAT_CLUSTERS = "other_hcat_clusters";
 
   /* Test for getStringListFromCluster(String s)*/
   @Test
   public void testSplit1() {
+    Props p = new Props();
     String s1 = "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port;";
     p.put(EXTRA_HCAT_CLUSTERS, s1);
     List<String> s2 = Arrays.asList("thrift://hcat1:port,thrift://hcat2:port" , "thrift://hcat3:port,thrift://hcat4:port");
@@ -45,5 +48,46 @@ public class PropsTest {
     p.put(EXTRA_HCAT_CLUSTERS, s5);
     List<String> s6 = Arrays.asList("thrift://hcat1:port,thrift://hcat2:port");
     Assert.assertTrue(p.getStringListFromCluster(EXTRA_HCAT_CLUSTERS).equals(s6));
+  }
+
+  @Test
+  public void userCanGetSubsetOfProps() {
+    Props p = new Props();
+    p.put("azkaban.executor.foo", "1");
+    p.put("azkaban.executor.bar", "2");
+    Props subset = p.getProps("azkaban.executor");
+    assertThat(subset.size()).isEqualTo(2);
+    assertThat(subset.getInt("foo")).isEqualTo(1);
+    assertThat(subset.getInt("bar")).isEqualTo(2);
+  }
+
+  @Test
+  public void getSubsetPropsShouldNotReturnNull() {
+    Props p = new Props();
+    p.put("azkaban.executor.foo", "1");
+    Props subset = p.getProps("blahblah");
+    assertThat(subset).isNotNull();
+    assertThat(subset.size()).isEqualTo(0);
+  }
+
+  @Test
+  public void userCanGetSubsetOfPropsWithPrefixDotInArgument() {
+    Props p = new Props();
+    p.put("azkaban.executor.foo", "1");
+    Props subset = p.getProps("azkaban.executor.");
+    assertThat(subset.size()).isEqualTo(1);
+  }
+
+  @Test
+  public void userCanGetSubsetOfPropsIncludingParent() {
+    Props parent = new Props();
+    parent.put("azkaban.executor.foo", "1");
+
+    Props current = Props.of(parent, "azkaban.executor.bar", "2");
+
+    Props subset = current.getProps("azkaban.executor");
+    assertThat(subset.size()).isEqualTo(2);
+    assertThat(subset.getInt("foo")).isEqualTo(1);
+    assertThat(subset.getInt("bar")).isEqualTo(2);
   }
 }

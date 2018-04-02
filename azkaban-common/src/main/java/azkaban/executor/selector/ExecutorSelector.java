@@ -18,6 +18,8 @@ package azkaban.executor.selector;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
+import azkaban.utils.Props;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -39,9 +41,10 @@ public class ExecutorSelector extends CandidateSelector<Executor, ExecutableFlow
    * @param comparatorList name/weight pair list of the comparators to be registered , again
    * comparator feature is disabled if a null value is passed.
    */
-  public ExecutorSelector(final Collection<String> filterList,
+  public ExecutorSelector(Props azkProps,
+      final Collection<String> filterList,
       final Map<String, Integer> comparatorList) {
-    super(null == filterList || filterList.isEmpty() ? null : new ExecutorFilter(filterList),
+    super(null == filterList || filterList.isEmpty() ? null : new ExecutorFilter(azkProps, filterList),
         null == comparatorList || comparatorList.isEmpty() ? null
             : new ExecutorComparator(comparatorList));
   }

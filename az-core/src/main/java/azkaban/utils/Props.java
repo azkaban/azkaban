@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+
+import com.google.common.base.Strings;
 import org.apache.log4j.Logger;
 
 /**
@@ -758,6 +760,34 @@ public class Props {
       }
     }
     return values;
+  }
+
+  /**
+   * This allows code to extract a subset of props.
+   *
+   * e.g.
+   * azkaban.executor.foo=1
+   * azkaban.executor.bar=2
+   *
+   * props.getProps("azkaban.executor");
+   * ->
+   * foo=1
+   * bar=2
+   *
+   * @return a subset of props or an empty set if there's no match
+   */
+  public Props getProps(String group) {
+    if (Strings.isNullOrEmpty(group)) {
+      return this;
+    }
+    String prefix = group;
+    if (!prefix.endsWith(".")) {
+      prefix = prefix + ".";
+    }
+    Props props = new Props();
+    Map<String, String> kvs = getMapByPrefix(prefix);
+    props.putAll(kvs);
+    return props;
   }
 
   /**

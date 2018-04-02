@@ -159,15 +159,7 @@ public class ExecutorManager extends EventHandler implements
             Constants.ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5));
 
     // configure queue processor
-    this.queueProcessor =
-        new QueueProcessorThread(
-            this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true),
-            this.azkProps.getLong(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000),
-            this.azkProps.getInt(
-                Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
-            this.azkProps.getInt(
-                Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
-                this.activeExecutors.size()));
+    this.queueProcessor = new QueueProcessorThread(azkProps, this);
 
     this.queueProcessor.start();
   }
@@ -1606,26 +1598,35 @@ public class ExecutorManager extends EventHandler implements
    * This thread is responsible for processing queued flows using dispatcher and
    * making rest api calls to executor server
    */
-  private class QueueProcessorThread extends Thread {
+  private static class QueueProcessorThread extends Thread {
 
     private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
     private final int maxDispatchingErrors;
-    private final long activeExecutorRefreshWindowInMilisec;
+    private final long activeExecutorRefreshWindowInMillis;
     private final int activeExecutorRefreshWindowInFlows;
+    private final ExecutorManager executorManager;
+    private final ExecutorSelector executorSelector;
 
     private volatile boolean shutdown = false;
     private volatile boolean isActive = true;
 
-    public QueueProcessorThread(final boolean isActive,
-        final long activeExecutorRefreshWindowInTime,
-        final int activeExecutorRefreshWindowInFlows,
-        final int maxDispatchingErrors) {
-      setActive(isActive);
-      this.maxDispatchingErrors = maxDispatchingErrors;
+    public QueueProcessorThread(Props azkProps, ExecutorManager executorManager) {
+      this.executorManager = executorManager;
+      this.executorSelector = new ExecutorSelector(
+          azkProps,
+          executorManager.filterList,
+          executorManager.comparatorWeightsMap
+      );
+
+      setActive(azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true));
+
+      this.maxDispatchingErrors = azkProps.getInt(
+              Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
+              executorManager.activeExecutors.size());
       this.activeExecutorRefreshWindowInFlows =
-          activeExecutorRefreshWindowInFlows;
-      this.activeExecutorRefreshWindowInMilisec =
-          activeExecutorRefreshWindowInTime;
+              azkProps.getInt(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5);
+      this.activeExecutorRefreshWindowInMillis =
+              azkProps.getLong(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000);
       this.setName("AzkabanWebServer-QueueProcessor-Thread");
     }
 
@@ -1651,7 +1652,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             // start processing queue if active, other wait for sometime
             if (this.isActive) {
-              processQueuedFlows(this.activeExecutorRefreshWindowInMilisec,
+              processQueuedFlows(this.activeExecutorRefreshWindowInMillis,
                   this.activeExecutorRefreshWindowInFlows);
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);
@@ -1670,10 +1671,10 @@ public class ExecutorManager extends EventHandler implements
       long lastExecutorRefreshTime = 0;
       int currentContinuousFlowProcessed = 0;
 
-      while (isActive() && (ExecutorManager.this.runningCandidate = ExecutorManager.this.queuedFlows
+      while (isActive() && (executorManager.runningCandidate = executorManager.queuedFlows
           .fetchHead()) != null) {
-        final ExecutionReference reference = ExecutorManager.this.runningCandidate.getFirst();
-        final ExecutableFlow exflow = ExecutorManager.this.runningCandidate.getSecond();
+        final ExecutionReference reference = executorManager.runningCandidate.getFirst();
+        final ExecutableFlow exflow = executorManager.runningCandidate.getSecond();
         final long currentTime = System.currentTimeMillis();
 
         // if we have dispatched more than maxContinuousFlowProcessed or
@@ -1683,7 +1684,7 @@ public class ExecutorManager extends EventHandler implements
         if (currentTime - lastExecutorRefreshTime > activeExecutorsRefreshWindow
             || currentContinuousFlowProcessed >= maxContinuousFlowProcessed) {
           // Refresh executorInfo for all activeExecutors
-          refreshExecutors();
+          executorManager.refreshExecutors();
           lastExecutorRefreshTime = currentTime;
           currentContinuousFlowProcessed = 0;
         }
@@ -1703,8 +1704,8 @@ public class ExecutorManager extends EventHandler implements
          */
         if (exflow.getUpdateTime() > lastExecutorRefreshTime) {
           // put back in the queue
-          ExecutorManager.this.queuedFlows.enqueue(exflow, reference);
-          ExecutorManager.this.runningCandidate = null;
+          executorManager.queuedFlows.enqueue(exflow, reference);
+          executorManager.runningCandidate = null;
           final long sleepInterval =
               activeExecutorsRefreshWindow
                   - (currentTime - lastExecutorRefreshTime);
@@ -1714,12 +1715,12 @@ public class ExecutorManager extends EventHandler implements
           exflow.setUpdateTime(currentTime);
           // process flow with current snapshot of activeExecutors
           selectExecutorAndDispatchFlow(reference, exflow, new HashSet<>(
-              ExecutorManager.this.activeExecutors));
-          ExecutorManager.this.runningCandidate = null;
+              executorManager.activeExecutors));
+          executorManager.runningCandidate = null;
         }
 
         // do not count failed flow processsing (flows still in queue)
-        if (ExecutorManager.this.queuedFlows.getFlow(exflow.getExecutionId()) == null) {
+        if (executorManager.queuedFlows.getFlow(exflow.getExecutionId()) == null) {
           currentContinuousFlowProcessed++;
         }
       }
@@ -1733,10 +1734,10 @@ public class ExecutorManager extends EventHandler implements
         final Executor selectedExecutor = selectExecutor(exflow, availableExecutors);
         if (selectedExecutor != null) {
           try {
-            dispatch(reference, exflow, selectedExecutor);
-            ExecutorManager.this.commonMetrics.markDispatchSuccess();
+            executorManager.dispatch(reference, exflow, selectedExecutor);
+            executorManager.commonMetrics.markDispatchSuccess();
           } catch (final ExecutorManagerException e) {
-            ExecutorManager.this.commonMetrics.markDispatchFail();
+            executorManager.commonMetrics.markDispatchFail();
             logger.warn(String.format(
                 "Executor %s responded with exception for exec: %d",
                 selectedExecutor, exflow.getExecutionId()), e);
@@ -1744,7 +1745,7 @@ public class ExecutorManager extends EventHandler implements
                 availableExecutors);
           }
         } else {
-          ExecutorManager.this.commonMetrics.markDispatchFail();
+          executorManager.commonMetrics.markDispatchFail();
           handleNoExecutorSelectedCase(reference, exflow);
         }
       }
@@ -1762,7 +1763,7 @@ public class ExecutorManager extends EventHandler implements
           final int executorId =
               Integer.valueOf(options.getFlowParameters().get(
                   ExecutionOptions.USE_EXECUTOR));
-          executor = fetchExecutor(executorId);
+          executor = executorManager.fetchExecutor(executorId);
 
           if (executor == null) {
             logger
@@ -1770,7 +1771,7 @@ public class ExecutorManager extends EventHandler implements
                     .format(
                         "User specified executor id: %d for execution id: %d is not active, Looking up db.",
                         executorId, executionId));
-            executor = ExecutorManager.this.executorLoader.fetchExecutor(executorId);
+            executor = executorManager.executorLoader.fetchExecutor(executorId);
             if (executor == null) {
               logger
                   .warn(String
@@ -1798,9 +1799,7 @@ public class ExecutorManager extends EventHandler implements
       if (choosenExecutor == null) {
         logger.info("Using dispatcher for execution id :"
             + exflow.getExecutionId());
-        final ExecutorSelector selector = new ExecutorSelector(ExecutorManager.this.filterList,
-            ExecutorManager.this.comparatorWeightsMap);
-        choosenExecutor = selector.getBest(availableExecutors, exflow);
+        choosenExecutor = executorSelector.getBest(availableExecutors, exflow);
       }
       return choosenExecutor;
     }
@@ -1817,7 +1816,7 @@ public class ExecutorManager extends EventHandler implements
       if (reference.getNumErrors() > this.maxDispatchingErrors
           || remainingExecutors.size() <= 1) {
         logger.error("Failed to process queued flow");
-        finalizeFlows(exflow);
+        executorManager.finalizeFlows(exflow);
       } else {
         remainingExecutors.remove(lastSelectedExecutor);
         // try other executors except chosenExecutor
@@ -1834,7 +1833,7 @@ public class ExecutorManager extends EventHandler implements
                   exflow.getExecutionId(), reference.getNumErrors()));
       // TODO: handle scenario where a high priority flow failing to get
       // schedule can starve all others
-      ExecutorManager.this.queuedFlows.enqueue(exflow, reference);
+      executorManager.queuedFlows.enqueue(exflow, reference);
     }
   }
 }
