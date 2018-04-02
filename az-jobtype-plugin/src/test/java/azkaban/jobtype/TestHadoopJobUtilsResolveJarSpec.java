@@ -52,22 +52,4 @@ public class TestHadoopJobUtilsResolveJarSpec {
     FileUtils.deleteDirectory(libFolderFile);
     HadoopJobUtils.resolveExecutionJarName(workingDirString, "./lib/abc.jar", logger);
   }
-
-  @Test
-  public void testSpecificationXXXjar() throws IOException {
-    String retval = HadoopJobUtils.resolveExecutionJarName(workingDirString,
-            "./lib/hadoop-spark.jar", logger);
-
-    Assert.assertEquals(retval,
-            "/tmp/TestHadoopSpark/./lib/hadoop-spark-job-test-execution-x.y.z-a.b.c.jar");
-  }
-
-  @Test
-  public void testSpecificationXXXprefix() throws IOException {
-    String retval = HadoopJobUtils.resolveExecutionJarName(workingDirString, "./lib/hadoop-spark",
-            logger);
-
-    Assert.assertEquals(retval,
-            "/tmp/TestHadoopSpark/./lib/hadoop-spark-job-test-execution-x.y.z-a.b.c.jar");
-  }
 }

@@ -79,14 +79,15 @@ public class TestTdchParameters {
                                    .password(PASSWORD)
                                    .build();
 
-    List<String> expected = getExpectedTdchParams("-avroschemafile", "-sourcepaths", "-azkaban.jobtype", "-fileformat");
+    List<String> expected = getExpectedTdchParams("-avroschemafile", "-sourcepaths", "-jobtype",
+        "-fileformat");
     expected.add("-sourcedatabase");
     expected.add("hive_database");
     expected.add("-sourcetable");
     expected.add("hive_table");
     expected.add("-hiveconf");
     expected.add("hive_conf");
-    expected.add("-azkaban.jobtype");
+    expected.add("-jobtype");
     expected.add("hive");
     expected.add("-fileformat");
     expected.add("orcfile");
@@ -101,7 +102,7 @@ public class TestTdchParameters {
                                                "com.teradata.jdbc.TeraDriver",
                                                "-fileformat",
                                                "avrofile",
-                                               "-azkaban.jobtype",
+                                               "-jobtype",
                                                "hdfs",
                                                "-username",
                                                "userName",
