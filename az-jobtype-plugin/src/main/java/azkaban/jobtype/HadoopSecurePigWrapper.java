@@ -155,6 +155,7 @@ public class HadoopSecurePigWrapper {
     }
   }
 
+  @SuppressWarnings("DefaultCharset")
   private static void handleError(File pigLog) throws Exception {
     System.out.println();
     System.out.println("Pig logfile dump:");

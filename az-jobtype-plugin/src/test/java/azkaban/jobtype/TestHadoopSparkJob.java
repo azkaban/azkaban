@@ -14,10 +14,8 @@
  * the License.
  */
 
-package jobtype;
+package azkaban.jobtype;
 
-import azkaban.jobtype.HadoopSparkJob;
-import azkaban.jobtype.SparkJobArg;
 import azkaban.utils.Props;
 
 import com.google.common.io.Files;

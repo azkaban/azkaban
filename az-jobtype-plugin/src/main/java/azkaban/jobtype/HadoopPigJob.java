@@ -284,7 +284,7 @@ public class HadoopPigJob extends JavaProcessJob {
           jarFile = new File(pluginDir + File.separatorChar + jar);
         }
 
-        if (!classPath.contains(jarFile.getAbsoluteFile())) {
+        if (!classPath.contains(jarFile.getAbsolutePath())) {
           classPath.add(jarFile.getAbsolutePath());
         }
       }

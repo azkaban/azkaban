@@ -1,6 +1,5 @@
-package jobtype;
+package azkaban.jobtype;
 
-import azkaban.jobtype.HadoopSecureHiveWrapper;
 import java.util.Map;
 
 import org.junit.Assert;

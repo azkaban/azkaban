@@ -101,6 +101,7 @@ public class WordCount extends AbstractHadoopJob {
     }
   }
 
+  @Override
   public void run() throws Exception {
     logger.info(String.format("Starting %s", getClass().getSimpleName()));
 

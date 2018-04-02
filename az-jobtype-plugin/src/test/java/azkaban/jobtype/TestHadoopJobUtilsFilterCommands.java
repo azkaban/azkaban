@@ -1,8 +1,5 @@
-package jobtype;
+package azkaban.jobtype;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -12,7 +9,6 @@ import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
-import azkaban.jobtype.HadoopJobUtils;
 import junit.framework.Assert;
 
 /**

@@ -64,6 +64,7 @@ public class JavaJob extends JavaProcessJob {
   }
 
   @Override
+  @SuppressWarnings("CollectionIncompatibleType")
   protected List<String> getClassPaths() {
     List<String> classPath = super.getClassPaths();
 

@@ -1,7 +1,5 @@
-package jobtype;
+package azkaban.jobtype;
 
-import azkaban.jobtype.HadoopJobUtils;
-import azkaban.jobtype.SparkJobArg;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;

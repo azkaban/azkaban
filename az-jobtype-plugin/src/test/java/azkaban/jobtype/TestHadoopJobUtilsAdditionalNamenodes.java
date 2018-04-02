@@ -1,6 +1,5 @@
-package jobtype;
+package azkaban.jobtype;
 
-import azkaban.jobtype.HadoopJobUtils;
 import azkaban.utils.Props;
 import org.junit.Assert;
 import org.junit.Test;

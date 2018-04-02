@@ -16,6 +16,8 @@
 
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import org.apache.log4j.Logger;
 
 import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
@@ -61,6 +63,7 @@ public class ExecuteHiveQuery implements HiveAction {
     this.hqe = hqe;
   }
 
+  @SuppressWarnings("Finally")
   private String extractQueryFromFile(Properties properties)
       throws HiveViaAzkabanException {
     String file = properties.getProperty(HIVE_QUERY_FILE);
@@ -73,7 +76,9 @@ public class ExecuteHiveQuery implements HiveAction {
     StringBuilder contents = new StringBuilder();
     BufferedReader br = null;
     try {
-      br = new BufferedReader(new FileReader(file));
+//      br = new BufferedReader(new FileReader(file));
+      br = new BufferedReader(new InputStreamReader(
+          new FileInputStream(file), StandardCharsets.UTF_8));
 
       String line;
 
@@ -97,6 +102,7 @@ public class ExecuteHiveQuery implements HiveAction {
     return contents.toString();
   }
 
+  @SuppressWarnings("Finally")
   private String extractQueryFromURL(Properties properties)
       throws HiveViaAzkabanException {
     String url = properties.getProperty(HIVE_QUERY_URL);
@@ -112,7 +118,7 @@ public class ExecuteHiveQuery implements HiveAction {
     try {
       URL queryURL = new URL(url);
 
-      br = new BufferedReader(new InputStreamReader(queryURL.openStream()));
+      br = new BufferedReader(new InputStreamReader(queryURL.openStream(), StandardCharsets.UTF_8));
       String line;
 
       while ((line = br.readLine()) != null) {

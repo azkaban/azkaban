@@ -1,4 +1,4 @@
-package jobtype;
+package azkaban.jobtype;
 
 import org.junit.Test;
 

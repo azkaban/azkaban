@@ -21,13 +21,19 @@ import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -100,7 +106,11 @@ public class HadoopJavaJobRunnerMain {
       _logger.setLevel(Level.INFO); //Explicitly setting level to INFO
 
       Properties props = new Properties();
-      props.load(new BufferedReader(new FileReader(propsFile)));
+//      props.load(new BufferedReader(new FileReader(propsFile)));
+
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+          new FileInputStream(propsFile), StandardCharsets.UTF_8));
+      props.load(br);
 
       HadoopConfigurationInjector.injectResources(new Props(null, props));
 
@@ -265,11 +275,12 @@ public class HadoopJavaJobRunnerMain {
 
     Writer writer = null;
     try {
-      writer = new BufferedWriter(new FileWriter(outputFileStr));
+//      writer = new BufferedWriter(new FileWriter(outputFileStr));
+      writer = Files.newBufferedWriter(Paths.get(outputFileStr), Charset.defaultCharset());
+
       JSONUtils.writePropsNoJarDependency(properties, writer);
     } catch (Exception e) {
-      new RuntimeException("Unable to store output properties to: "
-          + outputFileStr);
+
     } finally {
       if (writer != null) {
         try {

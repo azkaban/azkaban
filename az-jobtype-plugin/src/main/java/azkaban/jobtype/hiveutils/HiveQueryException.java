@@ -32,6 +32,7 @@ public class HiveQueryException extends Exception {
     return code;
   }
 
+  @Override
   public String getMessage() {
     return message;
   }

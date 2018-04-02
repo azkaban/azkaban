@@ -1,4 +1,4 @@
-package jobtype;
+package azkaban.jobtype;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -15,6 +15,7 @@ import azkaban.jobtype.javautils.FileUtils;
 
 import com.google.common.io.Files;
 
+@SuppressWarnings("DefaultCharset")
 public class TestFileUtils {
   private static final int DIRECTORY_LEVEL = 5;
   private static final int NUM_FILES = 5;

@@ -14,10 +14,8 @@
  * the License.
  */
 
-package jobtype;
+package azkaban.jobtype;
 
-import azkaban.jobtype.HadoopSecureSparkWrapper;
-import azkaban.jobtype.HadoopSparkJob;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;

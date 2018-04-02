@@ -18,12 +18,15 @@ package azkaban.jobtype;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
 import java.util.HashSet;
@@ -460,7 +463,9 @@ public class HadoopJobUtils {
     Set<String> applicationIds = new HashSet<String>();
 
     try {
-      br = new BufferedReader(new FileReader(logFile));
+//      br = new BufferedReader(new FileReader(logFile));
+      br = new BufferedReader(new InputStreamReader(
+          new FileInputStream(logFile), StandardCharsets.UTF_8));
       String line;
 
       // finds all the application IDs

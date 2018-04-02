@@ -9,7 +9,7 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied.
  */
-package jobtype;
+package azkaban.jobtype;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,6 +36,7 @@ public class TestWhitelist {
   private Whitelist whitelist;
 
   @Before
+  @SuppressWarnings("DefaultCharset")
   public void setup() throws IOException, URISyntaxException {
     temp = File.createTempFile(TestWhitelist.class.getSimpleName(), null);
     temp.deleteOnExit();

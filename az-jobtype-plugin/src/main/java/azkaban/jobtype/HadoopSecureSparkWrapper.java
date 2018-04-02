@@ -431,7 +431,7 @@ public class HadoopSecureSparkWrapper {
    */
   private static double getRoundedMemoryGb(String mem, String memOverhead,
       Configuration config) {
-    int memoryMb = (int) JavaUtils.byteStringAsMb(mem);
+    long memoryMb = JavaUtils.byteStringAsMb(mem);
     if (memOverhead == null || !NumberUtils.isDigits(memOverhead)) {
       memoryMb += Math.max(memoryMb / 10, 384);
     } else {

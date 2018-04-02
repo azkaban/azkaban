@@ -9,12 +9,10 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied.
  */
-package jobtype.connectors.teradata;
+package azkaban.jobtype.connectors.teradata;
 
 import static azkaban.jobtype.connectors.teradata.TdchConstants.*;
 
-import azkaban.jobtype.connectors.teradata.TdchConstants;
-import azkaban.jobtype.connectors.teradata.TdchParameters;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -81,14 +79,14 @@ public class TestTdchParameters {
                                    .password(PASSWORD)
                                    .build();
 
-    List<String> expected = getExpectedTdchParams("-avroschemafile", "-sourcepaths", "-jobtype", "-fileformat");
+    List<String> expected = getExpectedTdchParams("-avroschemafile", "-sourcepaths", "-azkaban.jobtype", "-fileformat");
     expected.add("-sourcedatabase");
     expected.add("hive_database");
     expected.add("-sourcetable");
     expected.add("hive_table");
     expected.add("-hiveconf");
     expected.add("hive_conf");
-    expected.add("-jobtype");
+    expected.add("-azkaban.jobtype");
     expected.add("hive");
     expected.add("-fileformat");
     expected.add("orcfile");
@@ -103,7 +101,7 @@ public class TestTdchParameters {
                                                "com.teradata.jdbc.TeraDriver",
                                                "-fileformat",
                                                "avrofile",
-                                               "-jobtype",
+                                               "-azkaban.jobtype",
                                                "hdfs",
                                                "-username",
                                                "userName",

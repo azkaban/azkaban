@@ -132,6 +132,8 @@ public class HadoopSecureWrapperUtils {
    * @throws IOException
    * @throws FileNotFoundException
    */
+
+   @SuppressWarnings("DefaultCharset")
   public static Properties loadAzkabanProps() throws IOException, FileNotFoundException {
     String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
     Properties props = new Properties();

@@ -159,6 +159,7 @@ public class PigProcessJob extends JavaProcessJob {
   }
 
   @Override
+  @SuppressWarnings("CollectionIncompatibleType")
   protected List<String> getClassPaths() {
     final List<String> classPath = super.getClassPaths();
 

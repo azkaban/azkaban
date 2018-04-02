@@ -76,6 +76,7 @@ public class JavaJobRunnerMain {
     JavaJobRunnerMain wrapper = new JavaJobRunnerMain();
   }
 
+  @SuppressWarnings("DefaultCharset")
   public JavaJobRunnerMain() throws Exception {
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -192,6 +193,7 @@ public class JavaJobRunnerMain {
     obj.getClass().getMethod(runMethod, new Class<?>[] {}).invoke(obj);
   }
 
+  @SuppressWarnings("DefaultCharset")
   private void outputGeneratedProperties(Props outputProperties) {
 
     if (outputProperties == null) {
@@ -220,8 +222,6 @@ public class JavaJobRunnerMain {
       writer = new BufferedWriter(new FileWriter(outputFileStr));
       JSONUtils.writePropsNoJarDependency(properties, writer);
     } catch (Exception e) {
-      new RuntimeException("Unable to store output properties to: "
-          + outputFileStr);
     } finally {
       if (writer != null) {
         try {

@@ -5,30 +5,30 @@ dependencies {
     compile project(":azkaban-common")
     compile project(":azkaban-hadoop-security-plugin")
 
-    compileOnly deps.hadoopCommon
-    compileOnly deps.hadoopMRClientCommon
-    compileOnly deps.hadoopMRClientCore
-    compileOnly(deps.hiveCli) {
+    compile deps.hadoopCommon
+    compile deps.hadoopMRClientCommon
+    compile deps.hadoopMRClientCore
+    compile(deps.hiveCli) {
         transitive = false
     }
-    compileOnly("org.apache.hive:hive-metastore:0.12.0") {
+    compile("org.apache.hive:hive-metastore:0.12.0") {
         force = true
     }
-    compileOnly("org.apache.hive:hive-shims:0.12.0") {
+    compile("org.apache.hive:hive-shims:0.12.0") {
         force = true
     }
-    compileOnly(deps.hiveExecCore) {
+    compile(deps.hiveExecCore) {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
         exclude group: 'eigenbase', module: 'eigenbase-properties'
     }
-    compileOnly(deps.pig) {
+    compile(deps.pig) {
         transitive = false
     }
-    compileOnly deps.sparkCore
-    compileOnly deps.jasypt
-    compileOnly deps.bcpg
-    compileOnly deps.commonsCli
-    compileOnly files('lib/teradata-connector-1.4.2.jar')
+    compile deps.sparkCore
+    compile deps.jasypt
+    compile deps.bcpg
+    compile deps.commonsCli
+    compile files('lib/teradata-connector-1.4.2.jar')
 }
 
 /**

@@ -14,6 +14,7 @@ package azkaban.jobtype.javautils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -101,7 +102,8 @@ public class Whitelist {
       Preconditions.checkArgument(fs.isFile(path), "Whitelist path is not a file. " + path);
 
       Set<String> result = Sets.newHashSet();
-      try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path)))) {
+      try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path),
+          StandardCharsets.UTF_8))) {
         String s = null;
         while (!StringUtils.isEmpty((s = br.readLine()))) {
           result.add(s);

@@ -9,12 +9,11 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied.
  */
-package jobtype.connectors.teradata;
+package azkaban.jobtype.connectors.teradata;
 
 import static org.mockito.Mockito.*;
 import static azkaban.jobtype.connectors.teradata.TdchConstants.*;
 
-import azkaban.jobtype.connectors.teradata.HdfsToTeradataJobRunnerMain;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;

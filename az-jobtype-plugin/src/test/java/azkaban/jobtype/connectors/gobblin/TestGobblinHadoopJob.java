@@ -1,19 +1,5 @@
-package jobtype.connectors.gobblin;
+package azkaban.jobtype.connectors.gobblin;
 
-
-import azkaban.jobtype.connectors.gobblin.GobblinConstants;
-import azkaban.jobtype.connectors.gobblin.GobblinHadoopJob;
-import java.util.Set;
-import java.util.UUID;
-
-import junit.framework.Assert;
-
-import org.apache.log4j.Logger;
-import org.junit.Test;
-
-import com.google.common.collect.Sets;
-
-import azkaban.utils.Props;
 
 public class TestGobblinHadoopJob {
 //  private static final String JOB_ID = "test_job_id";
