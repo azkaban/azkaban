@@ -19,6 +19,8 @@ package azkaban.executor.selector;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.log4j.Logger;
 
 
@@ -45,7 +47,7 @@ public abstract class CandidateFilter<T, V> {
   /**
    * function to register a factorFilter to the internal Map for future reference.
    *
-   * @param factorfilter : the Filter object to be registered.
+   * @param filter : the factor filter object to be registered.
    */
   protected void registerFactorFilter(final FactorFilter<T, V> filter) {
     if (null == filter) {
@@ -86,5 +88,10 @@ public abstract class CandidateFilter<T, V> {
     }
     logger.debug(String.format("Final filtering result : %s ", result));
     return result;
+  }
+
+  @VisibleForTesting
+  Map<String, FactorFilter<T, V>> getFactorFilters() {
+    return factorFilterList;
   }
 }

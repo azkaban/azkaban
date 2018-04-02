@@ -30,6 +30,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import azkaban.utils.Props;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.After;
 import org.junit.Assert;
@@ -433,7 +435,7 @@ public class SelectorTest {
   public void testCreatingExectorfilterObject() throws Exception {
     final List<String> validList = new ArrayList<>(ExecutorFilter.getAvailableFilterNames());
     try {
-      new ExecutorFilter(validList);
+      new ExecutorFilter(new Props(), validList);
     } catch (final Exception ex) {
       Assert.fail(
           "creating ExecutorFilter with valid list throws exception . ex -" + ex.getMessage());
@@ -446,7 +448,7 @@ public class SelectorTest {
     invalidList.add("notExistingFilter");
     Exception result = null;
     try {
-      new ExecutorFilter(invalidList);
+      new ExecutorFilter(new Props(), invalidList);
     } catch (final Exception ex) {
       if (ex instanceof IllegalArgumentException) {
         result = ex;
@@ -517,7 +519,7 @@ public class SelectorTest {
 
     final ExecutableFlow flow = new ExecutableFlow();
 
-    final ExecutorSelector selector = new ExecutorSelector(null, null);
+    final ExecutorSelector selector = new ExecutorSelector(new Props(), null, null);
     final Executor executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(2), executor);
   }
@@ -544,7 +546,7 @@ public class SelectorTest {
     for (final String name : ExecutorComparator.getAvailableComparatorNames()) {
       comparatorMap.put(name, 1);
     }
-    final ExecutorSelector selector = new ExecutorSelector(filterList, comparatorMap);
+    final ExecutorSelector selector = new ExecutorSelector(new Props(), filterList, comparatorMap);
     Executor executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(0), executor);
 
@@ -625,6 +627,7 @@ public class SelectorTest {
   }
 
   // mock Filter class.
+  @SuppressWarnings("unchecked")
   static class MockFilter
       extends CandidateFilter<MockExecutorObject, MockFlowObject> {
 
@@ -636,63 +639,74 @@ public class SelectorTest {
       return "Mockfilter";
     }
 
-    // function to register the remainingMemory filter.
     // for test purpose the registration is put in a separated method, in production the work should be done
     // in the constructor.
     public void registerFilterforTotalMemory() {
-      this.registerFactorFilter(
-          FactorFilter.create("requiredTotalMemory", (itemToCheck, sourceObject) -> {
-            // REAL LOGIC COMES HERE -
-            if (null == itemToCheck || null == sourceObject) {
-              return false;
-            }
+      FactorFilter<MockExecutorObject, MockFlowObject> totalMemoryFilter =
+          new FactorFilter<MockExecutorObject, MockFlowObject>("requiredTotalMemory", new Props()) {
+            @Override
+            public boolean filterTarget(MockExecutorObject executor, MockFlowObject flow) {
+              if (executor == null || flow == null) {
+                return false;
+              }
 
-            // Box has infinite memory.:)
-            if (itemToCheck.percentOfRemainingMemory == 0) {
-              return true;
-            }
+              if (executor.percentOfRemainingMemory == 0) {
+                return true;
+              }
 
-            // calculate the memory and return.
-            return itemToCheck.amountOfRemainingMemory / itemToCheck.percentOfRemainingMemory * 100
-                >
-                sourceObject.requiredTotalMemory;
-          }));
+              // calculate the memory and return.
+              return executor.amountOfRemainingMemory / executor.percentOfRemainingMemory * 100
+                  > flow.requiredTotalMemory;
+            }
+          };
+
+      this.registerFactorFilter(totalMemoryFilter);
     }
 
     public void registerFilterforRemainingMemory() {
-      this.registerFactorFilter(
-          FactorFilter.create("requiredRemainingMemory", (itemToCheck, sourceObject) -> {
-            // REAL LOGIC COMES HERE -
-            if (null == itemToCheck || null == sourceObject) {
-              return false;
+      FactorFilter<MockExecutorObject, MockFlowObject> remainingMemoryFilter =
+          new FactorFilter<MockExecutorObject, MockFlowObject>("requiredRemainingMemory", new Props()) {
+            @Override
+            public boolean filterTarget(MockExecutorObject executor, MockFlowObject flow) {
+              if (executor == null || flow == null) {
+                return false;
+              }
+
+              return executor.amountOfRemainingMemory > flow.requiredRemainingMemory;
             }
-            return itemToCheck.amountOfRemainingMemory > sourceObject.requiredRemainingMemory;
-          }));
+          };
+
+      this.registerFactorFilter(remainingMemoryFilter);
     }
 
     public void registerFilterforPriority() {
-      this.registerFactorFilter(
-          FactorFilter.create("requiredProprity", (itemToCheck, sourceObject) -> {
-            // REAL LOGIC COMES HERE -
-            if (null == itemToCheck || null == sourceObject) {
-              return false;
+      FactorFilter<MockExecutorObject, MockFlowObject> requiredPriorityFilter =
+          new FactorFilter<MockExecutorObject, MockFlowObject>("requiredPriority", new Props()) {
+            @Override
+            public boolean filterTarget(MockExecutorObject executor, MockFlowObject flow) {
+              if (executor == null || flow == null) {
+                return false;
+              }
+              // priority value, the bigger the lower.
+              return executor.priority >= flow.priority;
             }
-
-            // priority value, the bigger the lower.
-            return itemToCheck.priority >= sourceObject.priority;
-          }));
+          };
+      this.registerFactorFilter(requiredPriorityFilter);
     }
 
     public void registerFilterforRemainingTmpSpace() {
-      this.registerFactorFilter(
-          FactorFilter.create("requiredRemainingTmpSpace", (itemToCheck, sourceObject) -> {
-            // REAL LOGIC COMES HERE -
-            if (null == itemToCheck || null == sourceObject) {
-              return false;
-            }
+      FactorFilter<MockExecutorObject, MockFlowObject> requiredRemainingTmpSpaceFilter =
+          new FactorFilter<MockExecutorObject, MockFlowObject>("requiredRemainingTmpSpace", new Props()) {
+            @Override
+            public boolean filterTarget(MockExecutorObject executor, MockFlowObject flow) {
+              if (executor == null || flow == null) {
+                return false;
+              }
 
-            return itemToCheck.remainingTmp > sourceObject.requiredRemainingTmpSpace;
-          }));
+              return executor.remainingTmp > flow.requiredRemainingTmpSpace;
+            }
+          };
+      this.registerFactorFilter(requiredRemainingTmpSpaceFilter);
     }
 
   }

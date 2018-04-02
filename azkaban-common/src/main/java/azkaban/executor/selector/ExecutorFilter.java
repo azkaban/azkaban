@@ -16,15 +16,19 @@
 
 package azkaban.executor.selector;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
-import azkaban.executor.ExecutorInfo;
+import azkaban.executor.selector.filter.MaxCpuUsageFilter;
+import azkaban.executor.selector.filter.MinFreeMemFilter;
+import azkaban.executor.selector.filter.RemainingFlowSizeFilter;
 import azkaban.utils.Props;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * De-normalized version of the candidateFilter, which also contains the implementation of the
@@ -84,108 +88,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
    * @return the list of the names.
    */
   public static Set<String> getAvailableFilterNames() {
-    return filterRepository.keySet();
-  }
-
-  /**
-   * <pre>
-   * function to register the static remaining flow size filter.
-   * NOTE : this is a static filter which means the filter will be filtering based on the system
-   * standard which is not
-   *        Coming for the passed flow.
-   *        Ideally this filter will make sure only the executor hasn't reached the Max allowed #
-   * of
-   * executing flows.
-   * </pre>
-   */
-  private static FactorFilter<Executor, ExecutableFlow> getStaticRemainingFlowSizeFilter() {
-    return FactorFilter
-        .create(STATICREMAININGFLOWSIZE_FILTER_NAME, (filteringTarget, referencingObject) -> {
-          if (null == filteringTarget) {
-            logger.debug(String.format("%s : filtering out the target as it is null.",
-                STATICREMAININGFLOWSIZE_FILTER_NAME));
-            return false;
-          }
-
-          final ExecutorInfo stats = filteringTarget.getExecutorInfo();
-          if (null == stats) {
-            logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
-                STATICREMAININGFLOWSIZE_FILTER_NAME,
-                filteringTarget.toString()));
-            return false;
-          }
-          return stats.getRemainingFlowCapacity() > 0;
-        });
-  }
-
-  /**
-   * <pre>
-   * function to register the static Minimum Reserved Memory filter.
-   * NOTE : this is a static filter which means the filter will be filtering based on the system
-   * standard which is not
-   *        Coming for the passed flow.
-   *        This filter will filter out any executors that has the remaining  memory below 6G
-   * </pre>
-   */
-  private static FactorFilter<Executor, ExecutableFlow> getMinimumReservedMemoryFilter() {
-    return FactorFilter
-        .create(MINIMUMFREEMEMORY_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
-          private static final int MINIMUM_FREE_MEMORY = 6 * 1024;
-
-          @Override
-          public boolean filterTarget(final Executor filteringTarget,
-              final ExecutableFlow referencingObject) {
-            if (null == filteringTarget) {
-              logger.debug(String.format("%s : filtering out the target as it is null.",
-                  MINIMUMFREEMEMORY_FILTER_NAME));
-              return false;
-            }
-
-            final ExecutorInfo stats = filteringTarget.getExecutorInfo();
-            if (null == stats) {
-              logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
-                  MINIMUMFREEMEMORY_FILTER_NAME,
-                  filteringTarget.toString()));
-              return false;
-            }
-            return stats.getRemainingMemoryInMB() > MINIMUM_FREE_MEMORY;
-          }
-        });
-  }
-
-  /**
-   * <pre>
-   * function to register the static Minimum Reserved Memory filter.
-   * NOTE :  this is a static filter which means the filter will be filtering based on the system
-   * standard which
-   *        is not Coming for the passed flow.
-   *        This filter will filter out any executors that the current CPU usage exceed 95%
-   * </pre>
-   */
-  private static FactorFilter<Executor, ExecutableFlow> getCpuStatusFilter() {
-    return FactorFilter
-        .create(CPUSTATUS_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
-          private static final int MAX_CPU_CURRENT_USAGE = 95;
-
-          @Override
-          public boolean filterTarget(final Executor filteringTarget,
-              final ExecutableFlow referencingObject) {
-            if (null == filteringTarget) {
-              logger.debug(String
-                  .format("%s : filtering out the target as it is null.", CPUSTATUS_FILTER_NAME));
-              return false;
-            }
-
-            final ExecutorInfo stats = filteringTarget.getExecutorInfo();
-            if (null == stats) {
-              logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
-                  CPUSTATUS_FILTER_NAME,
-                  filteringTarget.toString()));
-              return false;
-            }
-            return stats.getCpuUsage() < MAX_CPU_CURRENT_USAGE;
-          }
-        });
+    return filterBuilders.keySet();
   }
 
   @Override

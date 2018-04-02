@@ -16,47 +16,30 @@
 
 package azkaban.executor.selector;
 
+import azkaban.filter.Filter;
+import azkaban.utils.Props;
 import org.apache.log4j.Logger;
 
 /**
- * wrapper class for a factor Filter .
+ * Factor filter base. User is supposed to extend this class for implementations.
  *
- * @param T: the type of the objects to be compared.
- * @param V: the type of the object to be used for filtering.
+ * @see azkaban.filter.Filter
  */
-public final class FactorFilter<T, V> {
+public abstract class FactorFilter<T, V> implements Filter<T, V> {
 
-  private static final Logger logger = Logger.getLogger(FactorFilter.class);
-
+  private final Logger logger = Logger.getLogger(this.getClass());
   private final String factorName;
-  private final Filter<T, V> filter;
+  private final Props filterProps;
 
   /**
-   * private constructor of the class. User will create the instance of the class by calling the
-   * static method provided below.
+   * User is supposed to call this constructor in all implementations.
    *
-   * @param factorName : the factor name .
-   * @param filter : user defined function specifying how the filtering should be implemented.
+   * @param factorName: the factor name .
+   * @param filterProps: the props to be used by the filter
    */
-  private FactorFilter(final String factorName, final Filter<T, V> filter) {
+  public FactorFilter(final String factorName, Props filterProps) {
     this.factorName = factorName;
-    this.filter = filter;
-  }
-
-  /**
-   * static function to generate an instance of the class. refer to the constructor for the param
-   * definitions.
-   */
-  public static <T, V> FactorFilter<T, V> create(final String factorName,
-      final Filter<T, V> filter) {
-
-    if (null == factorName || factorName.length() == 0 || null == filter) {
-      logger.error(
-          "failed to create instance of FactorFilter, at least one of the input paramters are invalid");
-      return null;
-    }
-
-    return new FactorFilter<>(factorName, filter);
+    this.filterProps = filterProps;
   }
 
   // function to return the factor name.
@@ -64,24 +47,21 @@ public final class FactorFilter<T, V> {
     return this.factorName;
   }
 
-  // the actual check function, which will leverage the logic defined by user.
-  public boolean filterTarget(final T filteringTarget, final V referencingObject) {
-    return this.filter.filterTarget(filteringTarget, referencingObject);
+  /**
+   * Get the logger for the filter
+   *
+   * @return the logger associated with this filter
+   */
+  public Logger getLogger() {
+    return logger;
   }
 
-  // interface of the filter.
-  public interface Filter<T, V> {
-
-    /**
-     * function to analyze the target item according to the reference object to decide whether the
-     * item should be filtered.
-     *
-     * @param filteringTarget object to be checked.
-     * @param referencingObject object which contains statistics based on which a decision is made
-     * whether the object being checked need to be filtered or not.
-     * @return true if the check passed, false if check failed, which means the item need to be
-     * filtered.
-     */
-    boolean filterTarget(T filteringTarget, V referencingObject);
+  /**
+   * Get props for this filter
+   *
+   * @return a subset in main azkaban properties corresponding to this filter, never null.
+   */
+  public Props getFilterProps() {
+    return filterProps;
   }
 }
