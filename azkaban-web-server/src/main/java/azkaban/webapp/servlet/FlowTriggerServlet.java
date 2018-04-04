@@ -68,7 +68,9 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
       jsonObj.put("nextExecTime",
           utils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
       jsonObj.put("maxWaitMin", res.getFlowTrigger().getMaxWaitDuration().toMinutes());
-      jsonObj.put("dependencies", res.getDependencyListJson());
+      if (!res.getFlowTrigger().getDependencies().isEmpty()) {
+        jsonObj.put("dependencies", res.getDependencyListJson());
+      }
       ret.put("flowTrigger", jsonObj);
     }
   }

@@ -408,9 +408,6 @@ azkaban.SummaryView = Backbone.View.extend({
       schedule: this.model.get('schedule'),
       flowtrigger: this.model.get('flowtrigger'),
     };
-    if (typeof data.flowtrigger !== 'undefined') {
-      alert(data.flowtrigger.cronExpression);
-    }
     dust.render("flowsummary", data, function (err, out) {
       $('#summary-view-content').html(out);
     });
