@@ -900,6 +900,15 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         proxyUser = variable.name;
       }
 
+      if (variable.title.equals("reportal.config.user.to.proxy")) {
+        String userToProxy = variable.name;
+        final UserManager userManager = getApplication().getUserManager();
+        if (!userManager.validateProxyUser(userToProxy, user)) {
+          errors.add("User " + user.getUserId() + " has no permission to add " + userToProxy
+              + " as proxy user.");
+        }
+      }
+
       variableList.add(variable);
     }
 
