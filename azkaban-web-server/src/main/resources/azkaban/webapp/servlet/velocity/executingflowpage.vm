@@ -160,7 +160,6 @@
             <th class="elapse">Elapsed</th>
             <th class="status">Status</th>
             <th class="status">Cancellation Cause</th>
-            <th class="props">Props</th>
           </tr>
           </thead>
           <tbody id="triggerExecutableBody">

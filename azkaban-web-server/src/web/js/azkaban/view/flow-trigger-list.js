@@ -28,7 +28,6 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     this.model.bind("change:trigger", this.renderJobs, this);
     this.model.bind("change:update", this.updateJobs, this);
 
-//    alert(JSON.stringify(this.model));
     // This is for tabbing. Blah, hacky
     var executingBody = $("#triggerExecutableBody")[0];
     executingBody.level = 0;
@@ -283,7 +282,6 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var tdElapse = document.createElement("td");
     var tdStatus = document.createElement("td");
     var tdCancelCause = document.createElement("td");
-    var tdDetails = document.createElement("td");
     //node.joblistrow = tr;
     //tr.node = node;
     var padding = 15 * $(body)[0].level;
@@ -296,7 +294,6 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     $(tr).append(tdElapse);
     $(tr).append(tdStatus);
     $(tr).append(tdCancelCause);
-    $(tr).append(tdDetails);
     $(tr).addClass("depListRow");
 
     $(tdName).addClass("depname");
@@ -308,9 +305,7 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     $(tdEnd).addClass("endTime");
     $(tdElapse).addClass("elapsedTime");
     $(tdStatus).addClass("statustd");
-    $(tdDetails).addClass("details");
 
-    alert(node.triggerInstanceId);
     $(tdId).text(node.triggerInstanceId);
     $(tdName).text(node.dependencyName);
     $(tdType).text(node.dependencyType);
@@ -407,30 +402,4 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     }*/
   }
 });
-
-var attemptRightClick = function (event) {
-  var target = event.currentTarget;
-  var job = target.job;
-  var attempt = target.attempt;
-
-  var jobId = event.currentTarget.jobid;
-  var requestURL = contextURL + "/executor?project=" + projectName + "&execid="
-      + execId + "&job=" + job + "&attempt=" + attempt;
-
-  var menu = [
-    {
-      title: "Open Attempt Log...", callback: function () {
-      window.location.href = requestURL;
-    }
-    },
-    {
-      title: "Open Attempt Log in New Window...", callback: function () {
-      window.open(requestURL);
-    }
-    }
-  ];
-
-  contextMenuView.show(event, menu);
-  return false;
-}
 
