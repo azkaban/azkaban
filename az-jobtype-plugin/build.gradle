@@ -41,10 +41,7 @@ dependencies {
         transitive = false
     }
     compile deps.sparkCore
-    compile deps.jasypt
-    compile deps.bcpg
     compile deps.commonsCli
-    compile files('lib/teradata-connector-1.4.2.jar')
 }
 
 /**

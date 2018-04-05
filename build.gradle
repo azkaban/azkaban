@@ -63,7 +63,6 @@ ext.deps = [
         // External dependencies
         assertj             : 'org.assertj:assertj-core:3.8.0',
         awaitility          : 'org.awaitility:awaitility:3.0.0',
-        bcpg                : 'org.bouncycastle:bcprov-jdk15on:1.54',
         collections         : 'commons-collections:commons-collections:3.2.2',
         commonsCli          : 'commons-cli:commons-cli:1.3.1',
         commonsLang         : 'commons-lang:commons-lang:2.6',
@@ -88,7 +87,6 @@ ext.deps = [
         io                  : 'commons-io:commons-io:2.4',
         jacksonCoreAsl      : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
         jacksonMapperAsl    : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
-        jasypt              : 'org.jasypt:jasypt:1.9.2',
         jetty               : 'org.mortbay.jetty:jetty:6.1.26',
         jettyUtil           : 'org.mortbay.jetty:jetty-util:6.1.26',
         jexl                : 'org.apache.commons:commons-jexl:2.1.1',
