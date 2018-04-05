@@ -29,7 +29,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -156,8 +155,7 @@ public class FlowTriggerDependencyPluginManager {
     try {
       clazz = (Class<? extends DependencyCheck>) dependencyClassloader.loadClass(pluginConfig.get
           (DEPENDENCY_CLASS));
-      final Object obj = Utils.callConstructor(clazz);
-      return (DependencyCheck) obj;
+      return (DependencyCheck) Utils.callConstructor(clazz);
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
     }
@@ -250,79 +248,6 @@ public class FlowTriggerDependencyPluginManager {
         depCheck.shutdown();
       } catch (final Exception ex) {
         logger.error("failed to shutdown dependency check " + depCheck, ex);
-      }
-    }
-  }
-
-  /**
-   * A parent-last classloader that will try the child classloader first and then the parent.
-   */
-  private static class ParentLastURLClassLoader extends ClassLoader {
-
-    private final ChildURLClassLoader childClassLoader;
-
-    public ParentLastURLClassLoader(final URL[] urls, final ClassLoader parentCL) {
-      super(parentCL);
-
-      this.childClassLoader = new ChildURLClassLoader(urls,
-          new FindClassClassLoader(this.getParent()));
-    }
-
-    @Override
-    protected synchronized Class<?> loadClass(final String name, final boolean resolve)
-        throws ClassNotFoundException {
-      try {
-        // first we try to find a class inside the child classloader
-        return this.childClassLoader.findClass(name);
-      } catch (final ClassNotFoundException e) {
-        // didn't find it, try the parent
-        return super.loadClass(name, resolve);
-      }
-    }
-
-    /**
-     * This class allows me to call findClass on a classloader
-     */
-    private static class FindClassClassLoader extends ClassLoader {
-
-      public FindClassClassLoader(final ClassLoader parent) {
-        super(parent);
-      }
-
-      @Override
-      public Class<?> findClass(final String name) throws ClassNotFoundException {
-        return super.findClass(name);
-      }
-    }
-
-    /**
-     * This class delegates (child then parent) for the findClass method for a URLClassLoader.
-     * We need this because findClass is protected in URLClassLoader
-     */
-    private static class ChildURLClassLoader extends URLClassLoader {
-
-      private final FindClassClassLoader realParent;
-
-      public ChildURLClassLoader(final URL[] urls, final FindClassClassLoader realParent) {
-        super(urls, null);
-
-        this.realParent = realParent;
-      }
-
-      @Override
-      public Class<?> findClass(final String name) throws ClassNotFoundException {
-        try {
-          final Class<?> loaded = super.findLoadedClass(name);
-          if (loaded != null) {
-            return loaded;
-          }
-
-          // first try to use the URLClassLoader findClass
-          return super.findClass(name);
-        } catch (final ClassNotFoundException e) {
-          // if that fails, we ask our real parent classloader to load the class (we give up)
-          return this.realParent.loadClass(name);
-        }
       }
     }
   }
