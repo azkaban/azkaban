@@ -21,16 +21,15 @@
 var flowTriggerInstanceListView;
 azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
   events: {
-    //"contextmenu .flow-progress-bar": "handleProgressBoxClick"
+    //"contextmenu.flow-progress-bar": "handleProgressBoxClick"
   },
 
   initialize: function (settings) {
     this.model.bind("change:trigger", this.renderJobs, this);
     this.model.bind("change:update", this.updateJobs, this);
-
     // This is for tabbing. Blah, hacky
-    var executingBody = $("#triggerExecutableBody")[0];
-    executingBody.level = 0;
+    //var executingBody = $("#triggerExecutableBody")[0];
+    //executingBody.level = 0;
   },
 
   renderJobs: function (evt) {
@@ -39,10 +38,8 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var executingBody = $("#triggerExecutableBody");
     this.updateJobRow(data.items, executingBody);
 
-    var flowLastTime = data.endTime == -1 ? (new Date()).getTime()
-        : data.endTime;
-    var flowStartTime = data.startTime;
-    this.updateProgressBar(data, flowStartTime, flowLastTime);
+    var triggerBody = $("#triggerBody");
+    this.updateTriggerRow(data, triggerBody);
   },
 
   updateJobs: function (evt) {
@@ -62,6 +59,56 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
         : data.endTime;
     var flowStartTime = data.startTime;
     this.updateProgressBar(data, flowStartTime, flowLastTime);
+  },
+
+  updateTriggerRow: function (data, body) {
+    if (!data) {
+      return;
+    }
+    this.addTriggerRow(data, body);
+  },
+
+  addTriggerRow: function (data, body) {
+    var self = this;
+    var tr = document.createElement("tr");
+    var tdId = document.createElement("td");
+    var tdSubmitter = document.createElement("td");
+    var tdStart = document.createElement("td");
+    var tdEnd = document.createElement("td");
+    var tdElapse = document.createElement("td");
+    var tdStatus = document.createElement("td");
+    var tdProps = document.createElement("td");
+
+    $(tr).append(tdId);
+    $(tr).append(tdSubmitter);
+    $(tr).append(tdStart);
+    $(tr).append(tdEnd);
+    $(tr).append(tdElapse);
+    $(tr).append(tdStatus);
+    $(tr).append(tdProps);
+
+    $(tr).addClass("triggerRow");
+    $(tdId).addClass("triggerInstanceId");
+    $(tdSubmitter).addClass("triggerSubmitter");
+    $(tdStart).addClass("startTime");
+    $(tdEnd).addClass("endTime");
+    $(tdElapse).addClass("elapsedTime");
+    $(tdStatus).addClass("status");
+    $(tdProps).addClass("props");
+
+    //alert(data.triggerId);
+    //alert(tr);
+    $(tr).text(data.triggerId);
+    $(tdId).text(data.triggerId);
+
+    /*
+    $(tdSubmitter).addClass("triggerSubmitter");
+    $(tdStart).addClass("startTime");
+    $(tdEnd).addClass("endTime");
+    $(tdElapse).addClass("elapsedTime");
+    $(tdStatus).addClass("status");
+    $(tdProps).addClass("props");*/
+
   },
 
   updateJobRow: function (nodes, body) {
@@ -158,117 +205,8 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
       //   this.updateJobRow(node.nodes, subtableBody);
       // }
     }
-  },
-
-  updateProgressBar: function (data, flowStartTime, flowLastTime) {
-    var outerWidth = $(".flow-progress").css("width");
-    if (outerWidth) {
-      if (outerWidth.substring(outerWidth.length - 2, outerWidth.length)
-          == "px") {
-        outerWidth = outerWidth.substring(0, outerWidth.length - 2);
-      }
-      outerWidth = parseInt(outerWidth);
-    }
-
-    var parentLastTime = data.endTime == -1 ? (new Date()).getTime()
-        : data.endTime;
-    var parentStartTime = data.startTime;
-
-    var factor = outerWidth / (flowLastTime - flowStartTime);
-    var outerProgressBarWidth = factor * (parentLastTime - parentStartTime);
-    var outerLeftMargin = factor * (parentStartTime - flowStartTime);
-
-    var nodes = data.nodes;
-    for (var i = 0; i < nodes.length; ++i) {
-      var node = nodes[i];
-
-      // calculate the progress
-      var tr = node.joblistrow;
-      var outerProgressBar = $(tr).find("> td.timeline > .flow-progress");
-      var progressBar = $(tr).find(
-          "> td.timeline > .flow-progress > .main-progress");
-      var offsetLeft = 0;
-      var minOffset = 0;
-      progressBar.attempt = 0;
-
-      // Shift the outer progress
-      $(outerProgressBar).css("width", outerProgressBarWidth)
-      $(outerProgressBar).css("margin-left", outerLeftMargin);
-
-      // Add all the attempts
-      if (node.pastAttempts) {
-        var logURL = contextURL + "/executor?execid=" + execId + "&job="
-            + node.nestedId + "&attempt=" + node.pastAttempts.length;
-        var anchor = $(tr).find("> td.details > a");
-        if (anchor.length != 0) {
-          $(anchor).attr("href", logURL);
-          progressBar.attempt = node.pastAttempts.length;
-        }
-
-        // Calculate the node attempt bars
-        for (var p = 0; p < node.pastAttempts.length; ++p) {
-          var pastAttempt = node.pastAttempts[p];
-          var pastAttemptBox = pastAttempt.attemptBox;
-
-          var left = (pastAttempt.startTime - flowStartTime) * factor;
-          var width = Math.max((pastAttempt.endTime - pastAttempt.startTime)
-              * factor, 3);
-
-          var margin = left - offsetLeft;
-          $(pastAttemptBox).css("margin-left", left - offsetLeft);
-          $(pastAttemptBox).css("width", width);
-
-          $(pastAttemptBox).attr("title", "attempt:" + p + "  start:"
-              + getHourMinSec(new Date(pastAttempt.startTime)) + "  end:"
-              + getHourMinSec(new Date(pastAttempt.endTime)));
-          offsetLeft += width + margin;
-        }
-      }
-
-      var nodeLastTime = node.endTime == -1 ? (new Date()).getTime()
-          : node.endTime;
-      var nodeStartTime = node.startTime == -1 ? (new Date()).getTime()
-          : node.startTime;
-      var left = Math.max((nodeStartTime - parentStartTime) * factor,
-          minOffset);
-      var margin = left - offsetLeft;
-      var width = Math.max((nodeLastTime - nodeStartTime) * factor, 3);
-
-      width = Math.min(width, outerWidth);
-
-      progressBar.css("margin-left", left)
-      progressBar.css("width", width);
-      progressBar.attr("title", "attempt:" + progressBar.attempt + "  start:"
-          + getHourMinSec(new Date(node.startTime)) + "  end:" + getHourMinSec(
-              new Date(node.endTime)));
-
-      if (node.nodes) {
-        this.updateProgressBar(node, flowStartTime, flowLastTime);
-      }
-    }
-  },
-
-  toggleExpandFlow: function (flow) {
-    console.log("Toggle Expand");
-    var tr = flow.joblistrow;
-    var subFlowRow = tr.subflowrow;
-    var expandIcon = $(tr).find("> td > .listExpand");
-    if (tr.expanded) {
-      tr.expanded = false;
-      $(expandIcon).removeClass("glyphicon-chevron-up");
-      $(expandIcon).addClass("glyphicon-chevron-down");
-
-      $(tr).removeClass("expanded");
-      $(subFlowRow).hide();
-    }
-    else {
-      tr.expanded = true;
-      $(expandIcon).addClass("glyphicon-chevron-up");
-      $(expandIcon).removeClass("glyphicon-chevron-down");
-      $(tr).addClass("expanded");
-      $(subFlowRow).show();
-    }
-  },
+  }
+  ,
 
   addNodeRow: function (node, body) {
     var self = this;

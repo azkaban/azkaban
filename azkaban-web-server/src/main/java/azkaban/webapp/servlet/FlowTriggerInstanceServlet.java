@@ -147,6 +147,13 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       dependencyOutput.add(depMap);
     }
     ret.put("items", dependencyOutput);
+
+    ret.put("triggerId", triggerInst.getId());
+    ret.put("triggerSubmitter", triggerInst.getSubmitUser());
+    ret.put("triggerStartTime", triggerInst.getStartTime());
+    ret.put("triggerEndTime", triggerInst.getEndTime());
+    ret.put("triggerStatus", triggerInst.getStatus());
+    ret.put("triggerProps", triggerInst.getFlowTrigger());
   }
 
   private void ajaxFetchTriggerInstanceByExecId(final int execId, final Session session,
