@@ -63,6 +63,14 @@ public class FlowTriggerDependencyPluginManager {
     this.prevClassLoader = Thread.currentThread().getContextClassLoader();
   }
 
+  /**
+   * retrieve files with wildcard matching.
+   * Only support "dir/*". Pattern like "dir/foo*" or "dir/*foo*" will not be supported
+   * since user shouldn't upload the jars they don't want to import
+   * the reason for supporting dir/* is to provide another packaging option
+   * which let user upload a dir of all required jars
+   * in addition to one fat jar.
+   */
   private File[] getFilesMatchingPath(final String path) {
     if (path.endsWith("*")) {
       final File dir = new File(path.substring(0, path.lastIndexOf("/") + 1));
