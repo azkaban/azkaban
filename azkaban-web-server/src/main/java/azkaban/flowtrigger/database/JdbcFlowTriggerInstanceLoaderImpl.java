@@ -31,7 +31,6 @@ import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
 import com.google.common.io.Files;
 import java.io.File;
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -136,10 +135,18 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   @Override
   public Collection<TriggerInstance> getIncompleteTriggerInstances() {
-    Collection<TriggerInstance> unfinished = Collections.EMPTY_LIST;
+    final Collection<TriggerInstance> unfinished = new ArrayList<>();
     try {
-      unfinished = this.dbOperator
+      final Collection<TriggerInstance> triggerInstances = this.dbOperator
           .query(SELECT_ALL_PENDING_EXECUTIONS, new TriggerInstanceHandler());
+
+      // select incomplete trigger instances
+      for (final TriggerInstance triggerInst : triggerInstances) {
+        if (!Status.isDone(triggerInst.getStatus()) || (triggerInst.getStatus() == Status.SUCCEEDED
+            && triggerInst.getFlowExecId() == Constants.UNASSIGNED_EXEC_ID)) {
+          unfinished.add(triggerInst);
+        }
+      }
 
       // backfilling flow trigger for unfinished trigger instances
       // dedup flow config id with a set to avoid downloading/parsing same flow file multiple times
@@ -165,7 +172,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           } else {
             logger.error("Unable to find flow file for " + flowConfigID);
           }
-        } catch (final IOException ex) {
+        } catch (final Exception ex) {
           logger.error("error in getting flow file", ex);
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
@@ -181,7 +188,6 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     } catch (final SQLException ex) {
       handleSQLException(ex);
     }
-
     return unfinished;
   }
 
@@ -314,7 +320,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
         } else {
           logger.error("Unable to find flow file for " + triggerInstanceId);
         }
-      } catch (final IOException ex) {
+      } catch (final Exception ex) {
         logger.error("error in getting flow file", ex);
       } finally {
         FlowLoaderUtils.cleanUpDir(tempDir);
