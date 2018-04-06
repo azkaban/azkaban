@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2012 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,18 +14,20 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'az-flow-trigger-dependency-plugin'
-include 'test'
-include 'az-reportal'
-include 'az-hadoop-jobtype-plugin'
+class AlterTableLocationQL implements HQL {
+  private final String table;
+  private final String newLocation;
+
+  public AlterTableLocationQL(String table, String newLocation) {
+    // @TODO: Null checks
+    this.table = table;
+    this.newLocation = newLocation;
+  }
+
+  @Override
+  public String toHQL() {
+    return "ALTER TABLE " + table + " SET LOCATION '" + newLocation + "';";
+  }
+}

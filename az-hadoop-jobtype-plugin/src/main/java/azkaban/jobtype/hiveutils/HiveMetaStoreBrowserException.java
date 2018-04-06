@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2012 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,18 +14,23 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package azkaban.jobtype.hiveutils;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'az-flow-trigger-dependency-plugin'
-include 'test'
-include 'az-reportal'
-include 'az-hadoop-jobtype-plugin'
+/**
+ * Thrown when unexpected Hive metastore browsing problems come up
+ */
+public class HiveMetaStoreBrowserException extends Exception {
+  private static final long serialVersionUID = 1L;
+
+  public HiveMetaStoreBrowserException(String msg) {
+    super(msg);
+  }
+
+  public HiveMetaStoreBrowserException(Throwable t) {
+    super(t);
+  }
+
+  public HiveMetaStoreBrowserException(String msg, Throwable t) {
+    super(msg, t);
+  }
+}
