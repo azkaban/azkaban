@@ -109,7 +109,7 @@ public class Constants {
     // Designates one of the external link topics to correspond to a job log viewer
     public static final String AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC = "azkaban.server.external.logviewer.topic";
     public static final String AZKABAN_SERVER_EXTERNAL_LOGVIEWER_LABEL = "azkaban.server.external.logviewer.label";
-    
+
     /*
      * Hadoop/Spark user job link.
      * Example:
@@ -267,6 +267,11 @@ public class Constants {
     public static final String MAX_XMX_DEFAULT = "2G";
     // The hadoop user the job should run under. If not specified, it will default to submit user.
     public static final String USER_TO_PROXY = "user.to.proxy";
+
+    /**
+     * Format string for Log4j's EnhancedPatternLayout
+     */
+    public static final String JOB_LOG_LAYOUT = "azkaban.job.log.layout";
   }
 
   public static class JobCallbackProperties {
