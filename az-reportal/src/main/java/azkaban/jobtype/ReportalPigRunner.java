@@ -220,6 +220,9 @@ public class ReportalPigRunner extends ReportalAbstractRunner {
     // Inject variables into the script
     System.out.println("Reportal Pig: Replacing variables");
     final File inputFile = new File(file);
+
+    // Creating a bak file under the root working directory, in order to copy the original pig
+    // script to here with injected variables.
     final File outputFile = new File(this.jobName + ".bak");
 
     final InputStream scriptInputStream =
