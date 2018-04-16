@@ -81,12 +81,12 @@ public class MetricManagerTest {
   @Test
   public void managerEmitterHandlingTest() throws Exception {
     this.emitter.purgeAllData();
-    final Date from = DateTime.now().minusMinutes(1).toDate();
+    final Date from = DateTime.now().minusMinutes(10).toDate();
     this.metric.notifyManager();
 
     this.emitterWrapper.countDownLatch.await(10L, TimeUnit.SECONDS);
 
-    final Date to = DateTime.now().plusMinutes(1).toDate();
+    final Date to = DateTime.now().plusMinutes(10).toDate();
     final List<InMemoryHistoryNode> nodes = this.emitter.getMetrics("FakeMetric", from, to, false);
 
     assertEquals("Failed to report metric", 1, nodes.size());
