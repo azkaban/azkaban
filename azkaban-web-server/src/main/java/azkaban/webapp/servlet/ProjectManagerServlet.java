@@ -465,6 +465,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    if (!hasPermission(project, user, Type.READ)) {
+      this.setErrorMessageInCookie(resp, "No permission to download project " + projectName
+          + ".");
+      resp.sendRedirect(req.getContextPath());
+      return;
+    }
+
     int version = -1;
     if (hasParam(req, "version")) {
       version = getIntParam(req, "version");
