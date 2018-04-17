@@ -388,6 +388,11 @@ public abstract class LoginAbstractAzkabanServlet extends
 
     for (final String roleName : user.getRoles()) {
       final Role role = userManager.getRole(roleName);
+
+      if (role == null) {
+          continue;
+      }
+
       if (role.getPermission().isPermissionSet(type)
           || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
