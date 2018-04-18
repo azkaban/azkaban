@@ -44,9 +44,8 @@
     var projectId = "${projectId}";
     var projectName = "${projectName}";
     var flowId = "${flowid}";
-    var execId, triggerInstanceId;
-    execId = "${execid}";
-    triggerInstanceId = "${triggerInstanceId}";
+    var execId = "${execid}";
+    var triggerInstanceId = "${triggerInstanceId}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
