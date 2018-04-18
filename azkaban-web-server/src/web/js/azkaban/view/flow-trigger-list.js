@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,7 +15,7 @@
  */
 
 /*
- * List of executing jobs on executing flow page.
+ * List of executing triggers on executing flow page.
  */
 
 var flowTriggerInstanceListView;
@@ -36,16 +36,9 @@ function killTrigger(id) {
 };
 
 azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
-  events: {
-    //"contextmenu.flow-progress-bar": "handleProgressBoxClick"
-  },
-
   initialize: function (settings) {
     this.model.bind("change:trigger", this.renderJobs, this);
     this.model.bind("change:update", this.updateJobs, this);
-    // This is for tabbing. Blah, hacky
-    //var executingBody = $("#triggerExecutableBody")[0];
-    //executingBody.level = 0;
   },
 
   renderJobs: function (evt) {
@@ -123,9 +116,6 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     $(tdStatus).addClass("status");
     $(tdProps).addClass("props");
 
-    //alert(data.triggerId);
-    //alert(tr);
-    //$(tr).text(data.triggerId);
     $(tdId).text(data.triggerId);
     $(tdSubmitter).text(data.triggerSubmitter);
 
@@ -171,16 +161,7 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     }
 
     $(body).append(tr);
-
-    /*
-    $(tdSubmitter).addClass("triggerSubmitter");
-    $(tdStart).addClass("startTime");
-    $(tdEnd).addClass("endTime");
-    $(tdElapse).addClass("elapsedTime");
-    $(tdStatus).addClass("status");
-    $(tdProps).addClass("props");*/
-  }
-  ,
+  },
 
   updateJobRow: function (nodes, body) {
     if (!nodes) {
@@ -192,92 +173,8 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     });
     for (var i = 0; i < nodes.length; ++i) {
       this.addNodeRow(nodes[i], body);
-
-      // var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
-      //
-      // if (node.status == 'READY') {
-      //   continue;
-      // }
-      //
-      // //var nodeId = node.id.replace(".", "\\\\.");
-      // var row = node.joblistrow;
-      // if (!row) {
-      //   this.addNodeRow(node, body);
-      // }
-      //
-      // row = node.joblistrow;
-      // var statusDiv = $(row).find("> td.statustd > .status");
-      // statusDiv.text(statusStringMap[node.status]);
-      // $(statusDiv).attr("class", "status " + node.status);
-      //
-      // var startTimeTd = $(row).find("> td.startTime");
-      // if (node.startTime == -1) {
-      //   $(startTimeTd).text("-");
-      // }
-      // else {
-      //   var startdate = new Date(node.startTime);
-      //   $(startTimeTd).text(getDateFormat(startdate));
-      // }
-      //
-      // var endTimeTd = $(row).find("> td.endTime");
-      // if (node.endTime == -1) {
-      //   $(endTimeTd).text("-");
-      // }
-      // else {
-      //   var enddate = new Date(node.endTime);
-      //   $(endTimeTd).text(getDateFormat(enddate));
-      // }
-      //
-      // var progressBar = $(row).find(
-      //     "> td.timeline > .flow-progress > .main-progress");
-      // if (!progressBar.hasClass(node.status)) {
-      //   for (var j = 0; j < statusList.length; ++j) {
-      //     var status = statusList[j];
-      //     progressBar.removeClass(status);
-      //   }
-      //   progressBar.addClass(node.status);
-      // }
-      //
-      // // Create past attempts
-      // if (node.pastAttempts) {
-      //   for (var a = 0; a < node.pastAttempts.length; ++a) {
-      //     var attempt = node.pastAttempts[a];
-      //     var attemptBox = attempt.attemptBox;
-      //
-      //     if (!attemptBox) {
-      //       var attemptBox = document.createElement("div");
-      //       attempt.attemptBox = attemptBox;
-      //
-      //       $(attemptBox).addClass("flow-progress-bar");
-      //       $(attemptBox).addClass("attempt");
-      //
-      //       $(attemptBox).css("float", "left");
-      //       $(attemptBox).bind("contextmenu", attemptRightClick);
-      //
-      //       $(progressBar).before(attemptBox);
-      //       attemptBox.job = node.nestedId;
-      //       attemptBox.attempt = a;
-      //     }
-      //   }
-      // }
-      //
-      // var elapsedTime = $(row).find("> td.elapsedTime");
-      // if (node.endTime == -1) {
-      //   $(elapsedTime).text(
-      //       getDuration(node.startTime, (new Date()).getTime()));
-      // }
-      // else {
-      //   $(elapsedTime).text(getDuration(node.startTime, node.endTime));
-      // }
-      //
-      // if (node.nodes) {
-      //   var subtableBody = $(row.subflowrow).find("> td > table");
-      //   subtableBody[0].level = $(body)[0].level + 1;
-      //   this.updateJobRow(node.nodes, subtableBody);
-      // }
     }
-  }
-  ,
+  },
 
   addNodeRow: function (node, body) {
     var self = this;
@@ -339,76 +236,6 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     }
 
     $(body).append(tr);
-
-    /*
-    var outerProgressBar = document.createElement("div");
-    //$(outerProgressBar).attr("id", node.id + "-outerprogressbar");
-    $(outerProgressBar).addClass("flow-progress");
-
-    var progressBox = document.createElement("div");
-    progressBox.job = node.id;
-    //$(progressBox).attr("id", node.id + "-progressbar");
-    $(progressBox).addClass("flow-progress-bar");
-    $(progressBox).addClass("main-progress");
-    $(outerProgressBar).append(progressBox);
-    $(tdTimeline).append(outerProgressBar);
-
-    var requestURL = contextURL + "/manager?project=" + projectName + "&job="
-        + node.id + "&history";
-    var a = document.createElement("a");
-    $(a).attr("href", requestURL);
-    $(a).text(node.id);
-    $(tdName).append(a);
-    if (node.type == "flow") {
-      var expandIcon = document.createElement("div");
-      $(expandIcon).addClass("listExpand");
-      $(tdName).append(expandIcon);
-      $(expandIcon).addClass("expandarrow glyphicon glyphicon-chevron-down");
-      $(expandIcon).click(function (evt) {
-        var parent = $(evt.currentTarget).parents("tr")[0];
-        self.toggleExpandFlow(parent.node);
-      });
-    }
-
-    var status = document.createElement("div");
-    $(status).addClass("status");
-    //$(status).attr("id", node.id + "-status-div");
-    tdStatus.appendChild(status);
-
-    var logURL = contextURL + "/executor?execid=" + execId + "&job="
-        + node.nestedId;
-    if (node.attempt) {
-      logURL += "&attempt=" + node.attempt;
-    }
-
-    if (node.type != 'flow' && node.status != 'SKIPPED') {
-      var a = document.createElement("a");
-      $(a).attr("href", logURL);
-      //$(a).attr("id", node.id + "-log-link");
-      $(a).text("Details");
-      $(tdDetails).append(a);
-    }
-
-    $(body).append(tr);
-    if (node.type == "flow") {
-      var subFlowRow = document.createElement("tr");
-      var subFlowCell = document.createElement("td");
-      $(subFlowCell).addClass("subflowrow");
-
-      var numColumn = $(tr).children("td").length;
-      $(subFlowCell).attr("colspan", numColumn);
-      tr.subflowrow = subFlowRow;
-
-      $(subFlowRow).append(subFlowCell);
-      $(body).append(subFlowRow);
-      $(subFlowRow).hide();
-      var subtable = document.createElement("table");
-      var parentClasses = $(body).closest("table").attr("class");
-
-      $(subtable).attr("class", parentClasses);
-      $(subtable).addClass("subtable");
-      $(subFlowCell).append(subtable);
-    }*/
   }
 });
 

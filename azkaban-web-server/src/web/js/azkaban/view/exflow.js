@@ -771,32 +771,6 @@ $(function () {
   successHandler = function (data) {
     flowTriggerModel.addTrigger(data)
     flowTriggerModel.trigger("change:trigger");
-    /*
-    console.log("data fetched");
-    graphModel.addFlow(data);
-    graphModel.trigger("change:graph");
-
-    updateTime = Math.max(updateTime, data.submitTime);
-    updateTime = Math.max(updateTime, data.startTime);
-    updateTime = Math.max(updateTime, data.endTime);
-
-    if (window.location.hash) {
-      var hash = window.location.hash;
-      if (hash == "#jobslist") {
-        flowTabView.handleJobslistLinkClick();
-      }
-      else if (hash == "#log") {
-        flowTabView.handleLogLinkClick();
-      }
-      else if (hash == "#stats") {
-        flowTabView.handleStatsLinkClick();
-      }
-    }
-    else {
-      flowTabView.handleGraphLinkClick();
-    }
-    updaterFunction();
-    logUpdaterFunction();*/
   };
   ajaxCall(requestURL, requestData, successHandler);
 });
