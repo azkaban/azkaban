@@ -84,6 +84,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
+    //todo chengren311: add permission control
     if (ajaxName.equals("fetchRunningTriggers")) {
       ajaxFetchRunningTriggerInstances(ret);
     } else if (ajaxName.equals("killRunningTrigger")) {
@@ -107,7 +108,6 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       } else if (hasParam(req, "execid")) {
         final int execId = getIntParam(req, "execid");
         ajaxFetchTriggerInstanceByExecId(execId, session, ret);
-        //ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
       } else {
         ret.put("error", "please specify a valid trigger instance id");
       }
