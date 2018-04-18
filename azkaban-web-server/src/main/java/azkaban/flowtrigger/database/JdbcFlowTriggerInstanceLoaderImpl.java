@@ -146,13 +146,13 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   @Override
   public Collection<TriggerInstance> getIncompleteTriggerInstances() {
-    Collection<TriggerInstance> unfinished = new ArrayList<>();
+    final Collection<TriggerInstance> unfinished = new ArrayList<>();
     try {
-      unfinished = this.dbOperator
+      final Collection<TriggerInstance> triggerInsts = this.dbOperator
           .query(SELECT_ALL_PENDING_EXECUTIONS, new TriggerInstanceHandler(false));
 
       // select incomplete trigger instances
-      for (final TriggerInstance triggerInst : unfinished) {
+      for (final TriggerInstance triggerInst : triggerInsts) {
         if (!Status.isDone(triggerInst.getStatus()) || (triggerInst.getStatus() == Status.SUCCEEDED
             && triggerInst.getFlowExecId() == Constants.UNASSIGNED_EXEC_ID)) {
           unfinished.add(triggerInst);

@@ -110,11 +110,6 @@
             <a
                 href="$!context/flowtrigger">Flow Trigger Schedule</a></li>
 
-          <li#if($current_page == 'flowtriggerinstance') class="active"#end
-                                                         onClick="navMenuClick('$!context/flowtriggerinstance')">
-            <a
-                href="$!context/flowtriggerinstance">Running Flow Trigger</a></li>
-
           #foreach ($viewer in $viewers)
             #if (!$viewer.hidden)
               <li#if($current_page == $viewer.pluginName) class="active"#end
