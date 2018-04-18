@@ -55,9 +55,9 @@ public class DirectoryFlowLoaderTest {
           parent.mkdirs();
         }
 
-        FileOutputStream os = new FileOutputStream(outputFile);
-        IOUtils.copy(tais, os);
-        os.close();
+        try (FileOutputStream os = new FileOutputStream(outputFile)) {
+          IOUtils.copy(tais, os);
+        }
       }
 
       return outputDir;

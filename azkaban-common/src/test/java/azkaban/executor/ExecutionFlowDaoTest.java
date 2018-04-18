@@ -170,9 +170,6 @@ public class ExecutionFlowDaoTest {
     final List<ExecutableFlow> flows = this.executionFlowDao
         .fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME);
     assertThat(flows.size()).isEqualTo(0);
-
-    //Restore the clock
-    DateTimeUtils.setCurrentMillisOffset(0);
   }
 
   @Test
@@ -358,6 +355,14 @@ public class ExecutionFlowDaoTest {
     assertThat(flow1.getExecutionOptions().getFailureAction())
         .isEqualTo(flow2.getExecutionOptions().getFailureAction());
     assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
+  }
+
+  /**
+   * restores the clock; see {@link #testFetchEmptyRecentlyFinishedFlows()}
+   */
+  @After
+  public void clockReset() {
+    DateTimeUtils.setCurrentMillisOffset(0);
   }
 
 }
