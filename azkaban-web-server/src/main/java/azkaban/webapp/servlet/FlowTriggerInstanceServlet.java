@@ -25,6 +25,7 @@ import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.webapp.AzkabanWebServer;
+import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -110,11 +111,60 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       } else {
         ret.put("error", "please specify a valid trigger instance id");
       }
+    } else if (ajaxName.equals("fetchTriggerInstances")) {
+      if (hasParam(req, "project") && hasParam(req, "flow")) {
+        final String projectName = getParam(req, "project");
+        final String flowId = getParam(req, "flow");
+        final Project project = this.projectManager.getProject(projectName);
+        if (project == null) {
+          ret.put("error", "please specify a valid project name");
+          return;
+        }
+        if (!hasPermission(project, session.getUser(), Type.READ)) {
+          ret.put("error", "Permission denied. Need READ access.");
+          return;
+        }
+        ajaxFetchTriggerInstances(project.getId(), flowId, ret, req);
+      } else {
+        ret.put("error", "please specify project id and flow id");
+      }
     }
 
     if (ret != null) {
       this.writeJSON(resp, ret);
     }
+  }
+
+  private void ajaxFetchTriggerInstances(
+      final int projectId,
+      final String flowId,
+      final HashMap<String, Object> ret,
+      final HttpServletRequest req)
+      throws ServletException {
+
+    final int from = Integer.valueOf(getParam(req, "start"));
+    final int length = Integer.valueOf(getParam(req, "length"));
+
+    final Collection<TriggerInstance> triggerInstances = this.triggerService
+        .getTriggerInstances(projectId, flowId, from, length);
+
+    ret.put("flow", flowId);
+    ret.put("total", triggerInstances.size());
+    ret.put("from", from);
+    ret.put("length", length);
+
+    final List<Object> history = new ArrayList<>();
+    for (final TriggerInstance instance : triggerInstances) {
+      final HashMap<String, Object> triggerInfo = new HashMap<>();
+      triggerInfo.put("instanceId", instance.getId());
+      triggerInfo.put("submitUser", instance.getSubmitUser());
+      triggerInfo.put("startTime", instance.getStartTime());
+      triggerInfo.put("endTime", instance.getEndTime());
+      triggerInfo.put("status", instance.getStatus().toString());
+      history.add(triggerInfo);
+    }
+
+    ret.put("executions", history);
   }
 
   private void loadTriggerProperties(final String triggerInstanceId,
@@ -153,7 +203,9 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     ret.put("triggerStartTime", triggerInst.getStartTime());
     ret.put("triggerEndTime", triggerInst.getEndTime());
     ret.put("triggerStatus", triggerInst.getStatus());
-    ret.put("triggerProps", triggerInst.getFlowTrigger());
+    final String flowTriggerJson = new GsonBuilder().setPrettyPrinting().create()
+        .toJson(triggerInst.getFlowTrigger());
+    ret.put("triggerProps", flowTriggerJson);
   }
 
   private void ajaxFetchTriggerInstanceByExecId(final int execId, final Session session,

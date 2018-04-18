@@ -157,7 +157,7 @@
         {:else}
           <div class="callout callout-default">
             <h4>None</h4>
-            <p>This flow has not been scheduled.</p>
+            <p>This flow doesn't have flow trigger.</p>
           </div>
         {/flowtrigger}
 

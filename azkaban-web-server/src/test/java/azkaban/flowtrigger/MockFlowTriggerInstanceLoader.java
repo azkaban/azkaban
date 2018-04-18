@@ -115,4 +115,10 @@ public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader 
     }
     return null;
   }
+
+  @Override
+  public Collection<TriggerInstance> getTriggerInstances(final int projectId, final String flowId,
+      final int from, final int length) {
+    throw new UnsupportedOperationException("Not Yet Implemented");
+  }
 }

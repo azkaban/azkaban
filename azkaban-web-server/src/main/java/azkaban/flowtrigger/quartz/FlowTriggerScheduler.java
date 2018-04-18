@@ -113,8 +113,8 @@ public class FlowTriggerScheduler {
    * Retrieve the list of scheduled flow triggers from quartz database
    */
   public List<ScheduledFlowTrigger> getScheduledFlowTriggerJobs() {
-    final Scheduler quartzScheduler = this.scheduler.getScheduler();
     try {
+      final Scheduler quartzScheduler = this.scheduler.getScheduler();
       final List<String> groupNames = quartzScheduler.getJobGroupNames();
 
       final List<ScheduledFlowTrigger> flowTriggerJobDetails = new ArrayList<>();
@@ -143,7 +143,7 @@ public class FlowTriggerScheduler {
         flowTriggerJobDetails.add(scheduledFlowTrigger);
       }
       return flowTriggerJobDetails;
-    } catch (final SchedulerException ex) {
+    } catch (final Exception ex) {
       logger.error("unable to get scheduled flow triggers", ex);
       return new ArrayList<>();
     }

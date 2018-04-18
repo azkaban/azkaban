@@ -710,8 +710,21 @@ $(function () {
     model: flowTriggerModel
   });
 
-  var requestURL = contextURL + "/executor";
-  var requestData = {"execid": execId, "ajax": "fetchexecflow"};
+  var requestURL;
+  var requestData;
+  if (execId != "-1" && execId != "-2") {
+    requestURL = contextURL + "/executor";
+    requestData = {"execid": execId, "ajax": "fetchexecflow"};
+  }
+  else {
+    requestURL = contextURL + "/manager";
+    requestData = {
+      "project": projectName,
+      "ajax": "fetchflowgraph",
+      "flow": flowId
+    };
+  }
+
   var successHandler = function (data) {
     console.log("data fetched");
     graphModel.addFlow(data);
@@ -745,7 +758,16 @@ $(function () {
   ajaxCall(requestURL, requestData, successHandler);
 
   requestURL = contextURL + "/flowtriggerinstance";
-  requestData = {"execid": execId, "ajax": "fetchTriggerStatus"};
+  if (execId != "-1" && execId != "-2") {
+    requestData = {"execid": execId, "ajax": "fetchTriggerStatus"};
+  }
+  else if (triggerInstanceId != "-1") {
+    requestData = {
+      "triggerinstid": triggerInstanceId,
+      "ajax": "fetchTriggerStatus"
+    };
+  }
+
   successHandler = function (data) {
     flowTriggerModel.addTrigger(data)
     flowTriggerModel.trigger("change:trigger");

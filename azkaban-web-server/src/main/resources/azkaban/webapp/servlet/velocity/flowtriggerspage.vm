@@ -21,8 +21,6 @@
   #parse("azkaban/webapp/servlet/velocity/style.vm")
   #parse("azkaban/webapp/servlet/velocity/javascript.vm")
   <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
-  #
-  <script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
   <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
@@ -39,14 +37,14 @@
 </head>
 <body>
 
-  #set ($current_page="executing")
+  #set ($current_page="flowtrigger")
   #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 ## Page header.
 
 <div class="az-page-header">
   <div class="container-full">
-    <h1><a href="${context}/executor">Scheduled Flow Triggers</a></h1>
+    <h1><a href="${context}/flowtrigger">Scheduled Flow Triggers</a></h1>
   </div>
 </div>
 

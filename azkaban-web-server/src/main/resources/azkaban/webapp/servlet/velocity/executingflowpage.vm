@@ -41,11 +41,12 @@
     var timezone = "${timezone}";
     var errorMessage = null;
     var successMessage = null;
-    ;
     var projectId = "${projectId}";
     var projectName = "${projectName}";
     var flowId = "${flowid}";
-    var execId = "${execid}";
+    var execId, triggerInstanceId;
+    execId = "${execid}";
+    triggerInstanceId = "${triggerInstanceId}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
@@ -69,7 +70,11 @@
           <h1>
             <a href="${context}/executor?execid=${execid}">
               Flow Execution
-              <small>$execid <span id="flowStatus">-</span></small>
+              #if (${execid} == "-1" || ${execid} == "-2")
+                <small>not started <span id="flowStatus">-</span></small>
+              #else
+                <small>$execid <span id="flowStatus">-</span></small>
+              #end
             </a>
           </h1>
         </div>
@@ -96,7 +101,8 @@
             href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName
         </a></li>
         <li><a
-            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid
+            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong>
+          $flowid
         </a></li>
         <li class="active"><strong>Execution</strong> $execid</li>
       </ol>
@@ -161,6 +167,27 @@
             <th class="props">Trigger Properties</th>
             <th class="action">Action</th>
           </tr>
+
+          <div class="modal fade" id="dependencyList" tabindex="-1"
+               role="dialog"
+               aria-labelledby="dependencyLabel">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+                  <h4 class="modal-title" id="dependencyLabel">Dependencies</h4>
+                </div>
+                <div id="triggerProp" class="modal-body">
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default" data-dismiss="modal">Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           </thead>
           <tbody id="triggerBody">
           </tbody>
@@ -173,7 +200,7 @@
             <th class="date">End Time</th>
             <th class="elapse">Elapsed</th>
             <th class="status">Status</th>
-            <th class="status">Cancellation Cause</th>
+            <th class="cause">Cancellation Cause</th>
           </tr>
           </thead>
           <tbody id="triggerExecutableBody">
