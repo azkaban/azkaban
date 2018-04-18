@@ -130,10 +130,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   private static final String UPDATE_DEPENDENCY_FLOW_EXEC_ID = String.format("UPDATE %s SET "
       + "flow_exec_id "
       + "= ? WHERE trigger_instance_id = ? AND dep_name = ? ;", DEPENDENCY_EXECUTION_TABLE);
-  private static final String SELECT_EXECUTIONS_BY_RANGE =
-      String.format("SELECT %s FROM %s WHERE project_id = ? AND flow_id = ?",
-          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
-          DEPENDENCY_EXECUTION_TABLE);
+
   private final ProjectLoader projectLoader;
   private final DatabaseOperator dbOperator;
   private final ProjectManager projectManager;
@@ -149,13 +146,13 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   @Override
   public Collection<TriggerInstance> getIncompleteTriggerInstances() {
-    final Collection<TriggerInstance> unfinished = new ArrayList<>();
+    Collection<TriggerInstance> unfinished = new ArrayList<>();
     try {
       unfinished = this.dbOperator
           .query(SELECT_ALL_PENDING_EXECUTIONS, new TriggerInstanceHandler(false));
 
       // select incomplete trigger instances
-      for (final TriggerInstance triggerInst : triggerInstances) {
+      for (final TriggerInstance triggerInst : unfinished) {
         if (!Status.isDone(triggerInst.getStatus()) || (triggerInst.getStatus() == Status.SUCCEEDED
             && triggerInst.getFlowExecId() == Constants.UNASSIGNED_EXEC_ID)) {
           unfinished.add(triggerInst);
@@ -353,6 +350,14 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   }
 
   @Override
+  /**
+   * Retrieve sorted trigger instances on start time in descending order
+   * given projectId, flowId, start position and length.
+   * @param projectId
+   * @param flowId
+   * @param from starting position of the range of trigger instance to retrieve
+   * @param length number of consecutive trigger instances to retrieve
+   */
   public Collection<TriggerInstance> getTriggerInstances(
       final int projectId, final String flowId, final int from,
       final int length) {
