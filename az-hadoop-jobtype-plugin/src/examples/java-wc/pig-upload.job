@@ -1,0 +1,4 @@
+type=pig
+pig.script=src/upload.pig
+
+
