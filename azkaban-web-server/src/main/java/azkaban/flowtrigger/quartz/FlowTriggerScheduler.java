@@ -113,8 +113,8 @@ public class FlowTriggerScheduler {
    * Retrieve the list of scheduled flow triggers from quartz database
    */
   public List<ScheduledFlowTrigger> getScheduledFlowTriggerJobs() {
-    final Scheduler quartzScheduler = this.scheduler.getScheduler();
     try {
+      final Scheduler quartzScheduler = this.scheduler.getScheduler();
       final List<String> groupNames = quartzScheduler.getJobGroupNames();
 
       final List<ScheduledFlowTrigger> flowTriggerJobDetails = new ArrayList<>();
@@ -131,7 +131,7 @@ public class FlowTriggerScheduler {
               .get(FlowTriggerQuartzJob.FLOW_TRIGGER);
           final String submitUser = jobDataMap.getString(FlowTriggerQuartzJob.SUBMIT_USER);
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
-          scheduledFlowTrigger = new ScheduledFlowTrigger(
+          scheduledFlowTrigger = new ScheduledFlowTrigger(projectId,
               this.projectManager.getProject(projectId).getName(),
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0));
@@ -143,7 +143,7 @@ public class FlowTriggerScheduler {
         flowTriggerJobDetails.add(scheduledFlowTrigger);
       }
       return flowTriggerJobDetails;
-    } catch (final SchedulerException ex) {
+    } catch (final Exception ex) {
       logger.error("unable to get scheduled flow triggers", ex);
       return new ArrayList<>();
     }
@@ -176,20 +176,26 @@ public class FlowTriggerScheduler {
 
   public static class ScheduledFlowTrigger {
 
+    private final int projectId;
     private final String projectName;
     private final String flowId;
     private final FlowTrigger flowTrigger;
     private final Trigger quartzTrigger;
     private final String submitUser;
 
-    public ScheduledFlowTrigger(final String projectName, final String flowId,
+    public ScheduledFlowTrigger(final int projectId, final String projectName, final String flowId,
         final FlowTrigger flowTrigger, final String submitUser,
         final Trigger quartzTrigger) {
+      this.projectId = projectId;
       this.projectName = projectName;
       this.flowId = flowId;
       this.flowTrigger = flowTrigger;
       this.submitUser = submitUser;
       this.quartzTrigger = quartzTrigger;
+    }
+
+    public int getProjectId() {
+      return this.projectId;
     }
 
     public String getProjectName() {

@@ -59,4 +59,8 @@ public interface FlowTriggerInstanceLoader {
 
   TriggerInstance getTriggerInstanceById(String triggerInstanceId);
 
+  TriggerInstance getTriggerInstanceByFlowExecId(int execId);
+
+  Collection<TriggerInstance> getTriggerInstances(int projectId, String flowId, int from, int
+      length);
 }

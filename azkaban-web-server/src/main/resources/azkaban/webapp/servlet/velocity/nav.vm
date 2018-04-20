@@ -105,6 +105,11 @@
           <li#if($current_page == 'history') class="active"#end
                                              onClick="navMenuClick('$!context/history')"><a
               href="$!context/history">History</a></li>
+          <li#if($current_page == 'flowtrigger') class="active"#end
+                                                 onClick="navMenuClick('$!context/flowtrigger')">
+            <a
+                href="$!context/flowtrigger">Flow Trigger Schedule</a></li>
+
           #foreach ($viewer in $viewers)
             #if (!$viewer.hidden)
               <li#if($current_page == $viewer.pluginName) class="active"#end

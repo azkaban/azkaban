@@ -25,6 +25,7 @@ import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.webapp.AzkabanWebServer;
+import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,6 +84,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
+    //todo chengren311: add permission control
     if (ajaxName.equals("fetchRunningTriggers")) {
       ajaxFetchRunningTriggerInstances(ret);
     } else if (ajaxName.equals("killRunningTrigger")) {
@@ -99,11 +101,70 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       } else {
         ret.put("error", "please specify a valid running trigger instance id");
       }
+    } else if (ajaxName.equals("fetchTriggerStatus")) {
+      if (hasParam(req, "triggerinstid")) {
+        final String triggerInstanceId = getParam(req, "triggerinstid");
+        ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
+      } else if (hasParam(req, "execid")) {
+        final int execId = getIntParam(req, "execid");
+        ajaxFetchTriggerInstanceByExecId(execId, session, ret);
+      } else {
+        ret.put("error", "please specify a valid trigger instance id or flow execution id");
+      }
+    } else if (ajaxName.equals("fetchTriggerInstances")) {
+      if (hasParam(req, "project") && hasParam(req, "flow")) {
+        final String projectName = getParam(req, "project");
+        final String flowId = getParam(req, "flow");
+        final Project project = this.projectManager.getProject(projectName);
+        if (project == null) {
+          ret.put("error", "please specify a valid project name");
+          return;
+        }
+        if (!hasPermission(project, session.getUser(), Type.READ)) {
+          ret.put("error", "Permission denied. Need READ access.");
+          return;
+        }
+        ajaxFetchTriggerInstances(project.getId(), flowId, ret, req);
+      } else {
+        ret.put("error", "please specify project id and flow id");
+      }
     }
 
     if (ret != null) {
       this.writeJSON(resp, ret);
     }
+  }
+
+  private void ajaxFetchTriggerInstances(
+      final int projectId,
+      final String flowId,
+      final HashMap<String, Object> ret,
+      final HttpServletRequest req)
+      throws ServletException {
+
+    final int from = Integer.valueOf(getParam(req, "start"));
+    final int length = Integer.valueOf(getParam(req, "length"));
+
+    final Collection<TriggerInstance> triggerInstances = this.triggerService
+        .getTriggerInstances(projectId, flowId, from, length);
+
+    ret.put("flow", flowId);
+    ret.put("total", triggerInstances.size());
+    ret.put("from", from);
+    ret.put("length", length);
+
+    final List<Object> history = new ArrayList<>();
+    for (final TriggerInstance instance : triggerInstances) {
+      final HashMap<String, Object> triggerInfo = new HashMap<>();
+      triggerInfo.put("instanceId", instance.getId());
+      triggerInfo.put("submitUser", instance.getSubmitUser());
+      triggerInfo.put("startTime", instance.getStartTime());
+      triggerInfo.put("endTime", instance.getEndTime());
+      triggerInfo.put("status", instance.getStatus().toString());
+      history.add(triggerInfo);
+    }
+
+    ret.put("executions", history);
   }
 
   private void loadTriggerProperties(final String triggerInstanceId,
@@ -114,6 +175,54 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       ret.put("triggerProperties", triggerInstance.getFlowTrigger().toString());
     } else {
       ret.put("error", "the trigger instance doesn't exist");
+    }
+  }
+
+
+  private void wrapTriggerInst(final TriggerInstance triggerInst,
+      final HashMap<String, Object> ret) {
+    final List<Map<String, Object>> dependencyOutput = new ArrayList<>();
+    for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+      final Map<String, Object> depMap = new HashMap<>();
+      depMap.put("triggerInstanceId", depInst.getTriggerInstance().getId());
+      depMap.put("dependencyName", depInst.getDepName());
+      depMap.put("dependencyType", depInst.getTriggerInstance().getFlowTrigger()
+          .getDependencyByName(depInst.getDepName()).getType());
+      depMap.put("dependencyStartTime", depInst.getStartTime());
+      depMap.put("dependencyEndTime", depInst.getEndTime());
+      depMap.put("dependencyStatus", depInst.getStatus());
+      depMap.put("dependencyCancelCause", depInst.getCancellationCause());
+      depMap.put("dependencyConfig", depInst.getTriggerInstance().getFlowTrigger()
+          .getDependencyByName(depInst.getDepName()));
+      dependencyOutput.add(depMap);
+    }
+    ret.put("items", dependencyOutput);
+
+    ret.put("triggerId", triggerInst.getId());
+    ret.put("triggerSubmitter", triggerInst.getSubmitUser());
+    ret.put("triggerStartTime", triggerInst.getStartTime());
+    ret.put("triggerEndTime", triggerInst.getEndTime());
+    ret.put("triggerStatus", triggerInst.getStatus());
+    final String flowTriggerJson = new GsonBuilder().setPrettyPrinting().create()
+        .toJson(triggerInst.getFlowTrigger());
+    ret.put("triggerProps", flowTriggerJson);
+  }
+
+  private void ajaxFetchTriggerInstanceByExecId(final int execId, final Session session,
+      final HashMap<String, Object> ret) {
+    final TriggerInstance triggerInst = this.triggerService
+        .findTriggerInstanceByExecId(execId);
+    if (triggerInst != null) {
+      wrapTriggerInst(triggerInst, ret);
+    }
+  }
+
+  private void ajaxFetchTriggerInstanceByTriggerInstId(final String triggerInstanceId,
+      final Session session, final HashMap<String, Object> ret) {
+    final TriggerInstance triggerInst = this.triggerService
+        .findTriggerInstanceById(triggerInstanceId);
+    if (triggerInst != null) {
+      wrapTriggerInst(triggerInst, ret);
     }
   }
 

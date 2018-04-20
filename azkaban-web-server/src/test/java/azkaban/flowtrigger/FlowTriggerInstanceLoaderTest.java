@@ -368,6 +368,31 @@ public class FlowTriggerInstanceLoaderTest {
   }
 
   @Test
+  public void testGetTriggerInstancesStartTimeDesc() {
+    final List<TriggerInstance> expected = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+      expected.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 1000));
+    }
+
+    this.shuffleAndUpload(expected);
+    final Collection<TriggerInstance> actual = this.triggerInstLoader.getTriggerInstances
+        (this.project_id, this.flow_id, 0, 10);
+    expected.sort((o1, o2) -> ((Long) o2.getStartTime()).compareTo(o1.getStartTime()));
+
+    assertTwoTriggerInstanceListsEqual(new ArrayList<>(actual), new ArrayList<>(expected), true,
+        true);
+  }
+
+  @Test
+  public void testGetEmptyTriggerInstancesStartTimeDesc() {
+    final Collection<TriggerInstance> actual = this.triggerInstLoader.getTriggerInstances
+        (this.project_id, this.flow_id, 0, 10);
+    assertThat(actual).isEmpty();
+  }
+
+  @Test
   public void testGetRecentlyFinished() throws InterruptedException {
 
     final List<TriggerInstance> all = new ArrayList<>();
