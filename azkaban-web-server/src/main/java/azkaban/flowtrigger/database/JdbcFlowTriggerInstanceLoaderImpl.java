@@ -36,6 +36,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,7 +150,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     final Collection<TriggerInstance> unfinished = new ArrayList<>();
     try {
       final Collection<TriggerInstance> triggerInsts = this.dbOperator
-          .query(SELECT_ALL_PENDING_EXECUTIONS, new TriggerInstanceHandler(false));
+          .query(SELECT_ALL_PENDING_EXECUTIONS,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC));
 
       // select incomplete trigger instances
       for (final TriggerInstance triggerInst : triggerInsts) {
@@ -279,7 +281,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   public Collection<TriggerInstance> getRecentlyFinished(final int limit) {
     final String query = String.format(SELECT_RECENTLY_FINISHED, limit);
     try {
-      return this.dbOperator.query(query, new TriggerInstanceHandler(false));
+      return this.dbOperator
+          .query(query, new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC));
     } catch (final SQLException ex) {
       handleSQLException(ex);
     }
@@ -293,7 +296,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       // 1. add index for the execution_dependencies table to accelerate selection.
       // 2. implement purging mechanism to keep reasonable amount of historical executions in db.
       return this.dbOperator.query(SELECT_ALL_RUNNING_EXECUTIONS, new TriggerInstanceHandler
-          (false));
+          (SORT_MODE.SORT_ON_START_TIME_ASC));
     } catch (final SQLException ex) {
       handleSQLException(ex);
     }
@@ -340,7 +343,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     TriggerInstance triggerInstance = null;
     try {
       final Collection<TriggerInstance> res = this.dbOperator
-          .query(SELECT_EXECUTIONS_BY_EXEC_ID, new TriggerInstanceHandler(false), flowExecId);
+          .query(SELECT_EXECUTIONS_BY_EXEC_ID,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC), flowExecId);
       triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
     } catch (final SQLException ex) {
       handleSQLException(ex);
@@ -364,7 +368,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
     try {
       final Collection<TriggerInstance> res = this.dbOperator
-          .query(SELECT_RECENT_WITH_START_AND_LENGTH, new TriggerInstanceHandler(true), projectId,
+          .query(SELECT_RECENT_WITH_START_AND_LENGTH, new TriggerInstanceHandler(SORT_MODE
+                  .SORT_ON_START_TIME_DESC), projectId,
               flowId, length, from);
       return res;
     } catch (final SQLException ex) {
@@ -382,7 +387,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     TriggerInstance triggerInstance = null;
     try {
       final Collection<TriggerInstance> res = this.dbOperator
-          .query(SELECT_EXECUTIONS_BY_INSTANCE_ID, new TriggerInstanceHandler(false),
+          .query(SELECT_EXECUTIONS_BY_INSTANCE_ID,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC),
               triggerInstanceId);
       triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
     } catch (final SQLException ex) {
@@ -390,6 +396,11 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     }
     populateFlowTriggerProperties(triggerInstance);
     return triggerInstance;
+  }
+
+  private enum SORT_MODE {
+    SORT_ON_START_TIME_DESC,
+    SORT_ON_START_TIME_ASC
   }
 
   public static class FlowConfigID {
@@ -457,10 +468,10 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   private class TriggerInstanceHandler implements
       ResultSetHandler<Collection<TriggerInstance>> {
 
-    private final boolean sortDescOnStartTime;
+    private final SORT_MODE mode;
 
-    public TriggerInstanceHandler(final boolean sortOnStartTimeDesc) {
-      this.sortDescOnStartTime = sortOnStartTimeDesc;
+    public TriggerInstanceHandler(final SORT_MODE mode) {
+      this.mode = mode;
     }
 
     @Override
@@ -504,18 +515,14 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
             .submitUser, entry.getValue(), entry.getKey().flowExecId, entry.getKey().project));
       }
 
-      Collections.sort(res, (o1, o2) -> {
-        if (o1.getStartTime() < o2.getStartTime()) {
-          return this.sortDescOnStartTime ? 1 : -1;
-        } else if (o1.getStartTime() > o2.getStartTime()) {
-          return this.sortDescOnStartTime ? -1 : 1;
-        } else {
-          return 0;
-        }
-      });
-
+      if (this.mode == SORT_MODE.SORT_ON_START_TIME_ASC) {
+        Collections.sort(res, Comparator.comparing(TriggerInstance::getStartTime));
+      } else if (this.mode == SORT_MODE.SORT_ON_START_TIME_DESC) {
+        Collections.sort(res, Comparator.comparing(TriggerInstance::getStartTime).reversed());
+      }
       return res;
     }
+
 
     private class TriggerInstKey {
 

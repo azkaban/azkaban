@@ -109,7 +109,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
         final int execId = getIntParam(req, "execid");
         ajaxFetchTriggerInstanceByExecId(execId, session, ret);
       } else {
-        ret.put("error", "please specify a valid trigger instance id");
+        ret.put("error", "please specify a valid trigger instance id or flow execution id");
       }
     } else if (ajaxName.equals("fetchTriggerInstances")) {
       if (hasParam(req, "project") && hasParam(req, "flow")) {
