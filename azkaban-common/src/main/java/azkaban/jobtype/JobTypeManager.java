@@ -123,8 +123,8 @@ public class JobTypeManager {
       }
     } else {
       logger.info("Common plugin job props file " + commonJobPropsFile
-          + " not found. Using empty props.");
-      commonPluginJobProps = new Props();
+          + " not found. Using only globals props");
+      commonPluginJobProps = new Props(this.globalProperties);
     }
 
     // Loads the common properties used by all plugins when loading
