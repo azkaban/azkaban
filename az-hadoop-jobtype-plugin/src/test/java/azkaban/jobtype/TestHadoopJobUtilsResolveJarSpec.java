@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import azkaban.utils.Props;
 
+// TODO kunkun-tang: This test class needs more refactors.
 public class TestHadoopJobUtilsResolveJarSpec {
   private Logger logger = Logger.getRootLogger();
 
@@ -25,7 +26,6 @@ public class TestHadoopJobUtilsResolveJarSpec {
   public static void setupFolder() {
     workingDirString = currentDirString + "/../temp/TestHadoopSpark";
     workingDirFile = new File(workingDirString);
-    libFolderFile = new File(workingDirFile, "lib");
     libFolderFile = new File(workingDirFile, "lib");
     executionJarFile = new File(libFolderFile,
         "hadoop-spark-job-test-execution-x.y.z-a.b.c"

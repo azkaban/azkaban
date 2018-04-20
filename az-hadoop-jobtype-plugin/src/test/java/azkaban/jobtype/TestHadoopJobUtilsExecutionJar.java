@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// This test class needs more refactors.
+// TODO kunkun-tang: This test class needs more refactors.
 public class TestHadoopJobUtilsExecutionJar {
   private Logger logger = Logger.getRootLogger();
 
@@ -28,7 +28,6 @@ public class TestHadoopJobUtilsExecutionJar {
   public static void setupFolder() {
     workingDirString = currentDirString + "/../temp/TestHadoopSpark";
     workingDirFile = new File(workingDirString);
-    libFolderFile = new File(workingDirFile, "lib");
     libFolderFile = new File(workingDirFile, "lib");
     executionJarFile = new File(libFolderFile,
         "hadoop-spark-job-test-execution-x.y.z-a.b.c"
@@ -50,7 +49,7 @@ public class TestHadoopJobUtilsExecutionJar {
   @Test
   public void testNoLibFolder() throws IOException {
     FileUtils.deleteDirectory(libFolderFile);
-    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "./lib/*", logger);
+    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "lib/*", logger);
     Assert.assertEquals(retval, "");
   }
 
@@ -59,7 +58,7 @@ public class TestHadoopJobUtilsExecutionJar {
   public void testLibFolderHasNothingInIt() throws IOException {
     FileUtils.deleteDirectory(libFolderFile);
     libFolderFile.mkdirs();
-    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "./lib/*", logger);
+    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "lib/*", logger);
 
     Assert.assertEquals(retval, "");
   }
@@ -67,12 +66,12 @@ public class TestHadoopJobUtilsExecutionJar {
 
   @Test
   public void testOneLibFolderExpansion() throws IOException {
-    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "./lib/*", logger);
+    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "lib/*", logger);
     Set<String> retvalSet = new HashSet<String>(Arrays.asList(retval.split(",")));
 
     Set<String> expected = new HashSet<String>();
-    expected.add(workingDirFile + "/./lib/library.jar");
-    expected.add(workingDirFile + "/./lib/hadoop-spark-job-test-execution-x.y.z-a.b.c.jar");
+    expected.add(workingDirFile + "/lib/library.jar");
+    expected.add(workingDirFile + "/lib/hadoop-spark-job-test-execution-x.y.z-a.b.c.jar");
 
     Assert.assertTrue("Expected size is different from retrieval size. Expected: " + expected + " , Actual: " + retvalSet,
                       expected.size() == retvalSet.size());
@@ -89,14 +88,14 @@ public class TestHadoopJobUtilsExecutionJar {
     lib2test1Jar.createNewFile();
     File lib2test2Jar = new File(lib2FolderFile, "test2.jar");
     lib2test2Jar.createNewFile();
-    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "./lib/*,./lib2/*",
+    String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "lib/*,lib2/*",
             logger);
 
-    Assert.assertTrue(retval.contains(workingDirFile + "/./lib/library.jar"));
-    Assert.assertTrue(retval.contains(workingDirFile + "/./lib/hadoop-spark-job-test-execution-x.y"
+    Assert.assertTrue(retval.contains(workingDirFile + "/lib/library.jar"));
+    Assert.assertTrue(retval.contains(workingDirFile + "/lib/hadoop-spark-job-test-execution-x.y"
         + ".z-a.b.c.jar"));
-    Assert.assertTrue(retval.contains(workingDirFile + "/./lib2/test1.jar"));
-    Assert.assertTrue(retval.contains(workingDirFile + "/./lib2/test2.jar"));
+    Assert.assertTrue(retval.contains(workingDirFile + "/lib2/test1.jar"));
+    Assert.assertTrue(retval.contains(workingDirFile + "/lib2/test2.jar"));
   }
 
     @Test
@@ -109,11 +108,11 @@ public class TestHadoopJobUtilsExecutionJar {
       File lib2test1Jar = new File(lib2FolderFile, "test1.jar");
       lib2test1Jar.createNewFile();
 
-      String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "./lib/*,./lib2/*",
+      String retval = HadoopJobUtils.resolveWildCardForJarSpec(workingDirString, "lib/*,lib2/*",
               logger);
 
       Assert.assertEquals(
               retval,
-          workingDirFile + "/./lib/library.jar," + workingDirFile + "/./lib2/test1.jar");
+          workingDirFile + "/lib/library.jar," + workingDirFile + "/lib2/test1.jar");
   }
 }
