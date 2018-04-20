@@ -78,6 +78,7 @@ public class ExecutorManager extends EventHandler implements
 
   private static final String SPARK_JOB_TYPE = "spark";
   private static final String APPLICATION_ID = "${application.id}";
+  private static final String ALERT_PLUGIN_TYPE = "alert.type";
   // The regex to look for while fetching application ID from the Hadoop/Spark job log
   private static final Pattern APPLICATION_ID_PATTERN = Pattern
       .compile("application_\\d+_\\d+");
@@ -95,6 +96,7 @@ public class ExecutorManager extends EventHandler implements
   final private Set<Executor> activeExecutors = new HashSet<>();
   private final AlerterHolder alerterHolder;
   private final Props azkProps;
+  private final Props globalProps;
   private final CommonMetrics commonMetrics;
   private final ExecutorLoader executorLoader;
   private final CleanerThread cleanerThread;
@@ -154,6 +156,19 @@ public class ExecutorManager extends EventHandler implements
     this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
     this.cleanerThread.start();
 
+    this.globalProps = setupGlobalProps(azkProps);
+  }
+
+  private Props setupGlobalProps(Props azkProps) {
+    String globalPropsPath = azkProps.getString("executor.global.properties", null);
+    if (globalPropsPath != null) {
+      try {
+          return new Props(null, globalPropsPath);
+      } catch (IOException e) {
+        logger.warn(String.format("Unable to load global properties from %s", globalPropsPath));
+      }
+    }
+    return new Props();
   }
 
   private String findApplicationIdFromLog(final String logData) {
@@ -1263,59 +1278,53 @@ public class ExecutorManager extends EventHandler implements
 
     this.updaterStage = "finalizing flow " + execId + " alerting and emailing";
     if (alertUser) {
-      final ExecutionOptions options = flow.getExecutionOptions();
-      // But we can definitely email them.
-      final Alerter mailAlerter = this.alerterHolder.get("email");
-      if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED) {
-        if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
-          try {
-            mailAlerter.alertOnError(flow);
-          } catch (final Exception e) {
-            logger.error(e);
-          }
-        }
-        if (options.getFlowParameters().containsKey("alert.type")) {
-          final String alertType = options.getFlowParameters().get("alert.type");
-          final Alerter alerter = this.alerterHolder.get(alertType);
-          if (alerter != null) {
-            try {
-              alerter.alertOnError(flow);
-            } catch (final Exception e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-              logger.error("Failed to alert by " + alertType);
-            }
-          } else {
-            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-          }
-        }
-      } else {
-        if (options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty()) {
-          try {
+      sendAlertNotification(flow);
+    }
+  }
 
-            mailAlerter.alertOnSuccess(flow);
-          } catch (final Exception e) {
-            logger.error(e);
-          }
-        }
-        if (options.getFlowParameters().containsKey("alert.type")) {
-          final String alertType = options.getFlowParameters().get("alert.type");
-          final Alerter alerter = this.alerterHolder.get(alertType);
-          if (alerter != null) {
-            try {
-              alerter.alertOnSuccess(flow);
-            } catch (final Exception e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-              logger.error("Failed to alert by " + alertType);
-            }
-          } else {
-            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-          }
-        }
-      }
+  private void sendAlertNotification(ExecutableFlow flow) {
+    final ExecutionOptions options = flow.getExecutionOptions();
+
+    if (areEmailRecipientsExist(options, flow.getStatus())) {
+      final Alerter mailAlerter = this.alerterHolder.get("email");
+      alertOnStatusType(mailAlerter, flow);
     }
 
+    if (options.getFlowParameters().containsKey(ALERT_PLUGIN_TYPE) || this.globalProps.containsKey(ALERT_PLUGIN_TYPE)) {
+      String alertType = options.getFlowParameters().getOrDefault(ALERT_PLUGIN_TYPE, this.globalProps.get(ALERT_PLUGIN_TYPE));
+      final Alerter alerter = this.alerterHolder.get(alertType);
+      if (alerter != null)
+        alertOnStatusType(alerter, flow);
+      else
+        logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+    }
+  }
+
+  private boolean areEmailRecipientsExist(ExecutionOptions options, Status status) {
+    return (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()
+        && (status == Status.FAILED || status == Status.KILLED || status == Status.FAILED_FINISHING)) ||
+           (options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty()
+        && (status != Status.FAILED && status != Status.KILLED && status != Status.FAILED_FINISHING));
+  }
+
+  private void alertOnStatusType(Alerter alerter, ExecutableFlow flow){
+    try {
+      switch (flow.getStatus()) {
+        case FAILED:
+        case KILLED:
+          alerter.alertOnError(flow);
+          return;
+        case FAILED_FINISHING:
+          alerter.alertOnFirstError(flow);
+          return;
+        default:
+          alerter.alertOnSuccess(flow);
+      }
+    } catch (final Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      logger.error("Failed to alert by " + alerter.getClass().getName());
+    }
   }
 
   private void failEverything(final ExecutableFlow exFlow) {
@@ -1388,33 +1397,8 @@ public class ExecutorManager extends EventHandler implements
     }
 
     final ExecutionOptions options = flow.getExecutionOptions();
-    if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
-      // We want to see if we should give an email status on first failure.
-      if (options.getNotifyOnFirstFailure()) {
-        final Alerter mailAlerter = this.alerterHolder.get("email");
-        try {
-          mailAlerter.alertOnFirstError(flow);
-        } catch (final Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to send first error email." + e.getMessage());
-        }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = this.alerterHolder.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnFirstError(flow);
-          } catch (final Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
-          }
-        } else {
-          logger.error("Alerter type " + alertType
-              + " doesn't exist. Failed to alert.");
-        }
-      }
+    if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING) && options.getNotifyOnFirstFailure()) {
+      sendAlertNotification(flow);
     }
 
     return flow;
