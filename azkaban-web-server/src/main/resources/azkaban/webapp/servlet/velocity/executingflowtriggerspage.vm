@@ -21,7 +21,6 @@
   #parse("azkaban/webapp/servlet/velocity/style.vm")
   #parse("azkaban/webapp/servlet/velocity/javascript.vm")
   <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
-  #
   <script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
   <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
   <script type="text/javascript">
@@ -58,8 +57,7 @@
           showDialog("Error", data.error);
         }
         else {
-          showDialog("Killed", "Trigger has been killed.");
-
+          showDialog("Killed", "Trigger " + id + " has been killed.");
         }
       };
       ajaxCall(requestURL, requestData, successHandler);
@@ -85,14 +83,14 @@
 </head>
 <body>
 
-  #set ($current_page="executing")
+  #set ($current_page="flowtriggerinstance")
   #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 ## Page header.
 
 <div class="az-page-header">
   <div class="container-full">
-    <h1><a href="${context}/executor">Executing Triggers</a></h1>
+    <h1><a href="${context}/flowtriggerinstance">Executing Triggers</a></h1>
   </div>
 </div>
 
@@ -109,7 +107,7 @@
 
   <div class="row" id="currently-running-view">
     <div class="col-xs-12">
-      <table id="executingJobs"
+      <table id="executingTriggers"
              class="table table-striped table-bordered table-hover table-condensed executions-table">
         <thead>
         <tr>
@@ -137,7 +135,8 @@
               </td>
               <td>
                 #if (${trigger.getId()})
-                  ${trigger.getId()}
+                  <a href="${context}/executor?triggerinstanceid=${trigger.getId()}" }>
+                    ${trigger.getId()} </a>
                 #else
                   -
                 #end
@@ -285,7 +284,8 @@
               </td>
               <td>
                 #if (${trigger.getId()})
-                  ${trigger.getId()}
+                  <a href="${context}/executor?triggerinstanceid=${trigger.getId()}" }>
+                    ${trigger.getId()} </a>
                 #else
                   -
                 #end

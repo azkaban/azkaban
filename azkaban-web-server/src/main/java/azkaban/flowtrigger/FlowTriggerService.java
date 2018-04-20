@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
 public class FlowTriggerService {
 
   private static final Duration CANCELLING_GRACE_PERIOD_AFTER_RESTART = Duration.ofMinutes(1);
-  private static final int RECENTLY_FINISHED_TRIGGER_LIMIT = 20;
+  private static final int RECENTLY_FINISHED_TRIGGER_LIMIT = 50;
   private static final int CANCEL_EXECUTOR_POOL_SIZE = 32;
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerService.class);
   private final ExecutorService singleThreadExecutorService;
@@ -187,6 +187,10 @@ public class FlowTriggerService {
 
   public TriggerInstance findTriggerInstanceById(final String triggerInstanceId) {
     return this.flowTriggerInstanceLoader.getTriggerInstanceById(triggerInstanceId);
+  }
+
+  public TriggerInstance findTriggerInstanceByExecId(final int flowExecId) {
+    return this.flowTriggerInstanceLoader.getTriggerInstanceByFlowExecId(flowExecId);
   }
 
   private boolean isDoneButFlowNotExecuted(final TriggerInstance triggerInstance) {
@@ -539,5 +543,10 @@ public class FlowTriggerService {
     this.multiThreadsExecutorService.shutdownNow();
     this.triggerProcessor.shutdown();
     this.triggerPluginManager.shutdown();
+  }
+
+  public Collection<TriggerInstance> getTriggerInstances(final int projectId, final String flowId,
+      final int from, final int length) {
+    return this.flowTriggerInstanceLoader.getTriggerInstances(projectId, flowId, from, length);
   }
 }

@@ -17,9 +17,12 @@
 package azkaban.webapp.servlet;
 
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler.ScheduledFlowTrigger;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +43,53 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
-    handlePage(req, resp, session);
+    if (hasParam(req, "ajax")) {
+      handleAJAXAction(req, resp, session);
+    } else {
+      handlePage(req, resp, session);
+    }
+  }
+
+  private void ajaxFetchTrigger(final int projectId, final String flowId, final Session session,
+      final HashMap<String,
+          Object> ret) {
+    final ScheduledFlowTrigger res = this.scheduler
+        .getScheduledFlowTriggerJobs().stream().filter(
+            scheduledFlowTrigger -> scheduledFlowTrigger.getFlowId().equals(flowId)
+                && scheduledFlowTrigger.getProjectId
+                () == projectId).findFirst().orElse(null);
+
+    if (res != null) {
+      final Map<String, Object> jsonObj = new HashMap<>();
+      jsonObj.put("cronExpression", res.getFlowTrigger().getSchedule().getCronExpression());
+      jsonObj.put("submitUser", res.getSubmitUser());
+      jsonObj.put("firstSchedTime",
+          utils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
+      jsonObj.put("nextExecTime",
+          utils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
+      jsonObj.put("maxWaitMin", res.getFlowTrigger().getMaxWaitDuration().toMinutes());
+      if (!res.getFlowTrigger().getDependencies().isEmpty()) {
+        jsonObj.put("dependencies", res.getDependencyListJson());
+      }
+      ret.put("flowTrigger", jsonObj);
+    }
+  }
+
+  private void handleAJAXAction(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
+      IOException {
+    final HashMap<String, Object> ret = new HashMap<>();
+    final String ajaxName = getParam(req, "ajax");
+    if (ajaxName.equals("fetchTrigger")) {
+      if (hasParam(req, "projectId") && hasParam(req, "flowId")) {
+        final int projectId = getIntParam(req, "projectId");
+        final String flowId = getParam(req, "flowId");
+        ajaxFetchTrigger(projectId, flowId, session, ret);
+        if (ret != null) {
+          this.writeJSON(resp, ret);
+        }
+      }
+    }
   }
 
   private void handlePage(final HttpServletRequest req,

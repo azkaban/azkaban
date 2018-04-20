@@ -5,30 +5,33 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import azkaban.utils.Props;
 
+// TODO kunkun-tang: This test class needs more refactors.
 public class TestHadoopJobUtilsResolveJarSpec {
-  Props jobProps = null;
+  private Logger logger = Logger.getRootLogger();
 
-  Logger logger = Logger.getRootLogger();
+  private static String currentDirString = System.getProperty("user.dir");
+  private static String workingDirString = null;
+  private static File workingDirFile = null;
+  private static File libFolderFile = null;
+  private static File executionJarFile = null;
+  private static File libraryJarFile = null;
 
-  String workingDirString = "/tmp/TestHadoopSpark";
-
-  File workingDirFile = new File(workingDirString);
-
-  File libFolderFile = new File(workingDirFile, "lib");
-
-  String executionJarName = "hadoop-spark-job-test-execution-x.y.z-a.b.c.jar";
-
-  File executionJarFile = new File(libFolderFile, "hadoop-spark-job-test-execution-x.y.z-a.b.c.jar");
-
-  File libraryJarFile = new File(libFolderFile, "library.jar");
-
-  String delim = SparkJobArg.delimiter;
+  @BeforeClass
+  public static void setupFolder() {
+    workingDirString = currentDirString + "/../temp/TestHadoopSpark";
+    workingDirFile = new File(workingDirString);
+    libFolderFile = new File(workingDirFile, "lib");
+    executionJarFile = new File(libFolderFile,
+        "hadoop-spark-job-test-execution-x.y.z-a.b.c"
+            + ".jar");
+    libraryJarFile = new File(libFolderFile, "library.jar");
+  }
 
   @Before
   public void beforeMethod() throws IOException {
@@ -44,12 +47,12 @@ public class TestHadoopJobUtilsResolveJarSpec {
   // nothing should happen
   @Test(expected = IllegalStateException.class)
   public void testJarDoesNotExist() throws IOException {
-    HadoopJobUtils.resolveExecutionJarName(workingDirString, "./lib/abc.jar", logger);
+    HadoopJobUtils.resolveExecutionJarName(workingDirString, "/lib/abc.jar", logger);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testNoLibFolder() throws IOException {
     FileUtils.deleteDirectory(libFolderFile);
-    HadoopJobUtils.resolveExecutionJarName(workingDirString, "./lib/abc.jar", logger);
+    HadoopJobUtils.resolveExecutionJarName(workingDirString, "/lib/abc.jar", logger);
   }
 }
