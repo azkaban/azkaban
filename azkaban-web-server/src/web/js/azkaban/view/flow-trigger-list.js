@@ -88,7 +88,6 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var tdStart = document.createElement("td");
     var tdEnd = document.createElement("td");
     var tdElapse = document.createElement("td");
-    var tdStatus = document.createElement("td");
     var tdProps = document.createElement("td");
     var buttonProps = document.createElement("BUTTON");
     var tdStatus = document.createElement("td");
@@ -136,7 +135,11 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
       $(tdElapse).text(
           getDuration(data.triggerStartTime, data.triggerEndTime));
     }
-    $(tdStatus).text(data.triggerStatus);
+    var status = document.createElement("div");
+    $(status).addClass("status");
+    $(status).addClass(data.triggerStatus);
+    $(status).text(data.triggerStatus);
+    tdStatus.appendChild(status);
 
     $("#dependencyList").children("div").children("div").children(
         "div")[1].innerHTML = "<pre>" + data.triggerProps + "</pre>";
@@ -215,7 +218,13 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     $(tdId).text(node.triggerInstanceId);
     $(tdName).text(node.dependencyName);
     $(tdType).text(node.dependencyType);
-    $(tdStatus).text(node.dependencyStatus);
+
+    var status = document.createElement("div");
+    $(status).addClass("status");
+    $(status).addClass(node.dependencyStatus);
+    $(status).text(node.dependencyStatus);
+    tdStatus.appendChild(status);
+
     $(tdCancelCause).text(node.dependencyCancelCause);
     var startTime = node.dependencyStartTime == 0 ? (new Date()).getTime()
         : node.dependencyStartTime;

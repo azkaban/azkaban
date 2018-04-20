@@ -193,8 +193,8 @@
           <thead>
           <tr>
             <th>Trigger Instance Id</th>
-            <th>Name</th>
-            <th class="triggertype">Type</th>
+            <th>Dependency Name</th>
+            <th class="triggertype">Dependency Type</th>
             <th class="date">Start Time</th>
             <th class="date">End Time</th>
             <th class="elapse">Elapsed</th>
