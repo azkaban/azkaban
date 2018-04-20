@@ -28,7 +28,7 @@ function killTrigger(id) {
       showDialog("Error", data.error);
     }
     else {
-      showDialog("Killed", "Trigger has been killed.");
+      showDialog("Killed", "Trigger " + id + " has been killed.");
 
     }
   };
