@@ -1,6 +1,6 @@
 package azkaban.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
@@ -23,9 +23,9 @@ public class EmailMessageCreatorTest {
     final EmailMessageCreator creator = new EmailMessageCreator(props);
     final EmailMessage message = creator.createMessage();
 
-    assertEquals(MAIL_PORT, message.getMailPort());
-    assertEquals("", message.getBody());
-    assertEquals(null, message.getSubject());
+    assertThat(message.getMailPort()).isEqualTo(MAIL_PORT);
+    assertThat(message.getBody()).isEmpty();
+    assertThat(message.getSubject()).isNull();
   }
 
 }

@@ -16,7 +16,6 @@
 package azkaban.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -78,7 +77,7 @@ public class EmailerTest {
     this.props = createMailProperties();
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props);
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
-    assertEquals(0, loader.getErrors().size());
+    assertThat(loader.getErrors()).isEmpty();
     this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(123);
   }
@@ -106,7 +105,7 @@ public class EmailerTest {
     final EmailMessage em = emailer
         .createEmailMessage("subject", "text/html", this.receiveAddrList);
     verify(this.messageCreator).createMessage();
-    assertEquals(this.messageCreator.createMessage(), em);
+    assertThat(this.messageCreator.createMessage()).isEqualTo(em);
     verify(this.message).addAllToAddress(this.receiveAddrList);
     verify(this.message).setSubject("subject");
     verify(this.message).setMimeType("text/html");

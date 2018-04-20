@@ -15,7 +15,7 @@
  */
 package azkaban.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class AbstractMailerTest {
     final AbstractMailer mailer = new AbstractMailer(this.props, this.messageCreator);
     final EmailMessage em = mailer.createEmailMessage("subject", "text/html", this.senderList);
     verify(this.messageCreator).createMessage();
-    assertEquals(this.message, em);
+    assertThat(this.message).isEqualTo(em);
     verify(this.message).setSubject("subject");
   }
 
