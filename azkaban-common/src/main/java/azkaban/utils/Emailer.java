@@ -159,4 +159,25 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
+  @Override
+  public void alertOnSuccess(final ExecutableFlow exflow) {
+    sendSuccessEmail(exflow);
+  }
+
+  @Override
+  public void alertOnError(final ExecutableFlow exflow, final String... extraReasons) {
+    sendErrorEmail(exflow, extraReasons);
+  }
+
+  @Override
+  public void alertOnFlowTriggerCancel(final String triggerInstanceId, String projectName, String
+   flowName) {
+    sendErrorEmail(exflow, extraReasons);
+  }
+
+  @Override
+  public void alertOnFirstError(final ExecutableFlow exflow) {
+    sendFirstErrorMessage(exflow);
+  }
+
 }
