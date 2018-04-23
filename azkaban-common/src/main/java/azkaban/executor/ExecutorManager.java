@@ -1734,7 +1734,7 @@ public class ExecutorManager extends EventHandler implements
 
     private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
     private final int maxDispatchingErrors;
-    private final long activeExecutorRefreshWindowInMilisec;
+    private final long activeExecutorRefreshWindowInMillisec;
     private final int activeExecutorRefreshWindowInFlows;
 
     private volatile boolean shutdown = false;
@@ -1748,7 +1748,7 @@ public class ExecutorManager extends EventHandler implements
       this.maxDispatchingErrors = maxDispatchingErrors;
       this.activeExecutorRefreshWindowInFlows =
           activeExecutorRefreshWindowInFlows;
-      this.activeExecutorRefreshWindowInMilisec =
+      this.activeExecutorRefreshWindowInMillisec =
           activeExecutorRefreshWindowInTime;
       this.setName("AzkabanWebServer-QueueProcessor-Thread");
     }
@@ -1775,7 +1775,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             // start processing queue if active, other wait for sometime
             if (this.isActive) {
-              processQueuedFlows(this.activeExecutorRefreshWindowInMilisec,
+              processQueuedFlows(this.activeExecutorRefreshWindowInMillisec,
                   this.activeExecutorRefreshWindowInFlows);
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);

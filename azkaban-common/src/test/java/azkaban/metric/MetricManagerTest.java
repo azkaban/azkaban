@@ -80,13 +80,18 @@ public class MetricManagerTest {
    */
   @Test
   public void managerEmitterHandlingTest() throws Exception {
+
+    // metrics use System.currentTimeMillis, so that method should be the millis provider
+    final DateTime aboutNow = new DateTime(System.currentTimeMillis());
+
     this.emitter.purgeAllData();
-    final Date from = DateTime.now().minusMinutes(1).toDate();
+
+    final Date from = aboutNow.minusMinutes(1).toDate();
     this.metric.notifyManager();
 
     this.emitterWrapper.countDownLatch.await(10L, TimeUnit.SECONDS);
 
-    final Date to = DateTime.now().plusMinutes(1).toDate();
+    final Date to = aboutNow.plusMinutes(1).toDate();
     final List<InMemoryHistoryNode> nodes = this.emitter.getMetrics("FakeMetric", from, to, false);
 
     assertEquals("Failed to report metric", 1, nodes.size());
