@@ -70,7 +70,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   /**
    * Update reporting interval
    *
-   * @param val interval in milli seconds
+   * @param val interval in milliseconds
    */
   public synchronized void setReportingInterval(final long val) {
     this.timeWindow = val;

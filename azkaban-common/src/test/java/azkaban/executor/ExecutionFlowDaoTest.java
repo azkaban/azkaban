@@ -357,4 +357,12 @@ public class ExecutionFlowDaoTest {
     assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
   }
 
+  /**
+   * restores the clock; see {@link #testFetchEmptyRecentlyFinishedFlows()}
+   */
+  @After
+  public void clockReset() {
+    DateTimeUtils.setCurrentMillisOffset(0);
+  }
+
 }
