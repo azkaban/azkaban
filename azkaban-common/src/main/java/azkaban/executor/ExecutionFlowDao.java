@@ -142,7 +142,7 @@ public class ExecutionFlowDao {
 
     boolean first = true;
     if (projContain != null && !projContain.isEmpty()) {
-      query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
+      query += " JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
       params.add('%' + projContain + '%');
       first = false;
     }
@@ -268,7 +268,7 @@ public class ExecutionFlowDao {
       ResultSetHandler<List<ExecutableFlow>> {
 
     static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
+        "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef";
     static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE exec_id=?";
