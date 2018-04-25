@@ -1,0 +1,10 @@
+---
+# Flow trigger
+trigger:
+  maxWaitMins: 5
+  schedule:
+    type: cron
+    value: 1/1   0   0  ? * * *
+
+  triggerDependencies:
+
