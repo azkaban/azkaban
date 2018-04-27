@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 /**
- * This is to clean up old flow trigger execution records from the db table.
+ * This is to purge old flow trigger execution records from the db table.
  * Otherwise the table will keep growing indefinitely as triggers are executed, leading to
  * excessive query time on the table.
  * The cleanup policy is removing trigger instances finishing older than 20 days back.
