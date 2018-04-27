@@ -83,11 +83,13 @@ public class FlowTriggerService {
   private final TriggerInstanceProcessor triggerProcessor;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final DependencyInstanceProcessor dependencyProcessor;
+  private final FlowTriggerExecutionCleaner cleaner;
 
   @Inject
   public FlowTriggerService(final FlowTriggerDependencyPluginManager pluginManager,
       final TriggerInstanceProcessor triggerProcessor, final DependencyInstanceProcessor
-      dependencyProcessor, final FlowTriggerInstanceLoader flowTriggerInstanceLoader) {
+      dependencyProcessor, final FlowTriggerInstanceLoader flowTriggerInstanceLoader,
+      final FlowTriggerExecutionCleaner cleaner) {
     // Give the thread a name to make debugging easier.
     final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
         .setNameFormat("FlowTrigger-service").build();
@@ -100,11 +102,13 @@ public class FlowTriggerService {
     this.triggerProcessor = triggerProcessor;
     this.dependencyProcessor = dependencyProcessor;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
+    this.cleaner = cleaner;
   }
 
   public void start() throws FlowTriggerDependencyPluginException {
     this.triggerPluginManager.loadAllPlugins();
     this.recoverIncompleteTriggerInstances();
+    this.cleaner.start();
   }
 
   private DependencyInstanceContext createDepContext(final FlowTriggerDependency dep, final long
@@ -541,8 +545,10 @@ public class FlowTriggerService {
     this.singleThreadExecutorService.shutdownNow(); // Cancel currently executing tasks
     this.multiThreadsExecutorService.shutdown();
     this.multiThreadsExecutorService.shutdownNow();
+
     this.triggerProcessor.shutdown();
     this.triggerPluginManager.shutdown();
+    this.cleaner.shutdown();
   }
 
   public Collection<TriggerInstance> getTriggerInstances(final int projectId, final String flowId,

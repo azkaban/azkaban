@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -127,6 +128,16 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           + "trigger_instance_id ORDER BY trigger_start_time DESC\n"
           + "LIMIT ? OFFSET ?) AS tmp);", StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
       DEPENDENCY_EXECUTION_TABLE, DEPENDENCY_EXECUTION_TABLE);
+
+  private static final String SELECT_EXECUTION_OLDER_THAN =
+      String.format(
+          "SELECT %s FROM %s WHERE trigger_instance_id IN (SELECT "
+              + "DISTINCT(trigger_instance_id) FROM %s WHERE endtime <= ? AND endtime != 0);",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","), DEPENDENCY_EXECUTION_TABLE,
+          DEPENDENCY_EXECUTION_TABLE);
+
+  private static final String DELETE_EXECUTIONS =
+      String.format("DELETE FROM %s WHERE trigger_instance_id IN (?);", DEPENDENCY_EXECUTION_TABLE);
 
   private static final String UPDATE_DEPENDENCY_FLOW_EXEC_ID = String.format("UPDATE %s SET "
       + "flow_exec_id "
@@ -376,6 +387,33 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       handleSQLException(ex);
     }
     return Collections.emptyList();
+  }
+
+  @Override
+  public int deleteCompleteTriggerExecutionFinishingOlderThan(final long timestamp) {
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_EXECUTION_OLDER_THAN,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_DESC), timestamp);
+      final Set<String> toBeDeleted = new HashSet<>();
+      for (final TriggerInstance inst : res) {
+        if ((inst.getStatus() == Status.CANCELLED || (inst.getStatus() == Status.SUCCEEDED && inst
+            .getFlowExecId() != -1)) && inst.getEndTime() <= timestamp) {
+          toBeDeleted.add(inst.getId());
+        }
+      }
+      int numDeleted = 0;
+      if (!toBeDeleted.isEmpty()) {
+        final String ids = toBeDeleted.stream().map(s -> "'" + s + "'")
+            .collect(Collectors.joining(", "));
+        numDeleted = this.dbOperator.update(DELETE_EXECUTIONS.replace("?", ids));
+      }
+      logger.info("{} dependency instance record(s) deleted", numDeleted);
+      return numDeleted;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+      return 0;
+    }
   }
 
   /**
