@@ -305,7 +305,6 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     try {
       //todo chengren311:
       // 1. add index for the execution_dependencies table to accelerate selection.
-      // 2. implement purging mechanism to keep reasonable amount of historical executions in db.
       return this.dbOperator.query(SELECT_ALL_RUNNING_EXECUTIONS, new TriggerInstanceHandler
           (SORT_MODE.SORT_ON_START_TIME_ASC));
     } catch (final SQLException ex) {
