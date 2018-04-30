@@ -20,6 +20,7 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader {
@@ -120,5 +121,20 @@ public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader 
   public Collection<TriggerInstance> getTriggerInstances(final int projectId, final String flowId,
       final int from, final int length) {
     throw new UnsupportedOperationException("Not Yet Implemented");
+  }
+
+  @Override
+  public int deleteTriggerExecutionsFinishingOlderThan(final long timestamp) {
+    int deleted = 0;
+    for (final Iterator<TriggerInstance> iterator = this.triggerInstances.iterator();
+        iterator.hasNext(); ) {
+      final TriggerInstance inst = iterator.next();
+      if ((inst.getEndTime() <= timestamp) && ((inst.getStatus() == Status.CANCELLED) || ((inst
+          .getStatus() == Status.SUCCEEDED) && (inst.getFlowExecId() != -1)))) {
+        iterator.remove();
+        deleted++;
+      }
+    }
+    return deleted;
   }
 }

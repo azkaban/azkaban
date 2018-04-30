@@ -77,8 +77,11 @@ public class FlowTriggerServiceTest {
     final DependencyInstanceProcessor depInstProcessor = new DependencyInstanceProcessor
         (flowTriggerInstanceLoader);
 
-    flowTriggerService = new FlowTriggerService(pluginManager,
-        triggerInstProcessor, depInstProcessor, flowTriggerInstanceLoader);
+    final FlowTriggerExecutionCleaner executionCleaner = new FlowTriggerExecutionCleaner(
+        flowTriggerInstanceLoader);
+
+    flowTriggerService = new FlowTriggerService(pluginManager, triggerInstProcessor,
+        depInstProcessor, flowTriggerInstanceLoader, executionCleaner);
     flowTriggerService.start();
   }
 
