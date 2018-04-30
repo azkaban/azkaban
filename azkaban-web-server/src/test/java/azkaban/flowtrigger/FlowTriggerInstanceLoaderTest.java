@@ -422,13 +422,13 @@ public class FlowTriggerInstanceLoaderTest {
     }
     this.shuffleAndUpload(all);
 
-    assertThat(this.triggerInstLoader.deleteCompleteTriggerExecutionFinishingOlderThan(ts1))
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts1))
         .isEqualTo(0);
 
-    assertThat(this.triggerInstLoader.deleteCompleteTriggerExecutionFinishingOlderThan(ts2))
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts2))
         .isEqualTo(0);
 
-    assertThat(this.triggerInstLoader.deleteCompleteTriggerExecutionFinishingOlderThan(ts3))
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts3))
         .isEqualTo(16);
 
   }

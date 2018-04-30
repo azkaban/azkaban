@@ -65,9 +65,9 @@ public interface FlowTriggerInstanceLoader {
       length);
 
   /**
-   * Delete trigger instances whose endtime is older than the timestamp
+   * Delete cancelled or succeeded trigger instances whose endtime is older than the timestamp
    *
    * @return number of deleted rows(dependency instances) ;
    */
-  int deleteCompleteTriggerExecutionFinishingOlderThan(long timestamp);
+  int deleteTriggerExecutionsFinishingOlderThan(long timestamp);
 }

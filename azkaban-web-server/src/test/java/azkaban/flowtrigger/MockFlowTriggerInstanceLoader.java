@@ -124,7 +124,7 @@ public class MockFlowTriggerInstanceLoader implements FlowTriggerInstanceLoader 
   }
 
   @Override
-  public int deleteCompleteTriggerExecutionFinishingOlderThan(final long timestamp) {
+  public int deleteTriggerExecutionsFinishingOlderThan(final long timestamp) {
     int deleted = 0;
     for (final Iterator<TriggerInstance> iterator = this.triggerInstances.iterator();
         iterator.hasNext(); ) {

@@ -389,7 +389,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   }
 
   @Override
-  public int deleteCompleteTriggerExecutionFinishingOlderThan(final long timestamp) {
+  public int deleteTriggerExecutionsFinishingOlderThan(final long timestamp) {
     try {
       final Collection<TriggerInstance> res = this.dbOperator
           .query(SELECT_EXECUTION_OLDER_THAN,

@@ -46,7 +46,7 @@ public class FlowTriggerExecutionCleaner {
   public void start() {
     this.scheduler.scheduleAtFixedRate(() -> {
       FlowTriggerExecutionCleaner.this.flowTriggerInstanceLoader
-          .deleteCompleteTriggerExecutionFinishingOlderThan(System
+          .deleteTriggerExecutionsFinishingOlderThan(System
               .currentTimeMillis() - RETENTION_PERIOD.toMillis());
     }, 0, CLEAN_INTERVAL.getSeconds(), TimeUnit.SECONDS);
   }
