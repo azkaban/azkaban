@@ -46,7 +46,6 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String clientHostname;
   private final String clientPortNumber;
   private final String azkabanName;
-  private final boolean testMode;
 
   @Inject
   public Emailer(final Props props, final CommonMetrics commonMetrics,
@@ -78,8 +77,6 @@ public class Emailer extends AbstractMailer implements Alerter {
           props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT, props.getInt("jetty.port",
               Constants.DEFAULT_PORT_NUMBER)));
     }
-
-    this.testMode = props.getBoolean("test.mode", false);
   }
 
   public static List<String> findFailedJobs(final ExecutableFlow flow) {
@@ -111,15 +108,13 @@ public class Emailer extends AbstractMailer implements Alerter {
 
       message.setBody(body);
 
-      if (!this.testMode) {
-        try {
-          message.sendEmail();
-          logger.info("Sent email message " + body);
-          this.commonMetrics.markSendEmailSuccess();
-        } catch (final Exception e) {
-          logger.error("Failed to send email message " + body, e);
-          this.commonMetrics.markSendEmailFail();
-        }
+      try {
+        message.sendEmail();
+        logger.info("Sent email message " + body);
+        this.commonMetrics.markSendEmailSuccess();
+      } catch (final Exception e) {
+        logger.error("Failed to send email message " + body, e);
+        this.commonMetrics.markSendEmailFail();
       }
     }
   }
@@ -149,7 +144,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         mailCreator.createFirstErrorMessage(flow, message, this.azkabanName, this.scheme,
             this.clientHostname, this.clientPortNumber);
 
-    if (mailCreated && !this.testMode) {
+    if (mailCreated) {
       try {
         message.sendEmail();
         logger.info("Sent first error email message for execution " + flow.getExecutionId());
@@ -176,7 +171,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         mailCreator.createErrorEmail(flow, message, this.azkabanName, this.scheme,
             this.clientHostname, this.clientPortNumber, extraReasons);
 
-    if (mailCreated && !this.testMode) {
+    if (mailCreated) {
       try {
         message.sendEmail();
         logger.info("Sent error email message for execution " + flow.getExecutionId());
@@ -203,7 +198,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         mailCreator.createSuccessEmail(flow, message, this.azkabanName, this.scheme,
             this.clientHostname, this.clientPortNumber);
 
-    if (mailCreated && !this.testMode) {
+    if (mailCreated) {
       try {
         message.sendEmail();
         logger.info("Sent success email message for execution " + flow.getExecutionId());
