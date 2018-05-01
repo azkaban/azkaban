@@ -16,7 +16,6 @@
 
 package azkaban.utils;
 
-import com.sun.mail.smtp.SMTPTransport;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -30,16 +29,13 @@ import javax.activation.FileDataSource;
 import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import org.apache.log4j.Logger;
 
 public class EmailMessage {
 
-  private static final String protocol = "smtp";
   private static final int MAX_EMAIL_RETRY_COUNT = 5;
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
@@ -51,6 +47,7 @@ public class EmailMessage {
   private final String _mailHost;
   private final String _mailUser;
   private final String _mailPassword;
+  private final EmailMessageCreator creator;
   private String _subject;
   private String _fromAddress;
   private String _mimeType = "text/plain";
@@ -60,15 +57,13 @@ public class EmailMessage {
   private boolean _enableAttachementEmbedment = true;
   private StringBuffer _body = new StringBuffer();
 
-  public EmailMessage() {
-    this("localhost", AbstractMailer.DEFAULT_SMTP_PORT, "", "");
-  }
-
-  public EmailMessage(final String host, final int port, final String user, final String password) {
+  public EmailMessage(final String host, final int port, final String user, final String password,
+      final EmailMessageCreator creator) {
     this._mailUser = user;
     this._mailHost = host;
     this._mailPort = port;
     this._mailPassword = password;
+    this.creator = creator;
   }
 
   public static void setTimeout(final int timeoutMillis) {
@@ -171,21 +166,22 @@ public class EmailMessage {
     checkSettings();
     final Properties props = new Properties();
     if (this._usesAuth) {
-      props.put("mail." + protocol + ".auth", "true");
+      props.put("mail.smtp.auth", "true");
       props.put("mail.user", this._mailUser);
       props.put("mail.password", this._mailPassword);
     } else {
-      props.put("mail." + protocol + ".auth", "false");
+      props.put("mail.smtp.auth", "false");
     }
-    props.put("mail." + protocol + ".host", this._mailHost);
-    props.put("mail." + protocol + ".port", this._mailPort);
-    props.put("mail." + protocol + ".timeout", _mailTimeout);
-    props.put("mail." + protocol + ".connectiontimeout", _connectionTimeout);
+    props.put("mail.smtp.host", this._mailHost);
+    props.put("mail.smtp.port", this._mailPort);
+    props.put("mail.smtp.timeout", _mailTimeout);
+    props.put("mail.smtp.connectiontimeout", _connectionTimeout);
     props.put("mail.smtp.starttls.enable", this._tls);
     props.put("mail.smtp.ssl.trust", this._mailHost);
 
-    final Session session = Session.getInstance(props, null);
-    final Message message = new MimeMessage(session);
+    final JavaxMailSender sender = this.creator.createSender(props);
+    final Message message = sender.createMessage();
+
     final InternetAddress from = new InternetAddress(this._fromAddress, false);
     message.setFrom(from);
     for (final String toAddr : this._toAddress) {
@@ -214,48 +210,46 @@ public class EmailMessage {
       message.setContent(this._body.toString(), this._mimeType);
     }
 
-    final SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
-
-    retryConnectToSMTPServer(t);
-    retrySendMessage(t, message);
-    t.close();
+    retryConnectToSMTPServer(sender);
+    retrySendMessage(sender, message);
+    sender.close();
   }
 
-  private void connectToSMTPServer(final SMTPTransport t) throws MessagingException {
+  private void connectToSMTPServer(final JavaxMailSender s) throws MessagingException {
     if (this._usesAuth) {
-      t.connect(this._mailHost, this._mailPort, this._mailUser, this._mailPassword);
+      s.connect(this._mailHost, this._mailPort, this._mailUser, this._mailPassword);
     } else {
-      t.connect();
+      s.connect();
     }
   }
 
-  private void retryConnectToSMTPServer(final SMTPTransport t) throws MessagingException {
+  private void retryConnectToSMTPServer(final JavaxMailSender s) throws MessagingException {
     int attempt;
     for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
       try {
-        connectToSMTPServer(t);
+        connectToSMTPServer(s);
         return;
       } catch (final Exception e) {
         this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, e);
       }
     }
-    t.close();
+    s.close();
     throw new MessagingException("Failed to connect to SMTP server after "
         + attempt + " attempts.");
   }
 
-  private void retrySendMessage(final SMTPTransport t, final Message message)
+  private void retrySendMessage(final JavaxMailSender s, final Message message)
       throws MessagingException {
     int attempt;
     for (attempt = 0; attempt < MAX_EMAIL_RETRY_COUNT; attempt++) {
       try {
-        t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
+        s.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
         return;
       } catch (final Exception e) {
         this.logger.error("Sending email messages failed, attempt: " + attempt, e);
       }
     }
-    t.close();
+    s.close();
     throw new MessagingException("Failed to send email messages after "
         + attempt + " attempts.");
   }

@@ -45,26 +45,15 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String scheme;
   private final String clientHostname;
   private final String clientPortNumber;
-  private final String mailHost;
-  private final int mailPort;
-  private final String mailUser;
-  private final String mailPassword;
-  private final String mailSender;
   private final String azkabanName;
-  private final String tls;
   private final boolean testMode;
 
   @Inject
-  public Emailer(final Props props, final CommonMetrics commonMetrics) {
-    super(props);
+  public Emailer(final Props props, final CommonMetrics commonMetrics,
+      final EmailMessageCreator messageCreator) {
+    super(props, messageCreator);
     this.commonMetrics = requireNonNull(commonMetrics, "commonMetrics is null.");
     this.azkabanName = props.getString("azkaban.name", "azkaban");
-    this.mailHost = props.getString("mail.host", "localhost");
-    this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
-    this.mailUser = props.getString("mail.user", "");
-    this.mailPassword = props.getString("mail.password", "");
-    this.mailSender = props.getString("mail.sender", "");
-    this.tls = props.getString("mail.tls", "false");
 
     final int mailTimeout = props.getInt("mail.timeout.millis", 30000);
     EmailMessage.setTimeout(mailTimeout);
@@ -146,11 +135,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendFirstErrorMessage(final ExecutableFlow flow) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
-    message.setAuth(super.hasMailAuth());
+    final EmailMessage message = this.messageCreator.createMessage();
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
@@ -178,11 +163,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendErrorEmail(final ExecutableFlow flow, final String... extraReasons) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
-    message.setAuth(super.hasMailAuth());
+    final EmailMessage message = this.messageCreator.createMessage();
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
@@ -209,11 +190,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendSuccessEmail(final ExecutableFlow flow) {
-    final EmailMessage message = new EmailMessage(this.mailHost, this.mailPort, this.mailUser,
-        this.mailPassword);
-    message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
-    message.setAuth(super.hasMailAuth());
+    final EmailMessage message = this.messageCreator.createMessage();
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
