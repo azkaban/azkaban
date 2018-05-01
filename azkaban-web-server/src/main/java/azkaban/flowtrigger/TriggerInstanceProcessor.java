@@ -23,7 +23,9 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.project.Project;
+import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
+import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -130,16 +132,58 @@ public class TriggerInstanceProcessor {
   }
 
   private String generateFailureEmailSubject(final TriggerInstance triggerInstance) {
-    final String flowFullName =
-        triggerInstance.getProjectName() + "." + triggerInstance.getFlowId();
-    return String.format(FAILURE_EMAIL_SUBJECT, flowFullName, this.emailer.getAzkabanName());
+    return String.format(FAILURE_EMAIL_SUBJECT, triggerInstance.getFlowId(), triggerInstance
+        .getProjectName(), this.emailer.getAzkabanName());
+  }
+
+  private EmailMessage createFlowTriggerEmailMessage(final TriggerInstance triggerInst) {
+    final EmailMessage message = this.emailer.createEmailMessage();
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    message.setSubject(generateFailureEmailSubject(triggerInst));
+
+    message.addAllToAddress(triggerInst.getFailureEmails());
+    message.setMimeType("text/html");
+    message.println("<table>");
+    message.println("<tr><td>Start Time</td><td>");
+    message.println("<tr><td>" + sdf.format(new Date(triggerInst.getStartTime())) + "</td><td>");
+
+    message.println("<tr><td>End Time</td><td>");
+    message.println("<tr><td>" + sdf.format(new Date(triggerInst.getEndTime())) + "</td><td>");
+    message.println("<tr><td>Duration</td><td>"
+        + Utils.formatDuration(triggerInst.getStartTime(), triggerInst.getEndTime())
+        + "</td></tr>");
+    message.println("<tr><td>Status</td><td>" + triggerInst.getStatus() + "</td></tr>");
+    message.println("</table>");
+    message.println("");
+    final String executionUrl =
+        this.emailer.getScheme() + "://" + this.emailer.getClientHostname() + ":" +
+            this.emailer.getClientPortNumber() + "/" + "executor?" + "triggerinstanceid="
+            + triggerInst.getId();
+
+    message.println("<a href=\"" + executionUrl + "\">" + triggerInst.getFlowId()
+        + " Flow Trigger Instance Link</a>");
+
+    message.println("");
+    message.println("<h3>Cancelled Dependencies</h3>");
+
+    for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+      if (depInst.getStatus() == Status.CANCELLED) {
+        message.println("<table>");
+        message.println("<tr><td>Dependency Name: " + depInst.getDepName() + "</td><td>");
+        message
+            .println("<tr><td>Cancellation Cause: " + depInst.getCancellationCause() + "</td><td>");
+        message.println("</table>");
+      }
+    }
+
+    return message;
   }
 
   private void sendFailureEmailIfConfigured(final TriggerInstance triggerInstance) {
     final List<String> failureEmails = triggerInstance.getFailureEmails();
     if (!failureEmails.isEmpty()) {
-      this.emailer.sendEmail(failureEmails, generateFailureEmailSubject(triggerInstance),
-          generateFailureEmailBody(triggerInstance));
+      this.emailer.sendEmail(this.createFlowTriggerEmailMessage(triggerInstance));
     }
   }
 
