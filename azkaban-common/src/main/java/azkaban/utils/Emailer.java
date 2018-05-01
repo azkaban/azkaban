@@ -102,17 +102,16 @@ public class Emailer extends AbstractMailer implements Alerter {
    */
   public void sendEmail(final List<String> emailList, final String subject, final String body) {
     if (emailList != null && !emailList.isEmpty()) {
-      final EmailMessage message =
-          super.createEmailMessage(subject, "text/html", emailList);
-
+      final EmailMessage message = super.createEmailMessage(subject, "text/html", emailList);
       message.setBody(body);
 
+      final String operation = "email message " + body;
       try {
         message.sendEmail();
-        logger.info("Sent email message " + body);
+        logger.info("Sent " + operation);
         this.commonMetrics.markSendEmailSuccess();
       } catch (final Exception e) {
-        logger.error("Failed to send email message " + body, e);
+        logger.error("Failed to send " + operation, e);
         this.commonMetrics.markSendEmailFail();
       }
     }
@@ -131,19 +130,17 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void sendFirstErrorMessage(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
+    final boolean mailCreated = mailCreator.createFirstErrorMessage(flow, message, this.azkabanName,
+        this.scheme, this.clientHostname, this.clientPortNumber);
 
-    final boolean mailCreated =
-        mailCreator.createFirstErrorMessage(flow, message, this.azkabanName, this.scheme,
-            this.clientHostname, this.clientPortNumber);
-
+    final String operation = "first error email message for execution " + flow.getExecutionId();
     if (mailCreated) {
       try {
         message.sendEmail();
-        logger.info("Sent first error email message for execution " + flow.getExecutionId());
+        logger.info("Sent " + operation);
         this.commonMetrics.markSendEmailSuccess();
       } catch (final Exception e) {
-        logger.error(
-            "Failed to send first error email message for execution " + flow.getExecutionId(), e);
+        logger.error("Failed to send " + operation, e);
         this.commonMetrics.markSendEmailFail();
       }
     }
@@ -152,19 +149,18 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void sendErrorEmail(final ExecutableFlow flow, final String... extraReasons) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
+    final boolean mailCreated = mailCreator.createErrorEmail(flow, message, this.azkabanName,
+        this.scheme, this.clientHostname, this.clientPortNumber, extraReasons);
 
-    final boolean mailCreated =
-        mailCreator.createErrorEmail(flow, message, this.azkabanName, this.scheme,
-            this.clientHostname, this.clientPortNumber, extraReasons);
-
+    final String operation = "error email message for execution " + flow.getExecutionId();
     if (mailCreated) {
       try {
         message.sendEmail();
-        logger.info("Sent error email message for execution " + flow.getExecutionId());
+        logger.info("Sent " + operation);
         this.commonMetrics.markSendEmailSuccess();
       } catch (final Exception e) {
         logger
-            .error("Failed to send error email message for execution " + flow.getExecutionId(), e);
+            .error("Failed to send " + operation, e);
         this.commonMetrics.markSendEmailFail();
       }
     }
@@ -173,19 +169,17 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void sendSuccessEmail(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
+    final boolean mailCreated = mailCreator.createSuccessEmail(flow, message, this.azkabanName,
+        this.scheme, this.clientHostname, this.clientPortNumber);
 
-    final boolean mailCreated =
-        mailCreator.createSuccessEmail(flow, message, this.azkabanName, this.scheme,
-            this.clientHostname, this.clientPortNumber);
-
+    final String operation = "success email message for execution" + flow.getExecutionId();
     if (mailCreated) {
       try {
         message.sendEmail();
-        logger.info("Sent success email message for execution " + flow.getExecutionId());
+        logger.info("Sent " + operation);
         this.commonMetrics.markSendEmailSuccess();
       } catch (final Exception e) {
-        logger.error("Failed to send success email message for execution " + flow.getExecutionId(),
-            e);
+        logger.error("Failed to send " + operation, e);
         this.commonMetrics.markSendEmailFail();
       }
     }
