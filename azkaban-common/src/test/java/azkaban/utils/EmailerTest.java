@@ -91,7 +91,7 @@ public class EmailerTest {
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
-    emailer.sendErrorEmail(exFlow);
+    emailer.alertOnError(exFlow);
     verify(this.message).addAllToAddress(this.receiveAddrList);
     verify(this.message).setSubject("Flow 'jobe' has failed on azkaban");
     assertThat(DefaultMailCreatorTest.read("errorEmail2.html"))

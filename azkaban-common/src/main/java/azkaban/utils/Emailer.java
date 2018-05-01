@@ -88,7 +88,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     return failedJobs;
   }
 
-  private void sendSlaAlertEmail(final SlaOption slaOption, final String slaMessage) {
+  @Override
+  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
     final String subject =
         "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
     final List<String> emailList =
@@ -132,7 +133,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  public void sendFirstErrorMessage(final ExecutableFlow flow) {
+  @Override
+  public void alertOnFirstError(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createFirstErrorMessage(flow, message, this.azkabanName,
@@ -141,7 +143,8 @@ public class Emailer extends AbstractMailer implements Alerter {
         "first error email message for execution " + flow.getExecutionId());
   }
 
-  public void sendErrorEmail(final ExecutableFlow flow, final String... extraReasons) {
+  @Override
+  public void alertOnError(final ExecutableFlow flow, final String... extraReasons) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createErrorEmail(flow, message, this.azkabanName,
@@ -149,7 +152,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     sendEmail(message, mailCreated, "error email message for execution " + flow.getExecutionId());
   }
 
-  public void sendSuccessEmail(final ExecutableFlow flow) {
+  @Override
+  public void alertOnSuccess(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createSuccessEmail(flow, message, this.azkabanName,
@@ -168,23 +172,4 @@ public class Emailer extends AbstractMailer implements Alerter {
     return mailCreator;
   }
 
-  @Override
-  public void alertOnSuccess(final ExecutableFlow exflow) {
-    sendSuccessEmail(exflow);
-  }
-
-  @Override
-  public void alertOnError(final ExecutableFlow exflow, final String... extraReasons) {
-    sendErrorEmail(exflow, extraReasons);
-  }
-
-  @Override
-  public void alertOnFirstError(final ExecutableFlow exflow) {
-    sendFirstErrorMessage(exflow);
-  }
-
-  @Override
-  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
-    sendSlaAlertEmail(slaOption, slaMessage);
-  }
 }
