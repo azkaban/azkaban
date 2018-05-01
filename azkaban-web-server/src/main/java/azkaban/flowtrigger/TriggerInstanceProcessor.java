@@ -28,7 +28,6 @@ import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -64,44 +63,6 @@ public class TriggerInstanceProcessor {
     this.executorManager = executorManager;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
     this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-  }
-
-  public static void main(final String[] args) {
-    final List<DependencyInstance> depInst = new ArrayList<>();
-    depInst.add(new DependencyInstance("1", System.currentTimeMillis(), System.currentTimeMillis
-        (), null, Status.CANCELLED, CancellationCause.MANUAL));
-    depInst.add(new DependencyInstance("2", System.currentTimeMillis(), System.currentTimeMillis
-        (), null, Status.CANCELLED, CancellationCause.MANUAL));
-    depInst.add(new DependencyInstance("3", System.currentTimeMillis(), System.currentTimeMillis
-        (), null, Status.CANCELLED, CancellationCause.MANUAL));
-    final TriggerInstance triggerInstance = new TriggerInstance("111", null, "flowId", 1,
-        "test", depInst, -1, null);
-
-    System.out.println(generateFailureEmailBody(triggerInstance));
-  }
-
-  public static String generateFailureEmailBody(final TriggerInstance triggerInstance) {
-    final String body = String.format(FAILURE_EMAIL_BODY, triggerInstance.getId());
-    final StringBuilder details = new StringBuilder();
-    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    details.append(String.format("%25s%25s%25s%25s%25s\n", new String[]{"trigger instance id",
-        "start time", "end time", "status", "cancellation cause"}));
-
-    final Object[][] table = new String[triggerInstance.getDepInstances().size()][];
-
-    for (int i = 0; i < triggerInstance.getDepInstances().size(); i++) {
-      final DependencyInstance depInst = triggerInstance.getDepInstances().get(i);
-      table[i] = new String[]{depInst.getDepName(), sdf.format(new Date(depInst.getStartTime())),
-          sdf.format(new Date(depInst.getEndTime())), depInst.getStatus().toString(),
-          depInst.getCancellationCause().toString()};
-      details.append(String.format("%25s%25s%25s%25s%25s\n", table[i]));
-    }
-
-    final String executionUrl = "hi";
-    final String link = "<a href=\"" + executionUrl + "\"> Execution Link</a>";
-
-    return body + "\n" + details + link;
   }
 
   public void shutdown() {
