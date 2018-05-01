@@ -23,7 +23,6 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
@@ -131,14 +130,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   public void sendFirstErrorMessage(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
-
-    final ExecutionOptions option = flow.getExecutionOptions();
-
-    final MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
-
-    logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+    final MailCreator mailCreator = getMailCreator(flow);
 
     final boolean mailCreated =
         mailCreator.createFirstErrorMessage(flow, message, this.azkabanName, this.scheme,
@@ -159,13 +151,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   public void sendErrorEmail(final ExecutableFlow flow, final String... extraReasons) {
     final EmailMessage message = this.messageCreator.createMessage();
-
-    final ExecutionOptions option = flow.getExecutionOptions();
-
-    final MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
-    logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+    final MailCreator mailCreator = getMailCreator(flow);
 
     final boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, this.azkabanName, this.scheme,
@@ -186,13 +172,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   public void sendSuccessEmail(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
-
-    final ExecutionOptions option = flow.getExecutionOptions();
-
-    final MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
-    logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+    final MailCreator mailCreator = getMailCreator(flow);
 
     final boolean mailCreated =
         mailCreator.createSuccessEmail(flow, message, this.azkabanName, this.scheme,
@@ -209,6 +189,18 @@ public class Emailer extends AbstractMailer implements Alerter {
         this.commonMetrics.markSendEmailFail();
       }
     }
+  }
+
+  private MailCreator getMailCreator(final ExecutableFlow flow) {
+    final String name = flow.getExecutionOptions().getMailCreator();
+    return getMailCreator(name);
+  }
+
+  private MailCreator getMailCreator(final String name) {
+    final MailCreator mailCreator = DefaultMailCreator.getCreator(name);
+    logger.debug("ExecutorMailer using mail creator:"
+        + mailCreator.getClass().getCanonicalName());
+    return mailCreator;
   }
 
   @Override
