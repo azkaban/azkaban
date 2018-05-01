@@ -170,12 +170,6 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   @Override
-  public void alertOnFlowTriggerCancel(final String triggerInstanceId, String projectName, String
-   flowName) {
-    sendErrorEmail(exflow, extraReasons);
-  }
-
-  @Override
   public void alertOnFirstError(final ExecutableFlow exflow) {
     sendFirstErrorMessage(exflow);
   }
