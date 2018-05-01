@@ -22,13 +22,10 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.metrics.CommonMetrics;
 import azkaban.sla.SlaOption;
-import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -78,26 +75,6 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  public static List<String> findFailedJobs(final ExecutableFlow flow) {
-    final ArrayList<String> failedJobs = new ArrayList<>();
-    for (final ExecutableNode node : flow.getExecutableNodes()) {
-      if (node.getStatus() == Status.FAILED) {
-        failedJobs.add(node.getId());
-      }
-    }
-    return failedJobs;
-  }
-
-  @Override
-  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
-    final String subject =
-        "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
-    final List<String> emailList =
-        (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
-    logger.info("Sending SLA email " + slaMessage);
-    sendEmail(emailList, subject, slaMessage);
-  }
-
   /**
    * Send an email to the specified email list
    */
@@ -109,28 +86,14 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  private void sendEmail(final EmailMessage message, final boolean mailCreated,
-      final String operation) {
-    if (mailCreated) {
-      try {
-        message.sendEmail();
-        logger.info("Sent " + operation);
-        this.commonMetrics.markSendEmailSuccess();
-      } catch (final Exception e) {
-        logger.error("Failed to send " + operation, e);
-        this.commonMetrics.markSendEmailFail();
-      }
-    }
-  }
-
-  private String getJobOrFlowName(final SlaOption slaOption) {
-    final String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
-    final String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
-    if (org.apache.commons.lang.StringUtils.isNotBlank(jobName)) {
-      return flowName + ":" + jobName;
-    } else {
-      return flowName;
-    }
+  @Override
+  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
+    final String subject =
+        "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
+    final List<String> emailList =
+        (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
+    logger.info("Sending SLA email " + slaMessage);
+    sendEmail(emailList, subject, slaMessage);
   }
 
   @Override
@@ -170,6 +133,30 @@ public class Emailer extends AbstractMailer implements Alerter {
     final MailCreator mailCreator = DefaultMailCreator.getCreator(name);
     logger.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
     return mailCreator;
+  }
+
+  private void sendEmail(final EmailMessage message, final boolean mailCreated,
+      final String operation) {
+    if (mailCreated) {
+      try {
+        message.sendEmail();
+        logger.info("Sent " + operation);
+        this.commonMetrics.markSendEmailSuccess();
+      } catch (final Exception e) {
+        logger.error("Failed to send " + operation, e);
+        this.commonMetrics.markSendEmailFail();
+      }
+    }
+  }
+
+  private String getJobOrFlowName(final SlaOption slaOption) {
+    final String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+    final String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+    if (org.apache.commons.lang.StringUtils.isNotBlank(jobName)) {
+      return flowName + ":" + jobName;
+    } else {
+      return flowName;
+    }
   }
 
 }

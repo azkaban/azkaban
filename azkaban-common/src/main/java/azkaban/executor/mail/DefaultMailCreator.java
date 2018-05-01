@@ -17,13 +17,15 @@
 package azkaban.executor.mail;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.Status;
 import azkaban.utils.EmailMessage;
-import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +61,16 @@ public class DefaultMailCreator implements MailCreator {
     } else {
       return DATE_FORMATTER.format(new Date(timeInMS));
     }
+  }
+
+  private static List<String> findFailedJobs(final ExecutableFlow flow) {
+    final ArrayList<String> failedJobs = new ArrayList<>();
+    for (final ExecutableNode node : flow.getExecutableNodes()) {
+      if (node.getStatus() == Status.FAILED) {
+        failedJobs.add(node.getId());
+      }
+    }
+    return failedJobs;
   }
 
   @Override
@@ -110,7 +122,7 @@ public class DefaultMailCreator implements MailCreator {
 
       message.println("");
       message.println("<h3>Reason</h3>");
-      final List<String> failedJobs = Emailer.findFailedJobs(flow);
+      final List<String> failedJobs = findFailedJobs(flow);
       message.println("<ul>");
       for (final String jobId : failedJobs) {
         message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
@@ -162,7 +174,7 @@ public class DefaultMailCreator implements MailCreator {
 
       message.println("");
       message.println("<h3>Reason</h3>");
-      final List<String> failedJobs = Emailer.findFailedJobs(flow);
+      final List<String> failedJobs = findFailedJobs(flow);
       message.println("<ul>");
       for (final String jobId : failedJobs) {
         message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
