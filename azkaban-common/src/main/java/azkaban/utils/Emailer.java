@@ -104,8 +104,13 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (emailList != null && !emailList.isEmpty()) {
       final EmailMessage message = super.createEmailMessage(subject, "text/html", emailList);
       message.setBody(body);
+      sendEmail(message, true, "email message " + body);
+    }
+  }
 
-      final String operation = "email message " + body;
+  private void sendEmail(final EmailMessage message, final boolean mailCreated,
+      final String operation) {
+    if (mailCreated) {
       try {
         message.sendEmail();
         logger.info("Sent " + operation);
@@ -132,18 +137,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createFirstErrorMessage(flow, message, this.azkabanName,
         this.scheme, this.clientHostname, this.clientPortNumber);
-
-    final String operation = "first error email message for execution " + flow.getExecutionId();
-    if (mailCreated) {
-      try {
-        message.sendEmail();
-        logger.info("Sent " + operation);
-        this.commonMetrics.markSendEmailSuccess();
-      } catch (final Exception e) {
-        logger.error("Failed to send " + operation, e);
-        this.commonMetrics.markSendEmailFail();
-      }
-    }
+    sendEmail(message, mailCreated,
+        "first error email message for execution " + flow.getExecutionId());
   }
 
   public void sendErrorEmail(final ExecutableFlow flow, final String... extraReasons) {
@@ -151,19 +146,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createErrorEmail(flow, message, this.azkabanName,
         this.scheme, this.clientHostname, this.clientPortNumber, extraReasons);
-
-    final String operation = "error email message for execution " + flow.getExecutionId();
-    if (mailCreated) {
-      try {
-        message.sendEmail();
-        logger.info("Sent " + operation);
-        this.commonMetrics.markSendEmailSuccess();
-      } catch (final Exception e) {
-        logger
-            .error("Failed to send " + operation, e);
-        this.commonMetrics.markSendEmailFail();
-      }
-    }
+    sendEmail(message, mailCreated, "error email message for execution " + flow.getExecutionId());
   }
 
   public void sendSuccessEmail(final ExecutableFlow flow) {
@@ -171,18 +154,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createSuccessEmail(flow, message, this.azkabanName,
         this.scheme, this.clientHostname, this.clientPortNumber);
-
-    final String operation = "success email message for execution" + flow.getExecutionId();
-    if (mailCreated) {
-      try {
-        message.sendEmail();
-        logger.info("Sent " + operation);
-        this.commonMetrics.markSendEmailSuccess();
-      } catch (final Exception e) {
-        logger.error("Failed to send " + operation, e);
-        this.commonMetrics.markSendEmailFail();
-      }
-    }
+    sendEmail(message, mailCreated, "success email message for execution" + flow.getExecutionId());
   }
 
   private MailCreator getMailCreator(final ExecutableFlow flow) {
@@ -192,8 +164,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   private MailCreator getMailCreator(final String name) {
     final MailCreator mailCreator = DefaultMailCreator.getCreator(name);
-    logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+    logger.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
     return mailCreator;
   }
 
