@@ -16,6 +16,7 @@
 package azkaban.flowtrigger;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -29,6 +30,7 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.project.CronSchedule;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
+import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Maps;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -103,3 +107,4 @@ public class TriggerInstanceProcessorTest {
     verify(this.triggerInstLoader).uploadTriggerInstance(triggerInstance);
   }
 }
+

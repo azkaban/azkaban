@@ -34,7 +34,7 @@ public class AbstractMailer {
     this.attachmentMazSizeInByte = maxAttachmentSizeInMB * MB_IN_BYTES;
   }
 
-  protected EmailMessage createEmailMessage(final String subject, final String mimetype,
+  public EmailMessage createEmailMessage(final String subject, final String mimetype,
       final Collection<String> emailList) {
     final EmailMessage message = this.messageCreator.createMessage();
     message.addAllToAddress(emailList);

@@ -44,8 +44,6 @@ public class TriggerInstanceProcessor {
   private static final Logger logger = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for flow '%s', project '%s' "
       + "has been cancelled on %s";
-  private static final String FAILURE_EMAIL_BODY = "Your flow trigger instance[id: %s] is "
-      + "cancelled. ";
   private final static int THREAD_POOL_SIZE = 32;
   private final ExecutorManager executorManager;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
@@ -98,10 +96,9 @@ public class TriggerInstanceProcessor {
   }
 
   private EmailMessage createFlowTriggerEmailMessage(final TriggerInstance triggerInst) {
-    final EmailMessage message = this.emailer.createEmailMessage();
+    final EmailMessage message = this.emailer.createEmailMessage(generateFailureEmailSubject
+        (triggerInst), "text/html", triggerInst.getFailureEmails());
     final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    message.setSubject(generateFailureEmailSubject(triggerInst));
 
     message.addAllToAddress(triggerInst.getFailureEmails());
     message.setMimeType("text/html");
@@ -144,7 +141,8 @@ public class TriggerInstanceProcessor {
   private void sendFailureEmailIfConfigured(final TriggerInstance triggerInstance) {
     final List<String> failureEmails = triggerInstance.getFailureEmails();
     if (!failureEmails.isEmpty()) {
-      this.emailer.sendEmail(this.createFlowTriggerEmailMessage(triggerInstance));
+      final EmailMessage message = this.createFlowTriggerEmailMessage(triggerInstance);
+      this.emailer.sendEmail(message, true, "email message " + message.getBody());
     }
   }
 

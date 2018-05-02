@@ -75,21 +75,6 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  /**
-   * Send an email to the specified email list
-   */
-  public void sendEmail(final List<String> emailList, final String subject, final String body) {
-    if (emailList != null && !emailList.isEmpty()) {
-      final EmailMessage message = super.createEmailMessage(subject, "text/html", emailList);
-      message.setBody(body);
-      sendEmail(message, true, "email message " + body);
-    }
-  }
-
-<<<<<<< HEAD
-  @Override
-  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
-=======
   public String getScheme() {
     return this.scheme;
   }
@@ -102,8 +87,19 @@ public class Emailer extends AbstractMailer implements Alerter {
     return this.clientPortNumber;
   }
 
-  private void sendSlaAlertEmail(final SlaOption slaOption, final String slaMessage) {
->>>>>>> in progress
+  /**
+   * Send an email to the specified email list
+   */
+  public void sendEmail(final List<String> emailList, final String subject, final String body) {
+    if (emailList != null && !emailList.isEmpty()) {
+      final EmailMessage message = super.createEmailMessage(subject, "text/html", emailList);
+      message.setBody(body);
+      sendEmail(message, true, "email message " + body);
+    }
+  }
+
+  @Override
+  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
     final String subject =
         "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
     final List<String> emailList =
@@ -112,7 +108,6 @@ public class Emailer extends AbstractMailer implements Alerter {
     sendEmail(emailList, subject, slaMessage);
   }
 
-<<<<<<< HEAD
   @Override
   public void alertOnFirstError(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
@@ -121,45 +116,6 @@ public class Emailer extends AbstractMailer implements Alerter {
         this.scheme, this.clientHostname, this.clientPortNumber);
     sendEmail(message, mailCreated,
         "first error email message for execution " + flow.getExecutionId());
-=======
-  public EmailMessage createEmailMessage() {
-    return this.messageCreator.createMessage();
-  }
-
-  public void sendEmail(final EmailMessage message) {
-    if (!this.testMode) {
-      try {
-        message.sendEmail();
-        logger.info("Sent email message " + message.getBody());
-        this.commonMetrics.markSendEmailSuccess();
-      } catch (final Exception e) {
-        logger.error("Failed to send email message " + message.getBody(), e);
-        this.commonMetrics.markSendEmailFail();
-      }
-    }
-  }
-
-  /**
-   * Send an email to the specified email list
-   */
-  public void sendEmail(final List<String> emailList, final String subject, final String body) {
-    if (emailList != null && !emailList.isEmpty()) {
-      final EmailMessage message =
-          super.createEmailMessage(subject, "text/html", emailList);
-      message.setBody(body);
-      this.sendEmail(message);
-    }
-  }
-
-  private String getJobOrFlowName(final SlaOption slaOption) {
-    final String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
-    final String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
-    if (org.apache.commons.lang.StringUtils.isNotBlank(jobName)) {
-      return flowName + ":" + jobName;
-    } else {
-      return flowName;
-    }
->>>>>>> in progress
   }
 
   @Override
@@ -191,7 +147,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     return mailCreator;
   }
 
-  private void sendEmail(final EmailMessage message, final boolean mailCreated,
+  public void sendEmail(final EmailMessage message, final boolean mailCreated,
       final String operation) {
     if (mailCreated) {
       try {
@@ -214,20 +170,4 @@ public class Emailer extends AbstractMailer implements Alerter {
       return flowName;
     }
   }
-
-  @Override
-  public void alertOnSuccess(final ExecutableFlow exflow) {
-    sendSuccessEmail(exflow);
-  }
-
-  @Override
-  public void alertOnError(final ExecutableFlow exflow, final String... extraReasons) {
-    sendErrorEmail(exflow, extraReasons);
-  }
-
-  @Override
-  public void alertOnFirstError(final ExecutableFlow exflow) {
-    sendFirstErrorMessage(exflow);
-  }
-
 }
