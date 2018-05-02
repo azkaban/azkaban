@@ -1536,8 +1536,8 @@ public class ExecutorManager extends EventHandler implements
     private final int waitTimeIdleMs = 2000;
     private final int waitTimeMs = 500;
     // When we have an http error, for that flow, we'll check every 10 secs, 6
-    // times (1 mins) before we evict.
-    private final int numErrors = 6;
+    // times (1 mins) before we send an email about unresponsive executor.
+    private final int numErrorsBeforeUnresponsiveEmail = 6;
     private final long errorThreshold = 10000;
     private boolean shutdown = false;
 
@@ -1603,29 +1603,26 @@ public class ExecutorManager extends EventHandler implements
                         executor.getPort(), ConnectorParams.UPDATE_ACTION,
                         null, null, executionIds, updateTimes);
               } catch (final ExecutorManagerException e) {
-                logger.error(e);
+                logger.error("Failed to get update from executor " + executor.getHost(), e);
+                boolean sendUnresponsiveEmail = false;
                 for (final ExecutableFlow flow : entry.getValue()) {
                   final Pair<ExecutionReference, ExecutableFlow> pair =
                       ExecutorManager.this.runningFlows.get(flow.getExecutionId());
 
                   ExecutorManager.this.updaterStage =
-                      "Failed to get update. Doing some clean up for flow "
-                          + pair.getSecond().getExecutionId();
+                      "Failed to get update for flow " + pair.getSecond().getExecutionId();
 
-                  if (pair != null) {
-                    final ExecutionReference ref = pair.getFirst();
-                    int numErrors = ref.getNumErrors();
-                    if (ref.getNumErrors() < this.numErrors) {
-                      ref.setNextCheckTime(System.currentTimeMillis()
-                          + this.errorThreshold);
-                      ref.setNumErrors(++numErrors);
-                    } else {
-                      logger.warn("Evicting execution " + flow.getExecutionId()
-                          + ". The executor is unresponsive.");
-                      // TODO should send out an unresponsive email here.
-                      finalizeFlows.add(pair.getSecond());
-                    }
+                  final ExecutionReference ref = pair.getFirst();
+                  ref.setNextCheckTime(System.currentTimeMillis() + this.errorThreshold);
+                  ref.setNumErrors(ref.getNumErrors() + 1);
+                  if (ref.getNumErrors() % this.numErrorsBeforeUnresponsiveEmail == 0) {
+                    // if any of the executions has failed many enough updates, alert
+                    sendUnresponsiveEmail = true;
                   }
+                }
+                if (sendUnresponsiveEmail) {
+                  final Alerter mailAlerter = ExecutorManager.this.alerterHolder.get("email");
+                  mailAlerter.alertOnFailedUpdate(executor, entry.getValue(), e);
                 }
               }
 
