@@ -104,7 +104,7 @@ class Node {
     for (final Node child : this.children) {
       child.runIfAllowed();
     }
-    this.flow.checkFinished();
+    this.flow.updateFlowStatus();
   }
 
   /**
@@ -123,7 +123,7 @@ class Node {
     for (final Node child : this.children) {
       child.cancel();
     }
-    this.flow.checkFinished();
+    this.flow.updateFlowStatus();
   }
 
   private void cancel() {
@@ -173,7 +173,7 @@ class Node {
   void markKilled() {
     assert (this.status == Status.KILLING);
     changeStatus(Status.KILLED);
-    this.flow.checkFinished();
+    this.flow.updateFlowStatus();
   }
 
   @Override

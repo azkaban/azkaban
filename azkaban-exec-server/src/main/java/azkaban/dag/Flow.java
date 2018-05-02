@@ -51,7 +51,7 @@ class Flow {
     }
     // It's possible that all nodes are disabled. In this rare case the flow should be
     // marked success. Otherwise it will be stuck in the the running state.
-    checkFinished();
+    updateFlowStatus();
   }
 
   void kill() {
@@ -65,13 +65,15 @@ class Flow {
     for (final Node node : this.nodes) {
       node.kill();
     }
-    checkFinished();
+    updateFlowStatus();
   }
 
   /**
-   * Checks if the flow is done.
+   * Update the final flow status when all jobs are done.
+   *
+   * <p>If any job has not reached its terminal state, this method will simply return.
    */
-  void checkFinished() {
+  void updateFlowStatus() {
     // A flow may have nodes that are disabled. It's safer to scan all the nodes.
     // Assume the overhead is minimal. If it is not the case, we can optimize later.
     boolean failed = false;
@@ -85,6 +87,16 @@ class Flow {
       }
     }
 
+    // Update the flow status only after all nodes have reached terminal states.
+    updateFlowStatusInternal(failed);
+  }
+
+  /**
+   * Update the final flow status.
+   *
+   * @param failed true if any of the jobs has failed
+   */
+  private void updateFlowStatusInternal(final boolean failed) {
     if (this.status == Status.KILLING) {
       /*
       It's possible that some nodes have failed when the flow is killed.
