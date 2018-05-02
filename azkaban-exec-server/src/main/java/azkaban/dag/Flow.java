@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A DAG (Directed acyclic graph) consists of {@link Node}s
+ * A DAG (Directed acyclic graph) consists of {@link Node}s.
  */
 class Flow {
 
@@ -34,7 +34,7 @@ class Flow {
 
   Flow(final String name, final FlowProcessor flowProcessor) {
     this.name = name;
-    requireNonNull(flowProcessor);
+    requireNonNull(flowProcessor, "flowProcessor parameter can't be null.");
     this.flowProcessor = flowProcessor;
   }
 
