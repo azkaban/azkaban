@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
+import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,6 +33,7 @@ import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
+import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
@@ -108,6 +110,43 @@ public class QuartzScheduler {
       this.scheduler.shutdown();
     } catch (final SchedulerException e) {
       logger.error("Exception shutting down scheduler: ", e);
+    }
+  }
+
+  /**
+   * pause a job given the groupname. since pausing request might be issued concurrently,
+   * so synchronized is added to ensure thread safety.
+   */
+  public synchronized void pauseJob(final String groupName) throws SchedulerException {
+    if (!ifJobExist(groupName)) {
+      logger.warn("can not find job with " + groupName + " in quartz.");
+    } else {
+      this.scheduler.pauseJob(new JobKey(DEFAULT_JOB_NAME, groupName));
+    }
+  }
+
+  public synchronized boolean isJobPaused(final String groupName) throws SchedulerException {
+    final JobKey jobKey = new JobKey(DEFAULT_JOB_NAME, groupName);
+    final JobDetail jobDetail = this.scheduler.getJobDetail(jobKey);
+    final List<? extends Trigger> triggers = this.scheduler.getTriggersOfJob(jobDetail.getKey());
+    for (final Trigger trigger : triggers) {
+      final TriggerState triggerState = this.scheduler.getTriggerState(trigger.getKey());
+      if (TriggerState.PAUSED.equals(triggerState)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * resume a paused job given the groupname. since resuming request might be issued concurrently,
+   * so synchronized is added to ensure thread safety.
+   */
+  public synchronized void resumeJob(final String groupName) throws SchedulerException {
+    if (!ifJobExist(groupName)) {
+      logger.warn("can not find job with " + groupName + " in quartz.");
+    } else {
+      this.scheduler.resumeJob(new JobKey(DEFAULT_JOB_NAME, groupName));
     }
   }
 

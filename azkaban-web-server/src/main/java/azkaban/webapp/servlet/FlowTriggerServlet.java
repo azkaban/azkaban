@@ -18,7 +18,10 @@ package azkaban.webapp.servlet;
 
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler.ScheduledFlowTrigger;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
+import azkaban.user.Permission.Type;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,17 +30,20 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.quartz.SchedulerException;
 
 public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
   private FlowTriggerScheduler scheduler;
+  private ProjectManager projectManager;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.scheduler = server.getScheduler();
+    this.projectManager = server.getProjectManager();
   }
 
   @Override
@@ -75,20 +81,51 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  private boolean checkProjectIdAndFlowId(HttpServletRequest req) {
+    return hasParam(req, "projectId") && hasParam(req, "flowId");
+  }
+
   private void handleAJAXAction(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
     if (ajaxName.equals("fetchTrigger")) {
-      if (hasParam(req, "projectId") && hasParam(req, "flowId")) {
+      if (checkProjectIdAndFlowId(req)) {
         final int projectId = getIntParam(req, "projectId");
         final String flowId = getParam(req, "flowId");
         ajaxFetchTrigger(projectId, flowId, session, ret);
-        if (ret != null) {
-          this.writeJSON(resp, ret);
+      }
+    } else if (ajaxName.equals("pauseTrigger") || ajaxName.equals("resumeTrigger")) {
+      if (checkProjectIdAndFlowId(req)) {
+        final int projectId = getIntParam(req, "projectId");
+        final String flowId = getParam(req, "flowId");
+        final Project project = this.projectManager.getProject(projectId);
+
+        if (project == null) {
+          ret.put("error", "please specify a valid project id");
+        }
+        else if (!hasPermission(project, session.getUser(), Type.ADMIN)) {
+          ret.put("error", "Permission denied. Need ADMIN access.");
+        }
+        else {
+          try {
+            if(ajaxName.equals("pauseTrigger")) {
+              this.scheduler.pauseFlowTrigger(projectId, flowId);
+            }
+            else {
+              this.scheduler.resumeFlowTrigger(projectId, flowId);
+            }
+            ret.put("status", "success");
+          } catch (SchedulerException ex) {
+            ret.put("status", "error");
+            ret.put("message", ex);
+          }
         }
       }
+    }
+    if (ret != null) {
+      this.writeJSON(resp, ret);
     }
   }
 

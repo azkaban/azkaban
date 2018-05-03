@@ -21,6 +21,7 @@
   #parse("azkaban/webapp/servlet/velocity/style.vm")
   #parse("azkaban/webapp/servlet/velocity/javascript.vm")
   <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
   <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
@@ -33,6 +34,36 @@
       var jobTable = $("#scheduleFlowTriggers");
       jobTable.tablesorter();
     });
+  </script>
+
+  <script type="text/javascript">
+    function pauseTrigger(projectId, flowId) {
+      var requestURL = document.location.href;
+      var requestData = {"projectId": projectId, "flowId" : flowId, "ajax": "pauseTrigger"};
+      var successHandler = function (data) {
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          window.location = requestURL;
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+
+    function resumeTrigger(projectId, flowId) {
+      var requestURL = document.location.href;
+      var requestData = {"projectId": projectId, "flowId" : flowId, "ajax": "resumeTrigger"};
+      var successHandler = function (data) {
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          window.location = requestURL;
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
   </script>
 </head>
 <body>
@@ -73,6 +104,8 @@
           <th>Schedule</th>
           <th>Max Wait Mins</th>
           <th>Dependencies</th>
+          <th>Is Paused</th>
+          <th>Pause/Resume</th>
         </tr>
         </thead>
         <tbody>
@@ -129,6 +162,20 @@
                   </div>
                 </div>
               </div>
+
+              <td>${trigger.isPaused()}</td>
+
+              <td>
+                #if (${trigger.isPaused()} == "false")
+                  <button type="button" id="pausebtn" class="btn btn-danger btn-sm"
+                          onclick="pauseTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">Pause
+                  </button>
+                #else
+                  <button type="button" id="resumebtn" class="btn btn-info btn-sm"
+                          onclick="resumeTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">Resume
+                  </button>
+                #end
+              </td>
 
             </tr>
             #end

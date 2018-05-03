@@ -109,6 +109,18 @@ public class FlowTriggerScheduler {
     }
   }
 
+  public void pauseFlowTrigger(final int projectId, final String flowId) throws SchedulerException {
+    logger.info(String.format("pausing flow trigger for [projectId:%s, flowId:%s]", projectId,
+        flowId));
+    this.scheduler.pauseJob(generateGroupName(projectId, flowId));
+  }
+
+  public void resumeFlowTrigger(final int projectId, final String flowId) throws
+      SchedulerException {
+    logger.info(String.format("resuming flow trigger for [projectId:%s, flowId:%s]", projectId, flowId));
+    this.scheduler.resumeJob(generateGroupName(projectId, flowId));
+  }
+
   /**
    * Retrieve the list of scheduled flow triggers from quartz database
    */
@@ -131,10 +143,11 @@ public class FlowTriggerScheduler {
               .get(FlowTriggerQuartzJob.FLOW_TRIGGER);
           final String submitUser = jobDataMap.getString(FlowTriggerQuartzJob.SUBMIT_USER);
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
+          final boolean isPaused = this.scheduler.isJobPaused(groupName);
           scheduledFlowTrigger = new ScheduledFlowTrigger(projectId,
               this.projectManager.getProject(projectId).getName(),
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
-              : quartzTriggers.get(0));
+              : quartzTriggers.get(0), isPaused);
         } catch (final Exception ex) {
           logger.error(String.format("unable to get flow trigger by job key %s", jobKey), ex);
           scheduledFlowTrigger = null;
@@ -163,7 +176,11 @@ public class FlowTriggerScheduler {
   }
 
   private String generateGroupName(final Flow flow) {
-    return String.valueOf(flow.getProjectId()) + "." + flow.getId();
+    return generateGroupName(flow.getProjectId(), flow.getId());
+  }
+
+  private String generateGroupName(final int projectId, final String flowId) {
+    return String.valueOf(projectId) + "." + flowId;
   }
 
   public void start() {
@@ -182,16 +199,22 @@ public class FlowTriggerScheduler {
     private final FlowTrigger flowTrigger;
     private final Trigger quartzTrigger;
     private final String submitUser;
+    private final boolean isPaused;
 
     public ScheduledFlowTrigger(final int projectId, final String projectName, final String flowId,
         final FlowTrigger flowTrigger, final String submitUser,
-        final Trigger quartzTrigger) {
+        final Trigger quartzTrigger, final boolean isPaused) {
       this.projectId = projectId;
       this.projectName = projectName;
       this.flowId = flowId;
       this.flowTrigger = flowTrigger;
       this.submitUser = submitUser;
       this.quartzTrigger = quartzTrigger;
+      this.isPaused = isPaused;
+    }
+
+    public boolean isPaused() {
+      return isPaused;
     }
 
     public int getProjectId() {
