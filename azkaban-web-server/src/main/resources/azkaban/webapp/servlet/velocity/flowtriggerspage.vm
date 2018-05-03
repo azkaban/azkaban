@@ -165,6 +165,7 @@
 
               <td>${trigger.isPaused()}</td>
 
+              ##todo chengren311: add pause/resume button in flow page.
               <td>
                 #if (${trigger.isPaused()} == "false")
                   <button type="button" id="pausebtn" class="btn btn-danger btn-sm"

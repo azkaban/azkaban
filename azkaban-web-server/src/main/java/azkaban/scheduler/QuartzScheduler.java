@@ -119,7 +119,7 @@ public class QuartzScheduler {
    */
   public synchronized void pauseJob(final String groupName) throws SchedulerException {
     if (!ifJobExist(groupName)) {
-      logger.warn("can not find job with " + groupName + " in quartz.");
+      throw new SchedulerException("can not find job with group name: " + groupName + " in quartz.");
     } else {
       this.scheduler.pauseJob(new JobKey(DEFAULT_JOB_NAME, groupName));
     }
@@ -144,7 +144,7 @@ public class QuartzScheduler {
    */
   public synchronized void resumeJob(final String groupName) throws SchedulerException {
     if (!ifJobExist(groupName)) {
-      logger.warn("can not find job with " + groupName + " in quartz.");
+      throw new SchedulerException("can not find job with group name: " + groupName + " in quartz.");
     } else {
       this.scheduler.resumeJob(new JobKey(DEFAULT_JOB_NAME, groupName));
     }
@@ -156,7 +156,7 @@ public class QuartzScheduler {
    */
   public synchronized void unregisterJob(final String groupName) throws SchedulerException {
     if (!ifJobExist(groupName)) {
-      logger.warn("can not find job with " + groupName + " in quartz.");
+      throw new SchedulerException("can not find job with group name: " + groupName + " in quartz.");
     } else {
       this.scheduler.deleteJob(new JobKey(DEFAULT_JOB_NAME, groupName));
     }

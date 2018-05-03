@@ -112,14 +112,12 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
           try {
             if(ajaxName.equals("pauseTrigger")) {
               this.scheduler.pauseFlowTrigger(projectId, flowId);
-            }
-            else {
+            } else {
               this.scheduler.resumeFlowTrigger(projectId, flowId);
             }
             ret.put("status", "success");
           } catch (SchedulerException ex) {
-            ret.put("status", "error");
-            ret.put("message", ex);
+            ret.put("error", ex.getMessage());
           }
         }
       }
