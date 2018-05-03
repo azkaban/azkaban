@@ -267,22 +267,22 @@ public class NodeBeanLoaderTest {
     assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
         .isInstanceOf(IllegalArgumentException.class);
 
-    loader.load(ExecutionsTestUtil.getFlowFile(
+    final NodeBean nodeBean1 = loader.load(ExecutionsTestUtil.getFlowFile(
         TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_second_level_cron_expression1.flow"));
 
-    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
-        .isInstanceOf(IllegalArgumentException.class);
-
-    loader.load(ExecutionsTestUtil.getFlowFile(
-        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_second_level_cron_expression2.flow"));
-
-    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean1.getTrigger()))
         .isInstanceOf(IllegalArgumentException.class);
 
     final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
-        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_no_schedule.flow"));
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_second_level_cron_expression2.flow"));
 
     assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean2.getTrigger()))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    final NodeBean nodeBean3 = loader.load(ExecutionsTestUtil.getFlowFile(
+        TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_no_schedule.flow"));
+
+    assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean3.getTrigger()))
         .isInstanceOf(NullPointerException.class);
   }
 
