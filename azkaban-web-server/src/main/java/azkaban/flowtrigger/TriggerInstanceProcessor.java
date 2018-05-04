@@ -114,9 +114,7 @@ public class TriggerInstanceProcessor {
     message.println("<tr><td>Status</td><td>" + triggerInst.getStatus() + "</td></tr>");
     message.println("</table>");
     message.println("");
-    final String executionUrl =
-        this.emailer.getScheme() + "://" + this.emailer.getClientHostname() + ":" +
-            this.emailer.getClientPortNumber() + "/" + "executor?" + "triggerinstanceid="
+    final String executionUrl = this.emailer.getAzkabanURL()+ "/executor?triggerinstanceid="
             + triggerInst.getId();
 
     message.println("<a href=\"" + executionUrl + "\">" + triggerInst.getFlowId()

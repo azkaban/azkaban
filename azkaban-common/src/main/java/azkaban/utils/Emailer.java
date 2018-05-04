@@ -52,8 +52,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     final int mailTimeout = props.getInt("mail.timeout.millis", 30000);
     EmailMessage.setTimeout(mailTimeout);
-    final int connectionTimeout =
-        props.getInt("mail.connection.timeout.millis", 30000);
+    final int connectionTimeout = props.getInt("mail.connection.timeout.millis", 30000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
@@ -75,16 +74,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  public String getScheme() {
-    return this.scheme;
-  }
-
-  public String getClientHostname() {
-    return this.clientHostname;
-  }
-
-  public String getClientPortNumber() {
-    return this.clientPortNumber;
+  public String getAzkabanURL() {
+    return this.scheme + "://" + this.clientHostname + ":" + this.clientPortNumber;
   }
 
   /**

@@ -98,6 +98,13 @@ public class EmailerTest {
   }
 
   @Test
+  public void testGetAzkabanURL() {
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
+    assertThat(emailer.getAzkabanURL()).isEqualTo("http://localhost:8786");
+  }
+
+  @Test
   public void testCreateEmailMessage() {
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
