@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
+@SuppressWarnings("FutureReturnValueIgnored")
 public class TriggerInstanceProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
