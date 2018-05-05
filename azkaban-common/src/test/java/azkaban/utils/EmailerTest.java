@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.mail.DefaultMailCreatorTest;
 import azkaban.flow.Flow;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
@@ -94,7 +93,7 @@ public class EmailerTest {
     emailer.alertOnError(exFlow);
     verify(this.message).addAllToAddress(this.receiveAddrList);
     verify(this.message).setSubject("Flow 'jobe' has failed on azkaban");
-    assertThat(DefaultMailCreatorTest.read("errorEmail2.html"))
+    assertThat(TestUtils.readResource("errorEmail2.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
