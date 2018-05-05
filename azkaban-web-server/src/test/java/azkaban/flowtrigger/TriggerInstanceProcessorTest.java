@@ -15,10 +15,17 @@
  */
 package azkaban.flowtrigger;
 
+<<<<<<< HEAD
+=======
+import static java.lang.Thread.sleep;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+>>>>>>> address comment
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+<<<<<<< HEAD
 import static org.mockito.Mockito.doAnswer;
+=======
+>>>>>>> address comment
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,21 +34,30 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.CronSchedule;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
+import azkaban.utils.EmailMessageCreator;
 import azkaban.utils.Emailer;
+import azkaban.utils.EmailerTest;
+import azkaban.utils.Props;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Charsets;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.IOUtils;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Maps;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -61,10 +77,18 @@ public class TriggerInstanceProcessorTest {
         Duration.ofMinutes(1)
     );
     final Project proj = new Project(1, "proj");
-    final Flow flow = new Flow("flowId");
+    final Flow flow = new Flow("123");
     flow.addFailureEmails(Lists.newArrayList(EMAIL));
     proj.setFlows(Maps.newHashMap("flowId", flow));
     final List<DependencyInstance> depInstList = new ArrayList<>();
+    depInstList.add(
+        new DependencyInstance("dep1", 1, 2, null, Status.CANCELLED, CancellationCause.MANUAL));
+    depInstList.add(
+        new DependencyInstance("dep2", 1, 2, null, Status.SUCCEEDED, CancellationCause.FAILURE));
+    depInstList.add(
+        new DependencyInstance("dep3", 1, 2, null, Status.CANCELLED, CancellationCause.TIMEOUT));
+    depInstList.add(
+        new DependencyInstance("dep4", 1, 2, null, Status.CANCELLED, CancellationCause.CASCADING));
     return new TriggerInstance("instanceId", flowTrigger, "flowId", 1,
         "test", depInstList, -1, proj);
   }
@@ -98,6 +122,17 @@ public class TriggerInstanceProcessorTest {
     this.processor.processTermination(triggerInstance);
     this.sendEmailLatch.await(10L, TimeUnit.SECONDS);
     verify(this.emailer).sendEmail(any(), any(), any());
+    InputStream is = null;
+    try {
+      is = TriggerInstanceProcessorTest.class.getClassLoader()
+          .getResourceAsStream("emailTemplate/flowtriggerfailureemail.html");
+      final String emailHtml = IOUtils.toString(is, Charsets.UTF_8).trim();
+      assertThat(emailHtml).isEqualToIgnoringWhitespace(message.getBody());
+    } finally {
+      if (is != null) {
+        is.close();
+      }
+    }
   }
 
   @Test

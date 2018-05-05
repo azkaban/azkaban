@@ -37,7 +37,6 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
 public class TriggerInstanceProcessor {
 
@@ -95,7 +94,7 @@ public class TriggerInstanceProcessor {
         .getProjectName(), this.emailer.getAzkabanName());
   }
 
-  private EmailMessage createFlowTriggerEmailMessage(final TriggerInstance triggerInst) {
+  private EmailMessage createFlowTriggerFailureEmailMessage(final TriggerInstance triggerInst) {
     final EmailMessage message = this.emailer.createEmailMessage(generateFailureEmailSubject
         (triggerInst), "text/html", triggerInst.getFailureEmails());
     final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -114,8 +113,8 @@ public class TriggerInstanceProcessor {
     message.println("<tr><td>Status</td><td>" + triggerInst.getStatus() + "</td></tr>");
     message.println("</table>");
     message.println("");
-    final String executionUrl = this.emailer.getAzkabanURL()+ "/executor?triggerinstanceid="
-            + triggerInst.getId();
+    final String executionUrl = this.emailer.getAzkabanURL() + "/executor?triggerinstanceid="
+        + triggerInst.getId();
 
     message.println("<a href=\"" + executionUrl + "\">" + triggerInst.getFlowId()
         + " Flow Trigger Instance Link</a>");
@@ -139,8 +138,9 @@ public class TriggerInstanceProcessor {
   private void sendFailureEmailIfConfigured(final TriggerInstance triggerInstance) {
     final List<String> failureEmails = triggerInstance.getFailureEmails();
     if (!failureEmails.isEmpty()) {
-      final EmailMessage message = this.createFlowTriggerEmailMessage(triggerInstance);
-      this.emailer.sendEmail(message, true, "email message " + message.getBody());
+      final EmailMessage message = this.createFlowTriggerFailureEmailMessage(triggerInstance);
+      this.emailer.sendEmail(message, true, "email message failure email for flow trigger "
+          + triggerInstance.getId());
     }
   }
 
