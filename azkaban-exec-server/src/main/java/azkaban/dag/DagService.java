@@ -28,7 +28,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Thread safe and non blocking service for DAG processing.
  *
- * <p>Since only one thread is used to progress the DAG, thread synchronization is avoided.
+ * <p>Allow external inputs to be given to a dag or node to allow the dag to transition states
+ * . Since only one thread is used to progress the DAG, thread synchronization is avoided.
  */
 @SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
@@ -72,7 +73,7 @@ class DagService {
   }
 
   /**
-   * Kills a Dag.
+   * Kills a DAG.
    */
   void killDag(final Dag dag) {
     this.executorService.submit(dag::kill);
