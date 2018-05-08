@@ -31,7 +31,7 @@ public class TestFlowProcessor implements FlowProcessor {
   }
 
   @Override
-  public void changeStatus(final Flow flow, final Status status) {
+  public void changeStatus(final Dag flow, final Status status) {
     System.out.println(flow);
     this.statusChangeRecorder.recordFlow(flow);
     if (status.isTerminal()) {

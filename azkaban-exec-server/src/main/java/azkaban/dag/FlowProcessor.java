@@ -24,5 +24,5 @@ public interface FlowProcessor {
    * @param flow the flow to change
    * @param status the new status
    */
-  void changeStatus(Flow flow, Status status);
+  void changeStatus(Dag flow, Status status);
 }

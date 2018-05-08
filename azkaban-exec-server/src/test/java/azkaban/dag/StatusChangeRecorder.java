@@ -34,7 +34,7 @@ class StatusChangeRecorder {
     this.sequence.add(new Pair(node.getName(), node.getStatus()));
   }
 
-  void recordFlow(final Flow flow) {
+  void recordFlow(final Dag flow) {
     this.sequence.add(new Pair<>(flow.getName(), flow.getStatus()));
   }
 

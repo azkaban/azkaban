@@ -25,14 +25,14 @@ import java.util.List;
 /**
  * A DAG (Directed acyclic graph) consists of {@link Node}s.
  */
-class Flow {
+class Dag {
 
   private final String name;
   private final FlowProcessor flowProcessor;
   private final List<Node> nodes = new ArrayList<>();
   private Status status = Status.READY;
 
-  Flow(final String name, final FlowProcessor flowProcessor) {
+  Dag(final String name, final FlowProcessor flowProcessor) {
     this.name = name;
     requireNonNull(flowProcessor, "The flowProcessor parameter can't be null.");
     this.flowProcessor = flowProcessor;

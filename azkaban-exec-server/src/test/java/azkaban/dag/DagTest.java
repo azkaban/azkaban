@@ -26,9 +26,9 @@ import org.junit.Test;
  *
  * Focuses on how the flow state changes in response to one external request.
  */
-public class FlowTest {
+public class DagTest {
 
-  private final Flow testFlow = new Flow("fa", mock(FlowProcessor.class));
+  private final Dag testFlow = new Dag("fa", mock(FlowProcessor.class));
 
   @Test
   public void flow_finish_with_only_disabled_nodes() {

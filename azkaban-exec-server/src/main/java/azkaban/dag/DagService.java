@@ -46,7 +46,7 @@ class DagService {
     this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
   }
 
-  void startFlow(final Flow flow) {
+  void startFlow(final Dag flow) {
     this.executorService.submit(flow::start);
   }
 
@@ -62,7 +62,7 @@ class DagService {
     this.executorService.submit(node::markFailure);
   }
 
-  void killFlow(final Flow flow) {
+  void killFlow(final Dag flow) {
     this.executorService.submit(flow::kill);
   }
 

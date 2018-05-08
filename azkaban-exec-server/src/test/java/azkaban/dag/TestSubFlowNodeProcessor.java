@@ -20,16 +20,16 @@ public class TestSubFlowNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
-  private final Flow flow;
+  private final Dag dag;
 
 
   TestSubFlowNodeProcessor(final DagService dagService,
       final StatusChangeRecorder statusChangeRecorder,
-      final Flow flow
+      final Dag dag
   ) {
     this.dagService = dagService;
     this.statusChangeRecorder = statusChangeRecorder;
-    this.flow = flow;
+    this.dag = dag;
   }
 
 
@@ -40,10 +40,10 @@ public class TestSubFlowNodeProcessor implements NodeProcessor {
 
     switch (status) {
       case RUNNING:
-        this.dagService.startFlow(this.flow);
+        this.dagService.startFlow(this.dag);
         break;
       case KILLING:
-        this.dagService.killFlow(this.flow);
+        this.dagService.killFlow(this.dag);
         break;
       default:
         // todo: save status

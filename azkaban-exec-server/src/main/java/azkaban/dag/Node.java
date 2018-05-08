@@ -39,7 +39,7 @@ class Node {
 
   private Status status = Status.READY;
 
-  private Flow flow;
+  private Dag flow;
 
   Node(final String name, final NodeProcessor nodeProcessor) {
     this.name = name;
@@ -47,11 +47,11 @@ class Node {
     this.nodeProcessor = nodeProcessor;
   }
 
-  public Flow getFlow() {
+  public Dag getFlow() {
     return this.flow;
   }
 
-  public void setFlow(final Flow flow) {
+  public void setFlow(final Dag flow) {
     this.flow = flow;
   }
 
@@ -149,7 +149,7 @@ class Node {
    * Kills a node.
    *
    * <p> A node is not designed to be killed individually. This
-   * method expects {@link Flow#kill()} method to kill all nodes. Thus this method itself doesn't
+   * method expects {@link Dag#kill()} method to kill all nodes. Thus this method itself doesn't
    * need to propagate the kill signal to the node's children nodes.
    */
   void kill() {
