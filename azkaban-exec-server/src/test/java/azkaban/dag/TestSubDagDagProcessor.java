@@ -36,7 +36,7 @@ public class TestSubDagDagProcessor implements DagProcessor {
   @Override
   public void changeStatus(final Dag flow, final Status status) {
     System.out.println(flow);
-    this.statusChangeRecorder.recordFlow(flow);
+    this.statusChangeRecorder.recordDag(flow);
     requireNonNull(this.node);
     switch (status) {
       case SUCCESS:

@@ -33,7 +33,7 @@ public class TestDagProcessor implements DagProcessor {
   @Override
   public void changeStatus(final Dag flow, final Status status) {
     System.out.println(flow);
-    this.statusChangeRecorder.recordFlow(flow);
+    this.statusChangeRecorder.recordDag(flow);
     if (status.isTerminal()) {
       this.flowFinishedLatch.countDown();
     }
