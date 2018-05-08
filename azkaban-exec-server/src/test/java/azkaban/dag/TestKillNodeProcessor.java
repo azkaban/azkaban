@@ -22,13 +22,18 @@ public class TestKillNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
-  private final CountDownLatch jobRunningLatch;
+  private final CountDownLatch nodeRunningLatch;
 
+  /**
+   * A node processor that tests killing a node.
+   *
+   * @param nodeRunningLatch signal that the node has started running
+   */
   TestKillNodeProcessor(final DagService dagService,
-      final StatusChangeRecorder statusChangeRecorder, final CountDownLatch jobRunningLatch) {
+      final StatusChangeRecorder statusChangeRecorder, final CountDownLatch nodeRunningLatch) {
     this.dagService = dagService;
     this.statusChangeRecorder = statusChangeRecorder;
-    this.jobRunningLatch = jobRunningLatch;
+    this.nodeRunningLatch = nodeRunningLatch;
   }
 
   @Override
@@ -38,7 +43,7 @@ public class TestKillNodeProcessor implements NodeProcessor {
     switch (node.getStatus()) {
       case RUNNING:
         // Don't mark the job finished. Simulate a long running job.
-        this.jobRunningLatch.countDown();
+        this.nodeRunningLatch.countDown();
         break;
       case KILLING:
         this.dagService.markNodeKilled(node);

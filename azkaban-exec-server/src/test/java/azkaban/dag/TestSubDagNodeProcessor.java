@@ -16,53 +16,40 @@
 
 package azkaban.dag;
 
-import static java.util.Objects.requireNonNull;
-
-public class TestSubFlowDagProcessor implements DagProcessor {
+public class TestSubDagNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
-  private Node node;
+  private final Dag dag;
 
 
-  TestSubFlowDagProcessor(final DagService dagService,
-      final StatusChangeRecorder statusChangeRecorder
+  TestSubDagNodeProcessor(final DagService dagService,
+      final StatusChangeRecorder statusChangeRecorder,
+      final Dag dag
   ) {
     this.dagService = dagService;
     this.statusChangeRecorder = statusChangeRecorder;
+    this.dag = dag;
   }
 
 
   @Override
-  public void changeStatus(final Dag flow, final Status status) {
-    System.out.println(flow);
-    this.statusChangeRecorder.recordFlow(flow);
-    requireNonNull(this.node);
+  public void changeStatus(final Node node, final Status status) {
+    System.out.println(node);
+    this.statusChangeRecorder.recordNode(node);
+
     switch (status) {
-      case SUCCESS:
-        this.dagService.markNodeSuccess(this.node);
+      case RUNNING:
+        this.dagService.startDag(this.dag);
         break;
-      case FAILURE:
-        this.dagService.markNodeFailed(this.node);
-        break;
-      case KILLED:
-        //this.dagService.markJobKilled(this.node);
+      case KILLING:
+        this.dagService.killDag(this.dag);
         break;
       default:
         // todo: save status
         break;
     }
-  }
 
-  /**
-   * Sets the node that this subflow belongs.
-   *
-   * Can't pass this information in the constructor since it will cause a circular dependency
-   * problem.
-   *
-   * @param node the node as part of the parent flow
-   */
-  public void setNode(final Node node) {
-    this.node = node;
+
   }
 }

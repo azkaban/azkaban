@@ -28,6 +28,13 @@ import javafx.util.Pair;
 import org.junit.After;
 import org.junit.Test;
 
+/**
+ * Tests {@link DagService}
+ *
+ * <p>Naming conventions: nodes are named with letters such as a, b. Dags are named with 'f'
+ * prefix. e.g. "fa". A sub DAG has the prefix "sf" such as "sfb". A sub DAG is a node within the
+ * parent DAG.
+ */
 public class DagServiceTest {
 
   private final DagService dagService = new DagService();
@@ -35,10 +42,10 @@ public class DagServiceTest {
   private final Set<Node> nodesToFail = new HashSet<>();
   private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService,
       this.statusChangeRecorder, this.nodesToFail);
-  private final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
-  private final DagProcessor dagProcessor = new TestDagProcessor(this.flowFinishedLatch,
+  private final CountDownLatch dagFinishedLatch = new CountDownLatch(1);
+  private final DagProcessor dagProcessor = new TestDagProcessor(this.dagFinishedLatch,
       this.statusChangeRecorder);
-  private final Dag testFlow = createFlow("fa");
+  private final Dag testDag = createDag();
   private final List<Pair<String, Status>> expectedSequence = new ArrayList<>();
 
 
@@ -52,7 +59,7 @@ public class DagServiceTest {
    */
   @Test
   public void oneNodeSuccess() throws Exception {
-    createNodeAndAddToTestFlow("a");
+    createNodeAndAddToTestDag("a");
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("a", Status.RUNNING);
     addToExpectedSequence("a", Status.SUCCESS);
@@ -69,8 +76,8 @@ public class DagServiceTest {
    */
   @Test
   public void twoNodesSuccess() throws Exception {
-    final Node aNode = createNodeAndAddToTestFlow("a");
-    final Node bNode = createNodeAndAddToTestFlow("b");
+    final Node aNode = createNodeAndAddToTestDag("a");
+    final Node bNode = createNodeAndAddToTestDag("b");
     aNode.addChild(bNode);
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("a", Status.RUNNING);
@@ -92,9 +99,9 @@ public class DagServiceTest {
    */
   @Test
   public void threeNodesSuccess() throws Exception {
-    final Node aNode = createNodeAndAddToTestFlow("a");
-    final Node bNode = createNodeAndAddToTestFlow("b");
-    final Node cNode = createNodeAndAddToTestFlow("c");
+    final Node aNode = createNodeAndAddToTestDag("a");
+    final Node bNode = createNodeAndAddToTestDag("b");
+    final Node cNode = createNodeAndAddToTestDag("c");
     aNode.addChildren(bNode, cNode);
 
     addToExpectedSequence("fa", Status.RUNNING);
@@ -115,7 +122,7 @@ public class DagServiceTest {
    */
   @Test
   public void oneNodeFailure() throws Exception {
-    final Node aNode = createNodeAndAddToTestFlow("a");
+    final Node aNode = createNodeAndAddToTestDag("a");
     this.nodesToFail.add(aNode);
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("a", Status.RUNNING);
@@ -136,8 +143,8 @@ public class DagServiceTest {
    */
   @Test
   public void twoNodesFailFirst() throws Exception {
-    final Node aNode = createNodeAndAddToTestFlow("a");
-    final Node bNode = createNodeAndAddToTestFlow("b");
+    final Node aNode = createNodeAndAddToTestDag("a");
+    final Node bNode = createNodeAndAddToTestDag("b");
     aNode.addChild(bNode);
     this.nodesToFail.add(aNode);
 
@@ -163,9 +170,9 @@ public class DagServiceTest {
    */
   @Test
   public void threeNodesFailSecond() throws Exception {
-    final Node aNode = createNodeAndAddToTestFlow("a");
-    final Node bNode = createNodeAndAddToTestFlow("b");
-    final Node cNode = createNodeAndAddToTestFlow("c");
+    final Node aNode = createNodeAndAddToTestDag("a");
+    final Node bNode = createNodeAndAddToTestDag("b");
+    final Node cNode = createNodeAndAddToTestDag("c");
     aNode.addChildren(bNode, cNode);
 
     this.nodesToFail.add(bNode);
@@ -184,33 +191,33 @@ public class DagServiceTest {
   }
 
   /**
-   * Tests a DAG with one subflow, all successful.
+   * Tests a DAG with one subDag, all successful.
    *
    * <pre>
-   *   sfb ( subflow. "sb" stands for sub flow. This prefix is used in a node name.)
+   *   sfb
    *   |
    *   c
    *
-   * subflow:
+   * subDag: fb
    * a b
    * </pre>
    */
   @Test
-  public void simple_subflow_success_case() throws Exception {
-    final TestSubFlowDagProcessor testSubFlowFlowProcessor = new TestSubFlowDagProcessor
+  public void simple_subdag_success_case() throws Exception {
+    final TestSubDagDagProcessor testSubDagDagProcessor = new TestSubDagDagProcessor
         (this.dagService, this.statusChangeRecorder);
-    final Dag bDag = new Dag("fb", testSubFlowFlowProcessor);
-    createNodeAndAddToFlow("a", bDag);
-    createNodeAndAddToFlow("b", bDag);
+    final Dag bDag = new Dag("fb", testSubDagDagProcessor);
+    createNodeAndAddToDag("a", bDag);
+    createNodeAndAddToDag("b", bDag);
 
-    final TestSubFlowNodeProcessor testSubFlowNodeProcessor = new TestSubFlowNodeProcessor
+    final TestSubDagNodeProcessor testSubDagNodeProcessor = new TestSubDagNodeProcessor
         (this.dagService, this.statusChangeRecorder, bDag);
-    final Node subFlowNode = new Node("sfb", testSubFlowNodeProcessor);
-    testSubFlowFlowProcessor.setNode(subFlowNode);
-    this.testFlow.addNode(subFlowNode);
+    final Node subDagNode = new Node("sfb", testSubDagNodeProcessor);
+    testSubDagDagProcessor.setNode(subDagNode);
+    this.testDag.addNode(subDagNode);
 
-    final Node cNode = createNodeAndAddToTestFlow("c");
-    subFlowNode.addChild(cNode);
+    final Node cNode = createNodeAndAddToTestDag("c");
+    subDagNode.addChild(cNode);
 
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("sfb", Status.RUNNING);
@@ -230,15 +237,15 @@ public class DagServiceTest {
   }
 
   /**
-   * Tests killing a flow.
+   * Tests killing a dag.
    */
   @Test
   public void kill_a_node() throws Exception {
-    final CountDownLatch jobRunningLatch = new CountDownLatch(1);
+    final CountDownLatch nodeRunningLatch = new CountDownLatch(1);
     final TestKillNodeProcessor killNodeProcessor = new TestKillNodeProcessor(this.dagService,
-        this.statusChangeRecorder, jobRunningLatch);
+        this.statusChangeRecorder, nodeRunningLatch);
     final Node aNode = new Node("a", killNodeProcessor);
-    this.testFlow.addNode(aNode);
+    this.testDag.addNode(aNode);
 
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("a", Status.RUNNING);
@@ -247,12 +254,14 @@ public class DagServiceTest {
     addToExpectedSequence("a", Status.KILLED);
     addToExpectedSequence("fa", Status.KILLED);
 
-    this.dagService.startDag(this.testFlow);
-    jobRunningLatch.await(120, TimeUnit.SECONDS);
-    this.dagService.killDag(this.testFlow);
+    this.dagService.startDag(this.testDag);
 
-    final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
-    // Make sure the flow finishes.
+    // Make sure the node is running before killing the DAG.
+    nodeRunningLatch.await(120, TimeUnit.SECONDS);
+    this.dagService.killDag(this.testDag);
+
+    final boolean isWaitSuccessful = this.dagFinishedLatch.await(120, TimeUnit.SECONDS);
+    // Make sure the dag finishes.
     assertThat(isWaitSuccessful).isTrue();
     verifyStatusSequence();
   }
@@ -262,11 +271,11 @@ public class DagServiceTest {
     this.expectedSequence.add(new Pair<>(name, status));
   }
 
-  private void runFlow() throws InterruptedException {
-    this.dagService.startDag(this.testFlow);
-    final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
+  private void runDag() throws InterruptedException {
+    this.dagService.startDag(this.testDag);
+    final boolean isWaitSuccessful = this.dagFinishedLatch.await(120, TimeUnit.SECONDS);
 
-    // Make sure the flow finishes.
+    // Make sure the dag finishes.
     assertThat(isWaitSuccessful).isTrue();
   }
 
@@ -275,12 +284,12 @@ public class DagServiceTest {
   }
 
   private void runAndVerify() throws InterruptedException {
-    runFlow();
+    runDag();
     verifyStatusSequence();
   }
 
   /**
-   * Creates a node and add to the test flow.
+   * Creates a node and add to the test dag.
    *
    * @param name node name
    * @return Node object
@@ -289,17 +298,18 @@ public class DagServiceTest {
     return new Node(name, this.nodeProcessor);
   }
 
-  private Node createNodeAndAddToFlow(final String name, final Dag flow) {
+  private Node createNodeAndAddToDag(final String name, final Dag flow) {
     final Node node = createNode(name);
     flow.addNode(node);
     return node;
   }
 
-  private Node createNodeAndAddToTestFlow(final String name) {
-    return createNodeAndAddToFlow(name, this.testFlow);
+  private Node createNodeAndAddToTestDag(final String name) {
+    return createNodeAndAddToDag(name, this.testDag);
   }
 
-  private Dag createFlow(final String name) {
-    return new Dag(name, this.dagProcessor);
+  private Dag createDag() {
+    return new Dag("fa", this.dagProcessor);
   }
 }
+
