@@ -28,7 +28,7 @@ import org.junit.Test;
  */
 public class DagTest {
 
-  private final Dag testFlow = new Dag("fa", mock(FlowProcessor.class));
+  private final Dag testFlow = new Dag("fa", mock(DagProcessor.class));
 
   @Test
   public void flow_finish_with_only_disabled_nodes() {

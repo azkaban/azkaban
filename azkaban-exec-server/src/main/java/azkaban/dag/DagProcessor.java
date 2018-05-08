@@ -16,7 +16,7 @@
 
 package azkaban.dag;
 
-public interface FlowProcessor {
+public interface DagProcessor {
 
   /**
    * Changes the status of the flow.

@@ -36,7 +36,7 @@ public class DagServiceTest {
   private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService,
       this.statusChangeRecorder, this.nodesToFail);
   private final CountDownLatch flowFinishedLatch = new CountDownLatch(1);
-  private final FlowProcessor flowProcessor = new TestFlowProcessor(this.flowFinishedLatch,
+  private final DagProcessor dagProcessor = new TestDagProcessor(this.flowFinishedLatch,
       this.statusChangeRecorder);
   private final Dag testFlow = createFlow("fa");
   private final List<Pair<String, Status>> expectedSequence = new ArrayList<>();
@@ -197,7 +197,7 @@ public class DagServiceTest {
    */
   @Test
   public void simple_subflow_success_case() throws Exception {
-    final TestSubFlowFlowProcessor testSubFlowFlowProcessor = new TestSubFlowFlowProcessor
+    final TestSubFlowDagProcessor testSubFlowFlowProcessor = new TestSubFlowDagProcessor
         (this.dagService, this.statusChangeRecorder);
     final Dag bDag = new Dag("fb", testSubFlowFlowProcessor);
     createNodeAndAddToFlow("a", bDag);
@@ -300,6 +300,6 @@ public class DagServiceTest {
   }
 
   private Dag createFlow(final String name) {
-    return new Dag(name, this.flowProcessor);
+    return new Dag(name, this.dagProcessor);
   }
 }

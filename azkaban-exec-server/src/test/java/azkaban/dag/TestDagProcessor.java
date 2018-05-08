@@ -18,13 +18,13 @@ package azkaban.dag;
 
 import java.util.concurrent.CountDownLatch;
 
-public class TestFlowProcessor implements FlowProcessor {
+public class TestDagProcessor implements DagProcessor {
 
   private final StatusChangeRecorder statusChangeRecorder;
   private final CountDownLatch flowFinishedLatch;
 
 
-  TestFlowProcessor(final CountDownLatch flowFinishedLatch,
+  TestDagProcessor(final CountDownLatch flowFinishedLatch,
       final StatusChangeRecorder statusChangeRecorder) {
     this.flowFinishedLatch = flowFinishedLatch;
     this.statusChangeRecorder = statusChangeRecorder;

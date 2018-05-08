@@ -28,14 +28,14 @@ import java.util.List;
 class Dag {
 
   private final String name;
-  private final FlowProcessor flowProcessor;
+  private final DagProcessor dagProcessor;
   private final List<Node> nodes = new ArrayList<>();
   private Status status = Status.READY;
 
-  Dag(final String name, final FlowProcessor flowProcessor) {
+  Dag(final String name, final DagProcessor dagProcessor) {
     this.name = name;
-    requireNonNull(flowProcessor, "The flowProcessor parameter can't be null.");
-    this.flowProcessor = flowProcessor;
+    requireNonNull(dagProcessor, "The dagProcessor parameter can't be null.");
+    this.dagProcessor = dagProcessor;
   }
 
   void addNode(final Node node) {
@@ -116,7 +116,7 @@ class Dag {
 
   private void changeStatus(final Status status) {
     this.status = status;
-    this.flowProcessor.changeStatus(this, status);
+    this.dagProcessor.changeStatus(this, status);
   }
 
   @Override
