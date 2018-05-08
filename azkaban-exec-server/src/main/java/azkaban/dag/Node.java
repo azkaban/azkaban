@@ -118,6 +118,7 @@ class Node {
     for (final Node child : this.children) {
       child.cancel();
     }
+    //todo: HappyRay support failure options "Finish Current Running" and "Cancel All"
     this.flow.updateFlowStatus();
   }
 
