@@ -118,10 +118,9 @@ public class ExecutorApiGateway {
     }
 
     @SuppressWarnings("unchecked") final URI uri =
-        ExecutorApiClient.buildUri(host, port, path, true,
-            paramList.toArray(new Pair[0]));
+        ExecutorApiClient.buildUri(host, port, path, true);
 
-    return this.apiClient.httpGet(uri, null);
+    return this.apiClient.httpPost(uri, paramList);
   }
 
 }

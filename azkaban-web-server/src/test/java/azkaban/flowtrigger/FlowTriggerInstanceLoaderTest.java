@@ -16,6 +16,8 @@
 package azkaban.flowtrigger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
 import azkaban.db.DatabaseOperator;
@@ -29,6 +31,7 @@ import azkaban.project.JdbcProjectImpl;
 import azkaban.project.JdbcProjectImplTest;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
@@ -67,6 +70,7 @@ public class FlowTriggerInstanceLoaderTest {
   private static FlowTrigger flowTrigger;
   private static FlowTriggerInstanceLoader triggerInstLoader;
   private static Project project;
+  private static ProjectManager projManager;
 
   @AfterClass
   public static void destroyDB() {
@@ -83,8 +87,10 @@ public class FlowTriggerInstanceLoaderTest {
   public static void setup() throws Exception {
     dbOperator = Utils.initTestDB();
     projLoader = new JdbcProjectImpl(props, dbOperator);
-    triggerInstLoader = new JdbcFlowTriggerInstanceLoaderImpl(dbOperator, projLoader);
+    projManager = mock(ProjectManager.class);
+    triggerInstLoader = new JdbcFlowTriggerInstanceLoaderImpl(dbOperator, projLoader, projManager);
     project = new Project(project_id, project_name);
+
     final DirectoryYamlFlowLoader yamlFlowLoader = new DirectoryYamlFlowLoader(new Props());
     yamlFlowLoader
         .loadProjectFlow(project, ExecutionsTestUtil.getFlowDir(test_project_zip_dir));
@@ -94,6 +100,8 @@ public class FlowTriggerInstanceLoaderTest {
 
     final File flowFile = new File(JdbcProjectImplTest.class.getClassLoader().getResource
         (test_flow_file).getFile());
+
+    when(projManager.getProject(project_id)).thenReturn(project);
 
     projLoader
         .uploadFlowFile(project_id, project_version, flowFile, flow_version);
@@ -295,7 +303,7 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithCancelling(all.get(i));
       }
       //sleep for a while to ensure endtime is different for each trigger instance
-      Thread.sleep(1000);
+      Thread.sleep(100);
     }
 
     this.shuffleAndUpload(all);
@@ -360,6 +368,72 @@ public class FlowTriggerInstanceLoaderTest {
   }
 
   @Test
+  public void testGetTriggerInstancesStartTimeDesc() {
+    final List<TriggerInstance> expected = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+      expected.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 1000));
+    }
+
+    this.shuffleAndUpload(expected);
+    final Collection<TriggerInstance> actual = this.triggerInstLoader.getTriggerInstances
+        (this.project_id, this.flow_id, 0, 10);
+    expected.sort((o1, o2) -> ((Long) o2.getStartTime()).compareTo(o1.getStartTime()));
+
+    assertTwoTriggerInstanceListsEqual(new ArrayList<>(actual), new ArrayList<>(expected), true,
+        true);
+  }
+
+  @Test
+  public void testGetEmptyTriggerInstancesStartTimeDesc() {
+    final Collection<TriggerInstance> actual = this.triggerInstLoader.getTriggerInstances
+        (this.project_id, this.flow_id, 0, 10);
+    assertThat(actual).isEmpty();
+  }
+
+  @Test
+  public void testDeleteOldTriggerInstances() throws InterruptedException {
+    final List<TriggerInstance> all = new ArrayList<>();
+    final long ts1 = System.currentTimeMillis();
+    long ts2 = -1;
+    long ts3 = -1;
+    for (int i = 0; i < 30; i++) {
+      all.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 10000));
+
+      if (i < 5) {
+        finalizeTriggerInstanceWithSuccess(all.get(i), -1);
+      } else if (i <= 15) {
+        finalizeTriggerInstanceWithCancelled(all.get(i));
+      } else if (i <= 25) {
+        finalizeTriggerInstanceWithCancelling(all.get(i));
+      } else if (i <= 27) {
+        finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
+      }
+      //sleep for a while to ensure end time is different for each trigger instance
+      if (i == 3) {
+        ts2 = System.currentTimeMillis();
+      } else if (i == 12) {
+        ts3 = System.currentTimeMillis();
+      }
+      Thread.sleep(100);
+    }
+    this.shuffleAndUpload(all);
+
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts1))
+        .isEqualTo(0);
+
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts2))
+        .isEqualTo(0);
+
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts3))
+        .isEqualTo(16);
+
+  }
+
+  @Test
   public void testGetRecentlyFinished() throws InterruptedException {
 
     final List<TriggerInstance> all = new ArrayList<>();
@@ -375,7 +449,7 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithCancelling(all.get(i));
       }
       //sleep for a while to ensure endtime is different for each trigger instance
-      Thread.sleep(1000);
+      Thread.sleep(100);
     }
 
     this.shuffleAndUpload(all);

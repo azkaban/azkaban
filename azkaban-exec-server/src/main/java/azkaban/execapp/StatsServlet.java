@@ -69,13 +69,20 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   }
 
   /**
-   * Handle all get request to Stats Servlet {@inheritDoc}
-   *
-   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
-   * javax.servlet.http.HttpServletResponse)
+   * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
    */
+  @Deprecated
   @Override
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+    doPost(req, resp);
+  }
+
+  /**
+   * Handle all requests to Stats Servlet {@inheritDoc}
+   */
+  @Override
+  protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     final Map<String, Object> ret = new HashMap<>();
 

@@ -171,28 +171,31 @@ public class Flow {
         }
       }
 
-      for (final Node node : this.startNodes) {
-        node.setLevel(0);
-        this.numLevels = 0;
-        recursiveSetLevels(node);
-      }
+      setLevelsAndEdgeNodes(new HashSet<>(startNodes), 0);
     }
   }
 
-  private void recursiveSetLevels(final Node node) {
-    final Set<Edge> edges = this.outEdges.get(node.getId());
-    if (edges != null) {
-      for (final Edge edge : edges) {
-        final Node nextNode = this.nodes.get(edge.getTargetId());
-        edge.setSource(node);
-        edge.setTarget(nextNode);
+  private void setLevelsAndEdgeNodes(final Set<Node> levelNodes, int level) {
+    final Set<Node> nextLevelNodes = new HashSet<>();
 
-        // We pick whichever is higher to get the max distance from root.
-        final int level = Math.max(node.getLevel() + 1, nextNode.getLevel());
-        nextNode.setLevel(level);
-        this.numLevels = Math.max(level, this.numLevels);
-        recursiveSetLevels(nextNode);
+    for (Node node : levelNodes) {
+      node.setLevel(level);
+
+      final Set<Edge> edges = outEdges.get(node.getId());
+      if (edges != null) {
+        edges.forEach(edge -> {
+          edge.setSource(node);
+          edge.setTarget(nodes.get(edge.getTargetId()));
+
+          nextLevelNodes.add(edge.getTarget());
+        });
       }
+    }
+
+    numLevels = level;
+
+    if (!nextLevelNodes.isEmpty()) {
+      setLevelsAndEdgeNodes(nextLevelNodes, level++);
     }
   }
 

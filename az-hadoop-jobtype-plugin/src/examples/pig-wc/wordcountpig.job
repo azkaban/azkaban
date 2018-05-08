@@ -1,0 +1,12 @@
+type=pig
+pig.script=src/wordcountpig.pig
+
+user.to.proxy=azkaban
+
+HDFSRoot=/tmp
+
+param.inDataLocal=res/rpfarewell
+param.inData=${HDFSRoot}/${user.to.proxy}/wordcountpigin
+param.outData=${HDFSRoot}/${user.to.proxy}/wordcountpigout
+
+

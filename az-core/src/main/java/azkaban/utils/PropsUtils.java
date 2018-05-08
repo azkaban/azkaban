@@ -142,7 +142,7 @@ public class PropsUtils {
     return false;
   }
 
-  public static boolean isVarialbeReplacementPattern(final String str) {
+  public static boolean isVariableReplacementPattern(final String str) {
     final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(str);
     return matcher.matches();
   }

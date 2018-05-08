@@ -17,7 +17,7 @@ package azkaban.flowtrigger;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,29 +33,22 @@ import azkaban.utils.Emailer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Maps;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 
 public class TriggerInstanceProcessorTest {
 
   private static final String EMAIL = "test@email.com";
-  private static FlowTriggerInstanceLoader triggerInstLoader;
-  private static ExecutorManager executorManager;
-  private static Emailer emailer;
-  private static TriggerInstanceProcessor processor;
-
-  @BeforeClass
-  public static void setup() throws Exception {
-    triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
-    executorManager = mock(ExecutorManager.class);
-    when(executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
-    emailer = mock(Emailer.class);
-    doNothing().when(emailer).sendEmail(any(), any(), any());
-    processor = new TriggerInstanceProcessor(executorManager, triggerInstLoader, emailer);
-  }
+  private FlowTriggerInstanceLoader triggerInstLoader;
+  private ExecutorManager executorManager;
+  private Emailer emailer;
+  private TriggerInstanceProcessor processor;
+  private CountDownLatch sendEmailLatch;
 
   private static TriggerInstance createTriggerInstance() {
     final FlowTrigger flowTrigger = new FlowTrigger(
@@ -72,25 +65,41 @@ public class TriggerInstanceProcessorTest {
         "test", depInstList, -1, proj);
   }
 
+  @Before
+  public void setUp() throws Exception {
+    this.triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
+    this.executorManager = mock(ExecutorManager.class);
+    when(this.executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
+    this.emailer = mock(Emailer.class);
+    this.sendEmailLatch = new CountDownLatch(1);
+    doAnswer(invocation -> {
+      this.sendEmailLatch.countDown();
+      return null;
+    }).when(this.emailer).sendEmail(any(), any(), any());
+    this.processor = new TriggerInstanceProcessor(this.executorManager, this.triggerInstLoader,
+        this.emailer);
+  }
+
   @Test
   public void testProcessSucceed() throws ExecutorManagerException {
     final TriggerInstance triggerInstance = createTriggerInstance();
-    processor.processSucceed(triggerInstance);
-    verify(executorManager).submitExecutableFlow(any(), anyString());
-    verify(triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
+    this.processor.processSucceed(triggerInstance);
+    verify(this.executorManager).submitExecutableFlow(any(), anyString());
+    verify(this.triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
   }
 
   @Test
-  public void testProcessTermination() throws ExecutorManagerException {
+  public void testProcessTermination() throws Exception {
     final TriggerInstance triggerInstance = createTriggerInstance();
-    processor.processTermination(triggerInstance);
-    verify(emailer).sendEmail(any(), any(), any());
+    this.processor.processTermination(triggerInstance);
+    this.sendEmailLatch.await(10L, TimeUnit.SECONDS);
+    verify(this.emailer).sendEmail(any(), any(), any());
   }
 
   @Test
-  public void testNewInstance() throws ExecutorManagerException {
+  public void testNewInstance() {
     final TriggerInstance triggerInstance = createTriggerInstance();
-    processor.processNewInstance(triggerInstance);
-    verify(triggerInstLoader).uploadTriggerInstance(triggerInstance);
+    this.processor.processNewInstance(triggerInstance);
+    verify(this.triggerInstLoader).uploadTriggerInstance(triggerInstance);
   }
 }

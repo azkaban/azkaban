@@ -16,6 +16,7 @@
 
 package azkaban.flowtrigger;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.flow.Flow;
@@ -25,11 +26,14 @@ import azkaban.project.Project;
 import azkaban.utils.Emailer;
 import com.google.common.base.Preconditions;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
 public class TriggerInstanceProcessor {
 
@@ -37,10 +41,11 @@ public class TriggerInstanceProcessor {
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for %s "
       + "cancelled from %s";
   private static final String FAILURE_EMAIL_BODY = "Your flow trigger cancelled [id: %s]";
-
+  private final static int THREAD_POOL_SIZE = 32;
   private final ExecutorManager executorManager;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final Emailer emailer;
+  private final ExecutorService executorService;
 
   @Inject
   public TriggerInstanceProcessor(final ExecutorManager executorManager,
@@ -52,6 +57,12 @@ public class TriggerInstanceProcessor {
     this.emailer = emailer;
     this.executorManager = executorManager;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
+    this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+  }
+
+  public void shutdown() {
+    this.executorService.shutdown();
+    this.executorService.shutdownNow();
   }
 
   private void executeFlowAndUpdateExecID(final TriggerInstance triggerInst) {
@@ -63,11 +74,17 @@ public class TriggerInstanceProcessor {
       // currently running")
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
-      this.flowTriggerInstanceLoader.updateAssociatedFlowExecId(triggerInst);
     } catch (final Exception ex) {
-      logger.error("exception when executing the associate flow and updating flow exec id", ex);
-      //todo chengren311: should we swallow the exception or notify user
+      logger.error(String.format(
+          "exception when executing the associated flow and updating flow exec id for trigger instance[id: %s]",
+          triggerInst.getId()), ex);
+      // if flow fails to be executed(e.g. running execution exceeds the allowed concurrent run
+      // limit), set associated flow exec id to Constants.FAILED_EXEC_ID. Upon web server
+      // restart, recovery process will skip those flows.
+      triggerInst.setFlowExecId(Constants.FAILED_EXEC_ID);
     }
+
+    this.flowTriggerInstanceLoader.updateAssociatedFlowExecId(triggerInst);
   }
 
   private String generateFailureEmailSubject(final TriggerInstance triggerInstance) {
@@ -104,7 +121,8 @@ public class TriggerInstanceProcessor {
    */
   public void processTermination(final TriggerInstance triggerInst) {
     logger.debug("process termination for " + triggerInst);
-    sendFailureEmailIfConfigured(triggerInst);
+    //sendFailureEmailIfConfigured takes 1/3 secs
+    this.executorService.submit(() -> sendFailureEmailIfConfigured(triggerInst));
   }
 
   /**

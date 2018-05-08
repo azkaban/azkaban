@@ -49,6 +49,7 @@ dependencies {
     testCompile deps.hadoopHdfs
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
+    testCompile deps.commonsCompress
 }
 
 tasks.withType(JavaCompile) {

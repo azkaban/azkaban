@@ -25,11 +25,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
-import azkaban.utils.AbstractMailerTest;
-import azkaban.utils.Emailer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -69,8 +68,8 @@ public class ExecutorManagerTest {
 
   @Before
   public void setup() {
-    this.props = AbstractMailerTest.createMailProperties();
-    this.alertHolder = new AlerterHolder(this.props, new Emailer(this.props, this.commonMetrics));
+    this.props = new Props();
+    this.alertHolder = mock(AlerterHolder.class);
     this.loader = new MockExecutorLoader();
   }
 
@@ -85,8 +84,8 @@ public class ExecutorManagerTest {
    * Helper method to create a ExecutorManager Instance
    */
   private ExecutorManager createMultiExecutorManagerInstance() throws Exception {
-    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-    this.props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "false");
+    this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, "false");
     this.loader.addExecutor("localhost", 12345);
     this.loader.addExecutor("localhost", 12346);
     return createExecutorManager();
@@ -98,7 +97,7 @@ public class ExecutorManagerTest {
    */
   @Test(expected = ExecutorManagerException.class)
   public void testNoExecutorScenario() throws Exception {
-    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     @SuppressWarnings("unused") final ExecutorManager manager = createExecutorManager();
   }
 
@@ -125,7 +124,7 @@ public class ExecutorManagerTest {
    */
   @Test
   public void testMultipleExecutorScenario() throws Exception {
-    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     final Executor executor1 = this.loader.addExecutor("localhost", 12345);
     final Executor executor2 = this.loader.addExecutor("localhost", 12346);
 
@@ -147,7 +146,7 @@ public class ExecutorManagerTest {
    */
   @Test
   public void testSetupExecutorsSucess() throws Exception {
-    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     final Executor executor1 = this.loader.addExecutor("localhost", 12345);
     final ExecutorManager manager = createExecutorManager();
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
@@ -170,7 +169,7 @@ public class ExecutorManagerTest {
    */
   @Test(expected = ExecutorManagerException.class)
   public void testSetupExecutorsException() throws Exception {
-    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     final Executor executor1 = this.loader.addExecutor("localhost", 12345);
     final ExecutorManager manager = createExecutorManager();
     final Set<Executor> activeExecutors =
@@ -384,13 +383,13 @@ public class ExecutorManagerTest {
     this.loader = mock(ExecutorLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.user = TestUtils.getTestUser();
-    this.props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     //To test runningFlows, AZKABAN_QUEUEPROCESSING_ENABLED should be set to true
     //so that flows will be dispatched to executors.
-    this.props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "true");
+    this.props.put(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, "true");
 
     // allow two concurrent runs give one Flow
-    this.props.put(ExecutorManager.AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW, 2);
+    this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 2);
 
     final List<Executor> executors = new ArrayList<>();
     final Executor executor1 = new Executor(1, "localhost", 12345, true);

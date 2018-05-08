@@ -16,7 +16,10 @@
 
 package azkaban.executor;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
@@ -26,15 +29,21 @@ import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
+import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.Lists;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.Thread.State;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +61,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
@@ -65,27 +76,17 @@ import org.joda.time.DateTime;
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
-  public static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
-      "azkaban.use.multiple.executors";
-  public static final String AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW =
-      "azkaban.max.concurrent.runs.oneflow";
-  static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
-      "azkaban.executorselector.filters";
-  static final String AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
-      "azkaban.executorselector.comparator.";
-  static final String AZKABAN_QUEUEPROCESSING_ENABLED =
-      "azkaban.queueprocessing.enabled";
-  private static final String AZKABAN_WEBSERVER_QUEUE_SIZE =
-      "azkaban.webserver.queue.size";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS =
-      "azkaban.activeexecutor.refresh.milisecinterval";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
-      "azkaban.activeexecutor.refresh.flowinterval";
+  private static final String SPARK_JOB_TYPE = "spark";
+  private static final String APPLICATION_ID = "${application.id}";
+  // The regex to look for while fetching application ID from the Hadoop/Spark job log
+  private static final Pattern APPLICATION_ID_PATTERN = Pattern
+      .compile("application_\\d+_\\d+");
+  // The regex to look for while validating the content from RM job link
+  private static final Pattern FAILED_TO_READ_APPLICATION_PATTERN = Pattern
+      .compile("Failed to read the application");
+  private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
+      .compile("Invalid Application ID");
   private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
-  private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
-      "azkaban.executorinfo.refresh.maxThreads";
-  private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
-      "azkaban.maxDispatchingErrors";
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
@@ -127,12 +128,14 @@ public class ExecutorManager extends EventHandler implements
     this.setupExecutors();
     this.loadRunningFlows();
 
-    this.queuedFlows = new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+    this.queuedFlows = new QueuedExecutions(
+        azkProps.getLong(Constants.ConfigurationKeys.WEBSERVER_QUEUE_SIZE, 100000));
 
     // The default threshold is set to 30 for now, in case some users are affected. We may
     // decrease this number in future, to better prevent DDos attacks.
-    this.maxConcurrentRunsOneFlow = azkProps.getInt(AZKABAN_MAX_CONCURRENT_RUNS_ONEFLOW,
-        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
+    this.maxConcurrentRunsOneFlow = azkProps
+        .getInt(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
+            DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
@@ -153,17 +156,28 @@ public class ExecutorManager extends EventHandler implements
 
   }
 
+  private String findApplicationIdFromLog(final String logData) {
+    final Matcher matcher = APPLICATION_ID_PATTERN.matcher(logData);
+    String appId = null;
+    if (matcher.find()) {
+      appId = matcher.group().substring(12);
+    }
+    this.logger.info("Application ID is " + appId);
+    return appId;
+  }
+
   private void setupMultiExecutorMode() {
     // initliatize hard filters for executor selector from azkaban.properties
-    final String filters = this.azkProps.getString(AZKABAN_EXECUTOR_SELECTOR_FILTERS, "");
+    final String filters = this.azkProps
+        .getString(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_FILTERS, "");
     if (filters != null) {
       this.filterList = Arrays.asList(StringUtils.split(filters, ","));
     }
 
     // initliatize comparator feature weights for executor selector from
     // azkaban.properties
-    final Map<String, String> compListStrings =
-        this.azkProps.getMapByPrefix(AZKABAN_EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
+    final Map<String, String> compListStrings = this.azkProps
+        .getMapByPrefix(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
     if (compListStrings != null) {
       this.comparatorWeightsMap = new TreeMap<>();
       for (final Map.Entry<String, String> entry : compListStrings.entrySet()) {
@@ -173,15 +187,18 @@ public class ExecutorManager extends EventHandler implements
 
     this.executorInforRefresherService =
         Executors.newFixedThreadPool(this.azkProps.getInt(
-            AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS, 5));
+            Constants.ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5));
 
     // configure queue processor
     this.queueProcessor =
-        new QueueProcessorThread(this.azkProps.getBoolean(
-            AZKABAN_QUEUEPROCESSING_ENABLED, true), this.azkProps.getLong(
-            AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000), this.azkProps.getInt(
-            AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5), this.azkProps.getInt(
-            AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED, this.activeExecutors.size()));
+        new QueueProcessorThread(
+            this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true),
+            this.azkProps.getLong(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000),
+            this.azkProps.getInt(
+                Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
+            this.azkProps.getInt(
+                Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
+                this.activeExecutors.size()));
 
     this.queueProcessor.start();
   }
@@ -232,7 +249,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private boolean isMultiExecutorMode() {
-    return this.azkProps.getBoolean(AZKABAN_USE_MULTIPLE_EXECUTORS, false);
+    return this.azkProps.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false);
   }
 
   /**
@@ -755,6 +772,99 @@ public class ExecutorManager extends EventHandler implements
         .get("attachments");
 
     return jobStats;
+  }
+
+  @Override
+  public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
+    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
+      return null;
+    }
+
+    final String applicationId = getApplicationId(exFlow, jobId, attempt);
+    if (applicationId == null) {
+      return null;
+    }
+
+    final URL url;
+    final String jobLinkUrl;
+    boolean isRMJobLinkValid = true;
+
+    try {
+      url = new URL(this.azkProps.getString(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL)
+          .replace(APPLICATION_ID, applicationId));
+      final String keytabPrincipal = requireNonNull(
+          this.azkProps.getString(ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL));
+      final String keytabPath = requireNonNull(this.azkProps.getString(ConfigurationKeys
+          .AZKABAN_KEYTAB_PATH));
+      final HttpURLConnection connection = AuthenticationUtils.loginAuthenticatedURL(url,
+          keytabPrincipal, keytabPath);
+
+      try (final BufferedReader in = new BufferedReader(
+          new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+          if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()
+              || INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
+            this.logger.info(
+                "RM job link is invalid or has expired for application_" + applicationId);
+            isRMJobLinkValid = false;
+            break;
+          }
+        }
+      }
+    } catch (final Exception e) {
+      this.logger.error("Failed to get job link for application_" + applicationId, e);
+      return null;
+    }
+
+    if (isRMJobLinkValid) {
+      jobLinkUrl = url.toString();
+    } else {
+      // If RM job link is invalid or has expired, fetch the job link from JHS or SHS.
+      if (exFlow.getExecutableNode(jobId).getType().equals(SPARK_JOB_TYPE)) {
+        jobLinkUrl =
+            this.azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL).replace
+                (APPLICATION_ID, applicationId);
+      } else {
+        jobLinkUrl =
+            this.azkProps.get(ConfigurationKeys.HISTORY_SERVER_JOB_URL).replace(APPLICATION_ID,
+                applicationId);
+      }
+    }
+
+    this.logger.info(
+        "Job link url is " + jobLinkUrl + " for execution " + exFlow.getExecutionId() + ", job "
+            + jobId);
+    return jobLinkUrl;
+  }
+
+  private String getApplicationId(final ExecutableFlow exFlow, final String jobId,
+      final int attempt) {
+    String applicationId;
+    boolean finished = false;
+    int offset = 0;
+    try {
+      while (!finished) {
+        final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+        if (data != null) {
+          applicationId = findApplicationIdFromLog(data.getData());
+          if (applicationId != null) {
+            return applicationId;
+          }
+          offset = data.getOffset() + data.getLength();
+          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+              + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
+        } else {
+          finished = true;
+        }
+      }
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+          ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
+    }
+    return null;
   }
 
   @Override
@@ -1624,7 +1734,7 @@ public class ExecutorManager extends EventHandler implements
 
     private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
     private final int maxDispatchingErrors;
-    private final long activeExecutorRefreshWindowInMilisec;
+    private final long activeExecutorRefreshWindowInMillisec;
     private final int activeExecutorRefreshWindowInFlows;
 
     private volatile boolean shutdown = false;
@@ -1638,7 +1748,7 @@ public class ExecutorManager extends EventHandler implements
       this.maxDispatchingErrors = maxDispatchingErrors;
       this.activeExecutorRefreshWindowInFlows =
           activeExecutorRefreshWindowInFlows;
-      this.activeExecutorRefreshWindowInMilisec =
+      this.activeExecutorRefreshWindowInMillisec =
           activeExecutorRefreshWindowInTime;
       this.setName("AzkabanWebServer-QueueProcessor-Thread");
     }
@@ -1665,7 +1775,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             // start processing queue if active, other wait for sometime
             if (this.isActive) {
-              processQueuedFlows(this.activeExecutorRefreshWindowInMilisec,
+              processQueuedFlows(this.activeExecutorRefreshWindowInMillisec,
                   this.activeExecutorRefreshWindowInFlows);
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);

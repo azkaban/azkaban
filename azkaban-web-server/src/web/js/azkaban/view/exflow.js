@@ -88,6 +88,7 @@ var flowTabView;
 azkaban.FlowTabView = Backbone.View.extend({
   events: {
     "click #graphViewLink": "handleGraphLinkClick",
+    "click #flowTriggerlistViewLink": "handleFlowTriggerLinkClick",
     "click #jobslistViewLink": "handleJobslistLinkClick",
     "click #flowLogViewLink": "handleLogLinkClick",
     "click #statsViewLink": "handleStatsLinkClick",
@@ -125,10 +126,26 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#jobslistViewLink").removeClass("active");
     $("#graphViewLink").addClass("active");
     $("#flowLogViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#jobListView").hide();
+    $("#flowTriggerListView").hide();
     $("#graphView").show();
+    $("#flowLogView").hide();
+    $("#statsView").hide();
+  },
+
+  handleFlowTriggerLinkClick: function () {
+    $("#jobslistViewLink").removeClass("active");
+    $("#graphViewLink").removeClass("active");
+    $("#flowLogViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").addClass("active");
+    $("#statsViewLink").removeClass("active");
+
+    $("#jobListView").hide();
+    $("#flowTriggerListView").show();
+    $("#graphView").hide();
     $("#flowLogView").hide();
     $("#statsView").hide();
   },
@@ -137,9 +154,11 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#graphViewLink").removeClass("active");
     $("#jobslistViewLink").addClass("active");
     $("#flowLogViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#graphView").hide();
+    $("#flowTriggerListView").hide();
     $("#jobListView").show();
     $("#flowLogView").hide();
     $("#statsView").hide();
@@ -147,11 +166,13 @@ azkaban.FlowTabView = Backbone.View.extend({
 
   handleLogLinkClick: function () {
     $("#graphViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").addClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#graphView").hide();
+    $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").show();
     $("#statsView").hide();
@@ -159,11 +180,13 @@ azkaban.FlowTabView = Backbone.View.extend({
 
   handleStatsLinkClick: function () {
     $("#graphViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").removeClass("active");
     $("#statsViewLink").addClass("active");
 
     $("#graphView").hide();
+    $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").hide();
     statsView.show();
@@ -392,6 +415,7 @@ azkaban.StatsView = Backbone.View.extend({
 var graphModel;
 
 var logModel;
+var flowTriggerModel;
 azkaban.LogModel = Backbone.Model.extend({});
 
 var updateStatus = function (updateTime) {
@@ -422,33 +446,33 @@ var updateStatus = function (updateTime) {
 }
 
 function updatePastAttempts(data, update) {
-	if (!update.pastAttempts) {
-	    return;
-	}
+  if (!update.pastAttempts) {
+    return;
+  }
 
-	if (data.pastAttempts) {
-		for (var i = 0; i < update.pastAttempts.length; ++i) {
-			var updatedAttempt = update.pastAttempts[i];
-			var found = false;
-			for (var j = 0; j < data.pastAttempts.length; ++j) {
-				var attempt = data.pastAttempts[j];
-				if (attempt.attempt == updatedAttempt.attempt) {
-					attempt.startTime = updatedAttempt.startTime;
-					attempt.endTime = updatedAttempt.endTime;
-					attempt.status = updatedAttempt.status;
-					found = true;
-					break;
-				}
-			}
+  if (data.pastAttempts) {
+    for (var i = 0; i < update.pastAttempts.length; ++i) {
+      var updatedAttempt = update.pastAttempts[i];
+      var found = false;
+      for (var j = 0; j < data.pastAttempts.length; ++j) {
+        var attempt = data.pastAttempts[j];
+        if (attempt.attempt == updatedAttempt.attempt) {
+          attempt.startTime = updatedAttempt.startTime;
+          attempt.endTime = updatedAttempt.endTime;
+          attempt.status = updatedAttempt.status;
+          found = true;
+          break;
+        }
+      }
 
-			if (!found) {
-				data.pastAttempts.push(updatedAttempt);
-			}
-		}
-	}
-	else {
-		data.pastAttempts = update.pastAttempts;
-	}
+      if (!found) {
+        data.pastAttempts.push(updatedAttempt);
+      }
+    }
+  }
+  else {
+    data.pastAttempts = update.pastAttempts;
+  }
 }
 
 var updateGraph = function (data, update) {
@@ -630,6 +654,7 @@ $(function () {
   var selected;
 
   graphModel = new azkaban.GraphModel();
+  flowTriggerModel = new azkaban.FlowTriggerModel();
   logModel = new azkaban.LogModel();
 
   flowTabView = new azkaban.FlowTabView({
@@ -680,8 +705,26 @@ $(function () {
     model: graphModel
   });
 
-  var requestURL = contextURL + "/executor";
-  var requestData = {"execid": execId, "ajax": "fetchexecflow"};
+  flowTriggerInstanceListView = new azkaban.FlowTriggerInstanceListView({
+    el: $('#flowTriggerListView'),
+    model: flowTriggerModel
+  });
+
+  var requestURL;
+  var requestData;
+  if (execId != "-1" && execId != "-2") {
+    requestURL = contextURL + "/executor";
+    requestData = {"execid": execId, "ajax": "fetchexecflow"};
+  }
+  else {
+    requestURL = contextURL + "/manager";
+    requestData = {
+      "project": projectName,
+      "ajax": "fetchflowgraph",
+      "flow": flowId
+    };
+  }
+
   var successHandler = function (data) {
     console.log("data fetched");
     graphModel.addFlow(data);
@@ -702,12 +745,32 @@ $(function () {
       else if (hash == "#stats") {
         flowTabView.handleStatsLinkClick();
       }
+      else if (hash == "#triggerslist") {
+        flowTabView.handleFlowTriggerLinkClick();
+      }
     }
     else {
       flowTabView.handleGraphLinkClick();
     }
     updaterFunction();
     logUpdaterFunction();
+  };
+  ajaxCall(requestURL, requestData, successHandler);
+
+  requestURL = contextURL + "/flowtriggerinstance";
+  if (execId != "-1" && execId != "-2") {
+    requestData = {"execid": execId, "ajax": "fetchTriggerStatus"};
+  }
+  else if (triggerInstanceId != "-1") {
+    requestData = {
+      "triggerinstid": triggerInstanceId,
+      "ajax": "fetchTriggerStatus"
+    };
+  }
+
+  successHandler = function (data) {
+    flowTriggerModel.addTrigger(data)
+    flowTriggerModel.trigger("change:trigger");
   };
   ajaxCall(requestURL, requestData, successHandler);
 });

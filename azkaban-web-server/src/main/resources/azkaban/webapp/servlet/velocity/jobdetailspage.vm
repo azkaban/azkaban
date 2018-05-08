@@ -37,6 +37,13 @@
     var jobId = "${jobid}";
     var attempt = ${attempt};
   </script>
+  <script type="text/javascript">
+    $(document).ready(function () {
+      #if ($jobFailed == "true")
+        $("#jobLinkUrl").removeClass("btn-primary").addClass("btn-danger");
+      #end
+    });
+  </script>
 </head>
 <body>
 

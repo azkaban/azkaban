@@ -20,6 +20,7 @@ package azkaban.project;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowTriggerProps;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import java.io.File;
@@ -96,12 +97,22 @@ public class NodeBeanLoader {
     Preconditions.checkNotNull(scheduleMap, "flow trigger schedule must not be null");
 
     Preconditions.checkArgument(
-        scheduleMap.containsKey(Constants.SCHEDULE_TYPE) && scheduleMap.get(Constants.SCHEDULE_TYPE)
-            .equals(Constants.CRON_SCHEDULE_TYPE), "flow trigger schedule type must be cron");
+        scheduleMap.containsKey(FlowTriggerProps.SCHEDULE_TYPE) && scheduleMap.get
+            (FlowTriggerProps.SCHEDULE_TYPE)
+            .equals(FlowTriggerProps.CRON_SCHEDULE_TYPE),
+        "flow trigger schedule type must be cron");
 
-    Preconditions.checkArgument(scheduleMap.containsKey(Constants.SCHEDULE_VALUE) && CronExpression
-            .isValidExpression(scheduleMap.get(Constants.SCHEDULE_VALUE)),
-        "flow trigger schedule value must be a valid cron expression");
+    Preconditions
+        .checkArgument(scheduleMap.containsKey(FlowTriggerProps.SCHEDULE_VALUE) && CronExpression
+                .isValidExpression(scheduleMap.get(FlowTriggerProps.SCHEDULE_VALUE)),
+            "flow trigger schedule value must be a valid cron expression");
+
+    final String cronExpression = scheduleMap.get(FlowTriggerProps.SCHEDULE_VALUE).trim();
+    final String[] cronParts = cronExpression.split("\\s+");
+
+    Preconditions
+        .checkArgument(cronParts[0].equals("0"), "interval of flow trigger schedule has to"
+            + " be larger than 1 min");
 
     Preconditions.checkArgument(scheduleMap.size() == 2, "flow trigger schedule must "
         + "contain type and value only");
@@ -177,7 +188,7 @@ public class NodeBeanLoader {
         flowTriggerBean.setMaxWaitMins(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME.toMinutes());
       }
       return new FlowTrigger(
-          new CronSchedule(flowTriggerBean.getSchedule().get(Constants.SCHEDULE_VALUE)),
+          new CronSchedule(flowTriggerBean.getSchedule().get(FlowTriggerProps.SCHEDULE_VALUE)),
           flowTriggerBean.getTriggerDependencies().stream()
               .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
               .collect(Collectors.toList()),

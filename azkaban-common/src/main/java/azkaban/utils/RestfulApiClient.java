@@ -21,21 +21,18 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
 
 /**
@@ -76,60 +73,11 @@ public abstract class RestfulApiClient<T> {
       }
     }
 
-    URI uri = null;
     try {
-      uri = builder.build();
+      return builder.build();
     } catch (final URISyntaxException e) {
       throw new IOException(e);
     }
-
-    return uri;
-  }
-
-  /**
-   * helper function to build a valid URI.
-   *
-   * @param uri the URI to start with.
-   * @param params extra query parameters to append.
-   * @return the URI built from the inputs.
-   */
-  public static URI BuildUri(final URI uri, final Pair<String, String>... params)
-      throws IOException {
-    final URIBuilder builder = new URIBuilder(uri);
-
-    if (params != null) {
-      for (final Pair<String, String> pair : params) {
-        builder.setParameter(pair.getFirst(), pair.getSecond());
-      }
-    }
-
-    URI returningUri = null;
-    try {
-      returningUri = builder.build();
-    } catch (final URISyntaxException e) {
-      throw new IOException(e);
-    }
-
-    return returningUri;
-  }
-
-  /**
-   * helper function to fill  the request with header entries .
-   */
-  private static HttpMessage completeRequest(final HttpMessage request,
-      final List<NameValuePair> headerEntries) {
-    if (null == request) {
-      logger.error("unable to complete request as the passed request object is null");
-      return request;
-    }
-
-    // dump all the header entries to the request.
-    if (null != headerEntries && headerEntries.size() > 0) {
-      for (final NameValuePair pair : headerEntries) {
-        request.addHeader(pair.getName(), pair.getValue());
-      }
-    }
-    return request;
   }
 
   /**
@@ -137,13 +85,13 @@ public abstract class RestfulApiClient<T> {
    */
   private static HttpEntityEnclosingRequestBase completeRequest(
       final HttpEntityEnclosingRequestBase request,
-      final List<NameValuePair> headerEntries,
-      final String postingBody) throws UnsupportedEncodingException {
-    if (null != completeRequest(request, headerEntries)) {
-      // dump the post body UTF-8 will be used as the default encoding type.
-      if (null != postingBody && postingBody.length() > 0) {
-        final HttpEntity entity = new ByteArrayEntity(postingBody.getBytes("UTF-8"));
-        request.setHeader("Content-Length", Long.toString(entity.getContentLength()));
+      final List<Pair<String, String>> params) throws UnsupportedEncodingException {
+    if (request != null) {
+      if (null != params && !params.isEmpty()) {
+        final List<NameValuePair> formParams = params.stream()
+            .map(pair -> new BasicNameValuePair(pair.getFirst(), pair.getSecond()))
+            .collect(Collectors.toList());
+        final HttpEntity entity = new UrlEncodedFormEntity(formParams, "UTF-8");
         request.setEntity(entity);
       }
     }
@@ -156,39 +104,17 @@ public abstract class RestfulApiClient<T> {
    * response object out via the returning value as the response will be closed after the execution
    * steps out of the method context.
    **/
-  protected abstract T parseResponse(HttpResponse response)
-      throws HttpResponseException, IOException;
-
-  /**
-   * function to perform a Get http request.
-   *
-   * @param uri the URI of the request.
-   * @param headerEntries extra entries to be added to request header.
-   * @return the response object type of which is specified by user.
-   */
-  public T httpGet(final URI uri, final List<NameValuePair> headerEntries) throws IOException {
-    // shortcut if the passed url is invalid.
-    if (null == uri) {
-      logger.error(" unable to perform httpGet as the passed uri is null");
-      return null;
-    }
-
-    final HttpGet get = new HttpGet(uri);
-    return this.sendAndReturn((HttpGet) completeRequest(get, headerEntries));
-  }
+  protected abstract T parseResponse(HttpResponse response) throws IOException;
 
   /**
    * function to perform a Post http request.
    *
    * @param uri the URI of the request.
-   * @param headerEntries extra entries to be added to request header.
-   * @param postingBody the content to be posted , optional.
+   * @param params the form params to be posted, optional.
    * @return the response object type of which is specified by user.
    * @throws UnsupportedEncodingException, IOException
    */
-  public T httpPost(final URI uri,
-      final List<NameValuePair> headerEntries,
-      final String postingBody) throws UnsupportedEncodingException, IOException {
+  public T httpPost(final URI uri, final List<Pair<String, String>> params) throws IOException {
     // shortcut if the passed url is invalid.
     if (null == uri) {
       logger.error(" unable to perform httpPost as the passed uri is null.");
@@ -196,57 +122,15 @@ public abstract class RestfulApiClient<T> {
     }
 
     final HttpPost post = new HttpPost(uri);
-    return this.sendAndReturn(completeRequest(post, headerEntries, postingBody));
-  }
-
-  /**
-   * function to perform a Delete http request.
-   *
-   * @param uri the URI of the request.
-   * @param headerEntries extra entries to be added to request header.
-   * @return the response object type of which is specified by user.
-   */
-  public T httpDelete(final URI uri, final List<NameValuePair> headerEntries) throws IOException {
-    // shortcut if the passed url is invalid.
-    if (null == uri) {
-      logger.error(" unable to perform httpDelete as the passed uri is null.");
-      return null;
-    }
-
-    final HttpDelete delete = new HttpDelete(uri);
-    return this.sendAndReturn((HttpDelete) completeRequest(delete, headerEntries));
-  }
-
-  /**
-   * function to perform a Put http request.
-   *
-   * @param uri the URI of the request.
-   * @param headerEntries extra entries to be added to request header.
-   * @param postingBody the content to be posted , optional.
-   * @return the response object type of which is specified by user.
-   * @throws UnsupportedEncodingException, IOException
-   */
-  public T httpPut(final URI uri, final List<NameValuePair> headerEntries,
-      final String postingBody) throws UnsupportedEncodingException, IOException {
-    // shortcut if the passed url is invalid.
-    if (null == uri) {
-      logger.error(" unable to perform httpPut as the passed url is null or empty.");
-      return null;
-    }
-
-    final HttpPut put = new HttpPut(uri);
-    return this.sendAndReturn(completeRequest(put, headerEntries, postingBody));
+    return this.sendAndReturn(completeRequest(post, params));
   }
 
   /**
    * function to dispatch the request and pass back the response.
    */
   protected T sendAndReturn(final HttpUriRequest request) throws IOException {
-    final CloseableHttpClient client = HttpClients.createDefault();
-    try {
+    try (CloseableHttpClient client = HttpClients.createDefault()) {
       return this.parseResponse(client.execute(request));
-    } finally {
-      client.close();
     }
   }
 }

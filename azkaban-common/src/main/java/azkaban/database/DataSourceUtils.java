@@ -142,7 +142,7 @@ public class DataSourceUtils {
 
     private EmbeddedH2BasicDataSource(final Path filePath) {
       super();
-      final String url = "jdbc:h2:file:" + filePath;
+      final String url = "jdbc:h2:file:" + filePath + ";IGNORECASE=TRUE";
       setDriverClassName("org.h2.Driver");
       setUrl(url);
     }

@@ -20,8 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.project.JdbcProjectImpl;
+import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -50,6 +53,8 @@ public class ExecutionFlowDaoTest {
   private AssignExecutorDao assignExecutor;
   private FetchActiveFlowDao fetchActiveFlowDao;
   private ExecutionJobDao executionJobDao;
+  private static final Props props = new Props();
+  private ProjectLoader loader;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -73,6 +78,7 @@ public class ExecutionFlowDaoTest {
     this.assignExecutor = new AssignExecutorDao(dbOperator, this.executorDao);
     this.fetchActiveFlowDao = new FetchActiveFlowDao(dbOperator);
     this.executionJobDao = new ExecutionJobDao(dbOperator);
+    this.loader = new JdbcProjectImpl(props, dbOperator);
   }
 
   @After
@@ -80,6 +86,7 @@ public class ExecutionFlowDaoTest {
     try {
       dbOperator.update("DELETE FROM execution_flows");
       dbOperator.update("DELETE FROM executors");
+      dbOperator.update("DELETE FROM projects");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -87,6 +94,13 @@ public class ExecutionFlowDaoTest {
 
   private ExecutableFlow createTestFlow() throws Exception {
     return TestUtils.createTestExecutableFlow("exectest1", "exec1");
+  }
+
+  private void createTestProject() {
+    String projectName = "exectest1";
+    String projectDescription = "This is my new project";
+    User user = new User("testUser1");
+    this.loader.createNewProject(projectName, projectDescription, user);
   }
 
   @Test
@@ -134,6 +148,19 @@ public class ExecutionFlowDaoTest {
     final ExecutableFlow fetchFlow =
         this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), flowList2.get(0));
+    assertTwoFlowSame(flowList1.get(0), fetchFlow);
+  }
+
+  @Test
+  public void testAdvancedFilter() throws Exception {
+    createTestProject();
+    final ExecutableFlow flow = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory("exectest1", "", "",0, -1, -1, 0, 16);
+    assertThat(flowList1.size()).isEqualTo(1);
+
+    final ExecutableFlow fetchFlow =
+            this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
   }
 
@@ -355,6 +382,14 @@ public class ExecutionFlowDaoTest {
     assertThat(flow1.getExecutionOptions().getFailureAction())
         .isEqualTo(flow2.getExecutionOptions().getFailureAction());
     assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
+  }
+
+  /**
+   * restores the clock; see {@link #testFetchEmptyRecentlyFinishedFlows()}
+   */
+  @After
+  public void clockReset() {
+    DateTimeUtils.setCurrentMillisOffset(0);
   }
 
 }
