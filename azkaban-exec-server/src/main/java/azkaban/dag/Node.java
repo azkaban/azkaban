@@ -92,11 +92,6 @@ class Node {
     return true;
   }
 
-  public void run() {
-    assert (isReady());
-    changeStatus(Status.RUNNING);
-  }
-
   void markSuccess() {
     // It's possible that the flow is killed before this method is called.
     assertRunningOrKilling();
@@ -112,7 +107,7 @@ class Node {
    */
   void runIfAllowed() {
     if (isReady()) {
-      run();
+      changeStatus(Status.RUNNING);
     }
   }
 
@@ -155,12 +150,12 @@ class Node {
   /**
    * Kills a node.
    *
-   * <p>Unlike other events, this method expects that the caller will check if the flow is finished.
-   * This action will only be invoked by the {@link Flow#kill()} method, i.e. there is no
-   * DagService#killNode method. In the interest of efficiency, it only needs to check once in
-   * the Flow#kill method.
+   * <p> A node is not designed to be killed individually. This
+   * method expects {@link Flow#kill()} method to kill all nodes. Thus this method itself doesn't
+   * need to propagate the kill signal to the node's children nodes.
    */
   void kill() {
+    assert (this.flow.getStatus() == Status.KILLING);
     if (this.status == Status.READY || this.status == Status.BLOCKED) {
       // If the node is disabled, keep the status as disabled.
       changeStatus(Status.CANCELED);
