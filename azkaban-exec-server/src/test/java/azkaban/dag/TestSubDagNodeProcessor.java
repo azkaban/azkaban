@@ -16,6 +16,9 @@
 
 package azkaban.dag;
 
+/**
+ * A NodeProcessor that bridges the sub DAG and the parent DAG.
+ */
 public class TestSubDagNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
@@ -33,6 +36,12 @@ public class TestSubDagNodeProcessor implements NodeProcessor {
   }
 
 
+  /**
+   * Triggers the sub DAG state change when the sub DAG node in the parent DAG's status changes.
+   *
+   * @param node the node to change
+   * @param status the new status
+   */
   @Override
   public void changeStatus(final Node node, final Status status) {
     System.out.println(node);
@@ -45,11 +54,6 @@ public class TestSubDagNodeProcessor implements NodeProcessor {
       case KILLING:
         this.dagService.killDag(this.dag);
         break;
-      default:
-        // todo: save status
-        break;
     }
-
-
   }
 }
