@@ -79,7 +79,7 @@ class DagService {
   }
 
   /**
-   * Shuts down the service and wait for the tasks to finish.
+   * Shuts down the service and waits for the tasks to finish.
    *
    * <p>Adopted from
    * <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html">
