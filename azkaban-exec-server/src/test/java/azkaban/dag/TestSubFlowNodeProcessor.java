@@ -40,10 +40,10 @@ public class TestSubFlowNodeProcessor implements NodeProcessor {
 
     switch (status) {
       case RUNNING:
-        this.dagService.startFlow(this.dag);
+        this.dagService.startDag(this.dag);
         break;
       case KILLING:
-        this.dagService.killFlow(this.dag);
+        this.dagService.killDag(this.dag);
         break;
       default:
         // todo: save status

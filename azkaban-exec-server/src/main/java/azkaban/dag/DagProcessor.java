@@ -19,10 +19,10 @@ package azkaban.dag;
 public interface DagProcessor {
 
   /**
-   * Changes the status of the flow.
+   * Changes the status of the dag.
    *
-   * @param flow the flow to change
+   * @param dag the dag to change
    * @param status the new status
    */
-  void changeStatus(Dag flow, Status status);
+  void changeStatus(Dag dag, Status status);
 }

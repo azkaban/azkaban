@@ -39,7 +39,7 @@ class Node {
 
   private Status status = Status.READY;
 
-  private Dag flow;
+  private Dag dag;
 
   Node(final String name, final NodeProcessor nodeProcessor) {
     this.name = name;
@@ -47,12 +47,12 @@ class Node {
     this.nodeProcessor = nodeProcessor;
   }
 
-  public Dag getFlow() {
-    return this.flow;
+  public Dag getDag() {
+    return this.dag;
   }
 
-  public void setFlow(final Dag flow) {
-    this.flow = flow;
+  public void setDag(final Dag flow) {
+    this.dag = flow;
   }
 
   private void addParent(final Node node) {
@@ -92,6 +92,9 @@ class Node {
     return true;
   }
 
+  /**
+   * Transitions the node to the success state.
+   */
   void markSuccess() {
     // It's possible that the flow is killed before this method is called.
     assertRunningOrKilling();
@@ -99,7 +102,7 @@ class Node {
     for (final Node child : this.children) {
       child.runIfAllowed();
     }
-    this.flow.updateFlowStatus();
+    this.dag.updateDagStatus();
   }
 
   /**
@@ -111,7 +114,10 @@ class Node {
     }
   }
 
-  void markFailure() {
+  /**
+   * Transitions the node to the failure state.
+   */
+  void markFailed() {
     // It's possible that the flow is killed before this method is called.
     assertRunningOrKilling();
     changeStatus(Status.FAILURE);
@@ -119,7 +125,7 @@ class Node {
       child.cancel();
     }
     //todo: HappyRay support failure options "Finish Current Running" and "Cancel All"
-    this.flow.updateFlowStatus();
+    this.dag.updateDagStatus();
   }
 
   private void cancel() {
@@ -153,7 +159,7 @@ class Node {
    * need to propagate the kill signal to the node's children nodes.
    */
   void kill() {
-    assert (this.flow.getStatus() == Status.KILLING);
+    assert (this.dag.getStatus() == Status.KILLING);
     if (this.status == Status.READY || this.status == Status.BLOCKED) {
       // If the node is disabled, keep the status as disabled.
       changeStatus(Status.CANCELED);
@@ -163,15 +169,18 @@ class Node {
     // If the node has finished, leave the status intact.
   }
 
+  /**
+   * Transition the node from the killing state to the killed state.
+   */
   void markKilled() {
     assert (this.status == Status.KILLING);
     changeStatus(Status.KILLED);
-    this.flow.updateFlowStatus();
+    this.dag.updateDagStatus();
   }
 
   @Override
   public String toString() {
-    return String.format("Node (%s) status (%s) in (%s)", this.name, this.status, this.flow);
+    return String.format("Node (%s) status (%s) in (%s)", this.name, this.status, this.dag);
   }
 
   Status getStatus() {

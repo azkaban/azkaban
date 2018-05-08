@@ -46,24 +46,36 @@ class DagService {
     this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
   }
 
-  void startFlow(final Dag flow) {
-    this.executorService.submit(flow::start);
+  void startDag(final Dag dag) {
+    this.executorService.submit(dag::start);
   }
 
-  void markJobSuccess(final Node node) {
+  /**
+   * Transitions the node to the success state.
+   */
+  void markNodeSuccess(final Node node) {
     this.executorService.submit(node::markSuccess);
   }
 
-  void markJobKilled(final Node node) {
+  /**
+   * Transitions the node from the killing state to the killed state.
+   */
+  void markNodeKilled(final Node node) {
     this.executorService.submit(node::markKilled);
   }
 
-  void failJob(final Node node) {
-    this.executorService.submit(node::markFailure);
+  /**
+   * Transitions the node to the failure state.
+   */
+  void markNodeFailed(final Node node) {
+    this.executorService.submit(node::markFailed);
   }
 
-  void killFlow(final Dag flow) {
-    this.executorService.submit(flow::kill);
+  /**
+   * Kills a Dag.
+   */
+  void killDag(final Dag dag) {
+    this.executorService.submit(dag::kill);
   }
 
   /**

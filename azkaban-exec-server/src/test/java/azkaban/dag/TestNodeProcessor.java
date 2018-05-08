@@ -39,13 +39,13 @@ public class TestNodeProcessor implements NodeProcessor {
     switch (status) {
       case RUNNING:
         if (this.nodesToFail.contains(node)) {
-          this.dagService.failJob(node);
+          this.dagService.markNodeFailed(node);
         } else {
-          this.dagService.markJobSuccess(node);
+          this.dagService.markNodeSuccess(node);
         }
         break;
       case KILLING:
-        this.dagService.failJob(node);
+        this.dagService.markNodeFailed(node);
         break;
       default:
         // todo: save status

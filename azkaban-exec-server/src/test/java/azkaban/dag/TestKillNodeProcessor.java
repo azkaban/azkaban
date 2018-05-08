@@ -41,7 +41,7 @@ public class TestKillNodeProcessor implements NodeProcessor {
         this.jobRunningLatch.countDown();
         break;
       case KILLING:
-        this.dagService.markJobKilled(node);
+        this.dagService.markNodeKilled(node);
         break;
       default:
         break;

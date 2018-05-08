@@ -39,7 +39,7 @@ class Dag {
   }
 
   void addNode(final Node node) {
-    node.setFlow(this);
+    node.setDag(this);
     this.nodes.add(node);
   }
 
@@ -49,32 +49,32 @@ class Dag {
     for (final Node node : this.nodes) {
       node.runIfAllowed();
     }
-    // It's possible that all nodes are disabled. In this rare case the flow should be
+    // It's possible that all nodes are disabled. In this rare case the dag should be
     // marked success. Otherwise it will be stuck in the the running state.
-    updateFlowStatus();
+    updateDagStatus();
   }
 
   void kill() {
     if (this.status.isTerminal() || this.status == Status.KILLING) {
-      // It is possible that a kill is issued after a flow has finished or multiple kill requests
+      // It is possible that a kill is issued after a dag has finished or multiple kill requests
       // are received. Without this check, this method will make duplicate calls to the
-      // FlowProcessor.
+      // DagProcessor.
       return;
     }
     changeStatus(Status.KILLING);
     for (final Node node : this.nodes) {
       node.kill();
     }
-    updateFlowStatus();
+    updateDagStatus();
   }
 
   /**
-   * Update the final flow status when all jobs are done.
+   * Update the final dag status when all nodes are done.
    *
-   * <p>If any job has not reached its terminal state, this method will simply return.
+   * <p>If any node has not reached its terminal state, this method will simply return.
    */
-  void updateFlowStatus() {
-    // A flow may have nodes that are disabled. It's safer to scan all the nodes.
+  void updateDagStatus() {
+    // A dag may have nodes that are disabled. It's safer to scan all the nodes.
     // Assume the overhead is minimal. If it is not the case, we can optimize later.
     boolean failed = false;
     for (final Node node : this.nodes) {
@@ -87,21 +87,21 @@ class Dag {
       }
     }
 
-    // Update the flow status only after all nodes have reached terminal states.
-    updateFlowStatusInternal(failed);
+    // Update the dag status only after all nodes have reached terminal states.
+    updateDagStatusInternal(failed);
   }
 
   /**
-   * Update the final flow status.
+   * Update the final dag status.
    *
    * @param failed true if any of the jobs has failed
    */
-  private void updateFlowStatusInternal(final boolean failed) {
+  private void updateDagStatusInternal(final boolean failed) {
     if (this.status == Status.KILLING) {
       /*
-      It's possible that some nodes have failed when the flow is killed.
-      Since killing a flow signals an intent from an operator, it is more important to make
-      the flow status reflect the result of that explict intent. e.g. if the killing is a
+      It's possible that some nodes have failed when the dag is killed.
+      Since killing a dag signals an intent from an operator, it is more important to make
+      the dag status reflect the result of that explict intent. e.g. if the killing is a
       result of handing a job failure, users more likely want to know that someone has taken
       an action rather than that a job has failed. Operators can still see the individual job
       status.
@@ -121,7 +121,7 @@ class Dag {
 
   @Override
   public String toString() {
-    return String.format("Flow (%s), status (%s)", this.name, this.status);
+    return String.format("dag (%s), status (%s)", this.name, this.status);
   }
 
   String getName() {

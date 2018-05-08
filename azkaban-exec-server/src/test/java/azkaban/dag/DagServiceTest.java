@@ -247,9 +247,9 @@ public class DagServiceTest {
     addToExpectedSequence("a", Status.KILLED);
     addToExpectedSequence("fa", Status.KILLED);
 
-    this.dagService.startFlow(this.testFlow);
+    this.dagService.startDag(this.testFlow);
     jobRunningLatch.await(120, TimeUnit.SECONDS);
-    this.dagService.killFlow(this.testFlow);
+    this.dagService.killDag(this.testFlow);
 
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
     // Make sure the flow finishes.
@@ -263,7 +263,7 @@ public class DagServiceTest {
   }
 
   private void runFlow() throws InterruptedException {
-    this.dagService.startFlow(this.testFlow);
+    this.dagService.startDag(this.testFlow);
     final boolean isWaitSuccessful = this.flowFinishedLatch.await(120, TimeUnit.SECONDS);
 
     // Make sure the flow finishes.

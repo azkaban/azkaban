@@ -40,10 +40,10 @@ public class TestSubFlowDagProcessor implements DagProcessor {
     requireNonNull(this.node);
     switch (status) {
       case SUCCESS:
-        this.dagService.markJobSuccess(this.node);
+        this.dagService.markNodeSuccess(this.node);
         break;
       case FAILURE:
-        this.dagService.failJob(this.node);
+        this.dagService.markNodeFailed(this.node);
         break;
       case KILLED:
         //this.dagService.markJobKilled(this.node);
