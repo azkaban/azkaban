@@ -21,21 +21,21 @@ import java.util.concurrent.CountDownLatch;
 public class TestDagProcessor implements DagProcessor {
 
   private final StatusChangeRecorder statusChangeRecorder;
-  private final CountDownLatch flowFinishedLatch;
+  private final CountDownLatch dagFinishedLatch;
 
 
-  TestDagProcessor(final CountDownLatch flowFinishedLatch,
+  TestDagProcessor(final CountDownLatch dagFinishedLatch,
       final StatusChangeRecorder statusChangeRecorder) {
-    this.flowFinishedLatch = flowFinishedLatch;
+    this.dagFinishedLatch = dagFinishedLatch;
     this.statusChangeRecorder = statusChangeRecorder;
   }
 
   @Override
-  public void changeStatus(final Dag flow, final Status status) {
-    System.out.println(flow);
-    this.statusChangeRecorder.recordDag(flow);
+  public void changeStatus(final Dag dag, final Status status) {
+    System.out.println(dag);
+    this.statusChangeRecorder.recordDag(dag);
     if (status.isTerminal()) {
-      this.flowFinishedLatch.countDown();
+      this.dagFinishedLatch.countDown();
     }
   }
 }
