@@ -22,16 +22,16 @@ import static org.mockito.Mockito.mock;
 import org.junit.Test;
 
 /**
- * Tests the flow state ( including its nodes' states) transitions.
+ * Tests the dag state ( including its nodes' states) transitions.
  *
- * Focuses on how the flow state changes in response to one external request.
+ * Focuses on how the dag state changes in response to one external request.
  */
 public class DagTest {
 
   private final Dag testFlow = new Dag("fa", mock(DagProcessor.class));
 
   @Test
-  public void flow_finish_with_only_disabled_nodes() {
+  public void dag_finish_with_only_disabled_nodes() {
     final Node aNode = createAndAddNode("a");
     aNode.setStatus(Status.DISABLED);
     this.testFlow.start();
@@ -50,7 +50,7 @@ public class DagTest {
   }
 
   /**
-   * Tests ready nodes are canceled when the flow is killed.
+   * Tests ready nodes are canceled when the dag is killed.
    */
   @Test
   public void waiting_nodes_are_canceled_when_killed() {
@@ -66,7 +66,7 @@ public class DagTest {
   }
 
   /**
-   * Tests multiple ready nodes are canceled when the flow is killed.
+   * Tests multiple ready nodes are canceled when the dag is killed.
    * <pre>
    *     a (running)
    *    / \
@@ -96,7 +96,7 @@ public class DagTest {
   }
 
   /**
-   * Tests blocked nodes are canceled when the flow is killed.
+   * Tests blocked nodes are canceled when the dag is killed.
    */
   @Test
   public void blocked_nodes_are_canceled_when_killed() {
@@ -112,7 +112,7 @@ public class DagTest {
   }
 
   /**
-   * Tests success nodes' states remain the same when the flow is killed.
+   * Tests success nodes' states remain the same when the dag is killed.
    * <pre>
    *     a (success)
    *    /
@@ -132,7 +132,7 @@ public class DagTest {
   }
 
   /**
-   * Tests failed nodes' states remain the same when the flow is killed.
+   * Tests failed nodes' states remain the same when the dag is killed.
    * This can happen when running jobs are allowed to finish when a node fails.
    *
    * <pre>
@@ -151,7 +151,7 @@ public class DagTest {
   }
 
   /**
-   * Creates a node and add to the test flow.
+   * Creates a node and add to the test dag.
    *
    * @param name node name
    * @return Node object
