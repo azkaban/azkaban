@@ -273,7 +273,7 @@ public class DagServiceTest {
 
   private void runDag() throws InterruptedException {
     this.dagService.startDag(this.testDag);
-    final boolean isWaitSuccessful = this.dagFinishedLatch.await(120, TimeUnit.SECONDS);
+    final boolean isWaitSuccessful = this.dagFinishedLatch.await(2, TimeUnit.SECONDS);
 
     // Make sure the dag finishes.
     assertThat(isWaitSuccessful).isTrue();
