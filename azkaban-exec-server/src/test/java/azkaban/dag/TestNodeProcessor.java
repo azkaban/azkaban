@@ -44,12 +44,6 @@ public class TestNodeProcessor implements NodeProcessor {
           this.dagService.markNodeSuccess(node);
         }
         break;
-      case KILLING:
-        this.dagService.markNodeFailed(node);
-        break;
-      default:
-        // todo: save status
-        break;
     }
   }
 }
