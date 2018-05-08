@@ -20,6 +20,11 @@ import static org.mockito.Mockito.mock;
 
 class TestUtil {
 
+  /**
+   * Creates a node with a processor that does nothing.
+   *
+   * @param name node name
+   */
   static Node createNodeWithNullProcessor(final String name) {
     return new Node(name, mock(NodeProcessor.class));
   }
