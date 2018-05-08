@@ -51,8 +51,8 @@ class Node {
     return this.dag;
   }
 
-  public void setDag(final Dag flow) {
-    this.dag = flow;
+  public void setDag(final Dag dag) {
+    this.dag = dag;
   }
 
   private void addParent(final Node node) {
@@ -96,7 +96,7 @@ class Node {
    * Transitions the node to the success state.
    */
   void markSuccess() {
-    // It's possible that the flow is killed before this method is called.
+    // It's possible that the dag is killed before this method is called.
     assertRunningOrKilling();
     changeStatus(Status.SUCCESS);
     for (final Node child : this.children) {
@@ -118,7 +118,7 @@ class Node {
    * Transitions the node to the failure state.
    */
   void markFailed() {
-    // It's possible that the flow is killed before this method is called.
+    // It's possible that the dag is killed before this method is called.
     assertRunningOrKilling();
     changeStatus(Status.FAILURE);
     for (final Node child : this.children) {
@@ -154,7 +154,7 @@ class Node {
   /**
    * Kills a node.
    *
-   * <p> A node is not designed to be killed individually. This method expects {@link Dag#kill()}
+   * <p>A node is not designed to be killed individually. This method expects {@link Dag#kill()}
    * method to kill all nodes. Thus this method itself doesn't need to propagate the kill signal to
    * the node's children nodes.
    */
@@ -180,7 +180,7 @@ class Node {
 
   @Override
   public String toString() {
-    return String.format("Node (%s) status (%s) in (%s)", this.name, this.status, this.dag);
+    return String.format("Node (%s) status (%s) in %s", this.name, this.status, this.dag);
   }
 
   Status getStatus() {
