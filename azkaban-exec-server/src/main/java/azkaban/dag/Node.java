@@ -154,9 +154,9 @@ class Node {
   /**
    * Kills a node.
    *
-   * <p> A node is not designed to be killed individually. This
-   * method expects {@link Dag#kill()} method to kill all nodes. Thus this method itself doesn't
-   * need to propagate the kill signal to the node's children nodes.
+   * <p> A node is not designed to be killed individually. This method expects {@link Dag#kill()}
+   * method to kill all nodes. Thus this method itself doesn't need to propagate the kill signal to
+   * the node's children nodes.
    */
   void kill() {
     assert (this.dag.getStatus() == Status.KILLING);
