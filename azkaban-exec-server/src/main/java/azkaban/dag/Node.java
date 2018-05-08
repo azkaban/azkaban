@@ -122,11 +122,8 @@ class Node {
   }
 
   private void cancel() {
-    // The node can't be in the running, killing, success, failure, killed states since this method
-    // will only be called when one of its ancestors has failed or been killed. It shouldn't have
-    // started.
-    assert (this.status == Status.DISABLED || this.status == Status.READY
-        || this.status == Status.BLOCKED);
+    // The node shouldn't have started.
+    assert (this.status.isPreRunState());
     if (this.status != Status.DISABLED) {
       changeStatus(Status.CANCELED);
     }

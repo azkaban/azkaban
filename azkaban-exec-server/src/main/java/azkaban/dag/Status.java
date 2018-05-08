@@ -32,17 +32,24 @@ enum Status {
   KILLED; // explicitly killed by a user
 
   // The states that will not transition to other states
-  static final ImmutableSet TERMINAL_STATES = ImmutableSet.of(DISABLED, SUCCESS, FAILURE,
+  static private final ImmutableSet TERMINAL_STATES = ImmutableSet.of(DISABLED, SUCCESS, FAILURE,
       CANCELED, KILLED);
-  // The states that are considered as success effectively
-  static final ImmutableSet EFFECTIVE_SUCCESS_STATES = ImmutableSet.of(DISABLED, SUCCESS);
 
   boolean isTerminal() {
     return TERMINAL_STATES.contains(this);
   }
 
+  // The states that are considered as success effectively
+  static private final ImmutableSet EFFECTIVE_SUCCESS_STATES = ImmutableSet.of(DISABLED, SUCCESS);
+
   boolean isSuccessEffectively() {
     return EFFECTIVE_SUCCESS_STATES.contains(this);
   }
 
+  // The states that are possible before a node ever starts to run or be killed or canceled
+  static private final ImmutableSet PRE_RUN_STATES = ImmutableSet.of(DISABLED, READY, BLOCKED);
+
+  boolean isPreRunState() {
+    return PRE_RUN_STATES.contains(this);
+  }
 }
