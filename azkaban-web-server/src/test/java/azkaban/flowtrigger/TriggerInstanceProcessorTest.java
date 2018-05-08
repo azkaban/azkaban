@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -80,15 +81,15 @@ public class TriggerInstanceProcessorTest {
     final Flow flow = new Flow("123");
     flow.addFailureEmails(Lists.newArrayList(EMAIL));
     proj.setFlows(Maps.newHashMap("flowId", flow));
-    final List<DependencyInstance> depInstList = new ArrayList<>();
-    depInstList.add(
-        new DependencyInstance("dep1", 1, 2, null, Status.CANCELLED, CancellationCause.MANUAL));
-    depInstList.add(
-        new DependencyInstance("dep2", 1, 2, null, Status.SUCCEEDED, CancellationCause.FAILURE));
-    depInstList.add(
-        new DependencyInstance("dep3", 1, 2, null, Status.CANCELLED, CancellationCause.TIMEOUT));
-    depInstList.add(
-        new DependencyInstance("dep4", 1, 2, null, Status.CANCELLED, CancellationCause.CASCADING));
+    final List<DependencyInstance> depInstList = Arrays.asList(
+        new DependencyInstance("dep2", 1525500295, 1525500295, null, Status.SUCCEEDED,
+            CancellationCause.FAILURE),
+        new DependencyInstance("dep3", 1525500295, 1525500295, null, Status.CANCELLED,
+            CancellationCause.TIMEOUT),
+        new DependencyInstance("dep4", 1525500295, 1525500295, null, Status.CANCELLED,
+            CancellationCause.CASCADING)
+    );
+
     return new TriggerInstance("instanceId", flowTrigger, "flowId", 1,
         "test", depInstList, -1, proj);
   }
