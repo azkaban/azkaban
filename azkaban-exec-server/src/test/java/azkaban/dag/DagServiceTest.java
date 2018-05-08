@@ -204,16 +204,16 @@ public class DagServiceTest {
    */
   @Test
   public void simple_subdag_success_case() throws Exception {
-    final TestSubDagDagProcessor testSubDagDagProcessor = new TestSubDagDagProcessor
+    final TestSubDagProcessor testSubDagProcessor = new TestSubDagProcessor
         (this.dagService, this.statusChangeRecorder);
-    final Dag bDag = new Dag("fb", testSubDagDagProcessor);
+    final Dag bDag = new Dag("fb", testSubDagProcessor);
     createNodeAndAddToDag("a", bDag);
     createNodeAndAddToDag("b", bDag);
 
     final TestSubDagNodeProcessor testSubDagNodeProcessor = new TestSubDagNodeProcessor
         (this.dagService, this.statusChangeRecorder, bDag);
     final Node subDagNode = new Node("sfb", testSubDagNodeProcessor);
-    testSubDagDagProcessor.setNode(subDagNode);
+    testSubDagProcessor.setNode(subDagNode);
     this.testDag.addNode(subDagNode);
 
     final Node cNode = createNodeAndAddToTestDag("c");

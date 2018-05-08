@@ -18,14 +18,14 @@ package azkaban.dag;
 
 import static java.util.Objects.requireNonNull;
 
-public class TestSubDagDagProcessor implements DagProcessor {
+public class TestSubDagProcessor implements DagProcessor {
 
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
   private Node node;
 
 
-  TestSubDagDagProcessor(final DagService dagService,
+  TestSubDagProcessor(final DagService dagService,
       final StatusChangeRecorder statusChangeRecorder
   ) {
     this.dagService = dagService;
