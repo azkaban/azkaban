@@ -18,6 +18,9 @@ package azkaban.dag;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A DAG processor that brides the sub DAG and the parent DAG.
+ */
 public class TestSubDagProcessor implements DagProcessor {
 
   private final DagService dagService;
@@ -33,11 +36,17 @@ public class TestSubDagProcessor implements DagProcessor {
   }
 
 
+  /**
+   * Transfers the node state in the parent DAG when the sub DAG status changes.
+   *
+   * @param dag the dag to change
+   * @param status the new status
+   */
   @Override
-  public void changeStatus(final Dag flow, final Status status) {
-    System.out.println(flow);
-    this.statusChangeRecorder.recordDag(flow);
-    requireNonNull(this.node);
+  public void changeStatus(final Dag dag, final Status status) {
+    System.out.println(dag);
+    this.statusChangeRecorder.recordDag(dag);
+    requireNonNull(this.node, "Node for the subDag in the parent DAG can't be null.");
     switch (status) {
       case SUCCESS:
         this.dagService.markNodeSuccess(this.node);
@@ -45,18 +54,12 @@ public class TestSubDagProcessor implements DagProcessor {
       case FAILURE:
         this.dagService.markNodeFailed(this.node);
         break;
-      case KILLED:
-        //this.dagService.markJobKilled(this.node);
-        break;
-      default:
-        // todo: save status
-        break;
     }
   }
 
   /**
    * Sets the node that this subflow belongs.
-   *
+   * <p>
    * Can't pass this information in the constructor since it will cause a circular dependency
    * problem.
    *
