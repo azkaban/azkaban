@@ -43,7 +43,7 @@ class Node {
 
   Node(final String name, final NodeProcessor nodeProcessor) {
     this.name = name;
-    requireNonNull(nodeProcessor);
+    requireNonNull(nodeProcessor, "The nodeProcessor parameter can't be null.");
     this.nodeProcessor = nodeProcessor;
   }
 

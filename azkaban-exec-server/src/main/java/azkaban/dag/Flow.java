@@ -34,7 +34,7 @@ class Flow {
 
   Flow(final String name, final FlowProcessor flowProcessor) {
     this.name = name;
-    requireNonNull(flowProcessor, "flowProcessor parameter can't be null.");
+    requireNonNull(flowProcessor, "The flowProcessor parameter can't be null.");
     this.flowProcessor = flowProcessor;
   }
 
