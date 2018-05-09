@@ -102,7 +102,8 @@ public class FlowTriggerScheduler {
                         generateGroupName(flow), contextMap));
           }
         } catch (final Exception ex) {
-          logger.error("error in registering flow", ex);
+          logger.error(String.format("error in registering flow [project: %s, flow: %s]", project
+              .getName(), flow.getId()), ex);
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
         }

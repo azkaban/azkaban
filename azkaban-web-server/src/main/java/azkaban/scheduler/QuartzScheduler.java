@@ -39,7 +39,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one mapping.
+ * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
+ * mapping.
+ * Quartz job key naming standard:
+ * Job key is composed of job name and group name. Job type denotes job name. Project id+flow
+ * name denotes group name.
+ * E.x FLOW_TRIGGER as job name, 1.flow1 as group name
  */
 @Singleton
 public class QuartzScheduler {
