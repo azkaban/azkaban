@@ -114,18 +114,22 @@ public class QuartzScheduler {
     }
   }
 
+  private void checkJobExistence(final String jobName, final String groupName)
+      throws SchedulerException {
+    if (!ifJobExist(jobName, groupName)) {
+      throw new SchedulerException(String.format("can not find job with job name: %s and group "
+          + "name %s: in quartz.", jobName, groupName));
+    }
+  }
+
   /**
    * pause a job given the groupname. since pausing request might be issued concurrently,
    * so synchronized is added to ensure thread safety.
    */
   public synchronized void pauseJob(final String jobName, final String groupName)
       throws SchedulerException {
-    if (!ifJobExist(jobName, groupName)) {
-      throw new SchedulerException(
-          "can not find job with group name: " + groupName + " in quartz.");
-    } else {
-      this.scheduler.pauseJob(new JobKey(jobName, groupName));
-    }
+    checkJobExistence(jobName, groupName);
+    this.scheduler.pauseJob(new JobKey(jobName, groupName));
   }
 
   public synchronized boolean isJobPaused(final String jobName, final String groupName)
@@ -148,12 +152,8 @@ public class QuartzScheduler {
    */
   public synchronized void resumeJob(final String jobName, final String groupName)
       throws SchedulerException {
-    if (!ifJobExist(jobName, groupName)) {
-      throw new SchedulerException(
-          "can not find job with group name: " + groupName + " in quartz.");
-    } else {
-      this.scheduler.resumeJob(new JobKey(jobName, groupName));
-    }
+    checkJobExistence(jobName, groupName);
+    this.scheduler.resumeJob(new JobKey(jobName, groupName));
   }
 
   /**
@@ -162,12 +162,8 @@ public class QuartzScheduler {
    */
   public synchronized void unregisterJob(final String jobName, final String groupName) throws
       SchedulerException {
-    if (!ifJobExist(jobName, groupName)) {
-      throw new SchedulerException(
-          "can not find job with group name: " + groupName + " in quartz.");
-    } else {
-      this.scheduler.deleteJob(new JobKey(jobName, groupName));
-    }
+    checkJobExistence(jobName, groupName);
+    this.scheduler.deleteJob(new JobKey(jobName, groupName));
   }
 
   /**
@@ -190,10 +186,7 @@ public class QuartzScheduler {
     requireNonNull(jobDescription, "jobDescription is null");
 
     // Not allowed to register duplicate job name.
-    if (ifJobExist(jobDescription.getJobName(), jobDescription.getGroupName())) {
-      throw new SchedulerException(
-          "can not register existing job " + jobDescription.getGroupName());
-    }
+    checkJobExistence(jobDescription.getJobName(), jobDescription.getGroupName());
 
     if (!CronExpression.isValidExpression(cronExpression)) {
       throw new SchedulerException(
