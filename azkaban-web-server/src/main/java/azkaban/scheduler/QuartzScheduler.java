@@ -122,6 +122,7 @@ public class QuartzScheduler {
     }
   }
 
+
   /**
    * pause a job given the groupname. since pausing request might be issued concurrently,
    * so synchronized is added to ensure thread safety.
@@ -185,8 +186,10 @@ public class QuartzScheduler {
 
     requireNonNull(jobDescription, "jobDescription is null");
 
-    // Not allowed to register duplicate job name.
-    checkJobExistence(jobDescription.getJobName(), jobDescription.getGroupName());
+    if (ifJobExist(jobDescription.getJobName(), jobDescription.getGroupName())) {
+      throw new SchedulerException(String.format("can not register existing job with job name: "
+          + "%s and group name: %s", jobDescription.getJobName(), jobDescription.getGroupName()));
+    }
 
     if (!CronExpression.isValidExpression(cronExpression)) {
       throw new SchedulerException(
