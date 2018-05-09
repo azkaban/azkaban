@@ -98,10 +98,11 @@ public class FlowTriggerScheduler {
             logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
             this.scheduler
                 .registerJob(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
-                    (FlowTriggerQuartzJob.class, generateGroupName(flow), contextMap));
+                    (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
+                        generateGroupName(flow), contextMap));
           }
         } catch (final Exception ex) {
-          logger.error("error in getting flow file", ex);
+          logger.error("error in registering flow", ex);
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
         }
@@ -112,13 +113,14 @@ public class FlowTriggerScheduler {
   public void pauseFlowTrigger(final int projectId, final String flowId) throws SchedulerException {
     logger.info(String.format("pausing flow trigger for [projectId:%s, flowId:%s]", projectId,
         flowId));
-    this.scheduler.pauseJob(generateGroupName(projectId, flowId));
+    this.scheduler.pauseJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
   public void resumeFlowTrigger(final int projectId, final String flowId) throws
       SchedulerException {
-    logger.info(String.format("resuming flow trigger for [projectId:%s, flowId:%s]", projectId, flowId));
-    this.scheduler.resumeJob(generateGroupName(projectId, flowId));
+    logger.info(
+        String.format("resuming flow trigger for [projectId:%s, flowId:%s]", projectId, flowId));
+    this.scheduler.resumeJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
   /**
@@ -131,7 +133,7 @@ public class FlowTriggerScheduler {
 
       final List<ScheduledFlowTrigger> flowTriggerJobDetails = new ArrayList<>();
       for (final String groupName : groupNames) {
-        final JobKey jobKey = new JobKey(QuartzScheduler.DEFAULT_JOB_NAME, groupName);
+        final JobKey jobKey = new JobKey(FlowTriggerQuartzJob.JOB_NAME, groupName);
         ScheduledFlowTrigger scheduledFlowTrigger = null;
         try {
           final JobDetail job = quartzScheduler.getJobDetail(jobKey);
@@ -143,7 +145,8 @@ public class FlowTriggerScheduler {
               .get(FlowTriggerQuartzJob.FLOW_TRIGGER);
           final String submitUser = jobDataMap.getString(FlowTriggerQuartzJob.SUBMIT_USER);
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
-          final boolean isPaused = this.scheduler.isJobPaused(groupName);
+          final boolean isPaused = this.scheduler
+              .isJobPaused(FlowTriggerQuartzJob.JOB_NAME, groupName);
           scheduledFlowTrigger = new ScheduledFlowTrigger(projectId,
               this.projectManager.getProject(projectId).getName(),
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
@@ -170,7 +173,11 @@ public class FlowTriggerScheduler {
       logger.info("unscheduling flow" + flow.getProjectId() + "." + flow.getId() + " if it has "
           + " schedule");
       if (!flow.isEmbeddedFlow()) {
-        this.scheduler.unregisterJob(generateGroupName(flow));
+        try {
+          this.scheduler.unregisterJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
+        } catch (final Exception ex) {
+          logger.info("error when unregistering job", ex);
+        }
       }
     }
   }
@@ -214,7 +221,7 @@ public class FlowTriggerScheduler {
     }
 
     public boolean isPaused() {
-      return isPaused;
+      return this.isPaused;
     }
 
     public int getProjectId() {

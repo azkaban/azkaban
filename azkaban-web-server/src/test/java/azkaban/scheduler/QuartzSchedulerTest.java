@@ -94,7 +94,7 @@ public class QuartzSchedulerTest {
   @Test
   public void testCreateScheduleAndRun() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
-    assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(true);
+    assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
     TestUtils.await().untilAsserted(() -> assertThat(SampleQuartzJob.COUNT_EXECUTION)
         .isNotNull().isGreaterThan(1));
   }
@@ -119,9 +119,27 @@ public class QuartzSchedulerTest {
   @Test
   public void testUnregisterSchedule() throws Exception {
     scheduler.registerJob("* * * * * ?", createJobDescription());
-    assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(true);
-    scheduler.unregisterJob("SampleService");
-    assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(false);
+    assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
+    scheduler.unregisterJob("SampleJob", "SampleService");
+    assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(false);
+  }
+
+  @Test
+  public void testPauseSchedule() throws Exception {
+    scheduler.registerJob("* * * * * ?", createJobDescription());
+    scheduler.pauseJob("SampleJob", "SampleService");
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(true);
+    scheduler.resumeJob("SampleJob", "SampleService");
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(false);
+
+    // test pausing a paused job
+    scheduler.pauseJob("SampleJob", "SampleService");
+    scheduler.pauseJob("SampleJob", "SampleService");
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(true);
+    // test resuming a non-paused job
+    scheduler.resumeJob("SampleJob", "SampleService");
+    scheduler.resumeJob("SampleJob", "SampleService");
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(false);
   }
 
   @Ignore("Flaky test, slow too. Don't use Thread.sleep in unit tests.")
@@ -138,6 +156,6 @@ public class QuartzSchedulerTest {
   }
 
   private QuartzJobDescription createJobDescription() {
-    return new QuartzJobDescription<>(SampleQuartzJob.class, "SampleService");
+    return new QuartzJobDescription<>(SampleQuartzJob.class, "SampleJob", "SampleService");
   }
 }

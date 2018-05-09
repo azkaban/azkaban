@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.quartz.CronExpression;
@@ -36,7 +35,6 @@ import org.quartz.Trigger;
 import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
-import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +44,6 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class QuartzScheduler {
 
-  //Unless specified, all Quartz jobs's identities comes with the default job name.
-  public static final String DEFAULT_JOB_NAME = "job1";
   private static final Logger logger = LoggerFactory.getLogger(QuartzScheduler.class);
   private Scheduler scheduler = null;
 
@@ -117,16 +113,19 @@ public class QuartzScheduler {
    * pause a job given the groupname. since pausing request might be issued concurrently,
    * so synchronized is added to ensure thread safety.
    */
-  public synchronized void pauseJob(final String groupName) throws SchedulerException {
-    if (!ifJobExist(groupName)) {
-      throw new SchedulerException("can not find job with group name: " + groupName + " in quartz.");
+  public synchronized void pauseJob(final String jobName, final String groupName)
+      throws SchedulerException {
+    if (!ifJobExist(jobName, groupName)) {
+      throw new SchedulerException(
+          "can not find job with group name: " + groupName + " in quartz.");
     } else {
-      this.scheduler.pauseJob(new JobKey(DEFAULT_JOB_NAME, groupName));
+      this.scheduler.pauseJob(new JobKey(jobName, groupName));
     }
   }
 
-  public synchronized boolean isJobPaused(final String groupName) throws SchedulerException {
-    final JobKey jobKey = new JobKey(DEFAULT_JOB_NAME, groupName);
+  public synchronized boolean isJobPaused(final String jobName, final String groupName)
+      throws SchedulerException {
+    final JobKey jobKey = new JobKey(jobName, groupName);
     final JobDetail jobDetail = this.scheduler.getJobDetail(jobKey);
     final List<? extends Trigger> triggers = this.scheduler.getTriggersOfJob(jobDetail.getKey());
     for (final Trigger trigger : triggers) {
@@ -142,11 +141,13 @@ public class QuartzScheduler {
    * resume a paused job given the groupname. since resuming request might be issued concurrently,
    * so synchronized is added to ensure thread safety.
    */
-  public synchronized void resumeJob(final String groupName) throws SchedulerException {
-    if (!ifJobExist(groupName)) {
-      throw new SchedulerException("can not find job with group name: " + groupName + " in quartz.");
+  public synchronized void resumeJob(final String jobName, final String groupName)
+      throws SchedulerException {
+    if (!ifJobExist(jobName, groupName)) {
+      throw new SchedulerException(
+          "can not find job with group name: " + groupName + " in quartz.");
     } else {
-      this.scheduler.resumeJob(new JobKey(DEFAULT_JOB_NAME, groupName));
+      this.scheduler.resumeJob(new JobKey(jobName, groupName));
     }
   }
 
@@ -154,11 +155,13 @@ public class QuartzScheduler {
    * Unregister a job given the groupname. Since unregister might be called when
    * concurrently removing projects, so synchronized is added to ensure thread safety.
    */
-  public synchronized void unregisterJob(final String groupName) throws SchedulerException {
-    if (!ifJobExist(groupName)) {
-      throw new SchedulerException("can not find job with group name: " + groupName + " in quartz.");
+  public synchronized void unregisterJob(final String jobName, final String groupName) throws
+      SchedulerException {
+    if (!ifJobExist(jobName, groupName)) {
+      throw new SchedulerException(
+          "can not find job with group name: " + groupName + " in quartz.");
     } else {
-      this.scheduler.deleteJob(new JobKey(DEFAULT_JOB_NAME, groupName));
+      this.scheduler.deleteJob(new JobKey(jobName, groupName));
     }
   }
 
@@ -182,7 +185,7 @@ public class QuartzScheduler {
     requireNonNull(jobDescription, "jobDescription is null");
 
     // Not allowed to register duplicate job name.
-    if (ifJobExist(jobDescription.getGroupName())) {
+    if (ifJobExist(jobDescription.getJobName(), jobDescription.getGroupName())) {
       throw new SchedulerException(
           "can not register existing job " + jobDescription.getGroupName());
     }
@@ -194,7 +197,7 @@ public class QuartzScheduler {
 
     // TODO kunkun-tang: we will modify this when we start supporting multi schedules per flow.
     final JobDetail job = JobBuilder.newJob(jobDescription.getJobClass())
-        .withIdentity(DEFAULT_JOB_NAME, jobDescription.getGroupName()).build();
+        .withIdentity(jobDescription.getJobName(), jobDescription.getGroupName()).build();
 
     // Add external dependencies to Job Data Map.
     job.getJobDataMap().putAll(jobDescription.getContextMap());
@@ -215,9 +218,9 @@ public class QuartzScheduler {
   }
 
 
-  public boolean ifJobExist(final String groupName) throws SchedulerException {
-    final Set<JobKey> jobKeySet = this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
-    return jobKeySet != null && jobKeySet.size() > 0;
+  public boolean ifJobExist(final String jobName, final String groupName)
+      throws SchedulerException {
+    return this.scheduler.getJobDetail(new JobKey(jobName, groupName)) != null;
   }
 
   public Scheduler getScheduler() {
