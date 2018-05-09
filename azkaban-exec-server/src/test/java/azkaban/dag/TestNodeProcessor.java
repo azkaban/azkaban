@@ -44,6 +44,8 @@ public class TestNodeProcessor implements NodeProcessor {
           this.dagService.markNodeSuccess(node);
         }
         break;
+      default:
+        break;
     }
   }
 }

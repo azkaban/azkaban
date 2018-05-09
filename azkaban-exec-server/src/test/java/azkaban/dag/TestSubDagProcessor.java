@@ -54,6 +54,8 @@ public class TestSubDagProcessor implements DagProcessor {
       case FAILURE:
         this.dagService.markNodeFailed(this.node);
         break;
+      default:
+        break;
     }
   }
 

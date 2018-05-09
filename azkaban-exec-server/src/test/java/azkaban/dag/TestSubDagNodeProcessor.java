@@ -54,6 +54,8 @@ public class TestSubDagNodeProcessor implements NodeProcessor {
       case KILLING:
         this.dagService.killDag(this.dag);
         break;
+      default:
+        break;
     }
   }
 }
