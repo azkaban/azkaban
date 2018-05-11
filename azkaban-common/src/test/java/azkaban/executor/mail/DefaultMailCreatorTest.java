@@ -13,11 +13,9 @@ import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.EmailMessageCreator;
-import com.google.common.base.Charsets;
+import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
-import java.io.InputStream;
 import java.util.TimeZone;
-import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -44,11 +42,6 @@ public class DefaultMailCreatorTest {
   private String clientHostname;
   private String clientPortNumber;
   private TimeZone defaultTz;
-
-  public static String read(final String file) throws Exception {
-    final InputStream is = DefaultMailCreatorTest.class.getResourceAsStream(file);
-    return IOUtils.toString(is, Charsets.UTF_8).trim();
-  }
 
   @Before
   public void setUp() throws Exception {
@@ -104,7 +97,8 @@ public class DefaultMailCreatorTest {
         this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has failed on unit-tests", this.message.getSubject());
-    assertThat(read("errorEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
+    assertThat(TestUtils.readResource("errorEmail.html", this))
+        .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
@@ -116,7 +110,8 @@ public class DefaultMailCreatorTest {
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests",
         this.message.getSubject());
-    assertThat(read("firstErrorMessage.html")).isEqualToIgnoringWhitespace(this.message.getBody());
+    assertThat(TestUtils.readResource("firstErrorMessage.html", this))
+        .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
@@ -128,7 +123,8 @@ public class DefaultMailCreatorTest {
         this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
         this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", this.message.getSubject());
-    assertThat(read("successEmail.html")).isEqualToIgnoringWhitespace(this.message.getBody());
+    assertThat(TestUtils.readResource("successEmail.html", this))
+        .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
 }
