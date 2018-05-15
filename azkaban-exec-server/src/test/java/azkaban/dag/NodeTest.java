@@ -18,6 +18,7 @@ package azkaban.dag;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
 
@@ -25,18 +26,23 @@ public class NodeTest {
 
   @Test
   public void hasParent() {
-    final Node node = TestUtil.createNodeWithNullProcessor("a");
-    final Node parentNode = TestUtil.createNodeWithNullProcessor("parent");
-    parentNode.addChild(node);
+    final Node node = createTestNode("a");
+    final Node parentNode = createTestNode("parent");
+    node.addParent(parentNode);
     final boolean hasParent = node.hasParent();
     assertThat(hasParent).isTrue();
   }
 
   @Test
   public void hasParentNegative() {
-    final Node node = TestUtil.createNodeWithNullProcessor("a");
+    final Node node = createTestNode("a");
     final boolean hasParent = node.hasParent();
     assertThat(hasParent).isFalse();
   }
+
+  private Node createTestNode(final String name) {
+    return TestUtil.createNodeWithNullProcessor(name, mock(Dag.class));
+  }
+
 
 }

@@ -22,10 +22,10 @@ public class TestNodeProcessor implements NodeProcessor {
 
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
-  private final Set<Node> nodesToFail;
+  private final Set<String> nodesToFail;
 
   TestNodeProcessor(final DagService dagService,
-      final StatusChangeRecorder statusChangeRecorder, final Set<Node> nodesToFail) {
+      final StatusChangeRecorder statusChangeRecorder, final Set<String> nodesToFail) {
     this.dagService = dagService;
     this.statusChangeRecorder = statusChangeRecorder;
     this.nodesToFail = nodesToFail;
@@ -38,7 +38,7 @@ public class TestNodeProcessor implements NodeProcessor {
 
     switch (status) {
       case RUNNING:
-        if (this.nodesToFail.contains(node)) {
+        if (this.nodesToFail.contains(node.getName())) {
           this.dagService.markNodeFailed(node);
         } else {
           this.dagService.markNodeSuccess(node);

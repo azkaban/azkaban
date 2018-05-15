@@ -57,7 +57,7 @@ public class DagTest {
     final Node aNode = createAndAddNode("a");
     aNode.setStatus(Status.RUNNING);
     final Node bNode = createAndAddNode("b");
-    aNode.addChild(bNode);
+    bNode.addParent(aNode);
     this.testFlow.setStatus(Status.RUNNING);
     this.testFlow.kill();
     assertThat(aNode.getStatus()).isEqualTo(Status.KILLING);
@@ -80,11 +80,11 @@ public class DagTest {
     final Node aNode = createAndAddNode("a");
     aNode.setStatus(Status.RUNNING);
     final Node bNode = createAndAddNode("b");
-    aNode.addChild(bNode);
+    bNode.addParent(aNode);
     final Node cNode = createAndAddNode("c");
-    aNode.addChild(cNode);
+    cNode.addParent(aNode);
     final Node dNode = createAndAddNode("d");
-    cNode.addChild(dNode);
+    dNode.addParent(cNode);
 
     this.testFlow.setStatus(Status.RUNNING);
     this.testFlow.kill();
@@ -103,7 +103,7 @@ public class DagTest {
     final Node aNode = createAndAddNode("a");
     aNode.setStatus(Status.RUNNING);
     final Node bNode = createAndAddNode("b");
-    aNode.addChild(bNode);
+    bNode.addParent(aNode);
     bNode.setStatus(Status.BLOCKED);
     this.testFlow.setStatus(Status.RUNNING);
     this.testFlow.kill();
@@ -125,7 +125,7 @@ public class DagTest {
     aNode.setStatus(Status.SUCCESS);
     final Node bNode = createAndAddNode("b");
     bNode.setStatus(Status.RUNNING);
-    aNode.addChild(bNode);
+    bNode.addParent(aNode);
     this.testFlow.kill();
     assertThat(aNode.getStatus()).isEqualTo(Status.SUCCESS);
     assertThat(bNode.getStatus()).isEqualTo(Status.KILLING);
@@ -157,7 +157,7 @@ public class DagTest {
    * @return Node object
    */
   private Node createAndAddNode(final String name) {
-    final Node node = TestUtil.createNodeWithNullProcessor(name);
+    final Node node = TestUtil.createNodeWithNullProcessor(name, this.testFlow);
     this.testFlow.addNode(node);
     return node;
   }
