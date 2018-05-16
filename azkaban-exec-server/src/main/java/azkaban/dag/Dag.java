@@ -20,27 +20,54 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A DAG (Directed acyclic graph) consists of {@link Node}s.
+ *
+ * <p>Most of the methods in this class should remain package private. Code outside of this
+ * package should mainly interact with the {@link DagService}.
  */
 class Dag {
 
   private final String name;
   private final DagProcessor dagProcessor;
   private final List<Node> nodes = new ArrayList<>();
+  private final Map<String, Node> nameToNodeMap = new HashMap<>();
   private Status status = Status.READY;
 
   Dag(final String name, final DagProcessor dagProcessor) {
+    requireNonNull(name, "The name of the Dag can't be null");
     this.name = name;
     requireNonNull(dagProcessor, "The dagProcessor parameter can't be null.");
     this.dagProcessor = dagProcessor;
   }
 
+  /**
+   * Adds a node to the current dag.
+   *
+   * <p>It's important NOT to expose this method as public. The design relies on this to ensure
+   * correctness. The DAG's structure shouldn't change after it is created.
+   *
+   * @param node a node to add
+   */
   void addNode(final Node node) {
-    node.setDag(this);
+    assert (node.getDag() == this);
     this.nodes.add(node);
+    assert (!this.nameToNodeMap.containsKey(node.getName()));
+    this.nameToNodeMap.put(node.getName(), node);
+  }
+
+  /**
+   * Gets the node associated with the name.
+   *
+   * @param name node name
+   * @return node. null if the node with this name doesn't exist
+   */
+  Node getNodeByName(final String name) {
+    return this.nameToNodeMap.get(name);
   }
 
   void start() {
@@ -135,5 +162,10 @@ class Dag {
   @VisibleForTesting
   void setStatus(final Status status) {
     this.status = status;
+  }
+
+  @VisibleForTesting
+  public List<Node> getNodes() {
+    return this.nodes;
   }
 }

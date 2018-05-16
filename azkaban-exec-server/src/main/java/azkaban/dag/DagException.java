@@ -16,16 +16,9 @@
 
 package azkaban.dag;
 
-import static org.mockito.Mockito.mock;
+public class DagException extends RuntimeException {
 
-class TestUtil {
-
-  /**
-   * Creates a node with a processor that does nothing.
-   *
-   * @param name node name
-   */
-  static Node createNodeWithNullProcessor(final String name, final Dag dag) {
-    return new Node(name, mock(NodeProcessor.class), dag);
+  public DagException(final String message) {
+    super(message);
   }
 }
