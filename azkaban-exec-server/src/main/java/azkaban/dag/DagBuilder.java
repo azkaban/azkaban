@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,11 +70,98 @@ public class DagBuilder {
    * @return the Dag reflecting the current state of the DagBuilder
    */
   public Dag build() {
+    checkCircularDependencies();
     final Dag dag = new Dag(this.name, this.dagProcessor);
     final Map<NodeBuilder, Node> builderNodeMap = createBuilderToNodeMap(dag);
     updateNodesRelationships(builderNodeMap);
-    // todo HappyRay: circular dependency detection.
     return dag;
+  }
+
+  /**
+   * Checks if the builder contains nodes that form a circular dependency ring.
+   *
+   * <p>The depth first algorithm is described in this article
+   * <a href="https://en.wikipedia.org/wiki/Topological_sorting">https://en.wikipedia.org/wiki/Topological_sorting</a>
+   * </p>
+   *
+   * @throws DagException if true
+   */
+  private void checkCircularDependencies() {
+    class CircularDependencyChecker {
+
+      // The nodes that need to be visited
+      private final Set<NodeBuilder> toVisit = new HashSet<>(DagBuilder.this.builders);
+
+      // The nodes that have finished traversing all their parent nodes
+      private final Set<NodeBuilder> finished = new HashSet<>();
+
+      // The nodes that are waiting for their parent nodes to finish visit.
+      private final Set<NodeBuilder> ongoing = new HashSet<>();
+
+      // One sample of nodes that form a circular dependency
+      private final List<NodeBuilder> sampleCircularNodes = new ArrayList<>();
+
+      /**
+       * Checks if the builder contains nodes that form a circular dependency ring.
+       *
+       * @throws DagException if true
+       */
+      private void check() {
+        // The algorithm is described in
+        while (!this.toVisit.isEmpty()) {
+          final NodeBuilder node = removeOneNodeFromToVisitSet();
+          if (checkNode(node)) {
+            final String msg = String.format("Circular dependency detected. Sample: %s",
+                this.sampleCircularNodes);
+            throw new DagException(msg);
+          }
+        }
+      }
+
+      /**
+       * Removes one node from the toVisit set and returns that node.
+       *
+       * @return a node
+       */
+      private NodeBuilder removeOneNodeFromToVisitSet() {
+        final Iterator<NodeBuilder> iterator = this.toVisit.iterator();
+        final NodeBuilder node = iterator.next();
+        iterator.remove();
+        return node;
+      }
+
+      /**
+       * Checks if the node is part of a group of nodes that form a circular dependency ring.
+       *
+       * <p>If true, the node will be added to the sampleCircularNodes list</p>
+       *
+       * @param node node to check
+       * @return true if it is
+       */
+      private boolean checkNode(final NodeBuilder node) {
+        if (this.finished.contains(node)) {
+          return false;
+        }
+        if (this.ongoing.contains(node)) {
+          this.sampleCircularNodes.add(node);
+          return true;
+        }
+        this.toVisit.remove(node);
+        this.ongoing.add(node);
+        for (final NodeBuilder parent : node.getParents()) {
+          if (checkNode(parent)) {
+            this.sampleCircularNodes.add(node);
+            return true;
+          }
+        }
+        this.ongoing.remove(node);
+        this.finished.add(node);
+        return false;
+      }
+    }
+
+    final CircularDependencyChecker checker = new CircularDependencyChecker();
+    checker.check();
   }
 
   /**

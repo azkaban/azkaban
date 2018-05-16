@@ -80,6 +80,27 @@ public class DagBuilderTest {
   }
 
   @Test
+  public void build_should_throw_exception_when_circular_dependency_is_detected() {
+    // given
+    final NodeBuilder nodeBuilder1 = createNodeBuilder("nb1");
+    final NodeBuilder nodeBuilder2 = createNodeBuilder("nb2");
+    final NodeBuilder nodeBuilder3 = createNodeBuilder("nb3");
+    nodeBuilder2.addParents(nodeBuilder1);
+    nodeBuilder3.addParents(nodeBuilder2);
+    nodeBuilder1.addParents(nodeBuilder3);
+
+    // when
+    final Throwable thrown = catchThrowable(() -> {
+      this.dagBuilder.build();
+    });
+
+    System.out.println("Expect exception: " + thrown);
+
+    // then
+    assertThat(thrown).isInstanceOf(DagException.class);
+  }
+
+  @Test
   public void add_dependency_should_not_affect_dag_already_built() {
     // given
     final Dag dag = this.dagBuilder.build();
