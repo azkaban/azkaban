@@ -107,7 +107,6 @@ public class DagBuilder {
        * @throws DagException if true
        */
       private void check() {
-        // The algorithm is described in
         while (!this.toVisit.isEmpty()) {
           final NodeBuilder node = removeOneNodeFromToVisitSet();
           if (checkNode(node)) {
