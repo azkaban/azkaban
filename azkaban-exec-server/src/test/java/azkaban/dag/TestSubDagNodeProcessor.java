@@ -24,15 +24,17 @@ public class TestSubDagNodeProcessor implements NodeProcessor {
   private final DagService dagService;
   private final StatusChangeRecorder statusChangeRecorder;
   private final Dag dag;
+  private final TestSubDagProcessor testSubDagProcessor;
 
 
   TestSubDagNodeProcessor(final DagService dagService,
       final StatusChangeRecorder statusChangeRecorder,
-      final Dag dag
-  ) {
+      final Dag dag,
+      final TestSubDagProcessor testSubDagProcessor) {
     this.dagService = dagService;
     this.statusChangeRecorder = statusChangeRecorder;
     this.dag = dag;
+    this.testSubDagProcessor = testSubDagProcessor;
   }
 
 
@@ -49,6 +51,9 @@ public class TestSubDagNodeProcessor implements NodeProcessor {
 
     switch (status) {
       case RUNNING:
+        //Discover the node in the parent Dag this subDag is associated with.
+        //This allows the subtag processor to inform the parent dag the status change.
+        this.testSubDagProcessor.setNode(node);
         this.dagService.startDag(this.dag);
         break;
       case KILLING:
