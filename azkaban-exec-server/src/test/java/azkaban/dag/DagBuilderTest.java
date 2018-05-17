@@ -94,9 +94,9 @@ public class DagBuilderTest {
       this.dagBuilder.build();
     });
 
-    System.out.println("Expect exception: " + thrown);
-
     // then
+    // Expect the exception message to show the loop: nb1 -> nb2 -> nb3 -> nb1.
+    System.out.println("Expect exception: " + thrown);
     assertThat(thrown).isInstanceOf(DagException.class);
   }
 
