@@ -96,6 +96,31 @@ public class DagTest {
   }
 
   /**
+   * Tests multiple ready nodes are canceled when the parent node failed.
+   * <pre>
+   *     a (running)
+   *     |
+   *     b
+   *     |
+   *     c
+   * </pre>
+   */
+  @Test
+  public void multiple_waiting_children_are_canceled_when_parent_failed() {
+    final Node aNode = createAndAddNode("a");
+    aNode.setStatus(Status.RUNNING);
+    final Node bNode = createAndAddNode("b");
+    bNode.addParent(aNode);
+    final Node cNode = createAndAddNode("c");
+    cNode.addParent(bNode);
+
+    this.testFlow.setStatus(Status.RUNNING);
+    aNode.markFailed();
+    assertThat(bNode.getStatus()).isEqualTo(Status.CANCELED);
+    assertThat(cNode.getStatus()).isEqualTo(Status.CANCELED);
+  }
+
+  /**
    * Tests blocked nodes are canceled when the dag is killed.
    */
   @Test
