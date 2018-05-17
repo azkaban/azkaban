@@ -214,15 +214,13 @@ public class DagServiceTest {
     final Dag bDag = subDagBuilder.build();
 
     final TestSubDagNodeProcessor testSubDagNodeProcessor = new TestSubDagNodeProcessor
-        (this.dagService, this.statusChangeRecorder, bDag);
+        (this.dagService, this.statusChangeRecorder, bDag, testSubDagProcessor);
     final NodeBuilder subDagNodeBuilder = this.dagBuilder
         .createNode("sfb", testSubDagNodeProcessor);
 
     final NodeBuilder cBuilder = createNodeInTestDag("c");
     cBuilder.addParents(subDagNodeBuilder);
     final Dag dag = this.dagBuilder.build();
-
-    testSubDagProcessor.setNode(dag.getNodeByName(subDagNodeBuilder.getName()));
 
     addToExpectedSequence("fa", Status.RUNNING);
     addToExpectedSequence("sfb", Status.RUNNING);
