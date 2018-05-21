@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import org.junit.Test;
 
+@SuppressWarnings("FutureReturnValueIgnored")
 public class ExecutorServiceUtilsTest {
 
   private final ExecutorServiceUtils executorServiceUtils = new ExecutorServiceUtils();
