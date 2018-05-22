@@ -57,7 +57,8 @@ public class ExecutorServiceUtilsTest {
     assertThat(service.isShutdown()).isTrue();
     final long shutdownDuration = endShutdownTime - beginShutdownTime;
     // Give some buffer for overhead to reduce false positives.
-    assertThat(shutdownDuration).isLessThan(10);
+    // 100 is still much smaller than 1000 if the task were not forcefully terminated.
+    assertThat(shutdownDuration).isLessThan(100);
   }
 
   @Test
