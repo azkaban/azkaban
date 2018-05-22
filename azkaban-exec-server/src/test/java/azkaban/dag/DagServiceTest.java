@@ -17,12 +17,17 @@
 package azkaban.dag;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import azkaban.utils.ExecutorServiceUtils;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javafx.util.Pair;
 import org.junit.After;
@@ -37,7 +42,7 @@ import org.junit.Test;
  */
 public class DagServiceTest {
 
-  private final DagService dagService = new DagService();
+  private final DagService dagService = new DagService(new ExecutorServiceUtils());
   private final StatusChangeRecorder statusChangeRecorder = new StatusChangeRecorder();
 
   // The names of the nodes that are supposed to fail.
@@ -52,8 +57,22 @@ public class DagServiceTest {
 
 
   @After
-  public void tearDown() {
+  public void tearDown() throws InterruptedException {
     this.dagService.shutdownAndAwaitTermination();
+  }
+
+  @Test
+  public void shutdown_calls_service_util_graceful_shutdown() throws InterruptedException {
+    // given
+    final ExecutorServiceUtils serviceUtils = mock(ExecutorServiceUtils.class);
+    final DagService testDagService = new DagService(serviceUtils);
+
+    // when
+    testDagService.shutdownAndAwaitTermination();
+
+    // then
+    final ExecutorService exService = testDagService.getExecutorService();
+    verify(serviceUtils).gracefulShutdown(exService, Duration.ofSeconds(10));
   }
 
   /**

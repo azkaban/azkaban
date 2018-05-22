@@ -16,11 +16,14 @@
 
 package azkaban.dag;
 
+import azkaban.utils.ExecutorServiceUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +38,16 @@ import org.slf4j.LoggerFactory;
 @Singleton
 class DagService {
 
-  private static final long SHUTDOWN_WAIT_TIMEOUT = 60;
+  private static final Duration SHUTDOWN_WAIT_TIMEOUT = Duration.ofSeconds(10);
   private static final Logger logger = LoggerFactory.getLogger(DagService.class);
 
+  private final ExecutorServiceUtils executorServiceUtils;
   private final ExecutorService executorService;
 
-  DagService() {
+  @Inject
+  DagService(final ExecutorServiceUtils executorServiceUtils) {
     // Give the thread a name to make debugging easier.
+    this.executorServiceUtils = executorServiceUtils;
     final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
         .setNameFormat("Dag-service").build();
     this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
@@ -81,28 +87,14 @@ class DagService {
 
   /**
    * Shuts down the service and waits for the tasks to finish.
-   *
-   * <p>Adopted from
-   * <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html">
-   *   the Oracle JAVA Documentation.
-   * </a>
    */
-  void shutdownAndAwaitTermination() {
-    this.executorService.shutdown(); // Disable new tasks from being submitted
-    try {
-      // Wait a while for existing tasks to terminate
-      if (!this.executorService.awaitTermination(SHUTDOWN_WAIT_TIMEOUT, TimeUnit.SECONDS)) {
-        this.executorService.shutdownNow(); // Cancel currently executing tasks
-        // Wait a while for tasks to respond to being cancelled
-        if (!this.executorService.awaitTermination(SHUTDOWN_WAIT_TIMEOUT, TimeUnit.SECONDS)) {
-          logger.error("The DagService did not terminate.");
-        }
-      }
-    } catch (final InterruptedException ie) {
-      // (Re-)Cancel if current thread also interrupted
-      this.executorService.shutdownNow();
-      // Preserve interrupt status
-      Thread.currentThread().interrupt();
-    }
+  void shutdownAndAwaitTermination() throws InterruptedException {
+    logger.info("DagService is shutting down.");
+    this.executorServiceUtils.gracefulShutdown(this.executorService, SHUTDOWN_WAIT_TIMEOUT);
+  }
+
+  @VisibleForTesting
+  ExecutorService getExecutorService() {
+    return this.executorService;
   }
 }
