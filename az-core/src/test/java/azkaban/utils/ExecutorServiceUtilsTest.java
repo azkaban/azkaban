@@ -30,6 +30,8 @@ public class ExecutorServiceUtilsTest {
 
   private final ExecutorServiceUtils executorServiceUtils = new ExecutorServiceUtils();
 
+  private boolean isTestThreadInterrupted = false;
+
   @Test
   public void gracefulShutdown() throws InterruptedException {
     // given
@@ -55,11 +57,12 @@ public class ExecutorServiceUtilsTest {
 
     // then
     assertThat(service.isShutdown()).isTrue();
+    assertThat(this.isTestThreadInterrupted).isTrue();
     final long shutdownDuration = endShutdownTime - beginShutdownTime;
-    // Give some buffer for overhead to reduce false positives.
-    // 5 seconds is still much smaller than 30 seconds sleep time if the task were not forcefully
-    // terminated.
-    assertThat(shutdownDuration).isLessThan(5000);
+
+    // Test that the wait time parameter is effective.
+    // Give some buffer to account for overhead to reduce false positives.
+    assertThat(shutdownDuration).isLessThan(1000);
   }
 
   @Test
@@ -71,9 +74,7 @@ public class ExecutorServiceUtilsTest {
 
     // when
     this.executorServiceUtils.gracefulShutdown(service, Duration.ofMillis(1));
-    final Throwable thrown = catchThrowable(() -> {
-      service.submit(this::sleep);
-    });
+    final Throwable thrown = catchThrowable(() -> service.submit(this::sleep));
 
     // then
     assertThat(thrown).isInstanceOf(RejectedExecutionException.class);
@@ -81,8 +82,9 @@ public class ExecutorServiceUtilsTest {
 
   private void sleep() {
     try {
-      Thread.sleep(30_000);
+      Thread.sleep(5000);
     } catch (final InterruptedException ex) {
+      this.isTestThreadInterrupted = true;
     }
   }
 }
