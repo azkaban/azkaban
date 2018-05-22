@@ -17,7 +17,10 @@
 package azkaban.dag;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import org.junit.Test;
 
@@ -28,7 +31,8 @@ import org.junit.Test;
  */
 public class DagTest {
 
-  private final Dag testFlow = new Dag("fa", mock(DagProcessor.class));
+  private final DagProcessor mockDagProcessor = mock(DagProcessor.class);
+  private final Dag testFlow = new Dag("fa", this.mockDagProcessor);
 
   @Test
   public void dag_finish_with_only_disabled_nodes() {
@@ -47,6 +51,30 @@ public class DagTest {
     this.testFlow.kill();
     assertThat(aNode.getStatus()).isEqualTo(Status.KILLING);
     assertThat(this.testFlow.getStatus()).isEqualTo(Status.KILLING);
+  }
+
+  @Test
+  public void kill_node_in_terminal_state_should_have_no_effect() {
+    for (final Status status : Status.TERMINAL_STATES) {
+      kill_dag_in_this_state_should_have_no_effect(status);
+    }
+  }
+
+  @Test
+  public void kill_node_in_killing_state_should_have_no_effect() {
+    kill_dag_in_this_state_should_have_no_effect(Status.KILLING);
+  }
+
+  private void kill_dag_in_this_state_should_have_no_effect(final Status status) {
+    // given
+    this.testFlow.setStatus(status);
+
+    // when
+    this.testFlow.kill();
+
+    // then
+    assertThat(this.testFlow.getStatus()).isEqualTo(status);
+    verify(this.mockDagProcessor, never()).changeStatus(any(), any());
   }
 
   /**
