@@ -57,8 +57,9 @@ public class ExecutorServiceUtilsTest {
     assertThat(service.isShutdown()).isTrue();
     final long shutdownDuration = endShutdownTime - beginShutdownTime;
     // Give some buffer for overhead to reduce false positives.
-    // 100 is still much smaller than 1000 if the task were not forcefully terminated.
-    assertThat(shutdownDuration).isLessThan(100);
+    // 5 seconds is still much smaller than 30 seconds sleep time if the task were not forcefully
+    // terminated.
+    assertThat(shutdownDuration).isLessThan(5000);
   }
 
   @Test
@@ -80,7 +81,7 @@ public class ExecutorServiceUtilsTest {
 
   private void sleep() {
     try {
-      Thread.sleep(1000);
+      Thread.sleep(30_000);
     } catch (final InterruptedException ex) {
     }
   }
