@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -46,7 +46,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
   public static final String JSON_MIME_TYPE = "application/json";
-  private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ExecutorServlet.class
       .getName());
   private AzkabanExecutorServer application;
