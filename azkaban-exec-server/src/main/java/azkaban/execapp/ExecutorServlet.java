@@ -287,7 +287,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     try {
       this.flowRunnerManager.submitFlow(execId);
     } catch (final ExecutorManagerException e) {
-      e.printStackTrace();
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
@@ -330,7 +329,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       this.flowRunnerManager.resumeFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (final ExecutorManagerException e) {
-      e.printStackTrace();
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
