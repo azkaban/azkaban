@@ -393,10 +393,12 @@ public class FlowRunnerManager implements EventListener,
       // update the last submitted time.
       this.lastFlowSubmittedDate = System.currentTimeMillis();
     } catch (final RejectedExecutionException re) {
-      throw new ExecutorManagerException(
-          "Azkaban server can't execute any more flows. "
-              + "The number of running flows has reached the system configured limit."
-              + "Please notify Azkaban administrators");
+      final StringBuffer errorMsg = new StringBuffer(
+          "Azkaban executor can't execute any more flows. ");
+      if (this.executorService.isShutdown()) {
+        errorMsg.append("The executor is being shut down.");
+      }
+      throw new ExecutorManagerException(errorMsg.toString(), re);
     }
   }
 
