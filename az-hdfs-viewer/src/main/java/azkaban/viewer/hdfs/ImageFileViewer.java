@@ -86,6 +86,7 @@ public class ImageFileViewer extends HdfsFileViewer {
     return EnumSet.noneOf(Capability.class);
   }
 
+  @Override
   public void displayFile(FileSystem fs, Path path, OutputStream outputStream,
       int startLine, int endLine) throws IOException {
 

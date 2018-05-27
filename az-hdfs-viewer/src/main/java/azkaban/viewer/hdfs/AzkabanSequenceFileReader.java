@@ -16,9 +16,19 @@
 
 package azkaban.viewer.hdfs;
 
-import java.io.*;
-import java.util.*;
-import org.apache.hadoop.fs.*;
+import azkaban.security.commons.HadoopSecurityManager;
+import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.Arrays;
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ChecksumException;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.SequenceFile.Metadata;
@@ -36,11 +46,8 @@ import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
-
-import azkaban.security.commons.HadoopSecurityManager;
 
 /**
  * Our forked version of hadoop sequence file.
@@ -51,22 +58,19 @@ import azkaban.security.commons.HadoopSecurityManager;
 public class AzkabanSequenceFileReader {
   private final static Logger LOG = Logger
       .getLogger(HadoopSecurityManager.class);
-
-  private AzkabanSequenceFileReader() {
-  } // no public ctor
-
   private static final byte BLOCK_COMPRESS_VERSION = (byte) 4;
   private static final byte CUSTOM_COMPRESS_VERSION = (byte) 5;
   private static final byte VERSION_WITH_METADATA = (byte) 6;
-  private static byte[] VERSION = new byte[] { (byte) 'S', (byte) 'E',
-      (byte) 'Q', VERSION_WITH_METADATA };
-
   private static final int SYNC_ESCAPE = -1; // "length" of sync entries
   private static final int SYNC_HASH_SIZE = 16; // number of bytes in hash
   private static final int SYNC_SIZE = 4 + SYNC_HASH_SIZE; // escape + hash
-
   /** The number of bytes between sync points. */
   public static final int SYNC_INTERVAL = 100 * SYNC_SIZE;
+  private static final byte[] VERSION = new byte[]{(byte) 'S', (byte) 'E',
+      (byte) 'Q', VERSION_WITH_METADATA};
+
+  private AzkabanSequenceFileReader() {
+  } // no public ctor
 
   /**
    * The compression type used to compress key/value pairs in the
@@ -88,28 +92,31 @@ public class AzkabanSequenceFileReader {
     private byte[] data;
 
     private UncompressedBytes() {
-      data = null;
-      dataSize = 0;
+      this.data = null;
+      this.dataSize = 0;
     }
 
-    private void reset(DataInputStream in, int length) throws IOException {
-      data = new byte[length];
-      dataSize = -1;
+    private void reset(final DataInputStream in, final int length) throws IOException {
+      this.data = new byte[length];
+      this.dataSize = -1;
 
-      in.readFully(data);
-      dataSize = data.length;
+      in.readFully(this.data);
+      this.dataSize = this.data.length;
     }
 
+    @Override
     public int getSize() {
-      return dataSize;
+      return this.dataSize;
     }
 
-    public void writeUncompressedBytes(DataOutputStream outStream)
+    @Override
+    public void writeUncompressedBytes(final DataOutputStream outStream)
         throws IOException {
-      outStream.write(data, 0, dataSize);
+      outStream.write(this.data, 0, this.dataSize);
     }
 
-    public void writeCompressedBytes(DataOutputStream outStream)
+    @Override
+    public void writeCompressedBytes(final DataOutputStream outStream)
         throws IllegalArgumentException, IOException {
       throw new IllegalArgumentException(
           "UncompressedBytes cannot be compressed!");
@@ -118,87 +125,83 @@ public class AzkabanSequenceFileReader {
   } // UncompressedBytes
 
   private static class CompressedBytes implements ValueBytes {
-    private int dataSize;
-    private byte[] data;
     DataInputBuffer rawData = null;
     CompressionCodec codec = null;
     CompressionInputStream decompressedStream = null;
+    private int dataSize;
+    private byte[] data;
 
-    private CompressedBytes(CompressionCodec codec) {
-      data = null;
-      dataSize = 0;
+    private CompressedBytes(final CompressionCodec codec) {
+      this.data = null;
+      this.dataSize = 0;
       this.codec = codec;
     }
 
-    private void reset(DataInputStream in, int length) throws IOException {
-      data = new byte[length];
-      dataSize = -1;
+    private void reset(final DataInputStream in, final int length) throws IOException {
+      this.data = new byte[length];
+      this.dataSize = -1;
 
-      in.readFully(data);
-      dataSize = data.length;
+      in.readFully(this.data);
+      this.dataSize = this.data.length;
     }
 
+    @Override
     public int getSize() {
-      return dataSize;
+      return this.dataSize;
     }
 
-    public void writeUncompressedBytes(DataOutputStream outStream)
+    @Override
+    public void writeUncompressedBytes(final DataOutputStream outStream)
         throws IOException {
-      if (decompressedStream == null) {
-        rawData = new DataInputBuffer();
-        decompressedStream = codec.createInputStream(rawData);
+      if (this.decompressedStream == null) {
+        this.rawData = new DataInputBuffer();
+        this.decompressedStream = this.codec.createInputStream(this.rawData);
       } else {
-        decompressedStream.resetState();
+        this.decompressedStream.resetState();
       }
-      rawData.reset(data, 0, dataSize);
+      this.rawData.reset(this.data, 0, this.dataSize);
 
-      byte[] buffer = new byte[8192];
+      final byte[] buffer = new byte[8192];
       int bytesRead = 0;
-      while ((bytesRead = decompressedStream.read(buffer, 0, 8192)) != -1) {
+      while ((bytesRead = this.decompressedStream.read(buffer, 0, 8192)) != -1) {
         outStream.write(buffer, 0, bytesRead);
       }
     }
 
-    public void writeCompressedBytes(DataOutputStream outStream)
+    @Override
+    public void writeCompressedBytes(final DataOutputStream outStream)
         throws IllegalArgumentException, IOException {
-      outStream.write(data, 0, dataSize);
+      outStream.write(this.data, 0, this.dataSize);
     }
 
   } // CompressedBytes
 
   /** Reads key/value pairs from a sequence-format file. */
   public static class Reader implements Closeable {
-    private Path file;
+
+    private final Path file;
+    private final DataOutputBuffer outBuf = new DataOutputBuffer();
+    private final byte[] sync = new byte[SYNC_HASH_SIZE];
+    private final byte[] syncCheck = new byte[SYNC_HASH_SIZE];
+    private final long end;
+    private final Configuration conf;
+    private final boolean lazyDecompress = true;
     private FSDataInputStream in;
-    private DataOutputBuffer outBuf = new DataOutputBuffer();
-
     private byte version;
-
     private String keyClassName;
     private String valClassName;
     @SuppressWarnings("rawtypes")
     private Class keyClass;
     @SuppressWarnings("rawtypes")
     private Class valClass;
-
     private CompressionCodec codec = null;
     private Metadata metadata = null;
-
-    private byte[] sync = new byte[SYNC_HASH_SIZE];
-    private byte[] syncCheck = new byte[SYNC_HASH_SIZE];
     private boolean syncSeen;
-
-    private long end;
     private int keyLength;
     private int recordLength;
-
     private boolean decompress;
     private boolean blockCompressed;
-
-    private Configuration conf;
-
     private int noBufferedRecords = 0;
-    private boolean lazyDecompress = true;
     private boolean valuesDecompressed = true;
 
     private int noBufferedKeys = 0;
@@ -228,29 +231,29 @@ public class AzkabanSequenceFileReader {
     private Deserializer valDeserializer;
 
     /** Open the named file. */
-    public Reader(FileSystem fs, Path file, Configuration conf)
+    public Reader(final FileSystem fs, final Path file, final Configuration conf)
         throws IOException {
       this(fs, file, conf.getInt("io.file.buffer.size", 4096), conf, false);
     }
 
-    private Reader(FileSystem fs, Path file, int bufferSize,
-        Configuration conf, boolean tempReader) throws IOException {
+    private Reader(final FileSystem fs, final Path file, final int bufferSize,
+        final Configuration conf, final boolean tempReader) throws IOException {
       this(fs, file, bufferSize, 0, fs.getLength(file), conf, tempReader);
     }
 
-    private Reader(FileSystem fs, Path file, int bufferSize, long start,
-        long length, Configuration conf, boolean tempReader) throws IOException {
+    private Reader(final FileSystem fs, final Path file, final int bufferSize, final long start,
+        final long length, final Configuration conf, final boolean tempReader) throws IOException {
       this.file = file;
 
       try {
         this.in = openFile(fs, file, bufferSize, length);
         this.conf = conf;
         seek(start);
-        this.end = in.getPos() + length;
+        this.end = this.in.getPos() + length;
         init(tempReader);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         if (this.in != null) {
-          in.close();
+          this.in.close();
         }
         throw e;
       }
@@ -260,8 +263,8 @@ public class AzkabanSequenceFileReader {
      * Override this method to specialize the type of {@link FSDataInputStream}
      * returned.
      */
-    protected FSDataInputStream openFile(FileSystem fs, Path file,
-        int bufferSize, long length) throws IOException {
+    protected FSDataInputStream openFile(final FileSystem fs, final Path file,
+        final int bufferSize, final long length) throws IOException {
       return fs.open(file, bufferSize);
     }
 
@@ -275,194 +278,197 @@ public class AzkabanSequenceFileReader {
      *          otherwise.
      * @throws IOException
      */
-    private void init(boolean tempReader) throws IOException {
-      byte[] versionBlock = new byte[VERSION.length];
-      in.readFully(versionBlock);
+    private void init(final boolean tempReader) throws IOException {
+      final byte[] versionBlock = new byte[VERSION.length];
+      this.in.readFully(versionBlock);
 
       if ((versionBlock[0] != VERSION[0]) || (versionBlock[1] != VERSION[1])
-          || (versionBlock[2] != VERSION[2]))
-        throw new IOException(file + " not a SequenceFile");
+          || (versionBlock[2] != VERSION[2])) {
+        throw new IOException(this.file + " not a SequenceFile");
+      }
 
       // Set 'version'
-      version = versionBlock[3];
-      if (version > VERSION[3])
-        throw new VersionMismatchException(VERSION[3], version);
-
-      if (version < BLOCK_COMPRESS_VERSION) {
-        UTF8 className = new UTF8();
-
-        className.readFields(in);
-        keyClassName = className.toString(); // key class name
-
-        className.readFields(in);
-        valClassName = className.toString(); // val class name
-      } else {
-        keyClassName = Text.readString(in);
-        valClassName = Text.readString(in);
+      this.version = versionBlock[3];
+      if (this.version > VERSION[3]) {
+        throw new VersionMismatchException(VERSION[3], this.version);
       }
 
-      if (version > 2) { // if version > 2
-        this.decompress = in.readBoolean(); // is compressed?
+      if (this.version < BLOCK_COMPRESS_VERSION) {
+        final UTF8 className = new UTF8();
+
+        className.readFields(this.in);
+        this.keyClassName = className.toString(); // key class name
+
+        className.readFields(this.in);
+        this.valClassName = className.toString(); // val class name
       } else {
-        decompress = false;
+        this.keyClassName = Text.readString(this.in);
+        this.valClassName = Text.readString(this.in);
       }
 
-      if (version >= BLOCK_COMPRESS_VERSION) { // if version >= 4
-        this.blockCompressed = in.readBoolean(); // is block-compressed?
+      if (this.version > 2) { // if version > 2
+        this.decompress = this.in.readBoolean(); // is compressed?
       } else {
-        blockCompressed = false;
+        this.decompress = false;
+      }
+
+      if (this.version >= BLOCK_COMPRESS_VERSION) { // if version >= 4
+        this.blockCompressed = this.in.readBoolean(); // is block-compressed?
+      } else {
+        this.blockCompressed = false;
       }
 
       // if version >= 5
       // setup the compression codec
-      if (decompress) {
-        if (version >= CUSTOM_COMPRESS_VERSION) {
-          String codecClassname = Text.readString(in);
+      if (this.decompress) {
+        if (this.version >= CUSTOM_COMPRESS_VERSION) {
+          final String codecClassname = Text.readString(this.in);
           try {
-            Class<? extends CompressionCodec> codecClass =
-                conf.getClassByName(codecClassname).asSubclass(
+            final Class<? extends CompressionCodec> codecClass =
+                this.conf.getClassByName(codecClassname).asSubclass(
                     CompressionCodec.class);
-            this.codec = ReflectionUtils.newInstance(codecClass, conf);
-          } catch (ClassNotFoundException cnfe) {
+            this.codec = ReflectionUtils.newInstance(codecClass, this.conf);
+          } catch (final ClassNotFoundException cnfe) {
             throw new IllegalArgumentException("Unknown codec: "
                 + codecClassname, cnfe);
           }
         } else {
-          codec = new DefaultCodec();
-          ((Configurable) codec).setConf(conf);
+          this.codec = new DefaultCodec();
+          ((Configurable) this.codec).setConf(this.conf);
         }
       }
 
       this.metadata = new Metadata();
-      if (version >= VERSION_WITH_METADATA) { // if version >= 6
-        this.metadata.readFields(in);
+      if (this.version >= VERSION_WITH_METADATA) { // if version >= 6
+        this.metadata.readFields(this.in);
       }
 
-      if (version > 1) { // if version > 1
-        in.readFully(sync); // read sync bytes
+      if (this.version > 1) { // if version > 1
+        this.in.readFully(this.sync); // read sync bytes
       }
 
       // Initialize... *not* if this we are constructing a temporary Reader
       if (!tempReader) {
-        valBuffer = new DataInputBuffer();
-        if (decompress) {
-          valDecompressor = CodecPool.getDecompressor(codec);
-          valInFilter = codec.createInputStream(valBuffer, valDecompressor);
-          valIn = new DataInputStream(valInFilter);
+        this.valBuffer = new DataInputBuffer();
+        if (this.decompress) {
+          this.valDecompressor = CodecPool.getDecompressor(this.codec);
+          this.valInFilter = this.codec.createInputStream(this.valBuffer, this.valDecompressor);
+          this.valIn = new DataInputStream(this.valInFilter);
         } else {
-          valIn = valBuffer;
+          this.valIn = this.valBuffer;
         }
 
-        if (blockCompressed) {
-          keyLenBuffer = new DataInputBuffer();
-          keyBuffer = new DataInputBuffer();
-          valLenBuffer = new DataInputBuffer();
+        if (this.blockCompressed) {
+          this.keyLenBuffer = new DataInputBuffer();
+          this.keyBuffer = new DataInputBuffer();
+          this.valLenBuffer = new DataInputBuffer();
 
-          keyLenDecompressor = CodecPool.getDecompressor(codec);
-          keyLenInFilter =
-              codec.createInputStream(keyLenBuffer, keyLenDecompressor);
-          keyLenIn = new DataInputStream(keyLenInFilter);
+          this.keyLenDecompressor = CodecPool.getDecompressor(this.codec);
+          this.keyLenInFilter =
+              this.codec.createInputStream(this.keyLenBuffer, this.keyLenDecompressor);
+          this.keyLenIn = new DataInputStream(this.keyLenInFilter);
 
-          keyDecompressor = CodecPool.getDecompressor(codec);
-          keyInFilter = codec.createInputStream(keyBuffer, keyDecompressor);
-          keyIn = new DataInputStream(keyInFilter);
+          this.keyDecompressor = CodecPool.getDecompressor(this.codec);
+          this.keyInFilter = this.codec.createInputStream(this.keyBuffer, this.keyDecompressor);
+          this.keyIn = new DataInputStream(this.keyInFilter);
 
-          valLenDecompressor = CodecPool.getDecompressor(codec);
-          valLenInFilter =
-              codec.createInputStream(valLenBuffer, valLenDecompressor);
-          valLenIn = new DataInputStream(valLenInFilter);
+          this.valLenDecompressor = CodecPool.getDecompressor(this.codec);
+          this.valLenInFilter =
+              this.codec.createInputStream(this.valLenBuffer, this.valLenDecompressor);
+          this.valLenIn = new DataInputStream(this.valLenInFilter);
         }
 
-        SerializationFactory serializationFactory =
-            new SerializationFactory(conf);
+        final SerializationFactory serializationFactory =
+            new SerializationFactory(this.conf);
         this.keyDeserializer =
             getDeserializer(serializationFactory, getKeyClass());
-        if (!blockCompressed) {
-          this.keyDeserializer.open(valBuffer);
+        if (!this.blockCompressed) {
+          this.keyDeserializer.open(this.valBuffer);
         } else {
-          this.keyDeserializer.open(keyIn);
+          this.keyDeserializer.open(this.keyIn);
         }
         this.valDeserializer =
             getDeserializer(serializationFactory, getValueClass());
-        this.valDeserializer.open(valIn);
+        this.valDeserializer.open(this.valIn);
       }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private Deserializer getDeserializer(SerializationFactory sf, Class c) {
+    private Deserializer getDeserializer(final SerializationFactory sf, final Class c) {
       return sf.getDeserializer(c);
     }
 
     /** Close the file. */
+    @Override
     public synchronized void close() throws IOException {
       // Return the decompressors to the pool
-      CodecPool.returnDecompressor(keyLenDecompressor);
-      CodecPool.returnDecompressor(keyDecompressor);
-      CodecPool.returnDecompressor(valLenDecompressor);
-      CodecPool.returnDecompressor(valDecompressor);
-      keyLenDecompressor = keyDecompressor = null;
-      valLenDecompressor = valDecompressor = null;
+      CodecPool.returnDecompressor(this.keyLenDecompressor);
+      CodecPool.returnDecompressor(this.keyDecompressor);
+      CodecPool.returnDecompressor(this.valLenDecompressor);
+      CodecPool.returnDecompressor(this.valDecompressor);
+      this.keyLenDecompressor = this.keyDecompressor = null;
+      this.valLenDecompressor = this.valDecompressor = null;
 
-      if (keyDeserializer != null) {
-        keyDeserializer.close();
+      if (this.keyDeserializer != null) {
+        this.keyDeserializer.close();
       }
-      if (valDeserializer != null) {
-        valDeserializer.close();
+      if (this.valDeserializer != null) {
+        this.valDeserializer.close();
       }
 
       // Close the input-stream
-      if (in != null) {
-        in.close();
+      if (this.in != null) {
+        this.in.close();
       }
     }
 
     /** Returns the name of the key class. */
     public String getKeyClassName() {
-      return keyClassName;
+      return this.keyClassName;
     }
 
     /** Returns the class of keys in this file. */
     public synchronized Class<?> getKeyClass() {
-      if (null == keyClass) {
+      if (null == this.keyClass) {
         try {
-          keyClass = WritableName.getClass(getKeyClassName(), conf);
-        } catch (IOException e) {
+          this.keyClass = WritableName.getClass(getKeyClassName(), this.conf);
+        } catch (final IOException e) {
           throw new RuntimeException(e);
         }
       }
-      return keyClass;
+      return this.keyClass;
     }
 
     /** Returns the name of the value class. */
     public String getValueClassName() {
-      return valClassName;
+      return this.valClassName;
     }
 
     /** Returns the class of values in this file. */
     public synchronized Class<?> getValueClass() {
-      if (null == valClass) {
+      if (null == this.valClass) {
         try {
-          valClass = WritableName.getClass(getValueClassName(), conf);
-        } catch (IOException e) {
+          this.valClass = WritableName.getClass(getValueClassName(), this.conf);
+        } catch (final IOException e) {
           throw new RuntimeException(e);
         }
       }
-      return valClass;
+      return this.valClass;
     }
 
     /** Returns true if values are compressed. */
     public boolean isCompressed() {
-      return decompress;
+      return this.decompress;
     }
 
     /** Returns true if records are block-compressed. */
     public boolean isBlockCompressed() {
-      return blockCompressed;
+      return this.blockCompressed;
     }
 
     /** Returns the compression codec of data in this file. */
     public CompressionCodec getCompressionCodec() {
-      return codec;
+      return this.codec;
     }
 
     /** Returns the metadata object of the file */
@@ -472,18 +478,18 @@ public class AzkabanSequenceFileReader {
 
     /** Returns the configuration used for this file. */
     Configuration getConf() {
-      return conf;
+      return this.conf;
     }
 
     /** Read a compressed buffer */
-    private synchronized void readBuffer(DataInputBuffer buffer,
-        CompressionInputStream filter) throws IOException {
+    private synchronized void readBuffer(final DataInputBuffer buffer,
+        final CompressionInputStream filter) throws IOException {
       // Read data into a temporary buffer
-      DataOutputBuffer dataBuffer = new DataOutputBuffer();
+      final DataOutputBuffer dataBuffer = new DataOutputBuffer();
 
       try {
-        int dataBufferLength = WritableUtils.readVInt(in);
-        dataBuffer.write(in, dataBufferLength);
+        final int dataBufferLength = WritableUtils.readVInt(this.in);
+        dataBuffer.write(this.in, dataBufferLength);
 
         // Set up 'buffer' connected to the input-stream
         buffer.reset(dataBuffer.getData(), 0, dataBuffer.getLength());
@@ -499,40 +505,40 @@ public class AzkabanSequenceFileReader {
     private synchronized void readBlock() throws IOException {
       // Check if we need to throw away a whole block of
       // 'values' due to 'lazy decompression'
-      if (lazyDecompress && !valuesDecompressed) {
-        in.seek(WritableUtils.readVInt(in) + in.getPos());
-        in.seek(WritableUtils.readVInt(in) + in.getPos());
+      if (this.lazyDecompress && !this.valuesDecompressed) {
+        this.in.seek(WritableUtils.readVInt(this.in) + this.in.getPos());
+        this.in.seek(WritableUtils.readVInt(this.in) + this.in.getPos());
       }
 
       // Reset internal states
-      noBufferedKeys = 0;
-      noBufferedValues = 0;
-      noBufferedRecords = 0;
-      valuesDecompressed = false;
+      this.noBufferedKeys = 0;
+      this.noBufferedValues = 0;
+      this.noBufferedRecords = 0;
+      this.valuesDecompressed = false;
 
       // Process sync
-      if (sync != null) {
-        in.readInt();
-        in.readFully(syncCheck); // read syncCheck
-        if (!Arrays.equals(sync, syncCheck)) // check it
+      if (this.sync != null) {
+        this.in.readInt();
+        this.in.readFully(this.syncCheck); // read syncCheck
+        if (!Arrays.equals(this.sync, this.syncCheck)) // check it
           throw new IOException("File is corrupt!");
       }
-      syncSeen = true;
+      this.syncSeen = true;
 
       // Read number of records in this block
-      noBufferedRecords = WritableUtils.readVInt(in);
+      this.noBufferedRecords = WritableUtils.readVInt(this.in);
 
       // Read key lengths and keys
-      readBuffer(keyLenBuffer, keyLenInFilter);
-      readBuffer(keyBuffer, keyInFilter);
-      noBufferedKeys = noBufferedRecords;
+      readBuffer(this.keyLenBuffer, this.keyLenInFilter);
+      readBuffer(this.keyBuffer, this.keyInFilter);
+      this.noBufferedKeys = this.noBufferedRecords;
 
       // Read value lengths and values
-      if (!lazyDecompress) {
-        readBuffer(valLenBuffer, valLenInFilter);
-        readBuffer(valBuffer, valInFilter);
-        noBufferedValues = noBufferedRecords;
-        valuesDecompressed = true;
+      if (!this.lazyDecompress) {
+        readBuffer(this.valLenBuffer, this.valLenInFilter);
+        readBuffer(this.valBuffer, this.valInFilter);
+        this.noBufferedValues = this.noBufferedRecords;
+        this.valuesDecompressed = true;
       }
     }
 
@@ -540,33 +546,33 @@ public class AzkabanSequenceFileReader {
      * Position valLenIn/valIn to the 'value' corresponding to the 'current' key
      */
     private synchronized void seekToCurrentValue() throws IOException {
-      if (!blockCompressed) {
-        if (decompress) {
-          valInFilter.resetState();
+      if (!this.blockCompressed) {
+        if (this.decompress) {
+          this.valInFilter.resetState();
         }
-        valBuffer.reset();
+        this.valBuffer.reset();
       } else {
         // Check if this is the first value in the 'block' to be read
-        if (lazyDecompress && !valuesDecompressed) {
+        if (this.lazyDecompress && !this.valuesDecompressed) {
           // Read the value lengths and values
-          readBuffer(valLenBuffer, valLenInFilter);
-          readBuffer(valBuffer, valInFilter);
-          noBufferedValues = noBufferedRecords;
-          valuesDecompressed = true;
+          readBuffer(this.valLenBuffer, this.valLenInFilter);
+          readBuffer(this.valBuffer, this.valInFilter);
+          this.noBufferedValues = this.noBufferedRecords;
+          this.valuesDecompressed = true;
         }
 
         // Calculate the no. of bytes to skip
         // Note: 'current' key has already been read!
         int skipValBytes = 0;
-        int currentKey = noBufferedKeys + 1;
-        for (int i = noBufferedValues; i > currentKey; --i) {
-          skipValBytes += WritableUtils.readVInt(valLenIn);
-          --noBufferedValues;
+        final int currentKey = this.noBufferedKeys + 1;
+        for (int i = this.noBufferedValues; i > currentKey; --i) {
+          skipValBytes += WritableUtils.readVInt(this.valLenIn);
+          --this.noBufferedValues;
         }
 
         // Skip to the 'val' corresponding to 'current' key
         if (skipValBytes > 0) {
-          if (valIn.skipBytes(skipValBytes) != skipValBytes) {
+          if (this.valIn.skipBytes(skipValBytes) != skipValBytes) {
             throw new IOException("Failed to seek to " + currentKey
                 + "(th) value!");
           }
@@ -580,7 +586,7 @@ public class AzkabanSequenceFileReader {
      * @param val : The 'value' to be read.
      * @throws IOException
      */
-    public synchronized void getCurrentValue(Writable val) throws IOException {
+    public synchronized void getCurrentValue(final Writable val) throws IOException {
       if (val instanceof Configurable) {
         ((Configurable) val).setConf(this.conf);
       }
@@ -588,22 +594,22 @@ public class AzkabanSequenceFileReader {
       // Position stream to 'current' value
       seekToCurrentValue();
 
-      if (!blockCompressed) {
-        val.readFields(valIn);
+      if (!this.blockCompressed) {
+        val.readFields(this.valIn);
 
-        if (valIn.read() > 0) {
-          LOG.info("available bytes: " + valIn.available());
+        if (this.valIn.read() > 0) {
+          LOG.info("available bytes: " + this.valIn.available());
           throw new IOException(val + " read "
-              + (valBuffer.getPosition() - keyLength) + " bytes, should read "
-              + (valBuffer.getLength() - keyLength));
+              + (this.valBuffer.getPosition() - this.keyLength) + " bytes, should read "
+              + (this.valBuffer.getLength() - this.keyLength));
         }
       } else {
         // Get the value
-        int valLength = WritableUtils.readVInt(valLenIn);
-        val.readFields(valIn);
+        final int valLength = WritableUtils.readVInt(this.valLenIn);
+        val.readFields(this.valIn);
 
         // Read another compressed 'value'
-        --noBufferedValues;
+        --this.noBufferedValues;
 
         // Sanity check
         if (valLength < 0) {
@@ -627,22 +633,22 @@ public class AzkabanSequenceFileReader {
       // Position stream to 'current' value
       seekToCurrentValue();
 
-      if (!blockCompressed) {
+      if (!this.blockCompressed) {
         val = deserializeValue(val);
 
-        if (valIn.read() > 0) {
-          LOG.info("available bytes: " + valIn.available());
+        if (this.valIn.read() > 0) {
+          LOG.info("available bytes: " + this.valIn.available());
           throw new IOException(val + " read "
-              + (valBuffer.getPosition() - keyLength) + " bytes, should read "
-              + (valBuffer.getLength() - keyLength));
+              + (this.valBuffer.getPosition() - this.keyLength) + " bytes, should read "
+              + (this.valBuffer.getLength() - this.keyLength));
         }
       } else {
         // Get the value
-        int valLength = WritableUtils.readVInt(valLenIn);
+        final int valLength = WritableUtils.readVInt(this.valLenIn);
         val = deserializeValue(val);
 
         // Read another compressed 'value'
-        --noBufferedValues;
+        --this.noBufferedValues;
 
         // Sanity check
         if (valLength < 0) {
@@ -654,46 +660,47 @@ public class AzkabanSequenceFileReader {
     }
 
     @SuppressWarnings("unchecked")
-    private Object deserializeValue(Object val) throws IOException {
-      return valDeserializer.deserialize(val);
+    private Object deserializeValue(final Object val) throws IOException {
+      return this.valDeserializer.deserialize(val);
     }
 
     /**
      * Read the next key in the file into <code>key</code>, skipping its value.
      * True if another entry exists, and false at end of file.
      */
-    public synchronized boolean next(Writable key) throws IOException {
+    public synchronized boolean next(final Writable key) throws IOException {
       if (key.getClass() != getKeyClass())
         throw new IOException("wrong key class: " + key.getClass().getName()
-            + " is not " + keyClass);
+            + " is not " + this.keyClass);
 
-      if (!blockCompressed) {
-        outBuf.reset();
+      if (!this.blockCompressed) {
+        this.outBuf.reset();
 
-        keyLength = next(outBuf);
-        if (keyLength < 0)
+        this.keyLength = next(this.outBuf);
+        if (this.keyLength < 0)
           return false;
 
-        valBuffer.reset(outBuf.getData(), outBuf.getLength());
+        this.valBuffer.reset(this.outBuf.getData(), this.outBuf.getLength());
 
-        key.readFields(valBuffer);
-        valBuffer.mark(0);
-        if (valBuffer.getPosition() != keyLength)
-          throw new IOException(key + " read " + valBuffer.getPosition()
-              + " bytes, should read " + keyLength);
+        key.readFields(this.valBuffer);
+        this.valBuffer.mark(0);
+        if (this.valBuffer.getPosition() != this.keyLength) {
+          throw new IOException(key + " read " + this.valBuffer.getPosition()
+              + " bytes, should read " + this.keyLength);
+        }
       } else {
         // Reset syncSeen
-        syncSeen = false;
+        this.syncSeen = false;
 
-        if (noBufferedKeys == 0) {
+        if (this.noBufferedKeys == 0) {
           try {
             readBlock();
-          } catch (EOFException eof) {
+          } catch (final EOFException eof) {
             return false;
           }
         }
 
-        int keyLength = WritableUtils.readVInt(keyLenIn);
+        final int keyLength = WritableUtils.readVInt(this.keyLenIn);
 
         // Sanity check
         if (keyLength < 0) {
@@ -701,8 +708,8 @@ public class AzkabanSequenceFileReader {
         }
 
         // Read another compressed 'key'
-        key.readFields(keyIn);
-        --noBufferedKeys;
+        key.readFields(this.keyIn);
+        --this.noBufferedKeys;
       }
 
       return true;
@@ -713,13 +720,13 @@ public class AzkabanSequenceFileReader {
      * <code>val</code>. Returns true if such a pair exists and false when at
      * end of file
      */
-    public synchronized boolean next(Writable key, Writable val)
+    public synchronized boolean next(final Writable key, final Writable val)
         throws IOException {
       if (val.getClass() != getValueClass())
         throw new IOException("wrong value class: " + val + " is not "
-            + valClass);
+            + this.valClass);
 
-      boolean more = next(key);
+      final boolean more = next(key);
 
       if (more) {
         getCurrentValue(val);
@@ -736,22 +743,22 @@ public class AzkabanSequenceFileReader {
      * @throws IOException
      */
     private synchronized int readRecordLength() throws IOException {
-      if (in.getPos() >= end) {
+      if (this.in.getPos() >= this.end) {
         return -1;
       }
-      int length = in.readInt();
-      if (version > 1 && sync != null && length == SYNC_ESCAPE) { // process a
+      int length = this.in.readInt();
+      if (this.version > 1 && this.sync != null && length == SYNC_ESCAPE) { // process a
                                                                   // sync entry
-        in.readFully(syncCheck); // read syncCheck
-        if (!Arrays.equals(sync, syncCheck)) // check it
+        this.in.readFully(this.syncCheck); // read syncCheck
+        if (!Arrays.equals(this.sync, this.syncCheck)) // check it
           throw new IOException("File is corrupt!");
-        syncSeen = true;
-        if (in.getPos() >= end) {
+        this.syncSeen = true;
+        if (this.in.getPos() >= this.end) {
           return -1;
         }
-        length = in.readInt(); // re-read length
+        length = this.in.readInt(); // re-read length
       } else {
-        syncSeen = false;
+        this.syncSeen = false;
       }
 
       return length;
@@ -767,22 +774,22 @@ public class AzkabanSequenceFileReader {
      * @deprecated Call
      *             {@link #nextRaw(DataOutputBuffer,SequenceFile.ValueBytes)}.
      */
-    public synchronized int next(DataOutputBuffer buffer) throws IOException {
+    public synchronized int next(final DataOutputBuffer buffer) throws IOException {
       // Unsupported for block-compressed sequence files
-      if (blockCompressed) {
+      if (this.blockCompressed) {
         throw new IOException(
             "Unsupported call for block-compressed"
                 + " SequenceFiles - use SequenceFile.Reader.next(DataOutputStream, ValueBytes)");
       }
       try {
-        int length = readRecordLength();
+        final int length = readRecordLength();
         if (length == -1) {
           return -1;
         }
-        int keyLength = in.readInt();
-        buffer.write(in, length);
+        final int keyLength = this.in.readInt();
+        buffer.write(this.in, length);
         return keyLength;
-      } catch (ChecksumException e) { // checksum failure
+      } catch (final ChecksumException e) { // checksum failure
         handleChecksumException(e);
         return next(buffer);
       }
@@ -790,10 +797,10 @@ public class AzkabanSequenceFileReader {
 
     public ValueBytes createValueBytes() {
       ValueBytes val = null;
-      if (!decompress || blockCompressed) {
+      if (!this.decompress || this.blockCompressed) {
         val = new UncompressedBytes();
       } else {
-        val = new CompressedBytes(codec);
+        val = new CompressedBytes(this.codec);
       }
       return val;
     }
@@ -806,53 +813,53 @@ public class AzkabanSequenceFileReader {
      * @return Returns the total record length or -1 for end of file
      * @throws IOException
      */
-    public synchronized int nextRaw(DataOutputBuffer key, ValueBytes val)
+    public synchronized int nextRaw(final DataOutputBuffer key, final ValueBytes val)
         throws IOException {
-      if (!blockCompressed) {
-        int length = readRecordLength();
+      if (!this.blockCompressed) {
+        final int length = readRecordLength();
         if (length == -1) {
           return -1;
         }
-        int keyLength = in.readInt();
-        int valLength = length - keyLength;
-        key.write(in, keyLength);
-        if (decompress) {
-          CompressedBytes value = (CompressedBytes) val;
-          value.reset(in, valLength);
+        final int keyLength = this.in.readInt();
+        final int valLength = length - keyLength;
+        key.write(this.in, keyLength);
+        if (this.decompress) {
+          final CompressedBytes value = (CompressedBytes) val;
+          value.reset(this.in, valLength);
         } else {
-          UncompressedBytes value = (UncompressedBytes) val;
-          value.reset(in, valLength);
+          final UncompressedBytes value = (UncompressedBytes) val;
+          value.reset(this.in, valLength);
         }
 
         return length;
       } else {
         // Reset syncSeen
-        syncSeen = false;
+        this.syncSeen = false;
 
         // Read 'key'
-        if (noBufferedKeys == 0) {
-          if (in.getPos() >= end)
+        if (this.noBufferedKeys == 0) {
+          if (this.in.getPos() >= this.end)
             return -1;
 
           try {
             readBlock();
-          } catch (EOFException eof) {
+          } catch (final EOFException eof) {
             return -1;
           }
         }
-        int keyLength = WritableUtils.readVInt(keyLenIn);
+        final int keyLength = WritableUtils.readVInt(this.keyLenIn);
         if (keyLength < 0) {
           throw new IOException("zero length key found!");
         }
-        key.write(keyIn, keyLength);
-        --noBufferedKeys;
+        key.write(this.keyIn, keyLength);
+        --this.noBufferedKeys;
 
         // Read raw 'value'
         seekToCurrentValue();
-        int valLength = WritableUtils.readVInt(valLenIn);
-        UncompressedBytes rawValue = (UncompressedBytes) val;
-        rawValue.reset(valIn, valLength);
-        --noBufferedValues;
+        final int valLength = WritableUtils.readVInt(this.valLenIn);
+        final UncompressedBytes rawValue = (UncompressedBytes) val;
+        rawValue.reset(this.valIn, valLength);
+        --this.noBufferedValues;
 
         return (keyLength + valLength);
       }
@@ -866,36 +873,36 @@ public class AzkabanSequenceFileReader {
      * @return Returns the key length or -1 for end of file
      * @throws IOException
      */
-    public int nextRawKey(DataOutputBuffer key) throws IOException {
-      if (!blockCompressed) {
-        recordLength = readRecordLength();
-        if (recordLength == -1) {
+    public int nextRawKey(final DataOutputBuffer key) throws IOException {
+      if (!this.blockCompressed) {
+        this.recordLength = readRecordLength();
+        if (this.recordLength == -1) {
           return -1;
         }
-        keyLength = in.readInt();
-        key.write(in, keyLength);
-        return keyLength;
+        this.keyLength = this.in.readInt();
+        key.write(this.in, this.keyLength);
+        return this.keyLength;
       } else {
         // Reset syncSeen
-        syncSeen = false;
+        this.syncSeen = false;
 
         // Read 'key'
-        if (noBufferedKeys == 0) {
-          if (in.getPos() >= end)
+        if (this.noBufferedKeys == 0) {
+          if (this.in.getPos() >= this.end)
             return -1;
 
           try {
             readBlock();
-          } catch (EOFException eof) {
+          } catch (final EOFException eof) {
             return -1;
           }
         }
-        int keyLength = WritableUtils.readVInt(keyLenIn);
+        final int keyLength = WritableUtils.readVInt(this.keyLenIn);
         if (keyLength < 0) {
           throw new IOException("zero length key found!");
         }
-        key.write(keyIn, keyLength);
-        --noBufferedKeys;
+        key.write(this.keyIn, keyLength);
+        --this.noBufferedKeys;
 
         return keyLength;
       }
@@ -909,36 +916,37 @@ public class AzkabanSequenceFileReader {
     public synchronized Object next(Object key) throws IOException {
       if (key != null && key.getClass() != getKeyClass()) {
         throw new IOException("wrong key class: " + key.getClass().getName()
-            + " is not " + keyClass);
+            + " is not " + this.keyClass);
       }
 
-      if (!blockCompressed) {
-        outBuf.reset();
+      if (!this.blockCompressed) {
+        this.outBuf.reset();
 
-        keyLength = next(outBuf);
-        if (keyLength < 0)
+        this.keyLength = next(this.outBuf);
+        if (this.keyLength < 0)
           return null;
 
-        valBuffer.reset(outBuf.getData(), outBuf.getLength());
+        this.valBuffer.reset(this.outBuf.getData(), this.outBuf.getLength());
 
         key = deserializeKey(key);
-        valBuffer.mark(0);
-        if (valBuffer.getPosition() != keyLength)
-          throw new IOException(key + " read " + valBuffer.getPosition()
-              + " bytes, should read " + keyLength);
+        this.valBuffer.mark(0);
+        if (this.valBuffer.getPosition() != this.keyLength) {
+          throw new IOException(key + " read " + this.valBuffer.getPosition()
+              + " bytes, should read " + this.keyLength);
+        }
       } else {
         // Reset syncSeen
-        syncSeen = false;
+        this.syncSeen = false;
 
-        if (noBufferedKeys == 0) {
+        if (this.noBufferedKeys == 0) {
           try {
             readBlock();
-          } catch (EOFException eof) {
+          } catch (final EOFException eof) {
             return null;
           }
         }
 
-        int keyLength = WritableUtils.readVInt(keyLenIn);
+        final int keyLength = WritableUtils.readVInt(this.keyLenIn);
 
         // Sanity check
         if (keyLength < 0) {
@@ -947,15 +955,15 @@ public class AzkabanSequenceFileReader {
 
         // Read another compressed 'key'
         key = deserializeKey(key);
-        --noBufferedKeys;
+        --this.noBufferedKeys;
       }
 
       return key;
     }
 
     @SuppressWarnings("unchecked")
-    private Object deserializeKey(Object key) throws IOException {
-      return keyDeserializer.deserialize(key);
+    private Object deserializeKey(final Object key) throws IOException {
+      return this.keyDeserializer.deserialize(key);
     }
 
     /**
@@ -965,33 +973,33 @@ public class AzkabanSequenceFileReader {
      * @return Returns the value length
      * @throws IOException
      */
-    public synchronized int nextRawValue(ValueBytes val) throws IOException {
+    public synchronized int nextRawValue(final ValueBytes val) throws IOException {
 
       // Position stream to current value
       seekToCurrentValue();
 
-      if (!blockCompressed) {
-        int valLength = recordLength - keyLength;
-        if (decompress) {
-          CompressedBytes value = (CompressedBytes) val;
-          value.reset(in, valLength);
+      if (!this.blockCompressed) {
+        final int valLength = this.recordLength - this.keyLength;
+        if (this.decompress) {
+          final CompressedBytes value = (CompressedBytes) val;
+          value.reset(this.in, valLength);
         } else {
-          UncompressedBytes value = (UncompressedBytes) val;
-          value.reset(in, valLength);
+          final UncompressedBytes value = (UncompressedBytes) val;
+          value.reset(this.in, valLength);
         }
 
         return valLength;
       } else {
-        int valLength = WritableUtils.readVInt(valLenIn);
-        UncompressedBytes rawValue = (UncompressedBytes) val;
-        rawValue.reset(valIn, valLength);
-        --noBufferedValues;
+        final int valLength = WritableUtils.readVInt(this.valLenIn);
+        final UncompressedBytes rawValue = (UncompressedBytes) val;
+        rawValue.reset(this.valIn, valLength);
+        --this.noBufferedValues;
         return valLength;
       }
 
     }
 
-    private void handleChecksumException(ChecksumException e)
+    private void handleChecksumException(final ChecksumException e)
         throws IOException {
       if (this.conf.getBoolean("io.skip.checksum.errors", false)) {
         LOG.warn("Bad checksum at " + getPosition() + ". Skipping entries.");
@@ -1010,55 +1018,56 @@ public class AzkabanSequenceFileReader {
      * file. To seek to an arbitrary position, use
      * {@link Reader#sync(long)}.
      */
-    public synchronized void seek(long position) throws IOException {
-      in.seek(position);
-      if (blockCompressed) { // trigger block read
-        noBufferedKeys = 0;
-        valuesDecompressed = true;
+    public synchronized void seek(final long position) throws IOException {
+      this.in.seek(position);
+      if (this.blockCompressed) { // trigger block read
+        this.noBufferedKeys = 0;
+        this.valuesDecompressed = true;
       }
     }
 
     /** Seek to the next sync mark past a given position. */
-    public synchronized void sync(long position) throws IOException {
-      if (position + SYNC_SIZE >= end) {
-        seek(end);
+    public synchronized void sync(final long position) throws IOException {
+      if (position + SYNC_SIZE >= this.end) {
+        seek(this.end);
         return;
       }
 
       try {
         seek(position + 4); // skip escape
-        in.readFully(syncCheck);
-        int syncLen = sync.length;
-        for (int i = 0; in.getPos() < end; i++) {
+        this.in.readFully(this.syncCheck);
+        final int syncLen = this.sync.length;
+        for (int i = 0; this.in.getPos() < this.end; i++) {
           int j = 0;
           for (; j < syncLen; j++) {
-            if (sync[j] != syncCheck[(i + j) % syncLen])
+            if (this.sync[j] != this.syncCheck[(i + j) % syncLen])
               break;
           }
           if (j == syncLen) {
-            in.seek(in.getPos() - SYNC_SIZE); // position before sync
+            this.in.seek(this.in.getPos() - SYNC_SIZE); // position before sync
             return;
           }
-          syncCheck[i % syncLen] = in.readByte();
+          this.syncCheck[i % syncLen] = this.in.readByte();
         }
-      } catch (ChecksumException e) { // checksum failure
+      } catch (final ChecksumException e) { // checksum failure
         handleChecksumException(e);
       }
     }
 
     /** Returns true iff the previous call to next passed a sync mark. */
     public boolean syncSeen() {
-      return syncSeen;
+      return this.syncSeen;
     }
 
     /** Return the current byte position in the input file. */
     public synchronized long getPosition() throws IOException {
-      return in.getPos();
+      return this.in.getPos();
     }
 
+    @Override
     /** Returns the name of the file. */
     public String toString() {
-      return file.toString();
+      return this.file.toString();
     }
 
   }

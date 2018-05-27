@@ -1,5 +1,8 @@
 package azkaban.viewer.hdfs;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -12,8 +15,6 @@ import org.apache.hadoop.fs.permission.AccessControlException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 
 /**
@@ -33,24 +34,25 @@ public class HtmlFileViewerTest {
 
     @Before
     public void setUp() throws IOException {
-        fs = new LocalFileSystem();
-        fs.initialize(fs.getWorkingDirectory().toUri(), new Configuration());
-        viewer = new HtmlFileViewer();
+        this.fs = new LocalFileSystem();
+        this.fs.initialize(this.fs.getWorkingDirectory().toUri(), new Configuration());
+        this.viewer = new HtmlFileViewer();
     }
 
     @After
     public void tearDown() throws IOException {
-        fs.close();
+        this.fs.close();
     }
 
     @Test
     public void testCapabilities() throws AccessControlException {
-        Set<Capability> capabilities = viewer.getCapabilities(fs, getResourcePath(EMPTY_HTM));
+        Set<Capability> capabilities = this.viewer
+            .getCapabilities(this.fs, getResourcePath(EMPTY_HTM));
         // READ should be the the one and only capability
         assertTrue(capabilities.contains(Capability.READ));
         assertEquals(capabilities.size(), 1);
 
-        capabilities = viewer.getCapabilities(fs, getResourcePath(VALID_HTML));
+        capabilities = this.viewer.getCapabilities(this.fs, getResourcePath(VALID_HTML));
         // READ should be the the one and only capability
         assertTrue(capabilities.contains(Capability.READ));
         assertEquals(capabilities.size(), 1);
@@ -58,28 +60,29 @@ public class HtmlFileViewerTest {
 
     @Test
     public void testContentType() {
-        assertEquals(ContentType.HTML, viewer.getContentType());
+        assertEquals(ContentType.HTML, this.viewer.getContentType());
     }
 
     @Test
     public void testEmptyFile() throws IOException {
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        viewer.displayFile(fs, getResourcePath(EMPTY_HTM), outStream, 1, 2);
-        String output = outStream.toString();
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        this.viewer.displayFile(this.fs, getResourcePath(EMPTY_HTM), outStream, 1, 2);
+        final String output = outStream.toString();
         assertTrue(output.isEmpty());
     }
 
     @Test
+    @SuppressWarnings("DefaultCharset")
     public void testValidHtmlFile() throws IOException {
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        viewer.displayFile(fs, getResourcePath(VALID_HTML), outStream, 1, 2);
-        String output = new String(outStream.toByteArray());
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        this.viewer.displayFile(this.fs, getResourcePath(VALID_HTML), outStream, 1, 2);
+        final String output = new String(outStream.toByteArray());
         assertEquals(output, "<p>file content</p>\n");
     }
 
     /* Get Path to a file from resource dir */
-    private Path getResourcePath(String filename) {
-        URL url =
+    private Path getResourcePath(final String filename) {
+        final URL url =
             Thread.currentThread().getContextClassLoader()
                 .getResource("resources/" + filename);
         return new Path(url.getPath());

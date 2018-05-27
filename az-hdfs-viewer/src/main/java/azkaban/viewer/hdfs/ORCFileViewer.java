@@ -2,6 +2,7 @@ package azkaban.viewer.hdfs;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -117,7 +118,7 @@ public class ORCFileViewer extends HdfsFileViewer {
                 }
                 lineNum++;
             }
-            outStream.write(ret.toString().getBytes());
+            outStream.write(ret.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             outStream.write(("Error in display orc file: " + e
                 .getLocalizedMessage()).getBytes("UTF-8"));

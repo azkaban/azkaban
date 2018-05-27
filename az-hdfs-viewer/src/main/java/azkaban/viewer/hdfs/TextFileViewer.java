@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.HashSet;
@@ -62,6 +63,7 @@ public class TextFileViewer extends HdfsFileViewer {
     return EnumSet.of(Capability.READ);
   }
 
+  @Override
   public void displayFile(FileSystem fs, Path path, OutputStream outputStream,
       int startLine, int endLine) throws IOException {
 
@@ -71,6 +73,7 @@ public class TextFileViewer extends HdfsFileViewer {
     displayFileContent(fs, path, outputStream, startLine, endLine, BUFFER_LIMIT);
   }
 
+  @SuppressWarnings("DefaultCharset")
   static void displayFileContent(FileSystem fs, Path path, OutputStream outputStream,
       int startLine, int endLine, int bufferLimit) throws IOException {
 
@@ -78,10 +81,11 @@ public class TextFileViewer extends HdfsFileViewer {
     BufferedReader reader = null;
     try {
       inputStream = fs.open(path);
-      reader = new BufferedReader(new InputStreamReader(inputStream));
+      reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
       PrintWriter output = new PrintWriter(outputStream);
-      for (int i = 1; i < startLine; i++)
+      for (int i = 1; i < startLine; i++) {
         reader.readLine();
+      }
 
       int bufferSize = 0;
       for (int i = startLine; i < endLine; i++) {

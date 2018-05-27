@@ -16,18 +16,15 @@
 
 package azkaban.viewer.hdfs;
 
-import java.util.EnumSet;
-import java.util.Set;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-
+import java.util.EnumSet;
+import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AccessControlException;
-
-import azkaban.viewer.hdfs.AzkabanSequenceFileReader;
 
 public abstract class SequenceFileViewer extends HdfsFileViewer {
 
@@ -39,7 +36,7 @@ public abstract class SequenceFileViewer extends HdfsFileViewer {
       int startLine, int endLine) throws IOException;
 
   @Override
-  public Set<Capability> getCapabilities(FileSystem fs, Path path)
+  public Set<Capability> getCapabilities(final FileSystem fs, final Path path)
       throws AccessControlException {
     Set<Capability> result = EnumSet.noneOf(Capability.class);
     AzkabanSequenceFileReader.Reader reader = null;
@@ -47,15 +44,15 @@ public abstract class SequenceFileViewer extends HdfsFileViewer {
       reader =
           new AzkabanSequenceFileReader.Reader(fs, path, new Configuration());
       result = getCapabilities(reader);
-    } catch (AccessControlException e) {
+    } catch (final AccessControlException e) {
       throw e;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return EnumSet.noneOf(Capability.class);
     } finally {
       if (reader != null) {
         try {
           reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
           e.printStackTrace();
         }
       }
@@ -65,16 +62,17 @@ public abstract class SequenceFileViewer extends HdfsFileViewer {
   }
 
   @Override
-  public void displayFile(FileSystem fs, Path file, OutputStream outputStream,
-      int startLine, int endLine) throws IOException {
+  @SuppressWarnings("DefaultCharset")
+  public void displayFile(final FileSystem fs, final Path file, final OutputStream outputStream,
+      final int startLine, final int endLine) throws IOException {
 
     AzkabanSequenceFileReader.Reader reader = null;
-    PrintWriter writer = new PrintWriter(outputStream);
+    final PrintWriter writer = new PrintWriter(outputStream);
     try {
       reader =
           new AzkabanSequenceFileReader.Reader(fs, file, new Configuration());
       displaySequenceFile(reader, writer, startLine, endLine);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       writer.write("Error opening sequence file " + e);
       throw e;
     } finally {

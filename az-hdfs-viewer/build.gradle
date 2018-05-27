@@ -25,13 +25,15 @@ dependencies {
     compile deps.mongoDriver
     compile deps.parquetAvro
     compile deps.parquetBundle
-    compile deps.voldemort
+//    compile deps.voldemort
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
 //    compileOnly (deps.hiveCli) {
 //        transitive = false
 //    }
+
+    testCompile deps.hadoopCommon
     compileOnly deps.hiveMetastore
     compileOnly(deps.hiveExecCore) {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'

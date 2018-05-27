@@ -34,9 +34,8 @@ package azkaban.viewer.hdfs;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.EnumSet;
-import java.util.Set;
 import java.util.HashSet;
-
+import java.util.Set;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AccessControlException;
@@ -44,17 +43,16 @@ import org.apache.log4j.Logger;
 
 public class HtmlFileViewer extends HdfsFileViewer {
 
-  private static Logger logger = Logger.getLogger(HtmlFileViewer.class);
-  private Set<String> acceptedSuffix = new HashSet<>();
-
   // only display the first 25M chars. it is used to prevent
   // showing/downloading gb of data
   private static final int BUFFER_LIMIT = 25000000;
   private static final String VIEWER_NAME = "Html";
+  private static final Logger logger = Logger.getLogger(HtmlFileViewer.class);
+  private final Set<String> acceptedSuffix = new HashSet<>();
 
   public HtmlFileViewer() {
-    acceptedSuffix.add(".htm");
-    acceptedSuffix.add(".html");
+    this.acceptedSuffix.add(".htm");
+    this.acceptedSuffix.add(".html");
   }
 
   @Override
@@ -64,24 +62,25 @@ public class HtmlFileViewer extends HdfsFileViewer {
 
 
   @Override
-  public Set<Capability> getCapabilities(FileSystem fs, Path path)
+  public Set<Capability> getCapabilities(final FileSystem fs, final Path path)
       throws AccessControlException {
-    String fileName = path.getName();
-    int pos = fileName.lastIndexOf('.');
+    final String fileName = path.getName();
+    final int pos = fileName.lastIndexOf('.');
     if (pos < 0) {
       return EnumSet.noneOf(Capability.class);
     }
 
-    String suffix = fileName.substring(pos).toLowerCase();
-    if (acceptedSuffix.contains(suffix)) {
+    final String suffix = fileName.substring(pos).toLowerCase();
+    if (this.acceptedSuffix.contains(suffix)) {
       return EnumSet.of(Capability.READ);
     } else {
       return EnumSet.noneOf(Capability.class);
     }
   }
 
-  public void displayFile(FileSystem fs, Path path, OutputStream outputStream,
-      int startLine, int endLine) throws IOException {
+  @Override
+  public void displayFile(final FileSystem fs, final Path path, final OutputStream outputStream,
+      final int startLine, final int endLine) throws IOException {
 
     if (logger.isDebugEnabled())
       logger.debug("read in uncompressed html file");
@@ -91,6 +90,7 @@ public class HtmlFileViewer extends HdfsFileViewer {
     TextFileViewer.displayFileContent(fs, path, outputStream, startLine, Integer.MAX_VALUE, BUFFER_LIMIT);
   }
 
+  @Override
   public ContentType getContentType() {
     return ContentType.HTML;
   }
