@@ -38,7 +38,7 @@ import org.mockito.stubbing.Answer;
 
 public class EmailerTest {
 
-  private final String receiveAddr = "receive@domain.com";//receiver email address
+  private static final String receiveAddr = "receive@domain.com";//receiver email address
   private final List<String> receiveAddrList = new ArrayList<>();
 
   private Project project;
@@ -64,6 +64,16 @@ public class EmailerTest {
     when(message.getBody()).thenAnswer(invocation -> body.toString());
 
     return message;
+  }
+
+  public static Props createMailProperties() {
+    final Props props = new Props();
+    props.put("job.failure.email", receiveAddr);
+    props.put("server.port", "114");
+    props.put("jetty.use.ssl", "false");
+    props.put("server.useSSL", "false");
+    props.put("jetty.port", "8786");
+    return props;
   }
 
   @Before
@@ -115,15 +125,5 @@ public class EmailerTest {
     verify(this.message).addAllToAddress(this.receiveAddrList);
     verify(this.message).setSubject("subject");
     verify(this.message).setMimeType("text/html");
-  }
-
-  private Props createMailProperties() {
-    final Props props = new Props();
-    props.put("job.failure.email", this.receiveAddr);
-    props.put("server.port", "114");
-    props.put("jetty.use.ssl", "false");
-    props.put("server.useSSL", "false");
-    props.put("jetty.port", "8786");
-    return props;
   }
 }
