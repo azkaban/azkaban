@@ -36,7 +36,7 @@ public class UtilsTest {
     final ZipFile source = new ZipFile(zipFile);
     final File dest = Utils.createTempDir();
     assertThatThrownBy(() -> Utils.unzip(source, dest)).isInstanceOf(IOException.class)
-        .hasMessageContaining("Extracting Zip entry would have resulted in a file outside the "
+        .hasMessageContaining("Extracting zip entry would have resulted in a file outside the "
             + "specified destination directory.");
   }
 }
