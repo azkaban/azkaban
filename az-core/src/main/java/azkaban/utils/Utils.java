@@ -27,6 +27,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Collection;
 import java.util.Date;
@@ -198,6 +200,14 @@ public class Utils {
     final Enumeration<?> entries = source.entries();
     while (entries.hasMoreElements()) {
       final ZipEntry entry = (ZipEntry) entries.nextElement();
+      final Path fileDestinationPath = Paths.get(dest.getAbsolutePath(),
+          entry.getName()).normalize();
+      if (!fileDestinationPath.startsWith(dest.getAbsolutePath())) {
+        throw new IOException(
+            "Extracting zip entry would have resulted in a file outside the specified destination"
+                + " directory.");
+      }
+
       final File newFile = new File(dest, entry.getName());
       if (entry.isDirectory()) {
         newFile.mkdirs();
