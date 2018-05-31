@@ -29,9 +29,6 @@ dependencies {
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
-//    compileOnly (deps.hiveCli) {
-//        transitive = false
-//    }
 
     testCompile deps.hadoopCommon
     compileOnly deps.hiveMetastore
@@ -39,9 +36,6 @@ dependencies {
         exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
         exclude group: 'eigenbase', module: 'eigenbase-properties'
     }
-//    compileOnly(deps.pig) {
-//        transitive = false
-//    }
 }
 
 distributions {

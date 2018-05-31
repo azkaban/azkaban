@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -82,9 +81,7 @@ public class HtmlFileViewerTest {
 
     /* Get Path to a file from resource dir */
     private Path getResourcePath(final String filename) {
-        final URL url =
-            Thread.currentThread().getContextClassLoader()
-                .getResource("resources/" + filename);
-        return new Path(url.getPath());
+        final String HDFS_VIEWER_ROOT_PATH = "../test/hdfs-viewer-sample-files/";
+        return new Path(HDFS_VIEWER_ROOT_PATH + filename);
     }
 }
