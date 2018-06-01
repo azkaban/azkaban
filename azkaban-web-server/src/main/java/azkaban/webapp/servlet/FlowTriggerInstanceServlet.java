@@ -118,11 +118,11 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
         final Project project = this.projectManager.getProject(projectName);
         if (project == null) {
           ret.put("error", "please specify a valid project name");
-        }
-        else if (!hasPermission(project, session.getUser(), Type.READ)) {
+        } else if (!hasPermission(project, session.getUser(), Type.READ)) {
           ret.put("error", "Permission denied. Need READ access.");
+        } else {
+          ajaxFetchTriggerInstances(project.getId(), flowId, ret, req);
         }
-        else ajaxFetchTriggerInstances(project.getId(), flowId, ret, req);
       } else {
         ret.put("error", "please specify project id and flow id");
       }
@@ -230,7 +230,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
         .findRunningTriggerInstById(triggerInstanceId);
     if (triggerInst != null) {
       if (hasPermission(triggerInst.getProject(), session.getUser(), Type.EXECUTE)) {
-        this.triggerService.cancel(triggerInst, CancellationCause.MANUAL);
+        this.triggerService.cancelTriggerInstance(triggerInst, CancellationCause.MANUAL);
       } else {
         ret.put("error", "no permission to kill the trigger");
       }
