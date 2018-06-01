@@ -17,10 +17,10 @@
 apply plugin: 'distribution'
 
 dependencies {
-    compile project(':az-core')
-    compile project(":azkaban-common")
-    compile project(":azkaban-web-server")
-    compile project(":azkaban-hadoop-security-plugin")
+    compileOnly project(':az-core')
+    compileOnly project(":azkaban-common")
+    compileOnly project(":azkaban-web-server")
+    compileOnly project(":azkaban-hadoop-security-plugin")
 
     compile deps.mongoDriver
     compile deps.parquetAvro
@@ -42,6 +42,9 @@ distributions {
     main {
         contents {
             from(jar) {
+                into 'lib'
+            }
+            from(configurations.runtime) {
                 into 'lib'
             }
         }
