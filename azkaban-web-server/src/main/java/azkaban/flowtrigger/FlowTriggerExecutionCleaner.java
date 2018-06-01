@@ -27,13 +27,13 @@ import javax.inject.Inject;
  * This is to purge old flow trigger execution records from the db table.
  * Otherwise the table will keep growing indefinitely as triggers are executed, leading to
  * excessive query time on the table.
- * The cleanup policy is removing trigger instances finishing older than 20 days back.
+ * The cleanup policy is removing trigger instances finishing older than 30 days back.
  */
 @SuppressWarnings("FutureReturnValueIgnored")
 public class FlowTriggerExecutionCleaner {
 
   private static final Duration CLEAN_INTERVAL = Duration.ofMinutes(10);
-  private static final Duration RETENTION_PERIOD = Duration.ofDays(10);
+  private static final Duration RETENTION_PERIOD = Duration.ofDays(30);
   private final ScheduledExecutorService scheduler;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
 

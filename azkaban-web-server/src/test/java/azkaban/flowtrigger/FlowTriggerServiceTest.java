@@ -145,7 +145,7 @@ public class FlowTriggerServiceTest {
 
     Thread.sleep(Duration.ofMillis(500).toMillis());
     for (final TriggerInstance runningTrigger : flowTriggerService.getRunningTriggers()) {
-      flowTriggerService.cancel(runningTrigger, CancellationCause.MANUAL);
+      flowTriggerService.cancelTriggerInstance(runningTrigger, CancellationCause.MANUAL);
     }
     Thread.sleep(Duration.ofMillis(500).toMillis());
     assertThat(flowTriggerService.getRunningTriggers()).isEmpty();

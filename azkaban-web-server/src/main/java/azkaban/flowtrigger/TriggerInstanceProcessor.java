@@ -60,11 +60,6 @@ public class TriggerInstanceProcessor {
     this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
   }
 
-  public void shutdown() {
-    this.executorService.shutdown();
-    this.executorService.shutdownNow();
-  }
-
   private void executeFlowAndUpdateExecID(final TriggerInstance triggerInst) {
     try {
       final Project project = triggerInst.getProject();
@@ -131,5 +126,10 @@ public class TriggerInstanceProcessor {
   public void processNewInstance(final TriggerInstance triggerInst) {
     logger.debug("process new instance for " + triggerInst);
     this.flowTriggerInstanceLoader.uploadTriggerInstance(triggerInst);
+  }
+
+  public void shutdown() {
+    this.executorService.shutdown();
+    this.executorService.shutdownNow();
   }
 }
