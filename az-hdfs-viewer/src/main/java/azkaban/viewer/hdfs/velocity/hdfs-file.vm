@@ -1,0 +1,158 @@
+#*
+ * Copyright 2014 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ *#
+
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
+    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var homeDir = "${homedir}";
+      var path = "${path}";
+      var hasSchema = ${hasSchema};
+      var viewerId = ${viewerId};
+      var contentType = "${contentType}";
+    </script>
+#if ($allowproxy)
+  #parse ("azkaban/viewer/hdfs/velocity/hdfs-proxy-js.vm")
+#end
+#parse ("azkaban/viewer/hdfs/velocity/hdfs-file-js.vm")
+#parse ("azkaban/viewer/hdfs/velocity/hdfs-viewer-css.vm")
+  </head>
+  <body>
+
+#set ($current_page = "$viewerName")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+#if ($errorMsg)
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+#else
+
+    <div class="az-page-header">
+      <div class="container-full">
+        <div class="row">
+          <div class="header-title">
+            <h1><a href="${context}/hdfs">HDFS Browser</a></h1>
+          </div>
+          <div class="header-control">
+            <div class="pull-right header-form">
+  #if ($allowproxy)
+              <strong>Proxy user</strong> ${user}
+              <button type="button" id="changeUserBtn" class="btn btn-sm btn-primary">Change User</button>
+  #end
+              <a id="goHomeLink" class="btn btn-sm btn-default" href="${context}/hdfs${homedir}">Home Directory</a>
+            </div>
+            <div class="clearfix"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+  #if (!$no_fs)
+
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="panel panel-default" id="all-hdfsbrowser-content">
+            <div class="panel-heading">
+    #set ($size = $paths.size() - 1)
+              <a class="firstCrumb" href="${context}/hdfs/"> / </a>
+    #if ($size >= 0)
+      #set ($end = $size - 1)
+      #foreach ($i in [0 ..$end])
+              <a href="$context/hdfs${paths.get($i)}">${segments.get($i)}</a><span> / </span>
+      #end
+                ${segments.get($size)}
+    #end
+            </div>
+            <table class="table table-condensed table-striped table-bordered">
+              <tbody>
+                <tr>
+                  <td class="property-key">Permission</td>
+                  <td class="property-value-half">${status.permission}</td>
+                  <td class="property-key">Owner/Group</td>
+                  <td class="property-value-half">${status.owner}/${status.group}</td>
+                </tr>
+                <tr>
+                  <td class="property-key">Size</td>
+                  <td class="property-value-half">$utils.displayBytes(${status.len})</td>
+                  <td class="property-key">Block Size</td>
+                  <td class="property-value-half">$utils.displayBytes(${status.getBlockSize()})</td>
+                </tr>
+                <tr>
+                  <td class="property-key">Reps</td>
+                  <td class="property-value-half">${status.getReplication()}</td>
+                  <td class="property-key">Modified Date</td>
+                  <td class="property-value-half">$utils.formatDateTime(${status.modificationTime})</td>
+                </tr>
+              </tbody>
+            </table>
+          </div><!-- /.panel -->
+        </div><!-- /.col-xs-12 -->
+      </div><!-- /.row -->
+
+      <div class="row">
+        <div class="col-xs-12">
+          <ul class="nav nav-tabs nav-sm" id="file-tabs">
+            <li class="active"><a href="#contents" data-toggle="tab">Contents</a></li>
+    #if ($hasSchema)
+            <li><a href="#schema" data-toggle="tab">Schema</a></li>
+    #end
+          </ul>
+
+          <div class="tab-content">
+            <div class="tab-pane active" id="contents">
+              <div class="progress progress-striped active" id="file-contents-loading">
+                <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                  <span class="sr-only">Loading...</span>
+                </div>
+              </div>
+
+    #if ($contentType == "HTML")
+              <iframe id="file-contents-iframe" style="display:none;overflow:scroll" sandbox="allow-same-origin"></iframe>
+    #else
+              <pre id="file-contents"></pre>
+    #end
+            </div>
+
+    #if ($hasSchema)
+            <div class="tab-pane" id="schema">
+              <div class="progress progress-striped active" id="file-schema-loading">
+                <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                  <span class="sr-only">Loading...</span>
+                </div>
+              </div>
+              <pre id="file-schema"></pre>
+            </div>
+    #end
+          </div>
+        </div>
+      </div>
+
+  #end
+#parse ("azkaban/viewer/hdfs/velocity/change-proxy-modal.vm")
+#end
+    </div><!-- /.container-full -->
+  </body>
+</html>
