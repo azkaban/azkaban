@@ -23,7 +23,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.cinnober.gradle:semver-git:2.2.3'
-        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.11'
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.14'
     }
 }
 
