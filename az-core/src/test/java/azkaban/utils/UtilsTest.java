@@ -18,8 +18,11 @@ package azkaban.utils;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import org.junit.Test;
 
 /**
@@ -27,12 +30,17 @@ import org.junit.Test;
  */
 public class UtilsTest {
 
-  private static final String INVALID_ZIP_FILE = "zip-slip.zip";
-
+  /* An insecure zip file may hold path traversal filenames. During unzipping, the filename gets
+  concatenated to the target directory. The final path may end up outside the target directory,
+  causing security issues. */
   @Test
-  public void testUnzipInvalidFile() throws IOException {
-    final File zipFile = new File(
-        getClass().getClassLoader().getResource(INVALID_ZIP_FILE).getFile());
+  public void testUnzipInsecureFile() throws IOException {
+    final File zipFile = new File("myTest.zip");
+    final ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFile));
+    final ZipEntry entry = new ZipEntry("../../../../../evil.txt");
+    out.putNextEntry(entry);
+    out.close();
+
     final ZipFile source = new ZipFile(zipFile);
     final File dest = Utils.createTempDir();
     assertThatThrownBy(() -> Utils.unzip(source, dest)).isInstanceOf(IOException.class)
