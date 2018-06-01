@@ -30,16 +30,20 @@ import org.junit.Test;
  */
 public class UtilsTest {
 
-  /* An insecure zip file may hold path traversal filenames. During unzipping, the filename gets
-  concatenated to the target directory. The final path may end up outside the target directory,
-  causing security issues. */
+  /**
+   * An insecure zip file may hold path traversal filenames. During unzipping, the filename gets
+   * concatenated to the target directory. The final path may end up outside the target directory,
+   * causing security issues.
+   *
+   * @throws IOException the io exception
+   */
   @Test
   public void testUnzipInsecureFile() throws IOException {
     final File zipFile = new File("myTest.zip");
-    final ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFile));
-    final ZipEntry entry = new ZipEntry("../../../../../evil.txt");
-    out.putNextEntry(entry);
-    out.close();
+    try (final ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFile))) {
+      final ZipEntry entry = new ZipEntry("../../../../../evil.txt");
+      out.putNextEntry(entry);
+    }
 
     final ZipFile source = new ZipFile(zipFile);
     final File dest = Utils.createTempDir();
