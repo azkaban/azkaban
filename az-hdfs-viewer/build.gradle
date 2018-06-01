@@ -25,7 +25,6 @@ dependencies {
     compile deps.mongoDriver
     compile deps.parquetAvro
     compile deps.parquetBundle
-//    compile deps.voldemort
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore

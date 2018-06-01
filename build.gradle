@@ -114,7 +114,6 @@ ext.deps = [
         slf4jLog4j          : 'org.slf4j:slf4j-log4j12:' + versions.slf4j,
         sparkCore           : 'org.apache.spark:spark-core_2.10:1.4.0',
         snakeyaml           : 'org.yaml:snakeyaml:1.18',
-//        voldemort           : 'voldemort:voldemort:0.81',
         velocity            : 'org.apache.velocity:velocity:1.7',
         velocityTools       : 'org.apache.velocity:velocity-tools:2.0',
 ]
