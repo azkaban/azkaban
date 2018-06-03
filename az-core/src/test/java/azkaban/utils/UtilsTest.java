@@ -40,15 +40,21 @@ public class UtilsTest {
   @Test
   public void testUnzipInsecureFile() throws IOException {
     final File zipFile = new File("myTest.zip");
-    try (final ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFile))) {
-      final ZipEntry entry = new ZipEntry("../../../../../evil.txt");
-      out.putNextEntry(entry);
-    }
+    try {
+      try (final ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFile))) {
+        final ZipEntry entry = new ZipEntry("../../../../../evil.txt");
+        out.putNextEntry(entry);
+      }
 
-    final ZipFile source = new ZipFile(zipFile);
-    final File dest = Utils.createTempDir();
-    assertThatThrownBy(() -> Utils.unzip(source, dest)).isInstanceOf(IOException.class)
-        .hasMessageContaining("Extracting zip entry would have resulted in a file outside the "
-            + "specified destination directory.");
+      final ZipFile source = new ZipFile(zipFile);
+      final File dest = Utils.createTempDir();
+      assertThatThrownBy(() -> Utils.unzip(source, dest)).isInstanceOf(IOException.class)
+          .hasMessageContaining("Extracting zip entry would have resulted in a file outside the "
+              + "specified destination directory.");
+    } finally {
+      if (zipFile.exists()) {
+        zipFile.delete();
+      }
+    }
   }
 }
