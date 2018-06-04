@@ -73,9 +73,9 @@ public class TriggerInstanceProcessor {
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
     } catch (final Exception ex) {
-      logger.error(String.format(
-          "exception when executing the associated flow and updating flow exec id for trigger instance[id: %s]",
-          triggerInst.getId()), ex);
+      logger.error("exception when executing the associated flow and updating flow exec id for "
+              + "trigger instance[id: {}]",
+          triggerInst.getId(), ex);
       // if flow fails to be executed(e.g. running execution exceeds the allowed concurrent run
       // limit), set associated flow exec id to Constants.FAILED_EXEC_ID. Upon web server
       // restart, recovery process will skip those flows.
@@ -144,7 +144,6 @@ public class TriggerInstanceProcessor {
    * Process the case where status of trigger instance becomes success
    */
   public void processSucceed(final TriggerInstance triggerInst) {
-    logger.debug("process succeed for " + triggerInst);
     //todo chengren311: publishing Trigger events to Azkaban Project Events page
     executeFlowAndUpdateExecID(triggerInst);
   }
@@ -153,7 +152,6 @@ public class TriggerInstanceProcessor {
    * Process the case where status of trigger instance becomes cancelled
    */
   public void processTermination(final TriggerInstance triggerInst) {
-    logger.debug("process termination for " + triggerInst);
     //sendFailureEmailIfConfigured takes 1/3 secs
     this.executorService.submit(() -> sendFailureEmailIfConfigured(triggerInst));
   }
@@ -162,7 +160,6 @@ public class TriggerInstanceProcessor {
    * Process the case where a new trigger instance is created
    */
   public void processNewInstance(final TriggerInstance triggerInst) {
-    logger.debug("process new instance for " + triggerInst);
     this.flowTriggerInstanceLoader.uploadTriggerInstance(triggerInst);
   }
 
