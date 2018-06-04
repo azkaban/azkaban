@@ -110,9 +110,9 @@ public class NodeBeanLoader {
     final String cronExpression = scheduleMap.get(FlowTriggerProps.SCHEDULE_VALUE).trim();
     final String[] cronParts = cronExpression.split("\\s+");
 
-//    Preconditions
-//        .checkArgument(cronParts[0].equals("0"), "interval of flow trigger schedule has to"
-//            + " be larger than 1 min");
+    Preconditions
+        .checkArgument(cronParts[0].equals("0"), "interval of flow trigger schedule has to"
+            + " be larger than 1 min");
 
     Preconditions.checkArgument(scheduleMap.size() == 2, "flow trigger schedule must "
         + "contain type and value only");

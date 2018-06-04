@@ -475,7 +475,6 @@ public class FlowTriggerService {
   }
 
   private void markSuccess(final DependencyInstanceContext context) {
-    final long start = System.currentTimeMillis();
     final DependencyInstance depInst = findDependencyInstanceByContext(context);
     if (depInst != null) {
       if (Status.isDone(depInst.getStatus())) {
@@ -496,14 +495,6 @@ public class FlowTriggerService {
     } else {
       logger.debug("unable to find trigger instance with context {} when marking it success",
           context);
-    }
-    final long takes = System.currentTimeMillis() - start;
-    if (takes >= 1000) {
-      logger.info("longlong takes " + takes + " for  " + depInst.getTriggerInstance().getId()
-          + ":" + depInst.getDepName());
-    } else {
-      logger.info("takes " + takes + " for  " + depInst.getTriggerInstance().getId()
-          + ":" + depInst.getDepName());
     }
   }
 
