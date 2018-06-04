@@ -52,8 +52,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     final int mailTimeout = props.getInt("mail.timeout.millis", 30000);
     EmailMessage.setTimeout(mailTimeout);
-    final int connectionTimeout =
-        props.getInt("mail.connection.timeout.millis", 30000);
+    final int connectionTimeout = props.getInt("mail.connection.timeout.millis", 30000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
@@ -73,6 +72,10 @@ public class Emailer extends AbstractMailer implements Alerter {
           props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT, props.getInt("jetty.port",
               Constants.DEFAULT_PORT_NUMBER)));
     }
+  }
+
+  public String getAzkabanURL() {
+    return this.scheme + "://" + this.clientHostname + ":" + this.clientPortNumber;
   }
 
   /**
@@ -135,7 +138,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     return mailCreator;
   }
 
-  private void sendEmail(final EmailMessage message, final boolean mailCreated,
+  public void sendEmail(final EmailMessage message, final boolean mailCreated,
       final String operation) {
     if (mailCreated) {
       try {
@@ -158,5 +161,4 @@ public class Emailer extends AbstractMailer implements Alerter {
       return flowName;
     }
   }
-
 }

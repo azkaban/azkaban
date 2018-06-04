@@ -900,6 +900,17 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         proxyUser = variable.name;
       }
 
+      // Validate if the session user (who interact with UI) is part of specified user.to.proxy
+      // user. If not, reportal can not be saved and warn users.
+      if (variable.title.equals("reportal.config.user.to.proxy")) {
+        String userToProxy = variable.name;
+        final UserManager userManager = getApplication().getUserManager();
+        if (!userManager.validateProxyUser(userToProxy, user)) {
+          errors.add("User " + user.getUserId() + " has no permission to add " + userToProxy
+              + " as proxy user.");
+        }
+      }
+
       variableList.add(variable);
     }
 

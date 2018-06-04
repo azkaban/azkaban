@@ -1,0 +1,192 @@
+#*
+ * Copyright 2014 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ *#
+
+<script type="text/javascript">
+
+$.namespace('azkaban');
+
+azkaban.HdfsSchemaModel = Backbone.Model.extend({
+  initialize: function() {
+    this.set('schema', '');
+  },
+
+  fetchSchema: function(path, viewerId) {
+    var requestURL = '/hdfs';
+    var requestData = {
+      'ajax': 'fetchschema',
+      'path': path,
+      'viewerId': viewerId
+    };
+    var model = this;
+    var successHandler = function(data) {
+      if (data.error != null) {
+        model.set('error', data.error);
+      }
+      if (data.schema != null) {
+        model.set('schema', data.schema);
+      }
+    };
+    $.get(requestURL, requestData, successHandler, 'json');
+  }
+});
+
+azkaban.HdfsSchemaView = Backbone.View.extend({
+  events: {
+  },
+
+  initialize: function(settings) {
+    this.listenTo(this.model, 'change:schema', this.render);
+    this.rendered = false;
+  },
+
+  show: function() {
+    if (this.rendered == true) {
+      return;
+    }
+    this.model.fetchSchema(path, viewerId);
+  },
+
+  render: function(self) {
+    if (this.rendered == true) {
+      return;
+    }
+
+    var schema = this.model.get('schema');
+    if (schema == null) {
+      return;
+    }
+
+    $('#file-schema-loading').hide();
+    $('#file-schema').show().text(schema);
+    this.rendered = true;
+  }
+});
+
+azkaban.HdfsFileModel = Backbone.Model.extend({
+  initialize: function() {
+    this.set('contents', '');
+  },
+
+  fetchFile: function(path, viewerId) {
+    var requestURL = '/hdfs';
+    var requestData = {
+      'ajax': 'fetchfile',
+      'path': path,
+      'viewerId': viewerId,
+    };
+    var model = this;
+    var successHandler = function(data) {
+      if (data.error != null) {
+        model.set('error', data.error);
+      }
+      if (data === '') {
+        data = 'Oops this is an empty file !!';
+      }
+      model.set('contents', data);
+    };
+    $.get(requestURL, requestData, successHandler, 'text');
+  }
+});
+
+azkaban.HdfsFileView = Backbone.View.extend({
+  events: {
+  },
+
+  initialize: function(settings) {
+    this.listenTo(this.model, 'change:contents', this.render);
+    this.rendered = false;
+  },
+
+  show: function() {
+    if (this.rendered == true) {
+      return;
+    }
+    this.model.fetchFile(path, viewerId);
+  },
+
+  render: function(self) {
+    if (this.rendered == true) {
+      return;
+    }
+
+    var file = this.model.get('contents');
+    if (file == null) {
+      return;
+    }
+
+    $('#file-contents-loading').hide();
+
+    if (contentType == "HTML") {
+      var iframe = document.getElementById('file-contents-iframe');
+      // show iframe (initially it's hidden)
+      iframe.style.display = "inline";
+      // Write content to iframe. We can't just set the html source content as
+      // inner html of the iframe. The iframe hosts a completely separate dom
+      // structure than the current html, thus setting the inner HTML will not
+      // work. The only way to store html inside iframe is by either writing
+      // the content directly into it or set the content in srcdoc attribute.
+      // Since either way is fine, will go with write method since it looks
+      // nicer when you inspect the html structure.
+      var doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(file);
+      doc.close();
+      // adjust iframe size
+      iframe.width  = iframe.contentWindow.document.body.scrollWidth;
+      iframe.height = iframe.contentWindow.document.body.scrollHeight;
+    } else {
+      $('#file-contents').show().text(file);
+    }
+    this.rendered = true;
+  }
+});
+
+var schemaModel;
+var schemaView;
+
+var fileModel;
+var fileView;
+
+$(function () {
+  $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    var current = e.target;
+    var previous = e.relatedTarget;
+    var hash = $(current).attr('href');
+    if (hash == '#schema' && schemaModel != null) {
+      schemaView.show();
+    }
+    else if (hash == '#contents') {
+      fileView.show();
+    }
+  });
+
+  if (hasSchema) {
+    schemaModel = new azkaban.HdfsSchemaModel();
+    schemaView = new azkaban.HdfsSchemaView({
+      el: $("#schema"),
+      model: schemaModel
+    });
+  }
+
+  fileModel = new azkaban.HdfsFileModel();
+  fileView = new azkaban.HdfsFileView({
+    el: $("#contents"),
+    model: fileModel
+  });
+
+  fileView.show();
+});
+</script>
