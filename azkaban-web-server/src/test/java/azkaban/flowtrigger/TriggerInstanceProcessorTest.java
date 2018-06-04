@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.metrics.CommonMetrics;
@@ -65,6 +64,7 @@ public class TriggerInstanceProcessorTest {
   private EmailMessageCreator messageCreator;
   private TriggerInstanceProcessor processor;
   private CountDownLatch sendEmailLatch;
+  private CountDownLatch submitFlowLatch;
 
   private static TriggerInstance createTriggerInstance() throws ParseException {
     final FlowTrigger flowTrigger = new FlowTrigger(
@@ -112,14 +112,26 @@ public class TriggerInstanceProcessorTest {
       this.sendEmailLatch.countDown();
       return null;
     }).when(this.emailer).sendEmail(any(), any(), any());
+
+    this.submitFlowLatch = new CountDownLatch(1);
+    doAnswer(invocation -> {
+      this.submitFlowLatch.countDown();
+      return null;
+    }).when(this.executorManager).submitExecutableFlow(any(), anyString());
+
     this.processor = new TriggerInstanceProcessor(this.executorManager, this.triggerInstLoader,
         this.emailer);
   }
 
   @Test
+<<<<<<< Updated upstream
   public void testProcessSucceed() throws ExecutorManagerException, ParseException {
+=======
+  public void testProcessSucceed() throws Exception {
+>>>>>>> Stashed changes
     final TriggerInstance triggerInstance = createTriggerInstance();
     this.processor.processSucceed(triggerInstance);
+    this.submitFlowLatch.await(10L, TimeUnit.SECONDS);
     verify(this.executorManager).submitExecutableFlow(any(), anyString());
     verify(this.triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
   }
