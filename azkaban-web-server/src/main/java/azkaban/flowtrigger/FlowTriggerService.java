@@ -173,7 +173,7 @@ public class FlowTriggerService {
   private void scheduleKill(final TriggerInstance triggerInst, final Duration duration, final
   CancellationCause cause) {
     logger
-        .debug("Cancel trigger instance {} in {} secs", triggerInst.getId(), duration
+        .debug("cancel trigger instance {} in {} secs", triggerInst.getId(), duration
             .getSeconds());
     this.timeoutService.schedule(() -> {
       cancelTriggerInstance(triggerInst, cause);
@@ -484,18 +484,11 @@ public class FlowTriggerService {
         return;
       }
 
-//      logger.info(
-//          String.format("setting dependency instance[id: %s, name: %s] status to succeeded",
-//              depInst.getTriggerInstance().getId(), depInst.getDepName()));
-//      logger.info("setting dependency instance[id: {}, name: {}] status to succeeded",
-//          depInst.getTriggerInstance().getId(), depInst.getDepName());
       // if the status transits from cancelling to succeeded, then cancellation cause was set,
       // we need to unset cancellation cause.
       this.processStatusAndCancelCauseUpdate(depInst, Status.SUCCEEDED, CancellationCause.NONE);
       // if associated trigger instance becomes success, then remove it from running list
       if (depInst.getTriggerInstance().getStatus() == Status.SUCCEEDED) {
-//        logger.info(String.format("trigger instance[id: %s] succeeded",
-//            depInst.getTriggerInstance().getId()));
         logger.info("trigger instance[id: {}] succeeded", depInst.getTriggerInstance().getId());
         this.triggerProcessor.processSucceed(depInst.getTriggerInstance());
         this.runningTriggers.remove(depInst.getTriggerInstance());
@@ -534,8 +527,6 @@ public class FlowTriggerService {
   private void markCancelled(final DependencyInstanceContext context) {
     final DependencyInstance depInst = findDependencyInstanceByContext(context);
     if (depInst != null) {
-//      logger.info("set dependency instance[id: {}, name: {}] status to cancelled",
-//          depInst.getTriggerInstance().getId(), depInst.getDepName());
       if (cancelledByDependencyPlugin(depInst)) {
         processStatusAndCancelCauseUpdate(depInst, Status.CANCELLED, CancellationCause.FAILURE);
         cancelTriggerInstance(depInst.getTriggerInstance());
