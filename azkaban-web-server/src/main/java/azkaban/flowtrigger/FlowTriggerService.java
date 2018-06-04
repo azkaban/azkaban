@@ -377,7 +377,7 @@ public class FlowTriggerService {
     final TriggerInstance triggerInst = createTriggerInstance(flowTrigger, flowId, flowVersion,
         submitUser, project);
     this.flowTriggerExecutorService.submit(() -> {
-      logger.info("Starting the flow trigger {}[trigger instance id: {}] by {}", flowTrigger,
+      logger.info("Starting the flow trigger [trigger instance id: {}] by {}",
           triggerInst.getId(), submitUser);
       start(triggerInst);
     });
