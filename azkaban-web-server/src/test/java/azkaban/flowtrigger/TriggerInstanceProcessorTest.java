@@ -124,11 +124,7 @@ public class TriggerInstanceProcessorTest {
   }
 
   @Test
-<<<<<<< Updated upstream
-  public void testProcessSucceed() throws ExecutorManagerException, ParseException {
-=======
   public void testProcessSucceed() throws Exception {
->>>>>>> Stashed changes
     final TriggerInstance triggerInstance = createTriggerInstance();
     this.processor.processSucceed(triggerInstance);
     this.submitFlowLatch.await(10L, TimeUnit.SECONDS);
