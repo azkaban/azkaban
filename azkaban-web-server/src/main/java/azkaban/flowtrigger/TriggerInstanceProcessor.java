@@ -145,7 +145,7 @@ public class TriggerInstanceProcessor {
    */
   public void processSucceed(final TriggerInstance triggerInst) {
     //todo chengren311: publishing Trigger events to Azkaban Project Events page
-    executeFlowAndUpdateExecID(triggerInst);
+    this.executorService.submit(() -> executeFlowAndUpdateExecID(triggerInst));
   }
 
   /**
