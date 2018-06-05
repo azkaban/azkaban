@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -12,7 +12,6 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
- *
  */
 
 package azkaban;
@@ -31,6 +30,9 @@ import java.time.Duration;
  * <p>Flow level properties keys to be put in the {@link FlowProperties} class
  *
  * <p>Job level Properties keys to be put in the {@link JobProperties} class
+ *
+ * <p>Use '.' to separate name spaces and '_" to separate words in the same namespace. e.g.
+ * azkaban.job.some_key</p>
  */
 public class Constants {
 
