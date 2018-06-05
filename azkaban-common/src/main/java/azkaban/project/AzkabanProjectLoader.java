@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.flow.Flow;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
@@ -211,19 +212,26 @@ class AzkabanProjectLoader {
         this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
 
       } else if (loader instanceof DirectoryYamlFlowLoader) {
-        final File[] flowFiles = projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX));
-        for (final File file : flowFiles) {
-          final int newFlowVersion = this.projectLoader
-              .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
-          this.projectLoader
-              .uploadFlowFile(project.getId(), newProjectVersion, file, newFlowVersion);
-        }
+        uploadFlowFilesRecursively(projectDir, project, newProjectVersion);
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
 
       this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
           "Uploaded project files zip " + archive.getName());
+    }
+  }
+
+  private void uploadFlowFilesRecursively(final File projectDir, final Project project, final int
+      newProjectVersion) {
+    for (final File file : projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX))) {
+      final int newFlowVersion = this.projectLoader
+          .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
+      this.projectLoader
+          .uploadFlowFile(project.getId(), newProjectVersion, file, newFlowVersion);
+    }
+    for (final File file : projectDir.listFiles(new DirFilter())) {
+      uploadFlowFilesRecursively(file, project, newProjectVersion);
     }
   }
 

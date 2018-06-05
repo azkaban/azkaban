@@ -21,6 +21,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
@@ -112,13 +113,21 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
               + ". Duplicate nodes found or dependency undefined.");
         } else {
           final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
-          final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
-          this.flowMap.put(flow.getId(), flow);
+          if (this.flowMap.containsKey(azkabanFlow.getName())) {
+            this.errors.add("Duplicate flows found in the project with name " + azkabanFlow
+                .getName());
+          } else {
+            final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
+            this.flowMap.put(flow.getId(), flow);
+          }
         }
       } catch (final Exception e) {
         this.errors.add("Error loading flow yaml file " + file.getName() + ":"
             + e.getMessage());
       }
+    }
+    for (final File file : projectDir.listFiles(new DirFilter())) {
+      convertYamlFiles(file);
     }
   }
 
