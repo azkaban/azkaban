@@ -101,7 +101,6 @@ public class TriggerInstanceProcessorTest {
   public void setUp() throws Exception {
     this.message = EmailerTest.mockEmailMessage();
     this.messageCreator = EmailerTest.mockMessageCreator(this.message);
-
     this.triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
     this.executorManager = mock(ExecutorManager.class);
     when(this.executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
