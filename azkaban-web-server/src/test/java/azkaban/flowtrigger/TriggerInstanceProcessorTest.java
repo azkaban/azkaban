@@ -65,6 +65,7 @@ public class TriggerInstanceProcessorTest {
   private TriggerInstanceProcessor processor;
   private CountDownLatch sendEmailLatch;
   private CountDownLatch submitFlowLatch;
+  private CountDownLatch updateExecIDLatch;
 
   private static TriggerInstance createTriggerInstance() throws ParseException {
     final FlowTrigger flowTrigger = new FlowTrigger(
@@ -107,6 +108,7 @@ public class TriggerInstanceProcessorTest {
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     this.emailer = Mockito.spy(new Emailer(EmailerTest.createMailProperties(), commonMetrics,
         this.messageCreator));
+
     this.sendEmailLatch = new CountDownLatch(1);
     doAnswer(invocation -> {
       this.sendEmailLatch.countDown();
@@ -119,6 +121,12 @@ public class TriggerInstanceProcessorTest {
       return null;
     }).when(this.executorManager).submitExecutableFlow(any(), anyString());
 
+    this.updateExecIDLatch = new CountDownLatch(1);
+    doAnswer(invocation -> {
+      this.updateExecIDLatch.countDown();
+      return null;
+    }).when(this.triggerInstLoader).updateAssociatedFlowExecId(any());
+
     this.processor = new TriggerInstanceProcessor(this.executorManager, this.triggerInstLoader,
         this.emailer);
   }
@@ -129,6 +137,7 @@ public class TriggerInstanceProcessorTest {
     this.processor.processSucceed(triggerInstance);
     this.submitFlowLatch.await(10L, TimeUnit.SECONDS);
     verify(this.executorManager).submitExecutableFlow(any(), anyString());
+    this.updateExecIDLatch.await(10L, TimeUnit.SECONDS);
     verify(this.triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
   }
 
