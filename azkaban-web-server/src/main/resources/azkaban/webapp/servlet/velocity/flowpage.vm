@@ -48,6 +48,8 @@
     var projectName = "${project.name}";
     var flowId = "${flowid}";
     var execId = null;
+
+    var displayNumOfExecutions = "${displayNumOfExecutions}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
