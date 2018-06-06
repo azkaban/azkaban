@@ -830,7 +830,7 @@ public class FlowRunnerManager implements EventListener,
             if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > this.lastOldProjectCleanTime
                 && FlowRunnerManager.this.isExecutorActive) {
               logger.info("Cleaning old projects");
-              cleanOlderProjects();
+              cleanProjectsOfOldVersions();
               this.lastOldProjectCleanTime = currentTime;
             }
 
@@ -919,7 +919,7 @@ public class FlowRunnerManager implements EventListener,
       }
     }
 
-    private void cleanOlderProjects() {
+    private void cleanProjectsOfOldVersions() {
       final Map<Integer, ArrayList<ProjectVersion>> projectVersions =
           new HashMap<>();
       for (final ProjectVersion version : FlowRunnerManager.this.installedProjects.values()) {
@@ -932,13 +932,7 @@ public class FlowRunnerManager implements EventListener,
         versionList.add(version);
       }
 
-      final HashSet<Pair<Integer, Integer>> activeProjectVersions =
-          new HashSet<>();
-      for (final FlowRunner runner : FlowRunnerManager.this.runningFlows.values()) {
-        final ExecutableFlow flow = runner.getExecutableFlow();
-        activeProjectVersions.add(new Pair<>(flow
-            .getProjectId(), flow.getVersion()));
-      }
+      final HashSet<Pair<Integer, Integer>> activeProjectVersions = getActiveProjectVersions();
 
       for (final Map.Entry<Integer, ArrayList<ProjectVersion>> entry : projectVersions
           .entrySet()) {
@@ -967,6 +961,42 @@ public class FlowRunnerManager implements EventListener,
               logger.error(e);
             }
           }
+        }
+      }
+    }
+
+    private HashSet<Pair<Integer, Integer>> getActiveProjectVersions() {
+      final HashSet<Pair<Integer, Integer>> activeProjectVersions =
+          new HashSet<>();
+      for (final FlowRunner runner : FlowRunnerManager.this.runningFlows.values()) {
+        final ExecutableFlow flow = runner.getExecutableFlow();
+        activeProjectVersions.add(new Pair<>(flow
+            .getProjectId(), flow.getVersion()));
+      }
+      return activeProjectVersions;
+    }
+
+    private boolean shouldPurge() {
+
+    }
+
+    private List<ProjectVersion> getLeastRecentlyUsedProjectVersions() {
+
+    }
+
+    /**
+     * delete least recently used projects
+     */
+    private void cleanLRUProjects() {
+      if (shouldPurge()) {
+        for (final ProjectVersion version : FlowRunnerManager.this.installedProjects.values()) {
+          ArrayList<ProjectVersion> versionList =
+              projectVersions.get(version.getProjectId());
+          if (versionList == null) {
+            versionList = new ArrayList<>();
+            projectVersions.put(version.getProjectId(), versionList);
+          }
+          versionList.add(version);
         }
       }
     }
