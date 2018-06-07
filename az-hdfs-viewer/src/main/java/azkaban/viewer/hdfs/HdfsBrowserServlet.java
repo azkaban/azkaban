@@ -56,13 +56,10 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
       "hadoop.security.manager.class";
 
   private static final int DEFAULT_FILE_MAX_LINES = 1000;
-
+  private static Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
   private int fileMaxLines;
   private int defaultStartLine;
   private int defaultEndLine;
-
-  private static Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
-
   private ArrayList<HdfsFileViewer> viewers = new ArrayList<HdfsFileViewer>();
 
   private HdfsFileViewer defaultViewer;
@@ -174,9 +171,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     User user = session.getUser();
     String username = user.getUserId();
-    if (hasParam(req, "action") && getParam(req, "action").equals("goHomeDir")) {
-      username = getParam(req, "proxyname");
-    } else if (allowGroupProxy) {
+    if (allowGroupProxy) {
       String proxyName =
           (String) session.getSessionData(PROXY_USER_SESSION_KEY);
       if (proxyName != null) {
