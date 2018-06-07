@@ -68,7 +68,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
 
-  private int executionsPageSize;
+  private int displayExecutionPageSize;
 
   public static String createJsonResponse(final String status, final String message,
       final String action, final Map<String, Object> params) {
@@ -108,7 +108,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
-    this.executionsPageSize = props.getInt("azkaban.page.size.executions", 16);
+    this.executionsPageSize = props.getInt("azkaban.display.execution_page_size", 16);
 
     if (this.application instanceof AzkabanWebServer) {
       final AzkabanWebServer server = (AzkabanWebServer) this.application;
@@ -323,7 +323,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("triggerPlugins", this.triggerPlugins);
     }
 
-    page.add("executionsPageSize", executionsPageSize);
+    page.add("displayExecutionPageSize", displayExecutionPageSize);
 
     return page;
   }
@@ -358,7 +358,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("triggers", this.triggerPlugins);
     }
 
-    page.add("executionsPageSize", executionsPageSize);
+    page.add("displayExecutionPageSize", displayExecutionPageSize);
 
     return page;
   }
@@ -377,7 +377,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     JSONUtils.toJSON(obj, resp.getOutputStream(), true);
   }
 
-  public int getExecutionsPageSize() {
-    return executionsPageSize;
+  public int getDisplayExecutionPageSize() {
+    return displayExecutionPageSize;
   }
 }
