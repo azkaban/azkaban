@@ -49,7 +49,7 @@
     var flowId = "${flowid}";
     var execId = null;
 
-    var executionsPageSize = "${executionsPageSize}";
+    var displayExecutionPageSize = "${displayExecutionPageSize}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
