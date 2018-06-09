@@ -229,11 +229,15 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var startTime = node.dependencyStartTime == 0 ? (new Date()).getTime()
         : node.dependencyStartTime;
 
-    var endTime = node.dependencyEndTime == 0 ? (new Date()).getTime()
-        : node.dependencyEndTime;
+    var endTime = node.dependencyEndTime;
 
     $(tdStart).text(getDateFormat(new Date(startTime)));
-    $(tdEnd).text(getDateFormat(new Date(endTime)));
+    if (node.dependencyEndTime == 0) {
+      $(tdEnd).text("-");
+    }
+    else {
+      $(tdEnd).text(getDateFormat(new Date(endTime)));
+    }
 
     if (node.dependencyEndTime == 0) {
       $(tdElapse).text(
