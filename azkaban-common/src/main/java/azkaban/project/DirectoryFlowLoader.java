@@ -22,11 +22,11 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
  */
 public class DirectoryFlowLoader implements FlowLoader {
 
-  private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
 
@@ -211,8 +210,7 @@ public class DirectoryFlowLoader implements FlowLoader {
       }
     }
 
-    final File[] subDirs = dir.listFiles(DIR_FILTER);
-    for (final File file : subDirs) {
+    for (final File file : dir.listFiles(new DirFilter())) {
       loadProjectFromDir(base, file, parent);
     }
   }
@@ -394,13 +392,4 @@ public class DirectoryFlowLoader implements FlowLoader {
   private String getRelativeFilePath(final String basePath, final String filePath) {
     return filePath.substring(basePath.length() + 1);
   }
-
-  private static class DirFilter implements FileFilter {
-
-    @Override
-    public boolean accept(final File pathname) {
-      return pathname.isDirectory();
-    }
-  }
-
 }
