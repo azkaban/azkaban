@@ -23,6 +23,7 @@ import azkaban.utils.Props;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
@@ -43,6 +44,8 @@ public class MetricsManager {
 
   private static final Logger log = LoggerFactory.getLogger(MetricsManager.class);
   private final MetricRegistry registry;
+  private boolean active = false;
+  private ScheduledReporter reporter = null;
 
   @Inject
   public MetricsManager(final MetricRegistry registry) {
@@ -91,7 +94,12 @@ public class MetricsManager {
         final Class metricsClass = Class.forName(metricsReporterClassName);
 
         final Constructor[] constructors = metricsClass.getConstructors();
-        constructors[0].newInstance(reporterName, this.registry, metricsServerURL);
+        if (this.reporter != null) {
+          throw new Exception("the metric reporter should have been started.");
+        }
+        this.reporter = (ScheduledReporter) constructors[0]
+            .newInstance(reporterName, this.registry, metricsServerURL);
+        this.active = true;
 
       } catch (final Exception e) {
         log.error("Encountered error while loading and instantiating "
@@ -103,5 +111,18 @@ public class MetricsManager {
       log.error(String.format("No value for property: %s or %s was found",
           CUSTOM_METRICS_REPORTER_CLASS_NAME, METRICS_SERVER_URL));
     }
+  }
+
+  public boolean getMetricActive() {
+    return this.active;
+  }
+
+
+  public synchronized void stopMetrics() {
+    if (this.reporter != null) {
+      this.reporter.stop();
+    }
+    this.reporter = null;
+    this.active = false;
   }
 }

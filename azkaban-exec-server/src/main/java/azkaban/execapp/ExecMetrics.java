@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import azkaban.metrics.MetricsManager;
+import azkaban.utils.Props;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -36,6 +37,18 @@ public class ExecMetrics {
 
   public void setupStaticMetrics() {
 
+  }
+
+  public void keepMetricsDisabled() {
+    if (this.metricsManager.getMetricActive()) {
+      this.metricsManager.stopMetrics();
+    }
+  }
+
+  public void keepMetricsEnabled(final String groupName, final Props props) {
+    if (!this.metricsManager.getMetricActive()) {
+      this.metricsManager.startReporting(groupName, props);
+    }
   }
 
   public void addFlowRunnerManagerMetrics(final FlowRunnerManager flowRunnerManager) {
