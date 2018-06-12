@@ -44,7 +44,7 @@ public class MetricsManager {
 
   private static final Logger log = LoggerFactory.getLogger(MetricsManager.class);
   private final MetricRegistry registry;
-  private boolean active = false;
+  private volatile boolean active = false;
   private ScheduledReporter reporter = null;
 
   @Inject
@@ -95,7 +95,7 @@ public class MetricsManager {
 
         final Constructor[] constructors = metricsClass.getConstructors();
         if (this.reporter != null) {
-          throw new Exception("the metric reporter should have been started.");
+          throw new Exception("the metric reporter have been started. aborting starting...");
         }
         this.reporter = (ScheduledReporter) constructors[0]
             .newInstance(reporterName, this.registry, metricsServerURL);
@@ -119,6 +119,7 @@ public class MetricsManager {
 
 
   public synchronized void stopMetrics() {
+    log.warn("stop sending metrics.");
     if (this.reporter != null) {
       this.reporter.stop();
     }

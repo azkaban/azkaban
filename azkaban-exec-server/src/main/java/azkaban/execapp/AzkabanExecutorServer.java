@@ -544,7 +544,7 @@ public class AzkabanExecutorServer {
 
   private static class ExecutorServerChecker extends Thread {
 
-    private static final long LOOP_CEHCK_MILLISECONDS = 60000L;
+    private static final long LOOP_CEHCK_MILLISECONDS = 3000L;
     private final FlowRunnerManager flowRunnerManager;
     private final ExecMetrics execMetrics;
     private final String groupName;
