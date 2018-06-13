@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -91,8 +92,8 @@ public class FileIOUtils {
     Preconditions.checkArgument(dir.exists(), dir + " doesn't exist");
 
     final java.util.Scanner s = new java.util.Scanner(
-        Runtime.getRuntime().exec("du -sh -k " + dir.getAbsolutePath()).getInputStream())
-        .useDelimiter("\\A");
+        Runtime.getRuntime().exec("du -sh -k " + dir.getAbsolutePath()).getInputStream(),
+        Charset.defaultCharset().name()).useDelimiter("\\A");
     final String str = s.hasNext() ? s.next() : "";
     final String[] res = str.split("\\s+");
     return Long.valueOf(res[0]);
