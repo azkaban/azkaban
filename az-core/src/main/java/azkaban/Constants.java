@@ -235,7 +235,7 @@ public class Constants {
         + ".start_cleanup_threshold";
 
     // the disk usage threshold to stop project dir cleanup.
-    // E.g, if set to 0.6, cleanup will stop when project dir size <= 0.6 of
+    // E.g, if set to 0.6, cleanup will stop when project dir size < 0.6 of
     // {@value#PROJECT_DIR_MAX_SIZE}.
     public static final String PROJECT_DIR_CLEANUP_STOP_THRESHOLD = "azkaban.project"
         + ".stop_cleanup_threshold";

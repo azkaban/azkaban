@@ -861,7 +861,8 @@ public class FlowRunnerManager implements EventListener,
               this.lastExecutionDirCleanTime = currentTime;
             }
 
-            if (currentTime - LRU_PROJECT_DIR_INTERVAL_MS > this.lastLRUProjectCleanTime) {
+            if (currentTime - LRU_PROJECT_DIR_INTERVAL_MS > this.lastLRUProjectCleanTime
+                && FlowRunnerManager.this.isExecutorActive) {
               logger.info("Cleaning LRU project dirs");
               cleanLRUProjects();
               this.lastLRUProjectCleanTime = currentTime;
