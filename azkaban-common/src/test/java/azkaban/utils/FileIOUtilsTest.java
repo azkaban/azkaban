@@ -23,11 +23,13 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Date;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.junit.After;
@@ -107,6 +109,30 @@ public class FileIOUtilsTest {
     FileUtils.deleteDirectory(this.baseDir);
     FileUtils.deleteDirectory(this.sourceDir);
     FileUtils.deleteDirectory(this.destDir);
+  }
+
+  @Test
+  public void testSizeOfDirectory() throws IOException {
+    final File testDir = new File(this.baseDir.getAbsolutePath() + "/dirsizetest");
+    testDir.mkdir();
+
+    for (int i = 1; i <= 5; i++) {
+      final Path tmpDirPath = Paths.get(testDir.getAbsolutePath(), "dir" + i);
+      Files.createDirectory(tmpDirPath);
+      for (int j = 1; j <= 5; j++) {
+        final Path tmp = Paths.get(tmpDirPath.toAbsolutePath().toString(), String.valueOf(j));
+        final RandomAccessFile f = new RandomAccessFile(tmp.toFile(), "rw");
+        try {
+          f.setLength(1000000);
+        } finally {
+          f.close();
+        }
+      }
+    }
+
+//    final BigInteger size = FileIOUtils.sizeOf(testDir);
+//    assertThat(BigInteger.valueOf(1024 * 1024 * 1024 * 25)).isEqualTo(size);
+    System.out.println("size:" + new Date(FileIOUtils.creationTime(new File("/Users/chren"))));
   }
 
   @Test

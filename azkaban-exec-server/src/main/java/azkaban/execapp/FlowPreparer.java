@@ -70,14 +70,16 @@ public class FlowPreparer {
       // First get the ProjectVersion
       final ProjectVersion projectVersion = getProjectVersion(flow);
 
-      // Setup the project
-      setupProject(projectVersion);
+      synchronized (projectVersion) {
+        // Setup the project
+        setupProject(projectVersion);
 
-      // Create the execution directory
-      execDir = createExecDir(flow);
+        // Create the execution directory
+        execDir = createExecDir(flow);
 
-      // Create the symlinks from the project
-      copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
+        // Create the symlinks from the project
+        copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
+      }
 
       log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
           flow.getExecutionId(), execDir.getPath()));

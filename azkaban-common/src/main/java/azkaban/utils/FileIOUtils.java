@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import com.google.common.base.Preconditions;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,6 +29,8 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -67,6 +70,32 @@ public class FileIOUtils {
       }
     }
     return true;
+  }
+
+
+  /**
+   * Return creation time of file.
+   */
+  public static long creationTime(final File file) throws IOException {
+    final BasicFileAttributes attrs = Files
+        .readAttributes(file.toPath(), BasicFileAttributes.class);
+    final FileTime time = attrs.creationTime();
+    return time.toMillis();
+  }
+
+  /**
+   * Return the size of dir in KB.
+   */
+  public static long sizeInKB(final File dir) throws IOException {
+    Preconditions.checkArgument(dir.isDirectory(), dir + " is not a directory");
+    Preconditions.checkArgument(dir.exists(), dir + " doesn't exist");
+
+    final java.util.Scanner s = new java.util.Scanner(
+        Runtime.getRuntime().exec("du -sh -k " + dir.getAbsolutePath()).getInputStream())
+        .useDelimiter("\\A");
+    final String str = s.hasNext() ? s.next() : "";
+    final String[] res = str.split("\\s+");
+    return Long.valueOf(res[0]);
   }
 
   public static String getSourcePathFromClass(final Class<?> containedClass) {
