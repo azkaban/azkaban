@@ -54,15 +54,14 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
       "hdfs.browser.proxy.user";
   private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM =
       "hadoop.security.manager.class";
+  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE = 
+      "viewer.access_denied_message";
 
   private static final int DEFAULT_FILE_MAX_LINES = 1000;
-
+  private static Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
   private int fileMaxLines;
   private int defaultStartLine;
   private int defaultEndLine;
-
-  private static Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
-
   private ArrayList<HdfsFileViewer> viewers = new ArrayList<HdfsFileViewer>();
 
   private HdfsFileViewer defaultViewer;
@@ -174,9 +173,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     User user = session.getUser();
     String username = user.getUserId();
-    if (hasParam(req, "action") && getParam(req, "action").equals("goHomeDir")) {
-      username = getParam(req, "proxyname");
-    } else if (allowGroupProxy) {
+    if (allowGroupProxy) {
       String proxyName =
           (String) session.getSessionData(PROXY_USER_SESSION_KEY);
       if (proxyName != null) {
@@ -337,7 +334,8 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
       }
       page.add("dirsize", size);
     } catch (AccessControlException e) {
-      page.add("error_message", "Permission denied: " + e.getMessage());
+      String error_message = props.getString(HDFSVIEWER_ACCESS_DENIED_MESSAGE);
+      page.add("error_message", "Permission denied: " + error_message);
       page.add("no_fs", "true");
     } catch (IOException e) {
       page.add("error_message", "Error: " + e.getMessage());
