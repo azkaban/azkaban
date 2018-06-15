@@ -235,6 +235,7 @@ public class ExecutorManager extends EventHandler implements
       newExecutors.add(new Executor(executor.getId(), executorHost,
           executorPort, true));
     } else {
+      // single executor mode and no executor port specified in azkaban properties
       //todo chengren311: convert to slf4j and parameterized logging
       final String error = "Missing" + ConfigurationKeys.EXECUTOR_PORT + " in azkaban properties.";
       logger.error(error);
