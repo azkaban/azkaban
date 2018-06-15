@@ -258,41 +258,39 @@ public class ExecutorManager extends EventHandler implements
    * Refresh Executor stats for all the actie executors in this executorManager
    */
   private void refreshExecutors() {
-    synchronized (this.activeExecutors) {
 
-      final List<Pair<Executor, Future<ExecutorInfo>>> futures =
-          new ArrayList<>();
-      for (final Executor executor : this.activeExecutors) {
-        // execute each executorInfo refresh task to fetch
-        final Future<ExecutorInfo> fetchExecutionInfo =
-            this.executorInforRefresherService.submit(
-                () -> this.apiGateway.callForJsonType(executor.getHost(),
-                    executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
-        futures.add(new Pair<>(executor,
-            fetchExecutionInfo));
-      }
+    final List<Pair<Executor, Future<ExecutorInfo>>> futures =
+        new ArrayList<>();
+    for (final Executor executor : this.activeExecutors) {
+      // execute each executorInfo refresh task to fetch
+      final Future<ExecutorInfo> fetchExecutionInfo =
+          this.executorInforRefresherService.submit(
+              () -> this.apiGateway.callForJsonType(executor.getHost(),
+                  executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
+      futures.add(new Pair<>(executor,
+          fetchExecutionInfo));
+    }
 
-      boolean wasSuccess = true;
-      for (final Pair<Executor, Future<ExecutorInfo>> refreshPair : futures) {
-        final Executor executor = refreshPair.getFirst();
-        executor.setExecutorInfo(null); // invalidate cached ExecutorInfo
-        try {
-          // max 5 secs
-          final ExecutorInfo executorInfo = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
-          // executorInfo is null if the response was empty
-          executor.setExecutorInfo(executorInfo);
-          logger.info(String.format(
-              "Successfully refreshed executor: %s with executor info : %s",
-              executor, executorInfo));
-        } catch (final TimeoutException e) {
-          wasSuccess = false;
-          logger.error("Timed out while waiting for ExecutorInfo refresh"
-              + executor, e);
-        } catch (final Exception e) {
-          wasSuccess = false;
-          logger.error("Failed to update ExecutorInfo for executor : "
-              + executor, e);
-        }
+    boolean wasSuccess = true;
+    for (final Pair<Executor, Future<ExecutorInfo>> refreshPair : futures) {
+      final Executor executor = refreshPair.getFirst();
+      executor.setExecutorInfo(null); // invalidate cached ExecutorInfo
+      try {
+        // max 5 secs
+        final ExecutorInfo executorInfo = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
+        // executorInfo is null if the response was empty
+        executor.setExecutorInfo(executorInfo);
+        logger.info(String.format(
+            "Successfully refreshed executor: %s with executor info : %s",
+            executor, executorInfo));
+      } catch (final TimeoutException e) {
+        wasSuccess = false;
+        logger.error("Timed out while waiting for ExecutorInfo refresh"
+            + executor, e);
+      } catch (final Exception e) {
+        wasSuccess = false;
+        logger.error("Failed to update ExecutorInfo for executor : "
+            + executor, e);
       }
 
       // update is successful for all executors
