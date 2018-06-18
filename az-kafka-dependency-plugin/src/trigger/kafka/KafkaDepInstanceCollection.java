@@ -40,7 +40,6 @@ public class KafkaDepInstanceCollection {
     depList.add(dep);
     eventMap.put(dep.getDepName(), depList);
     this.topicEventMap.put(topic,eventMap);
-    streamTopicToEvent(this.topicEventMap);
 
   }
   public void streamTopicToEvent(Map<String, Map<String,List<KafkaDependencyInstanceContext>>> map){
@@ -51,6 +50,10 @@ public class KafkaDepInstanceCollection {
   }
   public boolean hasTopic(String topic){
     return !(this.topicEventMap.get(topic)==null);
+  }
+  public List<String> getTopicList(){
+    List<String> res = new ArrayList<String>(this.topicEventMap.keySet());
+    return res;
   }
   public boolean hasEventInTopic(String topic, String event){
     System.out.println("------------IN has Event------------");
@@ -101,8 +104,9 @@ public class KafkaDepInstanceCollection {
         }
       }
   }
-  public synchronized void removeList(String topic, String event,List<KafkaDependencyInstanceContext> list){
+  public synchronized boolean removeList(String topic, String event,List<KafkaDependencyInstanceContext> list){
     System.out.printf("IN remove list\n");
+    List<String> ori = new ArrayList<String>(this.topicEventMap.keySet());
     Map<String,List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap
         .get(topic);
     if (eventMap != null) {
@@ -117,5 +121,7 @@ public class KafkaDepInstanceCollection {
         this.topicEventMap.remove(topic);
       }
     }
+    List<String> res = new ArrayList<String>(this.topicEventMap.keySet());
+    return res==ori;
   }
 }

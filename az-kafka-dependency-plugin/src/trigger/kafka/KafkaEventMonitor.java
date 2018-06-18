@@ -3,10 +3,13 @@ package trigger.kafka;
 import azkaban.flowtrigger.DependencyPluginConfig;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -21,6 +24,7 @@ public class KafkaEventMonitor implements Runnable {
     private final static Logger log = LoggerFactory
         .getLogger(KafkaEventMonitor.class);
     private KafkaConsumer<String, String> consumer;
+    private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
 
     public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
         Properties props = new Properties();
@@ -36,26 +40,32 @@ public class KafkaEventMonitor implements Runnable {
         this.depInstances = new KafkaDepInstanceCollection();
 
         this.consumer = new KafkaConsumer<String, String>(props);
-        consumer.subscribe(Arrays.asList("AzEvent_Topic"));
+        this.consumer.subscribe(Arrays.asList("AzEvent_Init_Topic"));
+        if (!this.subscribedTopics.isEmpty()) {
+            ConsumerSubscriptionRebalance();
+        }
     }
     public void add(final KafkaDependencyInstanceContext context) {
         this.executorService.submit(() -> {
             try {
                 System.out.printf("ready to add %s\n", context.getDepName());
                 if (!this.depInstances.hasTopic(context.getTopicName())) {
-                    consumer.subscribe(Arrays.asList(context.getTopicName()));
+                    this.depInstances.add(context);
+                    subscribedTopics.addAll(this.depInstances.getTopicList());
                 }
-                this.depInstances.add(context);
+                else
+                    this.depInstances.add(context);
             }catch (final Exception ex) {
-                log.error(String.format("unable to add context %s, cancelling it", context), ex);
+                //log.error(String.format("unable to add context %s, cancelling it", context), ex);
+                System.out.printf("Cancle Here : %s", ex);
                 context.getCallback().onCancel(context);
             }
         });
     }
     public void remove(final KafkaDependencyInstanceContext context) {
         this.depInstances.remove(context);
-        if (!this.depInstances.hasTopic(context.getTopicName())) {
-            consumer.unsubscribe(context.getTopicName());
+        if(!this.depInstances.hasTopic(context.getTopicName())){
+            subscribedTopics.addAll(this.depInstances.getTopicList());
         }
     }
     @Override
@@ -63,14 +73,15 @@ public class KafkaEventMonitor implements Runnable {
         System.out.println("==============In RUN===========");
         try {
             while (true && !Thread.interrupted()) {
+                System.out.println(consumer.subscription());
                 ConsumerRecords<String, String> records = consumer.poll(10000);
                 for (ConsumerRecord<String, String> record : records){
-                    System.out.printf("Kafka get %s from TOPIC\n",record.value());
-                    if (this.depInstances.hasEventInTopic(TOPIC,record.value())) {
+                    System.out.printf("Kafka get %s from TOPIC: %s\n",record.topic(),record.value());
+                    if (this.depInstances.hasEventInTopic(record.topic(),record.value())) {
                         System.out.println("hasEventinTopic\n");
                         List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
                         final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
-                            this.depInstances.getDepsByTopicAndEvent(TOPIC, record.value().toString());
+                            this.depInstances.getDepsByTopicAndEvent(record.topic(), record.value().toString());
                         for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
                             if (dep.eventCaptured() == 0) {
                                 log.info(String.format("dependency %s becomes available, sending success " + "callback",
@@ -80,9 +91,15 @@ public class KafkaEventMonitor implements Runnable {
                             }
                         }
                         System.out.println("back from success");
-                        this.depInstances.removeList(TOPIC,record.value(),deleteList);
+                        if(!this.depInstances.removeList(record.topic(),record.value(),deleteList))
+                            subscribedTopics.addAll(this.depInstances.getTopicList());
+
                     }
-                    depInstances.streamTopicToEvent(depInstances.topicEventMap);
+                }
+                System.out.println("==============------===========");
+                depInstances.streamTopicToEvent(depInstances.topicEventMap);
+                if (!this.subscribedTopics.isEmpty()) {
+                    ConsumerSubscriptionRebalance();
                 }
             }
         } catch (final Exception ex) {
@@ -92,6 +109,18 @@ public class KafkaEventMonitor implements Runnable {
             // Failed to send SSL Close message.
             this.consumer.close();
             log.info("kafka consumer closed...");
+        }
+    }
+    public synchronized void ConsumerSubscriptionRebalance(){
+        System.out.println("updating......");
+        if (!subscribedTopics.isEmpty()) {
+            Iterator<String> iter = subscribedTopics.iterator();
+            List<String> topics = new ArrayList<>();
+            while (iter.hasNext()) {
+                topics.add(iter.next());
+            }
+            subscribedTopics.clear();
+            this.consumer.subscribe(topics); //re-subscribe
         }
     }
 

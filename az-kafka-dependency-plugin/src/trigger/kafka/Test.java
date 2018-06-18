@@ -26,8 +26,16 @@ public class Test {
 
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     check.init(pluginConfig);
-    createContext(check, "AzEvent_Topic", "chiawei_start","1");
-
+    DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic1", "chiawei_start1","1");
+    DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic2", "chiawei_start2","1");
+    DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic1", "chiawei_start2","1");
+    DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic2", "chiawei_start1","1");
+//    try {
+//      Thread.sleep(4000);
+//    } catch (InterruptedException e) {
+//      e.printStackTrace();
+//    }
+//    Di1.cancel();
   }
 
   private static DependencyInstanceContext createContext(final KafkaDependencyCheck check,
