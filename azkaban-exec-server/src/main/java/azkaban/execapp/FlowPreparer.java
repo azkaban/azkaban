@@ -74,8 +74,6 @@ public class FlowPreparer {
       // cleaning thread in {@link azkaban.execapp.FlowRunnerManager}
       // cleaning up the same project version when creating hardlink
       synchronized (projectVersion) {
-        log.info("start to setup project" + projectVersion);
-        Thread.sleep(5000);
         // Setup the project
         setupProject(projectVersion);
 
@@ -84,11 +82,10 @@ public class FlowPreparer {
 
         // Create the links from the project
         copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
-        log.info("completes setuping project " + projectVersion);
+        log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
+            flow.getExecutionId(), execDir.getPath()));
       }
 
-      log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
-          flow.getExecutionId(), execDir.getPath()));
     } catch (final Exception e) {
       log.error("Error in setting up project directory: " + this.projectsDir + ", Exception: " + e);
       cleanup(execDir);

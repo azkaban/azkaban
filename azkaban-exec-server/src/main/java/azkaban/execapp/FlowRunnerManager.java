@@ -1080,7 +1080,7 @@ public class FlowRunnerManager implements EventListener,
      * It first acquires object lock of {@code version} waiting for other threads creating
      * execution dir to finish to avoid race condition. An example of race condition scenario:
      * delete the dir of a project while an execution of a flow in the same project is being setup
-     * and the flow's execution dir is being created({@link FlowPreparer#setup).
+     * and the flow's execution dir is being created({@link FlowPreparer#setup}).
      */
     private void delete(final ProjectVersion version) {
       synchronized (version) {

@@ -78,6 +78,7 @@ public class FileIOUtils {
    * Return creation time of file.
    */
   public static long getCreationTime(final File file) throws IOException {
+    Preconditions.checkArgument(file.exists(), file + " doesn't exist");
     final BasicFileAttributes attrs = Files
         .readAttributes(file.toPath(), BasicFileAttributes.class);
     final FileTime time = attrs.creationTime();
