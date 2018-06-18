@@ -77,7 +77,7 @@ public class FileIOUtils {
   /**
    * Return creation time of file.
    */
-  public static long creationTime(final File file) throws IOException {
+  public static long getCreationTime(final File file) throws IOException {
     final BasicFileAttributes attrs = Files
         .readAttributes(file.toPath(), BasicFileAttributes.class);
     final FileTime time = attrs.creationTime();

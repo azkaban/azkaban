@@ -16,7 +16,7 @@
 
 package azkaban.execapp;
 
-import static azkaban.utils.FileIOUtils.creationTime;
+import static azkaban.utils.FileIOUtils.getCreationTime;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
@@ -1004,6 +1004,9 @@ public class FlowRunnerManager implements EventListener,
       return activeProjectVersions;
     }
 
+    /**
+     * Checks if the project version contains any running flow
+     */
     private boolean isActiveProject(final ProjectVersion version) {
       final Pair<Integer, Integer> versionKey = new Pair<>(version.getProjectId(),
           version.getVersion());
@@ -1048,8 +1051,8 @@ public class FlowRunnerManager implements EventListener,
         // sort project version by last creation time in ascending order
         projectVersionList.sort((o1, o2) -> {
           try {
-            final long creationTime1 = creationTime(o1.getInstalledDir());
-            final long creationTime2 = creationTime(o2.getInstalledDir());
+            final long creationTime1 = getCreationTime(o1.getInstalledDir());
+            final long creationTime2 = getCreationTime(o2.getInstalledDir());
             if (creationTime1 < creationTime2) {
               return -1;
             } else if (creationTime1 > creationTime2) {
