@@ -142,7 +142,7 @@ public class FlowRunnerManager implements EventListener,
   private Props globalProps;
 
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
+  private long executionDirRetention = 1 * 6 * 60 * 60 * 1000; // 6 hours
 
   // We want to limit the log sizes to about 20 megs
   private String jobLogChunkSize = "5MB";
