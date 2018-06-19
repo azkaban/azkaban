@@ -48,13 +48,21 @@ public class DagBuilder {
     this.dagProcessor = dagProcessor;
   }
 
+  /**
+   * Creates a new node builder and add it to the DagBuilder.
+   *
+   * @param name name of the node
+   * @param nodeProcessor node processor associated with this node
+   * @return a new NodeBuilder associated with this node
+   * @throws DagException if the name is not unique in the DAG.
+   */
   public NodeBuilder createNode(final String name, final NodeProcessor nodeProcessor) {
-    final NodeBuilder builder = new NodeBuilder(name, nodeProcessor, this);
-    this.builders.add(builder);
     if (this.nodeNamesSet.contains(name)) {
       throw new DagException(String.format("Node names in %s need to be unique. The name "
           + "(%s) already exists.", this, name));
     }
+    final NodeBuilder builder = new NodeBuilder(name, nodeProcessor, this);
+    this.builders.add(builder);
     this.nodeNamesSet.add(name);
 
     return builder;
