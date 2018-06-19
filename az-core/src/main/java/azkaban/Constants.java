@@ -227,6 +227,21 @@ public class Constants {
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
+
+    // allowed max size of project dir in mb
+    public static final String PROJECT_DIR_MAX_SIZE = "azkaban.project.dir_max_size";
+
+    // the disk usage threshold to trigger project dir cleanup.
+    // E.g, if set to 0.8, cleanup will trigger when project dir size >= 0.8 of
+    // {@value#PROJECT_DIR_MAX_SIZE}.
+    public static final String PROJECT_DIR_CLEANUP_START_THRESHOLD = "azkaban.project"
+        + ".start_cleanup_threshold";
+
+    // the disk usage threshold to stop project dir cleanup.
+    // E.g, if set to 0.6, cleanup will stop when project dir size < 0.6 of
+    // {@value#PROJECT_DIR_MAX_SIZE}.
+    public static final String PROJECT_DIR_CLEANUP_STOP_THRESHOLD = "azkaban.project"
+        + ".stop_cleanup_threshold";
   }
 
   public static class FlowProperties {
