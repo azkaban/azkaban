@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -205,14 +205,13 @@ public class ProcessJobTest {
 
   @Test
   public void testCancelAfterJobProcessCreation() throws InterruptedException, ExecutionException {
-    this.props.put(ProcessJob.COMMAND, "sleep 1");
+    this.props.put(ProcessJob.COMMAND, "sleep 5");
 
     final ExecutorService executorService = Executors.newSingleThreadExecutor();
     final Future future = executorService.submit(() -> {
       try {
         this.job.run();
       } catch (final Exception e) {
-        e.printStackTrace();
       }
     });
 
