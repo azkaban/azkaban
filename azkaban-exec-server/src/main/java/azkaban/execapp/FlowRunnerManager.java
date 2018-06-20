@@ -189,7 +189,7 @@ public class FlowRunnerManager implements EventListener,
         .getInt(ConfigurationKeys.PROJECT_DIR_CLEANUP_STOP_THRESHOLD, 60);
     Preconditions.checkArgument(this.projectDirStartDeletionThreshold >= 0 && this
         .projectDirStartDeletionThreshold <= 100 && this.projectDirStopDeletionThreshold >= 0 &&
-        this.projectDirStopDeletionThreshold <= 100);
+        this.projectDirStopDeletionThreshold < this.projectDirStartDeletionThreshold);
 
     this.installedProjects = loadExistingProjects();
 
@@ -206,7 +206,7 @@ public class FlowRunnerManager implements EventListener,
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
     this.triggerManager = triggerManager;
-
+    b
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
 
