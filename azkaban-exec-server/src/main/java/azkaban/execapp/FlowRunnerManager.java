@@ -206,7 +206,7 @@ public class FlowRunnerManager implements EventListener,
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
     this.triggerManager = triggerManager;
-    b
+
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
 
