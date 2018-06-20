@@ -26,26 +26,21 @@ import org.junit.Test;
 
 public class FlowTest {
 
+  private Project getEmbeddedTestProject() throws Exception {
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
 
-  private Project project;
-  private Props props;
+    final Project project = new Project(11, "myTestProject");
+    loader.loadProjectFlow(project, ExecutionsTestUtil.getFlowDir("embedded"));
+    assert loader.getErrors().size() == 0;
 
-
-  @Before
-  public void setUp() throws Exception {
-    this.project = new Project(11, "myTestProject");
-    this.props = new Props();
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props);
-    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
-    Assert.assertEquals(0, loader.getErrors().size());
-    this.project.setFlows(loader.getFlowMap());
-    this.project.setVersion(123);
+    project.setFlows(loader.getFlowMap());
+    project.setVersion(123);
+    return project;
   }
-
 
   @Test
   public void testNodeLevelComputation() throws Exception {
-    final Flow flow = FlowUtils.getFlow(this.project, "jobe");
+    final Flow flow = FlowUtils.getFlow(this.getEmbeddedTestProject(), "jobe");
     Assert.assertEquals(0, flow.getNode("joba").getLevel());
     Assert.assertEquals(1, flow.getNode("jobb").getLevel());
     Assert.assertEquals(1, flow.getNode("jobc").getLevel());
