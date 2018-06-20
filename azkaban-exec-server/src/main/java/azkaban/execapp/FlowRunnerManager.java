@@ -129,9 +129,9 @@ public class FlowRunnerManager implements EventListener,
   private final File executionDirectory;
   private final File projectDirectory;
 
-  private final long projectDirMaxSizeInMB;
-  private final double projectDirStartDeletionThreshold;
-  private final double projectDirStopDeletionThreshold;
+  private final long projectDirMaxSizeInMb;
+  private final int projectDirStartDeletionThreshold;
+  private final int projectDirStopDeletionThreshold;
 
   private final Object executionDirDeletionSync = new Object();
 
@@ -181,15 +181,15 @@ public class FlowRunnerManager implements EventListener,
       this.projectDirectory.mkdirs();
     }
 
-    this.projectDirMaxSizeInMB = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE,
-        2000000); // default value as 2TB
+    this.projectDirMaxSizeInMb = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE,
+        128000); // default value as 128GB
     this.projectDirStartDeletionThreshold = props
-        .getDouble(ConfigurationKeys.PROJECT_DIR_CLEANUP_START_THRESHOLD, 0.9);
+        .getInt(ConfigurationKeys.PROJECT_DIR_CLEANUP_START_THRESHOLD, 90);
     this.projectDirStopDeletionThreshold = props
-        .getDouble(ConfigurationKeys.PROJECT_DIR_CLEANUP_STOP_THRESHOLD, 0.8);
+        .getInt(ConfigurationKeys.PROJECT_DIR_CLEANUP_STOP_THRESHOLD, 60);
     Preconditions.checkArgument(this.projectDirStartDeletionThreshold >= 0 && this
-        .projectDirStartDeletionThreshold <= 1 && this.projectDirStopDeletionThreshold >= 0 &&
-        this.projectDirStopDeletionThreshold <= 1);
+        .projectDirStartDeletionThreshold <= 100 && this.projectDirStopDeletionThreshold >= 0 &&
+        this.projectDirStopDeletionThreshold <= 100);
 
     this.installedProjects = loadExistingProjects();
 
@@ -1017,8 +1017,8 @@ public class FlowRunnerManager implements EventListener,
       final long dirSize;
       try {
         dirSize = FileIOUtils.sizeInKB(projectDir);
-        final long upperLimitInKB = (long) (FlowRunnerManager.this.projectDirMaxSizeInMB *
-            FlowRunnerManager.this.projectDirStartDeletionThreshold * 1024);
+        final long upperLimitInKB = (long) (FlowRunnerManager.this.projectDirMaxSizeInMb *
+            FlowRunnerManager.this.projectDirStartDeletionThreshold * 0.01 * 1024);
         return dirSize >= upperLimitInKB;
       } catch (final IOException e) {
         logger.error(e);
@@ -1030,8 +1030,8 @@ public class FlowRunnerManager implements EventListener,
       final long dirSize;
       try {
         dirSize = FileIOUtils.sizeInKB(projectDir);
-        final long lowerLimitInKB = (long) (FlowRunnerManager.this.projectDirMaxSizeInMB *
-            FlowRunnerManager.this.projectDirStopDeletionThreshold * 1024);
+        final long lowerLimitInKB = (long) (FlowRunnerManager.this.projectDirMaxSizeInMb *
+            FlowRunnerManager.this.projectDirStopDeletionThreshold * 0.01 * 1024);
         return dirSize >= lowerLimitInKB;
       } catch (final IOException e) {
         logger.error(e);
