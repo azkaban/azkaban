@@ -195,7 +195,7 @@ public class Flow {
     numLevels = level;
 
     if (!nextLevelNodes.isEmpty()) {
-      setLevelsAndEdgeNodes(nextLevelNodes, level++);
+      setLevelsAndEdgeNodes(nextLevelNodes, level + 1);
     }
   }
 
