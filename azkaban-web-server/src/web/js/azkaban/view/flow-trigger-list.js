@@ -121,13 +121,16 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var startTime = data.triggerStartTime == 0 ? (new Date()).getTime()
         : data.triggerStartTime;
 
-    var endTime = data.triggerEndTime == 0 ? (new Date()).getTime()
-        : data.triggerEndTime;
-
     $(tdStart).text(getDateFormat(new Date(startTime)));
-    $(tdEnd).text(getDateFormat(new Date(endTime)));
 
-    if (data.triggerEndTime == 0) {
+    if (data.triggerEndTime <= 0) {
+      $(tdEnd).text("-");
+    }
+    else {
+      $(tdEnd).text(getDateFormat(new Date(data.triggerEndTime)));
+    }
+
+    if (data.triggerEndTime <= 0) {
       $(tdElapse).text(
           getDuration(data.triggerStartTime, (new Date()).getTime()));
     }
@@ -232,14 +235,14 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var endTime = node.dependencyEndTime;
 
     $(tdStart).text(getDateFormat(new Date(startTime)));
-    if (node.dependencyEndTime == 0) {
+    if (node.dependencyEndTime <= 0) {
       $(tdEnd).text("-");
     }
     else {
       $(tdEnd).text(getDateFormat(new Date(endTime)));
     }
 
-    if (node.dependencyEndTime == 0) {
+    if (node.dependencyEndTime <= 0) {
       $(tdElapse).text(
           getDuration(node.dependencyStartTime, (new Date()).getTime()));
     }
