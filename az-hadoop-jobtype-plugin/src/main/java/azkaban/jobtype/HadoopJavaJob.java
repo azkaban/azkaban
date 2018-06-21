@@ -19,13 +19,11 @@ package azkaban.jobtype;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.File;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.StringTokenizer;
-
-import org.apache.hadoop.security.UserGroupInformation;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
 import azkaban.flow.CommonJobProperties;
@@ -43,6 +41,8 @@ public class HadoopJavaJob extends JavaProcessJob {
   public static final String DEFAULT_CANCEL_METHOD = "cancel";
   public static final String DEFAULT_RUN_METHOD = "run";
   public static final String DEFAULT_PROGRESS_METHOD = "getProgress";
+
+  private static final Pattern AZKABAN_EXEC_ID_PATTERN = Pattern.compile("-Dazkaban.execid=(\\d+)");
 
   private String _runMethod;
   private String _cancelMethod;
@@ -250,6 +250,22 @@ public class HadoopJavaJob extends JavaProcessJob {
   }
 
   /**
+   * Returns the {@code azkaban.execid} system property, if set, and otherwise returns the value of
+   * {@value CommonJobProperties#EXEC_ID}. {@value CommonJobProperties#EXEC_ID} may be overridden by a flow param or
+   * job property, whereas the {@code azkaban.execid} system property will be the unique execution id Azkaban generates
+   * for each flow.
+   */
+  private String getExecId() {
+    String jvmArgs = getJVMArguments();
+    Matcher matcher = AZKABAN_EXEC_ID_PATTERN.matcher(jvmArgs);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+
+    return jobProps.getString(CommonJobProperties.EXEC_ID);
+  }
+
+  /**
    * This cancel method, in addition to the default canceling behavior, also
    * kills the MR jobs launched by this job on Hadoop
    */
@@ -259,7 +275,7 @@ public class HadoopJavaJob extends JavaProcessJob {
 
     info("Cancel called.  Killing the launched MR jobs on the cluster");
 
-    String azExecId = jobProps.getString(CommonJobProperties.EXEC_ID);
+    String azExecId = getExecId();
     final String logFilePath =
         String.format("%s/_job.%s.%s.log", getWorkingDirectory(), azExecId,
             getId());
