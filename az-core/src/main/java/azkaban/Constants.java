@@ -318,6 +318,6 @@ public class Constants {
     public static final int PROJECT_DIR_CLEANUP_START_THRESHOLD = 90;
     public static final int PROJECT_DIR_CLEANUP_STOP_THRESHOLD = 60;
     //128G
-    public static final long PROJECT_DIR_MAX_SIZE = 12800;
+    public static final long PROJECT_DIR_MAX_SIZE = 128000;
   }
 }
