@@ -73,7 +73,7 @@ public abstract class ConfigValidator {
    * @param configKey the config key
    * @param defaultValue default value to return if value is null;
    * @return the value of the {@param configKey}
-   * @throws InvalidAzkabanConfigException if value is non-int.
+   * @throws InvalidAzkabanConfigException if value is non-long.
    */
   protected final long getLong(final String configKey, final long defaultValue) {
     try {
