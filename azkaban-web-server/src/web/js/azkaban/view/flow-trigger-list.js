@@ -121,20 +121,19 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var startTime = data.triggerStartTime == 0 ? (new Date()).getTime()
         : data.triggerStartTime;
 
-    var endTime = data.triggerEndTime == 0 ? (new Date()).getTime()
-        : data.triggerEndTime;
-
     $(tdStart).text(getDateFormat(new Date(startTime)));
-    $(tdEnd).text(getDateFormat(new Date(endTime)));
 
     if (data.triggerEndTime == 0) {
+      $(tdEnd).text("-");
       $(tdElapse).text(
           getDuration(data.triggerStartTime, (new Date()).getTime()));
     }
     else {
+      $(tdEnd).text(getDateFormat(new Date(data.triggerEndTime)));
       $(tdElapse).text(
           getDuration(data.triggerStartTime, data.triggerEndTime));
     }
+
     var status = document.createElement("div");
     $(status).addClass("status");
     $(status).addClass(data.triggerStatus);
@@ -229,17 +228,14 @@ azkaban.FlowTriggerInstanceListView = Backbone.View.extend({
     var startTime = node.dependencyStartTime == 0 ? (new Date()).getTime()
         : node.dependencyStartTime;
 
-    var endTime = node.dependencyEndTime == 0 ? (new Date()).getTime()
-        : node.dependencyEndTime;
-
     $(tdStart).text(getDateFormat(new Date(startTime)));
-    $(tdEnd).text(getDateFormat(new Date(endTime)));
-
     if (node.dependencyEndTime == 0) {
+      $(tdEnd).text("-");
       $(tdElapse).text(
           getDuration(node.dependencyStartTime, (new Date()).getTime()));
     }
     else {
+      $(tdEnd).text(getDateFormat(new Date(node.dependencyEndTime)));
       $(tdElapse).text(
           getDuration(node.dependencyStartTime, node.dependencyEndTime));
     }
