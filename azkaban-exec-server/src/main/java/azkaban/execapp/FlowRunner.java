@@ -465,9 +465,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         }
       }
 
-      if (outNodeIds.isEmpty()) {
-        // There's no outnodes means it's the end of a flow, so we finalize
-        // and fire an event.
+      if (outNodeIds.isEmpty() && isFlowReadytoFinalize(parentFlow)) {
         finalizeFlow(parentFlow);
         finishExecutableNode(parentFlow);
 
@@ -589,6 +587,16 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.finishedNodes.add(node);
     final EventData eventData = new EventData(node.getStatus(), node.getNestedId());
     fireEventListeners(Event.create(this, EventType.JOB_FINISHED, eventData));
+  }
+
+  private boolean isFlowReadytoFinalize(final ExecutableFlowBase flow) {
+    // Only when all the end nodes are finished, the flow is ready to finalize.
+    for (final String end : flow.getEndNodes()) {
+      if (!Status.isStatusFinished(flow.getExecutableNode(end).getStatus())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private void finalizeFlow(final ExecutableFlowBase flow) {
