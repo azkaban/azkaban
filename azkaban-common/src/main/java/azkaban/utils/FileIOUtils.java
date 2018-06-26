@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -99,6 +100,28 @@ public class FileIOUtils {
     final String[] res = str.split("\\s+");
     return Long.valueOf(res[0]);
   }
+
+  public static void main(final String[] args) throws IOException {
+    final String file = args[0];
+
+    long time = System.currentTimeMillis();
+    System.out.println("kb1:" + FileIOUtils.sizeInKB(new File(file)));
+    System.out.println("takes:" + (time - System.currentTimeMillis()) / 1000);
+
+    time = System.currentTimeMillis();
+    System.out.println("kb2:" + FileIOUtils.sizeInKB2(new File(file)));
+    System.out.println("takes:" + (time - System.currentTimeMillis()) / 1000);
+  }
+
+  /**
+   * Return the size of dir in KB.
+   */
+  public static long sizeInKB2(final File dir) throws IOException {
+    Preconditions.checkArgument(dir.isDirectory(), dir + " is not a directory");
+    Preconditions.checkArgument(dir.exists(), dir + " doesn't exist");
+    return FileUtils.sizeOfDirectory(dir) / 1024;
+  }
+
 
   public static String getSourcePathFromClass(final Class<?> containedClass) {
     File file =
