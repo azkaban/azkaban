@@ -114,8 +114,6 @@ public class FlowRunnerManager implements EventListener,
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
-  private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
-
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
   private final ExecutorLoader executorLoader;
@@ -124,17 +122,14 @@ public class FlowRunnerManager implements EventListener,
   private final FlowPreparer flowPreparer;
   private final TriggerManager triggerManager;
   private final AzkabanEventReporter azkabanEventReporter;
-
   private final Props azkabanProps;
   private final File executionDirectory;
   private final File projectDirectory;
-
   private final long projectDirMaxSizeInMb;
   private final int projectDirStartDeletionThreshold;
   private final int projectDirStopDeletionThreshold;
-
   private final Object executionDirDeletionSync = new Object();
-
+  private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
   private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
   private int threadPoolQueueSize = -1;
   private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
@@ -191,7 +186,7 @@ public class FlowRunnerManager implements EventListener,
         .projectDirStartDeletionThreshold <= 100 && this.projectDirStopDeletionThreshold >= 0 &&
         this.projectDirStopDeletionThreshold < this.projectDirStartDeletionThreshold);
 
-    this.installedProjects = loadExistingProjects();
+    this.installedProjects = new HashMap<>();
 
     // azkaban.temp.dir
     this.numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
@@ -302,6 +297,9 @@ public class FlowRunnerManager implements EventListener,
 
   public void setExecutorActive(final boolean isActive) {
     this.isExecutorActive = isActive;
+    if (this.isExecutorActive) {
+      this.installedProjects = this.loadExistingProjects();
+    }
   }
 
   public long getLastFlowSubmittedTime() {
