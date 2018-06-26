@@ -25,14 +25,12 @@ import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectManagerException;
 import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.Pair;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Map;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -47,16 +45,13 @@ public class FlowPreparer {
   // TODO spyne: move to config class
   private final File projectsDir;
 
-  private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
   private final StorageManager storageManager;
 
   public FlowPreparer(final StorageManager storageManager, final File executionsDir,
-      final File projectsDir,
-      final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects) {
+      final File projectsDir) {
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
-    this.installedProjects = installedProjects;
   }
 
   /**
@@ -70,10 +65,10 @@ public class FlowPreparer {
       // First get the ProjectVersion
       final ProjectVersion projectVersion = getProjectVersion(flow);
 
-      // Synchronized on {@code projectVersion} to prevent
+      // Synchronized on {@code projectVersion.getID().intern())} to prevent
       // cleaning thread in {@link azkaban.execapp.FlowRunnerManager}
       // cleaning up the same project version when creating hardlink
-      synchronized (projectVersion) {
+      synchronized (projectVersion.getID().intern()) {
         // Setup the project
         setupProject(projectVersion);
 
@@ -85,7 +80,6 @@ public class FlowPreparer {
         log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
             flow.getExecutionId(), execDir.getPath()));
       }
-
     } catch (final Exception e) {
       log.error("Error in setting up project directory: " + this.projectsDir + ", Exception: " + e);
       cleanup(execDir);
@@ -163,15 +157,7 @@ public class FlowPreparer {
   }
 
   private ProjectVersion getProjectVersion(final ExecutableFlow flow) {
-    // We're setting up the installed projects. First time, it may take a while
-    // to set up.
-    final ProjectVersion projectVersion;
-    synchronized (this.installedProjects) {
-      projectVersion = this.installedProjects
-          .computeIfAbsent(new Pair<>(flow.getProjectId(), flow.getVersion()),
-              k -> new ProjectVersion(flow.getProjectId(), flow.getVersion()));
-    }
-    return projectVersion;
+    return new ProjectVersion(flow.getProjectId(), flow.getVersion());
   }
 
   private void cleanup(final File execDir) {

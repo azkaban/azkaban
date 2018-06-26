@@ -24,10 +24,7 @@ import static org.mockito.Mockito.when;
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.storage.StorageManager;
-import azkaban.utils.Pair;
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +37,6 @@ public class FlowPreparerTest {
 
   final File executionsDir = new File("executions");
   final File projectsDir = new File("projects");
-  final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
 
   private FlowPreparer instance;
 
@@ -61,8 +57,7 @@ public class FlowPreparerTest {
     final StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getProjectFile(12, 34)).thenReturn(projectFileHandler);
 
-    this.instance = new FlowPreparer(storageManager, this.executionsDir, this.projectsDir,
-        this.installedProjects);
+    this.instance = new FlowPreparer(storageManager, this.executionsDir, this.projectsDir);
   }
 
   @After

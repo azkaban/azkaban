@@ -238,6 +238,9 @@ public class Constants {
     // the disk usage threshold to stop project dir cleanup.
     // E.g, if set to 60, cleanup will stop when project dir size < 60% of {@value#PROJECT_DIR_MAX_SIZE}.
     public static final String PROJECT_DIR_CLEANUP_STOP_THRESHOLD = "azkaban.project_cache.stop_cleanup_threshold";
+
+    // directory to store uploaded projects
+    public static final String PROJECT_DIR = "azkaban.project.dir";
   }
 
   public static class FlowProperties {

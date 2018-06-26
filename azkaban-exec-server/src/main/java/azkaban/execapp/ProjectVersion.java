@@ -19,6 +19,8 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.File;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 
 public class ProjectVersion implements Comparable<ProjectVersion> {
@@ -67,10 +69,47 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final ProjectVersion that = (ProjectVersion) o;
+
+    return new EqualsBuilder()
+        .append(this.projectId, that.projectId)
+        .append(this.version, that.version)
+        .append(this.installedDir, that.installedDir)
+        .isEquals();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(this.projectId)
+        .append(this.version)
+        .append(this.installedDir)
+        .toHashCode();
+  }
+
+  @Override
   public String toString() {
     return "ProjectVersion{" + "projectId=" + this.projectId + ", version=" + this.version
         + ", installedDir="
         + this.installedDir
         + '}';
+  }
+
+  /**
+   * Returns the ID for the projectVersion. Two different instances sharing the same {@code
+   * projectId} and {@code version} return the same ID.
+   */
+  public String getID() {
+    return "ProjectVersion{" + String.valueOf(this.projectId) + "." + String.valueOf(this.version)
+        + "}";
   }
 }
