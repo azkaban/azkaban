@@ -29,8 +29,8 @@ import java.util.List;
 public class AzkabanJob extends AzkabanNode {
 
   private AzkabanJob(final String name, final String type, final Props props,
-      final List<String> dependsOn) {
-    super(name, type, props, dependsOn);
+      final String condition, final List<String> dependsOn) {
+    super(name, type, props, condition, dependsOn);
   }
 
   public static class AzkabanJobBuilder {
@@ -38,6 +38,7 @@ public class AzkabanJob extends AzkabanNode {
     private String name;
     private String type;
     private Props props;
+    private String condition;
     private List<String> dependsOn;
 
     public AzkabanJobBuilder name(final String name) {
@@ -55,6 +56,11 @@ public class AzkabanJob extends AzkabanNode {
       return this;
     }
 
+    public AzkabanJobBuilder condition(final String condition) {
+      this.condition = condition;
+      return this;
+    }
+
     public AzkabanJobBuilder dependsOn(final List<String> dependsOn) {
       // A node may or may not have dependencies.
       this.dependsOn = dependsOn == null
@@ -64,7 +70,7 @@ public class AzkabanJob extends AzkabanNode {
     }
 
     public AzkabanJob build() {
-      return new AzkabanJob(this.name, this.type, this.props, this.dependsOn);
+      return new AzkabanJob(this.name, this.type, this.props, this.condition, this.dependsOn);
     }
   }
 }

@@ -43,6 +43,7 @@ public class ExecutableNode {
   public static final String INNODES_PARAM = "inNodes";
   public static final String OUTNODES_PARAM = "outNodes";
   public static final String TYPE_PARAM = "type";
+  public static final String CONDITION_PARAM = "condition";
   public static final String PROPS_SOURCE_PARAM = "propSource";
   public static final String JOB_SOURCE_PARAM = "jobSource";
   public static final String OUTPUT_PROPS_PARAM = "outputProps";
@@ -66,6 +67,7 @@ public class ExecutableNode {
   private Props outputProps;
   private long delayExecution = 0;
   private ArrayList<ExecutionAttempt> pastAttempts = null;
+  private String condition;
 
   // Transient. These values aren't saved, but rediscovered.
   private ExecutableFlowBase parentFlow;
@@ -77,16 +79,18 @@ public class ExecutableNode {
   }
 
   public ExecutableNode(final Node node, final ExecutableFlowBase parent) {
-    this(node.getId(), node.getType(), node.getJobSource(), node
+    this(node.getId(), node.getType(), node.getCondition(), node.getJobSource(), node
         .getPropsSource(), parent);
   }
 
-  public ExecutableNode(final String id, final String type, final String jobSource,
+  public ExecutableNode(final String id, final String type, final String condition, final String
+      jobSource,
       final String propsSource, final ExecutableFlowBase parent) {
     this.id = id;
     this.jobSource = jobSource;
     this.propsSource = propsSource;
     this.type = type;
+    this.condition = condition;
     setParentFlow(parent);
   }
 
@@ -284,6 +288,7 @@ public class ExecutableNode {
     objMap.put(ENDTIME_PARAM, this.endTime);
     objMap.put(UPDATETIME_PARAM, this.updateTime);
     objMap.put(TYPE_PARAM, this.type);
+    objMap.put(CONDITION_PARAM, this.condition);
     objMap.put(ATTEMPT_PARAM, this.attempt);
 
     if (this.inNodes != null && !this.inNodes.isEmpty()) {
@@ -318,6 +323,7 @@ public class ExecutableNode {
       final TypedMapWrapper<String, Object> wrappedMap) {
     this.id = wrappedMap.getString(ID_PARAM);
     this.type = wrappedMap.getString(TYPE_PARAM);
+    this.condition = wrappedMap.getString(CONDITION_PARAM);
     this.status = Status.valueOf(wrappedMap.getString(STATUS_PARAM));
     this.startTime = wrappedMap.getLong(STARTTIME_PARAM);
     this.endTime = wrappedMap.getLong(ENDTIME_PARAM);
@@ -453,5 +459,13 @@ public class ExecutableNode {
 
   public long getRetryBackoff() {
     return this.inputProps.getLong("retry.backoff", 0);
+  }
+
+  public String getCondition() {
+    return this.condition;
+  }
+
+  public void setCondition(final String condition) {
+    this.condition = condition;
   }
 }

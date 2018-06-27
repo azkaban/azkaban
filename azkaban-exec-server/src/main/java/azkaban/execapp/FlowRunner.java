@@ -55,6 +55,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,6 +69,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
@@ -83,6 +89,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+  // Pattern to match job variables in condition expressions: ${jobName:variable}
+  private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
+      .compile("\\$\\{([^:{}]+):([^:{}]+)\\}");
   // We check update every 5 minutes, just in case things get stuck. But for the
   // most part, we'll be idling.
   private static final long CHECK_WAIT_MS = 5 * 60 * 1000;
@@ -172,6 +181,21 @@ public class FlowRunner extends EventHandler implements Runnable {
     // where the uninitialized logger is used in flow preparing state
     createLogger(this.flow.getFlowId());
     this.azkabanEventReporter = azkabanEventReporter;
+  }
+
+  private File findPropsFileForJob(final String prefix) {
+    final File[] files = this.getExecutionDir().listFiles(new FilenameFilter() {
+      @Override
+      public boolean accept(final File dir, final String name) {
+        return name.startsWith(prefix) && name.endsWith("tmp");
+      }
+    });
+
+    if (files == null || files.length == 0) {
+      this.logger.info("Not able to find props file for job " + prefix);
+      return null;
+    }
+    return files[0];
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -844,6 +868,10 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
     }
 
+    if (!isConditionMet(node)) {
+      return Status.CANCELLED;
+    }
+
     // If it's disabled but ready to run, we want to make sure it continues
     // being disabled.
     if (node.getStatus() == Status.DISABLED
@@ -863,6 +891,64 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     // All good to go, ready to run.
     return Status.READY;
+  }
+
+  private Boolean isConditionMet(final ExecutableNode node) {
+    final String condition = node.getCondition();
+    if (condition == null) {
+      return true;
+    }
+
+    final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(condition);
+    String replaced = condition;
+
+    while (matcher.find()) {
+      final String value = findValueForJobVariable(matcher.group(1), matcher.group(2));
+      if (value != null) {
+        replaced = replaced.replace(matcher.group(), "'" + value + "'");
+      }
+      this.logger.info("Condition is " + replaced);
+    }
+
+    // Evaluate string expression using script engine
+    return evaluateExpression(replaced);
+  }
+
+  private String findValueForJobVariable(final String jobName, final String variable) {
+    // Get props from job props tmp file
+    final File jobPropsFile = findPropsFileForJob(jobName + "_props");
+    if (jobPropsFile != null) {
+      try {
+        final Props jobProps = new Props(null, jobPropsFile);
+        if (jobProps.containsKey(variable)) {
+          return jobProps.get(variable);
+        }
+      } catch (final IOException e) {
+        this.logger.error("Not able to load props from job props file " + jobPropsFile
+            .getAbsolutePath());
+      }
+    }
+
+    // Get job output props
+    final Props outputProps = this.getExecutableFlow().getExecutableNode(jobName).getOutputProps();
+    if (outputProps != null && outputProps.containsKey(variable)) {
+      return outputProps.get(variable);
+    }
+
+    return null;
+  }
+
+  private boolean evaluateExpression(final String expression) {
+    boolean result = false;
+    try {
+      final ScriptEngineManager sem = new ScriptEngineManager();
+      final ScriptEngine se = sem.getEngineByName("JavaScript");
+      result = (boolean) se.eval(expression);
+      this.logger.info("Evaluate expression result: " + result);
+    } catch (final ScriptException e) {
+      this.logger.error("Invalid expression.", e);
+    }
+    return result;
   }
 
   private Props collectOutputProps(final ExecutableNode node) {
