@@ -114,6 +114,7 @@ $(function () {
     $("#dom_input").val("?");
     $("#month_input").val("*");
     $("#dow_input").val("*");
+    $("#year_input").val("");
     $(cron_translate_id).text("")
     $(cron_translate_warning_id).text("")
     $('#nextRecurId').html("");
@@ -187,6 +188,18 @@ $(function () {
     $('#instructions tbody tr:last th').html("?");
     $('#instructions tbody tr:last td').html("Blank");
   });
+
+  $("#year_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#year_label").css("color", "red");
+
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("");
+    $('#instructions tbody tr:last td').html("This field is optional");
+  });
 });
 
 function resetLabelColor() {
@@ -202,15 +215,15 @@ var cron_hours_id = "#hour_input";
 var cron_dom_id = "#dom_input";
 var cron_months_id = "#month_input";
 var cron_dow_id = "#dow_input";
+var cron_year_id = "#year_input";
 var cron_output_id = "#cron-output";
 var cron_translate_id = "#cronTranslate";
 var cron_translate_warning_id = "#translationWarning";
 
 function updateOutput() {
-  $(cron_output_id).val($(cron_minutes_id).val() + " " + $(cron_hours_id).val()
-      + " " +
-      $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " + $(
-          cron_dow_id).val()
+  $(cron_output_id).val($(cron_minutes_id).val() + " " + $(cron_hours_id).val() + " " +
+      $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " +
+      $(cron_dow_id).val() + " " + $(cron_year_id).val()
   );
   updateExpression();
 }
