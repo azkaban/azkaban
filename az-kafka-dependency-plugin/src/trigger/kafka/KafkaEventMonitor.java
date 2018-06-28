@@ -2,7 +2,6 @@ package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyPluginConfig;
 import com.linkedin.kafka.clients.consumer.LiKafkaConsumerImpl;
-import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -22,6 +21,9 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
@@ -29,52 +31,49 @@ public class KafkaEventMonitor implements Runnable {
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     private final KafkaDepInstanceCollection depInstances;
     private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
-    private Consumer<String, GenericRecord> consumer1;
-    private LiKafkaConsumerImpl consumer;
+    private Consumer<String, byte[]>consumer;
+    private LiKafkaConsumerImpl consumer1;
     //private Consumer<String, String> consumer;
     private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
     private Schema schema;
 
     public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
         initKafkaClient(pluginConfig);
-
-          this.consumer.subscribe(Arrays.asList("AzEvent_Init_Topic"));
-          if (!this.subscribedTopics.isEmpty()) {
+        this.consumer.subscribe(Arrays.asList("AzEvent_Init_Topic"));
+        if (!this.subscribedTopics.isEmpty()) {
             ConsumerSubscriptionRebalance();
-          }
-          //initialize deserialize schema
-          String userSchema = "{\"namespace\": \"example.avro\", \"type\": \"record\", " +
-          "\"name\": \"User\"," + "\"fields\": [{\"name\": \"name\", \"type\": \"string\"},{\"name\": \"username\", \"type\": \"string\"}]}";
-          Schema.Parser parser = new Schema.Parser();
-          this.schema = parser.parse(userSchema);
-
+        }
+        //initialize deserialize schema
+        String userSchema = "{\"namespace\": \"example.avro\", \"type\": \"record\", " +
+          "\"name\": \"User\"," + "\"fields\": [{\"name\": \"name\", \"type\": \"string\"},"
+           + "{\"name\": \"username\", \"type\": \"string\"}]}";
+        Schema.Parser parser = new Schema.Parser();
+        this.schema = parser.parse(userSchema);
         this.depInstances = new KafkaDepInstanceCollection();
     }
     private void initKafkaClient(final DependencyPluginConfig pluginConfig) {
-//        Properties props = new Properties();
-//        props.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
-//        props.put("auto.commit.interval.ms", "1000");
-//        props.put("enable.auto.commit", "true");
-//        props.put("zookeeper.connect", "localhost:2181");
-//        props.put("key.deserializer", StringDeserializer.class.getName());
-//        props.put("value.deserializer",KafkaAvroDeserializer.class);
-//        //props.put("value.deserializer", StringDeserializer.class.getName());
-//        props.put("group.id","test-consumer-group");
-//        props.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, pluginConfig.get(DependencyPluginConfigKey.SCHEMA_REGISTRY_URL));
-//        props.put("specific.avro.reader", "true");
-//        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-//        this.consumer = new KafkaConsumer<String, GenericRecord>(props);
-        Properties props1 = new Properties();
-        props1.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
-        props1.put("auto.commit.interval.ms", "1000");
-        props1.put("enable.auto.commit", "true");
-        props1.put("group.id","test-consumer-group");
-       // props1.put("key.deserializer", StringDeserializer.class.getName());
-        //props1.put("value.deserializer",KafkaAvroDeserializer.class);
-       // props1.put("value.deserializer",StringDeserializer.class);
-        props1.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, pluginConfig.get(DependencyPluginConfigKey.SCHEMA_REGISTRY_URL));
-        props1.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, "true");
-        this.consumer = new LiKafkaConsumerImpl(props1);
+        Properties props = new Properties();
+        props.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
+        props.put("auto.commit.interval.ms", "1000");
+        props.put("enable.auto.commit", "true");
+        props.put("zookeeper.connect", "localhost:2181");
+        props.put("key.deserializer", StringDeserializer.class.getName());
+        props.put("value.deserializer",ByteArrayDeserializer.class);
+        //props.put("value.deserializer", StringDeserializer.class.getName());
+        props.put("group.id","test-consumer-group");
+       // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        this.consumer = new KafkaConsumer<String, byte[]>(props);
+//        Properties props1 = new Properties();
+//        props1.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
+//        props1.put("auto.commit.interval.ms", "1000");
+//        props1.put("enable.auto.commit", "true");
+//        props1.put("group.id","test-consumer-group");
+//        props1.put("key.deserializer", StringDeserializer.class.getName());
+//        props1.put("value.deserializer",ByteArrayDeserializer.class);
+//        props1.put("value.deserializer",StringDeserializer.class);
+//        props1.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, pluginConfig.get(DependencyPluginConfigKey.SCHEMA_REGISTRY_URL));
+//        props1.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, "true");
+//        this.consumer1 = new LiKafkaConsumerImpl(props1);
 //        VerifiableProperties vProps = new VerifiableProperties(props);
 //        KafkaAvroDecoder keyDecoder = new KafkaAvroDecoder(vProps);
 //        KafkaAvroDecoder valueDecoder = new KafkaAvroDecoder(vProps);
@@ -114,7 +113,7 @@ public class KafkaEventMonitor implements Runnable {
             while (true && !Thread.interrupted()) {
                 System.out.println(consumer.subscription());
                 System.out.println("Above ConsumerRecords");
-                ConsumerRecords<String, byte[]> records=records = consumer.poll(10000);
+                ConsumerRecords<String, byte[]> records = consumer.poll(10000);
                     //ConsumerRecords<String, String> records = consumer.poll(10000);
                 Record recordToProcess = null;
                 System.out.println("Below ConsumerRecords");
