@@ -29,6 +29,7 @@ import azkaban.sla.SlaOption;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.mail.internet.AddressException;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -147,7 +148,9 @@ public class Emailer extends AbstractMailer implements Alerter {
         this.commonMetrics.markSendEmailSuccess();
       } catch (final Exception e) {
         logger.error("Failed to send " + operation, e);
-        this.commonMetrics.markSendEmailFail();
+        if (!(e instanceof AddressException)) {
+          this.commonMetrics.markSendEmailFail();
+        }
       }
     }
   }
