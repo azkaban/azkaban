@@ -13,7 +13,8 @@ public class Constants {
 
   public static class DependencyInstanceConfigKey {
 
-    public static final String EVENT = "event";
+    public static final String FIELD = "field";
+    public static final String MATCH = "match";
     public static final String TOPIC = "topic";
     public static final String COUNTER = "counter";
   }

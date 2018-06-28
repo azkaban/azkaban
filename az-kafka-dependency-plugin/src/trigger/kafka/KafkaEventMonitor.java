@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,10 +73,10 @@ public class KafkaEventMonitor implements Runnable {
         this.consumer = new LiKafkaConsumerImpl(props1);
 
     }
+
     public void add(final KafkaDependencyInstanceContext context) {
         this.executorService.submit(() -> {
             try {
-                System.out.printf("ready to add %s\n", context.getDepName());
                 if (!this.depInstances.hasTopic(context.getTopicName())) {
                     this.depInstances.add(context);
                     subscribedTopics.addAll(this.depInstances.getTopicList());
@@ -114,33 +115,35 @@ public class KafkaEventMonitor implements Runnable {
                         Decoder decoder = DecoderFactory.get().binaryDecoder(record.value(), null);
                         GenericRecord payload2 = reader.read(null, decoder);
                         System.out.println("Message received : " + payload2);
-                        String eventName = payload2.get("name").toString();
-//
-//                        System.out.printf("Kafka get %s from TOPIC: %s\n",record.topic(),eventName);
-                        System.out.printf("2.Kafka get %s from TOPIC: %s\n",record.topic(),eventName);
+                        List<Schema.Field> fields = this.schema.getFields();
+                        for (Schema.Field field : fields) {
+                            String key = field.name();
+                            String fieldName = payload2.get(key).toString();
+                            System.out.printf("2.Kafka get %s from TOPIC: %s\n", record.topic(), fieldName);
 
-    //                    SpecificDatumReader<Object> reader = new SpecificDatumReader<>(this.schema);
-    //                    ByteArrayInputStream is = new ByteArrayInputStream(record.value());
-    //                    BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(is, null);
-    //                    String log = datumReader.read(null, binaryDecoder);
-    //                    System.out.println("Value: " + log);
-
-                        if (this.depInstances.hasEventInTopic(record.topic(),eventName)) {
-                            System.out.println("hasEventinTopic\n");
-                            List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
-                            final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
-                                this.depInstances.getDepsByTopicAndEvent(record.topic(),eventName);
-                            for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
-                                if (dep.eventCaptured() == 0) {
-                                    log.info(String.format("dependency %s becomes available, sending success " + "callback",
-                                        dep));
-                                    dep.getCallback().onSuccess(dep);
-                                    deleteList.add(dep);
+                            //                    SpecificDatumReader<Object> reader = new SpecificDatumReader<>(this.schema);
+                            //                    ByteArrayInputStream is = new ByteArrayInputStream(record.value());
+                            //                    BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(is, null);
+                            //                    String log = datumReader.read(null, binaryDecoder);
+                            //                    System.out.println("Value: " + log);
+                            if (this.depInstances.hasEventInTopic(record.topic(), key)) {
+                                System.out.println("hasEventinTopic\n");
+                                List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
+                                final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
+                                    this.depInstances.getDepsByTopicAndEvent(record.topic(), key);
+                                for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
+                                    if (dep.eventCaptured() == 0 && Pattern.matches(dep.getRegexMatch(),
+                                        fieldName)) {
+                                        log.info(String.format("dependency %s becomes available, sending success " + "callback",
+                                            dep));
+                                        dep.getCallback().onSuccess(dep);
+                                        deleteList.add(dep);
+                                    }
                                 }
+                                System.out.println("back from success");
+                                if (!this.depInstances.removeList(record.topic(), key, deleteList))
+                                    subscribedTopics.addAll(this.depInstances.getTopicList());
                             }
-                            System.out.println("back from success");
-                            if (!this.depInstances.removeList(record.topic(), eventName, deleteList))
-                                subscribedTopics.addAll(this.depInstances.getTopicList());
                         }
                     }catch (final Exception ex) {
                         // todo: find a better way to handle schema evolution, just fail silently and let the
