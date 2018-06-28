@@ -122,6 +122,8 @@ $(function () {
     while ($("#instructions tbody tr:last").index() >= 4) {
       $("#instructions tbody tr:last").remove();
     }
+
+    updateOutput();
   });
 
   $("#minute_input").click(function () {
@@ -208,6 +210,7 @@ function resetLabelColor() {
   $("#dom_label").css("color", "black");
   $("#mon_label").css("color", "black");
   $("#dow_label").css("color", "black");
+  $("#year_label").css("color", "black");
 }
 
 var cron_minutes_id = "#minute_input";
