@@ -89,6 +89,8 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
+  // Name of the file which keeps project directory size
+  public static final String PROJECT_DIR_SIZE_FILE_NAME = "_project_dir_size_";
 
   public static class ConfigurationKeys {
 

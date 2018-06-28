@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -67,6 +68,68 @@ public class FileIOUtils {
       }
     }
     return true;
+  }
+
+
+  /**
+   * Return creation time of file.
+   */
+  public static long getCreationTime(final File file) throws IOException {
+    Preconditions.checkArgument(file.exists(), file + " doesn't exist");
+    final BasicFileAttributes attrs = Files
+        .readAttributes(file.toPath(), BasicFileAttributes.class);
+    final FileTime time = attrs.creationTime();
+    return time.toMillis();
+  }
+
+  /**
+   * Dumps a number into a file. Overwrites the file if it exists.
+   *
+   * @param filePath the target file
+   * @param num the number to dump
+   */
+  public static void dumpNumberToFile(final String filePath, final long num) throws IOException {
+    try (BufferedWriter writer = Files
+        .newBufferedWriter(Paths.get(filePath), StandardCharsets.UTF_8)) {
+      writer.write(String.valueOf(num));
+      writer.write("\n");
+    } catch (final IOException e) {
+      logger.error(String.format("Failed to write the number %s to the file %s", num, filePath), e);
+      throw e;
+    }
+  }
+
+  /**
+   * Reads a number from a file.
+   *
+   * @param filePath the target file
+   */
+  public static long readNumberFromFile(final String filePath)
+      throws IOException, NumberFormatException {
+    try (BufferedReader reader = Files
+        .newBufferedReader(Paths.get(filePath), StandardCharsets.UTF_8)) {
+      final long num = Long.parseLong(reader.readLine());
+      return num;
+    } catch (final IOException | NumberFormatException e) {
+      logger.error(String.format("Failed to read the number from the file %s", filePath),
+          e);
+      throw e;
+    }
+  }
+
+  /**
+   * Return the size of dir in KB.
+   */
+  public static long sizeInKB(final File dir) throws IOException {
+    Preconditions.checkArgument(dir.isDirectory(), dir + " is not a directory");
+    Preconditions.checkArgument(dir.exists(), dir + " doesn't exist");
+
+    final java.util.Scanner s = new java.util.Scanner(
+        Runtime.getRuntime().exec("du -sh -k " + dir.getAbsolutePath()).getInputStream(),
+        Charset.defaultCharset().name()).useDelimiter("\\A");
+    final String str = s.hasNext() ? s.next() : "";
+    final String[] res = str.split("\\s+");
+    return Long.valueOf(res[0]);
   }
 
   public static String getSourcePathFromClass(final Class<?> containedClass) {

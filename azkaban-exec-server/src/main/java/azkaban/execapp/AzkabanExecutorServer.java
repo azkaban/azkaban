@@ -44,12 +44,12 @@ import azkaban.metric.MetricReportManager;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.metrics.MetricsManager;
 import azkaban.server.AzkabanServer;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,8 +58,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -277,14 +275,7 @@ public class AzkabanExecutorServer {
     // By default this should write to the working directory
     final String portFile = this.props
         .getString(Constants.AZKABAN_EXECUTOR_PORT_FILE, AZKABAN_EXECUTOR_PORT_FILENAME);
-    try (BufferedWriter writer = Files
-        .newBufferedWriter(Paths.get(portFile), StandardCharsets.UTF_8)) {
-      writer.write(String.valueOf(getPort()));
-      writer.write("\n");
-    } catch (final IOException e) {
-      logger.error("Failed to write the port number to a file", e);
-      throw e;
-    }
+    FileIOUtils.dumpNumberToFile(portFile, getPort());
   }
 
   private void configureJobCallback(final Props props) {

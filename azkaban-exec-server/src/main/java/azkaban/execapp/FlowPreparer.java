@@ -20,6 +20,7 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectManagerException;
@@ -31,6 +32,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.zip.ZipFile;
@@ -89,6 +91,18 @@ public class FlowPreparer {
   }
 
   /**
+   * Touch the file if it exists.
+   *
+   * @param file the target file
+   */
+  private void touchIfExists(final File file) {
+    if (file.exists()) {
+      file.setLastModified(System.currentTimeMillis());
+    }
+  }
+
+
+  /**
    * Prepare the project directory.
    *
    * @param pv ProjectVersion object
@@ -107,6 +121,9 @@ public class FlowPreparer {
     // If directory exists. Assume its prepared and skip.
     if (pv.getInstalledDir().exists()) {
       log.info("Project already cached. Skipping download. " + pv);
+      touchIfExists(
+          new File(Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)
+              .toString()));
       return;
     }
 
@@ -127,18 +144,30 @@ public class FlowPreparer {
       final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
       final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, tempDir);
-
+      persistDirSize(tempDir);
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
-
-      log.warn(String.format("Project Preparation complete. [%s]", pv));
+      log.warn(String.format("Project preparation completes. [%s]", pv));
     } finally {
-
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
       }
-
       // Clean up: Remove tempDir if exists
       FileUtils.deleteDirectory(tempDir);
+    }
+  }
+
+  /**
+   * Creates a file which keeps the size of {@param dir} in bytes inside the {@param dir}.
+   *
+   * @param dir the directory whose size needs to be kept in the file to be created.
+   */
+  private void persistDirSize(final File dir) {
+    final long size = FileUtils.sizeOfDirectory(dir);
+    try {
+      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)
+          .toString(), size);
+    } catch (final IOException e) {
+      log.error(e);
     }
   }
 
