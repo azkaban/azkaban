@@ -46,8 +46,6 @@ npm_cache_clean {
 apply plugin: 'lesscss'
 apply plugin: 'dustjs'
 apply plugin: 'distribution'
-// apply plugin: 'jacoco'
-
 
 configurations {
     generateRestli
@@ -161,15 +159,6 @@ dustjs {
 }
 
 installDist.dependsOn 'lesscss'
-
-// jacocoTestReport {
-//     reports {
-//         xml.enabled true
-//         xml.destination "${buildDir}/reports/jacoco/report.xml"
-//         html.enabled false
-//         csv.enabled false
-//     }
-// }
 
 distributions {
     main {
