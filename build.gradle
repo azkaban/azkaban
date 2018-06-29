@@ -24,11 +24,16 @@ buildscript {
     dependencies {
         classpath 'com.cinnober.gradle:semver-git:2.2.3'
         classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.14'
+
+        // https://github.com/palantir/gradle-jacoco-coverage
+        classpath 'com.palantir:jacoco-coverage:0.4.0'
     }
 }
 
 plugins {
     id 'com.gradle.build-scan' version '1.9'
+    id 'com.github.kt3k.coveralls' version '2.6.3'
+    id 'jacoco'
 }
 
 buildScan {
@@ -40,14 +45,20 @@ apply plugin: 'com.cinnober.gradle.semver-git'
 
 apply plugin: 'compare-gradle-builds'
 
+// https://github.com/palantir/gradle-jacoco-coverage
+apply plugin: 'com.palantir.jacoco-full-report'
+
 compareGradleBuilds {
     targetBuild.gradleVersion = "4.0"
 }
 
 allprojects {
+    apply plugin: 'jacoco'
+
     repositories {
         mavenCentral()
         mavenLocal()
+        jcenter()
     }
 }
 
@@ -121,6 +132,8 @@ ext.deps = [
 subprojects {
     apply plugin: 'java'
     apply plugin: 'net.ltgt.errorprone'
+    apply plugin: 'jacoco'
+    apply plugin: 'com.palantir.jacoco-full-report'
 
     // Set the same version for all sub-projects to root project version
     version = rootProject.version
@@ -226,4 +239,55 @@ if (System.env.TRAVIS == 'true') {
             minHeapSize = '128m'
         }
     }
+}
+
+// task codeCoverageReport(type: JacocoReport) {
+//     executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+
+//     subprojects.each {
+//         sourceSets it.sourceSets.main
+//     }
+
+//     reports {
+//         xml.enabled true
+//         xml.destination "${buildDir}/reports/jacoco/report.xml"
+//         html.enabled false
+//         csv.enabled false
+//     }
+// }
+
+// codeCoverageReport.dependsOn {
+//     subprojects*.test
+// }
+
+
+def publishedProjects = subprojects.findAll()
+ 
+task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
+    description = 'Generates an aggregate report from all subprojects'
+ 
+    dependsOn(publishedProjects.test)
+ 
+    additionalSourceDirs = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    classDirectories = files(publishedProjects.sourceSets.main.output)
+    executionData = files(publishedProjects.jacocoTestReport.executionData)
+ 
+    doFirst {
+        executionData = files(executionData.findAll { it.exists() })
+    }
+ 
+    reports {
+        html.enabled = true // human readable
+        xml.enabled = true // required by coveralls
+    }
+}
+ 
+coveralls {
+    sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
+    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+}
+ 
+tasks.coveralls {
+    dependsOn jacocoRootReport
 }
