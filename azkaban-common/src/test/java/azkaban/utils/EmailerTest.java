@@ -17,7 +17,9 @@ package azkaban.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +33,7 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
 import java.util.List;
+import javax.mail.internet.AddressException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,5 +128,18 @@ public class EmailerTest {
     verify(this.message).addAllToAddress(this.receiveAddrList);
     verify(this.message).setSubject("subject");
     verify(this.message).setMimeType("text/html");
+  }
+
+  @Test
+  public void testSendEmailToInvalidAddress() throws Exception {
+    doThrow(AddressException.class).when(this.message).sendEmail();
+    final Flow flow = this.project.getFlow("jobe");
+    flow.addFailureEmails(this.receiveAddrList);
+
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    final CommonMetrics commonMetrics = mock(CommonMetrics.class);
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
+    emailer.alertOnError(exFlow);
+    verify(commonMetrics, never()).markSendEmailFail();
   }
 }
