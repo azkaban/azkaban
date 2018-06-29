@@ -102,13 +102,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId)
-      throws ExecutorManagerException {
-
-    return this.fetchActiveFlowDao.fetchActiveFlowByExecId(execId);
-  }
-
-  @Override
   public int fetchNumExecutableFlows() throws ExecutorManagerException {
     return this.numExecutionsDao.fetchNumExecutableFlows();
   }
