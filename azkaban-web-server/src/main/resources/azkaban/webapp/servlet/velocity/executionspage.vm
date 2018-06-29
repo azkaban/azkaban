@@ -93,8 +93,8 @@
                 <a href="${context}/executor?execid=${flow.getFirst().executionId}">${flow.getFirst().executionId}</a>
               </td>
               <td>
-                #if (${flow.getSecond()})
-                  ${flow.getSecond().getId()}
+                #if (${flow.getSecond().isPresent()})
+                  ${flow.getSecond().get().getId()}
                 #else
                   -
                 #end

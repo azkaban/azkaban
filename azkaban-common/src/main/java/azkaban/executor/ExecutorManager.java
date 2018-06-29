@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -393,10 +394,6 @@ public class ExecutorManager extends EventHandler implements
     return this.lastThreadCheckTime;
   }
 
-  public long getLastCleanerThreadCheckTime() {
-    return this.lastCleanerThreadCheckTime;
-  }
-
   @Override
   public Collection<Executor> getAllActiveExecutors() {
     return Collections.unmodifiableCollection(this.activeExecutors);
@@ -438,7 +435,10 @@ public class ExecutorManager extends EventHandler implements
     for (final Pair<ExecutionReference, ExecutableFlow> running : this.runningFlows
         .values()) {
       final ExecutionReference ref = running.getFirst();
-      ports.add(ref.getHost() + ":" + ref.getPort());
+      if (ref.getExecutor().isPresent()) {
+        final Executor executor = ref.getExecutor().get();
+        ports.add(executor.getHost() + ":" + executor.getPort());
+      }
     }
     return ports;
   }
@@ -505,9 +505,9 @@ public class ExecutorManager extends EventHandler implements
    * @see azkaban.executor.ExecutorManagerAdapter#getActiveFlowsWithExecutor()
    */
   @Override
-  public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
+  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
       throws IOException {
-    final List<Pair<ExecutableFlow, Executor>> flows =
+    final List<Pair<ExecutableFlow, Optional<Executor>>> flows =
         new ArrayList<>();
     getActiveFlowsWithExecutorHelper(flows, this.queuedFlows.getAllEntries());
     getActiveFlowsWithExecutorHelper(flows, this.runningFlows.values());
@@ -516,7 +516,7 @@ public class ExecutorManager extends EventHandler implements
 
   /* Helper method for getActiveFlowsWithExecutor */
   private void getActiveFlowsWithExecutorHelper(
-      final List<Pair<ExecutableFlow, Executor>> flows,
+      final List<Pair<ExecutableFlow, Optional<Executor>>> flows,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
     for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
       flows.add(new Pair<>(ref.getSecond(), ref
@@ -1442,15 +1442,15 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /* Group Executable flow by Executors to reduce number of REST calls */
-  private Map<Executor, List<ExecutableFlow>> getFlowToExecutorMap() {
-    final HashMap<Executor, List<ExecutableFlow>> exFlowMap =
+  private Map<Optional<Executor>, List<ExecutableFlow>> getFlowToExecutorMap() {
+    final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
         new HashMap<>();
 
     for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.runningFlows
         .values()) {
       final ExecutionReference ref = runningFlow.getFirst();
       final ExecutableFlow flow = runningFlow.getSecond();
-      final Executor executor = ref.getExecutor();
+      final Optional<Executor> executor = ref.getExecutor();
 
       // We can set the next check time to prevent the checking of certain
       // flows.
@@ -1550,20 +1550,27 @@ public class ExecutorManager extends EventHandler implements
           ExecutorManager.this.lastThreadCheckTime = System.currentTimeMillis();
           ExecutorManager.this.updaterStage = "Starting update all flows.";
 
-          final Map<Executor, List<ExecutableFlow>> exFlowMap =
+          final Map<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
               getFlowToExecutorMap();
-          final ArrayList<ExecutableFlow> finishedFlows =
-              new ArrayList<>();
           final ArrayList<ExecutableFlow> finalizeFlows =
               new ArrayList<>();
 
           if (exFlowMap.size() > 0) {
-            for (final Map.Entry<Executor, List<ExecutableFlow>> entry : exFlowMap
+            for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap
                 .entrySet()) {
               final List<Long> updateTimesList = new ArrayList<>();
               final List<Integer> executionIdsList = new ArrayList<>();
 
-              final Executor executor = entry.getKey();
+              final Optional<Executor> executorOption = entry.getKey();
+              if (!executorOption.isPresent()) {
+                for (final ExecutableFlow flow : entry.getValue()) {
+                  logger.error("Finalizing execution " + flow.getExecutionId()
+                      + ". Executor id of this execution doesn't exist");
+                  finalizeFlows.add(flow);
+                }
+                continue;
+              }
+              final Executor executor = executorOption.get();
 
               ExecutorManager.this.updaterStage =
                   "Starting update flows on " + executor.getHost() + ":"
@@ -1627,7 +1634,6 @@ public class ExecutorManager extends EventHandler implements
                     ExecutorManager.this.updaterStage = "Updated flow " + flow.getExecutionId();
 
                     if (isFinished(flow)) {
-                      finishedFlows.add(flow);
                       finalizeFlows.add(flow);
                     }
                   } catch (final ExecutorManagerException e) {

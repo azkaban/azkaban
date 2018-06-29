@@ -280,7 +280,11 @@ public class ExecutionFlowDaoTest {
         this.fetchActiveFlowDao.fetchActiveFlows();
 
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isTrue();
-    assertThat(activeFlows1.containsKey(flow2.getExecutionId())).isFalse();
+    assertThat(activeFlows1.get(flow1.getExecutionId()).getFirst().getExecutor().isPresent())
+        .isTrue();
+    assertThat(activeFlows1.containsKey(flow2.getExecutionId())).isTrue();
+    assertThat(activeFlows1.get(flow2.getExecutionId()).getFirst().getExecutor().isPresent())
+        .isFalse();
     final ExecutableFlow flow1Result =
         activeFlows1.get(flow1.getExecutionId()).getSecond();
     assertTwoFlowSame(flow1Result, flow1);
