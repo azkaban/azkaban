@@ -371,6 +371,8 @@ public class TriggerManager extends EventHandler implements
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
       } else {
+        logger.info("NextCheckTime did not change. Setting status to expired for trigger"
+            + t.getTriggerId());
         t.setStatus(TriggerStatus.EXPIRED);
       }
       try {

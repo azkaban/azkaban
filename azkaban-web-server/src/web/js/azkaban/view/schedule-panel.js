@@ -255,21 +255,31 @@ function updateExpression() {
   serverTimeInJsDateFormat.setUTCMonth(serverTime.get('month'),
       serverTime.get('date'));
 
-  // Calculate the following 10 occurences based on the current server time.
-  // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
-  // We transform from current browser-timezone-time to Server timezone.
-  // Then we let serverTimeInJsDateFormat is equal to the server time.
-  var occurrences = later.schedule(laterCron).next(10,
-      serverTimeInJsDateFormat);
+  //Calculate the following 10 occurrences based on the current server time.
+  for(var i = 9; i >= 0; i--) {
+    // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
+    // We transform from current browser-timezone-time to Server timezone.
+    // Then we let serverTimeInJsDateFormat is equal to the server time.
+    var occurrence = later.schedule(laterCron).next(1, serverTimeInJsDateFormat);
 
-  //The following component below displays a list of next 10 triggering timestamp.
-  for (var i = 9; i >= 0; i--) {
-    var strTime = JSON.stringify(occurrences[i]);
+    if (occurrence) {
+      var strTime = JSON.stringify(occurrence);
 
-    // Get the time. The original occurance time string is like: "2016-09-09T05:00:00.999",
-    // We trim the string to ignore milliseconds.
-    var nextTime = '<li style="color:DarkGreen">' + strTime.substring(
-        1, strTime.length - 6) + '</li>';
-    $('#nextRecurId').prepend(nextTime);
+      // Get the time. The original occurrence time string is like: "2016-09-09T05:00:00.999",
+      // We trim the string to ignore milliseconds.
+      var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-6) + '</li>';
+      $('#nextRecurId').append(nextTime);
+
+      serverTimeInJsDateFormat = occurrence;
+
+      // Add 10 seconds to exclude startDate from the next occurrences
+      serverTimeInJsDateFormat.setSeconds(serverTimeInJsDateFormat.getSeconds() + 10);
+    } else {
+      console.log("occurrence is null");
+      break;
+    }
   }
+
+  $('#nextRecurLabel').html("Next " + $('#nextRecurId li').length +
+		  " scheduled executions for this cron expression only:");
 }
