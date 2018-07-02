@@ -233,32 +233,35 @@ if (System.env.TRAVIS == 'true') {
 }
 
 def publishedProjects = subprojects.findAll()
- 
+
+// Aggregate all subproject reports into one.
 task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
     description = 'Generates an aggregate report from all subprojects'
- 
+
     dependsOn(publishedProjects.test)
- 
-    additionalSourceDirs = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+
+    // JacocoReport-type task requires users to specify which classes to be covered
+    // See details in
+    // https://docs.gradle.org/current/dsl/org.gradle.testing.jacoco.tasks.JacocoReport.html
     sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
     classDirectories = files(publishedProjects.sourceSets.main.output)
     executionData = files(publishedProjects.jacocoTestReport.executionData)
- 
+
     doFirst {
         executionData = files(executionData.findAll { it.exists() })
     }
- 
+
     reports {
         html.enabled = true // human readable
         xml.enabled = true // required by coveralls
     }
 }
- 
+
 coveralls {
     sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
     jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
 }
- 
+
 tasks.coveralls {
     dependsOn jacocoRootReport
 }
