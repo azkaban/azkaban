@@ -42,6 +42,7 @@ dependencies {
     }
     compile deps.sparkCore
     compile deps.commonsCli
+    compile deps.hiveBeeline
 }
 
 /**
