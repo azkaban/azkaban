@@ -18,6 +18,9 @@ package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
+import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.PageProperties;
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
@@ -108,7 +111,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
-    this.displayExecutionPageSize = props.getInt("azkaban.display.execution_page_size", 16);
+    this.displayExecutionPageSize = props.getInt(ConfigurationKeys.DISPLAY_EXECUTION_PAGE_SIZE, 16);
 
     if (this.application instanceof AzkabanWebServer) {
       final AzkabanWebServer server = (AzkabanWebServer) this.application;
@@ -323,7 +326,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("triggerPlugins", this.triggerPlugins);
     }
 
-    page.add("displayExecutionPageSize", displayExecutionPageSize);
+    page.add(PageProperties.DISPLAY_EXECUTION_PAGE_SIZE, displayExecutionPageSize);
 
     return page;
   }
@@ -358,7 +361,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("triggers", this.triggerPlugins);
     }
 
-    page.add("displayExecutionPageSize", displayExecutionPageSize);
+    page.add(PageProperties.DISPLAY_EXECUTION_PAGE_SIZE, displayExecutionPageSize);
 
     return page;
   }

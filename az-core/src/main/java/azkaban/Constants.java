@@ -224,6 +224,9 @@ public class Constants {
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
+
+    // number of rows to be displayed on the executions page.
+    public static final String DISPLAY_EXECUTION_PAGE_SIZE = "azkaban.display.execution_page_size";
   }
 
   public static class FlowProperties {
@@ -296,5 +299,10 @@ public class Constants {
     // Flow trigger dependency run time props
     public static final String START_TIME = "startTime";
     public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
+  }
+
+  public static class PageProperties {
+    // number of rows to be displayed on the executions page.
+    public static final String DISPLAY_EXECUTION_PAGE_SIZE = "displayExecutionPageSize";
   }
 }
