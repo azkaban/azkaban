@@ -28,7 +28,7 @@ import java.util.List;
  * <p>Most of the methods in this class should remain package private. Code outside of this
  * package should mainly interact with the {@link DagService}.
  */
-class Dag {
+public class Dag {
 
   private final String name;
   private final DagProcessor dagProcessor;

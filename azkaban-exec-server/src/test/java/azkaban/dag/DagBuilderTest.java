@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 
@@ -32,23 +32,23 @@ public class DagBuilderTest {
   public void create_nodes_with_same_name_should_throw_an_exception() {
     final String name = "nb";
     // given
-    final NodeBuilder nodeBuilder1 = createNodeBuilder(name);
+    createNode(name);
 
     // when
-    final Throwable thrown = catchThrowable(() -> {
-      createNodeBuilder(name);
-    });
+    final Throwable thrown = catchThrowable(() -> createNode(name));
 
     // then
-    assertThat(thrown).isInstanceOf(DagException.class);
+    assertThrownIsDagBuilderException(thrown);
   }
 
   @Test
   public void build_should_return_expected_dag() {
     // given
-    final NodeBuilder nodeBuilder1 = createNodeBuilder("nb1");
-    final NodeBuilder nodeBuilder2 = createNodeBuilder("nb2");
-    nodeBuilder1.addChildren(nodeBuilder2);
+    final String parentNodeName = "nb1";
+    final String childNodeName = "nb2";
+    createNode(parentNodeName);
+    createNode(childNodeName);
+    addParentNode(childNodeName, parentNodeName);
 
     // when
     final Dag dag = this.dagBuilder.build();
@@ -56,6 +56,13 @@ public class DagBuilderTest {
     // then
     assertThat(dag.getName()).isEqualTo("dag builder");
     assertDagNodes(dag);
+  }
+
+  /**
+   * Adds parent as the child's parent node.
+   */
+  private void addParentNode(final String childName, final String parentName) {
+    this.dagBuilder.addParentNode(childName, parentName);
   }
 
   private void assertDagNodes(final Dag dag) {
@@ -68,49 +75,78 @@ public class DagBuilderTest {
     assertThat(node2.getName()).isEqualTo("nb2");
 
     assertThat(node1.hasParent()).isFalse();
-    assertThat(node1.getChildren()).isEqualTo(Arrays.asList(node2));
+    assertThat(node1.getChildren()).isEqualTo(Collections.singletonList(node2));
 
     assertThat(node2.hasParent()).isTrue();
     assertThat(node2.getChildren()).isEmpty();
-    assertThat(node2.getParents()).isEqualTo(Arrays.asList(node1));
+    assertThat(node2.getParents()).isEqualTo(Collections.singletonList(node1));
   }
 
-  private NodeBuilder createNodeBuilder(final String name) {
+  private Node createNode(final String name) {
     return this.dagBuilder.createNode(name, mock(NodeProcessor.class));
   }
 
   @Test
   public void build_should_throw_exception_when_circular_dependency_is_detected() {
     // given
-    final NodeBuilder nodeBuilder1 = createNodeBuilder("nb1");
-    final NodeBuilder nodeBuilder2 = createNodeBuilder("nb2");
-    final NodeBuilder nodeBuilder3 = createNodeBuilder("nb3");
-    nodeBuilder2.addParents(nodeBuilder1);
-    nodeBuilder3.addParents(nodeBuilder2);
-    nodeBuilder1.addParents(nodeBuilder3);
+    final String n1Name = "nb1";
+    final String n2Name = "nb2";
+    final String n3Name = "nb3";
+    createNode(n1Name);
+    createNode(n2Name);
+    createNode(n3Name);
+
+    addParentNode(n2Name, n1Name);
+    addParentNode(n3Name, n2Name);
+    addParentNode(n1Name, n3Name);
 
     // when
-    final Throwable thrown = catchThrowable(() -> {
-      this.dagBuilder.build();
-    });
+    final Throwable thrown = catchThrowable(this.dagBuilder::build);
 
     // then
     // Expect the exception message to show the loop: nb1 -> nb2 -> nb3 -> nb1.
     System.out.println("Expect exception: " + thrown);
-    assertThat(thrown).isInstanceOf(DagException.class);
+    assertThrownIsDagBuilderException(thrown);
   }
 
   @Test
-  public void add_dependency_should_not_affect_dag_already_built() {
+  public void can_not_call_createNode_after_dag_already_built() {
     // given
-    final Dag dag = this.dagBuilder.build();
+    this.dagBuilder.build();
 
     // when
-    createNodeBuilder("a");
+    final Throwable thrown = catchThrowable(() -> createNode("a"));
 
     // then
-    final List<Node> nodes = dag.getNodes();
-    assertThat(nodes).hasSize(0);
+    assertThrownIsDagBuilderException(thrown);
+  }
+
+  @Test
+  public void can_not_call_addParentNode_after_dag_already_built() {
+    // given
+    this.dagBuilder.build();
+
+    // when
+    final Throwable thrown = catchThrowable(() -> addParentNode("n1", "n2"));
+
+    // then
+    assertThrownIsDagBuilderException(thrown);
+  }
+
+  @Test
+  public void can_not_call_build_after_dag_already_built() {
+    // given
+    this.dagBuilder.build();
+
+    // when
+    final Throwable thrown = catchThrowable(this.dagBuilder::build);
+
+    // then
+    assertThrownIsDagBuilderException(thrown);
+  }
+
+  private void assertThrownIsDagBuilderException(final Throwable thrown) {
+    assertThat(thrown).isInstanceOf(DagException.class);
   }
 
   @Test
