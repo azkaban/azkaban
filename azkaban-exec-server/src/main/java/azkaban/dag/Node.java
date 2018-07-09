@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Node in a DAG: Directed acyclic graph.
  */
-class Node {
+public class Node {
 
   private final String name;
 
@@ -48,6 +48,7 @@ class Node {
     this.name = name;
     requireNonNull(dag, "The dag of the node can't be null");
     this.dag = dag;
+    dag.addNode(this);
   }
 
   Dag getDag() {
