@@ -272,6 +272,7 @@ public class ExecutorManagerTest {
   @Test
   public void testNotFoundFlows() throws Exception {
     testSetUpForRunningFlows();
+    this.manager.start();
     final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
 

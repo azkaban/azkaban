@@ -143,7 +143,6 @@ public class ExecutorManager extends EventHandler implements
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
 
     this.executingManager = new ExecutingManagerUpdaterThread();
-    this.executingManager.start();
 
     if (isMultiExecutorMode()) {
       setupMultiExecutorMode();
@@ -154,8 +153,14 @@ public class ExecutorManager extends EventHandler implements
             DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 
     this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
-    this.cleanerThread.start();
+  }
 
+  public void start() {
+    this.executingManager.start();
+    this.cleanerThread.start();
+    if (isMultiExecutorMode()) {
+      this.queueProcessor.start();
+    }
   }
 
   private String findApplicationIdFromLog(final String logData) {
@@ -201,8 +206,6 @@ public class ExecutorManager extends EventHandler implements
             this.azkProps.getInt(
                 Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
                 this.activeExecutors.size()));
-
-    this.queueProcessor.start();
   }
 
   /**
