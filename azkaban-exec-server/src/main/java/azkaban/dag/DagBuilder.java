@@ -50,7 +50,7 @@ public class DagBuilder {
    */
   public DagBuilder(final String name, final DagProcessor dagProcessor) {
     requireNonNull(name, "The name of the DagBuilder can't be null");
-    requireNonNull(name, "The dagProcessor of the DagBuilder can't be null");
+    requireNonNull(dagProcessor, "The dagProcessor of the DagBuilder can't be null");
     this.dag = new Dag(name, dagProcessor);
   }
 
