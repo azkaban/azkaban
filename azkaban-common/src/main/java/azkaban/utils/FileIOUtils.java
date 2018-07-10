@@ -30,7 +30,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -90,8 +89,7 @@ public class FileIOUtils {
    */
   public static void dumpNumberToFile(final String filePath, final long num) throws IOException {
     try (BufferedWriter writer = Files
-        .newBufferedWriter(Paths.get(filePath), StandardCharsets.UTF_8,
-            StandardOpenOption.TRUNCATE_EXISTING)) {
+        .newBufferedWriter(Paths.get(filePath), StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
       writer.write("\n");
     } catch (final IOException e) {
