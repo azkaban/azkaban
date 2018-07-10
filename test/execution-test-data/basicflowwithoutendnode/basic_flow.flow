@@ -18,5 +18,5 @@ nodes:
   - name: jobC
     type: test
     config:
-      seconds: 1
+      seconds: 2
       fail: false
