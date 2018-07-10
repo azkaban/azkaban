@@ -36,6 +36,8 @@ public class KafkaEventMonitor implements Runnable {
     //private Consumer<String, String> consumer;
     private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
     private Schema schema;
+    private RegexKafkaDependencyMatcher matcher1;
+    private FieldRegexKafkaDependencyMatcher matcher2;
 
     public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
         initKafkaClient(pluginConfig);
@@ -50,6 +52,8 @@ public class KafkaEventMonitor implements Runnable {
         Schema.Parser parser = new Schema.Parser();
         this.schema = parser.parse(userSchema);
         this.depInstances = new KafkaDepInstanceCollection();
+        this.matcher1 = new RegexKafkaDependencyMatcher();
+        this.matcher2 = new FieldRegexKafkaDependencyMatcher();
     }
     private void initKafkaClient(final DependencyPluginConfig pluginConfig) {
 //        Properties props = new Properties();
@@ -66,6 +70,7 @@ public class KafkaEventMonitor implements Runnable {
         Properties props1 = new Properties();
         props1.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
         props1.put("auto.commit.interval.ms", "1000");
+        props1.put("auto.offset.reset", "latest");
         props1.put("enable.auto.commit", "true");
         props1.put("group.id","test-consumer-group");
         props1.put("key.deserializer", StringDeserializer.class.getName());
@@ -115,17 +120,15 @@ public class KafkaEventMonitor implements Runnable {
                         Decoder decoder = DecoderFactory.get().binaryDecoder(record.value(), null);
                         GenericRecord payload2 = reader.read(null, decoder);
                         System.out.println("Message received : " + payload2);
+                        //share 的部分要想一下  思考
+                        //怎麼重新整理ＭＡＰＰＩＮＧ
+                        //把觀念分開  不要黏在一起
+
                         List<Schema.Field> fields = this.schema.getFields();
                         for (Schema.Field field : fields) {
                             String key = field.name();
                             String fieldName = payload2.get(key).toString();
                             System.out.printf("2.Kafka get %s from TOPIC: %s\n", record.topic(), fieldName);
-
-                            //                    SpecificDatumReader<Object> reader = new SpecificDatumReader<>(this.schema);
-                            //                    ByteArrayInputStream is = new ByteArrayInputStream(record.value());
-                            //                    BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(is, null);
-                            //                    String log = datumReader.read(null, binaryDecoder);
-                            //                    System.out.println("Value: " + log);
                             if (this.depInstances.hasEventInTopic(record.topic(), key)) {
                                 System.out.println("hasEventinTopic\n");
                                 List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
