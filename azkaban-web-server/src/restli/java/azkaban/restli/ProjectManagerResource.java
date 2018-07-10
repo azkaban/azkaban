@@ -68,8 +68,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
 
     final FlowTriggerScheduler scheduler = getAzkaban().getScheduler();
     final boolean enableQuartz = getAzkaban().getServerProps().getBoolean(ConfigurationKeys
-            .ENABLE_QUARTZ,
-        false);
+        .ENABLE_QUARTZ, false);
 
     logger.info("Deploy: reference of project " + projectName + " is " + System.identityHashCode
         (project));
