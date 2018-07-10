@@ -144,7 +144,7 @@ public class FlowPreparer {
       final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
       final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, tempDir);
-      persistDirSize(tempDir);
+      updateDirSize(tempDir, pv);
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
       log.warn(String.format("Project preparation completes. [%s]", pv));
     } finally {
@@ -157,12 +157,15 @@ public class FlowPreparer {
   }
 
   /**
-   * Creates a file which keeps the size of {@param dir} in bytes inside the {@param dir}.
+   * Creates a file which keeps the size of {@param dir} in bytes inside the {@param dir} and sets
+   * the dirSize for {@param pv}.
    *
    * @param dir the directory whose size needs to be kept in the file to be created.
+   * @param pv the projectVersion whose size needs to updated.
    */
-  private void persistDirSize(final File dir) {
+  private void updateDirSize(final File dir, final ProjectVersion pv) {
     final long size = FileUtils.sizeOfDirectory(dir);
+    pv.setDirSize(size);
     try {
       FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)
           .toString(), size);

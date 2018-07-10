@@ -18,10 +18,7 @@ package azkaban.execapp;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import azkaban.Constants;
-import azkaban.utils.FileIOUtils;
 import java.io.File;
-import java.nio.file.Paths;
 
 
 public class ProjectVersion implements Comparable<ProjectVersion> {
@@ -43,21 +40,14 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
   public ProjectVersion(final int projectId, final int version, final File installedDir) {
     this(projectId, version);
     this.installedDir = installedDir;
-    this.dirSize = readFileSize();
-  }
-
-  private Long readFileSize() {
-    Long fileSize = null;
-    try {
-      fileSize = FileIOUtils.readNumberFromFile(
-          Paths.get(this.installedDir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME).toString());
-    } catch (final Exception ex) {
-    }
-    return fileSize;
   }
 
   public Long getDirSize() {
     return this.dirSize;
+  }
+
+  public void setDirSize(final Long dirSize) {
+    this.dirSize = dirSize;
   }
 
   public int getProjectId() {
@@ -74,7 +64,6 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 
   public void setInstalledDir(final File installedDir) {
     this.installedDir = installedDir;
-    this.dirSize = readFileSize();
   }
 
   @Override
