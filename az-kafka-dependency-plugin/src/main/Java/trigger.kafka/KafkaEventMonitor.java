@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,7 +22,6 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -31,11 +31,13 @@ public class KafkaEventMonitor implements Runnable {
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     private final KafkaDepInstanceCollection depInstances;
     private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
-    private Consumer<String, byte[]>consumer;
-    private LiKafkaConsumerImpl consumer1;
+    private Consumer<String, byte[]>consumer1;
+    private LiKafkaConsumerImpl consumer;
     //private Consumer<String, String> consumer;
     private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
     private Schema schema;
+    private RegexKafkaDependencyMatcher matcher1;
+    private FieldRegexKafkaDependencyMatcher matcher2;
 
     public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
         initKafkaClient(pluginConfig);
@@ -50,43 +52,36 @@ public class KafkaEventMonitor implements Runnable {
         Schema.Parser parser = new Schema.Parser();
         this.schema = parser.parse(userSchema);
         this.depInstances = new KafkaDepInstanceCollection();
+        this.matcher1 = new RegexKafkaDependencyMatcher();
+        this.matcher2 = new FieldRegexKafkaDependencyMatcher();
     }
     private void initKafkaClient(final DependencyPluginConfig pluginConfig) {
-        Properties props = new Properties();
-        props.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("enable.auto.commit", "true");
-        props.put("zookeeper.connect", "localhost:2181");
-        props.put("key.deserializer", StringDeserializer.class.getName());
-        props.put("value.deserializer",ByteArrayDeserializer.class);
-        //props.put("value.deserializer", StringDeserializer.class.getName());
-        props.put("group.id","test-consumer-group");
-       // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        this.consumer = new KafkaConsumer<String, byte[]>(props);
-//        Properties props1 = new Properties();
-//        props1.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
-//        props1.put("auto.commit.interval.ms", "1000");
-//        props1.put("enable.auto.commit", "true");
-//        props1.put("group.id","test-consumer-group");
-//        props1.put("key.deserializer", StringDeserializer.class.getName());
-//        props1.put("value.deserializer",ByteArrayDeserializer.class);
-//        props1.put("value.deserializer",StringDeserializer.class);
-//        props1.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, pluginConfig.get(DependencyPluginConfigKey.SCHEMA_REGISTRY_URL));
-//        props1.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, "true");
-//        this.consumer1 = new LiKafkaConsumerImpl(props1);
-//        VerifiableProperties vProps = new VerifiableProperties(props);
-//        KafkaAvroDecoder keyDecoder = new KafkaAvroDecoder(vProps);
-//        KafkaAvroDecoder valueDecoder = new KafkaAvroDecoder(vProps);
-//        this.consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(props));
-//        Map<String, Integer> topicCountMap = new HashMap<>();
-//        Map<String, List<KafkaStream<Object, Object>>> consumerMap = this.consumer2.createMessageStreams(
-//          topicCountMap, keyDecoder, valueDecoder);
+//        Properties props = new Properties();
+//        props.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
+//        props.put("auto.commit.interval.ms", "1000");
+//        props.put("enable.auto.commit", "true");
+//        props.put("zookeeper.connect", "localhost:2181");
+//        props.put("key.deserializer", StringDeserializer.class.getName());
+//        props.put("value.deserializer",ByteArrayDeserializer.class);
+//        //props.put("value.deserializer", StringDeserializer.class.getName());
+//        props.put("group.id","test-consumer-group");
+//       // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+//        this.consumer = new KafkaConsumer<String, byte[]>(props);
+        Properties props1 = new Properties();
+        props1.put("bootstrap.servers", pluginConfig.get(DependencyPluginConfigKey.KAKFA_BROKER_URL));
+        props1.put("auto.commit.interval.ms", "1000");
+        props1.put("auto.offset.reset", "latest");
+        props1.put("enable.auto.commit", "true");
+        props1.put("group.id","test-consumer-group");
+        props1.put("key.deserializer", StringDeserializer.class.getName());
+        props1.put("value.deserializer",ByteArrayDeserializer.class);
+        this.consumer = new LiKafkaConsumerImpl(props1);
 
     }
+
     public void add(final KafkaDependencyInstanceContext context) {
         this.executorService.submit(() -> {
             try {
-                System.out.printf("ready to add %s\n", context.getDepName());
                 if (!this.depInstances.hasTopic(context.getTopicName())) {
                     this.depInstances.add(context);
                     subscribedTopics.addAll(this.depInstances.getTopicList());
@@ -125,33 +120,33 @@ public class KafkaEventMonitor implements Runnable {
                         Decoder decoder = DecoderFactory.get().binaryDecoder(record.value(), null);
                         GenericRecord payload2 = reader.read(null, decoder);
                         System.out.println("Message received : " + payload2);
-                        String eventName = payload2.get("name").toString();
-//
-//                        System.out.printf("Kafka get %s from TOPIC: %s\n",record.topic(),eventName);
-                        System.out.printf("2.Kafka get %s from TOPIC: %s\n",record.topic(),eventName);
+                        //share 的部分要想一下  思考
+                        //怎麼重新整理ＭＡＰＰＩＮＧ
+                        //把觀念分開  不要黏在一起
 
-    //                    SpecificDatumReader<Object> reader = new SpecificDatumReader<>(this.schema);
-    //                    ByteArrayInputStream is = new ByteArrayInputStream(record.value());
-    //                    BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(is, null);
-    //                    String log = datumReader.read(null, binaryDecoder);
-    //                    System.out.println("Value: " + log);
-
-                        if (this.depInstances.hasEventInTopic(record.topic(),eventName)) {
-                            System.out.println("hasEventinTopic\n");
-                            List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
-                            final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
-                                this.depInstances.getDepsByTopicAndEvent(record.topic(),eventName);
-                            for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
-                                if (dep.eventCaptured() == 0) {
-                                    log.info(String.format("dependency %s becomes available, sending success " + "callback",
-                                        dep));
-                                    dep.getCallback().onSuccess(dep);
-                                    deleteList.add(dep);
+                        List<Schema.Field> fields = this.schema.getFields();
+                        for (Schema.Field field : fields) {
+                            String key = field.name();
+                            String fieldName = payload2.get(key).toString();
+                            System.out.printf("2.Kafka get %s from TOPIC: %s\n", record.topic(), fieldName);
+                            if (this.depInstances.hasEventInTopic(record.topic(), key)) {
+                                System.out.println("hasEventinTopic\n");
+                                List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
+                                final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
+                                    this.depInstances.getDepsByTopicAndEvent(record.topic(), key);
+                                for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
+                                    if (dep.eventCaptured() == 0 && Pattern.matches(dep.getRegexMatch(),
+                                        fieldName)) {
+                                        log.info(String.format("dependency %s becomes available, sending success " + "callback",
+                                            dep));
+                                        dep.getCallback().onSuccess(dep);
+                                        deleteList.add(dep);
+                                    }
                                 }
+                                System.out.println("back from success");
+                                if (!this.depInstances.removeList(record.topic(), key, deleteList))
+                                    subscribedTopics.addAll(this.depInstances.getTopicList());
                             }
-                            System.out.println("back from success");
-                            if (!this.depInstances.removeList(record.topic(), eventName, deleteList))
-                                subscribedTopics.addAll(this.depInstances.getTopicList());
                         }
                     }catch (final Exception ex) {
                         // todo: find a better way to handle schema evolution, just fail silently and let the

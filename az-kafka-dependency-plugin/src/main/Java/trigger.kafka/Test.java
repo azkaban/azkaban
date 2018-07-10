@@ -26,10 +26,10 @@ public class Test {
 
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     check.init(pluginConfig);
-    DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "chiawei_start1","1");
-    DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic4", "chiawei_start2","1");
-    DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic4", "chiawei_start2","1");
-    DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic4", "chiawei_start1","1");
+    DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "name","chia.*","1");
+    DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic4", "name","^\\w*","1");
+    DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic4", "username","chiawei_start1","1");
+    DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic4", "username",".*","1");
 
 
     while(true){
@@ -39,12 +39,13 @@ public class Test {
   }
 
   private static DependencyInstanceContext createContext(final KafkaDependencyCheck check,
-      final String topic, final String event,final String counter) {
+      final String topic, final String field,final String match,final String counter) {
     final Map<String, String> props = new HashMap<>();
 
-    props.put(DependencyInstanceConfigKey.EVENT, event);
+    props.put(DependencyInstanceConfigKey.FIELD, field);
     props.put(DependencyInstanceConfigKey.TOPIC, topic);
     props.put(DependencyInstanceConfigKey.COUNTER, counter);
+    props.put(DependencyInstanceConfigKey.MATCH,match);
 
     final DependencyInstanceConfig instConfig = (DependencyInstanceConfig)new DependencyInstanceConfigImpl(props);
     final Map<String, String> runtimePropsMap = new HashMap<>();

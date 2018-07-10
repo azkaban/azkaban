@@ -2,20 +2,17 @@ package trigger.kafka;
 import azkaban.flowtrigger.DependencyInstanceCallback;
 import azkaban.flowtrigger.DependencyInstanceConfig;
 import azkaban.flowtrigger.DependencyInstanceContext;
-
-import com.google.common.collect.ImmutableSet;
-import trigger.kafka.Constants.DependencyInstanceConfigKey;
-import trigger.kafka.Constants.DependencyInstanceRuntimeConfigKey;
-import trigger.kafka.Constants.DependencyPluginConfigKey;
 import org.apache.log4j.Logger;
+import trigger.kafka.Constants.DependencyInstanceConfigKey;
 
 public class KafkaDependencyInstanceContext implements DependencyInstanceContext {
   private static final Logger log = Logger.getLogger(KafkaDependencyInstanceContext.class);
   private final KafkaDependencyCheck depCheck;
   private final DependencyInstanceCallback callback;
   private final String triggerInstId;
-  private final String depName;
+  private final String depField;
   private final String topicName;
+  private final String regexMatch;
   private int counter;
 
   public KafkaDependencyInstanceContext(final DependencyInstanceConfig config,
@@ -25,7 +22,8 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
     this.callback = callback;
     this.depCheck = dependencyCheck;
     this.triggerInstId = triggerInstId;
-    this.depName = config.get(DependencyInstanceConfigKey.EVENT);
+    this.depField= config.get(DependencyInstanceConfigKey.FIELD);
+    this.regexMatch = config.get(DependencyInstanceConfigKey.MATCH);
     this.counter = Integer.parseInt(config.get(DependencyInstanceConfigKey.COUNTER));
   }
   @Override
@@ -43,13 +41,18 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
       this.callback.onCancel(this);
     }
   }
-  public String getDepName() {
-    return this.depName;
+  public String getDepField() {
+    return this.depField;
+  }
+  public String getRegexMatch() {
+    return this.regexMatch;
   }
   public String getTopicName() {
+
     return this.topicName;
   }
   public DependencyInstanceCallback getCallback() {
+
     return this.callback;
   }
   public int eventCaptured(){

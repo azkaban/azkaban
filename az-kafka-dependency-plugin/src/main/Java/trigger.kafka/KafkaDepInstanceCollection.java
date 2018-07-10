@@ -27,15 +27,14 @@ public class KafkaDepInstanceCollection {
       eventMap = new HashMap<>();
       depList = new LinkedList<>();
     } else {
-      depList = eventMap.get(dep.getDepName());
+      depList = eventMap.get(dep.getDepField());
       if (depList == null) {
         depList = new LinkedList<>();
       }
     }
     depList.add(dep);
-    eventMap.put(dep.getDepName(), depList);
+    eventMap.put(dep.getDepField(), depList);
     this.topicEventMap.put(topic,eventMap);
-
   }
   public void streamTopicToEvent(Map<String, Map<String,List<KafkaDependencyInstanceContext>>> map){
     map.entrySet().stream().forEach(entry-> System.out.println(entry.getKey() +": "+entry.getValue()));
@@ -51,20 +50,16 @@ public class KafkaDepInstanceCollection {
     return res;
   }
   public boolean hasEventInTopic(String topic, String event){
-    System.out.println("------------IN has Event------------");
     Map<String,List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
     if(eventMap==null){
       System.out.println("f1");
       return false;
     }
-    System.out.println("------------IN list-----------");
     streamEventToDep(eventMap);//Null pointer
     List<KafkaDependencyInstanceContext> depList = eventMap.get(event);
     if(depList==null) {
-      System.out.println("f2");
       return false;
     }
-    System.out.println("true");
     return true;
   }
   public synchronized List<KafkaDependencyInstanceContext> getDepsByTopicAndEvent(String topic, String event){
@@ -80,7 +75,7 @@ public class KafkaDepInstanceCollection {
     Map<String,List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap
           .get(dep.getTopicName());
       if (eventMap != null) {
-        final List<KafkaDependencyInstanceContext> deps = eventMap.get(dep.getDepName());
+        final List<KafkaDependencyInstanceContext> deps = eventMap.get(dep.getDepField());
         if (deps != null) {
           final Iterator<KafkaDependencyInstanceContext> i = deps.iterator();
           while (i.hasNext()) {
@@ -91,7 +86,7 @@ public class KafkaDepInstanceCollection {
             }
           }
           if (deps.isEmpty()) {
-            eventMap.remove(dep.getDepName());
+            eventMap.remove(dep.getDepField());
           }
           if (eventMap.isEmpty()) {
             this.topicEventMap.remove(dep.getTopicName());
