@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
@@ -82,6 +83,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
   @Override
   public void run() throws Exception {
+    final File[] propFiles = initPropsFiles();
     final String nestedFlowPath =
         this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
     final String jobIdPrefix = this.getJobProps().getString(JOB_ID_PREFIX, null);
@@ -100,6 +102,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
     if (this.jobProps.getBoolean("fail", false)) {
       final int passRetry = this.jobProps.getInt("passRetry", -1);
       if (passRetry > 0 && passRetry < this.jobProps.getInt(JOB_ATTEMPT)) {
+        generateProperties(propFiles[1]);
         succeedJob();
       } else {
         failJob();
@@ -119,6 +122,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
           }
         }
         if (this.jobProps.containsKey("fail")) {
+          generateProperties(propFiles[1]);
           succeedJob();
         }
 

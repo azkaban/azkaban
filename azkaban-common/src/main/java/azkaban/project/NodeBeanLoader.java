@@ -77,6 +77,7 @@ public class NodeBeanLoader {
       return new AzkabanFlow.AzkabanFlowBuilder()
           .name(nodeBean.getName())
           .props(nodeBean.getProps())
+          .condition(nodeBean.getCondition())
           .dependsOn(nodeBean.getDependsOn())
           .nodes(nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
           .flowTrigger(toFlowTrigger(nodeBean.getTrigger()))
@@ -85,6 +86,7 @@ public class NodeBeanLoader {
       return new AzkabanJob.AzkabanJobBuilder()
           .name(nodeBean.getName())
           .props(nodeBean.getProps())
+          .condition(nodeBean.getCondition())
           .type(nodeBean.getType())
           .dependsOn(nodeBean.getDependsOn())
           .build();
