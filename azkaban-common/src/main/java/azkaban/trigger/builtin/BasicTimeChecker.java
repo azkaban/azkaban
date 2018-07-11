@@ -171,8 +171,7 @@ public class BasicTimeChecker implements ConditionChecker {
         break;
       } else if (this.cronExecutionTime != null) {
         final Date nextDate = this.cronExecutionTime.getNextValidTimeAfter(date.toDate());
-        // It's possible to have a cron expression
-        // that will schedule a finite number of executions.
+        // Some Cron Expressions possibly do not have follow-up occurrences
         if (nextDate != null) {
           date = new DateTime(nextDate);
         } else {
