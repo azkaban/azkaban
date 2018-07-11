@@ -164,11 +164,11 @@ public class FlowPreparer {
    * @param pv the projectVersion whose size needs to updated.
    */
   private void updateDirSize(final File dir, final ProjectVersion pv) {
-    final long size = FileUtils.sizeOfDirectory(dir);
-    pv.setDirSize(size);
+    final long sizeInByte = FileUtils.sizeOfDirectory(dir);
+    pv.setDirSize(sizeInByte);
     try {
       FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)
-          .toString(), size);
+          .toString(), sizeInByte);
     } catch (final IOException e) {
       log.error(e);
     }

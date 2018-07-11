@@ -17,15 +17,19 @@
 
 package azkaban.execapp;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.storage.StorageManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
@@ -77,8 +81,30 @@ public class FlowPreparerTest {
         new File(this.projectsDir, "sample_project_01"));
     this.instance.setupProject(pv);
 
+    final long actualDirSize = 259;
+    final String sizeFile = Paths
+        .get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME).toString();
+
+    assertThat(pv.getDirSize()).isEqualTo(actualDirSize);
+    assertThat(FileIOUtils.readNumberFromFile(sizeFile)).isEqualTo(actualDirSize);
     assertTrue(pv.getInstalledDir().exists());
     assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
+  }
+
+  @Test
+  public void testSetupProjectTouchesTheDirSizeFile() throws Exception {
+    //verifies setup project updates last modified time of project dir size file.
+    final ProjectVersion pv = new ProjectVersion(12, 34,
+        new File(this.projectsDir, "sample_project_01"));
+    this.instance.setupProject(pv);
+    final long lastModifiedTime1 = new File(Paths.get(pv.getInstalledDir().getPath(), Constants
+        .PROJECT_DIR_SIZE_FILE_NAME).toString()).lastModified();
+    Thread.sleep(1000);
+    this.instance.setupProject(pv);
+    final long lastModifiedTime2 = new File(Paths.get(pv.getInstalledDir().getPath(), Constants
+        .PROJECT_DIR_SIZE_FILE_NAME).toString()).lastModified();
+
+    assertThat(lastModifiedTime2).isGreaterThan(lastModifiedTime1);
   }
 
   @Test
