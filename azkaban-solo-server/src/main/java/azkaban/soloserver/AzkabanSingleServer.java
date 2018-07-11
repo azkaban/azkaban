@@ -98,10 +98,11 @@ public class AzkabanSingleServer {
   }
 
   private void launch() throws Exception {
-    AzkabanWebServer.launch(this.webServer);
-    log.info("Azkaban Web Server started...");
-
+    // exec server first so that it's ready to accept calls by web server when web initializes
     AzkabanExecutorServer.launch(this.executor);
     log.info("Azkaban Exec Server started...");
+
+    AzkabanWebServer.launch(this.webServer);
+    log.info("Azkaban Web Server started...");
   }
 }

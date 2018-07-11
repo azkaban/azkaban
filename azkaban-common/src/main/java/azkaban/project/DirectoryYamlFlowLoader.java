@@ -163,6 +163,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       final File flowFile) {
     final Node node = new Node(azkabanNode.getName());
     node.setType(azkabanNode.getType());
+    node.setCondition(azkabanNode.getCondition());
     node.setPropsSource(flowFile.getName());
     node.setJobSource(flowFile.getName());
 

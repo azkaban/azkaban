@@ -76,12 +76,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId)
-      throws ExecutorManagerException {
-    return this.activeFlows.get(execId);
-  }
-
-  @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
       final int skip, final int num) throws ExecutorManagerException {
     return null;
@@ -97,10 +91,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   public void removeActiveExecutableReference(final int execId)
       throws ExecutorManagerException {
     this.refs.remove(execId);
-  }
-
-  public boolean hasActiveExecutableReference(final int execId) {
-    return this.refs.containsKey(execId);
   }
 
   @Override
@@ -169,10 +159,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   public int fetchNumExecutableFlows() throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return 0;
-  }
-
-  public int getFlowUpdateCount() {
-    return this.flowUpdateCount;
   }
 
   public Integer getNodeUpdateCount(final String jobId) {

@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
-class DagService {
+public class DagService {
 
   private static final Duration SHUTDOWN_WAIT_TIMEOUT = Duration.ofSeconds(10);
   private static final Logger logger = LoggerFactory.getLogger(DagService.class);
@@ -45,7 +45,7 @@ class DagService {
   private final ExecutorService executorService;
 
   @Inject
-  DagService(final ExecutorServiceUtils executorServiceUtils) {
+  public DagService(final ExecutorServiceUtils executorServiceUtils) {
     // Give the thread a name to make debugging easier.
     this.executorServiceUtils = executorServiceUtils;
     final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
@@ -53,42 +53,42 @@ class DagService {
     this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
   }
 
-  void startDag(final Dag dag) {
+  public void startDag(final Dag dag) {
     this.executorService.submit(dag::start);
   }
 
   /**
    * Transitions the node to the success state.
    */
-  void markNodeSuccess(final Node node) {
+  public void markNodeSuccess(final Node node) {
     this.executorService.submit(node::markSuccess);
   }
 
   /**
    * Transitions the node from the killing state to the killed state.
    */
-  void markNodeKilled(final Node node) {
+  public void markNodeKilled(final Node node) {
     this.executorService.submit(node::markKilled);
   }
 
   /**
    * Transitions the node to the failure state.
    */
-  void markNodeFailed(final Node node) {
+  public void markNodeFailed(final Node node) {
     this.executorService.submit(node::markFailed);
   }
 
   /**
    * Kills a DAG.
    */
-  void killDag(final Dag dag) {
+  public void killDag(final Dag dag) {
     this.executorService.submit(dag::kill);
   }
 
   /**
    * Shuts down the service and waits for the tasks to finish.
    */
-  void shutdownAndAwaitTermination() throws InterruptedException {
+  public void shutdownAndAwaitTermination() throws InterruptedException {
     logger.info("DagService is shutting down.");
     this.executorServiceUtils.gracefulShutdown(this.executorService, SHUTDOWN_WAIT_TIMEOUT);
   }

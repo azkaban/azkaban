@@ -18,19 +18,21 @@ package azkaban.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 @SuppressWarnings("FutureReturnValueIgnored")
 public class ExecutorServiceUtilsTest {
 
   private final ExecutorServiceUtils executorServiceUtils = new ExecutorServiceUtils();
-
-  private boolean isTestThreadInterrupted = false;
 
   @Test
   public void gracefulShutdown() throws InterruptedException {
@@ -47,22 +49,15 @@ public class ExecutorServiceUtilsTest {
   @Test
   public void force_shutdown_after_timeout() throws InterruptedException {
     // given
-    final ExecutorService service = Executors.newSingleThreadExecutor();
+    final ExecutorService service = mock(ExecutorService.class);
+    when(service.awaitTermination(1, TimeUnit.MILLISECONDS)).thenReturn(false);
 
     // when
-    service.submit(this::sleep);
-    final long beginShutdownTime = System.currentTimeMillis();
     this.executorServiceUtils.gracefulShutdown(service, Duration.ofMillis(1));
-    final long endShutdownTime = System.currentTimeMillis();
 
     // then
-    assertThat(service.isShutdown()).isTrue();
-    assertThat(this.isTestThreadInterrupted).isTrue();
-    final long shutdownDuration = endShutdownTime - beginShutdownTime;
-
-    // Test that the wait time parameter is effective.
-    // Give some buffer to account for overhead to reduce false positives.
-    assertThat(shutdownDuration).isLessThan(1000);
+    verify(service).shutdown();
+    verify(service).shutdownNow();
   }
 
   @Test
@@ -84,7 +79,6 @@ public class ExecutorServiceUtilsTest {
     try {
       Thread.sleep(5000);
     } catch (final InterruptedException ex) {
-      this.isTestThreadInterrupted = true;
     }
   }
 }
