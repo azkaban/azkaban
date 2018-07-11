@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Pattern;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -120,34 +120,23 @@ public class KafkaEventMonitor implements Runnable {
                         Decoder decoder = DecoderFactory.get().binaryDecoder(record.value(), null);
                         GenericRecord payload2 = reader.read(null, decoder);
                         System.out.println("Message received : " + payload2);
-                        //share 的部分要想一下  思考
-                        //怎麼重新整理ＭＡＰＰＩＮＧ
-                        //把觀念分開  不要黏在一起
-
-                        List<Schema.Field> fields = this.schema.getFields();
-                        for (Schema.Field field : fields) {
-                            String key = field.name();
-                            String fieldName = payload2.get(key).toString();
-                            System.out.printf("2.Kafka get %s from TOPIC: %s\n", record.topic(), fieldName);
-                            if (this.depInstances.hasEventInTopic(record.topic(), key)) {
-                                System.out.println("hasEventinTopic\n");
-                                List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
+                        Set<String> MatchedList = this.depInstances.hasEventInTopic(record.topic(), this.matcher1,payload2);
+                        if (MatchedList != null){
+                            System.out.println("hasEventinTopic\n");
+                            List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
+                            for(String it:MatchedList){
                                 final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
-                                    this.depInstances.getDepsByTopicAndEvent(record.topic(), key);
+                                    this.depInstances.getDepsByTopicAndEvent(record.topic(),it);
                                 for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
-                                    if (dep.eventCaptured() == 0 && Pattern.matches(dep.getRegexMatch(),
-                                        fieldName)) {
-                                        log.info(String.format("dependency %s becomes available, sending success " + "callback",
-                                            dep));
                                         dep.getCallback().onSuccess(dep);
                                         deleteList.add(dep);
-                                    }
                                 }
                                 System.out.println("back from success");
-                                if (!this.depInstances.removeList(record.topic(), key, deleteList))
+                                if (!this.depInstances.removeList(record.topic(),it, deleteList))
                                     subscribedTopics.addAll(this.depInstances.getTopicList());
                             }
                         }
+
                     }catch (final Exception ex) {
                         // todo: find a better way to handle schema evolution, just fail silently and let the
                         // last check handle this.

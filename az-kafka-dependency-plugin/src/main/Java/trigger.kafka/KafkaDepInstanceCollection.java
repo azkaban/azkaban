@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,8 +16,7 @@ public class KafkaDepInstanceCollection {
 
   private final static Logger log = LoggerFactory.getLogger(KafkaDepInstanceCollection.class);
   public final Map<String, Map<String,List<KafkaDependencyInstanceContext>>> topicEventMap;
-  //  public for testing **Should be private final Map<String, Map<String,List<KafkaDependencyInstanceContext>>> topicEventMap;
-  //private final Set<String> topics;
+
   public KafkaDepInstanceCollection() {
     this.topicEventMap = new HashMap<>();
   }
@@ -27,13 +29,13 @@ public class KafkaDepInstanceCollection {
       eventMap = new HashMap<>();
       depList = new LinkedList<>();
     } else {
-      depList = eventMap.get(dep.getDepField());
+      depList = eventMap.get(dep.getRegexMatch());
       if (depList == null) {
         depList = new LinkedList<>();
       }
     }
     depList.add(dep);
-    eventMap.put(dep.getDepField(), depList);
+    eventMap.put(dep.getRegexMatch(), depList);
     this.topicEventMap.put(topic,eventMap);
   }
   public void streamTopicToEvent(Map<String, Map<String,List<KafkaDependencyInstanceContext>>> map){
@@ -42,6 +44,7 @@ public class KafkaDepInstanceCollection {
   public void streamEventToDep(Map<String,List<KafkaDependencyInstanceContext>> map){
     map.entrySet().stream().forEach(entry-> System.out.println(entry.getKey() +": "+entry.getValue()));
   }
+
   public boolean hasTopic(String topic){
     return !(this.topicEventMap.get(topic)==null);
   }
@@ -49,18 +52,19 @@ public class KafkaDepInstanceCollection {
     List<String> res = new ArrayList<String>(this.topicEventMap.keySet());
     return res;
   }
-  public boolean hasEventInTopic(String topic, String event){
+  //to do 小心。並且要測試這個ＮＵＬＬ的部分。因為ＪＡＶＡ不熟
+  public  Set<String> hasEventInTopic(String topic, RegexKafkaDependencyMatcher matcher,GenericRecord payload){
+    Set<String> res = new HashSet<>();
     Map<String,List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
     if(eventMap==null){
-      System.out.println("f1");
-      return false;
+      return null;
     }
     streamEventToDep(eventMap);//Null pointer
-    List<KafkaDependencyInstanceContext> depList = eventMap.get(event);
-    if(depList==null) {
-      return false;
+    for(Map.Entry<String, List<KafkaDependencyInstanceContext>> entry : eventMap.entrySet()){
+        if(matcher.isMatch(payload,entry.getKey()))
+          res.add(entry.getKey());
     }
-    return true;
+    return res;
   }
   public synchronized List<KafkaDependencyInstanceContext> getDepsByTopicAndEvent(String topic, String event){
     final Map<String,List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap
@@ -75,7 +79,7 @@ public class KafkaDepInstanceCollection {
     Map<String,List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap
           .get(dep.getTopicName());
       if (eventMap != null) {
-        final List<KafkaDependencyInstanceContext> deps = eventMap.get(dep.getDepField());
+        final List<KafkaDependencyInstanceContext> deps = eventMap.get(dep.getRegexMatch());
         if (deps != null) {
           final Iterator<KafkaDependencyInstanceContext> i = deps.iterator();
           while (i.hasNext()) {
@@ -86,7 +90,7 @@ public class KafkaDepInstanceCollection {
             }
           }
           if (deps.isEmpty()) {
-            eventMap.remove(dep.getDepField());
+            eventMap.remove(dep.getRegexMatch());
           }
           if (eventMap.isEmpty()) {
             this.topicEventMap.remove(dep.getTopicName());

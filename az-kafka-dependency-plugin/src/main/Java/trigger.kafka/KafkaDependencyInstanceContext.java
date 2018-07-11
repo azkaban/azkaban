@@ -10,10 +10,8 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
   private final KafkaDependencyCheck depCheck;
   private final DependencyInstanceCallback callback;
   private final String triggerInstId;
-  private final String depField;
   private final String topicName;
   private final String regexMatch;
-  private int counter;
 
   public KafkaDependencyInstanceContext(final DependencyInstanceConfig config,
       final KafkaDependencyCheck dependencyCheck,
@@ -22,9 +20,7 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
     this.callback = callback;
     this.depCheck = dependencyCheck;
     this.triggerInstId = triggerInstId;
-    this.depField= config.get(DependencyInstanceConfigKey.FIELD);
     this.regexMatch = config.get(DependencyInstanceConfigKey.MATCH);
-    this.counter = Integer.parseInt(config.get(DependencyInstanceConfigKey.COUNTER));
   }
   @Override
   public void cancel() {
@@ -41,9 +37,6 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
       this.callback.onCancel(this);
     }
   }
-  public String getDepField() {
-    return this.depField;
-  }
   public String getRegexMatch() {
     return this.regexMatch;
   }
@@ -54,9 +47,5 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
   public DependencyInstanceCallback getCallback() {
 
     return this.callback;
-  }
-  public int eventCaptured(){
-    this.counter-=1;
-    return counter;
   }
 }
