@@ -21,15 +21,15 @@ import org.apache.avro.io.EncoderFactory;
 public class KafkaProducerTest {
   private final static String TOPIC = "AzEvent_Topic4";
   private KafkaProducer producer;
-  public byte[] createAvroRecord() {
+  public byte[] createAvroRecord(String name, String username) {
     String userSchema = "{\"namespace\": \"example.avro\", \"type\": \"record\", " +
         "\"name\": \"User\"," +
         "\"fields\": [{\"name\": \"name\", \"type\": \"string\"},{\"name\": \"username\", \"type\": \"string\"}]}";
     Schema.Parser parser = new Schema.Parser();
     Schema schema = parser.parse(userSchema);
     GenericRecord avroRecord = new GenericData.Record(schema);
-    avroRecord.put("name", "chiawei_start1");
-    avroRecord.put("username", "cichang");
+    avroRecord.put("name", name);
+    avroRecord.put("username", username);
 
     GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<GenericRecord>(schema);
     ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -44,7 +44,7 @@ public class KafkaProducerTest {
     return os.toByteArray();
   }
 
-  public KafkaProducerTest() {
+  public KafkaProducerTest(String name, String username) {
     Properties props = new Properties();
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -54,7 +54,7 @@ public class KafkaProducerTest {
     props.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG,
         "http://localhost:8000");
     this.producer = new KafkaProducer<>(props);
-    byte[] schemaRecord = createAvroRecord();
+    byte[] schemaRecord = createAvroRecord(name,username);
     ProducerRecord<String, byte[]> record = new ProducerRecord<>(TOPIC, schemaRecord);
     try {
       System.out.println("+++++++++++++++"+record+"+++++++++++++++");

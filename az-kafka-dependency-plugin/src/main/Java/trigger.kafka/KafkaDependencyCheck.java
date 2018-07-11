@@ -62,7 +62,7 @@ public class KafkaDependencyCheck implements DependencyCheck {
 
   @Override
   public void init(final DependencyPluginConfig config) {
-
+    //need to add an required for dependency check
     this.dependencyMonitor = new KafkaEventMonitor(config);
     this.executorService.submit(this.dependencyMonitor);
   }

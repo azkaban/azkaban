@@ -1,4 +1,5 @@
 package trigger.kafka;
+
 import azkaban.flowtrigger.DependencyInstanceCallback;
 import azkaban.flowtrigger.DependencyInstanceConfig;
 import azkaban.flowtrigger.DependencyInstanceConfigImpl;
@@ -20,41 +21,39 @@ public class Test {
     final String brokerURL = "localhost:9092";
     final String schemaRegistryRestfulClient = "http://localhost:8000";
 
-
     pluginConfigMap.put(DependencyPluginConfigKey.KAKFA_BROKER_URL, brokerURL);
     pluginConfigMap.put(DependencyPluginConfigKey.SCHEMA_REGISTRY_URL, schemaRegistryRestfulClient);
 
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     check.init(pluginConfig);
-    DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "name","chia.*","1");
-    DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic4", "name","^\\w*","1");
-    DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic4", "username","chiawei_start1","1");
-    DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic4", "username",".*","1");
+    final DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "chia.*");
+    final DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic4", "^\\w*");
+    final DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic4", "chiawei_start1");
+    final DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic4", ".*");
+    final DependencyInstanceContext Di5 = createContext(check, "AzEvent_Topic4", "stores.*store.*product");
+    final DependencyInstanceContext Di6 = createContext(check, "AzEvent_Topic4", ".*");
 
-
-    while(true){
-      KafkaProducerTest Pt = new KafkaProducerTest();
+    while (true) {
+      final KafkaProducerTest Pt = new KafkaProducerTest("hadoop", "cichang");
       Thread.sleep(40000);
     }
   }
 
-  private static DependencyInstanceContext createContext(final KafkaDependencyCheck check,
-      final String topic, final String field,final String match,final String counter) {
+  private static DependencyInstanceContext createContext(final KafkaDependencyCheck check, final String topic,
+      final String match) {
     final Map<String, String> props = new HashMap<>();
 
-    props.put(DependencyInstanceConfigKey.FIELD, field);
     props.put(DependencyInstanceConfigKey.TOPIC, topic);
-    props.put(DependencyInstanceConfigKey.COUNTER, counter);
-    props.put(DependencyInstanceConfigKey.MATCH,match);
+    props.put(DependencyInstanceConfigKey.MATCH, match);
 
-    final DependencyInstanceConfig instConfig = (DependencyInstanceConfig)new DependencyInstanceConfigImpl(props);
+    final DependencyInstanceConfig instConfig = (DependencyInstanceConfig) new DependencyInstanceConfigImpl(props);
     final Map<String, String> runtimePropsMap = new HashMap<>();
     runtimePropsMap.put("startTime", String.valueOf(System.currentTimeMillis()));
-    final DependencyInstanceRuntimeProps runtimeProps =(DependencyInstanceRuntimeProps) new DependencyInstanceRuntimePropsImpl(runtimePropsMap);
+    final DependencyInstanceRuntimeProps runtimeProps =
+        (DependencyInstanceRuntimeProps) new DependencyInstanceRuntimePropsImpl(runtimePropsMap);
 
-    final DependencyInstanceCallback callback = (DependencyInstanceCallback)new DependencyInstanceCallbackI();
+    final DependencyInstanceCallback callback = (DependencyInstanceCallback) new DependencyInstanceCallbackI();
     final DependencyInstanceContext context = check.run(instConfig, runtimeProps, callback);
     return context;
   }
-
 }

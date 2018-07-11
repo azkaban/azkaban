@@ -12,17 +12,12 @@ public class Constants {
   }
 
   public static class DependencyInstanceConfigKey {
-
-    public static final String FIELD = "field";
     public static final String MATCH = "match";
     public static final String TOPIC = "topic";
-    public static final String COUNTER = "counter";
   }
 
   public static class DependencyInstanceRuntimeConfigKey {
-
     public static final String START_TIME = "startTime";
     public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
   }
-
 }
