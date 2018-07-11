@@ -282,6 +282,10 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
+  public boolean getExecutorActive() {
+    return this.isExecutorActive;
+  }
+
   public void setExecutorActive(final boolean isActive) {
     this.isExecutorActive = isActive;
   }

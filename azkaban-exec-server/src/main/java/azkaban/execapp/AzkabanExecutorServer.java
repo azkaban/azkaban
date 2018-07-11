@@ -247,6 +247,11 @@ public class AzkabanExecutorServer {
 
     if (this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       startExecMetrics();
+      final ExecutorServerChecker serverChecker = new ExecutorServerChecker(this.runnerManager,
+          this.execMetrics,
+          "AZ-EXEC",
+          this.props);
+      serverChecker.start();
     }
   }
 
@@ -535,5 +540,53 @@ public class AzkabanExecutorServer {
     this.server.destroy();
     getFlowRunnerManager().shutdownNow();
     close();
+  }
+
+  private static class ExecutorServerChecker extends Thread {
+
+    private static final long LOOP_CEHCK_MILLISECONDS = 3000L;
+    private final FlowRunnerManager flowRunnerManager;
+    private final ExecMetrics execMetrics;
+    private final String groupName;
+    private final Props props;
+    private boolean shutdown = false;
+
+    public ExecutorServerChecker(final FlowRunnerManager flowRunnerManager, final ExecMetrics
+        execMetric, final String groupName, final Props props) {
+      this.flowRunnerManager = flowRunnerManager;
+      this.execMetrics = execMetric;
+      this.groupName = groupName;
+      this.props = props;
+      this.setName("ExecutorChecker-Thread");
+      setDaemon(true);
+    }
+
+    public void shutdown() {
+      this.shutdown = true;
+      this.interrupt();
+    }
+
+    @Override
+    public void run() {
+      while (!this.shutdown) {
+        synchronized (this) {
+          try {
+            final boolean executorActive = this.flowRunnerManager.getExecutorActive();
+            if (!executorActive) {
+              this.execMetrics.keepMetricsDisabled();
+            } else {
+              this.execMetrics.keepMetricsEnabled(this.groupName, this.props);
+            }
+
+            wait(LOOP_CEHCK_MILLISECONDS);
+          } catch (final InterruptedException e) {
+            logger.info("Interrupted. Probably to shut down.");
+          } catch (final Throwable t) {
+            logger.warn(
+                "Uncaught throwable, please look into why it is not caught", t);
+          }
+        }
+      }
+    }
   }
 }
