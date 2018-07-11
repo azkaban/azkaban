@@ -295,8 +295,8 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
-  // todo chengren311: this method will be invoked by executor activate API, but in single-executor
-  // mode the API is not called. So we should either have everything run in "multi-executor" mode
+  // todo chengren311: this method will be invoked by executor activate API, but in SOLO mode
+  // the API is not called. So we should either have everything run in "multi-executor" mode
   // or make SOLO server mode call the API.
   public void setExecutorActive(final boolean isActive) {
     this.isExecutorActive = isActive;
