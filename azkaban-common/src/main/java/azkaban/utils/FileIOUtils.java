@@ -16,7 +16,6 @@
 
 package azkaban.utils;
 
-import com.google.common.base.Preconditions;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -71,14 +70,6 @@ public class FileIOUtils {
     return true;
   }
 
-
-  /**
-   * Returns last modified time of file.
-   */
-  public static long getLastModifiedTime(final File file) throws IOException {
-    Preconditions.checkArgument(file.exists(), file + " doesn't exist");
-    return file.lastModified();
-  }
 
   /**
    * Dumps a number into a new file.
