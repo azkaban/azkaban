@@ -90,7 +90,7 @@ public class Constants {
   public static final int FAILED_EXEC_ID = -2;
 
   // Name of the file which keeps project directory size
-  public static final String PROJECT_DIR_SIZE_FILE_NAME = "_azkaban_project_dir_size_in_bytes_";
+  public static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
 
   public static class ConfigurationKeys {
 

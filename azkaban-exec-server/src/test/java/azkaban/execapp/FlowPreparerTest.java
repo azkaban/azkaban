@@ -29,7 +29,9 @@ import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
@@ -82,11 +84,11 @@ public class FlowPreparerTest {
     this.instance.setupProject(pv);
 
     final long actualDirSize = 259;
-    final String sizeFile = Paths
-        .get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME).toString();
 
     assertThat(pv.getDirSize()).isEqualTo(actualDirSize);
-    assertThat(FileIOUtils.readNumberFromFile(sizeFile)).isEqualTo(actualDirSize);
+    assertThat(FileIOUtils.readNumberFromFile(
+        Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)))
+        .isEqualTo(actualDirSize);
     assertTrue(pv.getInstalledDir().exists());
     assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
   }
@@ -97,12 +99,15 @@ public class FlowPreparerTest {
     final ProjectVersion pv = new ProjectVersion(12, 34,
         new File(this.projectsDir, "sample_project_01"));
     this.instance.setupProject(pv);
-    final long lastModifiedTime1 = new File(Paths.get(pv.getInstalledDir().getPath(), Constants
-        .PROJECT_DIR_SIZE_FILE_NAME).toString()).lastModified();
+
+    final FileTime lastModifiedTime1 = Files.getLastModifiedTime(
+        Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME));
+
     Thread.sleep(1000);
     this.instance.setupProject(pv);
-    final long lastModifiedTime2 = new File(Paths.get(pv.getInstalledDir().getPath(), Constants
-        .PROJECT_DIR_SIZE_FILE_NAME).toString()).lastModified();
+
+    final FileTime lastModifiedTime2 = Files.getLastModifiedTime(
+        Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME));
 
     assertThat(lastModifiedTime2).isGreaterThan(lastModifiedTime1);
   }

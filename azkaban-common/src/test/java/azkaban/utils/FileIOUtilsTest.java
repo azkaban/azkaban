@@ -112,7 +112,7 @@ public class FileIOUtilsTest {
 
   private File dumpNumberToTempFile(final String fileName, final long num) throws IOException {
     final File fileToDump = this.temp.newFile(fileName);
-    FileIOUtils.dumpNumberToFile(fileToDump.getAbsolutePath(), num);
+    FileIOUtils.dumpNumberToFile(fileToDump.toPath(), num);
     return fileToDump;
   }
 
@@ -121,7 +121,7 @@ public class FileIOUtilsTest {
     final String fileName = "number";
     final long num = 94127;
     final File fileToDump = dumpNumberToTempFile(fileName, num);
-    assertThat(FileIOUtils.readNumberFromFile(fileToDump.getAbsolutePath())).isEqualTo(num);
+    assertThat(FileIOUtils.readNumberFromFile(fileToDump.toPath())).isEqualTo(num);
   }
 
   @Test

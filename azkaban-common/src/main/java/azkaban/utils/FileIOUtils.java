@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,11 +79,10 @@ public class FileIOUtils {
    * @param num the number to dump
    * @throws IOException if file already exists
    */
-  public static void dumpNumberToFile(final String filePath, final long num) throws IOException {
+  public static void dumpNumberToFile(final Path filePath, final long num) throws IOException {
     try (BufferedWriter writer = Files
-        .newBufferedWriter(Paths.get(filePath), StandardCharsets.UTF_8)) {
+        .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
-      writer.write("\n");
     } catch (final IOException e) {
       logger.error(String.format("Failed to write the number %s to the file %s", num, filePath), e);
       throw e;
@@ -94,10 +94,10 @@ public class FileIOUtils {
    *
    * @param filePath the target file
    */
-  public static long readNumberFromFile(final String filePath)
+  public static long readNumberFromFile(final Path filePath)
       throws IOException, NumberFormatException {
     try (BufferedReader reader = Files
-        .newBufferedReader(Paths.get(filePath), StandardCharsets.UTF_8)) {
+        .newBufferedReader(filePath, StandardCharsets.UTF_8)) {
       final long num = Long.parseLong(reader.readLine());
       return num;
     } catch (final IOException | NumberFormatException e) {

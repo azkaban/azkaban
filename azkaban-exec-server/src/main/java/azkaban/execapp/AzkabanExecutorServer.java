@@ -58,6 +58,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -273,9 +274,9 @@ public class AzkabanExecutorServer {
 
   private void dumpPortToFile() throws IOException {
     // By default this should write to the working directory
-    final String portFile = this.props
+    final String portFileName = this.props
         .getString(Constants.AZKABAN_EXECUTOR_PORT_FILE, AZKABAN_EXECUTOR_PORT_FILENAME);
-    FileIOUtils.dumpNumberToFile(portFile, getPort());
+    FileIOUtils.dumpNumberToFile(Paths.get(portFileName), getPort());
   }
 
   private void configureJobCallback(final Props props) {

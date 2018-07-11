@@ -32,8 +32,10 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 import java.util.Map;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
@@ -93,11 +95,13 @@ public class FlowPreparer {
   /**
    * Touch the file if it exists.
    *
-   * @param file the target file
+   * @param path path to the target file
    */
-  private void touchIfExists(final File file) {
-    if (file.exists()) {
-      file.setLastModified(System.currentTimeMillis());
+  private void touchIfExists(final Path path) {
+    try {
+      Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
+    } catch (final IOException ex) {
+      log.error(ex);
     }
   }
 
@@ -122,8 +126,7 @@ public class FlowPreparer {
     if (pv.getInstalledDir().exists()) {
       log.info("Project already cached. Skipping download. " + pv);
       touchIfExists(
-          new File(Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)
-              .toString()));
+          Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME));
       return;
     }
 
@@ -167,8 +170,8 @@ public class FlowPreparer {
     final long sizeInByte = FileUtils.sizeOfDirectory(dir);
     pv.setDirSize(sizeInByte);
     try {
-      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)
-          .toString(), sizeInByte);
+      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME),
+          sizeInByte);
     } catch (final IOException e) {
       log.error(e);
     }
