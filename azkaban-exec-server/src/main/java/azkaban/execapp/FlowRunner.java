@@ -845,6 +845,20 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.logger.error(e);
     }
   }
+  
+  /**
+   * Check if the node is still in retry.
+   * 
+   * @param node
+   * @return
+   */
+  private boolean isInRetry(ExecutableNode node) {
+    if (node.getRetries() > node.getAttempt()) {
+	  return true;
+    } else {
+      return false;
+    }
+  }
 
   /**
    * Determines what the state of the next node should be. Returns null if the node should not be
@@ -867,7 +881,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       final ExecutableNode dependencyNode = flow.getExecutableNode(dependency);
       final Status depStatus = dependencyNode.getStatus();
 
-      if (!Status.isStatusFinished(depStatus)) {
+      if (!Status.isStatusFinished(depStatus) || (depStatus == Status.FAILED && isInRetry(dependencyNode))) {
         return null;
       } else if (depStatus == Status.FAILED || depStatus == Status.CANCELLED
           || depStatus == Status.KILLED) {
