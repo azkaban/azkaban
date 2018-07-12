@@ -89,9 +89,6 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
-  // Name of the file which keeps project directory size
-  public static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
-
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file

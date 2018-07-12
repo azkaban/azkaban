@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.storage.StorageManager;
@@ -87,7 +86,7 @@ public class FlowPreparerTest {
 
     assertThat(pv.getDirSize()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(
-        Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME)))
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);
     assertTrue(pv.getInstalledDir().exists());
     assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
@@ -101,13 +100,13 @@ public class FlowPreparerTest {
     this.instance.setupProject(pv);
 
     final FileTime lastModifiedTime1 = Files.getLastModifiedTime(
-        Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME));
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
 
     Thread.sleep(1000);
     this.instance.setupProject(pv);
 
     final FileTime lastModifiedTime2 = Files.getLastModifiedTime(
-        Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME));
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
 
     assertThat(lastModifiedTime2).isGreaterThan(lastModifiedTime1);
   }

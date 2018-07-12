@@ -20,7 +20,6 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
-import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectManagerException;
@@ -44,6 +43,8 @@ import org.apache.log4j.Logger;
 
 public class FlowPreparer {
 
+  // Name of the file which keeps project directory size
+  static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
   private static final Logger log = Logger.getLogger(FlowPreparer.class);
   // TODO spyne: move to config class
   private final File executionsDir;
@@ -124,7 +125,7 @@ public class FlowPreparer {
     if (pv.getInstalledDir().exists()) {
       log.info("Project already cached. Skipping download. " + pv);
       touchIfExists(
-          Paths.get(pv.getInstalledDir().getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME));
+          Paths.get(pv.getInstalledDir().getPath(), PROJECT_DIR_SIZE_FILE_NAME));
       return;
     }
 
@@ -168,7 +169,7 @@ public class FlowPreparer {
     final long sizeInByte = FileUtils.sizeOfDirectory(dir);
     pv.setDirSize(sizeInByte);
     try {
-      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), Constants.PROJECT_DIR_SIZE_FILE_NAME),
+      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_SIZE_FILE_NAME),
           sizeInByte);
     } catch (final IOException e) {
       log.error(e);
