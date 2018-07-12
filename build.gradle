@@ -235,7 +235,7 @@ if (System.env.TRAVIS == 'true') {
 def publishedProjects = subprojects.findAll()
 
 // Aggregate all subproject reports into one.
-task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
+task jacocoAggregateReport(type: JacocoReport, group: 'Coverage reports') {
     description = 'Generates an aggregate report from all subprojects'
 
     dependsOn(publishedProjects.test)
@@ -259,9 +259,9 @@ task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
 
 coveralls {
     sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
-    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml"
 }
 
 tasks.coveralls {
-    dependsOn jacocoRootReport
+    dependsOn jacocoAggregateReport
 }
