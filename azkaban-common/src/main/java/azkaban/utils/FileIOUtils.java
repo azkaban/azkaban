@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -96,14 +97,11 @@ public class FileIOUtils {
    */
   public static long readNumberFromFile(final Path filePath)
       throws IOException, NumberFormatException {
-    try (BufferedReader reader = Files
-        .newBufferedReader(filePath, StandardCharsets.UTF_8)) {
-      final long num = Long.parseLong(reader.readLine());
-      return num;
-    } catch (final IOException | NumberFormatException e) {
-      logger.error(String.format("Failed to read the number from the file %s", filePath),
-          e);
-      throw e;
+    final List<String> allLines = Files.readAllLines(filePath);
+    if (!allLines.isEmpty()) {
+      return Long.parseLong(allLines.get(0));
+    } else {
+      throw new NumberFormatException("unable to parse empty file " + filePath.toString());
     }
   }
 

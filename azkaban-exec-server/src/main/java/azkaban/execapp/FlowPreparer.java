@@ -45,12 +45,10 @@ import org.apache.log4j.Logger;
 public class FlowPreparer {
 
   private static final Logger log = Logger.getLogger(FlowPreparer.class);
-
   // TODO spyne: move to config class
   private final File executionsDir;
   // TODO spyne: move to config class
   private final File projectsDir;
-
   private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
   private final StorageManager storageManager;
 
