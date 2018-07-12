@@ -10,6 +10,7 @@ import azkaban.flowtrigger.DependencyPluginConfig;
 import azkaban.flowtrigger.DependencyPluginConfigImpl;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
 
@@ -26,12 +27,7 @@ public class Test {
 
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     check.init(pluginConfig);
-    final DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "chia.*");
-    final DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic4", "^\\w*");
-    final DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic4", "chiawei_start1");
-    final DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic4", ".*");
-    final DependencyInstanceContext Di5 = createContext(check, "AzEvent_Topic4", "stores.*store.*product");
-    final DependencyInstanceContext Di6 = createContext(check, "AzEvent_Topic4", ".*");
+//    eieecchrveflivurcugkgcvejuhhvbuihgrnfdlvbucu
 
     while (true) {
       final KafkaProducerTest Pt = new KafkaProducerTest("hadoop", "cichang");
@@ -49,6 +45,7 @@ public class Test {
     final DependencyInstanceConfig instConfig = (DependencyInstanceConfig) new DependencyInstanceConfigImpl(props);
     final Map<String, String> runtimePropsMap = new HashMap<>();
     runtimePropsMap.put("startTime", String.valueOf(System.currentTimeMillis()));
+    runtimePropsMap.put("triggerInstanceId", UUID.randomUUID().toString());
     final DependencyInstanceRuntimeProps runtimeProps =
         (DependencyInstanceRuntimeProps) new DependencyInstanceRuntimePropsImpl(runtimePropsMap);
 

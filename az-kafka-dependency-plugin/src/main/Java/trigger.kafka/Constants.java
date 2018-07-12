@@ -14,6 +14,7 @@ public class Constants {
   public static class DependencyInstanceConfigKey {
     public static final String MATCH = "match";
     public static final String TOPIC = "topic";
+    public static final String NAME = "name";
   }
 
   public static class DependencyInstanceRuntimeConfigKey {
