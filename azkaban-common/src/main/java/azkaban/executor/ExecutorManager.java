@@ -1564,7 +1564,7 @@ public class ExecutorManager extends EventHandler implements
               final Optional<Executor> executorOption = entry.getKey();
               if (!executorOption.isPresent()) {
                 for (final ExecutableFlow flow : entry.getValue()) {
-                  logger.error("Finalizing execution " + flow.getExecutionId()
+                  logger.warn("Finalizing execution " + flow.getExecutionId()
                       + ". Executor id of this execution doesn't exist");
                   finalizeFlows.add(flow);
                 }
@@ -1613,7 +1613,7 @@ public class ExecutorManager extends EventHandler implements
                           + this.errorThreshold);
                       ref.setNumErrors(++numErrors);
                     } else {
-                      logger.error("Evicting flow " + flow.getExecutionId()
+                      logger.warn("Evicting execution " + flow.getExecutionId()
                           + ". The executor is unresponsive.");
                       // TODO should send out an unresponsive email here.
                       finalizeFlows.add(pair.getSecond());
@@ -1641,7 +1641,7 @@ public class ExecutorManager extends EventHandler implements
                     logger.error(e);
 
                     if (flow != null) {
-                      logger.error("Finalizing flow " + flow.getExecutionId());
+                      logger.warn("Finalizing execution " + flow.getExecutionId());
                       finalizeFlows.add(flow);
                     }
                   }
