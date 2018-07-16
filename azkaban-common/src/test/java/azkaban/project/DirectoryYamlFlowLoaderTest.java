@@ -42,13 +42,10 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String DUPLICATE_NODENAME_YAML_DIR = "duplicatenodenamesyamltest";
   private static final String DEPENDENCY_UNDEFINED_YAML_DIR = "dependencyundefinedyamltest";
   private static final String INVALID_JOBPROPS_YAML_DIR = "invalidjobpropsyamltest";
-  private static final String CONDITIONAL_FLOW_YAML_DIR = "conditionalflowyamltest";
   private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
   private static final String EMBEDDED_FLOW = "embedded_flow";
-  private static final String CONDITIONAL_FLOW_1 = "conditional_flow1";
-  private static final String CONDITIONAL_FLOW_2 = "conditional_flow2";
   private static final String EMBEDDED_FLOW_1 = "embedded_flow" + Constants.PATH_DELIMITER +
       "embedded_flow1";
   private static final String EMBEDDED_FLOW_2 =
@@ -169,16 +166,6 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(NO_FLOW_YAML_DIR));
     checkFlowLoaderProperties(loader, 0, 0, 0);
-  }
-
-  @Test
-  public void testLoadConditionalWorkflowYamlFile() {
-    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
-    loader.loadProjectFlow(this.project,
-        ExecutionsTestUtil.getFlowDir(CONDITIONAL_FLOW_YAML_DIR));
-    checkFlowLoaderProperties(loader, 0, 2, 2);
-    checkFlowProperties(loader, CONDITIONAL_FLOW_1, 0, 4, 1, 4, null);
-    checkFlowProperties(loader, CONDITIONAL_FLOW_2, 0, 4, 1, 4, null);
   }
 
   private void checkFlowLoaderProperties(final DirectoryYamlFlowLoader loader, final int numError,

@@ -36,6 +36,8 @@ public class Node {
 
   private String condition = null;
 
+  private ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus.ALL_SUCCESS;
+
   public Node(final String id) {
     this.id = id;
   }
@@ -190,5 +192,13 @@ public class Node {
 
   public void setCondition(final String condition) {
     this.condition = condition;
+  }
+
+  public ConditionOnJobStatus getConditionOnJobStatus() {
+    return this.conditionOnJobStatus;
+  }
+
+  public void setConditionOnJobStatus(final ConditionOnJobStatus conditionOnJobStatus) {
+    this.conditionOnJobStatus = conditionOnJobStatus;
   }
 }
