@@ -96,7 +96,8 @@ public class FlowPreparer {
    *
    * @param path path to the target file
    */
-  private void touchIfExists(final Path path) {
+  @VisibleForTesting
+  void touchIfExists(final Path path) {
     try {
       Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
     } catch (final IOException ex) {
