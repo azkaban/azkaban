@@ -43,6 +43,7 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
   }
 
   public String getRegexMatch() {
+
     return this.regexMatch;
   }
 

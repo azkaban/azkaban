@@ -31,11 +31,16 @@ ext.deps = [
 
 
 dependencies {
+
   testCompile group: 'junit', name: 'junit', version: '4.12'
-  compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
+  compile 'org.assertj:assertj-core:3.8.0'
+  compile 'org.mockito:mockito-core:2.10.0'
+  compile group: 'org.apache.logging.log4j', name: 'log4j-api',
+      version: '2.11.0'
   compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'
   compile 'org.apache.kafka:kafka_2.11:0.10.2.0'
   compile group: 'org.apache.kafka', name: 'kafka-clients', version: '1.0.0'
+  compile group: 'org.apache.kafka', name: 'connect-json', version: '1.0.0'
   compile 'org.apache.curator:curator-recipes:2.8.0'
   compile 'org.apache.curator:curator-test:2.8.0'
   compile "org.apache.avro:avro:1.8.1"
