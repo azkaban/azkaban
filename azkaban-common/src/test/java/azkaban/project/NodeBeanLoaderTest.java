@@ -214,7 +214,7 @@ public class NodeBeanLoaderTest {
 
     assertThatThrownBy(() -> loader.toFlowTrigger(nodeBean.getTrigger()))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("max wait time cannot be null unless no dependency is defined");
+        .hasMessage("max wait min cannot be null unless no dependency is defined");
 
     final NodeBean nodeBean2 = loader.load(ExecutionsTestUtil.getFlowFile(
         TRIGGER_FLOW_YML_TEST_DIR, "flow_trigger_zero_max_wait_min.flow"));

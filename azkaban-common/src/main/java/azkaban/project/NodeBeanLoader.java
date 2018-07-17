@@ -129,7 +129,7 @@ public class NodeBeanLoader {
   private void validateMaxWaitMins(final FlowTriggerBean flowTriggerBean) {
     Preconditions.checkArgument(flowTriggerBean.getTriggerDependencies().isEmpty() ||
             flowTriggerBean.getMaxWaitMins() != null,
-        "max wait time cannot be null unless no dependency is defined");
+        "max wait min cannot be null unless no dependency is defined");
 
     if (flowTriggerBean.getMaxWaitMins() != null) {
       Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
