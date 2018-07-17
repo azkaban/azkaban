@@ -121,13 +121,21 @@ public class NodeBeanLoader {
   }
 
   private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean) {
-    // validate max wait mins
-    Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
-        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be at least " + Constants
-        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes() + " min(s)");
-
     validateSchedule(flowTriggerBean);
     validateTriggerDependencies(flowTriggerBean.getTriggerDependencies());
+    validateMaxWaitMins(flowTriggerBean);
+  }
+
+  private void validateMaxWaitMins(final FlowTriggerBean flowTriggerBean) {
+    Preconditions.checkArgument(flowTriggerBean.getTriggerDependencies().isEmpty() ||
+            flowTriggerBean.getMaxWaitMins() != null,
+        "max wait time cannot be null unless no dependency is defined");
+
+    if (flowTriggerBean.getMaxWaitMins() != null) {
+      Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
+          .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be at least " + Constants
+          .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes() + " min(s)");
+    }
   }
 
   /**
@@ -185,16 +193,20 @@ public class NodeBeanLoader {
       return null;
     } else {
       validateFlowTriggerBean(flowTriggerBean);
-      if (flowTriggerBean.getMaxWaitMins() > Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME
+      if (flowTriggerBean.getMaxWaitMins() != null
+          && flowTriggerBean.getMaxWaitMins() > Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME
           .toMinutes()) {
         flowTriggerBean.setMaxWaitMins(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME.toMinutes());
       }
+
+      final Duration duration = flowTriggerBean.getMaxWaitMins() == null ? null : Duration
+          .ofMinutes(flowTriggerBean.getMaxWaitMins());
+
       return new FlowTrigger(
           new CronSchedule(flowTriggerBean.getSchedule().get(FlowTriggerProps.SCHEDULE_VALUE)),
           flowTriggerBean.getTriggerDependencies().stream()
               .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
-              .collect(Collectors.toList()),
-          Duration.ofMinutes(flowTriggerBean.getMaxWaitMins()));
+              .collect(Collectors.toList()), duration);
     }
   }
 
