@@ -78,7 +78,7 @@ public class FlowTrigger implements Serializable {
   public String toString() {
     return "FlowTrigger{" +
         "schedule=" + this.schedule +
-        ", maxWaitDurationInMins=" + this.maxWaitDuration.toString() +
+        ", maxWaitDurationInMins=" + this.maxWaitDuration +
         "\n " + StringUtils.join(this.dependencies.values(), "\n") + '}';
   }
 
