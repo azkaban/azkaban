@@ -225,8 +225,11 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   private void setConditionOnJobStatus(final Node node) {
     String condition = node.getCondition();
     if (condition != null) {
+      // Only values in the ConditionOnJobStatus enum can be matched by this pattern. Some examples:
+      // Valid: all_done, one_success && ${jobA: param1} == 1, ALL_FAILED
+      // Invalid: two_success, one_faileddd, {one_failed}
       final String patternString =
-          "\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b";
+          "(?i)\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b";
       final Pattern pattern = Pattern.compile(patternString);
       final Matcher matcher = pattern.matcher(condition);
 
