@@ -17,15 +17,23 @@
 
 package azkaban.execapp;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.storage.StorageManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
@@ -61,8 +69,9 @@ public class FlowPreparerTest {
     final StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getProjectFile(12, 34)).thenReturn(projectFileHandler);
 
-    this.instance = new FlowPreparer(storageManager, this.executionsDir, this.projectsDir,
-        this.installedProjects);
+    this.instance = spy(new FlowPreparer(storageManager, this.executionsDir, this.projectsDir,
+        this.installedProjects));
+    doNothing().when(this.instance).touchIfExists(any());
   }
 
   @After
@@ -77,8 +86,30 @@ public class FlowPreparerTest {
         new File(this.projectsDir, "sample_project_01"));
     this.instance.setupProject(pv);
 
+    final long actualDirSize = 259;
+
+    assertThat(pv.getDirSize()).isEqualTo(actualDirSize);
+    assertThat(FileIOUtils.readNumberFromFile(
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
+        .isEqualTo(actualDirSize);
     assertTrue(pv.getInstalledDir().exists());
     assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
+  }
+
+  @Test
+  public void testSetupProjectTouchesTheDirSizeFile() throws Exception {
+    //verifies setup project touches project dir size file.
+    final ProjectVersion pv = new ProjectVersion(12, 34,
+        new File(this.projectsDir, "sample_project_01"));
+
+    //setup project 1st time will not do touch
+    this.instance.setupProject(pv);
+    verify(this.instance, never()).touchIfExists(
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
+
+    this.instance.setupProject(pv);
+    verify(this.instance).touchIfExists(
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
   }
 
   @Test

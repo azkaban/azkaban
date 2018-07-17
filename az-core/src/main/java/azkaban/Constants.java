@@ -89,7 +89,6 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
-
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file

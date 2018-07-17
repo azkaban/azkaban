@@ -27,6 +27,7 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
   private final int version;
 
   private File installedDir;
+  private Long dirSize;
 
   public ProjectVersion(final int projectId, final int version) {
     checkArgument(projectId > 0);
@@ -39,6 +40,14 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
   public ProjectVersion(final int projectId, final int version, final File installedDir) {
     this(projectId, version);
     this.installedDir = installedDir;
+  }
+
+  public Long getDirSize() {
+    return this.dirSize;
+  }
+
+  public void setDirSize(final Long dirSize) {
+    this.dirSize = dirSize;
   }
 
   public int getProjectId() {
