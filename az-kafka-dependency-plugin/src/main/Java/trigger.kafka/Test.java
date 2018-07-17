@@ -27,12 +27,17 @@ public class Test {
 
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     check.init(pluginConfig);
-//    eieecchrveflivurcugkgcvejuhhvbuihgrnfdlvbucu
+    final DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "cich.*");
+    final DependencyInstanceContext Di2 = createContext(check, "AzEvent_Topic4", "^\\w*");
+    final DependencyInstanceContext Di3 = createContext(check, "AzEvent_Topic4", "chiawei_start1");
+    final DependencyInstanceContext Di4 = createContext(check, "AzEvent_Topic4", ".*");
+    final DependencyInstanceContext Di5 = createContext(check, "AzEvent_Topic4", "stores.*store.*product");
+    final DependencyInstanceContext Di6 = createContext(check, "AzEvent_Topic4", ".*");
 
-    while (true) {
-      final KafkaProducerTest Pt = new KafkaProducerTest("hadoop", "cichang");
-      Thread.sleep(40000);
-    }
+//    while (true) {
+//      final KafkaProducerTest Pt = new KafkaProducerTest("hadoop", "cichang");
+//      Thread.sleep(40000);
+//    }
   }
 
   private static DependencyInstanceContext createContext(final KafkaDependencyCheck check, final String topic,
