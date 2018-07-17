@@ -73,7 +73,13 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
           utils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
       jsonObj.put("nextExecTime",
           utils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
-      jsonObj.put("maxWaitMin", res.getFlowTrigger().getMaxWaitDuration().toMinutes());
+
+      Long maxWaitMin = null;
+      if (res.getFlowTrigger().getMaxWaitDuration().isPresent()) {
+        maxWaitMin = res.getFlowTrigger().getMaxWaitDuration().get().toMinutes();
+      }
+      jsonObj.put("maxWaitMin", maxWaitMin);
+
       if (!res.getFlowTrigger().getDependencies().isEmpty()) {
         jsonObj.put("dependencies", res.getDependencyListJson());
       }
@@ -81,7 +87,7 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private boolean checkProjectIdAndFlowId(HttpServletRequest req) {
+  private boolean checkProjectIdAndFlowId(final HttpServletRequest req) {
     return hasParam(req, "projectId") && hasParam(req, "flowId");
   }
 
@@ -104,19 +110,17 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
         if (project == null) {
           ret.put("error", "please specify a valid project id");
-        }
-        else if (!hasPermission(project, session.getUser(), Type.ADMIN)) {
+        } else if (!hasPermission(project, session.getUser(), Type.ADMIN)) {
           ret.put("error", "Permission denied. Need ADMIN access.");
-        }
-        else {
+        } else {
           try {
-            if(ajaxName.equals("pauseTrigger")) {
+            if (ajaxName.equals("pauseTrigger")) {
               this.scheduler.pauseFlowTrigger(projectId, flowId);
             } else {
               this.scheduler.resumeFlowTrigger(projectId, flowId);
             }
             ret.put("status", "success");
-          } catch (SchedulerException ex) {
+          } catch (final SchedulerException ex) {
             ret.put("error", ex.getMessage());
           }
         }
