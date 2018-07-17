@@ -16,8 +16,8 @@
 
 package azkaban.executor;
 
-import azkaban.db.EncodingType;
 import azkaban.db.DatabaseOperator;
+import azkaban.db.EncodingType;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.Pair;
 import java.io.IOException;
@@ -29,9 +29,12 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.log4j.Logger;
 
 @Singleton
 public class FetchActiveFlowDao {
+
+  private static final Logger logger = Logger.getLogger(FetchActiveFlowDao.class);
 
   private final DatabaseOperator dbOperator;
 
@@ -56,9 +59,9 @@ public class FetchActiveFlowDao {
     // Select running and executor assigned flows
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOW =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, et.id executorId, et.active executorStatus"
+            + "et.port port, ex.executor_id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
-            + " INNER JOIN "
+            + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
             + Status.SUCCEEDED.getNumVal() + ", "
@@ -91,8 +94,13 @@ public class FetchActiveFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlowFromObject(
                     GZIPUtils.transformBytesToObject(data, encType));
-
-            final Executor executor = new Executor(executorId, host, port, executorStatus);
+            final Executor executor;
+            if (host == null) {
+              logger.warn("Executor id " + executorId + " (on execution " + id + ") wasn't found");
+              executor = null;
+            } else {
+              executor = new Executor(executorId, host, port, executorStatus);
+            }
             final ExecutionReference ref = new ExecutionReference(id, executor);
             execFlows.put(id, new Pair<>(ref, exFlow));
           } catch (final IOException e) {
