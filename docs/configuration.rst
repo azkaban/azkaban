@@ -1,0 +1,7 @@
+.. _configs:
+
+
+Configurations
+==================================
+
+BlaBlaBla
