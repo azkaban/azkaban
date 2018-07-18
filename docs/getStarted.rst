@@ -151,7 +151,14 @@ We suggest users to opt for **Mysql** as Azkaban database, because we build up a
          # Example database creation command, although the db name doesn't need to be 'azkaban'
          mysql> CREATE DATABASE azkaban;
 
-   b. Mysql Packet Size may need to be re-configured. MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you'll need to have the property max_allowed_packet set to a higher number, say 1024M.
+   b. create a mysql user for Azkaban. For example,::
+
+         # Example database creation command. The user name doesn't need to be 'azkaban'
+         mysql> CREATE USER 'username'@'%' IDENTIFIED BY 'password';
+         # give the user INSERT, SELECT, UPDATE, DELETE permission on all tables in the Azkaban db.
+         mysql> GRANT SELECT,INSERT,UPDATE,DELETE ON azkaban.* to '<username>'@'%' WITH GRANT OPTION;
+
+   c. Mysql Packet Size may need to be re-configured. MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you'll need to have the property max_allowed_packet set to a higher number, say 1024M.
       To configure this in linux, open /etc/my.cnf. Somewhere after mysqld, add the following::
 
          [mysqld]
