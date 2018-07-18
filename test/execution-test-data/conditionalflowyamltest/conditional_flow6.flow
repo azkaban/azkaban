@@ -1,0 +1,41 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobD
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: one_success && ${jobA:azkaban.server.name} == 'foo'
+
+    dependsOn:
+      - jobB
+      - jobC
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0
+
+  - name: jobB
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ${jobA:azkaban.server.name} == 'foo'
+
+    dependsOn:
+      - jobA
+
+  - name: jobC
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ${jobA:azkaban.server.name} == 'bar'
+
+    dependsOn:
+      - jobA

@@ -34,10 +34,12 @@ import org.junit.Test;
 public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
 
   private static final String FLOW_YAML_DIR = "conditionalflowyamltest";
-  private static final String FLOW_NAME_1 = "conditional_flow1";
-  private static final String FLOW_NAME_2 = "conditional_flow2";
-  private static final String FLOW_YAML_FILE_1 = FLOW_NAME_1 + ".flow";
-  private static final String FLOW_YAML_FILE_2 = FLOW_NAME_2 + ".flow";
+  private static final String CONDITIONAL_FLOW_1 = "conditional_flow1";
+  private static final String CONDITIONAL_FLOW_2 = "conditional_flow2";
+  private static final String CONDITIONAL_FLOW_3 = "conditional_flow3";
+  private static final String CONDITIONAL_FLOW_4 = "conditional_flow4";
+  private static final String CONDITIONAL_FLOW_5 = "conditional_flow5";
+  private static final String CONDITIONAL_FLOW_6 = "conditional_flow6";
   private FlowRunnerTestUtil testUtil;
   private Project project;
 
@@ -49,23 +51,10 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
 
   @Test
   public void runFlowOnJobPropsCondition() throws Exception {
-
-    when(this.testUtil.getProjectLoader()
-        .getLatestFlowVersion(this.project.getId(), this.project.getVersion(), FLOW_YAML_FILE_1))
-        .thenReturn(1);
-    when(this.testUtil.getProjectLoader()
-        .getUploadedFlowFile(eq(this.project.getId()), eq(this.project.getVersion()),
-            eq(FLOW_YAML_FILE_1),
-            eq(1), any(File.class)))
-        .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE_1));
-
     final HashMap<String, String> flowProps = new HashMap<>();
     flowProps.put("azkaban.server.name", "foo");
-    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME_1, flowProps);
-    final ExecutableFlow flow = runner.getExecutableFlow();
-
-    FlowRunnerTestUtil.startThread(runner);
-
+    setUp(CONDITIONAL_FLOW_1, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
     assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
@@ -75,22 +64,9 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
 
   @Test
   public void runFlowOnJobOutputCondition() throws Exception {
-
-    when(this.testUtil.getProjectLoader()
-        .getLatestFlowVersion(this.project.getId(), this.project.getVersion(), FLOW_YAML_FILE_2))
-        .thenReturn(1);
-    when(this.testUtil.getProjectLoader()
-        .getUploadedFlowFile(eq(this.project.getId()), eq(this.project.getVersion()),
-            eq(FLOW_YAML_FILE_2),
-            eq(1), any(File.class)))
-        .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE_2));
-
     final HashMap<String, String> flowProps = new HashMap<>();
-    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME_2, flowProps);
-    final ExecutableFlow flow = runner.getExecutableFlow();
-
-    FlowRunnerTestUtil.startThread(runner);
-
+    setUp(CONDITIONAL_FLOW_2, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
     assertStatus(flow, "jobA", Status.RUNNING);
     final Props generatedProperties = new Props();
     generatedProperties.put("key1", "value1");
@@ -101,5 +77,75 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     assertStatus(flow, "jobC", Status.CANCELLED);
     assertStatus(flow, "jobD", Status.CANCELLED);
     assertFlowStatus(flow, Status.KILLED);
+  }
+
+  @Test
+  public void runFlowOnJobStatusOneFailed() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_3, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    InteractiveTestJob.getTestJob("jobA").failJob();
+    assertStatus(flow, "jobA", Status.FAILED);
+    assertStatus(flow, "jobB", Status.RUNNING);
+    assertStatus(flow, "jobC", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
+  @Test
+  public void runFlowOnJobStatusAllFailed() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_4, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    InteractiveTestJob.getTestJob("jobA").failJob();
+    assertStatus(flow, "jobA", Status.FAILED);
+    assertStatus(flow, "jobB", Status.RUNNING);
+    assertStatus(flow, "jobC", Status.READY);
+    InteractiveTestJob.getTestJob("jobB").failJob();
+    assertStatus(flow, "jobB", Status.FAILED);
+    assertStatus(flow, "jobC", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
+  @Test
+  public void runFlowOnJobStatusOneSuccessAllDone() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_5, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    InteractiveTestJob.getTestJob("jobA").succeedJob();
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.RUNNING);
+    assertStatus(flow, "jobC", Status.READY);
+    InteractiveTestJob.getTestJob("jobB").failJob();
+    assertStatus(flow, "jobB", Status.FAILED);
+    assertStatus(flow, "jobC", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
+  @Test
+  public void runFlowOnBothJobStatusAndPropsCondition() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    flowProps.put("azkaban.server.name", "foo");
+    setUp(CONDITIONAL_FLOW_6, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.SUCCEEDED);
+    assertStatus(flow, "jobC", Status.CANCELLED);
+    assertStatus(flow, "jobD", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
+  private void setUp(final String flowName, final HashMap<String, String> flowProps)
+      throws Exception {
+    final String flowYamlFile = flowName + ".flow";
+    when(this.testUtil.getProjectLoader()
+        .getLatestFlowVersion(this.project.getId(), this.project.getVersion(), flowYamlFile))
+        .thenReturn(1);
+    when(this.testUtil.getProjectLoader()
+        .getUploadedFlowFile(eq(this.project.getId()), eq(this.project.getVersion()),
+            eq(flowYamlFile),
+            eq(1), any(File.class)))
+        .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, flowYamlFile));
+    this.runner = this.testUtil.createFromFlowMap(flowName, flowProps);
+    FlowRunnerTestUtil.startThread(this.runner);
   }
 }
