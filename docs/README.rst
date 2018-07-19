@@ -1,11 +1,5 @@
 Make sure python3 is installed in your environment. python virtual environment is recommended to run these scripts.
 
-To download the dependencies, run 
-
-```bash
-pip3 install -r requirements.txt
-```
-
 After sphinx is successfully installed, run::
 
 make html
