@@ -24,7 +24,7 @@ ext.deps = [
 
 
 dependencies {
-  compile project(":az-flow-trigger-dependency-plugin")
+  compileOnly project(":az-flow-trigger-dependency-plugin")
   testCompile group: 'junit', name: 'junit', version: '4.12'
   compile 'org.assertj:assertj-core:3.8.0'
   compile 'org.mockito:mockito-core:2.10.0'
