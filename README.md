@@ -64,5 +64,5 @@ pip3 install -r requirements.txt
 ```
 
 
-[July, 2018] We are actively improving our documentation. Everyone in the AZ community is welcomed
- to submit a pull request to edit/fix the documentation.
+**[July, 2018]** We are actively improving our documentation. Everyone in the AZ community is 
+welcome to submit a pull request to edit/fix the documentation.
