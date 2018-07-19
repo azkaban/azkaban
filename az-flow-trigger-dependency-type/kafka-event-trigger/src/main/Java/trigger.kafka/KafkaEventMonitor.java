@@ -16,7 +16,6 @@
 package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyPluginConfig;
-import com.linkedin.kafka.clients.consumer.LiKafkaConsumerImpl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -28,8 +27,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.avro.generic.GenericData.Record;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,13 +41,15 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
  * This class implement logics for kafka consumer and maintain the data structure for dependencies.
  *
  */
+
+@SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaEventMonitor implements Runnable {
   private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
   private final ExecutorService executorService = Executors.newFixedThreadPool(4);
   private final KafkaDepInstanceCollection depInstances;
   private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
   private final RegexKafkaDependencyMatcher matcher;
-  private LiKafkaConsumerImpl consumer;
+  private Consumer<String,String> consumer;
 
   public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
     this.initKafkaClient(pluginConfig);
@@ -69,7 +72,7 @@ public class KafkaEventMonitor implements Runnable {
     props.put("key.deserializer", StringDeserializer.class.getName());
     props.put("value.deserializer", StringDeserializer.class.getName());
 
-    this.consumer = new LiKafkaConsumerImpl(props);
+    this.consumer = new KafkaConsumer<String, String>(props);;
   }
 
   public void add(final KafkaDependencyInstanceContext context) {

@@ -1,22 +1,21 @@
+/*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 apply plugin: 'java'
 
-group 'trigger'
-version '1.0-SNAPSHOT'
-
-//sourceCompatibility = 1.8
-
-String confluentVersion = "4.1.1"
-
-repositories {
-  mavenCentral()
-  maven {
-    url "http://packages.confluent.io/maven/"
-  }
-  jcenter()
-}
-
-
-ext.versions = [slf4j: '1.7.18',]
 
 ext.deps = [
     // External dependencies
@@ -25,35 +24,21 @@ ext.deps = [
 
 
 dependencies {
-
+  compile project(":az-flow-trigger-dependency-plugin")
   testCompile group: 'junit', name: 'junit', version: '4.12'
   compile 'org.assertj:assertj-core:3.8.0'
   compile 'org.mockito:mockito-core:2.10.0'
-  compile group: 'org.apache.logging.log4j', name: 'log4j-api',
-      version: '2.11.0'
-  compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'
   compile 'org.apache.kafka:kafka_2.11:0.10.2.0'
   compile group: 'org.apache.kafka', name: 'kafka-clients', version: '1.0.0'
   compile group: 'org.apache.kafka', name: 'connect-json', version: '1.0.0'
   compile 'org.apache.curator:curator-recipes:2.8.0'
   compile 'org.apache.curator:curator-test:2.8.0'
   compile "org.apache.avro:avro:1.8.1"
-  compile "io.confluent:kafka-schema-registry:${confluentVersion}"
-  compile "io.confluent:kafka-schema-registry-client:${confluentVersion}"
-  compile "io.confluent:kafka-avro-serializer:${confluentVersion}"
-  compile("io.confluent:common-config:$confluentVersion")
-  compile("io.confluent:common-utils:$confluentVersion")
-  compile("io.confluent:rest-utils:$confluentVersion")
   compile group: 'org.apache.avro', name: 'avro-tools', version: '1.8.1'
   compile 'com.squareup.okhttp3:okhttp:3.7.0'
   compile 'com.fasterxml.jackson.core:jackson-core:2.9.2'
   compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.9.2'
   compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.2'
-  compile 'com.linkedin.kafka.clients:li-apache-kafka-clients:0.0.15'
-
-  testCompile files('az-flow-trigger-dependency-plugin-3.45.0-66-gbf1bb13c.jar')
-  testCompile files(
-      'azkaban-web-server-3.45.0-66-gbf1bb13c.jar')
 }
 
 task fatJar(type: Jar) {

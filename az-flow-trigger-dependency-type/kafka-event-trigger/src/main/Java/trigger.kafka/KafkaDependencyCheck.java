@@ -26,12 +26,12 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 import trigger.kafka.Constants.DependencyInstanceRuntimeConfigKey;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
-
 
 /**
  * A KafkaDependencyCheck is a factory in our design integrate with configuration file.
@@ -40,6 +40,7 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
  *
  */
 
+@SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaDependencyCheck implements DependencyCheck {
   private final static org.slf4j.Logger log = LoggerFactory.getLogger(KafkaDependencyCheck.class);
   private final ExecutorService executorService;
@@ -112,7 +113,12 @@ public class KafkaDependencyCheck implements DependencyCheck {
     for (final String requiredField : required) {
       Preconditions.checkNotNull(config.get(requiredField), requiredField + " is required");
     }
-    this.dependencyMonitor = new KafkaEventMonitor(config);
-    this.executorService.submit(this.dependencyMonitor);
+    try {
+      this.dependencyMonitor = new KafkaEventMonitor(config);
+      this.executorService.submit(this.dependencyMonitor);
+    } catch (RuntimeException rte) {
+      log.debug("[cichang] ExecutorService for minitor with RuntimeException: ", rte);
+    }
+
   }
 }
