@@ -20,6 +20,7 @@ import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.Pair;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -53,6 +54,7 @@ public class FetchActiveFlowDao {
     }
   }
 
+  @VisibleForTesting
   static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
 
