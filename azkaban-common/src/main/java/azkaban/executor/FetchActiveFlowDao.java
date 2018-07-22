@@ -20,6 +20,7 @@ import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.Pair;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -53,7 +54,8 @@ public class FetchActiveFlowDao {
     }
   }
 
-  private static class FetchActiveExecutableFlows implements
+  @VisibleForTesting
+  static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
 
     // Select running and executor assigned flows
@@ -87,7 +89,9 @@ public class FetchActiveFlowDao {
         final boolean executorStatus = rs.getBoolean(7);
 
         if (data == null) {
-          execFlows.put(id, null);
+          logger.warn("Execution id " + id + " has flow_data=null. To clean up, update status to "
+              + "FAILED manually, eg. "
+              + "SET status = " + Status.FAILED.getNumVal() + " WHERE id = " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
           try {
