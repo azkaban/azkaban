@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A KafkaDepInstanceCollection that maintain map for topic and event with all the util method.
+ * A KafkaDepInstanceCollection that maintains map for topics and events with all the util methods.
  * Enable sharing on regrex match rules, so as to be more efficient.
  * Structure looks like:
  * {-Topic1:{

@@ -25,20 +25,20 @@ ext.deps = [
 
 dependencies {
   compileOnly project(":az-flow-trigger-dependency-plugin")
-  testCompile group: 'junit', name: 'junit', version: '4.12'
-  compile 'org.assertj:assertj-core:3.8.0'
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.assertj:assertj-core:3.8.0'
   compile 'org.mockito:mockito-core:2.10.0'
   compile 'org.apache.kafka:kafka_2.11:0.10.2.0'
-  compile group: 'org.apache.kafka', name: 'kafka-clients', version: '1.0.0'
-  compile group: 'org.apache.kafka', name: 'connect-json', version: '1.0.0'
+  compile 'org.apache.kafka:kafka-clients:1.0.0'
+  compile 'org.apache.kafka:connect-json:1.0.0'
   compile 'org.apache.curator:curator-recipes:2.8.0'
   compile 'org.apache.curator:curator-test:2.8.0'
-  compile "org.apache.avro:avro:1.8.1"
-  compile group: 'org.apache.avro', name: 'avro-tools', version: '1.8.1'
+  compile 'org.apache.avro:avro:1.8.1'
+  compile 'org.apache.avro:avro-tools:1.8.1'
   compile 'com.squareup.okhttp3:okhttp:3.7.0'
   compile 'com.fasterxml.jackson.core:jackson-core:2.9.2'
-  compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.9.2'
-  compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.2'
+  compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.2'
+  compile 'com.fasterxml.jackson.core:jackson-databind:2.9.2'
 }
 
 task fatJar(type: Jar) {

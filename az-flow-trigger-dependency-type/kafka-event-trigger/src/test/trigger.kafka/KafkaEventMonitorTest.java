@@ -1,11 +1,9 @@
 package trigger.kafka;
 
-import avro.shaded.com.google.common.collect.ImmutableMap;
-import azkaban.flowtrigger.DependencyInstanceConfig;
-import azkaban.flowtrigger.DependencyInstanceConfigImpl;
 import azkaban.flowtrigger.DependencyPluginConfig;
 import azkaban.flowtrigger.DependencyPluginConfigImpl;
 import java.text.ParseException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -23,14 +21,15 @@ public class KafkaEventMonitorTest {
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     KafkaEventMonitor testMonitor = new KafkaEventMonitor(pluginConfig);
     assertThat(testMonitor.getMonitorSubscription()).contains("AzEvent_Init_Topic");
+    Date date = new Date();
     KafkaDependencyInstanceContext context =
-        this.createContext("AzTest_Topic1", "^(\\\\d{3}-?\\\\d{2}-?\\\\d{4})$", "dep1");
+        KafkaDepInstanceCollectionTest.createContext("AzTest_Topic1", "^(\\\\d{3}-?\\\\d{2}-?\\\\d{4})$",date.getTime(), "dep1");
     testMonitor.add(context);
-    context = this.createContext("AzTest_Topic1", "hadoop.*", "dep2");
+    context = KafkaDepInstanceCollectionTest.createContext("AzTest_Topic1", "hadoop.*",date.getTime(), "dep2");
     testMonitor.add(context);
-    context = this.createContext("AzTest_Topic2", "^\\w*", "dep3");
+    context = KafkaDepInstanceCollectionTest.createContext("AzTest_Topic2", "^\\w*",date.getTime(), "dep3");
     testMonitor.add(context);
-    context = this.createContext("AzTest_Topic3", ".*", "dep4");
+    context = KafkaDepInstanceCollectionTest.createContext("AzTest_Topic3", ".*",date.getTime(), "dep4");
     testMonitor.add(context);
     testMonitor.consumerSubscriptionRebalance();
     assertThat(testMonitor.getMonitorSubscription()).contains("AzTest_Topic1");
@@ -40,20 +39,5 @@ public class KafkaEventMonitorTest {
     testMonitor.remove(context);
     testMonitor.consumerSubscriptionRebalance();
     assertThat(testMonitor.getMonitorSubscription()).doesNotContain("AzTest_Topic3");
-  }
-
-  private KafkaDependencyInstanceContext createContext(final String topic, final String match,
-      final String depName) {
-
-    final Map<String, String> props =
-        ImmutableMap.of(Constants.DependencyInstanceConfigKey.TOPIC, topic, Constants.DependencyInstanceConfigKey.MATCH, match,
-            Constants.DependencyInstanceConfigKey.NAME, depName);
-
-    final DependencyInstanceConfig config = new DependencyInstanceConfigImpl(props);
-
-    final KafkaDependencyCheck depCheck = new KafkaDependencyCheck();
-    final KafkaDependencyInstanceContext res =
-        new KafkaDependencyInstanceContext(config, depCheck, null);
-    return res;
   }
 }

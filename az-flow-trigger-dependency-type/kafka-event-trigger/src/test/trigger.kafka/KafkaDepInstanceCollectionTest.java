@@ -18,7 +18,7 @@ import static trigger.kafka.Constants.*;
 
 public class KafkaDepInstanceCollectionTest {
 
-  private KafkaDependencyInstanceContext createContext(final String topic, final String match, final long startTime,
+  static KafkaDependencyInstanceContext createContext(final String topic, final String match, final long startTime,
       final String depName) {
 
     final Map<String, String> props =
@@ -29,7 +29,7 @@ public class KafkaDepInstanceCollectionTest {
 
     final KafkaDependencyCheck depCheck = new KafkaDependencyCheck();
     final KafkaDependencyInstanceContext res =
-        new KafkaDependencyInstanceContext(config, depCheck, null, startTime, "id");
+        new KafkaDependencyInstanceContext(config, depCheck, null);
     return res;
   }
 

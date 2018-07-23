@@ -41,6 +41,7 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
  * This class implement logics for kafka consumer and maintain the data structure for dependencies.
  *
  */
+@SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaEventMonitor implements Runnable {
   private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
   private final ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -48,6 +49,8 @@ public class KafkaEventMonitor implements Runnable {
   private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
   private final RegexKafkaDependencyMatcher matcher;
   private Consumer<String,String> consumer;
+  private static final String GROUP_ID = "group_" + KafkaEventMonitor.class.getSimpleName() + System.currentTimeMillis();
+
 
   public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
     this.initKafkaClient(pluginConfig);
@@ -66,7 +69,7 @@ public class KafkaEventMonitor implements Runnable {
     props.put("auto.commit.interval.ms", "1000");
     props.put("auto.offset.reset", "latest");
     props.put("enable.auto.commit", "true");
-    props.put("group.id", "test-consumer-group");
+    props.put("group.id", GROUP_ID);
     props.put("key.deserializer", StringDeserializer.class.getName());
     props.put("value.deserializer", StringDeserializer.class.getName());
 
@@ -104,6 +107,9 @@ public class KafkaEventMonitor implements Runnable {
   public void run() {
     try {
       while (true && !Thread.interrupted()) {
+        if (!this.subscribedTopics.isEmpty()) {
+          this.consumerSubscriptionRebalance();
+        }
         final ConsumerRecords<String, String> records = this.consumer.poll(10000);
         final Record recordToProcess = null;
         for (final ConsumerRecord<String, String> record : records) {

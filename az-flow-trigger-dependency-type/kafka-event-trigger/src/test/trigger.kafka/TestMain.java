@@ -23,8 +23,6 @@ public class TestMain {
     final String schemaRegistryRestfulClient = "http://localhost:8000";
 
     pluginConfigMap.put(DependencyPluginConfigKey.KAKFA_BROKER_URL, brokerURL);
-    pluginConfigMap.put(DependencyPluginConfigKey.SCHEMA_REGISTRY_URL, schemaRegistryRestfulClient);
-
     final DependencyPluginConfig pluginConfig = new DependencyPluginConfigImpl(pluginConfigMap);
     check.init(pluginConfig);
     final DependencyInstanceContext Di1 = createContext(check, "AzEvent_Topic4", "cich.*");
