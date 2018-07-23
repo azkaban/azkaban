@@ -41,8 +41,6 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
  * This class implement logics for kafka consumer and maintain the data structure for dependencies.
  *
  */
-
-@SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaEventMonitor implements Runnable {
   private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
   private final ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -98,11 +96,14 @@ public class KafkaEventMonitor implements Runnable {
     }
   }
 
+  public Set<String> getMonitorSubscription(){
+    return this.consumer.subscription();
+  }
+
   @Override
   public void run() {
     try {
       while (true && !Thread.interrupted()) {
-        log.debug("cichang :" + " Subscribed Topics " + this.consumer.subscription());
         final ConsumerRecords<String, String> records = this.consumer.poll(10000);
         final Record recordToProcess = null;
         for (final ConsumerRecord<String, String> record : records) {
@@ -135,7 +136,8 @@ public class KafkaEventMonitor implements Runnable {
    * Dynamically tuning subscription only for the topic that dependencies need.
    *
    */
-  private synchronized void consumerSubscriptionRebalance() {
+  synchronized void consumerSubscriptionRebalance() {
+    log.debug("Subscribed Topics " + this.consumer.subscription());
     if (!this.subscribedTopics.isEmpty()) {
       final Iterator<String> iter = this.subscribedTopics.iterator();
       final List<String> topics = new ArrayList<>();

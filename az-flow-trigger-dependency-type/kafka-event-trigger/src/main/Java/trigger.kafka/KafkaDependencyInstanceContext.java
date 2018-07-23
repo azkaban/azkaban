@@ -29,18 +29,15 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
   private final static org.slf4j.Logger log = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);
   private final KafkaDependencyCheck depCheck;
   private final DependencyInstanceCallback callback;
-  private final String triggerInstId;
   private final String topicName;
   private final String regexMatch;
   private final String depName;
 
   public KafkaDependencyInstanceContext(final DependencyInstanceConfig config,
-      final KafkaDependencyCheck dependencyCheck, final DependencyInstanceCallback callback, final long startTime,
-      final String triggerInstId) {
+      final KafkaDependencyCheck dependencyCheck, final DependencyInstanceCallback callback) {
     this.topicName = config.get(DependencyInstanceConfigKey.TOPIC);
     this.callback = callback;
     this.depCheck = dependencyCheck;
-    this.triggerInstId = triggerInstId;
     this.regexMatch = config.get(DependencyInstanceConfigKey.MATCH);
     this.depName = config.get(DependencyInstanceConfigKey.NAME);
   }

@@ -30,8 +30,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
-import trigger.kafka.Constants.DependencyInstanceRuntimeConfigKey;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
+
 
 /**
  * A KafkaDependencyCheck is a factory in our design integrate with configuration file.
@@ -40,7 +40,6 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
  *
  */
 
-@SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaDependencyCheck implements DependencyCheck {
   private final static org.slf4j.Logger log = LoggerFactory.getLogger(KafkaDependencyCheck.class);
   private final ExecutorService executorService;
@@ -57,16 +56,9 @@ public class KafkaDependencyCheck implements DependencyCheck {
   }
 
   private void validate(final DependencyInstanceConfig config, final DependencyInstanceRuntimeProps runtimeProps) {
-    final String startTimeStr = runtimeProps.get(DependencyInstanceRuntimeConfigKey.START_TIME);
-    final String triggerInstId = runtimeProps.get(DependencyInstanceRuntimeConfigKey.TRIGGER_INSTANCE_ID);
-    Preconditions.checkNotNull(triggerInstId,
-        DependencyInstanceRuntimeConfigKey.TRIGGER_INSTANCE_ID + " has to be passed in by Azkaban");
     final String LOG_SUFFIX =
-        String.format("for dependency instance[trigger instance id: %s, " + "dependency name: %s]", triggerInstId,
-            config.get(DependencyInstanceConfigKey.NAME));
+        String.format("for dependency name: %s",config.get(DependencyInstanceConfigKey.NAME));
 
-    Preconditions.checkNotNull(startTimeStr,
-        DependencyInstanceRuntimeConfigKey.START_TIME + " has to be passed in by Azkaban " + LOG_SUFFIX);
     final String topic = config.get(DependencyInstanceConfigKey.TOPIC);
     final String match = config.get(DependencyInstanceConfigKey.MATCH);
     Preconditions.checkNotNull(topic, DependencyInstanceConfigKey.TOPIC + " cannot be null " + LOG_SUFFIX);
@@ -77,10 +69,8 @@ public class KafkaDependencyCheck implements DependencyCheck {
   public DependencyInstanceContext run(final DependencyInstanceConfig config,
       final DependencyInstanceRuntimeProps runtimeProps, final DependencyInstanceCallback callback) {
     this.validate(config, runtimeProps);
-    final String starttimeStr = runtimeProps.get(DependencyInstanceRuntimeConfigKey.START_TIME);
-    final String triggerInstId = runtimeProps.get(DependencyInstanceRuntimeConfigKey.TRIGGER_INSTANCE_ID);
     final KafkaDependencyInstanceContext depInstance =
-        new KafkaDependencyInstanceContext(config, this, callback, Long.valueOf(starttimeStr), triggerInstId);
+        new KafkaDependencyInstanceContext(config, this, callback);
 
     this.dependencyMonitor.add(depInstance);
     return depInstance;
@@ -109,13 +99,13 @@ public class KafkaDependencyCheck implements DependencyCheck {
   public void init(final DependencyPluginConfig config) {
     //need to add an required for dependency check
     final Set<String> required =
-        Sets.newHashSet(DependencyPluginConfigKey.KAKFA_BROKER_URL, DependencyPluginConfigKey.SCHEMA_REGISTRY_URL);
+        Sets.newHashSet(DependencyPluginConfigKey.KAKFA_BROKER_URL);
     for (final String requiredField : required) {
       Preconditions.checkNotNull(config.get(requiredField), requiredField + " is required");
     }
+    this.dependencyMonitor = new KafkaEventMonitor(config);
     try {
-      this.dependencyMonitor = new KafkaEventMonitor(config);
-      this.executorService.submit(this.dependencyMonitor);
+      Future<?> result = this.executorService.submit(this.dependencyMonitor);
     } catch (RuntimeException rte) {
       log.debug("[cichang] ExecutorService for minitor with RuntimeException: ", rte);
     }

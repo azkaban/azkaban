@@ -2,9 +2,7 @@ package trigger.kafka;
 
 public class Constants {
   public static class DependencyPluginConfigKey {
-
     public static final String KAKFA_BROKER_URL = "kafka.broker.url";
-    public static final String SCHEMA_REGISTRY_URL = "kafka.schema.registry.url";
   }
 
   public static class DependencyInstanceConfigKey {
@@ -13,8 +11,4 @@ public class Constants {
     public static final String MATCH = "match";
   }
 
-  public static class DependencyInstanceRuntimeConfigKey {
-    public static final String START_TIME = "startTime";
-    public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
-  }
 }
