@@ -204,8 +204,7 @@ public class FlowRunnerManager implements EventListener,
 
     // Create a flow preparer
     this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory,
-        this.installedProjects, this.runningFlows, projectDirMaxSize);
+        this.projectDirectory, this.installedProjects, projectDirMaxSize);
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();

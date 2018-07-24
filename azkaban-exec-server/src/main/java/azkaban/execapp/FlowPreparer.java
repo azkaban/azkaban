@@ -59,13 +59,12 @@ public class FlowPreparer {
   public FlowPreparer(final StorageManager storageManager, final File executionsDir,
       final File projectsDir,
       final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects,
-      final Map<Integer, FlowRunner> runningFlows,
       final Long projectDirMaxSizeInMb) {
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
     this.installedProjects = installedProjects;
-    this.projectDirCleaner = new ProjectCacheDirCleaner(projectDirMaxSizeInMb, runningFlows);
+    this.projectDirCleaner = new ProjectCacheDirCleaner(projectDirMaxSizeInMb);
 
   }
 
@@ -87,8 +86,8 @@ public class FlowPreparer {
       // Create the execution directory
       execDir = createExecDir(flow);
 
-      // Synchronized on {@code projectVersion} to prevent one thread
-      // deleting a project dir while another is creating hardlink from the same project dir
+      // Synchronized on {@code projectVersion} to prevent one thread deleting a project dir
+      // in {@link FlowPreparer#setup} while another is creating hardlink from the same project dir
       synchronized (projectVersion) {
         // Create the symlinks from the project
         copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
@@ -229,24 +228,9 @@ public class FlowPreparer {
   private class ProjectCacheDirCleaner {
 
     private final Long projectDirMaxSizeInMb;
-    private final Map<Integer, FlowRunner> runningFlows;
 
-    ProjectCacheDirCleaner(final Long projectDirMaxSizeInMb,
-        final Map<Integer, FlowRunner> runningFlows) {
+    ProjectCacheDirCleaner(final Long projectDirMaxSizeInMb) {
       this.projectDirMaxSizeInMb = projectDirMaxSizeInMb;
-      this.runningFlows = runningFlows;
-    }
-
-    private boolean isActiveProject(final ProjectVersion projectVersion) {
-      for (final FlowRunner runner : this.runningFlows.values()) {
-        final ExecutableFlow flow = runner.getExecutableFlow();
-        final Pair<Integer, Integer> versionKey = new Pair<>(projectVersion.getProjectId(),
-            projectVersion.getVersion());
-        if (versionKey.equals(new Pair<>(flow.getProjectId(), flow.getVersion()))) {
-          return true;
-        }
-      }
-      return false;
     }
 
     /**
@@ -285,8 +269,10 @@ public class FlowPreparer {
       }
 
       for (final ProjectVersion version : projectVersions) {
-        if (!isActiveProject(version) && sizeToFreeInBytes > 0) {
+        if (sizeToFreeInBytes > 0) {
           try {
+            // delete the project directory even if flow within is running. It's ok to
+            // delete the directory since execution dir is HARD linked to project dir.
             FlowRunnerManager.deleteDirectory(version);
             FlowPreparer.this.installedProjects.remove(new Pair<>(version.getProjectId(), version
                 .getVersion()));

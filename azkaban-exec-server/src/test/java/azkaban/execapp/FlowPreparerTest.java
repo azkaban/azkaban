@@ -78,7 +78,7 @@ public class FlowPreparerTest {
 
     this.instance = spy(
         new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir,
-            this.installedProjects, new HashMap<>(), null));
+            this.installedProjects, null));
     doNothing().when(this.instance).touchIfExists(any());
   }
 
@@ -137,11 +137,10 @@ public class FlowPreparerTest {
   @Test
   public void testProjectCacheDirCleanerNotEnabled() throws IOException {
     final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
-    final Map<Integer, FlowRunner> runningFlows = new HashMap<>();
 
     //given
     final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
-        this.executionsDir, this.projectsDir, installedProjects, runningFlows, null);
+        this.executionsDir, this.projectsDir, installedProjects, null);
 
     //when
     final List<File> expectedRemainingFiles = new ArrayList<>();
@@ -163,11 +162,10 @@ public class FlowPreparerTest {
   public void testProjectCacheDirCleaner() throws IOException, InterruptedException {
     final Long projectDirMaxSize = 3L;
     final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
-    final Map<Integer, FlowRunner> runningFlows = new HashMap<>();
 
     //given
     final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
-        this.executionsDir, this.projectsDir, installedProjects, runningFlows, projectDirMaxSize);
+        this.executionsDir, this.projectsDir, installedProjects, projectDirMaxSize);
 
     //when
     final List<File> expectedRemainingFiles = new ArrayList<>();
