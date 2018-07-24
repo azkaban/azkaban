@@ -168,7 +168,7 @@ public class FlowPreparer {
       final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, tempDir);
       updateDirSize(tempDir, pv);
-      this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes() / (1024 * 1024));
+      this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
       this.installedProjects.put(new Pair<>(pv.getProjectId(), pv.getVersion()), pv);
       log.warn(String.format("Project preparation completes. [%s]", pv));
@@ -252,12 +252,12 @@ public class FlowPreparer {
     /**
      * @return sum of the size of all project dirs
      */
-    private long getProjectDirsTotalSizeInMb() throws IOException {
+    private long getProjectDirsTotalSizeInBytes() throws IOException {
       long totalSizeInBytes = 0;
       for (final ProjectVersion version : FlowPreparer.this.installedProjects.values()) {
         totalSizeInBytes += version.getDirSizeInBytes();
       }
-      return totalSizeInBytes / (1024 * 1024);
+      return totalSizeInBytes;
     }
 
     private FileTime getLastReferenceTime(final ProjectVersion pv) throws IOException {
@@ -298,11 +298,12 @@ public class FlowPreparer {
       }
     }
 
-    void deleteProjectDirsIfNecessary(final long newSpaceNeededInMb) throws IOException {
-      final long currentSpaceInMb = getProjectDirsTotalSizeInMb();
+    void deleteProjectDirsIfNecessary(final long newSpaceNeededInBytes) throws IOException {
+      final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes();
       if (this.projectDirMaxSizeInMb != null
-          && currentSpaceInMb + newSpaceNeededInMb >= this.projectDirMaxSizeInMb) {
-        deleteLeastRecentlyUsedProjects(newSpaceNeededInMb,
+          && (currentSpaceInBytes + newSpaceNeededInBytes) >= this
+          .projectDirMaxSizeInMb * 1024 * 1024) {
+        deleteLeastRecentlyUsedProjects(newSpaceNeededInBytes,
             new ArrayList<>(FlowPreparer.this.installedProjects.values()));
       }
     }
