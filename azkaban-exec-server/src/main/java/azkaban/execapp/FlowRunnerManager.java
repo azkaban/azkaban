@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
@@ -46,10 +47,14 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
+import azkaban.utils.UndefinedPropertyException;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -121,28 +126,22 @@ public class FlowRunnerManager implements EventListener,
   private final Props azkabanProps;
   private final File executionDirectory;
   private final File projectDirectory;
-
   private final Object executionDirDeletionSync = new Object();
+
   private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
   private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
   private int threadPoolQueueSize = -1;
   private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
-
   private Props globalProps;
-
   private long lastCleanerThreadCheckTime = -1;
   private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
-
   // We want to limit the log sizes to about 20 megs
   private String jobLogChunkSize = "5MB";
   private int jobLogNumFiles = 4;
-
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private boolean validateProxyUser = false;
-
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
-
   // whether the current executor is active
   private volatile boolean isExecutorActive = false;
 
@@ -170,17 +169,12 @@ public class FlowRunnerManager implements EventListener,
       this.projectDirectory.mkdirs();
     }
 
-    this.installedProjects = new HashMap<>();
+    this.installedProjects = new ConcurrentHashMap<>();
 
     // azkaban.temp.dir
     this.numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     this.numJobThreadPerFlow = props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
     this.executorService = createExecutorService(this.numThreads);
-
-    // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory,
-        this.installedProjects);
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
@@ -190,9 +184,6 @@ public class FlowRunnerManager implements EventListener,
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
 
     this.validateProxyUser = this.azkabanProps.getBoolean("proxy.user.lock.down", false);
-
-    this.cleanerThread = new CleanerThread();
-    this.cleanerThread.start();
 
     final String globalPropsPath = props.getString("executor.global.properties", null);
     if (globalPropsPath != null) {
@@ -204,6 +195,37 @@ public class FlowRunnerManager implements EventListener,
             AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), this.globalProps,
             getClass().getClassLoader());
+
+    Long projectDirMaxSize = null;
+    try {
+      projectDirMaxSize = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE_IN_MB);
+    } catch (final UndefinedPropertyException ex) {
+    }
+
+    // Create a flow preparer
+    this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
+        this.projectDirectory,
+        this.installedProjects, this.runningFlows, projectDirMaxSize);
+
+    this.cleanerThread = new CleanerThread();
+    this.cleanerThread.start();
+  }
+
+  /*
+   * Delete the project dir associated with {@code version}.
+   * It first acquires object lock of {@code version} waiting for other threads creating
+   * execution dir to finish to avoid race condition. An example of race condition scenario:
+   * delete the dir of a project while an execution of a flow in the same project is being setup
+   * and the flow's execution dir is being created({@link FlowPreparer#setup}).
+   */
+  static void deleteDirectory(final ProjectVersion pv) throws IOException {
+    synchronized (pv) {
+      logger.warn("Deleting project: " + pv);
+      final File installedDir = pv.getInstalledDir();
+      if (installedDir != null && installedDir.exists()) {
+        FileUtils.deleteDirectory(installedDir);
+      }
+    }
   }
 
   /**
@@ -250,9 +272,8 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
-  private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjects() {
-    final Map<Pair<Integer, Integer>, ProjectVersion> allProjects =
-        new HashMap<>();
+  private List<Path> loadExistingProjects() {
+    final List<Path> projects = new ArrayList<>();
     for (final File project : this.projectDirectory.listFiles(new FilenameFilter() {
 
       String pattern = "[0-9]+\\.[0-9]+";
@@ -263,19 +284,35 @@ public class FlowRunnerManager implements EventListener,
       }
     })) {
       if (project.isDirectory()) {
+        projects.add(project.toPath());
+      }
+    }
+    return projects;
+  }
+
+  private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjectsAsCache() {
+    final Map<Pair<Integer, Integer>, ProjectVersion> allProjects =
+        new ConcurrentHashMap<>();
+    for (final Path project : this.loadExistingProjects()) {
+      if (Files.isDirectory(project)) {
         try {
-          final String fileName = new File(project.getAbsolutePath()).getName();
+          final String fileName = project.getFileName().toString();
           final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
           final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
           final ProjectVersion version =
-              new ProjectVersion(projectId, versionNum, project);
-          allProjects.put(new Pair<>(projectId, versionNum),
-              version);
+              new ProjectVersion(projectId, versionNum, project.toFile());
+
+          version.setDirSizeInBytes(
+              FileIOUtils.readNumberFromFile(Paths.get(version.getInstalledDir().toString(),
+                  FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
+
+          allProjects.put(new Pair<>(projectId, versionNum), version);
         } catch (final Exception e) {
           e.printStackTrace();
         }
       }
     }
+
     return allProjects;
   }
 
@@ -285,7 +322,7 @@ public class FlowRunnerManager implements EventListener,
   public void setExecutorActive(final boolean isActive) {
     this.isExecutorActive = isActive;
     if (this.isExecutorActive) {
-      this.installedProjects = this.loadExistingProjects();
+      this.installedProjects = this.loadExistingProjectsAsCache();
     }
   }
 
@@ -302,16 +339,6 @@ public class FlowRunnerManager implements EventListener,
 
   public void setGlobalProps(final Props globalProps) {
     this.globalProps = globalProps;
-  }
-
-  public void deleteDirectory(final ProjectVersion pv) throws IOException {
-    synchronized (pv) {
-      logger.warn("Deleting project: " + pv);
-      final File installedDir = pv.getInstalledDir();
-      if (installedDir != null && installedDir.exists()) {
-        FileUtils.deleteDirectory(installedDir);
-      }
-    }
   }
 
   public void submitFlow(final int execId) throws ExecutorManagerException {
@@ -776,6 +803,26 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
+  private Set<Pair<Integer, Integer>> getActiveProjectVersions() {
+    final Set<Pair<Integer, Integer>> activeProjectVersions = new HashSet<>();
+    for (final FlowRunner runner : FlowRunnerManager.this.runningFlows.values()) {
+      final ExecutableFlow flow = runner.getExecutableFlow();
+      activeProjectVersions.add(new Pair<>(flow
+          .getProjectId(), flow.getVersion()));
+    }
+    return activeProjectVersions;
+  }
+
+  /**
+   * Checks if the project version contains any running flow
+   */
+  private boolean isActiveProject(final ProjectVersion version) {
+    final Pair<Integer, Integer> versionKey = new Pair<>(version.getProjectId(),
+        version.getVersion());
+    return getActiveProjectVersions().contains(versionKey);
+  }
+
+
   private class CleanerThread extends Thread {
 
     // Every hour, clean execution dir.
@@ -784,7 +831,6 @@ public class FlowRunnerManager implements EventListener,
     private static final long OLD_PROJECT_DIR_INTERVAL_MS = 5 * 60 * 1000;
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
-
     // Every 5 mins kill flows running longer than allowed max running time
     private static final long LONG_RUNNING_FLOW_KILLING_INTERVAL_MS = 5 * 60 * 1000;
     private final long flowMaxRunningTimeInMins = FlowRunnerManager.this.azkabanProps.getInt(
@@ -833,7 +879,7 @@ public class FlowRunnerManager implements EventListener,
             if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > this.lastOldProjectCleanTime
                 && FlowRunnerManager.this.isExecutorActive) {
               logger.info("Cleaning old projects");
-              cleanOlderProjects();
+              cleanProjectsOfOldVersion();
               this.lastOldProjectCleanTime = currentTime;
             }
 
@@ -922,7 +968,7 @@ public class FlowRunnerManager implements EventListener,
       }
     }
 
-    private void cleanOlderProjects() {
+    private void cleanProjectsOfOldVersion() {
       final Map<Integer, ArrayList<ProjectVersion>> projectVersions =
           new HashMap<>();
       for (final ProjectVersion version : FlowRunnerManager.this.installedProjects.values()) {
@@ -933,14 +979,6 @@ public class FlowRunnerManager implements EventListener,
           projectVersions.put(version.getProjectId(), versionList);
         }
         versionList.add(version);
-      }
-
-      final HashSet<Pair<Integer, Integer>> activeProjectVersions =
-          new HashSet<>();
-      for (final FlowRunner runner : FlowRunnerManager.this.runningFlows.values()) {
-        final ExecutableFlow flow = runner.getExecutableFlow();
-        activeProjectVersions.add(new Pair<>(flow
-            .getProjectId(), flow.getVersion()));
       }
 
       for (final Map.Entry<Integer, ArrayList<ProjectVersion>> entry : projectVersions
@@ -956,10 +994,7 @@ public class FlowRunnerManager implements EventListener,
         Collections.sort(installedVersions);
         for (int i = 0; i < installedVersions.size() - 1; ++i) {
           final ProjectVersion version = installedVersions.get(i);
-          final Pair<Integer, Integer> versionKey =
-              new Pair<>(version.getProjectId(),
-                  version.getVersion());
-          if (!activeProjectVersions.contains(versionKey)) {
+          if (!isActiveProject(version)) {
             try {
               logger.info("Removing old unused installed project "
                   + version.getProjectId() + ":" + version.getVersion());
@@ -973,6 +1008,8 @@ public class FlowRunnerManager implements EventListener,
         }
       }
     }
+
   }
+
 
 }
