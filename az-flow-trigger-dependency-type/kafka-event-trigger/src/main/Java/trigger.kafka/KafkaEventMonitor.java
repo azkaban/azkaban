@@ -32,13 +32,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.assertj.core.util.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 /**
  * A KafkaEventMonitor implements Azkaban trigger interface.
- * This class implement logics for kafka consumer and maintain the data structure for dependencies.
+ * This class implements logic for kafka consumer and maintain the data structure for dependencies.
  *
  */
 @SuppressWarnings("FutureReturnValueIgnored")
@@ -47,10 +48,8 @@ public class KafkaEventMonitor implements Runnable {
   private final ExecutorService executorService = Executors.newFixedThreadPool(4);
   private final KafkaDepInstanceCollection depInstances;
   private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
-  private final RegexKafkaDependencyMatcher matcher;
   private Consumer<String,String> consumer;
   private static final String GROUP_ID = "group_" + KafkaEventMonitor.class.getSimpleName() + System.currentTimeMillis();
-
 
   public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
     this.initKafkaClient(pluginConfig);
@@ -60,7 +59,6 @@ public class KafkaEventMonitor implements Runnable {
     }
 
     this.depInstances = new KafkaDepInstanceCollection();
-    this.matcher = new RegexKafkaDependencyMatcher();
   }
 
   private void initKafkaClient(final DependencyPluginConfig pluginConfig) {
@@ -115,8 +113,8 @@ public class KafkaEventMonitor implements Runnable {
         for (final ConsumerRecord<String, String> record : records) {
           try {
             final String payload = record.value();
-            final Set<String> matchedList = this.depInstances.eventInTopic(record.topic(), this.matcher, payload);
-            if (matchedList != null) {
+            final Set<String> matchedList = this.depInstances.eventsInTopic(record.topic(), payload);
+            if (!matchedList.isEmpty()) {
               triggerDependencies(matchedList,record);
             }
           } catch (final Exception ex) {
@@ -142,6 +140,7 @@ public class KafkaEventMonitor implements Runnable {
    * Dynamically tuning subscription only for the topic that dependencies need.
    *
    */
+  @VisibleForTesting
   synchronized void consumerSubscriptionRebalance() {
     log.debug("Subscribed Topics " + this.consumer.subscription());
     if (!this.subscribedTopics.isEmpty()) {
@@ -155,19 +154,20 @@ public class KafkaEventMonitor implements Runnable {
       this.consumer.subscribe(topics);
     }
   }
+
   private void triggerDependencies(Set<String> matchedList,ConsumerRecord<String, String> record){
     final List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
     for (final String it : matchedList) {
       final List<KafkaDependencyInstanceContext> possibleAvailableDeps =
           this.depInstances.getDepsByTopicAndEvent(record.topic(), it);
-      for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
-        dep.getCallback().onSuccess(dep);
-        deleteList.add(dep);
-      }
-      //If dependencies that need to be removed could lead to unsubscribing topics, do the topics rebalance
-      if (!this.depInstances.removeList(record.topic(), it, deleteList)) {
-        this.subscribedTopics.addAll(this.depInstances.getTopicList());
-      }
+        for (final KafkaDependencyInstanceContext dep : possibleAvailableDeps) {
+          dep.getCallback().onSuccess(dep);
+          deleteList.add(dep);
+        }
+        //If dependencies that need to be removed could lead to unsubscribing topics, do the topics rebalance
+        if (!this.depInstances.removeList(record.topic(), it, deleteList)) {
+          this.subscribedTopics.addAll(this.depInstances.getTopicList());
+        }
     }
   }
 }

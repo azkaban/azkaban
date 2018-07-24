@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
 
@@ -41,7 +42,7 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 @SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaDependencyCheck implements DependencyCheck {
-  private final static org.slf4j.Logger log = LoggerFactory.getLogger(KafkaDependencyCheck.class);
+  private final static Logger log = LoggerFactory.getLogger(KafkaDependencyCheck.class);
   private final ExecutorService executorService;
   private KafkaEventMonitor dependencyMonitor;
 
@@ -96,7 +97,6 @@ public class KafkaDependencyCheck implements DependencyCheck {
 
   @Override
   public void init(final DependencyPluginConfig config) {
-    //need to add an required for dependency check
     final Set<String> required =
         Sets.newHashSet(DependencyPluginConfigKey.KAKFA_BROKER_URL);
     for (final String requiredField : required) {

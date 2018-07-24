@@ -47,8 +47,6 @@ task fatJar(type: Jar) {
   //from configurations.compile.files
 
   from {
-//   configurations.runtime.collect { it.name.endsWith('.jar')? zipTree(it) : it }
-
     configurations.compile
         .collect {
       it.name.endsWith('.jar') ? zipTree(it).matching {

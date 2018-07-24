@@ -19,6 +19,7 @@ import azkaban.flowtrigger.DependencyInstanceCallback;
 import azkaban.flowtrigger.DependencyInstanceConfig;
 import azkaban.flowtrigger.DependencyInstanceContext;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 
 /**
@@ -26,7 +27,7 @@ import trigger.kafka.Constants.DependencyInstanceConfigKey;
  *
  */
 public class KafkaDependencyInstanceContext implements DependencyInstanceContext {
-  private final static org.slf4j.Logger log = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);
+  private final static Logger log = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);
   private final KafkaDependencyCheck depCheck;
   private final DependencyInstanceCallback callback;
   private final String topicName;

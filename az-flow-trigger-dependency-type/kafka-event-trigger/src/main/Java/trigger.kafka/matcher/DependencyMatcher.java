@@ -1,8 +1,9 @@
 package trigger.kafka.matcher;
 
-public interface DependencyMatcher {
+public interface DependencyMatcher<T> {
   /**
    * Determine whether the dependency condition is match.
    */
-  public boolean isMatch(String payload, String rule);
+  public boolean isMatch(T payload);
+
 }

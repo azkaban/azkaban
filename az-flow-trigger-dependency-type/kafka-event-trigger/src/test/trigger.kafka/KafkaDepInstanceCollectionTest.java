@@ -76,7 +76,7 @@ public class KafkaDepInstanceCollectionTest {
             + "\nAzTest_Topic2={^\\w*=[trigger.kafka.KafkaDependencyInstanceContext@153f5a29, trigger.kafka.KafkaDependencyInstanceContext@7f560810, trigger.kafka.KafkaDependencyInstanceContext@69d9c55, trigger.kafka.KafkaDependencyInstanceContext@13a57a3b, trigger.kafka.KafkaDependencyInstanceContext@7ca48474, trigger.kafka.KafkaDependencyInstanceContext@337d0578]}"
             + "\nAzTest_Topic1={^(\\\\d{3}-?\\\\d{2}-?\\\\d{4})$=[trigger.kafka.KafkaDependencyInstanceContext@59e84876, trigger.kafka.KafkaDependencyInstanceContext@61a485d2, trigger.kafka.KafkaDependencyInstanceContext@39fb3ab6, trigger.kafka.KafkaDependencyInstanceContext@6276ae34, trigger.kafka.KafkaDependencyInstanceContext@7946e1f4, trigger.kafka.KafkaDependencyInstanceContext@3c09711b], hadoop.*=[trigger.kafka.KafkaDependencyInstanceContext@5cc7c2a6, trigger.kafka.KafkaDependencyInstanceContext@b97c004, trigger.kafka.KafkaDependencyInstanceContext@4590c9c3, trigger.kafka.KafkaDependencyInstanceContext@32e6e9c3, trigger.kafka.KafkaDependencyInstanceContext@5056dfcb, trigger.kafka.KafkaDependencyInstanceContext@6574b225]}");
 
-    assertThat(testMap.getDepsByTopicAndEvent("a", "b")).isNull();
+    assertThat(testMap.getDepsByTopicAndEvent("a", "b")).isEmpty();
     assertThat(testMap.hasTopic("AzTest_Topic3")).isTrue();
     assertThat(testMap.getDepsByTopicAndEvent("AzTest_Topic1", "hadoop.*").toString()).isEqualTo(
         "[trigger.kafka.KafkaDependencyInstanceContext@5cc7c2a6, trigger.kafka.KafkaDependencyInstanceContext@b97c004, trigger.kafka.KafkaDependencyInstanceContext@4590c9c3, trigger.kafka.KafkaDependencyInstanceContext@32e6e9c3, trigger.kafka.KafkaDependencyInstanceContext@5056dfcb, trigger.kafka.KafkaDependencyInstanceContext@6574b225]");
@@ -109,7 +109,7 @@ public class KafkaDepInstanceCollectionTest {
     this.createContextListAndAddToCollection("2018-06-01 01:50:00", testMap);
     this.createContextListAndAddToCollection("2018-06-01 02:00:00", testMap);
     testMap.removeList("AzTest_Topic3", ".*", testMap.getDepsByTopicAndEvent("AzTest_Topic3", ".*"));
-    assertThat(testMap.getDepsByTopicAndEvent("AzTest_Topic3", ".*")).isNull();
+    assertThat(testMap.getDepsByTopicAndEvent("AzTest_Topic3", ".*")).isEmpty();
     assertThat(testMap.hasTopic("AzTest_Topic3")).isFalse();
   }
 }

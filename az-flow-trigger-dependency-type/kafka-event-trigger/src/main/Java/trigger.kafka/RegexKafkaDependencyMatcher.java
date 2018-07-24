@@ -25,12 +25,14 @@ import trigger.kafka.matcher.DependencyMatcher;
  *
  */
 
-public class RegexKafkaDependencyMatcher implements DependencyMatcher {
-  RegexKafkaDependencyMatcher() {
+public class RegexKafkaDependencyMatcher implements DependencyMatcher<String> {
+  private Pattern pattern ;
+  RegexKafkaDependencyMatcher(Pattern _pattern) {
+    this.pattern = _pattern;
   }
 
   @Override
-  public boolean isMatch(final String payload, final String rule) {
-    return Pattern.compile(rule).matcher(payload.toString()).find();
+  public boolean isMatch(String payload) {
+    return pattern.matcher(payload).find();
   }
 }

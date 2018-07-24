@@ -18,6 +18,7 @@ package trigger.kafka;
 
 import com.google.common.base.Joiner;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,20 +80,21 @@ public class KafkaDepInstanceCollection {
     return !(this.topicEventMap.get(topic) == null);
   }
 
-  public List<String> getTopicList() {
+  public synchronized List<String> getTopicList() {
     final List<String> res = new ArrayList<>(this.topicEventMap.keySet());
     return res;
   }
 
-  public Set<String> eventInTopic(final String topic, final RegexKafkaDependencyMatcher matcher,
-      final String payload) {
+  public synchronized Set<String> eventsInTopic(final String topic, final String payload) {
     final Set<String> res = new HashSet<>();
     final Map<String, List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
     if (eventMap == null) {
-      return null;
+      return Collections.emptySet();
     }
+
     for (final Map.Entry<String, List<KafkaDependencyInstanceContext>> entry : eventMap.entrySet()) {
-      if (matcher.isMatch(payload, entry.getKey())) {
+      final RegexKafkaDependencyMatcher matcher = new RegexKafkaDependencyMatcher(Pattern.compile(entry.getKey()));
+      if (matcher.isMatch(payload)) {
         res.add(entry.getKey());
       }
     }
@@ -104,7 +107,7 @@ public class KafkaDepInstanceCollection {
     if (eventMap != null) {
       return eventMap.get(event);
     }
-    return null;
+    return Collections.emptyList();
   }
 
   public synchronized void remove(final KafkaDependencyInstanceContext dep) {
