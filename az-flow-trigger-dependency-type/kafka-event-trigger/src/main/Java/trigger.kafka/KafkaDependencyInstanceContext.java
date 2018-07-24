@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyInstanceCallback;
@@ -24,7 +25,6 @@ import trigger.kafka.Constants.DependencyInstanceConfigKey;
 
 /**
  * A KafkaDependencyInstanceContext implements Azkaban interface declaring attributes for a dependencies instance.
- *
  */
 public class KafkaDependencyInstanceContext implements DependencyInstanceContext {
   private final static Logger log = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);

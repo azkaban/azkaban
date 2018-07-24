@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyPluginConfig;
@@ -40,7 +41,6 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
 /**
  * A KafkaEventMonitor implements Azkaban trigger interface.
  * This class implements logic for kafka consumer and maintain the data structure for dependencies.
- *
  */
 @SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaEventMonitor implements Runnable {
@@ -138,7 +138,6 @@ public class KafkaEventMonitor implements Runnable {
   }
   /**
    * Dynamically tuning subscription only for the topic that dependencies need.
-   *
    */
   @VisibleForTesting
   synchronized void consumerSubscriptionRebalance() {
@@ -154,7 +153,9 @@ public class KafkaEventMonitor implements Runnable {
       this.consumer.subscribe(topics);
     }
   }
-
+  /**
+   * If the matcher return true, remove the dependency from our collection. 
+   */
   private void triggerDependencies(Set<String> matchedList,ConsumerRecord<String, String> record){
     final List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
     for (final String it : matchedList) {

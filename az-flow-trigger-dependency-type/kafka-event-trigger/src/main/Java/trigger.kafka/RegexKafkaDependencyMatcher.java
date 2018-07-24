@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package trigger.kafka;
 
 import java.util.regex.Pattern;
@@ -24,7 +25,6 @@ import trigger.kafka.matcher.DependencyMatcher;
  * Can be extended in the future based on individual need.
  *
  */
-
 public class RegexKafkaDependencyMatcher implements DependencyMatcher<String> {
   private Pattern pattern ;
   RegexKafkaDependencyMatcher(Pattern _pattern) {

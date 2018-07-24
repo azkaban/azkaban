@@ -34,18 +34,19 @@ import org.slf4j.LoggerFactory;
  * A KafkaDepInstanceCollection that maintains map for topics and events with all the util methods.
  * Enable sharing on regrex match rules, so as to be more efficient.
  * Structure looks like:
- * {-Topic1:{
- * ----Rule1
- * ---------[List of dependencies]
- * ----Rule2
- * ---------[List of dependencies]
- * }
- * -Topic2:{
- * ----Rule1
- * ---------[List of dependencies]
- * ----Rule2
- * ---------[List of dependencies]
- * }
+ * {
+ *  -Topic1:{
+ *  ----Rule1
+ *  ---------[List of dependencies]
+ *  ----Rule2
+ *  ---------[List of dependencies]
+ *  }
+ *  -Topic2:{
+ *  ----Rule1
+ *  ---------[List of dependencies]
+ *  ----Rule2
+ *  ---------[List of dependencies]
+ *  }
  * }
  *
  */
@@ -80,11 +81,19 @@ public class KafkaDepInstanceCollection {
     return !(this.topicEventMap.get(topic) == null);
   }
 
+  /**
+   * Get a list of topics that we have dependencies on.
+   * @return List of String of topics
+   */
   public synchronized List<String> getTopicList() {
     final List<String> res = new ArrayList<>(this.topicEventMap.keySet());
     return res;
   }
-
+  /**
+   * When a event is processed, return a set of pattern that is match with the payload.
+   * @param payload and topic
+   * @return matches that meet the customized requirement
+   */
   public synchronized Set<String> eventsInTopic(final String topic, final String payload) {
     final Set<String> res = new HashSet<>();
     final Map<String, List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
@@ -100,7 +109,10 @@ public class KafkaDepInstanceCollection {
     }
     return res;
   }
-
+  /**
+   * Get dependencies with topic and dependency's event regular expression match
+   * @return List of dependencies instance
+   */
   public synchronized List<KafkaDependencyInstanceContext> getDepsByTopicAndEvent(final String topic,
       final String event) {
     final Map<String, List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
