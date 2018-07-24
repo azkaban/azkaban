@@ -94,7 +94,7 @@ public class FlowPreparerTest {
         new File(this.projectsDir, "sample_project_01"));
     this.instance.setupProject(pv);
 
-    final long actualDirSize = 1048335;
+    final long actualDirSize = 1048835;
 
     assertThat(pv.getDirSizeInBytes()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(

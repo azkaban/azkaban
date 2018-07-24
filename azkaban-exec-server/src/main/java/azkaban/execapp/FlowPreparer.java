@@ -220,15 +220,11 @@ public class FlowPreparer {
     final ProjectVersion projectVersion;
     synchronized (this.installedProjects) {
       final Pair<Integer, Integer> pair = new Pair<>(flow.getProjectId(), flow.getVersion());
-      if (this.installedProjects.containsKey(pair)) {
-        projectVersion = this.installedProjects.get(pair);
-      } else {
-        projectVersion = new ProjectVersion(flow.getProjectId(), flow.getVersion());
-      }
+      projectVersion = this.installedProjects.getOrDefault(pair, new ProjectVersion(flow
+          .getProjectId(), flow.getVersion()));
     }
     return projectVersion;
   }
-
 
   private class ProjectCacheDirCleaner {
 
@@ -261,7 +257,7 @@ public class FlowPreparer {
       for (final ProjectVersion version : FlowPreparer.this.installedProjects.values()) {
         totalSizeInBytes += version.getDirSizeInBytes();
       }
-      return (long) (totalSizeInBytes * 0.000001);
+      return totalSizeInBytes / (1024 * 1024);
     }
 
     private FileTime getLastReferenceTime(final ProjectVersion pv) throws IOException {
@@ -270,8 +266,9 @@ public class FlowPreparer {
       return Files.getLastModifiedTime(dirSizeFile);
     }
 
-    private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes, final List<ProjectVersion>
-        projectVersions) throws IOException {
+    private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes,
+        final List<ProjectVersion>
+            projectVersions) throws IOException {
       // sort project version by last reference time in ascending order
       try {
         projectVersions.sort((o1, o2) -> {
