@@ -14,23 +14,23 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package trigger.kafka;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'az-flow-trigger-dependency-plugin'
-include 'test'
-include 'az-reportal'
-include 'az-hadoop-jobtype-plugin'
-include 'az-jobsummary'
-include 'az-hdfs-viewer'
-include 'az-flow-trigger-dependency-type'
-include 'az-flow-trigger-dependency-type:kafka-event-trigger'
-include 'tools'
+import java.util.regex.Pattern;
+import trigger.kafka.matcher.DependencyMatcher;
+
+
+/**
+ * A RegexKafkaDependencyMatcher implements the regex match for whole kafka payload.
+ */
+public class RegexKafkaDependencyMatcher implements DependencyMatcher<String> {
+  private Pattern pattern ;
+  RegexKafkaDependencyMatcher(Pattern _pattern) {
+    this.pattern = _pattern;
+  }
+
+  @Override
+  public boolean isMatch(String payload) {
+    return pattern.matcher(payload).find();
+  }
+}

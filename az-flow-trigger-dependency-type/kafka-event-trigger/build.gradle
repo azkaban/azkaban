@@ -1,0 +1,64 @@
+/*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+apply plugin: 'java'
+
+
+ext.deps = [
+    // External dependencies
+    assertj         : 'org.assertj:assertj-core:3.8.0',
+    ]
+
+
+dependencies {
+  compileOnly project(":az-flow-trigger-dependency-plugin")
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.assertj:assertj-core:3.8.0'
+  compile 'org.mockito:mockito-core:2.10.0'
+  compile 'org.apache.kafka:kafka_2.11:0.10.2.0'
+  compile 'org.apache.kafka:kafka-clients:1.0.0'
+  compile 'org.apache.kafka:connect-json:1.0.0'
+  compile 'org.apache.curator:curator-recipes:2.8.0'
+  compile 'org.apache.curator:curator-test:2.8.0'
+  compile 'org.apache.avro:avro:1.8.1'
+  compile 'org.apache.avro:avro-tools:1.8.1'
+  compile 'com.squareup.okhttp3:okhttp:3.7.0'
+  compile 'com.fasterxml.jackson.core:jackson-core:2.9.2'
+  compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.2'
+  compile 'com.fasterxml.jackson.core:jackson-databind:2.9.2'
+  compile 'com.google.guava:guava:25.1-jre'
+}
+
+task fatJar(type: Jar) {
+  classifier = "fat" //so that 'fat' is included in jar name
+  from sourceSets.main.output // include our compiled source code in the JAR
+  //from configurations.compile.files
+
+  from {
+    configurations.compile
+        .collect {
+      it.name.endsWith('.jar') ? zipTree(it).matching {
+        exclude("log4j.properties")
+      } : it
+    }
+  }
+
+  fileMode 0755 // sometimes jars get unpacked with read-only permissions, this prevents errors when re-running
+}
+//If you want to publish the fatJar, include this
+artifacts {
+  archives fatJar
+}

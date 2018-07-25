@@ -14,23 +14,21 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package trigger.kafka;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'az-flow-trigger-dependency-plugin'
-include 'test'
-include 'az-reportal'
-include 'az-hadoop-jobtype-plugin'
-include 'az-jobsummary'
-include 'az-hdfs-viewer'
-include 'az-flow-trigger-dependency-type'
-include 'az-flow-trigger-dependency-type:kafka-event-trigger'
-include 'tools'
+public class Constants {
+  public static class DependencyPluginConfigKey {
+    //Define where the Kafka brocker is located.
+    public static final String KAKFA_BROKER_URL = "kafka.broker.url";
+  }
+  
+  /**
+   *  Required properties for dependencies
+   */
+  public static class DependencyInstanceConfigKey {
+    public static final String NAME = "name";
+    public static final String TOPIC = "topic";
+    public static final String MATCH = "match";
+  }
+
+}

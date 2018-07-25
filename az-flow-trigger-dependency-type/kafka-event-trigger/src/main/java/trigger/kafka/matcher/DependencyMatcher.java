@@ -14,23 +14,15 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+package trigger.kafka.matcher;
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'az-flow-trigger-dependency-plugin'
-include 'test'
-include 'az-reportal'
-include 'az-hadoop-jobtype-plugin'
-include 'az-jobsummary'
-include 'az-hdfs-viewer'
-include 'az-flow-trigger-dependency-type'
-include 'az-flow-trigger-dependency-type:kafka-event-trigger'
-include 'tools'
+/**
+ *  A generic interface that allows user to define their own matching method. 
+ */
+public interface DependencyMatcher<T> {
+  /**
+   * Determine whether the dependency condition is match with the Kafka event.
+   */
+   boolean isMatch(T payload);
+
+}
