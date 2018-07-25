@@ -284,12 +284,12 @@ public class FlowPreparer {
       }
     }
 
-    void deleteProjectDirsIfNecessary(final long newSpaceNeededInBytes) throws IOException {
+    void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes) throws IOException {
       final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes();
       if (this.projectDirMaxSizeInMb != null
-          && (currentSpaceInBytes + newSpaceNeededInBytes) >= this
+          && (currentSpaceInBytes + spaceToDeleteInBytes) >= this
           .projectDirMaxSizeInMb * 1024 * 1024) {
-        deleteLeastRecentlyUsedProjects(newSpaceNeededInBytes,
+        deleteLeastRecentlyUsedProjects(spaceToDeleteInBytes,
             new ArrayList<>(FlowPreparer.this.installedProjects.values()));
       }
     }
