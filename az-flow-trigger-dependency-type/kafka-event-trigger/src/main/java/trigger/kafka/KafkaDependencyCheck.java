@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
 
@@ -57,8 +57,7 @@ public class KafkaDependencyCheck implements DependencyCheck {
   }
 
   private void validate(final DependencyInstanceConfig config, final DependencyInstanceRuntimeProps runtimeProps) {
-    final String LOG_SUFFIX =
-        String.format("for dependency name: %s",config.get(DependencyInstanceConfigKey.NAME));
+    final String LOG_SUFFIX = String.format("for dependency name: %s", config.get(DependencyInstanceConfigKey.NAME));
 
     final String topic = config.get(DependencyInstanceConfigKey.TOPIC);
     final String match = config.get(DependencyInstanceConfigKey.MATCH);
@@ -70,8 +69,7 @@ public class KafkaDependencyCheck implements DependencyCheck {
   public DependencyInstanceContext run(final DependencyInstanceConfig config,
       final DependencyInstanceRuntimeProps runtimeProps, final DependencyInstanceCallback callback) {
     this.validate(config, runtimeProps);
-    final KafkaDependencyInstanceContext depInstance =
-        new KafkaDependencyInstanceContext(config, this, callback);
+    final KafkaDependencyInstanceContext depInstance = new KafkaDependencyInstanceContext(config, this, callback);
 
     this.dependencyMonitor.add(depInstance);
     return depInstance;
@@ -98,13 +96,11 @@ public class KafkaDependencyCheck implements DependencyCheck {
 
   @Override
   public void init(final DependencyPluginConfig config) {
-    final Set<String> required =
-        Sets.newHashSet(DependencyPluginConfigKey.KAKFA_BROKER_URL);
+    final Set<String> required = Sets.newHashSet(DependencyPluginConfigKey.KAKFA_BROKER_URL);
     for (final String requiredField : required) {
       Preconditions.checkNotNull(config.get(requiredField), requiredField + " is required");
     }
     this.dependencyMonitor = new KafkaEventMonitor(config);
     this.executorService.submit(this.dependencyMonitor);
-
   }
 }

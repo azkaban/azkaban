@@ -17,12 +17,11 @@
 package trigger.kafka;
 
 public class Constants {
-  /**
-   *  Define where the Kafka brocker is located.
-   */
   public static class DependencyPluginConfigKey {
+    //Define where the Kafka brocker is located.
     public static final String KAKFA_BROKER_URL = "kafka.broker.url";
   }
+  
   /**
    *  Required properties for dependencies
    */

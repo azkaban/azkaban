@@ -45,9 +45,8 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
 
   @Override
   public void cancel() {
-    log.info(String.format("ready to cancel dependency %s, performing last dependency check", this));
+    log.info(String.format("Canceling dependency %s", this));
     this.depCheck.remove(this);
-    log.info(String.format("Dependency %s is still not available, sending cancel callback", this));
     this.callback.onCancel(this);
   }
 

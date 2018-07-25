@@ -14,15 +14,24 @@
  * the License.
  */
 
-package trigger.kafka.matcher;
+package trigger.kafka;
+
+import java.util.regex.Pattern;
+import trigger.kafka.matcher.DependencyMatcher;
+
 
 /**
- *  A generic interface that allows user to define their own matching method. 
+ * A RegexKafkaDependencyMatcher implements the regex match for record and dependencies rule.
+ * Can be extended in the future based on individual need.
  */
-public interface DependencyMatcher<T> {
-  /**
-   * Determine whether the dependency condition is match with the Kafka event.
-   */
-  public boolean isMatch(T payload);
+public class RegexKafkaDependencyMatcher implements DependencyMatcher<String> {
+  private Pattern pattern ;
+  RegexKafkaDependencyMatcher(Pattern _pattern) {
+    this.pattern = _pattern;
+  }
 
+  @Override
+  public boolean isMatch(String payload) {
+    return pattern.matcher(payload).find();
+  }
 }

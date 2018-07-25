@@ -89,6 +89,7 @@ public class KafkaDepInstanceCollection {
     final List<String> res = new ArrayList<>(this.topicEventMap.keySet());
     return res;
   }
+
   /**
    * When a event is processed, return a set of pattern that is match with the payload.
    * @param payload and topic
@@ -109,6 +110,7 @@ public class KafkaDepInstanceCollection {
     }
     return res;
   }
+  
   /**
    * Get dependencies with topic and dependency's event regular expression match
    * @return List of dependencies instance

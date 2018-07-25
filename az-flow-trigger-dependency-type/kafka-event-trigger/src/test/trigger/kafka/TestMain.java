@@ -31,7 +31,7 @@ import trigger.kafka.Constants.DependencyInstanceConfigKey;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 /**
- * End to end testing from producing Kafka event to trigger a flow  
+ * End to end testing from producing Kafka event to trigger a flow
  */
 public class TestMain {
   public static void main(final String[] args) throws InterruptedException {
@@ -52,7 +52,7 @@ public class TestMain {
 
     while (true) {
       final KafkaProducerTest Pt = new KafkaProducerTest("hadoop", "cichang");
-      Thread.sleep(40000);
+      Thread.sleep(10000);
     }
   }
 
