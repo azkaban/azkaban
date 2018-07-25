@@ -42,11 +42,11 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
     this.installedDir = installedDir;
   }
 
-  public Long getDirSize() {
+  public Long getDirSizeInBytes() {
     return this.dirSize;
   }
 
-  public void setDirSize(final Long dirSize) {
+  public void setDirSizeInBytes(final Long dirSize) {
     this.dirSize = dirSize;
   }
 

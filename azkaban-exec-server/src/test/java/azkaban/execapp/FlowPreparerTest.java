@@ -20,6 +20,7 @@ package azkaban.execapp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -33,8 +34,11 @@ import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -52,13 +56,7 @@ public class FlowPreparerTest {
 
   private FlowPreparer instance;
 
-  @Before
-  public void setUp() throws Exception {
-    tearDown();
-
-    this.executionsDir.mkdirs();
-    this.projectsDir.mkdirs();
-
+  private StorageManager createMockStorageManager() {
     final ClassLoader classLoader = getClass().getClassLoader();
     final File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
 
@@ -67,10 +65,20 @@ public class FlowPreparerTest {
     when(projectFileHandler.getLocalFile()).thenReturn(file);
 
     final StorageManager storageManager = mock(StorageManager.class);
-    when(storageManager.getProjectFile(12, 34)).thenReturn(projectFileHandler);
+    when(storageManager.getProjectFile(anyInt(), anyInt())).thenReturn(projectFileHandler);
+    return storageManager;
+  }
 
-    this.instance = spy(new FlowPreparer(storageManager, this.executionsDir, this.projectsDir,
-        this.installedProjects));
+  @Before
+  public void setUp() throws Exception {
+    tearDown();
+
+    this.executionsDir.mkdirs();
+    this.projectsDir.mkdirs();
+
+    this.instance = spy(
+        new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir,
+            this.installedProjects, null));
     doNothing().when(this.instance).touchIfExists(any());
   }
 
@@ -86,9 +94,9 @@ public class FlowPreparerTest {
         new File(this.projectsDir, "sample_project_01"));
     this.instance.setupProject(pv);
 
-    final long actualDirSize = 259;
+    final long actualDirSize = 1048835;
 
-    assertThat(pv.getDirSize()).isEqualTo(actualDirSize);
+    assertThat(pv.getDirSizeInBytes()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(
         Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);
@@ -123,5 +131,62 @@ public class FlowPreparerTest {
     final File execDir = new File(this.executionsDir, "12345");
     assertTrue(execDir.exists());
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
+  }
+
+
+  @Test
+  public void testProjectCacheDirCleanerNotEnabled() throws IOException {
+    final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
+
+    //given
+    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
+        this.executionsDir, this.projectsDir, installedProjects, null);
+
+    //when
+    final List<File> expectedRemainingFiles = new ArrayList<>();
+    for (int i = 1; i <= 3; i++) {
+      final int projectId = i;
+      final int version = 1;
+      final ProjectVersion pv = new ProjectVersion(projectId, version, null);
+      installedProjects.put(new Pair<>(projectId, version), pv);
+      flowPreparer.setupProject(pv);
+      expectedRemainingFiles.add(pv.getInstalledDir());
+    }
+
+    //then
+    assertThat(this.projectsDir.listFiles()).containsExactlyInAnyOrder(expectedRemainingFiles
+        .toArray(new File[expectedRemainingFiles.size()]));
+  }
+
+  @Test
+  public void testProjectCacheDirCleaner() throws IOException, InterruptedException {
+    final Long projectDirMaxSize = 3L;
+    final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
+
+    //given
+    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
+        this.executionsDir, this.projectsDir, installedProjects, projectDirMaxSize);
+
+    //when
+    final List<File> expectedRemainingFiles = new ArrayList<>();
+    for (int i = 1; i <= 3; i++) {
+      final int projectId = i;
+      final int version = 1;
+      final ProjectVersion pv = new ProjectVersion(projectId, version, null);
+      flowPreparer.setupProject(pv);
+
+      if (i >= 2) {
+        //the first file will be deleted
+        expectedRemainingFiles.add(pv.getInstalledDir());
+      }
+      // last modified time of millis second granularity of a file is not supported by all file
+      // systems, so sleep for 1 second between creation of each project dir to make their last
+      // modified time different.
+      Thread.sleep(1000);
+    }
+
+    //then
+    assertThat(this.projectsDir.listFiles()).containsExactlyInAnyOrder(expectedRemainingFiles
+        .toArray(new File[expectedRemainingFiles.size()]));
   }
 }
