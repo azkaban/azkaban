@@ -478,7 +478,8 @@ public class ExecutableNode {
   }
 
   public ConditionOnJobStatus getConditionOnJobStatus() {
-    return this.conditionOnJobStatus;
+    return this.conditionOnJobStatus == null ? ConditionOnJobStatus.ALL_SUCCESS
+        : this.conditionOnJobStatus;
   }
 
   public void setConditionOnJobStatus(final ConditionOnJobStatus conditionOnJobStatus) {
