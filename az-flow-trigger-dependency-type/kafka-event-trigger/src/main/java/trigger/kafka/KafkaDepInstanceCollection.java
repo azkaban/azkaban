@@ -27,12 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
- * A KafkaDepInstanceCollection that maintains map for topics and events with all the util methods.
- * Enable sharing on regrex match rules, so as to be more efficient.
+ * A map data structure that enables efficient lookup by topic and adding/removing topic event pairs.
  * Structure looks like:
  * {
  *  -Topic1:{
@@ -52,7 +50,6 @@ import org.slf4j.LoggerFactory;
  */
 public class KafkaDepInstanceCollection {
 
-  private final static Logger log = LoggerFactory.getLogger(KafkaDepInstanceCollection.class);
   private final Map<String, Map<String, List<KafkaDependencyInstanceContext>>> topicEventMap;
 
   public KafkaDepInstanceCollection() {
@@ -82,7 +79,7 @@ public class KafkaDepInstanceCollection {
   }
 
   /**
-   * Get a list of topics that we have dependencies on.
+   * Get a list of topics that monitor have dependencies on.
    * @return List of String of topics
    */
   public synchronized List<String> getTopicList() {
@@ -91,11 +88,11 @@ public class KafkaDepInstanceCollection {
   }
 
   /**
-   * When a event is processed, return a set of pattern that is match with the payload.
+   * Return a set of pattern that matches with the payload.
    * @param payload and topic
-   * @return matches that meet the customized requirement
+   * @return regexs that meet the customized requirement
    */
-  public synchronized Set<String> eventsInTopic(final String topic, final String payload) {
+  public synchronized Set<String> regexInTopic(final String topic, final String payload) {
     final Set<String> res = new HashSet<>();
     final Map<String, List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
     if (eventMap == null) {
@@ -110,24 +107,23 @@ public class KafkaDepInstanceCollection {
     }
     return res;
   }
-  
+
   /**
-   * Get dependencies with topic and dependency's event regular expression match
-   * @return List of dependencies instance
+   * Returns dependencies with topic and dependency's event regular expression match
    */
   public synchronized List<KafkaDependencyInstanceContext> getDepsByTopicAndEvent(final String topic,
-      final String event) {
-    final Map<String, List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(topic);
-    if (eventMap != null) {
-      return eventMap.get(event);
+      final String regex) {
+    final Map<String, List<KafkaDependencyInstanceContext>> regexMap = this.topicEventMap.get(topic);
+    if (regexMap != null) {
+      return regexMap.get(regex);
     }
     return Collections.emptyList();
   }
 
   public synchronized void remove(final KafkaDependencyInstanceContext dep) {
-    final Map<String, List<KafkaDependencyInstanceContext>> eventMap = this.topicEventMap.get(dep.getTopicName());
-    if (eventMap != null) {
-      final List<KafkaDependencyInstanceContext> deps = eventMap.get(dep.getRegexMatch());
+    final Map<String, List<KafkaDependencyInstanceContext>> regexMap = this.topicEventMap.get(dep.getTopicName());
+    if (regexMap != null) {
+      final List<KafkaDependencyInstanceContext> deps = regexMap.get(dep.getRegexMatch());
       if (deps != null) {
         final Iterator<KafkaDependencyInstanceContext> it = deps.iterator();
         while (it.hasNext()) {
@@ -138,9 +134,9 @@ public class KafkaDepInstanceCollection {
           }
         }
         if (deps.isEmpty()) {
-          eventMap.remove(dep.getRegexMatch());
+          regexMap.remove(dep.getRegexMatch());
         }
-        if (eventMap.isEmpty()) {
+        if (regexMap.isEmpty()) {
           this.topicEventMap.remove(dep.getTopicName());
         }
       }

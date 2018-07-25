@@ -25,15 +25,13 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.avro.generic.GenericData.Record;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import com.google.common.annotations.VisibleForTesting;
+import org.assertj.core.util.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
@@ -48,14 +46,12 @@ public class KafkaEventMonitor implements Runnable {
   private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
   private static final String GROUP_ID =
       "group_" + KafkaEventMonitor.class.getSimpleName() + System.currentTimeMillis();
-  private final ExecutorService executorService = Executors.newFixedThreadPool(4);
   private final KafkaDepInstanceCollection depInstances;
   private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
   private Consumer<String, String> consumer;
 
   public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
     this.initKafkaClient(pluginConfig);
-    //A consumer need to have initial topic to subscribe
     this.consumer.subscribe(Arrays.asList("AzEvent_Init_Topic"));
     if (!this.subscribedTopics.isEmpty()) {
       this.consumerSubscriptionRebalance();
@@ -109,7 +105,7 @@ public class KafkaEventMonitor implements Runnable {
         for (final ConsumerRecord<String, String> record : records) {
           try {
             final String payload = record.value();
-            final Set<String> matchedList = this.depInstances.eventsInTopic(record.topic(), payload);
+            final Set<String> matchedList = this.depInstances.regexInTopic(record.topic(), payload);
             if (!matchedList.isEmpty()) {
               this.triggerDependencies(matchedList, record);
             }
