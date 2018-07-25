@@ -39,6 +39,7 @@ dependencies {
   compile 'com.fasterxml.jackson.core:jackson-core:2.9.2'
   compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.2'
   compile 'com.fasterxml.jackson.core:jackson-databind:2.9.2'
+  compile 'com.google.guava:guava:25.1-jre'
 }
 
 task fatJar(type: Jar) {

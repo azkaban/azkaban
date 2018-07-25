@@ -33,7 +33,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.assertj.core.util.VisibleForTesting;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
@@ -55,6 +55,7 @@ public class KafkaEventMonitor implements Runnable {
 
   public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
     this.initKafkaClient(pluginConfig);
+    //A consumer need to have initial topic to subscribe
     this.consumer.subscribe(Arrays.asList("AzEvent_Init_Topic"));
     if (!this.subscribedTopics.isEmpty()) {
       this.consumerSubscriptionRebalance();

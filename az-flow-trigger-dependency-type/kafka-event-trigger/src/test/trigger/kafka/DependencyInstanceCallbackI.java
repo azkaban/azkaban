@@ -35,6 +35,6 @@ public class DependencyInstanceCallbackI implements DependencyInstanceCallback {
 
   @Override
   public void onCancel(DependencyInstanceContext dependencyInstanceContext) {
-    System.out.println("CANCLE");
+    System.out.println("CANCEL");
   }
 }
