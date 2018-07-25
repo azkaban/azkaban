@@ -294,7 +294,9 @@ public class ExecutableNode {
     objMap.put(UPDATETIME_PARAM, this.updateTime);
     objMap.put(TYPE_PARAM, this.type);
     objMap.put(CONDITION_PARAM, this.condition);
-    objMap.put(CONDITION_ON_JOB_STATUS_PARAM, this.conditionOnJobStatus.toString());
+    if (this.conditionOnJobStatus != null) {
+      objMap.put(CONDITION_ON_JOB_STATUS_PARAM, this.conditionOnJobStatus.toString());
+    }
     objMap.put(ATTEMPT_PARAM, this.attempt);
 
     if (this.inNodes != null && !this.inNodes.isEmpty()) {
