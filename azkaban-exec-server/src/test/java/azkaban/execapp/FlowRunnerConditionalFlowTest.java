@@ -134,6 +134,19 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     assertFlowStatus(flow, Status.SUCCEEDED);
   }
 
+  @Test
+  public void runFlowOnJobStatusConditionNull() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_3, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    flow.getExecutableNode("jobC").setConditionOnJobStatus(null);
+    InteractiveTestJob.getTestJob("jobA").failJob();
+    assertStatus(flow, "jobA", Status.FAILED);
+    assertStatus(flow, "jobB", Status.SUCCEEDED);
+    assertStatus(flow, "jobC", Status.CANCELLED);
+    assertFlowStatus(flow, Status.FAILED);
+  }
+
   private void setUp(final String flowName, final HashMap<String, String> flowProps)
       throws Exception {
     final String flowYamlFile = flowName + ".flow";
