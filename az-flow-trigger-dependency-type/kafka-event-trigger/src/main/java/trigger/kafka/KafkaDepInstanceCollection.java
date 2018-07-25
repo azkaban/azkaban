@@ -79,7 +79,7 @@ public class KafkaDepInstanceCollection {
   }
 
   /**
-   * Get a list of topics that monitor have dependencies on.
+   * Get a list of topics.
    * @return List of String of topics
    */
   public synchronized List<String> getTopicList() {

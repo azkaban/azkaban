@@ -109,9 +109,6 @@ public class KafkaEventMonitor implements Runnable {
               this.triggerDependencies(matchedList, record);
             }
           } catch (final Exception ex) {
-            // todo: find a better way to handle schema evolution, just fail silently and let the
-            // last check handle this.
-            // currently we just swallow the exception
             log.error("failure when parsing record " + recordToProcess, ex);
           }
         }
@@ -129,7 +126,7 @@ public class KafkaEventMonitor implements Runnable {
   }
 
   /**
-   * Dynamically tuning subscription only for the topic that dependencies need.
+   * Dynamically tune subscription only for the topic that dependencies need.
    */
   @VisibleForTesting
   synchronized void consumerSubscriptionRebalance() {
@@ -147,7 +144,7 @@ public class KafkaEventMonitor implements Runnable {
   }
 
   /**
-   * If the matcher return true, remove the dependency from our collection.
+   * If the matcher returns true, remove the dependency from collection.
    */
   private void triggerDependencies(final Set<String> matchedList, final ConsumerRecord<String, String> record) {
     final List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
