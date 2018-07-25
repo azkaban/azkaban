@@ -38,8 +38,7 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 
 /**
- * A KafkaEventMonitor implements Azkaban trigger interface.
- * This class implements logic for kafka consumer and maintain the data structure for dependencies.
+ * KafkaEventMonitor implements logic for kafka consumer and maintains the KafkaDepInstanceCollection for dependencies.
  */
 @SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaEventMonitor implements Runnable {

@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 
 /**
- * A KafkaDependencyInstanceContext implements Azkaban interface declaring attributes for a dependencies instance.
+ * KafkaDependencyInstanceContext maintains attributes of a running instance of kafka dependency.
  */
 public class KafkaDependencyInstanceContext implements DependencyInstanceContext {
   private final static Logger log = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);

@@ -35,10 +35,7 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 
 /**
- * A KafkaDependencyCheck is a factory in our design integrate with configuration file.
- * So the class does a lot of validation on users define parameters.
- * Also, keep tract with all dependencies.
- *
+ * A factory class which maintaines all KafkaDependencyInstanceContext and creates new KafkaDependencyInstanceContext based on the configuration file.
  */
 
 @SuppressWarnings("FutureReturnValueIgnored")

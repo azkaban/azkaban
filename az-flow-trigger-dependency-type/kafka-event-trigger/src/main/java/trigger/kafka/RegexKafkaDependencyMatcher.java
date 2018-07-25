@@ -21,8 +21,7 @@ import trigger.kafka.matcher.DependencyMatcher;
 
 
 /**
- * A RegexKafkaDependencyMatcher implements the regex match for record and dependencies rule.
- * Can be extended in the future based on individual need.
+ * A RegexKafkaDependencyMatcher implements the regex match for whole kafka payload.
  */
 public class RegexKafkaDependencyMatcher implements DependencyMatcher<String> {
   private Pattern pattern ;
