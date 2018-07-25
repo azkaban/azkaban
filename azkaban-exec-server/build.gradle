@@ -42,6 +42,13 @@ distributions {
                 into 'bin'
                 fileMode = 0755
             }
+            from('src/main/resources/conf') {
+                into 'conf'
+                fileMode = 0755
+            }
+            from('src/main/resources/commonprivate.properties') {
+                into 'plugins/jobtypes'
+            }
             from('../azkaban-common/src/main/bash') {
                 into 'bin'
                 fileMode = 0755

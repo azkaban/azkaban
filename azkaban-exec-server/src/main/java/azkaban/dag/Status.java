@@ -18,7 +18,7 @@ package azkaban.dag;
 
 import com.google.common.collect.ImmutableSet;
 
-enum Status {
+public enum Status {
   READY, // ready to run
   DISABLED, // disabled by users. Treat as the node has the status of success
   BLOCKED, // temporarily blocked. Need to be unblocked by another external event
@@ -35,7 +35,7 @@ enum Status {
   static final ImmutableSet<Status> TERMINAL_STATES = ImmutableSet.of(DISABLED, SUCCESS, FAILURE,
       CANCELED, KILLED);
 
-  boolean isTerminal() {
+  public boolean isTerminal() {
     return TERMINAL_STATES.contains(this);
   }
 

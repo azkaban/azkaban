@@ -228,6 +228,8 @@ public class AzkabanWebServer extends AzkabanServer {
     /* This creates the Web Server instance */
     app = webServer;
 
+    webServer.executorManager.start();
+
     // TODO refactor code into ServerProvider
     webServer.prepareAndStartServer();
 

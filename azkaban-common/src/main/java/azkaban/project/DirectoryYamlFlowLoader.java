@@ -17,10 +17,12 @@
 package azkaban.project;
 
 import azkaban.Constants;
+import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
@@ -32,6 +34,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,13 +117,21 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
               + ". Duplicate nodes found or dependency undefined.");
         } else {
           final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
-          final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
-          this.flowMap.put(flow.getId(), flow);
+          if (this.flowMap.containsKey(azkabanFlow.getName())) {
+            this.errors.add("Duplicate flows found in the project with name " + azkabanFlow
+                .getName());
+          } else {
+            final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
+            this.flowMap.put(flow.getId(), flow);
+          }
         }
       } catch (final Exception e) {
         this.errors.add("Error loading flow yaml file " + file.getName() + ":"
             + e.getMessage());
       }
+    }
+    for (final File file : projectDir.listFiles(new DirFilter())) {
+      convertYamlFiles(file);
     }
   }
 
@@ -154,6 +167,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       final File flowFile) {
     final Node node = new Node(azkabanNode.getName());
     node.setType(azkabanNode.getType());
+    node.setCondition(azkabanNode.getCondition());
+    setConditionOnJobStatus(node);
     node.setPropsSource(flowFile.getName());
     node.setJobSource(flowFile.getName());
 
@@ -207,4 +222,25 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     }
   }
 
+  private void setConditionOnJobStatus(final Node node) {
+    String condition = node.getCondition();
+    if (condition != null) {
+      // Only values in the ConditionOnJobStatus enum can be matched by this pattern. Some examples:
+      // Valid: all_done, one_success && ${jobA: param1} == 1, ALL_FAILED
+      // Invalid: two_success, one_faileddd, {one_failed}
+      final String patternString =
+          "(?i)\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b";
+      final Pattern pattern = Pattern.compile(patternString);
+      final Matcher matcher = pattern.matcher(condition);
+
+      // Todo jamiesjc: need to add validation for condition
+      while (matcher.find()) {
+        logger.info("Found conditionOnJobStatus: " + matcher.group(1));
+        node.setConditionOnJobStatus(ConditionOnJobStatus.fromString(matcher.group(1)));
+        condition = condition.replace(matcher.group(1), "true");
+        logger.info("condition is " + condition);
+        node.setCondition(condition);
+      }
+    }
+  }
 }

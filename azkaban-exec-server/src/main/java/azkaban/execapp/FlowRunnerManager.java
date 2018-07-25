@@ -110,8 +110,6 @@ public class FlowRunnerManager implements EventListener,
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
-  private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
-
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
   private final ExecutorLoader executorLoader;
@@ -120,13 +118,12 @@ public class FlowRunnerManager implements EventListener,
   private final FlowPreparer flowPreparer;
   private final TriggerManager triggerManager;
   private final AzkabanEventReporter azkabanEventReporter;
-
   private final Props azkabanProps;
   private final File executionDirectory;
   private final File projectDirectory;
 
   private final Object executionDirDeletionSync = new Object();
-
+  private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
   private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
   private int threadPoolQueueSize = -1;
   private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
@@ -173,7 +170,7 @@ public class FlowRunnerManager implements EventListener,
       this.projectDirectory.mkdirs();
     }
 
-    this.installedProjects = loadExistingProjects();
+    this.installedProjects = new HashMap<>();
 
     // azkaban.temp.dir
     this.numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
@@ -282,8 +279,14 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
+  // todo chengren311: this method will be invoked by executor activate API, but in SOLO mode
+  // the API is not called. So we should either have everything run in "multi-executor" mode
+  // or make SOLO server mode call the API.
   public void setExecutorActive(final boolean isActive) {
     this.isExecutorActive = isActive;
+    if (this.isExecutorActive) {
+      this.installedProjects = this.loadExistingProjects();
+    }
   }
 
   public long getLastFlowSubmittedTime() {

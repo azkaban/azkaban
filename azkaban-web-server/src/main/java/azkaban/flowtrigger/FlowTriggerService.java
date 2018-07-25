@@ -365,7 +365,7 @@ public class FlowTriggerService {
   private long remainingTimeBeforeTimeout(final TriggerInstance triggerInst) {
     final long now = System.currentTimeMillis();
     return Math.max(0,
-        triggerInst.getFlowTrigger().getMaxWaitDuration().toMillis() - (now - triggerInst
+        triggerInst.getFlowTrigger().getMaxWaitDuration().get().toMillis() - (now - triggerInst
             .getStartTime()));
   }
 
@@ -403,7 +403,7 @@ public class FlowTriggerService {
       // todo chengren311: it's possible web server restarts before the db update, then
       // new instance will not be recoverable from db.
       addToRunningListAndScheduleKill(triggerInst, triggerInst.getFlowTrigger()
-          .getMaxWaitDuration(), CancellationCause.TIMEOUT);
+          .getMaxWaitDuration().get(), CancellationCause.TIMEOUT);
     }
   }
 

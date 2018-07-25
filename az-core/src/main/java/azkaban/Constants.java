@@ -89,7 +89,6 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
-
   public static class ConfigurationKeys {
 
     // Configures Azkaban Flow Version in project YAML file
@@ -159,6 +158,9 @@ public class Constants {
 
     // The property is used for the web server to get the host name of the executor when running in SOLO mode.
     public static final String EXECUTOR_HOST = "executor.host";
+
+    // The property is used for the web server to get the port of the executor when running in SOLO mode.
+    public static final String EXECUTOR_PORT = "executor.port";
 
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.

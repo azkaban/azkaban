@@ -1,0 +1,34 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobA
+    type: test
+    config:
+      seconds: 0
+      fail: false
+
+  - name: embedded_flow1
+    type: flow
+    nodes:
+      - name: jobB
+        type: test
+        config:
+          seconds: 0
+          fail: false
+      - name: jobC
+        type: test
+        config:
+          seconds: 1
+          fail: false
+        dependsOn:
+          - jobB
+
+  - name: jobD
+    type: test
+    config:
+      seconds: 1
+      fail: false
+    dependsOn:
+      - embedded_flow1

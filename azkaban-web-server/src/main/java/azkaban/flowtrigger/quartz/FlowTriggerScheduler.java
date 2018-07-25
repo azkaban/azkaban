@@ -66,7 +66,6 @@ public class FlowTriggerScheduler {
    */
   public void scheduleAll(final Project project, final String submitUser)
       throws SchedulerException, ProjectManagerException {
-    //todo chengren311: schedule on uploading via CRT
 
     for (final Flow flow : project.getFlows()) {
       //todo chengren311: we should validate embedded flow shouldn't have flow trigger defined.

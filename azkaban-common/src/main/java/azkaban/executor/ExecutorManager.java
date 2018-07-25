@@ -35,6 +35,7 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import java.io.BufferedReader;
 import java.io.File;
@@ -53,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,7 +94,6 @@ public class ExecutorManager extends EventHandler implements
       * 24 * 60 * 60 * 1000L;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
-  final private Set<Executor> activeExecutors = new HashSet<>();
   private final AlerterHolder alerterHolder;
   private final Props azkProps;
   private final CommonMetrics commonMetrics;
@@ -105,6 +106,8 @@ public class ExecutorManager extends EventHandler implements
   private final int maxConcurrentRunsOneFlow;
   QueuedExecutions queuedFlows;
   File cacheDir;
+  //make it immutable to ensure threadsafety
+  private volatile ImmutableSet<Executor> activeExecutors = null;
   private QueueProcessorThread queueProcessor;
   private volatile Pair<ExecutionReference, ExecutableFlow> runningCandidate = null;
   private long lastCleanerThreadCheckTime = -1;
@@ -141,7 +144,6 @@ public class ExecutorManager extends EventHandler implements
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
 
     this.executingManager = new ExecutingManagerUpdaterThread();
-    this.executingManager.start();
 
     if (isMultiExecutorMode()) {
       setupMultiExecutorMode();
@@ -152,8 +154,14 @@ public class ExecutorManager extends EventHandler implements
             DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 
     this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
-    this.cleanerThread.start();
+  }
 
+  public void start() {
+    this.executingManager.start();
+    this.cleanerThread.start();
+    if (isMultiExecutorMode()) {
+      this.queueProcessor.start();
+    }
   }
 
   private String findApplicationIdFromLog(final String logData) {
@@ -199,8 +207,6 @@ public class ExecutorManager extends EventHandler implements
             this.azkProps.getInt(
                 Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
                 this.activeExecutors.size()));
-
-    this.queueProcessor.start();
   }
 
   /**
@@ -213,13 +219,13 @@ public class ExecutorManager extends EventHandler implements
     final Set<Executor> newExecutors = new HashSet<>();
 
     if (isMultiExecutorMode()) {
-      logger.info("Initializing multi executors from database");
+      logger.info("Initializing multi executors from database.");
       newExecutors.addAll(this.executorLoader.fetchActiveExecutors());
-    } else if (this.azkProps.containsKey("executor.port")) {
-      // Add local executor, if specified as per properties
+    } else if (this.azkProps.containsKey(ConfigurationKeys.EXECUTOR_PORT)) {
+      // add local executor, if specified as per properties
       final String executorHost = this.azkProps
           .getString(Constants.ConfigurationKeys.EXECUTOR_HOST, "localhost");
-      final int executorPort = this.azkProps.getInt("executor.port");
+      final int executorPort = this.azkProps.getInt(ConfigurationKeys.EXECUTOR_PORT);
       logger.info(String.format("Initializing local executor %s:%d",
           executorHost, executorPort));
       Executor executor =
@@ -232,19 +238,21 @@ public class ExecutorManager extends EventHandler implements
       }
       newExecutors.add(new Executor(executor.getId(), executorHost,
           executorPort, true));
+    } else {
+      // throw exception when in single executor mode and no executor port specified in azkaban
+      // properties
+      //todo chengren311: convert to slf4j and parameterized logging
+      final String error = "Missing" + ConfigurationKeys.EXECUTOR_PORT + " in azkaban properties.";
+      logger.error(error);
+      throw new ExecutorManagerException(error);
     }
 
     if (newExecutors.isEmpty()) {
-      logger.error("No active executor found");
-      throw new ExecutorManagerException("No active executor found");
-    } else if (newExecutors.size() > 1 && !isMultiExecutorMode()) {
-      logger.error("Multiple local executors specified");
-      throw new ExecutorManagerException("Multiple local executors specified");
+      final String error = "No active executor found";
+      logger.error(error);
+      throw new ExecutorManagerException(error);
     } else {
-      // clear all active executors, only if we have at least one new active
-      // executors
-      this.activeExecutors.clear();
-      this.activeExecutors.addAll(newExecutors);
+      this.activeExecutors = ImmutableSet.copyOf(newExecutors);
     }
   }
 
@@ -256,41 +264,39 @@ public class ExecutorManager extends EventHandler implements
    * Refresh Executor stats for all the actie executors in this executorManager
    */
   private void refreshExecutors() {
-    synchronized (this.activeExecutors) {
 
-      final List<Pair<Executor, Future<ExecutorInfo>>> futures =
-          new ArrayList<>();
-      for (final Executor executor : this.activeExecutors) {
-        // execute each executorInfo refresh task to fetch
-        final Future<ExecutorInfo> fetchExecutionInfo =
-            this.executorInforRefresherService.submit(
-                () -> this.apiGateway.callForJsonType(executor.getHost(),
-                    executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
-        futures.add(new Pair<>(executor,
-            fetchExecutionInfo));
-      }
+    final List<Pair<Executor, Future<ExecutorInfo>>> futures =
+        new ArrayList<>();
+    for (final Executor executor : this.activeExecutors) {
+      // execute each executorInfo refresh task to fetch
+      final Future<ExecutorInfo> fetchExecutionInfo =
+          this.executorInforRefresherService.submit(
+              () -> this.apiGateway.callForJsonType(executor.getHost(),
+                  executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
+      futures.add(new Pair<>(executor,
+          fetchExecutionInfo));
+    }
 
-      boolean wasSuccess = true;
-      for (final Pair<Executor, Future<ExecutorInfo>> refreshPair : futures) {
-        final Executor executor = refreshPair.getFirst();
-        executor.setExecutorInfo(null); // invalidate cached ExecutorInfo
-        try {
-          // max 5 secs
-          final ExecutorInfo executorInfo = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
-          // executorInfo is null if the response was empty
-          executor.setExecutorInfo(executorInfo);
-          logger.info(String.format(
-              "Successfully refreshed executor: %s with executor info : %s",
-              executor, executorInfo));
-        } catch (final TimeoutException e) {
-          wasSuccess = false;
-          logger.error("Timed out while waiting for ExecutorInfo refresh"
-              + executor, e);
-        } catch (final Exception e) {
-          wasSuccess = false;
-          logger.error("Failed to update ExecutorInfo for executor : "
-              + executor, e);
-        }
+    boolean wasSuccess = true;
+    for (final Pair<Executor, Future<ExecutorInfo>> refreshPair : futures) {
+      final Executor executor = refreshPair.getFirst();
+      executor.setExecutorInfo(null); // invalidate cached ExecutorInfo
+      try {
+        // max 5 secs
+        final ExecutorInfo executorInfo = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
+        // executorInfo is null if the response was empty
+        executor.setExecutorInfo(executorInfo);
+        logger.info(String.format(
+            "Successfully refreshed executor: %s with executor info : %s",
+            executor, executorInfo));
+      } catch (final TimeoutException e) {
+        wasSuccess = false;
+        logger.error("Timed out while waiting for ExecutorInfo refresh"
+            + executor, e);
+      } catch (final Exception e) {
+        wasSuccess = false;
+        logger.error("Failed to update ExecutorInfo for executor : "
+            + executor, e);
       }
 
       // update is successful for all executors
@@ -391,10 +397,6 @@ public class ExecutorManager extends EventHandler implements
     return this.lastThreadCheckTime;
   }
 
-  public long getLastCleanerThreadCheckTime() {
-    return this.lastCleanerThreadCheckTime;
-  }
-
   @Override
   public Collection<Executor> getAllActiveExecutors() {
     return Collections.unmodifiableCollection(this.activeExecutors);
@@ -436,7 +438,10 @@ public class ExecutorManager extends EventHandler implements
     for (final Pair<ExecutionReference, ExecutableFlow> running : this.runningFlows
         .values()) {
       final ExecutionReference ref = running.getFirst();
-      ports.add(ref.getHost() + ":" + ref.getPort());
+      if (ref.getExecutor().isPresent()) {
+        final Executor executor = ref.getExecutor().get();
+        ports.add(executor.getHost() + ":" + executor.getPort());
+      }
     }
     return ports;
   }
@@ -503,9 +508,9 @@ public class ExecutorManager extends EventHandler implements
    * @see azkaban.executor.ExecutorManagerAdapter#getActiveFlowsWithExecutor()
    */
   @Override
-  public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
+  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
       throws IOException {
-    final List<Pair<ExecutableFlow, Executor>> flows =
+    final List<Pair<ExecutableFlow, Optional<Executor>>> flows =
         new ArrayList<>();
     getActiveFlowsWithExecutorHelper(flows, this.queuedFlows.getAllEntries());
     getActiveFlowsWithExecutorHelper(flows, this.runningFlows.values());
@@ -514,7 +519,7 @@ public class ExecutorManager extends EventHandler implements
 
   /* Helper method for getActiveFlowsWithExecutor */
   private void getActiveFlowsWithExecutorHelper(
-      final List<Pair<ExecutableFlow, Executor>> flows,
+      final List<Pair<ExecutableFlow, Optional<Executor>>> flows,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
     for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
       flows.add(new Pair<>(ref.getSecond(), ref
@@ -1440,15 +1445,15 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /* Group Executable flow by Executors to reduce number of REST calls */
-  private Map<Executor, List<ExecutableFlow>> getFlowToExecutorMap() {
-    final HashMap<Executor, List<ExecutableFlow>> exFlowMap =
+  private Map<Optional<Executor>, List<ExecutableFlow>> getFlowToExecutorMap() {
+    final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
         new HashMap<>();
 
     for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.runningFlows
         .values()) {
       final ExecutionReference ref = runningFlow.getFirst();
       final ExecutableFlow flow = runningFlow.getSecond();
-      final Executor executor = ref.getExecutor();
+      final Optional<Executor> executor = ref.getExecutor();
 
       // We can set the next check time to prevent the checking of certain
       // flows.
@@ -1548,20 +1553,27 @@ public class ExecutorManager extends EventHandler implements
           ExecutorManager.this.lastThreadCheckTime = System.currentTimeMillis();
           ExecutorManager.this.updaterStage = "Starting update all flows.";
 
-          final Map<Executor, List<ExecutableFlow>> exFlowMap =
+          final Map<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
               getFlowToExecutorMap();
-          final ArrayList<ExecutableFlow> finishedFlows =
-              new ArrayList<>();
           final ArrayList<ExecutableFlow> finalizeFlows =
               new ArrayList<>();
 
           if (exFlowMap.size() > 0) {
-            for (final Map.Entry<Executor, List<ExecutableFlow>> entry : exFlowMap
+            for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap
                 .entrySet()) {
               final List<Long> updateTimesList = new ArrayList<>();
               final List<Integer> executionIdsList = new ArrayList<>();
 
-              final Executor executor = entry.getKey();
+              final Optional<Executor> executorOption = entry.getKey();
+              if (!executorOption.isPresent()) {
+                for (final ExecutableFlow flow : entry.getValue()) {
+                  logger.warn("Finalizing execution " + flow.getExecutionId()
+                      + ". Executor id of this execution doesn't exist");
+                  finalizeFlows.add(flow);
+                }
+                continue;
+              }
+              final Executor executor = executorOption.get();
 
               ExecutorManager.this.updaterStage =
                   "Starting update flows on " + executor.getHost() + ":"
@@ -1604,7 +1616,7 @@ public class ExecutorManager extends EventHandler implements
                           + this.errorThreshold);
                       ref.setNumErrors(++numErrors);
                     } else {
-                      logger.error("Evicting flow " + flow.getExecutionId()
+                      logger.warn("Evicting execution " + flow.getExecutionId()
                           + ". The executor is unresponsive.");
                       // TODO should send out an unresponsive email here.
                       finalizeFlows.add(pair.getSecond());
@@ -1625,7 +1637,6 @@ public class ExecutorManager extends EventHandler implements
                     ExecutorManager.this.updaterStage = "Updated flow " + flow.getExecutionId();
 
                     if (isFinished(flow)) {
-                      finishedFlows.add(flow);
                       finalizeFlows.add(flow);
                     }
                   } catch (final ExecutorManagerException e) {
@@ -1633,7 +1644,7 @@ public class ExecutorManager extends EventHandler implements
                     logger.error(e);
 
                     if (flow != null) {
-                      logger.error("Finalizing flow " + flow.getExecutionId());
+                      logger.warn("Finalizing execution " + flow.getExecutionId());
                       finalizeFlows.add(flow);
                     }
                   }

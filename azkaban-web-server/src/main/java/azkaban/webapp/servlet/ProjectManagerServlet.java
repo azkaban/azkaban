@@ -1730,6 +1730,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         //unscheduleall/scheduleall should only work with flow which has defined flow trigger
         //unschedule all flows within the old project
         if (this.enableQuartz) {
+          //todo chengren311: should maintain atomicity,
+          // e.g, if uploadProject fails, associated schedule shouldn't be added.
           this.scheduler.unscheduleAll(project);
         }
         final Map<String, ValidationReport> reports =

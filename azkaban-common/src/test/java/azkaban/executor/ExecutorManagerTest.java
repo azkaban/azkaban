@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.After;
@@ -272,6 +273,7 @@ public class ExecutorManagerTest {
   @Test
   public void testNotFoundFlows() throws Exception {
     testSetUpForRunningFlows();
+    this.manager.start();
     final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
 
@@ -356,12 +358,12 @@ public class ExecutorManagerTest {
   @Test
   public void testFetchActiveFlowWithExecutor() throws Exception {
     testSetUpForRunningFlows();
-    final List<Pair<ExecutableFlow, Executor>> activeFlowsWithExecutor =
+    final List<Pair<ExecutableFlow, Optional<Executor>>> activeFlowsWithExecutor =
         this.manager.getActiveFlowsWithExecutor();
     Assert.assertTrue(activeFlowsWithExecutor.contains(new Pair<>(this.flow1,
-        this.manager.fetchExecutor(this.flow1.getExecutionId()))));
+        Optional.ofNullable(this.manager.fetchExecutor(this.flow1.getExecutionId())))));
     Assert.assertTrue(activeFlowsWithExecutor.contains(new Pair<>(this.flow2,
-        this.manager.fetchExecutor(this.flow2.getExecutionId()))));
+        Optional.ofNullable(this.manager.fetchExecutor(this.flow2.getExecutionId())))));
   }
 
   @Test

@@ -19,6 +19,7 @@ package azkaban.project;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.utils.Props;
 import java.io.File;
@@ -53,7 +54,15 @@ public class FlowLoaderFactory {
    * @return the flow loader
    */
   public FlowLoader createFlowLoader(final File projectDir) throws ProjectManagerException {
+    if (checkForValidProjectYamlFile(projectDir)) {
+      return new DirectoryYamlFlowLoader(this.props);
+    } else {
+      return new DirectoryFlowLoader(this.props);
+    }
+  }
 
+  private boolean checkForValidProjectYamlFile(final File projectDir) throws
+      ProjectManagerException {
     final File[] projectFileList = projectDir.listFiles(new SuffixFilter(Constants
         .PROJECT_FILE_SUFFIX));
 
@@ -83,12 +92,17 @@ public class FlowLoaderFactory {
 
       if (azkabanProject.get(Constants.ConfigurationKeys.AZKABAN_FLOW_VERSION).equals
           (Constants.AZKABAN_FLOW_VERSION_2_0)) {
-        return new DirectoryYamlFlowLoader(this.props);
+        return true;
       } else {
         throw new ProjectManagerException("Invalid azkaban-flow-version in the project YAML file.");
       }
     } else {
-      return new DirectoryFlowLoader(this.props);
+      for (final File file : projectDir.listFiles(new DirFilter())) {
+        if (checkForValidProjectYamlFile(file)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }

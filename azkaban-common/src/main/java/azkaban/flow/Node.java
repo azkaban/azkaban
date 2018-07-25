@@ -34,6 +34,10 @@ public class Node {
 
   private String embeddedFlowId;
 
+  private String condition = null;
+
+  private ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus.ALL_SUCCESS;
+
   public Node(final String id) {
     this.id = id;
   }
@@ -57,11 +61,13 @@ public class Node {
     final String jobType = (String) mapObj.get("jobType");
 
     final String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
+    final String condition = (String) mapObj.get("condition");
 
     node.setJobSource(jobSource);
     node.setPropsSource(propSource);
     node.setType(jobType);
     node.setEmbeddedFlowId(embeddedFlowId);
+    node.setCondition(condition);
 
     final Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
     if (expectedRuntime != null) {
@@ -175,7 +181,24 @@ public class Node {
     }
     layoutInfo.put("level", this.level);
     objMap.put("layout", layoutInfo);
+    objMap.put("condition", this.condition);
 
     return objMap;
+  }
+
+  public String getCondition() {
+    return this.condition;
+  }
+
+  public void setCondition(final String condition) {
+    this.condition = condition;
+  }
+
+  public ConditionOnJobStatus getConditionOnJobStatus() {
+    return this.conditionOnJobStatus;
+  }
+
+  public void setConditionOnJobStatus(final ConditionOnJobStatus conditionOnJobStatus) {
+    this.conditionOnJobStatus = conditionOnJobStatus;
   }
 }

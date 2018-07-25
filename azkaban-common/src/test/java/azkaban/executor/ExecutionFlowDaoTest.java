@@ -39,21 +39,19 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ExecutionFlowDaoTest {
 
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
   private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
-
+  private static final Props props = new Props();
   private static DatabaseOperator dbOperator;
   private ExecutionFlowDao executionFlowDao;
   private ExecutorDao executorDao;
   private AssignExecutorDao assignExecutor;
   private FetchActiveFlowDao fetchActiveFlowDao;
   private ExecutionJobDao executionJobDao;
-  private static final Props props = new Props();
   private ProjectLoader loader;
 
   @BeforeClass
@@ -97,9 +95,9 @@ public class ExecutionFlowDaoTest {
   }
 
   private void createTestProject() {
-    String projectName = "exectest1";
-    String projectDescription = "This is my new project";
-    User user = new User("testUser1");
+    final String projectName = "exectest1";
+    final String projectDescription = "This is my new project";
+    final User user = new User("testUser1");
     this.loader.createNewProject(projectName, projectDescription, user);
   }
 
@@ -156,11 +154,12 @@ public class ExecutionFlowDaoTest {
     createTestProject();
     final ExecutableFlow flow = createTestFlow();
     this.executionFlowDao.uploadExecutableFlow(flow);
-    final List<ExecutableFlow> flowList1 = this.executionFlowDao.fetchFlowHistory("exectest1", "", "",0, -1, -1, 0, 16);
+    final List<ExecutableFlow> flowList1 = this.executionFlowDao
+        .fetchFlowHistory("exectest1", "", "", 0, -1, -1, 0, 16);
     assertThat(flowList1.size()).isEqualTo(1);
 
     final ExecutableFlow fetchFlow =
-            this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
+        this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
   }
 
@@ -281,7 +280,11 @@ public class ExecutionFlowDaoTest {
         this.fetchActiveFlowDao.fetchActiveFlows();
 
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isTrue();
-    assertThat(activeFlows1.containsKey(flow2.getExecutionId())).isFalse();
+    assertThat(activeFlows1.get(flow1.getExecutionId()).getFirst().getExecutor().isPresent())
+        .isTrue();
+    assertThat(activeFlows1.containsKey(flow2.getExecutionId())).isTrue();
+    assertThat(activeFlows1.get(flow2.getExecutionId()).getFirst().getExecutor().isPresent())
+        .isFalse();
     final ExecutableFlow flow1Result =
         activeFlows1.get(flow1.getExecutionId()).getSecond();
     assertTwoFlowSame(flow1Result, flow1);
@@ -314,20 +317,6 @@ public class ExecutionFlowDaoTest {
     this.executionFlowDao.updateExecutableFlow(flow1);
     activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows();
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isFalse();
-  }
-
-  @Test
-  @Ignore
-  // TODO jamiesjc: Active_execution_flow table is already deprecated. we should remove related
-  // test methods as well.
-  public void testFetchActiveFlowsReferenceChanged() throws Exception {
-  }
-
-  @Test
-  @Ignore
-  // TODO jamiesjc: Active_execution_flow table is already deprecated. we should remove related
-  // test methods as well.
-  public void testFetchActiveFlowByExecId() throws Exception {
   }
 
   @Test

@@ -29,6 +29,8 @@ buildscript {
 
 plugins {
     id 'com.gradle.build-scan' version '1.9'
+    id 'com.github.kt3k.coveralls' version '2.6.3'
+    id 'jacoco'
 }
 
 buildScan {
@@ -45,6 +47,8 @@ compareGradleBuilds {
 }
 
 allprojects {
+    apply plugin: 'jacoco'
+
     repositories {
         mavenCentral()
         mavenLocal()
@@ -226,4 +230,38 @@ if (System.env.TRAVIS == 'true') {
             minHeapSize = '128m'
         }
     }
+}
+
+def publishedProjects = subprojects.findAll()
+
+// Aggregate all subproject reports into one.
+task jacocoAggregateReport(type: JacocoReport, group: 'Coverage reports') {
+    description = 'Generates an aggregate report from all subprojects'
+
+    dependsOn(publishedProjects.test)
+
+    // JacocoReport-type task requires users to specify which classes to be covered
+    // See details in
+    // https://docs.gradle.org/current/dsl/org.gradle.testing.jacoco.tasks.JacocoReport.html
+    sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    classDirectories = files(publishedProjects.sourceSets.main.output)
+    executionData = files(publishedProjects.jacocoTestReport.executionData)
+
+    doFirst {
+        executionData = files(executionData.findAll { it.exists() })
+    }
+
+    reports {
+        html.enabled = true // human readable
+        xml.enabled = true // required by coveralls
+    }
+}
+
+coveralls {
+    sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
+    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml"
+}
+
+tasks.coveralls {
+    dependsOn jacocoAggregateReport
 }

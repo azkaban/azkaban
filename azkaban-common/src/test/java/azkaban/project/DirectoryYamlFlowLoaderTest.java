@@ -35,6 +35,7 @@ public class DirectoryYamlFlowLoaderTest {
 
   private static final String BASIC_FLOW_YAML_DIR = "basicflowyamltest";
   private static final String MULTIPLE_FLOW_YAML_DIR = "multipleflowyamltest";
+  private static final String RECURSIVE_DIRECTORY_FLOW_YAML_DIR = "recursivedirectoryyamltest";
   private static final String EMBEDDED_FLOW_YAML_DIR = "embeddedflowyamltest";
   private static final String MULTIPLE_EMBEDDED_FLOW_YAML_DIR = "multipleembeddedflowyamltest";
   private static final String CYCLE_FOUND_YAML_DIR = "cyclefoundyamltest";
@@ -83,6 +84,16 @@ public class DirectoryYamlFlowLoaderTest {
     checkFlowLoaderProperties(loader, 0, 2, 2);
     checkFlowProperties(loader, BASIC_FLOW_1, 0, 4, 1, 3, null);
     checkFlowProperties(loader, BASIC_FLOW_2, 0, 3, 1, 2, null);
+  }
+
+  @Test
+  public void testLoadYamlFileRecursively() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project,
+        ExecutionsTestUtil.getFlowDir(RECURSIVE_DIRECTORY_FLOW_YAML_DIR));
+    checkFlowLoaderProperties(loader, 0, 2, 2);
+    checkFlowProperties(loader, BASIC_FLOW_1, 0, 3, 1, 2, null);
+    checkFlowProperties(loader, BASIC_FLOW_2, 0, 4, 1, 3, null);
   }
 
   @Test

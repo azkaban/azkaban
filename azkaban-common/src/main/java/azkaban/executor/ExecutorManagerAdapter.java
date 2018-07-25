@@ -25,6 +25,7 @@ import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ExecutorManagerAdapter {
@@ -44,7 +45,7 @@ public interface ExecutorManagerAdapter {
    * Note, returns empty list if there isn't any running or queued flows
    * </pre>
    */
-  public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
+  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
       throws IOException;
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
