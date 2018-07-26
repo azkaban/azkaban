@@ -1,0 +1,32 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobD
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: one_failed
+
+    dependsOn:
+      - jobA
+      - jobC
+
+  - name: jobA
+    type: test
+    config:
+      seconds: 2
+
+  - name: jobB
+    type: test
+    config:
+      seconds: 10
+
+  - name: jobC
+    type: test
+    config:
+      seconds: 10
+    dependsOn:
+      - jobB

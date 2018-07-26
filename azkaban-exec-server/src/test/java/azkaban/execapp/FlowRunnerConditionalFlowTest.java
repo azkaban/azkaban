@@ -40,6 +40,7 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   private static final String CONDITIONAL_FLOW_4 = "conditional_flow4";
   private static final String CONDITIONAL_FLOW_5 = "conditional_flow5";
   private static final String CONDITIONAL_FLOW_6 = "conditional_flow6";
+  private static final String CONDITIONAL_FLOW_7 = "conditional_flow7";
   private FlowRunnerTestUtil testUtil;
   private Project project;
 
@@ -145,6 +146,19 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
     assertFlowStatus(flow, Status.FAILED);
+  }
+
+  @Test
+  public void runFlowOnJobStatusOneFailedCancelRemainingJobs() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_7, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    InteractiveTestJob.getTestJob("jobA").failJob();
+    assertStatus(flow, "jobA", Status.FAILED);
+    assertStatus(flow, "jobD", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.KILLED);
+    assertStatus(flow, "jobC", Status.CANCELLED);
   }
 
   private void setUp(final String flowName, final HashMap<String, String> flowProps)

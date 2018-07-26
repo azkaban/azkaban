@@ -489,9 +489,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
 
       if (outNodeIds.isEmpty() && isFlowReadytoFinalize(parentFlow)) {
-        // Todo jamiesjc: For conditional workflows, if conditionOnJobStatus is ONE_SUCCESS or
-        // ONE_FAILED, some jobs might still be running when the end nodes have finished. In this
-        // case, we need to kill all running jobs before finalizing the flow.
+        cancelRemainingJobs(parentFlow);
         finalizeFlow(parentFlow);
         finishExecutableNode(parentFlow);
 
@@ -554,6 +552,24 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.kill();
       }
       this.flowFailed = true;
+    }
+  }
+
+  private void cancelRemainingJobs(final ExecutableFlowBase flow) {
+    for (final JobRunner runner : this.activeJobRunners) {
+      if (flow.getExecutableNodes().contains(runner.getNode())) {
+        this.logger.info("Kill remaining active running job " + runner.getNode().getId()
+            + " before finalizing the flow.");
+        runner.kill();
+      }
+    }
+    for (final ExecutableNode node : flow.getExecutableNodes()) {
+      if (!Status.isStatusFinished(node.getStatus())) {
+        this.logger.info("Cancel remaining unfinished job " + node.getId() + " before finalizing "
+            + "the flow.");
+        node.cancelNode(System.currentTimeMillis());
+        finishExecutableNode(node);
+      }
     }
   }
 
@@ -893,6 +909,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Check if condition on job status is satisfied
     switch (checkConditionOnJobStatus(node)) {
       case FAILED:
+        this.logger.info(
+            "Condition on job status: " + node.getConditionOnJobStatus() + " has failed for job "
+                + node.getId() + ". Cancel the job now.");
         status = Status.CANCELLED;
         break;
       // Condition not satisfied yet, need to wait
@@ -903,6 +922,8 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     if (!isConditionOnRuntimeVariableMet(node)) {
+      this.logger.info("Condition on runtime variable has failed for job " + node.getId()
+          + ". Cancel the job now.");
       status = Status.CANCELLED;
     }
 
