@@ -204,6 +204,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
+      final long startTime) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
   public List<ExecutableJobInfo> fetchJobHistory(final int projectId, final String jobId,
       final int skip, final int size) throws ExecutorManagerException {
     // TODO Auto-generated method stub

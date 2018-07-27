@@ -15,6 +15,8 @@ import azkaban.utils.EmailMessage;
 import azkaban.utils.EmailMessageCreator;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TimeZone;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -93,9 +95,10 @@ public class DefaultMailCreatorTest {
     setJobStatus(Status.FAILED);
     this.executableFlow.setEndTime(END_TIME_MILLIS);
     this.executableFlow.setStatus(Status.FAILED);
+    final List<ExecutableFlow> executableFlows = new ArrayList<>();
     assertTrue(this.mailCreator.createErrorEmail(
-        this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,
-        this.clientPortNumber));
+        this.executableFlow, executableFlows, this.message, this.azkabanName, this.scheme, this
+            .clientHostname, this.clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has failed on unit-tests", this.message.getSubject());
     assertThat(TestUtils.readResource("errorEmail.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
