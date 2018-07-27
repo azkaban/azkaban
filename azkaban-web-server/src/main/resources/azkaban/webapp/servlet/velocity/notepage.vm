@@ -36,6 +36,12 @@
 </head>
 <body>
 
+<script type="text/javascript">
+  function enableBanner() {
+    sessionStorage.setItem("dismissBanner", null);
+  }
+</script>
+
 <style type="text/css">
   .show-and-hide-true {
     display: none;
@@ -90,11 +96,13 @@
       </div>
       <div class="form-group">
         <div class="col-sm-3 col-sm-offset-3">
-          <button type="submit" id="submit-button" class="btn btn-primary btn-block">Submit Note
+          <button type="submit" id="submit-button" class="btn btn-primary btn-block"
+                  onclick="enableBanner()">Submit Note
           </button>
         </div>
         <div class="col-sm-2 col-sm-offset-4">
-          <button type="submit" id="clear-button" class="btn btn-warning btn-block">Clear Note
+          <button type="submit" id="clear-button" class="btn btn-warning btn-block"
+                  onclick="enableBanner()">Clear Note
           </button>
         </div>
       </div>
