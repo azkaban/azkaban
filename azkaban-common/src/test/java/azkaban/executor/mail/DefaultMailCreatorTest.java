@@ -96,6 +96,21 @@ public class DefaultMailCreatorTest {
     this.executableFlow.setEndTime(END_TIME_MILLIS);
     this.executableFlow.setStatus(Status.FAILED);
     final List<ExecutableFlow> executableFlows = new ArrayList<>();
+
+    final ExecutableFlow executableFlow1 = new ExecutableFlow(this.project, this.flow);
+    executableFlow1.setExecutionId(1);
+    executableFlow1.setStartTime(START_TIME_MILLIS);
+    executableFlow1.setEndTime(END_TIME_MILLIS);
+    executableFlow1.setStatus(Status.FAILED);
+    executableFlows.add(executableFlow1);
+
+    final ExecutableFlow executableFlow2 = new ExecutableFlow(this.project, this.flow);
+    executableFlow2.setExecutionId(2);
+    executableFlow2.setStartTime(START_TIME_MILLIS);
+    executableFlow2.setEndTime(END_TIME_MILLIS);
+    executableFlow2.setStatus(Status.SUCCEEDED);
+    executableFlows.add(executableFlow2);
+
     assertTrue(this.mailCreator.createErrorEmail(
         this.executableFlow, executableFlows, this.message, this.azkabanName, this.scheme, this
             .clientHostname, this.clientPortNumber));

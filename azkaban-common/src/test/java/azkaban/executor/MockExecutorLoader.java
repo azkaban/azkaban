@@ -206,7 +206,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
       final long startTime) throws ExecutorManagerException {
-    return null;
+    return new ArrayList<>();
   }
 
   @Override
