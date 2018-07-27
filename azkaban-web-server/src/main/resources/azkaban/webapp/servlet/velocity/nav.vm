@@ -48,7 +48,7 @@
 
   function dismissBanner() {
     var dismissBanner = sessionStorage.getItem("dismissBanner");
-    if (dismissBanner != true) {
+    if (dismissBanner != "true") {
       sessionStorage.setItem("dismissBanner", "true");
     }
     $("#banner").slideUp();

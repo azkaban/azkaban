@@ -38,7 +38,7 @@
 
 <script type="text/javascript">
   function enableBanner() {
-    sessionStorage.setItem("dismissBanner", null);
+    sessionStorage.removeItem("dismissBanner");
   }
 </script>
 
