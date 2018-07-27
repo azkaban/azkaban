@@ -47,15 +47,15 @@
   }
 
   function dismissBanner() {
-    var dismissBanner = sessionStorage.getItem("dismissBanner");
+    var dismissBanner = localStorage.getItem("dismissBanner");
     if (dismissBanner != "true") {
-      sessionStorage.setItem("dismissBanner", "true");
+      localStorage.setItem("dismissBanner", "true");
     }
     $("#banner").slideUp();
   }
 
   $(function () {
-    var dismissBanner = sessionStorage.getItem("dismissBanner");
+    var dismissBanner = localStorage.getItem("dismissBanner");
     if (dismissBanner == "true") {
       return;
     }
