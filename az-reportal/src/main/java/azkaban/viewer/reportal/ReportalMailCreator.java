@@ -16,19 +16,6 @@
 
 package azkaban.viewer.reportal;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionOptions;
-import azkaban.executor.mail.DefaultMailCreator;
-import azkaban.executor.mail.MailCreator;
-import azkaban.project.Project;
-import azkaban.reportal.util.IStreamProvider;
-import azkaban.reportal.util.ReportalHelper;
-import azkaban.reportal.util.ReportalUtil;
-import azkaban.reportal.util.StreamProviderHDFS;
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.utils.EmailMessage;
-import azkaban.webapp.AzkabanWebServer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -45,11 +32,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 
-public class ReportalMailCreator implements MailCreator {
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
+import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.executor.mail.MailCreator;
+import azkaban.project.Project;
+import azkaban.reportal.util.IStreamProvider;
+import azkaban.reportal.util.ReportalHelper;
+import azkaban.reportal.util.ReportalUtil;
+import azkaban.reportal.util.StreamProviderHDFS;
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.EmailMessage;
+import azkaban.webapp.AzkabanWebServer;
 
+public class ReportalMailCreator implements MailCreator {
   public static final String REPORTAL_MAIL_CREATOR = "ReportalMailCreator";
   public static final int NUM_PREVIEW_ROWS = 50;
   //Attachment that equal or larger than 10MB will be skipped in the email
@@ -67,47 +68,46 @@ public class ReportalMailCreator implements MailCreator {
   }
 
   @Override
-  public boolean createFirstErrorMessage(final ExecutableFlow flow,
-      final EmailMessage message, final String azkabanName, final String scheme,
-      final String clientHostname, final String clientPortNumber, final String... vars) {
+  public boolean createFirstErrorMessage(ExecutableFlow flow,
+      EmailMessage message, String azkabanName, String scheme,
+      String clientHostname, String clientPortNumber, String... vars) {
 
-    final ExecutionOptions option = flow.getExecutionOptions();
-    final Set<String> emailList = new HashSet<String>(option.getFailureEmails());
-
-    return createEmail(flow, emailList, message, "Failure", azkabanName,
-        scheme, clientHostname, clientPortNumber, false);
-  }
-
-  @Override
-  public boolean createErrorEmail(final ExecutableFlow flow,
-      final List<ExecutableFlow> executableFlows,
-      final EmailMessage message, final String azkabanName, final String scheme,
-      final String clientHostname, final String clientPortNumber, final String... vars) {
-    final ExecutionOptions option = flow.getExecutionOptions();
-    final Set<String> emailList = new HashSet<String>(option.getFailureEmails());
+    ExecutionOptions option = flow.getExecutionOptions();
+    Set<String> emailList = new HashSet<String>(option.getFailureEmails());
 
     return createEmail(flow, emailList, message, "Failure", azkabanName,
         scheme, clientHostname, clientPortNumber, false);
   }
 
   @Override
-  public boolean createSuccessEmail(final ExecutableFlow flow, final EmailMessage message,
-      final String azkabanName, final String scheme, final String clientHostname,
-      final String clientPortNumber, final String... vars) {
+  public boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow>
+      pastExecutions, EmailMessage message, String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, String... vars) {
 
-    final ExecutionOptions option = flow.getExecutionOptions();
-    final Set<String> emailList = new HashSet<String>(option.getSuccessEmails());
+    ExecutionOptions option = flow.getExecutionOptions();
+    Set<String> emailList = new HashSet<String>(option.getFailureEmails());
+
+    return createEmail(flow, emailList, message, "Failure", azkabanName,
+        scheme, clientHostname, clientPortNumber, false);
+  }
+
+  @Override
+  public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, String... vars) {
+
+    ExecutionOptions option = flow.getExecutionOptions();
+    Set<String> emailList = new HashSet<String>(option.getSuccessEmails());
 
     return createEmail(flow, emailList, message, "Success", azkabanName,
         scheme, clientHostname, clientPortNumber, true);
   }
 
-  private boolean createEmail(final ExecutableFlow flow, final Set<String> emailList,
-      final EmailMessage message, final String status, final String azkabanName,
-      final String scheme,
-      final String clientHostname, final String clientPortNumber, final boolean printData) {
+  private boolean createEmail(ExecutableFlow flow, Set<String> emailList,
+      EmailMessage message, String status, String azkabanName, String scheme,
+      String clientHostname, String clientPortNumber, boolean printData) {
 
-    final Project project =
+    Project project =
         azkaban.getProjectManager().getProject(flow.getProjectId());
 
     if (emailList != null && !emailList.isEmpty()) {
@@ -115,12 +115,12 @@ public class ReportalMailCreator implements MailCreator {
       message.setMimeType("text/html");
       message.setSubject("Report " + status + ": "
           + project.getMetadata().get("title"));
-      final String urlPrefix =
+      String urlPrefix =
           scheme + "://" + clientHostname + ":" + clientPortNumber
               + "/reportal";
       try {
         return createMessage(project, flow, message, urlPrefix, printData);
-      } catch (final Exception e) {
+      } catch (Exception e) {
         e.printStackTrace();
       }
     }
@@ -128,8 +128,8 @@ public class ReportalMailCreator implements MailCreator {
     return false;
   }
 
-  private boolean createMessage(final Project project, final ExecutableFlow flow,
-      final EmailMessage message, final String urlPrefix, final boolean printData)
+  private boolean createMessage(Project project, ExecutableFlow flow,
+      EmailMessage message, String urlPrefix, boolean printData)
       throws Exception {
 
     // set mail content type to be "multipart/mixed" as we are customizing the main content.
@@ -139,11 +139,9 @@ public class ReportalMailCreator implements MailCreator {
     message.println("<html>");
     message.println("<head></head>");
     message
-        .println(
-            "<body style='font-family: verdana; color: #000000; background-color: #cccccc; padding: 20px;'>");
+        .println("<body style='font-family: verdana; color: #000000; background-color: #cccccc; padding: 20px;'>");
     message
-        .println(
-            "<div style='background-color: #ffffff; border: 1px solid #aaaaaa; padding: 20px;-webkit-border-radius: 15px; -moz-border-radius: 15px; border-radius: 15px;'>");
+        .println("<div style='background-color: #ffffff; border: 1px solid #aaaaaa; padding: 20px;-webkit-border-radius: 15px; -moz-border-radius: 15px; border-radius: 15px;'>");
     // Title
     message.println("<b>" + project.getMetadata().get("title") + "</b>");
     message
@@ -171,14 +169,13 @@ public class ReportalMailCreator implements MailCreator {
     message.println("</div>");
 
     // Print variable values, if any
-    final Map<String, String> flowParameters =
+    Map<String, String> flowParameters =
         flow.getExecutionOptions().getFlowParameters();
     int i = 0;
     while (flowParameters.containsKey("reportal.variable." + i + ".from")) {
       if (i == 0) {
         message
-            .println(
-                "<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
+            .println("<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
         message.println("Variables");
         message.println("</div>");
         message
@@ -205,21 +202,21 @@ public class ReportalMailCreator implements MailCreator {
 
     long totalFileSize = 0;
     if (printData) {
-      final String locationFull =
+      String locationFull =
           (outputLocation + "/" + flow.getExecutionId()).replace("//", "/");
 
-      final IStreamProvider streamProvider =
+      IStreamProvider streamProvider =
           ReportalUtil.getStreamProvider(outputFileSystem);
 
       if (streamProvider instanceof StreamProviderHDFS) {
-        final StreamProviderHDFS hdfsStreamProvider =
+        StreamProviderHDFS hdfsStreamProvider =
             (StreamProviderHDFS) streamProvider;
         hdfsStreamProvider.setHadoopSecurityManager(hadoopSecurityManager);
         hdfsStreamProvider.setUser(reportalStorageUser);
       }
 
       // Get file list
-      final String[] fileList =
+      String[] fileList =
           ReportalHelper
               .filterCSVFile(streamProvider.getFileList(locationFull));
 
@@ -229,29 +226,29 @@ public class ReportalMailCreator implements MailCreator {
       Arrays.sort(fileList, new Comparator<String>() {
 
         @Override
-        public int compare(final String a, final String b) {
-          final Integer aExecutionOrder =
+        public int compare(String a, String b) {
+          Integer aExecutionOrder =
               Integer.parseInt(a.substring(0, a.indexOf('-')));
-          final Integer bExecutionOrder =
+          Integer bExecutionOrder =
               Integer.parseInt(b.substring(0, b.indexOf('-')));
           return aExecutionOrder.compareTo(bExecutionOrder);
         }
       });
 
       // Get jobs in execution order
-      final List<ExecutableNode> jobs = ReportalUtil.sortExecutableNodes(flow);
+      List<ExecutableNode> jobs = ReportalUtil.sortExecutableNodes(flow);
 
-      final File tempFolder =
+      File tempFolder =
           new File(reportalMailTempDirectory + "/" + flow.getExecutionId());
       tempFolder.mkdirs();
 
       // Copy output files from HDFS to local disk, so you can send them as
       // email attachments
-      for (final String file : fileList) {
-        final String filePath = locationFull + "/" + file;
+      for (String file : fileList) {
+        String filePath = locationFull + "/" + file;
         InputStream csvInputStream = null;
         OutputStream tempOutputStream = null;
-        final File tempOutputFile = new File(tempFolder, file);
+        File tempOutputFile = new File(tempFolder, file);
         tempOutputFile.createNewFile();
         try {
           csvInputStream = streamProvider.getFileInputStream(filePath);
@@ -267,36 +264,35 @@ public class ReportalMailCreator implements MailCreator {
 
       try {
         streamProvider.cleanUp();
-      } catch (final IOException e) {
+      } catch (IOException e) {
         e.printStackTrace();
       }
 
       boolean emptyResults = true;
 
-      final String htmlResults =
+      String htmlResults =
           flowParameters.get("reportal.render.results.as.html");
-      final boolean renderResultsAsHtml =
+      boolean renderResultsAsHtml =
           htmlResults != null && htmlResults.trim().equalsIgnoreCase("true");
 
       for (i = 0; i < fileList.length; i++) {
-        final String file = fileList[i];
-        final ExecutableNode job = jobs.get(i);
+        String file = fileList[i];
+        ExecutableNode job = jobs.get(i);
         job.getAttempt();
 
         message
-            .println(
-                "<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
+            .println("<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
         message.println(file);
         message.println("</div>");
         message.println("<div>");
         message
             .println("<table border='1' cellspacing='0' cellpadding='2' style='font-size: 14px;'>");
-        final File tempOutputFile = new File(tempFolder, file);
+        File tempOutputFile = new File(tempFolder, file);
         InputStream csvInputStream = null;
         try {
           csvInputStream =
               new BufferedInputStream(new FileInputStream(tempOutputFile));
-          final Scanner rowScanner = new Scanner(csvInputStream, StandardCharsets.UTF_8.toString());
+          Scanner rowScanner = new Scanner(csvInputStream, StandardCharsets.UTF_8.toString());
           int lineNumber = 0;
           while (rowScanner.hasNextLine() && lineNumber <= NUM_PREVIEW_ROWS) {
             // For Hive jobs, the first line is the column names, so we ignore
@@ -307,10 +303,10 @@ public class ReportalMailCreator implements MailCreator {
               emptyResults = false;
             }
 
-            final String csvLine = rowScanner.nextLine();
-            final String[] data = csvLine.split("\",\"");
+            String csvLine = rowScanner.nextLine();
+            String[] data = csvLine.split("\",\"");
             message.println("<tr>");
-            for (final String item : data) {
+            for (String item : data) {
               String column = item.replace("\"", "");
               if (!renderResultsAsHtml) {
                 column = StringEscapeUtils.escapeHtml(column);
@@ -336,16 +332,16 @@ public class ReportalMailCreator implements MailCreator {
 
       if (totalFileSize < MAX_ATTACHMENT_SIZE) {
         for (i = 0; i < fileList.length; i++) {
-          final String file = fileList[i];
-          final File tempOutputFile = new File(tempFolder, file);
-          message.addAttachment(file, tempOutputFile);
+            String file = fileList[i];
+            File tempOutputFile = new File(tempFolder, file);
+            message.addAttachment(file, tempOutputFile);
         }
       }
 
       // Don't send an email if there are no results, unless this is an
       // unscheduled run.
-      final String unscheduledRun = flowParameters.get("reportal.unscheduled.run");
-      final boolean isUnscheduledRun =
+      String unscheduledRun = flowParameters.get("reportal.unscheduled.run");
+      boolean isUnscheduledRun =
           unscheduledRun != null
               && unscheduledRun.trim().equalsIgnoreCase("true");
       if (emptyResults && !isUnscheduledRun) {
@@ -354,11 +350,10 @@ public class ReportalMailCreator implements MailCreator {
     }
 
     message.println("</div>");
-    if (totalFileSize >= MAX_ATTACHMENT_SIZE) {
-      message.println("<tr>The total size of the reports (" + totalFileSize / 1024 / 1024
-          + "MB) is bigger than the allowed maximum size of " +
-          MAX_ATTACHMENT_SIZE / 1024 / 1024 + "MB. " +
-          "It is too big to be attached in this message. Please use the link above titled Result Data to download the reports</tr>");
+    if (totalFileSize >= MAX_ATTACHMENT_SIZE){
+      message.println("<tr>The total size of the reports (" + totalFileSize/1024/1024 + "MB) is bigger than the allowed maximum size of " +
+              MAX_ATTACHMENT_SIZE/1024/1024 + "MB. " +
+                  "It is too big to be attached in this message. Please use the link above titled Result Data to download the reports</tr>");
     }
     message.println("</body>").println("</html>");
 
