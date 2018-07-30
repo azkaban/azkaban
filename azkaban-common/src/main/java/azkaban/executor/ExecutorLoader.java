@@ -52,6 +52,9 @@ public interface ExecutorLoader {
       String flowContains, String userNameContains, int status, long startData,
       long endData, int skip, int num) throws ExecutorManagerException;
 
+  List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
+      final long startTime) throws ExecutorManagerException;
+
   /**
    * <pre>
    * Fetch all executors from executors table
