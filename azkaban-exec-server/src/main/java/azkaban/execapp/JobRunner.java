@@ -16,6 +16,9 @@
 
 package azkaban.execapp;
 
+import static azkaban.jobExecutor.AbstractProcessJob.ENV_PREFIX;
+import static azkaban.jobExecutor.AbstractProcessJob.JOB_PROP_ENV;
+
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
@@ -108,7 +111,7 @@ public class JobRunner extends EventHandler implements Runnable {
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
-    final String jobLogLayout = props.getString(
+    final String jobLogLayout = this.props.getString(
         JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
@@ -804,6 +807,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
     if (this.job != null) {
       this.node.setOutputProps(this.job.getJobGeneratedProperties());
+      this.node.setjobPropsTempFilePath(this.job.getJobProps().get(ENV_PREFIX + JOB_PROP_ENV));
     }
 
     synchronized (this.syncObject) {

@@ -48,6 +48,7 @@ public class ExecutableNode {
   public static final String CONDITION_ON_JOB_STATUS_PARAM = "conditionOnJobStatus";
   public static final String PROPS_SOURCE_PARAM = "propSource";
   public static final String JOB_SOURCE_PARAM = "jobSource";
+  public static final String JOB_PROPS_TEMP_FILE_PATH_PARAM = "jobPropsTempFilePath";
   public static final String OUTPUT_PROPS_PARAM = "outputProps";
   public static final String ATTEMPT_PARAM = "attempt";
   public static final String PASTATTEMPTS_PARAM = "pastAttempts";
@@ -63,6 +64,8 @@ public class ExecutableNode {
   private String jobSource;
   // Path to top level props file
   private String propsSource;
+  // Path to job props temp file
+  private String jobPropsTempFilePath;
   private Set<String> inNodes = new HashSet<>();
   private Set<String> outNodes = new HashSet<>();
   private Props inputProps;
@@ -198,12 +201,24 @@ public class ExecutableNode {
     return this.propsSource != null;
   }
 
+  public boolean hasJobPropsTempFilePath() {
+    return this.jobPropsTempFilePath != null;
+  }
+
   public String getJobSource() {
     return this.jobSource;
   }
 
   public String getPropsSource() {
     return this.propsSource;
+  }
+
+  public String getjobPropsTempFilePath() {
+    return this.jobPropsTempFilePath;
+  }
+
+  public void setjobPropsTempFilePath(final String jobPropsTempFilePath) {
+    this.jobPropsTempFilePath = jobPropsTempFilePath;
   }
 
   public Props getInputProps() {
@@ -313,6 +328,10 @@ public class ExecutableNode {
       objMap.put(JOB_SOURCE_PARAM, this.jobSource);
     }
 
+    if (hasJobPropsTempFilePath()) {
+      objMap.put(JOB_PROPS_TEMP_FILE_PATH_PARAM, this.jobPropsTempFilePath);
+    }
+
     if (this.outputProps != null && this.outputProps.size() > 0) {
       objMap.put(OUTPUT_PROPS_PARAM, PropsUtils.toStringMap(this.outputProps, true));
     }
@@ -350,6 +369,7 @@ public class ExecutableNode {
 
     this.propsSource = wrappedMap.getString(PROPS_SOURCE_PARAM);
     this.jobSource = wrappedMap.getString(JOB_SOURCE_PARAM);
+    this.jobPropsTempFilePath = wrappedMap.getString(JOB_PROPS_TEMP_FILE_PATH_PARAM);
 
     final Map<String, String> outputProps =
         wrappedMap.<String, String>getMap(OUTPUT_PROPS_PARAM);

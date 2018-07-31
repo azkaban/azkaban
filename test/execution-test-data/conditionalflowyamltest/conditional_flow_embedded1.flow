@@ -1,0 +1,39 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobD
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ${jobA:azkaban.server.name} == 'foo'
+    dependsOn:
+      - embedded_flow
+
+  - name: embedded_flow
+    type: flow
+    condition: ${jobA:azkaban.server.name} == 'foo'
+    dependsOn:
+      - jobA
+    nodes:
+      - name: jobB
+        type: test
+        config:
+          fail: false
+          seconds: 0
+
+      - name: jobC
+        type: test
+        config:
+          fail: false
+          seconds: 0
+        dependsOn:
+          - jobB
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0
