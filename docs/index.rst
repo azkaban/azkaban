@@ -34,6 +34,7 @@ Features
    getStarted
    configuration
    userGuide
+   eventTrigger
 
 
 
