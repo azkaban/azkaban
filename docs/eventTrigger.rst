@@ -8,7 +8,8 @@ Event Based Trigger
 *****
 
 
-
+..
+   Todo:: Link to the data trigger documentation if available
 Currently there are only few ways to launch jobs in Azkaban including schedules and API. However, they are limited because sometimes jobs need to be executed automatically on demand. Event trigger is a new feature introduced by Azkaban. It defines a new paradigm of triggering flows - triggering a flow on event arrival. This concept enables users to define events that the flow depends on. Once all of the dependencies become ready, a workflow will be triggered. 
 
 Apache Kafka is a Publish & Subscribe data streaming system. By utilizing Kafka, we do the regular expression match on the Kafka event payload. With the contain-a logic matching, a dependency will be marked as satisfied only if the whole payload contains the Regex pattern that user predefines.
@@ -41,7 +42,7 @@ Solo-Server Configuration
 The gradlew commands help you to build the fat JAR. After that, you need to specify the plugin.dir within solo-server in ``conf``. Override the ``azkaban.dependency.plugin.dir`` property for runtime parameters inside the ``azkaban.properties`` file under the solo-server ``conf`` directory.
 This property needs to set to contain the location where you put your Event-Trigger JAR file. 
 
-Data Base Configuration (Optinal)
+Data Base Configuration (Optional)
 ########
 The following 4 properties can be defined in ``conf/azkaban.private.properties``. for solo-server based on the use case. 
 
@@ -63,7 +64,7 @@ Event Based Trigger Plugin Configuration
 
 Inside the Azkaban dependency plugin directory, there should be two items Event Based Trigger plugin jar and the ``dependency.properties``. 
 
-Required properties are :
+Required properties are:
 
 - **dependency.classpath** - Used by Azkaban identify plugins classpath. Should be the JAR file’s absolute path.
 
@@ -78,7 +79,7 @@ Event Trigger Instance Configuration
 *****
 Event trigger is part of flow definition and each flow can only have one event trigger at most. 
 Defining an event trigger is supported via Hadoop DSL.
-The trigger need to be configurated within the flow file along with the project zip that users upload.
+The trigger needs to be configurated within the flow file along with the project zip that users upload.
 Event trigger is composed of a list of event dependencies, max wait time and schedule.
 Take the following figure as example:
 
@@ -134,7 +135,7 @@ Here is how my ``recordPartition.json`` looks like:
         "event":"MetastorePartitionAuditEvent"
     }
 
-Once this event arrived, Azkaban will marked this specific event depedency as success. 
+Once this event arrived, Azkaban will mark this specific event dependency  as success. 
 
 .. image:: figures/Success.png
 
@@ -151,15 +152,5 @@ Once this event arrived, Azkaban will marked this specific event depedency as su
 Limitation
 *****
 Since our design purpose is to decouple the trigger condition from the action to take, currently there is a limitation on deserializing record. Although Kafka provides the ability to publish and subscribe to streams of records on custom serializer and deserializer. What we have right now is limited to Kafka build in String deserializer only. We are planning to enhance the flexibility on users to upload JAR with their own custom deserialize function in the near future. 
-
-*****
-Resource Referance
-*****
-- `Event Trigger Design Proposal <https://docs.google.com/document/d/1KxT17D8nvPvB-yTVZZEKuLMDp_TjdN1L6vagcZ4ypRI/edit>`_
-- `Event Trigger Presentation <https://docs.google.com/presentation/d/1fli7yIQNmKA_ZIj18JvDkAg30SrjpD7wlHJDXKeso7c/edit#slide=id.p1>`_
-- `Event Trigger Poster <https://docs.google.com/presentation/d/1M8Jh39MtqeGJWwkPxLWLAX6YBRWJCInmoxp-YIYq228/edit#slide=id.p1>`_
-
-
-
 
 
