@@ -37,6 +37,8 @@ Features
    useAzkaban
    eventTrigger
    ajaxApi
+   howTo
+   plugins
 
 
 
