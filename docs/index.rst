@@ -33,6 +33,7 @@ Features
 
    getStarted
    configuration
+   userManager
    useAzkaban
    eventTrigger
    ajaxApi
