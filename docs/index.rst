@@ -31,10 +31,16 @@ Features
    :maxdepth: 2
    :caption: Contents:
 
+
    getStarted
    configuration
-   userGuide
-
+   userManager
+   useAzkaban
+   eventTrigger
+   ajaxApi
+   howTo
+   plugins
+   jobTypes
 
 
 *****

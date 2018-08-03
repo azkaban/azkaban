@@ -23,7 +23,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.MockExecutorLoader;
 import azkaban.flow.Flow;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.metrics.CommonMetrics;
@@ -66,6 +68,7 @@ public class TriggerInstanceProcessorTest {
   private CountDownLatch sendEmailLatch;
   private CountDownLatch submitFlowLatch;
   private CountDownLatch updateExecIDLatch;
+  private ExecutorLoader executorLoader;
 
   private static TriggerInstance createTriggerInstance() throws ParseException {
     final FlowTrigger flowTrigger = new FlowTrigger(
@@ -103,10 +106,11 @@ public class TriggerInstanceProcessorTest {
     this.messageCreator = EmailerTest.mockMessageCreator(this.message);
     this.triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
     this.executorManager = mock(ExecutorManager.class);
+    this.executorLoader = new MockExecutorLoader();
     when(this.executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     this.emailer = Mockito.spy(new Emailer(EmailerTest.createMailProperties(), commonMetrics,
-        this.messageCreator));
+        this.messageCreator, this.executorLoader));
 
     this.sendEmailLatch = new CountDownLatch(1);
     doAnswer(invocation -> {

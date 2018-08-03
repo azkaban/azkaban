@@ -22,10 +22,14 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.metrics.CommonMetrics;
 import azkaban.sla.SlaOption;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,11 +47,13 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String clientHostname;
   private final String clientPortNumber;
   private final String azkabanName;
+  private final ExecutorLoader executorLoader;
 
   @Inject
   public Emailer(final Props props, final CommonMetrics commonMetrics,
-      final EmailMessageCreator messageCreator) {
+      final EmailMessageCreator messageCreator, final ExecutorLoader executorLoader) {
     super(props, messageCreator);
+    this.executorLoader = requireNonNull(executorLoader, "executorLoader is null.");
     this.commonMetrics = requireNonNull(commonMetrics, "commonMetrics is null.");
     this.azkabanName = props.getString("azkaban.name", "azkaban");
 
@@ -114,8 +120,20 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void alertOnError(final ExecutableFlow flow, final String... extraReasons) {
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
-    final boolean mailCreated = mailCreator.createErrorEmail(flow, message, this.azkabanName,
-        this.scheme, this.clientHostname, this.clientPortNumber, extraReasons);
+    List<ExecutableFlow> last72hoursExecutions = new ArrayList<>();
+
+    if (flow.getStartTime() > 0) {
+      final long startTime = flow.getStartTime() - Duration.ofHours(72).toMillis();
+      try {
+        last72hoursExecutions = this.executorLoader.fetchFlowHistory(flow.getProjectId(), flow
+            .getFlowId(), startTime);
+      } catch (final ExecutorManagerException e) {
+        logger.error("unable to fetch past executions", e);
+      }
+    }
+
+    final boolean mailCreated = mailCreator.createErrorEmail(flow, last72hoursExecutions, message,
+        this.azkabanName, this.scheme, this.clientHostname, this.clientPortNumber, extraReasons);
     sendEmail(message, mailCreated, "error email message for execution " + flow.getExecutionId());
   }
 
