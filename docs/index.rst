@@ -33,7 +33,6 @@ Features
 
    getStarted
    configuration
-   userGuide
    userManager
    useAzkaban
    eventTrigger

@@ -205,7 +205,7 @@ public class DefaultMailCreator implements MailCreator {
             + convertMSToString(executableFlow.getStartTime()) + "</td></tr>");
         message.println("<tr><td>End Time</td><td>"
             + convertMSToString(executableFlow.getEndTime()) + "</td></tr>");
-        message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
+        message.println("<tr><td>Status</td><td>" + executableFlow.getStatus() + "</td></tr>");
         message.println("</table>");
       }
 
