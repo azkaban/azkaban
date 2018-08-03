@@ -35,6 +35,7 @@ Features
    configuration
    useAzkaban
    eventTrigger
+   ajaxApi
 
 
 
