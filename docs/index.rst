@@ -36,6 +36,7 @@ Features
    userGuide
    useAzkaban
    eventTrigger
+   jobTypes
 
 
 
