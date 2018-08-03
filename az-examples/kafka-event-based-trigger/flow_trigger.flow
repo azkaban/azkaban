@@ -43,7 +43,7 @@ trigger:
 
 # All flow level properties here
 config:
-  #failure.emails: chren@linkedin.com
+  #failure.emails: example@example.com
 
 # This section defines the list of jobs
 # A node can be a job or a flow
