@@ -35,6 +35,7 @@ Features
    configuration
    userGuide
    useAzkaban
+   userManager
    eventTrigger
 
 
