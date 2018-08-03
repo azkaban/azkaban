@@ -370,8 +370,7 @@ Depending on if the hadoop installation is turned on:
 |                                   | the specified ``proxy.user``      |
 +-----------------------------------+-----------------------------------+
 
-For more Hadoop security related information, see
-`HadoopSecurityManager <https://azkaban.github.io/azkaban/docs/latest/#hadoopsecuritymanager>`__
+For more Hadoop security related information, see :ref:`hadoopsecuritymanager`.
 
 Job Type Plugins
 ########
@@ -438,8 +437,7 @@ Depending on if the hadoop installation is turned on:
 |                                   | the specified proxy.user          |
 +-----------------------------------+-----------------------------------+
 
-For more Hadoop security related information, see
-`HadoopSecurityManager <https://azkaban.github.io/azkaban/docs/latest/#hadoopsecuritymanager>`__
+For more Hadoop security related information, see :ref:`hadoopsecuritymanager`.
 
 Finally, start the executor, watch for error messages and check executor
 server log. For job type plugins, the executor should do minimum testing
@@ -521,7 +519,7 @@ properties. These are the same properties which are merged to form
 |                       | configured properties |                       |
 | in                    | during Azkaban setup. |                       |
 |  jobtype/{jobtype-na  | Restricted to a       |                       |
-|me}                   | specific jobtype.     |                       |
+|me}                    | specific jobtype.     |                       |
 | directory             |                       |                       |
 +-----------------------+-----------------------+-----------------------+
 
