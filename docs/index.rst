@@ -31,6 +31,7 @@ Features
    :maxdepth: 2
    :caption: Contents:
 
+
    getStarted
    configuration
    userManager
@@ -39,7 +40,7 @@ Features
    ajaxApi
    howTo
    plugins
-
+   jobTypes
 
 
 *****
