@@ -15,7 +15,7 @@ Currently there are only few ways to launch jobs in Azkaban including schedules 
 Apache Kafka is a Publish & Subscribe data streaming system. By utilizing Kafka, we do the regular expression match on the Kafka event payload. With the contain-a logic matching, a dependency will be marked as satisfied only if the whole payload contains the Regex pattern that user predefines.
 
 *****
-Getting started with Deploying Event Trigger on the Solo Server
+Getting started with Deploying Event Trigger on the Azkaban
 *****
 
 Azkaban builds use Gradle (downloads automatically when run using gradlew which is the Gradle wrapper) and requires Java 8 or higher.
@@ -37,9 +37,9 @@ These are all standard Gradle commands. Please look at Gradle documentation for 
 
 
 
-Solo-Server Configuration
+Server Configuration
 ########
-The gradlew commands help you to build the fat JAR. After that, you need to specify the plugin.dir within solo-server in ``conf``. Override the ``azkaban.dependency.plugin.dir`` property for runtime parameters inside the ``azkaban.properties`` file under the solo-server ``conf`` directory.
+The gradlew commands help you to build the fat JAR. After that, you need to specify the plugin.dir within ``conf``. Take solo-server for example, override the ``azkaban.dependency.plugin.dir`` property for runtime parameters inside the ``azkaban.properties`` file under the solo-server ``conf`` directory.
 This property needs to set to contain the location where you put your Event-Trigger JAR file. 
 
 Data Base Configuration (Optional)

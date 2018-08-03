@@ -33,10 +33,8 @@ permissions.
 
 After creating your project, an empty project page will appear. You
 will automatically be given ADMIN status for this project. Add and
-remove permissions by clicking on the Permissions Button.
+remove permissions by clicking on the `Permissions Button <#project-permissions>`_.
 
-.. 
-  ToDo::"Permissions Button" needs to be linkable to lower section 
 
 .. image:: figures/newprojectpage.png
 
@@ -156,10 +154,8 @@ The following permissions can be set for users and groups:
 
 Executing Flow
 --------------
-.. 
-  ToDo::"Flow View" need to be linkable to lower section 
 
-From the Flow View or the Project Page, you can trigger a job to be
+From the `Flow View <#flow-view>`_ or the Project Page, you can trigger a job to be
 executed. You will see an executing panel pop-up.
 
 
@@ -267,10 +263,8 @@ Executions
 Flow Execution Page
 ~~~~~~~~~~~~~~~~~~~
 
-.. 
-  ToDo:: "executing a flow" needs to be linkable to lower section
 
-After executing a flow you will be presented the Executing Flow page.
+After `executing a flow <#executing-flow>`_ you will be presented the Executing Flow page.
 Alternatively, you can access these flows from the Flow View page
 under the Executions tab, the History page, or the Executing page.
 
@@ -331,8 +325,7 @@ executions for a flow on the Flow View execution tab.
 
 Schedule Flow
 -------------
-..
-  ToDo::  "execute flows" needs to be linkable
+
 From the same panel that is used to `execute flow <#executing-flow>`_, flows can be
 scheduled by clicking on the *Schedule* button.
 
