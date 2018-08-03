@@ -51,16 +51,16 @@ import azkaban.utils.EmailMessage;
 import azkaban.webapp.AzkabanWebServer;
 
 public class ReportalMailCreator implements MailCreator {
+  public static final String REPORTAL_MAIL_CREATOR = "ReportalMailCreator";
+  public static final int NUM_PREVIEW_ROWS = 50;
+  //Attachment that equal or larger than 10MB will be skipped in the email
+  public static final long MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024L;
   public static AzkabanWebServer azkaban = null;
   public static HadoopSecurityManager hadoopSecurityManager = null;
   public static String outputLocation = "";
   public static String outputFileSystem = "";
   public static String reportalStorageUser = "";
   public static File reportalMailTempDirectory;
-  public static final String REPORTAL_MAIL_CREATOR = "ReportalMailCreator";
-  public static final int NUM_PREVIEW_ROWS = 50;
-  //Attachment that equal or larger than 10MB will be skipped in the email
-  public static final long MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024L;
 
   static {
     DefaultMailCreator.registerCreator(REPORTAL_MAIL_CREATOR,
@@ -80,8 +80,8 @@ public class ReportalMailCreator implements MailCreator {
   }
 
   @Override
-  public boolean createErrorEmail(ExecutableFlow flow, EmailMessage message,
-      String azkabanName, String scheme, String clientHostname,
+  public boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow>
+      pastExecutions, EmailMessage message, String azkabanName, String scheme, String clientHostname,
       String clientPortNumber, String... vars) {
 
     ExecutionOptions option = flow.getExecutionOptions();

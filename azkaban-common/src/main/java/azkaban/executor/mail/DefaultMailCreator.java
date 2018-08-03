@@ -137,9 +137,9 @@ public class DefaultMailCreator implements MailCreator {
   }
 
   @Override
-  public boolean createErrorEmail(final ExecutableFlow flow, final EmailMessage message,
-      final String azkabanName, final String scheme, final String clientHostname,
-      final String clientPortNumber, final String... vars) {
+  public boolean createErrorEmail(final ExecutableFlow flow, final List<ExecutableFlow>
+      pastExecutions, final EmailMessage message, final String azkabanName, final String scheme,
+      final String clientHostname, final String clientPortNumber, final String... vars) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
@@ -185,6 +185,30 @@ public class DefaultMailCreator implements MailCreator {
       }
 
       message.println("</ul>");
+
+      message.println("");
+
+      int failedCount = 0;
+      for (final ExecutableFlow executableFlow : pastExecutions) {
+        if (executableFlow.getStatus().equals(Status.FAILED)) {
+          failedCount++;
+        }
+      }
+
+      message.println(String.format("<h3>Executions from past 72 hours (%s out %s) failed</h3>",
+          failedCount, pastExecutions.size()));
+      for (final ExecutableFlow executableFlow : pastExecutions) {
+        message.println("<table>");
+        message.println(
+            "<tr><td>Execution Id</td><td>" + (executableFlow.getExecutionId()) + "</td></tr>");
+        message.println("<tr><td>Start Time</td><td>"
+            + convertMSToString(executableFlow.getStartTime()) + "</td></tr>");
+        message.println("<tr><td>End Time</td><td>"
+            + convertMSToString(executableFlow.getEndTime()) + "</td></tr>");
+        message.println("<tr><td>Status</td><td>" + executableFlow.getStatus() + "</td></tr>");
+        message.println("</table>");
+      }
+
       return true;
     }
     return false;

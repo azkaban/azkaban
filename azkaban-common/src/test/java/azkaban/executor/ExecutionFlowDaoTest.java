@@ -30,7 +30,11 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import java.io.File;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -114,7 +118,6 @@ public class ExecutionFlowDaoTest {
     assertTwoFlowSame(flow, fetchFlow);
   }
 
-
   @Test
   public void testUpdateExecutableFlow() throws Exception {
     final ExecutableFlow flow = createTestFlow();
@@ -147,6 +150,48 @@ public class ExecutionFlowDaoTest {
         this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), flowList2.get(0));
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
+  }
+
+  @Test
+  public void fetchFlowHistoryWithStartTime() throws Exception {
+    class DateUtil {
+
+      private long dateStrToLong(final String dateStr) throws ParseException {
+        final SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        final Date d = f.parse(dateStr);
+        final long milliseconds = d.getTime();
+        return milliseconds;
+      }
+    }
+
+    final DateUtil dateUtil = new DateUtil();
+    final ExecutableFlow flow1 = createTestFlow();
+    flow1.setStartTime(dateUtil.dateStrToLong("2018-09-01 10:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow1);
+
+    final ExecutableFlow flow2 = createTestFlow();
+    flow2.setStartTime(dateUtil.dateStrToLong("2018-09-01 09:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow2);
+
+    final ExecutableFlow flow3 = createTestFlow();
+    flow3.setStartTime(dateUtil.dateStrToLong("2018-09-01 09:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow3);
+
+    final ExecutableFlow flow4 = createTestFlow();
+    flow4.setStartTime(dateUtil.dateStrToLong("2018-09-01 08:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow4);
+
+    final List<ExecutableFlow> flowList = this.executionFlowDao.fetchFlowHistory
+        (flow1.getProjectId(), flow1.getFlowId(), dateUtil.dateStrToLong("2018-09-01 09:00:00"));
+    final List<ExecutableFlow> expected = new ArrayList<>();
+    expected.add(flow1);
+    expected.add(flow2);
+    expected.add(flow3);
+
+    assertThat(flowList).hasSize(3);
+    for (int i = 0; i < flowList.size(); i++) {
+      assertTwoFlowSame(flowList.get(i), expected.get(i));
+    }
   }
 
   @Test
@@ -364,7 +409,7 @@ public class ExecutionFlowDaoTest {
     assertThat(flow1.getStatus()).isEqualTo(flow2.getStatus());
     assertThat(flow1.getEndTime()).isEqualTo(flow2.getEndTime());
     assertThat(flow1.getStartTime()).isEqualTo(flow2.getStartTime());
-    assertThat(flow1.getSubmitTime()).isEqualTo(flow2.getStartTime());
+    assertThat(flow1.getSubmitTime()).isEqualTo(flow2.getSubmitTime());
     assertThat(flow1.getFlowId()).isEqualTo(flow2.getFlowId());
     assertThat(flow1.getProjectId()).isEqualTo(flow2.getProjectId());
     assertThat(flow1.getVersion()).isEqualTo(flow2.getVersion());

@@ -24,6 +24,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.MockExecutorLoader;
 import azkaban.flow.Flow;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
@@ -48,6 +50,7 @@ public class EmailerTest {
   private Props props;
   private EmailMessageCreator messageCreator;
   private EmailMessage message;
+  private ExecutorLoader executorLoader;
 
   public static EmailMessageCreator mockMessageCreator(final EmailMessage message) {
     final EmailMessageCreator mock = mock(EmailMessageCreator.class);
@@ -85,6 +88,7 @@ public class EmailerTest {
     this.messageCreator = mockMessageCreator(this.message);
     this.receiveAddrList.add(this.receiveAddr);
     this.project = new Project(11, "myTestProject");
+    this.executorLoader = new MockExecutorLoader();
 
     this.props = createMailProperties();
     final DirectoryFlowLoader loader = new DirectoryFlowLoader(this.props);
@@ -102,7 +106,8 @@ public class EmailerTest {
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
+        this.executorLoader);
     emailer.alertOnError(exFlow);
     verify(this.message).addAllToAddress(this.receiveAddrList);
     verify(this.message).setSubject("Flow 'jobe' has failed on azkaban");
@@ -113,14 +118,16 @@ public class EmailerTest {
   @Test
   public void testGetAzkabanURL() {
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
+        this.executorLoader);
     assertThat(emailer.getAzkabanURL()).isEqualTo("http://localhost:8786");
   }
 
   @Test
   public void testCreateEmailMessage() {
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
+        this.executorLoader);
     final EmailMessage em = emailer
         .createEmailMessage("subject", "text/html", this.receiveAddrList);
     verify(this.messageCreator).createMessage();
@@ -138,7 +145,8 @@ public class EmailerTest {
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     final CommonMetrics commonMetrics = mock(CommonMetrics.class);
-    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator);
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
+        this.executorLoader);
     emailer.alertOnError(exFlow);
     verify(commonMetrics, never()).markSendEmailFail();
   }

@@ -22,4 +22,5 @@ nodes:
   - name: jobB
     type: test
     config:
+      fail: false
       seconds: 2
