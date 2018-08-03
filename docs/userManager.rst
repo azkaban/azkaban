@@ -10,6 +10,11 @@ This is prevent seeing or executing workflows you shoudn’t see or touch.
 We also used authenticated users for auditing purposes. Whenever project files change, is modified, scheduled, etc.
 we often want to know which user performed that action.
 
+
+**user login in page:**
+
+.. image:: figures/login.png
+
 *****
 XmlUserManager
 *****

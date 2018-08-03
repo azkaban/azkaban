@@ -34,8 +34,8 @@ Features
    getStarted
    configuration
    userGuide
-   useAzkaban
    userManager
+   useAzkaban
    eventTrigger
 
 
