@@ -477,10 +477,10 @@ properties which are merged to form ``jobProps`` in
 |                       | Global to all         |                       |
 |                       | jobtypes.             |                       |
 +-----------------------+-----------------------+-----------------------+
-| ``plugin.properties`` | These are admin       | 2                     |
+|``plugin.properties``  | These are admin       | 2                     |
 | in                    | configured properties |                       |
-|   jobtype/{jobtype-na | during Azkaban setup. |                       |
-|me}                    | Restricted to a       |                       |
+| ``jobtype/<jobtype-na | during Azkaban setup. |                       |
+| me>``                 | Restricted to a       |                       |
 | directory             | specific jobtype.     |                       |
 +-----------------------+-----------------------+-----------------------+
 | ``common.properties`` | These are user        | 3                     |
