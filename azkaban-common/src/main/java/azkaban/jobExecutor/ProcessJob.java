@@ -402,7 +402,7 @@ public class ProcessJob extends AbstractProcessJob {
     final List<String> changeOwnershipCommand = Arrays
         .asList(CHOWN, effectiveUser + ":" + groupName, fileName);
     info("Change ownership of " + fileName + " to " + effectiveUser + ":" + groupName + ".");
-    final int result = executeAsUser.execute("root", changeOwnershipCommand);
+    final int result = executeAsUser.execute("mkumar1", changeOwnershipCommand);
     if (result != 0) {
       handleError("Failed to change current working directory ownership. Error code: " + Integer
           .toString(result), null);
