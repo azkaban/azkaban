@@ -1,0 +1,25 @@
+---
+config:
+  failure.emails: noreply@foo.com
+
+nodes:
+  - name: jobC
+    type: noop
+    dependsOn:
+      - embedded_flow
+
+  - name: embedded_flow
+    type: flow
+    config:
+      prop: value
+    nodes:
+      - name: jobB
+        type: noop
+        dependsOn:
+          - jobA
+
+      - name: jobA
+        type: command
+        config:
+          command: pwd
+
