@@ -40,6 +40,8 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   private static final String CONDITIONAL_FLOW_4 = "conditional_flow4";
   private static final String CONDITIONAL_FLOW_5 = "conditional_flow5";
   private static final String CONDITIONAL_FLOW_6 = "conditional_flow6";
+  private static final String CONDITIONAL_FLOW_EMBEDDED1 = "conditional_flow_embedded1";
+  private static final String CONDITIONAL_FLOW_EMBEDDED2 = "conditional_flow_embedded2";
   private FlowRunnerTestUtil testUtil;
   private Project project;
 
@@ -145,6 +147,36 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
     assertFlowStatus(flow, Status.FAILED);
+  }
+
+  @Test
+  public void runEmbeddedFlowOnJobPropsCondition() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    flowProps.put("azkaban.server.name", "foo");
+    setUp(CONDITIONAL_FLOW_EMBEDDED1, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow:jobB", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow:jobC", Status.SUCCEEDED);
+    assertStatus(flow, "jobD", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
+  @Test
+  public void runEmbeddedFlowOnJobPropsCondition2() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_EMBEDDED2, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow:jobB", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow:jobC", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow2", Status.KILLED);
+    assertStatus(flow, "embedded_flow2:jobB", Status.SUCCEEDED);
+    assertStatus(flow, "embedded_flow2:jobC", Status.CANCELLED);
+    assertStatus(flow, "jobD", Status.CANCELLED);
+    assertFlowStatus(flow, Status.KILLED);
   }
 
   private void setUp(final String flowName, final HashMap<String, String> flowProps)

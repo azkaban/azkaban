@@ -1,0 +1,61 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobD
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    dependsOn:
+      - embedded_flow
+      - embedded_flow2
+
+  - name: embedded_flow
+    type: flow
+    dependsOn:
+      - jobA
+    nodes:
+      - name: jobB
+        type: test
+        config:
+          fail: false
+          seconds: 0
+          props1: value1
+
+      - name: jobC
+        type: test
+        config:
+          fail: false
+          seconds: 0
+        dependsOn:
+          - jobB
+        condition: ${jobB:props1} == 'value1'
+
+  - name: embedded_flow2
+    type: flow
+    dependsOn:
+      - jobA
+    nodes:
+      - name: jobB
+        type: test
+        config:
+          fail: false
+          seconds: 0
+          props1: value2
+
+      - name: jobC
+        type: test
+        config:
+          fail: false
+          seconds: 0
+        dependsOn:
+          - jobB
+        condition: ${jobB:props1} == 'value1'
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0

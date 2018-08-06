@@ -80,6 +80,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
     return tempFile;
   }
 
+  @Override
   public Props getJobProps() {
     return this.jobProps;
   }

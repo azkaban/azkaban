@@ -59,7 +59,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -185,21 +184,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     // where the uninitialized logger is used in flow preparing state
     createLogger(this.flow.getFlowId());
     this.azkabanEventReporter = azkabanEventReporter;
-  }
-
-  private File findPropsFileForJob(final String prefix) {
-    final File[] files = this.getExecutionDir().listFiles(new FilenameFilter() {
-      @Override
-      public boolean accept(final File dir, final String name) {
-        return name.startsWith(prefix) && name.endsWith("tmp");
-      }
-    });
-
-    if (files == null || files.length == 0) {
-      this.logger.info("Not able to find props file for job " + prefix);
-      return null;
-    }
-    return files[0];
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -949,29 +933,28 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private String findValueForJobVariable(final ExecutableNode node, final String jobName, final
   String variable) {
+    final ExecutableNode target = node.getParentFlow().getExecutableNode(jobName);
+    if (target == null) {
+      this.logger.error("Not able to find value for job variable, job name " + jobName
+          + " might be invalid.");
+      return null;
+    }
+
     // Get props from job props tmp file
-    final File jobPropsFile = findPropsFileForJob(jobName + "_props");
-    if (jobPropsFile != null) {
+    final String filePath = target.getjobPropsTempFilePath();
+    if (filePath != null) {
       try {
+        final File jobPropsFile = new File(filePath);
         final Props jobProps = new Props(null, jobPropsFile);
         if (jobProps.containsKey(variable)) {
           return jobProps.get(variable);
         }
       } catch (final IOException e) {
-        this.logger.error("Not able to load props from job props file " + jobPropsFile
-            .getAbsolutePath());
+        this.logger.error("Not able to load props from job props file path " + filePath);
       }
     }
 
-    // Todo jamiesjc: need to handle condition for embedded flows
     // Get job output props
-    final ExecutableNode target = node.getParentFlow().getExecutableNode(jobName);
-    if (target == null) {
-      this.logger.error("Not able to load props from output props file, job name " + jobName
-          + " might be invalid.");
-      return null;
-    }
-
     final Props outputProps = target.getOutputProps();
     if (outputProps != null && outputProps.containsKey(variable)) {
       return outputProps.get(variable);
