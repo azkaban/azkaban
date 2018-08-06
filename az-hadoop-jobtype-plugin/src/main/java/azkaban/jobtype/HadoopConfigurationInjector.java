@@ -82,8 +82,9 @@ public class HadoopConfigurationInjector {
    *
    * @param props The Azkaban properties
    * @param workingDir The Azkaban job working directory
+   * @param fileName File name to write the XML configuration
    */
-  public static void prepareResourcesToInject(Props props, String workingDir) {
+  public static void prepareResourcesToInject(Props props, String workingDir, String fileName) {
     try {
       Configuration conf = new Configuration(false);
 
@@ -104,7 +105,7 @@ public class HadoopConfigurationInjector {
       }
 
       // Now write out the configuration file to inject.
-      File file = getConfFile(props, workingDir, INJECT_FILE);
+      File file = getConfFile(props, workingDir, fileName);
       OutputStream xmlOut = new FileOutputStream(file);
       conf.writeXml(xmlOut);
       xmlOut.close();
@@ -113,17 +114,31 @@ public class HadoopConfigurationInjector {
     }
   }
 
+  /**
+   * Writes out the XML configuration file that will be injected by the client
+   * as a configuration resource.
+   * <p>
+   * This file will include a series of links injected by Azkaban as well as
+   * any job properties that begin with the designated injection prefix.
+   *
+   * @param props The Azkaban properties
+   * @param workingDir The Azkaban job working directory
+   */
+  public static void prepareResourcesToInject(Props props, String workingDir) {
+    prepareResourcesToInject(props, workingDir, INJECT_FILE);
+  }
+
   private static void addHadoopProperty(Props props, String propertyName) {
-      props.put(INJECT_PREFIX + propertyName, props.get(propertyName));
+    props.put(INJECT_PREFIX + propertyName, props.get(propertyName));
   }
 
   private static void addHadoopWorkflowProperty(Props props, String propertyName) {
-    String workflowID = props.get(CommonJobProperties.PROJECT_NAME)
-        + WORKFLOW_ID_SEPERATOR + props.get(CommonJobProperties.FLOW_ID);
+    String workflowID =
+        props.get(CommonJobProperties.PROJECT_NAME) + WORKFLOW_ID_SEPERATOR + props.get(CommonJobProperties.FLOW_ID);
     props.put(INJECT_PREFIX + propertyName, workflowID);
   }
 
-  private static void addHadoopProperties(Props props) {
+  public static void addHadoopProperties(Props props) {
     String[] propsToInject = new String[]{
         CommonJobProperties.EXEC_ID,
         CommonJobProperties.FLOW_ID,
@@ -142,7 +157,7 @@ public class HadoopConfigurationInjector {
         CommonJobProperties.SUBMIT_USER
     };
 
-    for(String propertyName : propsToInject) {
+    for (String propertyName : propsToInject) {
       addHadoopProperty(props, propertyName);
     }
     addHadoopWorkflowProperty(props, WORKFLOW_ID_CONFIG);
