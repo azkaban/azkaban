@@ -16,6 +16,8 @@
 
 package azkaban.jobtype;
 
+import com.google.common.base.Joiner;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -90,6 +92,9 @@ public class HadoopJobUtils {
 
   // MapReduce config for specifying additional namenodes for delegation tokens
   public static final String MAPREDUCE_JOB_OTHER_NAMENODES = "mapreduce.job.hdfs-servers";
+
+  // MapReduce config for mapreduce job tags
+  public static final String MAPREDUCE_JOB_TAGS = "mapreduce.job.tags";
 
   // Azkaban property for listing additional namenodes for delegation tokens
   private static final String OTHER_NAMENODES_PROPERTY = "other_namenodes";
@@ -592,5 +597,22 @@ public class HadoopJobUtils {
               key, value));
     }
     return String.format("-D%s=%s", key, value);
+  }
+
+  /**
+   * Construct a CSV of tags for the Hadoop application.
+   *
+   * @param List of keys to construct tags from.
+   * @return a CSV of tags
+   */
+  public static String constructHadoopTags(Props props, String[] keys) {
+    String[] keysAndValues = new String[keys.length];
+    for (int i = 0; i < keys.length; i++) {
+      if (props.containsKey(keys[i])) {
+        keysAndValues[i] = keys[i] + ":" + props.get(keys[i]);
+      }
+    }
+    Joiner joiner = Joiner.on(',').skipNulls();
+    return joiner.join(keysAndValues);
   }
 }
