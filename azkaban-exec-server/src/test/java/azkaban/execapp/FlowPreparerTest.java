@@ -40,20 +40,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 
 public class FlowPreparerTest {
 
   public static final String SAMPLE_FLOW_01 = "sample_flow_01";
-
-  final File executionsDir = new File("executions");
-  final File projectsDir = new File("projects");
   final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
-
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private File executionsDir;
+  private File projectsDir;
   private FlowPreparer instance;
 
   private StorageManager createMockStorageManager() {
@@ -71,21 +71,13 @@ public class FlowPreparerTest {
 
   @Before
   public void setUp() throws Exception {
-    tearDown();
-
-    this.executionsDir.mkdirs();
-    this.projectsDir.mkdirs();
+    this.executionsDir = this.temporaryFolder.newFolder("executions");
+    this.projectsDir = this.temporaryFolder.newFolder("projects");
 
     this.instance = spy(
         new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir,
             this.installedProjects, null));
     doNothing().when(this.instance).touchIfExists(any());
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    FileUtils.deleteDirectory(this.executionsDir);
-    FileUtils.deleteDirectory(this.projectsDir);
   }
 
   @Test
