@@ -35,6 +35,7 @@ Features
    getStarted
    configuration
    userManager
+   createFlows
    useAzkaban
    eventTrigger
    ajaxApi

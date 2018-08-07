@@ -7,6 +7,7 @@ This section covers how to use Azkaban Web UI to create, view and
 execution your flows.
 
 
+.. _createProjects:
 
 
 Create Projects
@@ -43,7 +44,7 @@ the project), you can delete the project, update the description,
 upload files and view the project logs from this page.
 
 
-
+.. _uploadProjects:
 
 
 Upload Projects
