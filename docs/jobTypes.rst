@@ -24,10 +24,8 @@ The command job type is one of the basic built-in types. It runs
 multiple UNIX commands using java processbuilder. Upon execution,
 Azkaban spawns off a process to run the command.
 
-*****
 How To Use
-*****
-
+~~~~~~~~~~
 One can run one or multiple commands within one command job. Here is
 what is needed:
 
@@ -43,9 +41,8 @@ For multiple commands, do it like ``command.1, command.2``, etc.
 
    <div class="bs-callout bs-callout-info">
 
-*****
 Sample Job Package
-*****
+~~~~~~~~~~~~~~~~~~
 
 Here is a sample job package, just to show how it works:
 
@@ -74,9 +71,8 @@ multiple UNIX commands using java processbuilder. Upon execution,
 Azkaban spawns off a process to run the command.
 
 
-*****
 How To Use
-*****
+~~~~~~~~~~
 
 The ``HadoopShell`` job type talks to a secure cluster via Hadoop
 tokens. The admin should specify ``obtain.binary.token=true`` if the
@@ -170,9 +166,8 @@ talks to Hadoop clusters. That usage should be replaced by
 ``hadoopJava`` type now, which is secure. But we still keep ``java``
 type in the plugins for backwards compatibility.
 
-*****
 How to Use
-*****
+~~~~~~~~~~
 
 Azkaban spawns a local process for the java job type that runs user
 programs. It is different from the "javaprocess" job type in that
@@ -189,9 +184,8 @@ For the most part, using ``java`` type should be no different from
 
    <div class="bs-callout bs-callout-info">
 
-*****
 Sample Job
-*****
+~~~~~~~~~~
 
 Please refer to the  `hadoopJava type <#hadoopjava-type>`_.
 
@@ -211,9 +205,8 @@ ability to talk to a Hadoop cluster securely, via Hadoop tokens. Most
 Hadoop job types can be created by running a hadoopJava job, such as
 Pig, Hive, etc.
 
-*****
 How To Use
-*****
+~~~~~~~~~~
 
 
 The ``hadoopJava`` type runs user java program after all. Upon
@@ -338,9 +331,8 @@ should also make those naming public and consistent.
 .. raw:: html
 
    <div class="bs-callout bs-callout-info">
-*****
 Sample Job Package
-*****
+~~~~~~~~~~~~~~~~~~
 
 Here is a sample job package that does a word count. It relies on a Pig
 job to first upload the text file onto HDFS. One can also manually
@@ -379,9 +371,8 @@ company specific udfs registered and name space imported, so that the
 users don't need to provide all the jars and do the configurations in
 their specific Pig job conf files.
 
-*****
 How to Use
-*****
+~~~~~~~~~~
 
 
 The Pig job runs user Pig scripts. It is important to remember, however,
@@ -516,9 +507,8 @@ most cases will only need Pig scripts in their Azkaban job packages.
 
    <div class="bs-callout bs-callout-info">
 
-*****
 Sample Job Package
-*****
+~~~~~~~~~~~~~~~~~~
 
 
 Here is a sample job package that does word count. It assumes you have
@@ -551,9 +541,8 @@ important that individual MR step inside a single Pig script doesn't
 cancel the tokens upon its completion. Otherwise, all following steps
 will fail on authentication with the JobTracker or NameNode.
 
-*****
 How to Use
-*****
+~~~~~~~~~~
 
 The Hive job runs user Hive queries. The Hive job type talks to a secure
 cluster via Hadoop tokens. The admin should specify
@@ -833,9 +822,8 @@ Common Configurations
 This section lists out the configurations that are common to all job
 types
 
-*****
 other_namenodes
-*****
+~~~~~~~~~~~~~~~
 
 
 This job property is useful for jobs that need to read data from or
@@ -850,9 +838,8 @@ NameNode URLs.
 
 For example: **other_namenodes=webhdfs://host1:50070,hdfs://host2:9000**
 
-*****
 HTTP Job Callback
-*****
+~~~~~~~~~~~~~~~~~
 
 
 The purpose of this feature to allow Azkaban to notify external systems
@@ -864,9 +851,8 @@ following format:
 -  **job.notification.<status>.<sequence number>.body**
 -  **job.notification.<status>.<sequence number>.headers**
 
-*****
 Supported values for **status**
-*****
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 -  **started**: when a job is started
@@ -874,26 +860,23 @@ Supported values for **status**
 -  **failure**: when a job failed
 -  **completed**: when a job is either successfully completed or failed
 
-*****
 Number of callback URLs
-*****
+~~~~~~~~~~~~~~~~~~~~~~~
 
 
 The maximum # of callback URLs per job is 3. So the <sequence number>
 can go up from 1 to 3. If a gap is detected, only the ones before the
 gap is used.
 
-*****
 HTTP Method
-*****
+~~~~~~~~~~~
 
 
 The supported method are **GET** and **POST**. The default method is
 **GET**
 
-*****
 Headers
-*****
+~~~~~~~
 
 
 Each job callback URL can optional specify headers in the following
@@ -906,9 +889,8 @@ name and value is ':'
 
 The headers are applicable for both GET and POST job callback URLs.
 
-*****
 Job Context Information
-*****
+~~~~~~~~~~~~~~~~~~~~~~~
 
 
 It is often desirable to include some dynamic context information about
@@ -927,9 +909,9 @@ value of each token will be HTTP encoded.
 
 The value of these tokens will be HTTP encoded if they are on the URL,
 but will not be encoded when they are in the HTTP body.
-*****
+
 Examples
-*****
+~~~~~~~~
 
 
 GET HTTP Method
@@ -960,9 +942,8 @@ of jars and dependencies and keep them up-to-date. We created the
 dependencies are now managed by admins; absolutely no jars or java code
 are required from users.
 
-*****
 How to Use
-*****
+~~~~~~~~~~
 
 
 This is essentially a hadoopJava job, with all jars controlled by the
@@ -1062,9 +1043,8 @@ These go into ``plugin.properties``:
 
    <div class="bs-callout bs-callout-info">
 
-*****
 For more information
-*****
+~~~~~~~~~~~~~~~~~~~~
 
 
 Please refer to `Voldemort project
@@ -1088,9 +1068,8 @@ any job under the same Azkaban work flow management and scheduling.
 Creating new job types is often times very easy. Here are several ways
 one can do it:
 
-*****
 New Types with only Configuration Changes
-*****
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 One doesn't always need to write java code to create job types for end
@@ -1109,9 +1088,8 @@ pig/Azkaban users.
 The same practice applies to most other job types. Admins should create
 or tailor job types to their specific company needs or clusters.
 
-*****
 New Types Using Existing Job Types
-*****
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 If one needs to create a different job type, a good starting point is to
@@ -1131,9 +1109,8 @@ voldemort stores.
 
 The same applies to the hive type.
 
-*****
 New Types by Extending Existing Ones
-*****
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For the most flexibility, one can always build new types by extending
 the existing ones. Azkaban uses reflection to load job types that
@@ -1169,9 +1146,8 @@ To enable this feature, add the following property
 Property "executor.metric.milisecinterval.default" controls the interval
 at which the metrics are collected at
 
-*****
 Statistic Types
-*****
+~~~~~~~~~~~~~~~
 
 
 +----------------------+------------------------------+
@@ -1202,6 +1178,7 @@ are available
 -  To disable the statistic collection - /stats?action=disableMetrics
 
 --------------
+
 *****
 Reload Jobtypes
 *****
