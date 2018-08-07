@@ -1,4 +1,4 @@
-AJAX API
+API Documentation
 ========
 
 | Often there's a desire to interact with Azkaban without having to use
