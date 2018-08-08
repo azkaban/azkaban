@@ -82,7 +82,7 @@ public class FlowPreparer {
       FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_SIZE_FILE_NAME),
           sizeInByte);
     } catch (final IOException e) {
-      log.error(e);
+      log.error("error when dumping number to file", e);
     }
   }
 
