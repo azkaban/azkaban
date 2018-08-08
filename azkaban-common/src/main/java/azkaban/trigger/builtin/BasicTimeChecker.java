@@ -181,9 +181,6 @@ public class BasicTimeChecker implements ConditionChecker {
         date = date.plus(this.period);
       }
       count += 1;
-      if (!this.skipPastChecks) {
-        continue;
-      }
     }
     return date.getMillis();
   }
