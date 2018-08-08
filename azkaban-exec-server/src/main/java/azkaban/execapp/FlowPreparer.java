@@ -68,6 +68,23 @@ public class FlowPreparer {
 
   }
 
+  /**
+   * Creates a file which keeps the size of {@param dir} in bytes inside the {@param dir} and sets
+   * the dirSize for {@param pv}.
+   *
+   * @param dir the directory whose size needs to be kept in the file to be created.
+   * @param pv the projectVersion whose size needs to updated.
+   */
+  static void updateDirSize(final File dir, final ProjectVersion pv) {
+    final long sizeInByte = FileUtils.sizeOfDirectory(dir);
+    pv.setDirSizeInBytes(sizeInByte);
+    try {
+      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_SIZE_FILE_NAME),
+          sizeInByte);
+    } catch (final IOException e) {
+      log.error("error when dumping dir size to file", e);
+    }
+  }
 
   /**
    * Prepare the flow directory for execution.
@@ -177,24 +194,6 @@ public class FlowPreparer {
       }
       // Clean up: Remove tempDir if exists
       FileUtils.deleteDirectory(tempDir);
-    }
-  }
-
-  /**
-   * Creates a file which keeps the size of {@param dir} in bytes inside the {@param dir} and sets
-   * the dirSize for {@param pv}.
-   *
-   * @param dir the directory whose size needs to be kept in the file to be created.
-   * @param pv the projectVersion whose size needs to updated.
-   */
-  private void updateDirSize(final File dir, final ProjectVersion pv) {
-    final long sizeInByte = FileUtils.sizeOfDirectory(dir);
-    pv.setDirSizeInBytes(sizeInByte);
-    try {
-      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_SIZE_FILE_NAME),
-          sizeInByte);
-    } catch (final IOException e) {
-      log.error(e);
     }
   }
 
