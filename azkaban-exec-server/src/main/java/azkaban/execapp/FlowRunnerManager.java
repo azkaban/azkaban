@@ -299,17 +299,17 @@ public class FlowRunnerManager implements EventListener,
           final String fileName = project.getFileName().toString();
           final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
           final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
-          final ProjectVersion version =
+          final ProjectVersion projVersion =
               new ProjectVersion(projectId, versionNum, project.toFile());
           final Path projectDirSizeFile = Paths
-              .get(version.getInstalledDir().toString(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
-          if (Files.exists(projectDirSizeFile)) {
-            version.setDirSizeInBytes(FileIOUtils.readNumberFromFile(projectDirSizeFile));
-          } else {
-            FlowPreparer.updateDirSize(version.getInstalledDir(), version);
+              .get(projVersion.getInstalledDir().toString(),
+                  FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+          if (!Files.exists(projectDirSizeFile)) {
+            FlowPreparer.updateDirSize(projVersion.getInstalledDir(), projVersion);
           }
 
-          allProjects.put(new Pair<>(projectId, versionNum), version);
+          projVersion.setDirSizeInBytes(FileIOUtils.readNumberFromFile(projectDirSizeFile));
+          allProjects.put(new Pair<>(projectId, versionNum), projVersion);
         } catch (final Exception e) {
           logger.error("error while loading project dir metadata", e);
         }
