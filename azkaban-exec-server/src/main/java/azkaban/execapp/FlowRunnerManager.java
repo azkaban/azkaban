@@ -292,6 +292,7 @@ public class FlowRunnerManager implements EventListener,
   private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjectsAsCache() {
     final Map<Pair<Integer, Integer>, ProjectVersion> allProjects =
         new ConcurrentHashMap<>();
+    logger.info("loading project dir metadata into memory");
     for (final Path project : this.loadExistingProjects()) {
       if (Files.isDirectory(project)) {
         try {
@@ -300,16 +301,20 @@ public class FlowRunnerManager implements EventListener,
           final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
           final ProjectVersion version =
               new ProjectVersion(projectId, versionNum, project.toFile());
-
-          version.setDirSizeInBytes(
-              FileIOUtils.readNumberFromFile(Paths.get(version.getInstalledDir().toString(),
-                  FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
+          final Path projectDirSizeFile = Paths
+              .get(version.getInstalledDir().toString(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+          if (Files.exists(projectDirSizeFile)) {
+            version.setDirSizeInBytes(FileIOUtils.readNumberFromFile(projectDirSizeFile));
+          } else {
+            FlowPreparer.updateDirSize(version.getInstalledDir(), version);
+          }
 
           allProjects.put(new Pair<>(projectId, versionNum), version);
         } catch (final Exception e) {
-          e.printStackTrace();
+          logger.error("error while loading project dir metadata", e);
         }
       }
+      logger.info("finish loading project dir metadata into memory");
     }
 
     return allProjects;
