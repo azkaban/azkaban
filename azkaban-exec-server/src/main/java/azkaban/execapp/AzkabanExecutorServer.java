@@ -59,6 +59,9 @@ import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.security.Permission;
+import java.security.Policy;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -130,6 +133,17 @@ public class AzkabanExecutorServer {
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Executor...");
+
+    if (System.getSecurityManager() == null) {
+      Policy.setPolicy(new Policy() {
+        @Override
+        public boolean implies(final ProtectionDomain domain, final Permission permission) {
+          return true; // allow all
+        }
+      });
+      System.setSecurityManager(new SecurityManager());
+    }
+
     final Props props = AzkabanServer.loadProps(args);
 
     if (props == null) {
