@@ -81,6 +81,11 @@ public class HadoopHiveJob extends JavaProcessJob {
 
   @Override
   public void run() throws Exception {
+    String[] tagKeys = new String[] { CommonJobProperties.EXEC_ID,
+        CommonJobProperties.FLOW_ID, CommonJobProperties.PROJECT_NAME };
+    getJobProps().put(HadoopConfigurationInjector.INJECT_PREFIX
+        + HadoopJobUtils.MAPREDUCE_JOB_TAGS,
+        HadoopJobUtils.constructHadoopTags(getJobProps(), tagKeys));
     HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(),
         getWorkingDirectory());
 
