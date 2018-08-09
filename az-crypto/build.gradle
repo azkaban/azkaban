@@ -14,25 +14,26 @@
  * the License.
  */
 
-rootProject.name = 'azkaban'
+apply plugin: 'distribution'
 
-include 'az-core'
-include 'az-exec-util'
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-web-server'
-include 'az-flow-trigger-dependency-plugin'
-include 'test'
-include 'az-reportal'
-include 'az-hadoop-jobtype-plugin'
-include 'az-jobsummary'
-include 'az-hdfs-viewer'
-include 'az-flow-trigger-dependency-type'
-include 'az-flow-trigger-dependency-type:kafka-event-trigger'
-include 'tools'
-include 'az-crypto'
+dependencies {
+    compile deps.bcprov
+    compile deps.commonsCli
+    compile deps.commonsLang
+    compile deps.guava
+    compile deps.jacksonAnnotation
+    compile deps.jacksonCore
+    compile deps.jacksonDatabind
+    compile deps.jasypt
+    compile deps.hadoopCommon
+}
 
+distributions {
+    main {
+        contents {
+            from(jar) {
+                into 'lib'
+            }
+        }
+    }
+}
