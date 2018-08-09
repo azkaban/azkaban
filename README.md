@@ -54,7 +54,7 @@ For help, please visit the [Azkaban Google Group](https://groups.google.com/foru
 
 See [the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).
 
-#### Dcoumentation development
+#### Documentation development
 
 If you want to contribute to the documentation or the release tool (inside the `tools` folder), 
 please make sure python3 is installed in your environment. python virtual environment is recommended to run these scripts.

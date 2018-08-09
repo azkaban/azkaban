@@ -1,1 +1,0 @@
-If you want to contribute to the documentation, please follow the README in the root level of the project.

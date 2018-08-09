@@ -1,0 +1,1 @@
+If you want to contribute to the documentation, please follow the [README](https://github.com/azkaban/azkaban) in the root level of the project.
