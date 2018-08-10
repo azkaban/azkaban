@@ -9,11 +9,8 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied.
  */
-package crypto;
+package azkaban.crypto;
 
-import azkaban.crypto.Crypto;
-import azkaban.crypto.ICrypto;
-import azkaban.crypto.Version;
 import junit.framework.Assert;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;

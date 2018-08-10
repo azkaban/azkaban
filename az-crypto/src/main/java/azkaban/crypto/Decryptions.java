@@ -15,6 +15,7 @@ import com.google.common.base.Preconditions;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -42,7 +43,8 @@ public class Decryptions {
         "Passphrase file should only have read only permission on only user. " + passphrasePath);
 
     final Crypto crypto = new Crypto();
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path)))) {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path),
+        Charset.defaultCharset()))) {
       final String passphrase = br.readLine();
       final String decrypted = crypto.decrypt(cipheredText, passphrase);
       Preconditions.checkNotNull(decrypted, "Was not able to decrypt");

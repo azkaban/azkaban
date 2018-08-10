@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import java.nio.charset.Charset;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
@@ -38,11 +39,11 @@ public class Crypto implements ICrypto {
   }
 
   public static String encode(final String s) {
-    return Base64.getEncoder().encodeToString(s.getBytes());
+    return Base64.getEncoder().encodeToString(s.getBytes(Charset.defaultCharset()));
   }
 
   public static String decode(final String s) {
-    return new String(Base64.getDecoder().decode(s));
+    return new String(Base64.getDecoder().decode(s), Charset.defaultCharset());
   }
 
   @Override
