@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
@@ -27,7 +28,6 @@ import org.apache.log4j.Logger;
  */
 public class Crypto implements ICrypto {
 
-  private static final Logger logger = Logger.getLogger(Crypto.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private final Map<Version, ICrypto> cryptos;
 
@@ -39,11 +39,11 @@ public class Crypto implements ICrypto {
   }
 
   public static String encode(final String s) {
-    return Base64.getEncoder().encodeToString(s.getBytes(Charset.defaultCharset()));
+    return Base64.getEncoder().encodeToString(s.getBytes(StandardCharsets.UTF_8));
   }
 
   public static String decode(final String s) {
-    return new String(Base64.getDecoder().decode(s), Charset.defaultCharset());
+    return new String(Base64.getDecoder().decode(s), StandardCharsets.UTF_8);
   }
 
   @Override
