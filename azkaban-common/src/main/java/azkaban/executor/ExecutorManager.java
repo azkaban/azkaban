@@ -447,7 +447,11 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private void loadRunningFlows() throws ExecutorManagerException {
-    this.runningFlows.putAll(this.executorLoader.fetchActiveFlows());
+    logger.info("Loading running flows from database..");
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
+        .fetchActiveFlows();
+    logger.info("Loaded " + activeFlows.size() + " running flows");
+    this.runningFlows.putAll(activeFlows);
   }
 
   /*
