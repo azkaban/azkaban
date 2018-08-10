@@ -16,17 +16,24 @@
 
 apply plugin: 'distribution'
 
+
+configurations {
+  compileNotJar
+  compile.extendsFrom compileNotJar
+}
+
 dependencies {
-    compile deps.bcprov
+    compileNotJar(deps.bcprov) { transitive = false }
     compile deps.commonsCli
     compile deps.commonsLang
+    compile deps.hadoopCommon
     compile deps.guava
     compile deps.jacksonAnnotation
     compile deps.jacksonCore
     compile deps.jacksonDatabind
     compile deps.jasypt
-    compile deps.hadoopCommon
 }
+
 
 distributions {
     main {

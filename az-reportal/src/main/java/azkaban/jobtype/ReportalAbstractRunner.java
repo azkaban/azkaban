@@ -59,6 +59,7 @@ public abstract class ReportalAbstractRunner {
 
   public void run() throws Exception {
     System.out.println("Reportal: Setting up environment");
+    System.out.println("Reportal: " + this.props.toString());
 
     // Check the properties file
     if (this.props == null) {

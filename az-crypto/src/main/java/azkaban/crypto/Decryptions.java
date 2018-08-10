@@ -21,12 +21,16 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Decryptions {
 
   private static final FsPermission USER_READ_PERMISSION_ONLY = new FsPermission(FsAction.READ,
       FsAction.NONE,
       FsAction.NONE);
+
+  private static final Logger logger = LoggerFactory.getLogger(Decryptions.class);
 
   public String decrypt(final String cipheredText, final String passphrasePath, final FileSystem fs)
       throws IOException {
@@ -46,6 +50,11 @@ public class Decryptions {
     try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path),
         Charset.defaultCharset()))) {
       final String passphrase = br.readLine();
+
+      logger.info("cipheredText:" + cipheredText);
+      logger.info("path:" + path);
+      logger.info("passphrase:" + passphrase);
+
       final String decrypted = crypto.decrypt(cipheredText, passphrase);
       Preconditions.checkNotNull(decrypted, "Was not able to decrypt");
       return decrypted;

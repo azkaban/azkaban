@@ -22,10 +22,13 @@ import azkaban.reportal.util.Reportal;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.Map;
+import org.apache.log4j.Logger;
 
 public class ReportalTypeManager {
+
   public static final String DATA_COLLECTOR_JOB = "ReportalDataCollector";
   public static final String DATA_COLLECTOR_JOB_TYPE = "reportaldatacollector";
+  private static final Logger logger = Logger.getLogger(ReportalTypeManager.class);
 
   public static void createJobAndFiles(final Reportal reportal, final File jobFile,
       final String jobName, final String queryTitle, final String queryType,
@@ -49,6 +52,8 @@ public class ReportalTypeManager {
     propertiesFile.put("user.to.proxy", "${reportal.execution.user}");
     propertiesFile.put("reportal.proxy.user", "${reportal.execution.user}");
 
+    logger.info("type:" + type.getJobTypeName() + ":" + type.name());
+    logger.info("userName:" + userName);
     type.buildJobFiles(reportal, propertiesFile, jobFile, jobName, queryScript,
         userName);
 
