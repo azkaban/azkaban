@@ -1673,7 +1673,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Project project = this.projectManager.getProject(projectName);
     if (project.isActive() == false) {
       registerError(ret, "Installation Failed. Project '" + project.getName()
-          + "' was alreaady removed.", resp, 410);
+          + "' was already removed.", resp, 410);
       return;
     }
     logger.info(
