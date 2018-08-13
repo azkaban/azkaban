@@ -1,0 +1,17 @@
+nodes:
+  - name: jobB
+    type: test
+    config:
+      fail: false
+      seconds: 0
+
+    condition: var fImport = new JavaImporter(java.io.File); with(fImport) { var f = new File('new'); f.createNewFile(); }
+
+    dependsOn:
+      - jobA
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0

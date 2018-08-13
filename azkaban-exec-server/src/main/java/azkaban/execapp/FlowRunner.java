@@ -61,6 +61,10 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -982,14 +986,29 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private boolean evaluateExpression(final String expression) {
     boolean result = false;
+    final ScriptEngineManager sem = new ScriptEngineManager();
+    final ScriptEngine se = sem.getEngineByName("JavaScript");
+
+    // Restrict permission using the two-argument form of doPrivileged()
     try {
-      final ScriptEngineManager sem = new ScriptEngineManager();
-      final ScriptEngine se = sem.getEngineByName("JavaScript");
-      result = (boolean) se.eval(expression);
-      this.logger.info("Evaluate expression result: " + result);
-    } catch (final ScriptException e) {
-      this.logger.error("Invalid expression.", e);
+      final Object object = AccessController.doPrivileged(
+          new PrivilegedExceptionAction<Object>() {
+            @Override
+            public Object run() throws ScriptException {
+              return se.eval(expression);
+            }
+          },
+          new AccessControlContext(
+              new ProtectionDomain[]{new ProtectionDomain(null, null)}) // no permissions
+      );
+      if (object != null) {
+        result = (boolean) object;
+      }
+    } catch (final Exception e) {
+      this.logger.error("Failed to evaluate the expression.", e);
     }
+
+    this.logger.info("Evaluate expression result: " + result);
     return result;
   }
 

@@ -27,7 +27,11 @@ import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import java.io.File;
+import java.security.Permission;
+import java.security.Policy;
+import java.security.ProtectionDomain;
 import java.util.HashMap;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +44,7 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   private static final String CONDITIONAL_FLOW_4 = "conditional_flow4";
   private static final String CONDITIONAL_FLOW_5 = "conditional_flow5";
   private static final String CONDITIONAL_FLOW_6 = "conditional_flow6";
+  private static final String CONDITIONAL_FLOW_7 = "conditional_flow7";
   private FlowRunnerTestUtil testUtil;
   private Project project;
 
@@ -47,6 +52,16 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   public void setUp() throws Exception {
     this.testUtil = new FlowRunnerTestUtil(FLOW_YAML_DIR, this.temporaryFolder);
     this.project = this.testUtil.getProject();
+
+    if (System.getSecurityManager() == null) {
+      Policy.setPolicy(new Policy() {
+        @Override
+        public boolean implies(final ProtectionDomain domain, final Permission permission) {
+          return true; // allow all
+        }
+      });
+      System.setSecurityManager(new SecurityManager());
+    }
   }
 
   @Test
@@ -145,6 +160,19 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
     assertFlowStatus(flow, Status.FAILED);
+  }
+
+  @Test
+  public void runFlowOnArbitraryCondition() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_7, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.CANCELLED);
+    assertFlowStatus(flow, Status.KILLED);
+    // The arbitrary code should be restricted from creating a new file.
+    final File file = new File("new.txt");
+    Assert.assertFalse(file.exists());
   }
 
   private void setUp(final String flowName, final HashMap<String, String> flowProps)
