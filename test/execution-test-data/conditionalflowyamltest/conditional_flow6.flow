@@ -8,7 +8,7 @@ nodes:
     config:
       fail: false
       seconds: 0
-    condition: one_success && ${jobA:azkaban.server.name} == 'foo'
+    condition: one_success && ${jobA:props} == 'foo'
 
     dependsOn:
       - jobB
@@ -17,7 +17,6 @@ nodes:
   - name: jobA
     type: test
     config:
-      fail: false
       seconds: 0
 
   - name: jobB
@@ -25,7 +24,7 @@ nodes:
     config:
       fail: false
       seconds: 0
-    condition: ${jobA:azkaban.server.name} == 'foo'
+    condition: ${jobA:props} == 'foo'
 
     dependsOn:
       - jobA
@@ -35,7 +34,7 @@ nodes:
     config:
       fail: false
       seconds: 0
-    condition: ${jobA:azkaban.server.name} == 'bar'
+    condition: ${jobA:props} == 'bar'
 
     dependsOn:
       - jobA
