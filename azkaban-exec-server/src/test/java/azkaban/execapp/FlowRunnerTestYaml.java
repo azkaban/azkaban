@@ -20,7 +20,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
@@ -28,7 +27,7 @@ import java.io.File;
 import java.util.HashMap;
 import org.junit.Test;
 
-public class FlowRunnerYamlTest extends FlowRunnerTestBase {
+public class FlowRunnerTestYaml extends FlowRunnerTestBase {
 
   private static final String BASIC_FLOW_YAML_DIR = "basicflowwithoutendnode";
   private static final String FAIL_BASIC_FLOW_YAML_DIR = "failbasicflowwithoutendnode";
@@ -48,9 +47,10 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     this.runner = this.testUtil.createFromFlowMap(BASIC_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     FlowRunnerTestUtil.startThread(this.runner);
+    assertFlowStatus(flow, Status.RUNNING);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobB", Status.SUCCEEDED);
-    InteractiveTestJob.getTestJob("jobC").succeedJob();
+    assertFlowStatus(flow, Status.RUNNING);
     assertStatus("jobC", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.SUCCEEDED);
   }
@@ -62,6 +62,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     this.runner = this.testUtil.createFromFlowMap(BASIC_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     FlowRunnerTestUtil.startThread(this.runner);
+    assertFlowStatus(flow, Status.RUNNING);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobB", Status.SUCCEEDED);
     this.runner.kill();
@@ -76,11 +77,9 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     this.runner = this.testUtil.createFromFlowMap(FAIL_BASIC_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     FlowRunnerTestUtil.startThread(this.runner);
-    InteractiveTestJob.getTestJob("jobC").failJob();
+    assertFlowStatus(flow, Status.FAILED_FINISHING);
     assertStatus("jobC", Status.FAILED);
-    InteractiveTestJob.getTestJob("jobB").succeedJob();
     assertStatus("jobB", Status.SUCCEEDED);
-    InteractiveTestJob.getTestJob("jobA").succeedJob();
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobD", Status.CANCELLED);
     assertFlowStatus(flow, Status.FAILED);
@@ -93,10 +92,13 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     this.runner = this.testUtil.createFromFlowMap(EMBEDDED_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     FlowRunnerTestUtil.startThread(this.runner);
+    assertFlowStatus(flow, Status.RUNNING);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("embedded_flow1:jobB", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.RUNNING);
     assertStatus("embedded_flow1:jobC", Status.SUCCEEDED);
     assertStatus("embedded_flow1", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.RUNNING);
     assertStatus("jobD", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.SUCCEEDED);
   }

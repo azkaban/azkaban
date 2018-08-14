@@ -20,7 +20,7 @@ nodes:
       - name: jobC
         type: test
         config:
-          seconds: 0
+          seconds: 1
           fail: false
         dependsOn:
           - jobB
@@ -28,7 +28,7 @@ nodes:
   - name: jobD
     type: test
     config:
-      seconds: 0
+      seconds: 1
       fail: false
     dependsOn:
       - embedded_flow1
