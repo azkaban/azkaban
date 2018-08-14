@@ -33,6 +33,7 @@ import java.security.ProtectionDomain;
 import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
@@ -162,6 +163,16 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     assertFlowStatus(flow, Status.FAILED);
   }
 
+  /**
+   * JobB has defined "condition: var fImport = new JavaImporter(java.io.File); with(fImport) { var
+   * f = new File('new'); f.createNewFile(); }"
+   * Null ProtectionDomain will restrict this arbitrary code from creating a new file.
+   * However it will not kick in when the change for condition whitelisting is implemented.
+   * As a result, this test case will be ignored.
+   *
+   * @throws Exception the exception
+   */
+  @Ignore
   @Test
   public void runFlowOnArbitraryCondition() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();

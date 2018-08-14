@@ -23,6 +23,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String DEPENDENCY_UNDEFINED_YAML_DIR = "dependencyundefinedyamltest";
   private static final String INVALID_JOBPROPS_YAML_DIR = "invalidjobpropsyamltest";
   private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
+  private static final String INVALID_CONDITION_YAML_DIR = "invalidconditionalflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
   private static final String EMBEDDED_FLOW = "embedded_flow";
@@ -166,6 +168,23 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(NO_FLOW_YAML_DIR));
     checkFlowLoaderProperties(loader, 0, 0, 0);
+  }
+
+  @Test
+  public void testFlowYamlFileWithInvalidConditions() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(INVALID_CONDITION_YAML_DIR));
+    checkFlowLoaderProperties(loader, 5, 5, 5);
+    Assert.assertTrue(
+        loader.getErrors().contains("Invalid condition for jobB: jobC doesn't exist in the flow."));
+    Assert.assertTrue(loader.getErrors().contains(
+        "Invalid condition for jobA: should not define condition on its descendant node jobD."));
+    Assert.assertTrue(
+        loader.getErrors().contains("Invalid condition for jobB: operand is an empty string."));
+    Assert.assertTrue(loader.getErrors().contains(
+        "Invalid condition for jobB: cannot resolve the condition. Please check the syntax for supported conditions."));
+    Assert.assertTrue(loader.getErrors().contains(
+        "Invalid condition for jobB: cannot combine more than one conditionOnJobStatus macros."));
   }
 
   private void checkFlowLoaderProperties(final DirectoryYamlFlowLoader loader, final int numError,

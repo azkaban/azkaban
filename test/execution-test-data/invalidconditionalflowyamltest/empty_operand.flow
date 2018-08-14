@@ -4,8 +4,7 @@ nodes:
     config:
       fail: false
       seconds: 0
-
-    condition: var fImport = new JavaImporter(java.io.File); with(fImport) { var f = new File('new'); f.createNewFile(); }
+    condition: ${jobA:param} != 'foo' || !() > 1
 
     dependsOn:
       - jobA
