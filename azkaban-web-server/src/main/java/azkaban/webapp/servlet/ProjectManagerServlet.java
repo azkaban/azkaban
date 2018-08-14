@@ -1671,7 +1671,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
     final Project project = this.projectManager.getProject(projectName);
-    if (project.isActive() == false) {
+    if (!project.isActive()) {
       registerError(ret, "Installation Failed. Project '" + project.getName()
           + "' was already removed.", resp, 410);
       return;

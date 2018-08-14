@@ -77,6 +77,12 @@ public class ProjectManagerResource extends ResourceContextHolder {
       throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
     }
 
+    if (!project.isActive()) {
+      final String errorMsg =
+          "Installation Failed. Project '" + projectName + "' was already removed.";
+      throw new RestLiServiceException(HttpStatus.S_410_GONE, errorMsg);
+    }
+
     if (!ResourceUtils.hasPermission(project, user, Permission.Type.WRITE)) {
       final String errorMsg =
           "User " + user.getUserId()
