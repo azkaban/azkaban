@@ -14,17 +14,14 @@ nodes:
   - name: jobA
     type: test
     config:
-      seconds: 1
-      fail: false
+      seconds: 0
 
   - name: jobB
     type: test
     config:
-      seconds: 1
-      fail: false
+      seconds: 0
 
   - name: jobC
     type: test
     config:
-      seconds: 1
-      fail: true
+      seconds: 0
