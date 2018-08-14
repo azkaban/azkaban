@@ -31,12 +31,14 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 import org.apache.pig.tools.pigstats.PigStats;
 
+import azkaban.jobtype.pig.PigCommonConstants;
 import azkaban.jobtype.pig.PigUtil;
 import azkaban.jobtype.tuning.TuningCommonConstants;
 import azkaban.jobtype.tuning.TuningErrorDetector;
 import azkaban.jobtype.tuning.TuningException;
 import azkaban.jobtype.tuning.TuningParameterUtils;
 import azkaban.utils.Props;
+import azkaban.jobExecutor.AbstractProcessJob;
 
 
 /**
@@ -44,30 +46,17 @@ import azkaban.utils.Props;
  */
 public class HadoopTuningSecurePigWrapper {
 
-  public static final String WORKING_DIR = "working.dir";
-
   private static File pigLogFile;
 
   private static Props props;
 
-  private static final Logger logger;
-
-  /**
-   * In case if job is failed because of auto tuning parameters, it will be retried with the best parameters
-   * we have seen so far. Maximum number of try by default is 2, which can be configured using parameter
-   * tuning.job.retry.count
-   */
-
-  private static final String TUNING_JOB_RETRY_COUNT = "tuning.job.retry.count";
-
-  static {
-    logger = Logger.getRootLogger();
-  }
+  private static final Logger logger = Logger.getRootLogger();;
 
   /**
    * This function runs the pig job with tuning enabled. In case tuning job fails in first try, it asks for
    * last best parameter from tuning and re-run the job. In case tuning end point is not responding this job
    * will run with default parameters.
+   *
    * @param args
    * @throws Throwable
    */
@@ -78,8 +67,8 @@ public class HadoopTuningSecurePigWrapper {
     boolean retry = false;
     boolean firstTry = true;
     int maxJobRetry = 2;
-    if (initialJobprops.containsKey(TUNING_JOB_RETRY_COUNT)) {
-      maxJobRetry = initialJobprops.getInt(TUNING_JOB_RETRY_COUNT);
+    if (initialJobprops.containsKey(TuningCommonConstants.TUNING_JOB_RETRY_COUNT)) {
+      maxJobRetry = initialJobprops.getInt(TuningCommonConstants.TUNING_JOB_RETRY_COUNT);
     }
 
     while (jobTryCount <= maxJobRetry && (retry || firstTry)) {
@@ -98,7 +87,7 @@ public class HadoopTuningSecurePigWrapper {
 
       // special feature of secure pig wrapper: we will append the pig error file
       // onto system out
-      pigLogFile = new File(System.getenv("PIG_LOG_FILE"));
+      pigLogFile = new File(System.getenv(PigCommonConstants.PIG_LOG_FILE));
 
       try {
         if (HadoopSecureWrapperUtils.shouldProxy(jobProps)) {
@@ -171,7 +160,7 @@ public class HadoopTuningSecurePigWrapper {
   }
 
   public static String getWorkingDirectory(Props props) {
-    final String workingDir = props.getString(WORKING_DIR);
+    final String workingDir = props.getString(AbstractProcessJob.WORKING_DIR);
     if (workingDir == null) {
       return "";
     }

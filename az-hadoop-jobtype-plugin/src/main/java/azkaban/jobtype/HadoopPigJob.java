@@ -34,6 +34,7 @@ import org.apache.pig.PigRunner;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.jobtype.pig.PigCommonConstants;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
@@ -232,7 +233,7 @@ public class HadoopPigJob extends JavaProcessJob {
       pigLogFile =
           File.createTempFile("piglogfile", ".log", new File(
               getWorkingDirectory()));
-      jobProps.put("env." + "PIG_LOG_FILE", pigLogFile.getAbsolutePath());
+      jobProps.put("env." + PigCommonConstants.PIG_LOG_FILE, pigLogFile.getAbsolutePath());
     } catch (IOException e) {
       e.printStackTrace();
     }
