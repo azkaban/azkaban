@@ -463,7 +463,6 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
             page.add("view-preview", true);
 
             try {
-              logger.info("locationFull:" + locationFull);
               String[] fileList = streamProvider.getFileList(locationFull);
               fileList = ReportalHelper.filterCSVFile(fileList);
               Arrays.sort(fileList);

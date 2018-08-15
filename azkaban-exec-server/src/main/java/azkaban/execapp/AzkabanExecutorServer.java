@@ -129,7 +129,9 @@ public class AzkabanExecutorServer {
    * Azkaban using Jetty
    */
   public static void main(final String[] args) throws Exception {
-<<<<<<< HEAD
+    // Redirect all std out and err messages into log4j
+    StdOutErrRedirect.redirectOutAndErrToLog();
+
     logger.info("Starting Jetty Azkaban Executor...");
 
     if (System.getSecurityManager() == null) {
@@ -142,12 +144,6 @@ public class AzkabanExecutorServer {
       System.setSecurityManager(new SecurityManager());
     }
 
-    final Props props = AzkabanServer.loadProps(args);
-    try {
-      // Redirect all std out and err messages into log4j
-      StdOutErrRedirect.redirectOutAndErrToLog();
-
-    logger.info("Starting Jetty Azkaban Executor...");
     final Props props = AzkabanServer.loadProps(args);
 
     if (props == null) {
