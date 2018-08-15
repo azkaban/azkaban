@@ -20,9 +20,7 @@ public enum ConditionOnJobStatus {
   ALL_FAILED("all_failed"),
   ALL_DONE("all_done"),
   ONE_FAILED("one_failed"),
-  ONE_SUCCESS("one_success"),
-  ONE_FAILED_ALL_DONE("one_failed_all_done"),
-  ONE_SUCCESS_ALL_DONE("one_success_all_done");
+  ONE_SUCCESS("one_success");
 
   private final String condition;
 

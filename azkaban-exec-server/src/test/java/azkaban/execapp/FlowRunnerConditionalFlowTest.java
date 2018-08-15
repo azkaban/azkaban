@@ -95,18 +95,6 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   }
 
   @Test
-  public void runFlowOnJobStatusOneFailed() throws Exception {
-    final HashMap<String, String> flowProps = new HashMap<>();
-    setUp(CONDITIONAL_FLOW_3, flowProps);
-    final ExecutableFlow flow = this.runner.getExecutableFlow();
-    InteractiveTestJob.getTestJob("jobA").failJob();
-    assertStatus(flow, "jobA", Status.FAILED);
-    assertStatus(flow, "jobB", Status.RUNNING);
-    assertStatus(flow, "jobC", Status.SUCCEEDED);
-    assertFlowStatus(flow, Status.SUCCEEDED);
-  }
-
-  @Test
   public void runFlowOnJobStatusAllFailed() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
     setUp(CONDITIONAL_FLOW_4, flowProps);
@@ -122,7 +110,7 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   }
 
   @Test
-  public void runFlowOnJobStatusOneSuccessAllDone() throws Exception {
+  public void runFlowOnJobStatusOneSuccess() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
     setUp(CONDITIONAL_FLOW_5, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();

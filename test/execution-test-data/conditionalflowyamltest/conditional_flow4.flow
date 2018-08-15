@@ -17,9 +17,9 @@ nodes:
   - name: jobA
     type: test
     config:
-      seconds: 2
+      seconds: 0
 
   - name: jobB
     type: test
     config:
-      seconds: 2
+      seconds: 0

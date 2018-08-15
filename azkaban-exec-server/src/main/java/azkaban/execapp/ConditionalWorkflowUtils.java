@@ -18,9 +18,7 @@ package azkaban.execapp;
 import static azkaban.flow.ConditionOnJobStatus.ALL_FAILED;
 import static azkaban.flow.ConditionOnJobStatus.ALL_SUCCESS;
 import static azkaban.flow.ConditionOnJobStatus.ONE_FAILED;
-import static azkaban.flow.ConditionOnJobStatus.ONE_FAILED_ALL_DONE;
 import static azkaban.flow.ConditionOnJobStatus.ONE_SUCCESS;
-import static azkaban.flow.ConditionOnJobStatus.ONE_SUCCESS_ALL_DONE;
 
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
@@ -42,9 +40,6 @@ public class ConditionalWorkflowUtils {
       case ONE_FAILED:
       case ONE_SUCCESS:
         return checkOneStatus(node, conditionOnJobStatus);
-      case ONE_FAILED_ALL_DONE:
-      case ONE_SUCCESS_ALL_DONE:
-        return checkOneStatusAllDone(node, conditionOnJobStatus);
       default:
         return checkAllStatus(node, ALL_SUCCESS);
     }
@@ -68,30 +63,14 @@ public class ConditionalWorkflowUtils {
 
   private static String checkOneStatus(final ExecutableNode node, final ConditionOnJobStatus
       condition) {
-    boolean finished = true;
-    for (final String dependency : node.getInNodes()) {
-      final ExecutableNode dependencyNode = node.getParentFlow().getExecutableNode(dependency);
-      final Status depStatus = dependencyNode.getStatus();
-      if ((condition.equals(ONE_SUCCESS) && Status.isStatusSucceeded(depStatus)) ||
-          (condition.equals(ONE_FAILED) && Status.isStatusFailed(depStatus))) {
-        return SATISFIED;
-      } else if (!Status.isStatusFinished(depStatus)) {
-        finished = false;
-      }
-    }
-    return finished ? FAILED : PENDING;
-  }
-
-  private static String checkOneStatusAllDone(final ExecutableNode node, final ConditionOnJobStatus
-      condition) {
     String result = FAILED;
     for (final String dependency : node.getInNodes()) {
       final ExecutableNode dependencyNode = node.getParentFlow().getExecutableNode(dependency);
       final Status depStatus = dependencyNode.getStatus();
       if (!Status.isStatusFinished(depStatus)) {
         return PENDING;
-      } else if ((condition.equals(ONE_SUCCESS_ALL_DONE) && Status.isStatusSucceeded(depStatus)) ||
-          (condition.equals(ONE_FAILED_ALL_DONE) && Status.isStatusFailed(depStatus))) {
+      } else if ((condition.equals(ONE_SUCCESS) && Status.isStatusSucceeded(depStatus)) ||
+          (condition.equals(ONE_FAILED) && Status.isStatusFailed(depStatus))) {
         result = SATISFIED;
       }
     }
