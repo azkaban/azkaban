@@ -17,13 +17,8 @@
 apply plugin: 'distribution'
 
 
-configurations {
-  compileNotJar
-  compile.extendsFrom compileNotJar
-}
-
 dependencies {
-    compileNotJar(deps.bcprov) { transitive = false }
+    compile deps.bcprov
     compile deps.commonsCli
     compile deps.commonsLang
     compile deps.hadoopCommon

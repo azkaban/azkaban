@@ -16,24 +16,17 @@
 
 apply plugin: 'distribution'
 
-configurations {
-  compileNotJar
-  compile.extendsFrom compileNotJar
-}
-
 dependencies {
-    compileNotJar project(':az-core')
-    compile project(':az-crypto')
-    compileNotJar project(":azkaban-common")
+    compile project(':az-core')
+    compile project(":azkaban-common")
     compile project(":azkaban-web-server")
     compile project(":azkaban-hadoop-security-plugin")
-    compileNotJar(deps.bcprov) { transitive = false }
+    compile project(':az-crypto')
 
     compileOnly deps.hadoopCommon
-    compileNotJar deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
-    compileOnly (deps.hiveCli) {
+    compileOnly(deps.hiveCli) {
         transitive = false
     }
     compileOnly deps.hiveMetastore
@@ -46,7 +39,6 @@ dependencies {
     }
 }
 
-
 distributions {
     main {
         contents {
@@ -57,22 +49,20 @@ distributions {
     }
 }
 
-
-//Create a fat jar with runtime dependencies less compileNotJar dependencies
-
-jar {
+// farJar is for presto reportal it depends az-crytpo and its dependencies
+task fatJar(type: Jar) {
     zip64 true
     baseName = "az-reportal-fat"
     dependsOn configurations.runtime
-
     from {
-           (configurations.runtime - configurations.compileNotJar)
-           .filter { it.path.matches(".*jar") }
-           .collect {
+        (configurations.runtime)
+                .filter { it.path.matches(".*jar") }
+                .collect {
             it.isDirectory() ? it : zipTree(it)
-           }
+        }
     }
-    exclude ('**/*.RSA')
-    exclude ('**/*.SF')
-    exclude ('**/*.DSA')
-} 
+    exclude('**/*.RSA')
+    exclude('**/*.SF')
+    exclude('**/*.DSA')
+}
+
