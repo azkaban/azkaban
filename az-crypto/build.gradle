@@ -16,19 +16,17 @@
 
 apply plugin: 'distribution'
 
-
 dependencies {
     compile deps.bcprov
     compile deps.commonsCli
     compile deps.commonsLang
-    compile deps.hadoopCommon
     compile deps.guava
     compile deps.jacksonAnnotation
     compile deps.jacksonCore
     compile deps.jacksonDatabind
     compile deps.jasypt
+    compile deps.hadoopCommon
 }
-
 
 distributions {
     main {
