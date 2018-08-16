@@ -16,13 +16,15 @@
 
 apply plugin: 'distribution'
 
+
 dependencies {
-    compile project(':az-core')
-    compile project(":azkaban-common")
-    compile project(":azkaban-web-server")
-    compile project(":azkaban-hadoop-security-plugin")
+    compileOnly project(':az-core')
+    compileOnly project(":azkaban-web-server")
+    compileOnly project(":azkaban-common")
+    compileOnly project(":azkaban-hadoop-security-plugin")
     compile project(':az-crypto')
 
+    compileOnly deps.bcprov
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
@@ -49,13 +51,14 @@ distributions {
     }
 }
 
-// farJar is for presto reportal it depends az-crytpo and its dependencies
+// fatJar is for presto reportal it depends az-crytpo and its dependencies
 task fatJar(type: Jar) {
     zip64 true
     baseName = "az-reportal-fat"
-    dependsOn configurations.runtime
+    from sourceSets.main.output
+    dependsOn configurations.compile
     from {
-        (configurations.runtime)
+        (configurations.compile - configurations.compileOnly)
                 .filter { it.path.matches(".*jar") }
                 .collect {
             it.isDirectory() ? it : zipTree(it)
