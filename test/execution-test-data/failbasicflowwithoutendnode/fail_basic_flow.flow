@@ -13,15 +13,9 @@ nodes:
 
   - name: jobA
     type: test
-    config:
-      seconds: 0
 
   - name: jobB
     type: test
-    config:
-      seconds: 0
 
   - name: jobC
     type: test
-    config:
-      seconds: 0

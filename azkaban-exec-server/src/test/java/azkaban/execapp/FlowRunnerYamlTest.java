@@ -50,6 +50,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     FlowRunnerTestUtil.startThread(this.runner);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobB", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.RUNNING);
     InteractiveTestJob.getTestJob("jobC").succeedJob();
     assertStatus("jobC", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.SUCCEEDED);

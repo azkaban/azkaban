@@ -17,5 +17,3 @@ nodes:
 
   - name: jobC
     type: test
-    config:
-      seconds: 0
