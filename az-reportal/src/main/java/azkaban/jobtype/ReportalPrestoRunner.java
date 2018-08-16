@@ -40,10 +40,6 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
     super(props);
   }
 
-  public static void main(final String[] args) {
-    System.out.println(Decryptions.class.getName());
-  }
-
   static String filesToURIString(final File[] files) throws IOException {
     final StringBuffer sb = new StringBuffer();
     for (int i = 0; i < files.length; i++) {
@@ -59,8 +55,6 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
 
   private String decrypt(final String encrypted, final String keyPath) throws IOException {
     final FileSystem fs = FileSystem.get(URI.create("file:///"), new Configuration());
-    //logger.info("fs:" + fs.getHomeDirectory());
-    //logger.info("fs:" + fs.getWorkingDirectory());
     return new Decryptions()
         .decrypt(encrypted, keyPath, fs);
   }
@@ -84,13 +78,10 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
   }
 
   public Connection getConnection(final String jdbcUrl, final String userToProxy) {
-    //logger.info("Connecting to JDBC URL: " + jdbcUrl + ":" + userToProxy);
     try {
       Class.forName("com.linkedin.daptor.jdbc.DaptorDriver");
       final Properties connProperties = getProperties();
       connProperties.put(IMPERSONATED_USER_KEY, userToProxy);
-      logger.info("connProperties");
-      logger.info(connProperties.toString());
       final Connection conn = DriverManager.getConnection(jdbcUrl, connProperties);
       return conn;
     } catch (final Exception e) {
@@ -100,17 +91,16 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
 
   @Override
   protected void runReportal() throws Exception {
-    final String holdem = "jdbc:daptor://ltx1-spidergw01.grid.linkedin.com:44444/hive;ssl=true;";
-    final String faro = "jdbc:daptor://ltx1-farogw01.grid.linkedin.com:44444/hive;ssl=true;";
 
     final Connection conn = getConnection(this.props.get("jdbc.url"), this.proxyUser);
     final PreparedStatement statement = conn.prepareStatement(this.jobQuery);
-    //logger.info("starting to execute the job query" + this.jobQuery);
-    statement.execute();
-    logger.info("output query result");
-    ReportalUtil.outputQueryResult(statement.getResultSet(), this.outputStream);
-    statement.close();
-    conn.close();
+    try {
+      statement.execute();
+      ReportalUtil.outputQueryResult(statement.getResultSet(), this.outputStream);
+    } finally {
+      statement.close();
+      conn.close();
+    }
   }
 
 }
