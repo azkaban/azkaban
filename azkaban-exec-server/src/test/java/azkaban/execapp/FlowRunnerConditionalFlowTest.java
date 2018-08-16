@@ -33,6 +33,7 @@ import java.security.ProtectionDomain;
 import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
@@ -64,6 +65,7 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void runFlowOnJobPropsCondition() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
@@ -139,9 +141,11 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   @Test
   public void runFlowOnBothJobStatusAndPropsCondition() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
-    flowProps.put("azkaban.server.name", "foo");
     setUp(CONDITIONAL_FLOW_6, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
+    final Props generatedProperties = new Props();
+    generatedProperties.put("props", "foo");
+    InteractiveTestJob.getTestJob("jobA").succeedJob(generatedProperties);
     assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
