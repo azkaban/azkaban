@@ -1,10 +1,10 @@
-package azkaban.jobtype.tableau;
+package azkaban.reportal.util.tableau;
 
 /**
  * Result enum stores resulting information from
  * the Tableau refresh
  */
-enum Result {
+public enum Result {
   SUCCESS("SUCCESS"), FAIL("FAILURE"), TIMEOUT("TIMEOUT");
 
   private final String message;
@@ -14,7 +14,7 @@ enum Result {
         + "See logs for more information.";
   }
 
-  protected String getMessage() {
+  public String getMessage() {
     return this.message;
   }
 

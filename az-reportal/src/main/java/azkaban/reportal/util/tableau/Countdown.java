@@ -1,4 +1,4 @@
-package azkaban.jobtype.tableau;
+package azkaban.reportal.util.tableau;
 
 import java.util.concurrent.TimeUnit;
 
@@ -11,16 +11,16 @@ public class Countdown {
 
   private long _timeRemaining;
 
-  protected Countdown(final long startingTime) {
+  public Countdown(final long startingTime) {
     this._timeRemaining = startingTime;
   }
 
-  protected void waitForOneMinute() throws InterruptedException {
+  public void waitForOneMinute() throws InterruptedException {
     TimeUnit.MINUTES.sleep(1);
     this._timeRemaining--;
   }
 
-  protected Boolean moreTimeRemaining() {
+  public boolean moreTimeRemaining() {
     return (this._timeRemaining > 0);
   }
 }

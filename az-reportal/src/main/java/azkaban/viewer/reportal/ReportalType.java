@@ -59,7 +59,7 @@ public enum ReportalType {
   },
   HiveJob("ReportalHive", "reportalhive", "hadoop"), TeraDataJob(
       "ReportalTeraData", "reportalteradata", "teradata"),
-  TableauJob("ReportalTableau", "reportaltableau", "tableau"),
+  TableauJob("ReportalTableau", "reportaltableau", "hadoop"),
   DataCollectorJob(
       ReportalTypeManager.DATA_COLLECTOR_JOB, ReportalTypeManager.DATA_COLLECTOR_JOB_TYPE, "") {
     @Override

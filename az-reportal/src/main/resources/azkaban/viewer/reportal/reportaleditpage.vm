@@ -289,6 +289,7 @@
                   <option value="ReportalHive">Hive</option>
                   <option value="ReportalTeraData">Teradata</option>
                   <option value="ReportalPig">Pig</option>
+                  <option value="ReportalTableau">Tableau</option>
                 </select>
               </div>
             </div>

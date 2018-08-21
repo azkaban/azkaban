@@ -14,9 +14,11 @@
  * the License.
  */
 
-package azkaban.jobtype.tableau;
+package azkaban.jobtype;
 
-import azkaban.jobtype.ReportalAbstractRunner;
+import azkaban.reportal.util.tableau.Countdown;
+import azkaban.reportal.util.tableau.Result;
+import azkaban.reportal.util.tableau.URLResponse;
 import java.time.Duration;
 import java.util.Properties;
 import org.apache.log4j.Logger;
@@ -80,13 +82,15 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
      * the status was an error or a timeout
      */
     logger.info("Refreshing extract to workbook " + workbook);
+    logger.info("Refreshing extract to tableauUrl " + tableauUrl);
+    logger.info("Refreshing extract with timeout " + timeout);
     refreshExtract(tableauUrl, workbook);
     logger.info("Getting last extract status from workbook " + workbook + "\n"
         + "Will wait for Tableau to refresh for up to " + timeout + " mins");
 
     final Result result = getLastExtractStatus(tableauUrl, workbook, Duration.ofMinutes(timeout));
 
-    logger.info(result.getMessage());
+    logger.info("result:" + result.getMessage());
     if (result == Result.FAIL || result == Result.TIMEOUT) {
       handleRefreshFailure(result, workbook);
     }

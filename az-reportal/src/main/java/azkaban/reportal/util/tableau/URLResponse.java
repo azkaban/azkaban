@@ -1,4 +1,4 @@
-package azkaban.jobtype.tableau;
+package azkaban.reportal.util.tableau;
 
 import java.io.IOException;
 import java.net.URL;
@@ -9,22 +9,22 @@ import org.apache.commons.io.IOUtils;
  * with the proxy server which interfaces with the Tableau
  * server.
  */
-class URLResponse {
+public class URLResponse {
 
   private final URL _url;
   private String _urlContents;
 
-  protected URLResponse(final String tableauUrl, final Path path, final String workbook) throws
+  public URLResponse(final String tableauUrl, final Path path, final String workbook) throws
       Exception {
     this._url = new URL(tableauUrl + "/" + path.getPath() + workbook);
     refreshContents();
   }
 
-  protected void refreshContents() throws IOException {
+  public void refreshContents() throws IOException {
     this._urlContents = IOUtils.toString(this._url.openStream(), "UTF-8");
   }
 
-  protected String getContents() {
+  public String getContents() {
     return (this._urlContents);
   }
 
@@ -36,15 +36,15 @@ class URLResponse {
     }
   }
 
-  protected Boolean indicatesSuccess() {
+  public Boolean indicatesSuccess() {
     return indicates("Success");
   }
 
-  protected Boolean indicatesError() {
+  public Boolean indicatesError() {
     return indicates("Error");
   }
 
-  protected enum Path {
+  public enum Path {
     REFRESH_EXTRACT("tableau_refresh_extract?workbook="), LAST_EXTRACT_STATUS(
         "tableau_last_extract_status?workbook=");
 
