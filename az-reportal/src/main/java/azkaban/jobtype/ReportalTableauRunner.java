@@ -25,8 +25,7 @@ import org.apache.log4j.Logger;
 
 public class ReportalTableauRunner extends ReportalAbstractRunner {
 
-  private static final String WORKBOOK = "workbook.name";
-  private static final String TIMEOUT = "max.running.mins";
+  private static final String TIMEOUT = "tableau.timeout.minutes";
   private static final String TABLEAU_URL = "tableau.url";
   private static final Logger logger = Logger.getLogger(ReportalTableauRunner.class);
 
@@ -46,7 +45,7 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
     final URLResponse urlResponse = new URLResponse(tableauUrl, URLResponse.Path
         .LAST_EXTRACT_STATUS,
         workbook);
-    final Countdown countdown = new Countdown(maxRunningDuration.toMinutes());
+    final Countdown countdown = new Countdown(maxRunningDuration);
 
     while (countdown.moreTimeRemaining()) {
       urlResponse.refreshContents();
@@ -73,7 +72,7 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
 
   @Override
   protected void runReportal() throws Exception {
-    final String workbook = this.props.get(WORKBOOK);
+    final String workbook = this.jobQuery;
     final int timeout = this.props.getInt(TIMEOUT);
     final String tableauUrl = this.props.get(TABLEAU_URL);
     /**
@@ -82,8 +81,6 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
      * the status was an error or a timeout
      */
     logger.info("Refreshing extract to workbook " + workbook);
-    logger.info("Refreshing extract to tableauUrl " + tableauUrl);
-    logger.info("Refreshing extract with timeout " + timeout);
     refreshExtract(tableauUrl, workbook);
     logger.info("Getting last extract status from workbook " + workbook + "\n"
         + "Will wait for Tableau to refresh for up to " + timeout + " mins");

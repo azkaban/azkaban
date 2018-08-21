@@ -1,5 +1,6 @@
 package azkaban.reportal.util.tableau;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -9,18 +10,18 @@ import java.util.concurrent.TimeUnit;
  */
 public class Countdown {
 
-  private long _timeRemaining;
+  private Duration duration;
 
-  public Countdown(final long startingTime) {
-    this._timeRemaining = startingTime;
+  public Countdown(final Duration duration) {
+    this.duration = duration;
   }
 
   public void waitForOneMinute() throws InterruptedException {
     TimeUnit.MINUTES.sleep(1);
-    this._timeRemaining--;
+    this.duration = this.duration.minusMinutes(1);
   }
 
   public boolean moreTimeRemaining() {
-    return (this._timeRemaining > 0);
+    return this.duration.toMillis() > 0;
   }
 }
