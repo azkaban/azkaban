@@ -305,9 +305,4 @@ public class Constants {
     public static final String START_TIME = "startTime";
     public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
   }
-
-  public static class PageProperties {
-    // number of rows to be displayed on the executions page.
-    public static final String DISPLAY_EXECUTION_PAGE_SIZE = "displayExecutionPageSize";
-  }
 }

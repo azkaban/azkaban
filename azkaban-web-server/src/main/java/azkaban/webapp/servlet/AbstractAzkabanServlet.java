@@ -20,7 +20,6 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.PageProperties;
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
@@ -326,8 +325,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("triggerPlugins", this.triggerPlugins);
     }
 
-    page.add(PageProperties.DISPLAY_EXECUTION_PAGE_SIZE, displayExecutionPageSize);
-
     return page;
   }
 
@@ -361,8 +358,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("triggers", this.triggerPlugins);
     }
 
-    page.add(PageProperties.DISPLAY_EXECUTION_PAGE_SIZE, displayExecutionPageSize);
-
     return page;
   }
 
@@ -380,7 +375,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     JSONUtils.toJSON(obj, resp.getOutputStream(), true);
   }
 
-  public int getDisplayExecutionPageSize() {
+  protected int getDisplayExecutionPageSize() {
     return displayExecutionPageSize;
   }
 }
