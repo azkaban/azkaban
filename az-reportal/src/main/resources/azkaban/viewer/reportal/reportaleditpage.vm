@@ -73,17 +73,6 @@
       } else {
         select.parentNode.parentNode.nextElementSibling.firstElementChild.innerHTML = "Script";
       }
-      //query.getElementById("queryLabel").innerHTML = "Workbook";
-      /*
-      query = select.parentNode.parentNode.nextElementSibling;
-      workbook = select.parentNode.parentNode.nextElementSibling.nextElementSibling;
-      if (select.value == "ReportalTableau") {
-        workbook.style.display = "block";
-        query.style.display = "none";
-      } else {
-        workbook.style.display = "none";
-        query.style.display = "block";
-      }*/
     }
   </script>
 
