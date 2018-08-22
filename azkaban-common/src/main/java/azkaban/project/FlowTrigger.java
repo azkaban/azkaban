@@ -37,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
  */
 public class FlowTrigger implements Serializable {
 
+  private static final long serialVersionUID = 5613379236523054097L;
   private final Map<String, FlowTriggerDependency> dependencies;
   private final CronSchedule schedule;
   private final Duration maxWaitDuration;
