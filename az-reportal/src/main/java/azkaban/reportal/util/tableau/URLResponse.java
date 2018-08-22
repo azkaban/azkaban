@@ -1,5 +1,6 @@
 package azkaban.reportal.util.tableau;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.net.URL;
 import org.apache.commons.io.IOUtils;
@@ -22,6 +23,11 @@ public class URLResponse {
 
   public void refreshContents() throws IOException {
     this._urlContents = IOUtils.toString(this._url.openStream(), "UTF-8");
+  }
+
+  @VisibleForTesting
+  void setURLContents(final String urlContents) {
+    this._urlContents = urlContents;
   }
 
   public String getContents() {
