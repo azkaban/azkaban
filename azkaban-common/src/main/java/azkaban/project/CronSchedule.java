@@ -29,6 +29,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  */
 public class CronSchedule implements Serializable {
 
+  private static final long serialVersionUID = -1330280892166841227L;
   private final String cronExpression;
 
   /**

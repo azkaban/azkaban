@@ -29,6 +29,7 @@ import org.apache.commons.lang.StringUtils;
  */
 public class FlowTriggerDependency implements Serializable {
 
+  private static final long serialVersionUID = 5875910030716100311L;
   private final Map<String, String> props;
   private final String name;
   private final String type;
