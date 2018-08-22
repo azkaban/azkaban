@@ -25,12 +25,16 @@ import org.apache.log4j.Logger;
 
 public class ReportalTableauRunner extends ReportalAbstractRunner {
 
-  private static final String TIMEOUT = "tableau.timeout.minutes";
-  private static final String TABLEAU_URL = "tableau.url";
+  public static final String TIMEOUT = "tableau.timeout.minutes";
+  public static final String TABLEAU_URL = "tableau.url";
   private static final Logger logger = Logger.getLogger(ReportalTableauRunner.class);
+  private final int timeout;
+  private final String tableauUrl;
 
   public ReportalTableauRunner(final String jobName, final Properties props) {
     super(props);
+    this.timeout = this.props.getInt(TIMEOUT);
+    this.tableauUrl = this.props.getString(TABLEAU_URL);
   }
 
   private void refreshExtract(final String tableauUrl, final String workbook) throws Exception {
@@ -73,19 +77,18 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
   @Override
   protected void runReportal() throws Exception {
     final String workbook = this.jobQuery;
-    final int timeout = this.props.getInt(TIMEOUT);
-    final String tableauUrl = this.props.get(TABLEAU_URL);
     /**
      * First refresh the extract
      * once the status is found, log the results and cancel the job if
      * the status was an error or a timeout
      */
     logger.info("Refreshing extract to workbook " + workbook);
-    refreshExtract(tableauUrl, workbook);
+    refreshExtract(this.tableauUrl, workbook);
     logger.info("Getting last extract status from workbook " + workbook + "\n"
-        + "Will wait for Tableau to refresh for up to " + timeout + " mins");
+        + "Will wait for Tableau to refresh for up to " + this.timeout + " mins");
 
-    final Result result = getLastExtractStatus(tableauUrl, workbook, Duration.ofMinutes(timeout));
+    final Result result = getLastExtractStatus(this.tableauUrl, workbook, Duration.ofMinutes(
+        this.timeout));
 
     logger.info("result:" + result.getMessage());
     if (result == Result.FAIL || result == Result.TIMEOUT) {
