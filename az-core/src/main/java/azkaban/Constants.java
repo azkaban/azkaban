@@ -229,6 +229,9 @@ public class Constants {
 
     // allowed max size of shared project dir in MB
     public static final String PROJECT_DIR_MAX_SIZE_IN_MB = "azkaban.project_cache_max_size_in_mb";
+
+    // number of rows to be displayed on the executions page.
+    public static final String DISPLAY_EXECUTION_PAGE_SIZE = "azkaban.display.execution_page_size";
   }
 
   public static class FlowProperties {
