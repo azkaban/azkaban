@@ -66,6 +66,16 @@
         #end
       #end];
   </script>
+  <script type="text/javascript">
+    function change(select) {
+      if (select.value == "ReportalTableau") {
+        select.parentNode.parentNode.nextElementSibling.firstElementChild.innerHTML = "Workbook";
+      } else {
+        select.parentNode.parentNode.nextElementSibling.firstElementChild.innerHTML = "Script";
+      }
+    }
+  </script>
+
   <script type="text/javascript" src="${context}/reportal/js/reportal.js"></script>
   <script type="text/javascript" src="${context}/reportal/js/reportal-edit.js"></script>
   <link href="${context}/reportal/css/reportal.css" rel="stylesheet">
@@ -285,20 +295,25 @@
             <div class="control-group required">
               <label class="control-label">Type<abbr title="Required" class="required-mark">*</abbr></label>
               <div class="controls">
-                <select class="querytype" nametemplate="query#type">
-                  <option value="ReportalHive">Hive</option>
+                <select id="querytype" class="querytype" onChange="change(this)"
+                        nametemplate="query#type">
+                  <option id="ReportalHive" value="ReportalHive">Hive</option>
                   <option value="ReportalTeraData">Teradata</option>
                   <option value="ReportalPig">Pig</option>
+                  <option value="ReportalTableau">Tableau</option>
                 </select>
               </div>
             </div>
-            <div class="control-group">
-              <label class="control-label">Script</label>
+
+            <div id="query" class="control-group">
+              <label class="control-label" id="queryLabel">Script</label>
               <div class="controls"><textarea class="span8 queryscript"
                                               nametemplate="query#script"></textarea></div>
             </div>
+
           </li>
         </ol>
+
         <div class="control-group">
           <label class="control-label"></label>
           <div class="controls">
@@ -308,6 +323,7 @@
             </button>
           </div>
         </div>
+
       </fieldset>
       <fieldset>
         <legend>Access</legend>
