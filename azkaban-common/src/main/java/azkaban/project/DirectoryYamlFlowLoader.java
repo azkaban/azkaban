@@ -267,7 +267,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
               .add("Invalid condition for " + node.getId() + ": operand is an empty string.");
           valid = false;
         } else if (!DIGIT_STRING_PATTERN.matcher(operands[i]).matches() &&
-            !validateVariableSubstitution(operands[i], azkabanNode, azkabanFlow)) {
+            !isValidVariableSubstitution(operands[i], azkabanNode, azkabanFlow)) {
           valid = false;
         }
       }
@@ -281,7 +281,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     }
   }
 
-  private boolean validateVariableSubstitution(final String operand, final AzkabanNode azkabanNode,
+  private boolean isValidVariableSubstitution(final String operand, final AzkabanNode azkabanNode,
       final AzkabanFlow azkabanFlow) {
     boolean result = false;
     final Matcher matcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(operand);
