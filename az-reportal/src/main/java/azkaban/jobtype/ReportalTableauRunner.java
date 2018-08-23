@@ -21,6 +21,7 @@ import azkaban.reportal.util.tableau.Result;
 import azkaban.reportal.util.tableau.URLResponse;
 import java.time.Duration;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 public class ReportalTableauRunner extends ReportalAbstractRunner {
@@ -60,7 +61,8 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
         logger.error(urlResponse.getContents());
         return (Result.FAIL);
       }
-      countdown.waitForOneMinute();
+      TimeUnit.MINUTES.sleep(1);
+      countdown.countDownByOneMinute();
       logger.info("Re-attempting connection with workbook " + workbook + ".");
     }
     return Result.TIMEOUT;

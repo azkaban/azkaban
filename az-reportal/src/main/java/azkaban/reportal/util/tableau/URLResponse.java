@@ -34,7 +34,7 @@ public class URLResponse {
     return (this._urlContents);
   }
 
-  private Boolean indicates(final String word) {
+  private boolean indicates(final String word) {
     if (this._urlContents == null) {
       return false;
     } else {
@@ -42,11 +42,11 @@ public class URLResponse {
     }
   }
 
-  public Boolean indicatesSuccess() {
+  public boolean indicatesSuccess() {
     return indicates("Success");
   }
 
-  public Boolean indicatesError() {
+  public boolean indicatesError() {
     return indicates("Error");
   }
 

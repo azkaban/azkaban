@@ -27,7 +27,7 @@ public class CountDownTest {
   public void testMoreTimeRemaining() throws InterruptedException {
     final Countdown countDown = new Countdown(Duration.ofMinutes(1));
     assertThat(countDown.moreTimeRemaining()).isTrue();
-    countDown.waitForOneMinute();
+    countDown.countDownByOneMinute();
     assertThat(countDown.moreTimeRemaining()).isFalse();
   }
 }

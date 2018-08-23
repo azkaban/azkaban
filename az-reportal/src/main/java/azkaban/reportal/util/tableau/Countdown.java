@@ -1,7 +1,6 @@
 package azkaban.reportal.util.tableau;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Countdown is a class used by Tableau Job to
@@ -16,8 +15,8 @@ public class Countdown {
     this.duration = duration;
   }
 
-  public void waitForOneMinute() throws InterruptedException {
-    TimeUnit.MINUTES.sleep(1);
+
+  public void countDownByOneMinute() throws InterruptedException {
     this.duration = this.duration.minusMinutes(1);
   }
 
