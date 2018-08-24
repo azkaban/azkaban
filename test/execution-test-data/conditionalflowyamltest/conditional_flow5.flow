@@ -8,7 +8,7 @@ nodes:
     config:
       fail: false
       seconds: 0
-    condition: one_success_all_done
+    condition: one_success
 
     dependsOn:
       - jobA
@@ -16,10 +16,6 @@ nodes:
 
   - name: jobA
     type: test
-    config:
-      seconds: 2
 
   - name: jobB
     type: test
-    config:
-      seconds: 2
