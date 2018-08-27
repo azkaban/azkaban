@@ -20,6 +20,7 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
+import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN;
 
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
@@ -77,7 +78,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -96,9 +96,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
-  // Pattern to match job variables in condition expressions: ${jobName:variable}
-  private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
-      .compile("\\$\\{([^:{}]+):([^:{}]+)\\}");
   // We check update every 5 minutes, just in case things get stuck. But for the
   // most part, we'll be idling.
   private static final long CHECK_WAIT_MS = 5 * 60 * 1000;
@@ -920,7 +917,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       return true;
     }
 
-    final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(condition);
+    final Matcher matcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(condition);
     String replaced = condition;
 
     while (matcher.find()) {
