@@ -22,11 +22,14 @@ import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
@@ -100,6 +103,37 @@ public class ScheduleManager implements TriggerAgent {
 
     updateLocal();
     return new ArrayList<>(this.scheduleIDMap.values());
+  }
+
+  /**
+   * Retrieves a copy of the list of schedules with filters.
+   */
+  public synchronized List<Schedule> getSchedules(String projectContain,
+      String flowContain, String submitUserContain,
+      long nextExecBeginTime, long nextExecEndTime)
+      throws ScheduleManagerException {
+
+    updateLocal();
+
+    Predicate<Schedule> projectNameFilter =
+        (s) -> (StringUtils.containsIgnoreCase(s.getProjectName(), projectContain));
+
+    Predicate<Schedule> flowNameFilter =
+        (s) -> (StringUtils.containsIgnoreCase(s.getFlowName(), flowContain));
+
+    Predicate<Schedule> submitUserFilter =
+        (s) -> (StringUtils.containsIgnoreCase(s.getSubmitUser(), submitUserContain));
+
+    Predicate<Schedule> nextExecTimeFilter = (s) -> (
+        (nextExecBeginTime == -1 && nextExecEndTime == -1)
+        || (s.getNextExecTime() > nextExecBeginTime && s.getNextExecTime() < nextExecEndTime));
+
+    return this.scheduleIDMap.values().stream()
+        .filter(projectNameFilter)
+        .filter(flowNameFilter)
+        .filter(submitUserFilter)
+        .filter(nextExecTimeFilter)
+        .collect(Collectors.toList());
   }
 
   /**
