@@ -32,15 +32,18 @@ import org.apache.hadoop.fs.FileSystem;
 
 public class ReportalPrestoRunner extends ReportalAbstractRunner {
 
+  public static final String JDBC_DRIVER_KEY = "presto.driver";
+  public static final String PRESTO_USER = "presto.driver.user";
+  public static final String DRIVER_URL = "presto.driver.jdbc.url";
   private static final String PRESTO_DRIVER_PROP_PREFIX = "presto.driver.";
   private static final String IMPERSONATED_USER_KEY = "presto.execute.user";
-  private static final String JDBC_DRIVER_KEY = "presto.driver";
-  private static final String PRESTO_USER = "presto.driver.user";
 
   public ReportalPrestoRunner(final String jobName, final Properties props) {
     super(props);
+
     Preconditions.checkArgument(props.containsKey(JDBC_DRIVER_KEY), "missing " + JDBC_DRIVER_KEY);
     Preconditions.checkArgument(props.containsKey(PRESTO_USER), "missing " + PRESTO_USER);
+    Preconditions.checkArgument(props.containsKey(DRIVER_URL), "missing " + DRIVER_URL);
   }
 
   private String decrypt(final String encrypted, final String keyPath) throws IOException {
