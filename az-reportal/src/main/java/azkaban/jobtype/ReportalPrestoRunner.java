@@ -18,11 +18,12 @@ package azkaban.jobtype;
 
 import azkaban.crypto.Decryptions;
 import azkaban.reportal.util.ReportalUtil;
+import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -34,10 +35,12 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
   private static final String PRESTO_DRIVER_PROP_PREFIX = "presto.driver.";
   private static final String IMPERSONATED_USER_KEY = "presto.execute.user";
   private static final String JDBC_DRIVER_KEY = "presto.driver";
-
+  private static final String PRESTO_USER = "presto.driver.user";
 
   public ReportalPrestoRunner(final String jobName, final Properties props) {
     super(props);
+    Preconditions.checkArgument(props.containsKey(JDBC_DRIVER_KEY), "missing " + JDBC_DRIVER_KEY);
+    Preconditions.checkArgument(props.containsKey(PRESTO_USER), "missing " + PRESTO_USER);
   }
 
   private String decrypt(final String encrypted, final String keyPath) throws IOException {
@@ -59,7 +62,7 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
         //"encrypted.password" => "password"
         final String jdbcProp = key.replaceFirst("encrypted.", "");
         connProperties.put(jdbcProp, decrypt(value, prestoProps.get("jdbc.crypto.key.path")));
-      } else {
+      } else if (!key.equals("jdbc.url") && !key.equals("jdbc.crypto.key.path")) {
         connProperties.put(key, value);
       }
     }
@@ -83,14 +86,13 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
   protected void runReportal() throws Exception {
     final Connection conn = getConnection(this.props.get(PRESTO_DRIVER_PROP_PREFIX + "jdbc.url"),
         this.proxyUser);
-    final PreparedStatement statement = conn.prepareStatement(this.jobQuery);
+    final Statement statement = conn.createStatement();
     try {
-      statement.execute();
+      statement.execute(this.jobQuery);
       ReportalUtil.outputQueryResult(statement.getResultSet(), this.outputStream);
     } finally {
       statement.close();
       conn.close();
     }
   }
-
 }
