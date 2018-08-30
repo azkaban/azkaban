@@ -18,7 +18,7 @@ apply plugin: 'distribution'
 
 
 dependencies {
-    compileOnly project(':az-core')
+    compile project(':az-core')
     compileOnly project(":azkaban-web-server")
     compileOnly project(":azkaban-common")
     compileOnly project(":azkaban-hadoop-security-plugin")
