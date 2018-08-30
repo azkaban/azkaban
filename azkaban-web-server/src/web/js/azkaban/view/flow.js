@@ -114,7 +114,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
   initialize: function (settings) {
     this.model.bind('change:view', this.handleChangeView, this);
     this.model.bind('render', this.render, this);
-    this.model.set({page: 1, pageSize: this.pageSize});
+    this.model.set({page: 1, pageSize: this.model.get("pageSize")});
     this.model.bind('change:page', this.handlePageChange, this);
   },
 
@@ -302,6 +302,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
   handlePageChange: function (evt) {
     var page = this.model.get("page") - 1;
     var pageSize = this.model.get("pageSize");
+    console.log("pageSize = " + pageSize)
     var content = this.model.get("content");
     if (content == 'flow') {
       requestURL = contextURL + "/manager";
