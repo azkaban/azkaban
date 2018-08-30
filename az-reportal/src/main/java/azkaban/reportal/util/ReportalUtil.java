@@ -19,6 +19,10 @@ package azkaban.reportal.util;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.reportal.util.Reportal.Variable;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,9 +42,6 @@ public class ReportalUtil {
   /**
    * Returns a list of the executable nodes in the specified flow in execution
    * order. Assumes that the flow is linear.
-   *
-   * @param nodes
-   * @return
    */
   public static List<ExecutableNode> sortExecutableNodes(final ExecutableFlow flow) {
     final List<ExecutableNode> sortedNodes = new ArrayList<>();
@@ -65,15 +66,12 @@ public class ReportalUtil {
   /**
    * Get runtime variables to be set in unscheduled mode of execution.
    * Returns empty list, if no runtime variable is found
-   *
-   * @param variables
-   * @return
    */
   public static List<Variable> getRunTimeVariables(
       final Collection<Variable> variables) {
     final List<Variable> runtimeVariables =
-      ReportalUtil.getVariablesByRegex(variables,
-        Reportal.REPORTAL_CONFIG_PREFIX_NEGATION_REGEX);
+        ReportalUtil.getVariablesByRegex(variables,
+            Reportal.REPORTAL_CONFIG_PREFIX_NEGATION_REGEX);
 
     return runtimeVariables;
   }
@@ -81,10 +79,6 @@ public class ReportalUtil {
   /**
    * Shortlist variables which match a given regex. Returns empty empty list, if no
    * eligible variable is found
-   *
-   * @param variables
-   * @param regex
-   * @return
    */
   public static List<Variable> getVariablesByRegex(
       final Collection<Variable> variables, final String regex) {
@@ -103,22 +97,69 @@ public class ReportalUtil {
    * Shortlist variables which match a given prefix. Returns empty map, if no
    * eligible variable is found.
    *
-   * @param variables
-   *          variables to be processed
-   * @param prefix
-   *          prefix to be matched
+   * @param variables variables to be processed
+   * @param prefix prefix to be matched
    * @return a map with shortlisted variables and prefix removed
    */
   public static Map<String, String> getVariableMapByPrefix(
       final Collection<Variable> variables, final String prefix) {
     final Map<String, String> shortlistMap = new HashMap<>();
-    if (variables!=null && prefix != null) {
+    if (variables != null && prefix != null) {
       for (final Variable var : getVariablesByRegex(variables,
-        Reportal.REPORTAL_CONFIG_PREFIX_REGEX)) {
+          Reportal.REPORTAL_CONFIG_PREFIX_REGEX)) {
         shortlistMap
-          .put(var.getTitle().replaceFirst(prefix, ""), var.getName());
+            .put(var.getTitle().replaceFirst(prefix, ""), var.getName());
       }
     }
     return shortlistMap;
+  }
+
+  private static String formatValue(final String value) {
+    return "\"" + value.replace("\"", "") + "\"";
+  }
+
+  public static void outputQueryResult(final ResultSet result, final OutputStream outputStream)
+      throws SQLException {
+    final PrintStream outFile = new PrintStream(outputStream);
+    final String delim = ",";
+    boolean isHeaderPending = true;
+    if (result != null) {
+      while (result.next()) {
+        final int numColumns = result.getMetaData().getColumnCount();
+        final StringBuilder dataString = new StringBuilder();
+
+        if (isHeaderPending) {
+          final StringBuilder headerString = new StringBuilder();
+          for (int j = 1; j <= numColumns; j++) {
+            final String colName = formatValue(result.getMetaData().getColumnName(j));
+            if (j > 1) {
+              headerString.append(delim).append(colName);
+            } else {
+              headerString.append(colName);
+            }
+          }
+          isHeaderPending = false;
+          outFile.println(headerString.toString());
+        }
+
+        for (int j = 1; j <= numColumns; j++) {
+          String colVal = result.getString(j);
+          if (colVal == null) {
+            colVal = "\"null\"";
+          } else {
+            colVal = formatValue(colVal);
+          }
+
+          if (j > 1) {
+            dataString.append(delim).append(colVal);
+          } else {
+            dataString.append(colVal);
+          }
+        }
+
+        outFile.println(dataString.toString());
+      }
+    }
+    outFile.close();
   }
 }
