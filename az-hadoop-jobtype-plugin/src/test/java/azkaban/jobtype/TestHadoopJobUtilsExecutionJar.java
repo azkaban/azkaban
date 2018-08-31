@@ -11,9 +11,11 @@ import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 // TODO kunkun-tang: This test class needs more refactors.
+@Ignore
 public class TestHadoopJobUtilsExecutionJar {
   private Logger logger = Logger.getRootLogger();
 
