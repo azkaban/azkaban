@@ -114,7 +114,8 @@ azkaban.ExecutionsView = Backbone.View.extend({
   initialize: function (settings) {
     this.model.bind('change:view', this.handleChangeView, this);
     this.model.bind('render', this.render, this);
-    this.model.set({page: 1, pageSize: this.model.get("pageSize")});
+    console.log("during initialization, pageSize: " + pageSize);
+    this.model.set({page: 1, pageSize: pageSize});
     this.model.bind('change:page', this.handlePageChange, this);
   },
 
