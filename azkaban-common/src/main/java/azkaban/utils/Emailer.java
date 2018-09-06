@@ -189,7 +189,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   /**
-   * Sends a single email.
+   * Sends a single email about failed updates.
    */
   private void sendFailedUpdateEmail(final Executor executor,
       final ExecutorManagerException exception, final MailCreator mailCreator,
