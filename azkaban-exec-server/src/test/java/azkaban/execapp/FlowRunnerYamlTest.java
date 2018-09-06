@@ -57,6 +57,12 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     assertFlowStatus(flow, Status.SUCCEEDED);
   }
 
+  /**
+   * There seems to be an actual race condition bug in the runtime code. See: issue #1921: Flaky
+   * test FlowRunnerTestYaml & issue #1311: Potential race condition between flowRunner thread and
+   * jetty killing thread. Disable this test until the potential bug is fixed or new DAG engine
+   * code is ready.
+   */
   @Ignore
   @Test
   public void testKillBasicFlowWithoutEndNode() throws Exception {
