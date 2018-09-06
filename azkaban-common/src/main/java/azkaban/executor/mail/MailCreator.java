@@ -17,6 +17,8 @@
 package azkaban.executor.mail;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.EmailMessage;
 import java.util.List;
 
@@ -33,4 +35,9 @@ public interface MailCreator {
   public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
       String clientPortNumber, String... vars);
+
+  public boolean createFailedUpdateMessage(List<ExecutableFlow> flows, Executor executor,
+      ExecutorManagerException updateException, EmailMessage message,
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber);
 }
