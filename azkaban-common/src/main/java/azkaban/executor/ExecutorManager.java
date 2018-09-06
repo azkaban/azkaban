@@ -1610,6 +1610,7 @@ public class ExecutorManager extends EventHandler implements
                 for (final ExecutableFlow flow : entry.getValue()) {
                   final Pair<ExecutionReference, ExecutableFlow> pair =
                       ExecutorManager.this.runningFlows.get(flow.getExecutionId());
+                  // TODO can runningFlows.get ever return null, causing NPE below?
 
                   ExecutorManager.this.updaterStage =
                       "Failed to get update for flow " + pair.getSecond().getExecutionId();
