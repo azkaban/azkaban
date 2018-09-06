@@ -1535,8 +1535,10 @@ public class ExecutorManager extends EventHandler implements
 
     private final int waitTimeIdleMs = 2000;
     private final int waitTimeMs = 500;
-    // When we have an http error, for that flow, we'll check every 10 secs, 6
-    // times (1 mins) before we send an email about unresponsive executor.
+    // When we have an http error, for that flow, we'll check every 10 secs, 360
+    // times (3600 seconds = 1 hour) before we send an email about unresponsive executor.
+    private final int numErrorsBetweenUnresponsiveEmail = 360;
+    // First email is sent after 1 minute of unresponsiveness
     private final int numErrorsBeforeUnresponsiveEmail = 6;
     private final long errorThreshold = 10000;
     private boolean shutdown = false;
@@ -1615,7 +1617,8 @@ public class ExecutorManager extends EventHandler implements
                   final ExecutionReference ref = pair.getFirst();
                   ref.setNextCheckTime(System.currentTimeMillis() + this.errorThreshold);
                   ref.setNumErrors(ref.getNumErrors() + 1);
-                  if (ref.getNumErrors() % this.numErrorsBeforeUnresponsiveEmail == 0) {
+                  if (ref.getNumErrors() == this.numErrorsBeforeUnresponsiveEmail
+                      || ref.getNumErrors() % this.numErrorsBetweenUnresponsiveEmail == 0) {
                     // if any of the executions has failed many enough updates, alert
                     sendUnresponsiveEmail = true;
                   }
