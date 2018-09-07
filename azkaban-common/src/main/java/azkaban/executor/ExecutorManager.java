@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,6 +69,7 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -921,7 +923,7 @@ public class ExecutorManager extends EventHandler implements
             userId);
       } else if (this.queuedFlows.hasExecution(exFlow.getExecutionId())) {
         this.queuedFlows.dequeue(exFlow.getExecutionId());
-        finalizeFlows(exFlow);
+        finalizeFlows(exFlow, "Cancelled before dispatching to executor", null);
       } else {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -1151,7 +1153,7 @@ public class ExecutorManager extends EventHandler implements
             // this logic is only implemented in multiExecutorMode but
             // missed in single executor case.
             this.commonMetrics.markDispatchFail();
-            finalizeFlows(exflow);
+            finalizeFlows(exflow, "Dispatching failed", e);
             throw e;
           }
         }
@@ -1227,10 +1229,12 @@ public class ExecutorManager extends EventHandler implements
     this.executingManager.shutdown();
   }
 
-  private void finalizeFlows(final ExecutableFlow flow) {
+  private void finalizeFlows(final ExecutableFlow flow, final String reason,
+      final Throwable originalError) {
 
     final int execId = flow.getExecutionId();
     boolean alertUser = true;
+    final String[] extraReasons = getFinalizeFlowReasons(reason, originalError);
     this.updaterStage = "finalizing flow " + execId;
     // First we check if the execution in the datastore is complete
     try {
@@ -1266,19 +1270,17 @@ public class ExecutorManager extends EventHandler implements
       logger.error(e);
     }
 
-    // TODO append to the flow log that we forced killed this flow because the
-    // target no longer had
-    // the reference.
+    // TODO append to the flow log that we marked this flow as failed + the extraReasons
 
     this.updaterStage = "finalizing flow " + execId + " alerting and emailing";
     if (alertUser) {
       final ExecutionOptions options = flow.getExecutionOptions();
       // But we can definitely email them.
       final Alerter mailAlerter = this.alerterHolder.get("email");
-      if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED) {
+      if (flow.getStatus() != Status.SUCCEEDED) {
         if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
           try {
-            mailAlerter.alertOnError(flow);
+            mailAlerter.alertOnError(flow, extraReasons);
           } catch (final Exception e) {
             logger.error(e);
           }
@@ -1288,11 +1290,9 @@ public class ExecutorManager extends EventHandler implements
           final Alerter alerter = this.alerterHolder.get(alertType);
           if (alerter != null) {
             try {
-              alerter.alertOnError(flow);
+              alerter.alertOnError(flow, extraReasons);
             } catch (final Exception e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-              logger.error("Failed to alert by " + alertType);
+              logger.error("Failed to alert by " + alertType, e);
             }
           } else {
             logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
@@ -1314,9 +1314,7 @@ public class ExecutorManager extends EventHandler implements
             try {
               alerter.alertOnSuccess(flow);
             } catch (final Exception e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-              logger.error("Failed to alert by " + alertType);
+              logger.error("Failed to alert by " + alertType, e);
             }
           } else {
             logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
@@ -1325,6 +1323,15 @@ public class ExecutorManager extends EventHandler implements
       }
     }
 
+  }
+
+  private String[] getFinalizeFlowReasons(final String reason, final Throwable originalError) {
+    final List<String> reasons = new LinkedList<>();
+    reasons.add(reason);
+    if (originalError != null) {
+      reasons.add(ExceptionUtils.getStackTrace(originalError));
+    }
+    return reasons.toArray(new String[reasons.size()]);
   }
 
   private void failEverything(final ExecutableFlow exFlow) {
@@ -1404,8 +1411,7 @@ public class ExecutorManager extends EventHandler implements
         try {
           mailAlerter.alertOnFirstError(flow);
         } catch (final Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to send first error email." + e.getMessage());
+          logger.error("Failed to send first error email." + e.getMessage(), e);
         }
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
@@ -1415,9 +1421,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             alerter.alertOnFirstError(flow);
           } catch (final Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
+            logger.error("Failed to alert by " + alertType, e);
           }
         } else {
           logger.error("Alerter type " + alertType
@@ -1662,7 +1666,7 @@ public class ExecutorManager extends EventHandler implements
 
             // Kill error flows
             for (final ExecutableFlow flow : finalizeFlows) {
-              finalizeFlows(flow);
+              finalizeFlows(flow, "Not running on the assigned executor (any more)", null);
             }
           }
 
@@ -1875,7 +1879,7 @@ public class ExecutorManager extends EventHandler implements
           if (giveUpReason != null) {
             logger.error("Failed to dispatch queued execution " + exflow.getId() + " because "
                 + giveUpReason);
-            finalizeFlows(exflow);
+            finalizeFlows(exflow, "Failed to dispatch because " + giveUpReason, null);
             // GIVE UP DISPATCHING - exit
             return;
           } else {
@@ -1925,7 +1929,7 @@ public class ExecutorManager extends EventHandler implements
           "Executor %s responded with exception for exec: %d",
           selectedExecutor, exflow.getExecutionId()), e);
       logger.info(String.format(
-          "Reached handleDispatchExceptionCase stage for exec %d with error count %d",
+          "Failed dispatch attempt for exec %d with error count %d",
           exflow.getExecutionId(), reference.getNumErrors()));
     }
 

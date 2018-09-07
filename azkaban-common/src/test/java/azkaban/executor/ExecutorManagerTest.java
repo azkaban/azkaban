@@ -331,7 +331,8 @@ public class ExecutorManagerTest {
     verify(this.apiGateway)
         .callWithExecutable(flow1, this.manager.fetchExecutor(2), ConnectorParams.EXECUTE_ACTION);
     verify(this.loader, Mockito.times(2)).unassignExecutor(-1);
-    verify(this.mailAlerter).alertOnError(flow1);
+    verify(this.mailAlerter).alertOnError(eq(flow1),
+        eq("Failed to dispatch because reached azkaban.maxDispatchingErrors (tried 2 executors)"));
   }
 
   private void mockFlowDoesNotExist() throws Exception {
