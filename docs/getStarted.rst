@@ -69,12 +69,12 @@ Follow these steps to get started:
   cd azkaban; ./gradlew build installDist
 3. Start the solo server:
 ::
-  cd azkaban-solo-server/build/install/azkaban-solo-server; bin/azkaban-solo-start.sh
+  cd azkaban-solo-server/build/install/azkaban-solo-server; bin/start-solo.sh
 Azkaban solo server should be all set, by listening to ``8081`` port at default to accept incoming network request. So, open a web browser and check out ``http://localhost:8081/``
 
 4. Stop server:
 ::
-  bin/azkaban-solo-shutdown.sh
+  bin/shutdown-solo.sh
 
 
 The solo-server installation should contain the following directories.
@@ -134,7 +134,7 @@ And configure ssl port in `azkaban.properties`:
 Getting started with the Multi Executor Server
 *****
 
-Databasea setup
+Database setup
 ########
 
 We suggest users to opt for **Mysql** as Azkaban database, because we build up a few Mysql connection enhancements to facilitate AZ set up, and strengthen service reliability:
