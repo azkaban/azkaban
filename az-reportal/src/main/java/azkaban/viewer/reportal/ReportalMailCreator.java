@@ -16,6 +16,8 @@
 
 package azkaban.viewer.reportal;
 
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorManagerException;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -101,6 +103,20 @@ public class ReportalMailCreator implements MailCreator {
 
     return createEmail(flow, emailList, message, "Success", azkabanName,
         scheme, clientHostname, clientPortNumber, true);
+  }
+
+  @Override
+  public boolean createFailedUpdateMessage(List<ExecutableFlow> flows, Executor executor,
+      ExecutorManagerException updateException, EmailMessage message, String azkabanName,
+      String scheme, String clientHostname, String clientPortNumber) {
+
+    ExecutableFlow flow = flows.get(0);
+
+    ExecutionOptions option = flow.getExecutionOptions();
+    Set<String> emailList = new HashSet<String>(option.getFailureEmails());
+
+    return createEmail(flow, emailList, message, "FailedUpdate", azkabanName,
+        scheme, clientHostname, clientPortNumber, false);
   }
 
   private boolean createEmail(ExecutableFlow flow, Set<String> emailList,
