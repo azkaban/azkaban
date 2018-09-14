@@ -16,12 +16,6 @@ nodes:
 
   - name: jobA
     type: test
-    config:
-      fail: false
-      seconds: 0
 
   - name: jobB
     type: test
-    config:
-      fail: false
-      seconds: 0
