@@ -1671,11 +1671,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
     final Project project = this.projectManager.getProject(projectName);
-    if (!project.isActive()) {
-      registerError(ret, "Installation Failed. Project '" + project.getName()
-          + "' was already removed.", resp, 410);
+    if(project == null || !project.isActive()) {
+      String failureCause = project == null ? "doesn't exist." : "was already removed.";
+      registerError(ret, "Installation Failed. Project '" + projectName + " "
+          + failureCause, resp, 410);
       return;
     }
+
     logger.info(
         "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
 
