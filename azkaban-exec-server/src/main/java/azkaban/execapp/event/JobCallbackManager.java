@@ -53,8 +53,10 @@ public class JobCallbackManager implements EventListener {
   private final JmxJobCallbackMBean callbackMbean;
   private final String azkabanHostName;
   private final SimpleDateFormat gmtDateFormatter;
+  private final Props azkabanProps;
 
   private JobCallbackManager(final Props props) {
+    azkabanProps = props;
     maxNumCallBack = props.getInt("jobcallback.max_count", maxNumCallBack);
 
     // initialize the request maker
@@ -210,7 +212,9 @@ public class JobCallbackManager implements EventListener {
 
       // don't want to waste time resolving properties if there are
       // callback properties to parse
-      final Props props = PropsUtils.resolveProps(jobRunner.getProps());
+      Props current = new Props(azkabanProps);
+      current.putAll(jobRunner.getProps());
+      final Props props = PropsUtils.resolveProps(current);
 
       final Map<String, String> contextInfo =
           JobCallbackUtil.buildJobContextInfoMap(event, this.azkabanHostName);
