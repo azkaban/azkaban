@@ -365,15 +365,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     final String flowName = getParam(req, "flow");
 
-    Flow flow = null;
     try {
-      flow = project.getFlow(flowName);
+      final Flow flow = project.getFlow(flowName);
       if (flow == null) {
         ret.put("error", "Flow " + flowName + " not found.");
         return;
       }
 
       ret.put("jobTypes", getFlowJobTypes(flow));
+      if (flow.getCondition() != null) {
+        ret.put("condition", flow.getCondition());
+      }
     } catch (final AccessControlException e) {
       ret.put("error", e.getMessage());
     }
@@ -1355,6 +1357,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       page.add("jobid", node.getId());
       page.add("jobtype", node.getType());
+      if (node.getCondition() != null) {
+        page.add("condition", node.getCondition());
+      }
 
       final ArrayList<String> dependencies = new ArrayList<>();
       final Set<Edge> inEdges = flow.getInEdges(node.getId());

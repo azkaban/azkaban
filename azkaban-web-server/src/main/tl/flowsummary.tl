@@ -10,6 +10,14 @@
         <td class="property-key">Job Types Used</td>
         <td>{#jobTypes}{.} {/jobTypes}</td>
       </tr>
+      <tr>
+        <td class="property-key">Condition</td>
+        {?condition}
+          <td>{condition}</td>
+        {:else}
+          <td>none</td>
+        {/condition}
+      </tr>
       </tbody>
     </table>
   </div>

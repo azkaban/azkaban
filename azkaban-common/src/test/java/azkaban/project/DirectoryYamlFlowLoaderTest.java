@@ -44,6 +44,7 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String DEPENDENCY_UNDEFINED_YAML_DIR = "dependencyundefinedyamltest";
   private static final String INVALID_JOBPROPS_YAML_DIR = "invalidjobpropsyamltest";
   private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
+  private static final String CONDITION_YAML_DIR = "conditionalflowyamltest";
   private static final String INVALID_CONDITION_YAML_DIR = "invalidconditionalflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
@@ -59,6 +60,7 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String EMBEDDED_FLOW_B2 =
       "embedded_flow_b" + Constants.PATH_DELIMITER + "embedded_flow1" + Constants.PATH_DELIMITER
           + "embedded_flow2";
+  private static final String CONDITIONAL_FLOW = "conditional_flow6";
   private static final String DUPLICATE_NODENAME_FLOW_FILE = "duplicate_nodename.flow";
   private static final String DEPENDENCY_UNDEFINED_FLOW_FILE = "dependency_undefined.flow";
   private static final String CYCLE_FOUND_FLOW = "cycle_found";
@@ -168,6 +170,21 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(NO_FLOW_YAML_DIR));
     checkFlowLoaderProperties(loader, 0, 0, 0);
+  }
+
+  @Test
+  public void testFlowYamlFileWithValidCondition() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(CONDITION_YAML_DIR));
+    assertThat(loader.getFlowMap().containsKey(CONDITIONAL_FLOW)).isTrue();
+    checkFlowProperties(loader, CONDITIONAL_FLOW, 0, 4, 1, 4, null);
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobA").getCondition()).isNull();
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobB").getCondition())
+        .isEqualTo("${jobA:props} == 'foo'");
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobC").getCondition())
+        .isEqualTo("${jobA:props} == 'bar'");
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobD").getCondition())
+        .isEqualTo("one_success && ${jobA:props} == 'foo'");
   }
 
   @Test
