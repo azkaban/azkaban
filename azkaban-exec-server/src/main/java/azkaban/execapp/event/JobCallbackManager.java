@@ -260,7 +260,6 @@ public class JobCallbackManager implements EventListener {
     for (final HttpRequestBase httpRequest : httpRequests) {
       httpRequest.addHeader(new BasicHeader("Date", this.gmtDateFormatter
           .format(new Date())));
-      httpRequest.addHeader(new BasicHeader("Host", this.azkabanHostName));
     }
 
   }
