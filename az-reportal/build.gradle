@@ -23,6 +23,7 @@ dependencies {
     compileOnly project(":azkaban-common")
     compileOnly project(":azkaban-hadoop-security-plugin")
     compile project(':az-crypto')
+    compile deps.prestoJdbc
 
     compileOnly deps.bcprov
     compileOnly deps.hadoopCommon
