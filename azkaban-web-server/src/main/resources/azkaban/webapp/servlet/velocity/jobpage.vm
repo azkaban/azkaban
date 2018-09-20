@@ -121,6 +121,19 @@
           <p><strong>Job Type</strong> $jobtype</p>
         </div>
 
+      ## Condition
+
+        <div class="panel panel-default">
+          <div class="panel-heading">Condition</div>
+          <ul class="list-group">
+            #if ($condition)
+              <li class="list-group-item">$condition</li>
+            #else
+              <li class="list-group-item">No Condition</li>
+            #end
+          </ul>
+        </div><!-- /panel -->
+
       ## Dependencies
 
         <div class="panel panel-default">

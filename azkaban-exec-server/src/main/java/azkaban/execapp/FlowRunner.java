@@ -20,6 +20,7 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
+import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_ON_JOB_STATUS_PATTERN;
 import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN;
 
 import azkaban.Constants;
@@ -878,6 +879,8 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Check if condition on job status is satisfied
     switch (checkConditionOnJobStatus(node)) {
       case FAILED:
+        this.logger.info("Condition on job status: " + node.getConditionOnJobStatus() + " is "
+            + "evaluated to false for " + node.getId());
         status = Status.CANCELLED;
         break;
       // Condition not satisfied yet, need to wait
@@ -887,7 +890,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         break;
     }
 
-    if (!isConditionOnRuntimeVariableMet(node)) {
+    if (status != Status.CANCELLED && !isConditionOnRuntimeVariableMet(node)) {
       status = Status.CANCELLED;
     }
 
@@ -917,15 +920,24 @@ public class FlowRunner extends EventHandler implements Runnable {
       return true;
     }
 
-    final Matcher matcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(condition);
     String replaced = condition;
+    // Replace the condition on job status macro with "true" to skip the evaluation by Script
+    // Engine since it has already been evaluated.
+    final Matcher jobStatusMatcher = CONDITION_ON_JOB_STATUS_PATTERN.matcher
+        (condition);
+    if (jobStatusMatcher.find()) {
+      replaced = condition.replace(jobStatusMatcher.group(1), "true");
+    }
 
-    while (matcher.find()) {
-      final String value = findValueForJobVariable(node, matcher.group(1), matcher.group(2));
+    final Matcher variableMatcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(replaced);
+
+    while (variableMatcher.find()) {
+      final String value = findValueForJobVariable(node, variableMatcher.group(1),
+          variableMatcher.group(2));
       if (value != null) {
-        replaced = replaced.replace(matcher.group(), "'" + value + "'");
+        replaced = replaced.replace(variableMatcher.group(), "'" + value + "'");
       }
-      this.logger.info("Condition is " + replaced);
+      this.logger.info("Resolved condition of " + node.getId() + " is " + replaced);
     }
 
     // Evaluate string expression using script engine
@@ -971,10 +983,10 @@ public class FlowRunner extends EventHandler implements Runnable {
         result = (boolean) object;
       }
     } catch (final Exception e) {
-      this.logger.error("Failed to evaluate the expression.", e);
+      this.logger.error("Failed to evaluate the condition.", e);
     }
 
-    this.logger.info("Evaluate expression result: " + result);
+    this.logger.info("Condition is evaluated to " + result);
     return result;
   }
 

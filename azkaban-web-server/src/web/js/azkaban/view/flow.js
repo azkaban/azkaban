@@ -363,7 +363,8 @@ azkaban.SummaryView = Backbone.View.extend({
     var successHandler = function (data) {
       console.log(data);
       model.set({
-        'jobTypes': data.jobTypes
+        'jobTypes': data.jobTypes,
+        'condition': data.condition
       });
       model.trigger('render');
     };
@@ -454,6 +455,7 @@ azkaban.SummaryView = Backbone.View.extend({
       projectName: projectName,
       flowName: flowId,
       jobTypes: this.model.get('jobTypes'),
+      condition: this.model.get('condition'),
       schedule: this.model.get('schedule'),
       flowtrigger: this.model.get('flowtrigger'),
     };
