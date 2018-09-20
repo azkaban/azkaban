@@ -923,17 +923,19 @@ public class FlowRunner extends EventHandler implements Runnable {
     String replaced = condition;
     // Replace the condition on job status macro with "true" to skip the evaluation by Script
     // Engine since it has already been evaluated.
-    Matcher matcher = CONDITION_ON_JOB_STATUS_PATTERN.matcher(condition);
-    if (matcher.find()) {
-      replaced = condition.replace(matcher.group(1), "true");
+    final Matcher jobStatusMatcher = CONDITION_ON_JOB_STATUS_PATTERN.matcher
+        (condition);
+    if (jobStatusMatcher.find()) {
+      replaced = condition.replace(jobStatusMatcher.group(1), "true");
     }
 
-    matcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(replaced);
+    final Matcher variableMatcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(replaced);
 
-    while (matcher.find()) {
-      final String value = findValueForJobVariable(node, matcher.group(1), matcher.group(2));
+    while (variableMatcher.find()) {
+      final String value = findValueForJobVariable(node, variableMatcher.group(1),
+          variableMatcher.group(2));
       if (value != null) {
-        replaced = replaced.replace(matcher.group(), "'" + value + "'");
+        replaced = replaced.replace(variableMatcher.group(), "'" + value + "'");
       }
       this.logger.info("Resolved condition of " + node.getId() + " is " + replaced);
     }
