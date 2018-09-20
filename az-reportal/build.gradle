@@ -45,16 +45,6 @@ dependencies {
 distributions {
     main {
         contents {
-            from(jar) {
-                into 'lib'
-            }
-        }
-    }
-}
-
-distributions {
-    main {
-        contents {
             from(configurations.runtime) {
                 into 'lib'
             }
