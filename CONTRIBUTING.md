@@ -53,20 +53,20 @@ Install and enable the intellij's
 [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) 
 to reformat/refactor code automatically:
 
-Please turn on all the options except 
-  * Remove unused suppress warning annotation
+Please turn on the following options:
+  * Optimize imports
+  * Reformat file
+  * Rearrange fields and methods
+  * Add final to local variable
+  * Add final to field
+  * Remove explicit generic type for diamond
+  * Add this to field access
+  * Add this to method access
+  * Add blocks in if/while/for statements
+  * Remove final from private method
+  * Remove unnecessary semicolon
+  * Add missing @Override annotations
 
-It allows us to do following when saving a file:
-* Organize imports
-* Reformat code based on the code style
-* Rearrange code (reorder methods, fields, etc.)
-* Add final to local variable
-* Add final to field
-* Remove explicit generic type for diamond
-* Qualify field access with this
-* Remove final from private method
-* Remove unnecessary semicolon
-* Add missing @Override annotations
 
 ### New line at the end of a file
 
