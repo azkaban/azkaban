@@ -57,7 +57,8 @@ Please turn on the following options:
   * Optimize imports
   * Reformat file
   * Rearrange fields and methods
-  * Add final to local variable
+  * Add final to local variable or parameter
+  * Add missing serialVersionUID field for Serializable classes
   * Add final to field
   * Remove explicit generic type for diamond
   * Add this to field access
@@ -66,6 +67,7 @@ Please turn on the following options:
   * Remove final from private method
   * Remove unnecessary semicolon
   * Add missing @Override annotations
+  * Change visibility of field or method to lower access
 
 
 ### New line at the end of a file
