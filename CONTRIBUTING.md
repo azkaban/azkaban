@@ -69,6 +69,7 @@ Please turn on the following options:
   * Add missing @Override annotations
   * Change visibility of field or method to lower access
 
+Please refer to save actions plugin(https://github.com/dubreuia/intellij-plugin-save-actions) for implication of each option.
 
 ### New line at the end of a file
 
