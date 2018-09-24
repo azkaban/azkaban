@@ -23,7 +23,6 @@ dependencies {
     compileOnly project(":azkaban-common")
     compileOnly project(":azkaban-hadoop-security-plugin")
     compile project(':az-crypto')
-    compile deps.prestoJdbc
 
     compileOnly deps.bcprov
     compileOnly deps.hadoopCommon
@@ -39,6 +38,16 @@ dependencies {
     }
     compileOnly(deps.pig) {
         transitive = false
+    }
+}
+
+distributions {
+    main {
+        contents {
+            from(jar) {
+                into 'lib'
+            }
+        }
     }
 }
 
