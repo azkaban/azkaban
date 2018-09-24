@@ -124,8 +124,7 @@ ext.deps = [
         jacksonAnnotation   : 'com.fasterxml.jackson.core:jackson-annotations:2.7.4',
         jacksonDatabind     : 'com.fasterxml.jackson.core:jackson-databind:2.7.4',
         jasypt              : 'org.jasypt:jasypt:1.9.2',
-        jacksonCore         : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
-        prestoJdbc          : 'com.facebook.presto:presto-jdbc:0.157.1'
+        jacksonCore         : 'com.fasterxml.jackson.core:jackson-core:2.9.2'
 ]
 
 subprojects {
