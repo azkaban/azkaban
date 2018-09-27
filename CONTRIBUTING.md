@@ -53,21 +53,18 @@ Install and enable the intellij's
 [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) 
 to reformat/refactor code automatically:
 
-Please turn on the following options:
+Please turn on the following options only:
   * Optimize imports
   * Reformat file
-  * Rearrange fields and methods
-  * Add final to local variable or parameter
-  * Add missing serialVersionUID field for Serializable classes
-  * Add final to field
-  * Remove explicit generic type for diamond
+  * Add final modifier to field	
+  * Add final modifier to local variable or parameter	
   * Add this to field access
-  * Add this to method access
-  * Add blocks in if/while/for statements
-  * Remove final from private method
-  * Remove unnecessary semicolon
+  * Add class qualifier to static member access outside declaring class only
   * Add missing @Override annotations
-  * Change visibility of field or method to lower access
+  * Add blocks to if/while/for statements
+  * Add missing serialVersionUID field for Serializable classes
+  * Remove explicit generic type for diamond	
+  * Remove unnecessary semicolon	
 
 Please refer to save actions plugin(https://github.com/dubreuia/intellij-plugin-save-actions) for implication of each option.
 
