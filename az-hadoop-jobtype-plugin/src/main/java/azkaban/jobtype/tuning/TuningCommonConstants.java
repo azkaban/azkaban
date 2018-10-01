@@ -24,6 +24,13 @@ public class TuningCommonConstants {
   private TuningCommonConstants() {
 
   }
+
+  /**
+   * In case if job is failed because of auto tuning parameters, it will be retried with the best parameters
+   * we have seen so far. Maximum number of try by default is 2, which can be configured using parameter
+   * tuning.job.retry.count
+   */
+  public static final String TUNING_JOB_RETRY_COUNT = "tuning.job.retry.count";
   public static final String AUTO_TUNING_JOB_TYPE = "auto.tuning.job.type";
   public static final String OPTIMIZATION_METRIC = "optimization.metric";
 

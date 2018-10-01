@@ -29,6 +29,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 import org.apache.pig.tools.pigstats.PigStats;
 
+import azkaban.jobtype.pig.PigCommonConstants;
 import azkaban.jobtype.pig.PigUtil;
 import azkaban.utils.Props;
 
@@ -52,7 +53,7 @@ public class HadoopSecurePigWrapper {
 
     // special feature of secure pig wrapper: we will append the pig error file
     // onto system out
-    pigLogFile = new File(System.getenv("PIG_LOG_FILE"));
+    pigLogFile = new File(System.getenv(PigCommonConstants.PIG_LOG_FILE));
 
     if (HadoopSecureWrapperUtils.shouldProxy(jobProps)) {
       String tokenFile = System.getenv(HADOOP_TOKEN_FILE_LOCATION);
