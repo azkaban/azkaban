@@ -53,7 +53,7 @@ Install and enable the intellij's
 [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) 
 to reformat/refactor code automatically:
 
-Please turn on the following options only(all of them are available in release 1.1.0(https://github.com/dubreuia/intellij-plugin-save-actions/releases) and above):
+Please turn on the following options only(all of them are available in release 1.1.0 and above, see https://github.com/dubreuia/intellij-plugin-save-actions/releases):
   * Optimize imports
   * Reformat file
   * Add final modifier to field	
