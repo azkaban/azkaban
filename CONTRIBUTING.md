@@ -63,6 +63,7 @@ Please turn on the following options only:
   * Add missing @Override annotations
   * Add blocks to if/while/for statements
   * Add missing serialVersionUID field for Serializable classes
+  * Remove final from private method
   * Remove explicit generic type for diamond	
   * Remove unnecessary semicolon	
 
