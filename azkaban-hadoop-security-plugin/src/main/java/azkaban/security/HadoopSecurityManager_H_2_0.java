@@ -37,6 +37,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +81,7 @@ import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.hive.jdbc.HiveConnection;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
@@ -337,8 +341,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     return this.shouldProxy;
   }
 
-  private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
-  String userToProxy, final Logger jobLogger) {
+  private void registerCustomCredential(final Props props, final Credentials hadoopCred,
+      final String userToProxy, final Logger jobLogger) {
     String credentialClassName = "unknown class";
       try {
         credentialClassName = props
@@ -348,7 +352,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
         // The credential class must have a constructor accepting 3 parameters, Credentials,
         // Props, and Logger in order.
-        Constructor constructor = credentialClass.getConstructor (new Class[]
+        final Constructor constructor = credentialClass.getConstructor(new Class[]
             {Credentials.class, Props.class, Logger.class});
         final CredentialProvider customCredential = (CredentialProvider) constructor
               .newInstance(hadoopCred, props, jobLogger);
@@ -626,6 +630,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       cred.addToken(jhsdt.getService(), jhsdt);
     }
 
+    if (props.getBoolean(Constants.JobProperties.OBTAIN_HIVESERVER2_TOKEN, false)) {
+      obtainHiveServer2Token(props, logger, userToProxy, cred);
+    }
+
     try {
       getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
@@ -714,6 +722,44 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
           + t.getMessage() + t.getCause(), t);
     }
+  }
+
+  private void obtainHiveServer2Token(final Props props, final Logger logger,
+      final String userToProxy,
+      final Credentials cred) throws HadoopSecurityManagerException {
+    Connection conn = null;
+    Token<DelegationTokenIdentifier> hive2Token = null;
+    try {
+      final HiveConf hiveConf = new HiveConf();
+      final String principal = hiveConf
+          .get(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname);
+      logger.info(HiveConf.ConfVars.METASTORE_KERBEROS_PRINCIPAL.varname + ":" + principal);
+      final String url = props.get(Constants.JobProperties.HIVESERVER2_URL) + ";principal=" +
+          principal;
+      logger.info("final url for hiveserver2:" + url);
+      conn = DriverManager.getConnection(url);
+      final String tokenStr = ((HiveConnection) conn).getDelegationToken(userToProxy, principal);
+      hive2Token = new Token<>();
+      hive2Token.decodeFromUrlString(tokenStr);
+
+      cred.addToken(hive2Token.getService(), hive2Token);
+    } catch (final Exception e) {
+      logger.error("Failed to get hiveserver2 token", e);
+      throw new HadoopSecurityManagerException(
+          "Failed to get hiveserver2 token for " + userToProxy);
+    } finally {
+      if (conn != null) {
+        try {
+          conn.close();
+        } catch (final SQLException e) {
+          logger.error("could not close connection", e);
+        }
+      }
+    }
+
+    logger.info("Created hive server2 token.");
+    logger.info("Token kind: " + hive2Token.getKind());
+    logger.info("Token service: " + hive2Token.getService());
   }
 
   /**

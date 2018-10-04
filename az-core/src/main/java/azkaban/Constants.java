@@ -278,10 +278,16 @@ public class Constants {
     // The hadoop user the job should run under. If not specified, it will default to submit user.
     public static final String USER_TO_PROXY = "user.to.proxy";
 
+
+    public static final String OBTAIN_HIVESERVER2_TOKEN =
+        "obtain.hiveserver2.token";
+    public static final String HIVESERVER2_URL = "hiveserver2.url";
+
     /**
      * Format string for Log4j's EnhancedPatternLayout
      */
     public static final String JOB_LOG_LAYOUT = "azkaban.job.log.layout";
+
   }
 
   public static class JobCallbackProperties {
