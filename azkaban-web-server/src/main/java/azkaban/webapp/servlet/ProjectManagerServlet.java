@@ -801,6 +801,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> nodeObj = new HashMap<>();
       nodeObj.put("id", node.getId());
       nodeObj.put("type", node.getType());
+      nodeObj.put("condition", node.getCondition());
       if (node.getEmbeddedFlowId() != null) {
         nodeObj.put("flowId", node.getEmbeddedFlowId());
         fillFlowInfo(project, node.getEmbeddedFlowId(), nodeObj);
@@ -1677,7 +1678,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String projectName = (String) multipart.get("project");
     final Project project = this.projectManager.getProject(projectName);
     if(project == null || !project.isActive()) {
-      String failureCause = project == null ? "doesn't exist." : "was already removed.";
+      final String failureCause = project == null ? "doesn't exist." : "was already removed.";
       registerError(ret, "Installation Failed. Project '" + projectName + " "
           + failureCause, resp, 410);
       return;
