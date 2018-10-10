@@ -94,16 +94,17 @@ public class ExecutorManager extends EventHandler implements
       * 24 * 60 * 60 * 1000L;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
+  final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
+      new ConcurrentHashMap<>();
   private final AlerterHolder alerterHolder;
   private final Props azkProps;
   private final CommonMetrics commonMetrics;
   private final ExecutorLoader executorLoader;
   private final CleanerThread cleanerThread;
-  final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
-      new ConcurrentHashMap<>();
   private final ExecutingManagerUpdaterThread executingManager;
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
+  private final ExecutorManagerUpdaterStage updaterStage = new ExecutorManagerUpdaterStage();
   QueuedExecutions queuedFlows;
   File cacheDir;
   //make it immutable to ensure threadsafety
@@ -111,7 +112,6 @@ public class ExecutorManager extends EventHandler implements
   private QueueProcessorThread queueProcessor;
   private volatile Pair<ExecutionReference, ExecutableFlow> runningCandidate = null;
   private long lastCleanerThreadCheckTime = -1;
-  private final ExecutorManagerUpdaterStage updaterStage = new ExecutorManagerUpdaterStage();
   private List<String> filterList;
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
@@ -154,6 +154,18 @@ public class ExecutorManager extends EventHandler implements
             DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 
     this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
+  }
+
+  // TODO move to some common place
+  static boolean isFinished(final ExecutableFlow flow) {
+    switch (flow.getStatus()) {
+      case SUCCEEDED:
+      case FAILED:
+      case KILLED:
+        return true;
+      default:
+        return false;
+    }
   }
 
   public void start() {
@@ -624,7 +636,6 @@ public class ExecutorManager extends EventHandler implements
     Collections.sort(allIds);
     return allIds.toString();
   }
-
 
   public long getQueuedFlowSize() {
     return this.queuedFlows.size();
@@ -1201,7 +1212,6 @@ public class ExecutorManager extends EventHandler implements
         "/stats", paramList);
   }
 
-
   @Override
   public Map<String, Object> callExecutorJMX(final String hostPort, final String action,
       final String mBean) throws IOException {
@@ -1363,18 +1373,6 @@ public class ExecutorManager extends EventHandler implements
     }
 
     exFlow.setStatus(Status.FAILED);
-  }
-
-  // TODO move to some common place
-  static boolean isFinished(final ExecutableFlow flow) {
-    switch (flow.getStatus()) {
-      case SUCCEEDED:
-      case FAILED:
-      case KILLED:
-        return true;
-      default:
-        return false;
-    }
   }
 
   @Override
@@ -1665,7 +1663,8 @@ public class ExecutorManager extends EventHandler implements
       }
     }
 
-    private void logFailedDispatchAttempt(final ExecutionReference reference, final ExecutableFlow exflow,
+    private void logFailedDispatchAttempt(final ExecutionReference reference,
+        final ExecutableFlow exflow,
         final Executor selectedExecutor, final ExecutorManagerException e) {
       logger.warn(String.format(
           "Executor %s responded with exception for exec: %d",
