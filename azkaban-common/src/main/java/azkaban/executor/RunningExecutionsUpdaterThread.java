@@ -58,6 +58,11 @@ public class RunningExecutionsUpdaterThread extends Thread {
       try {
         this.lastThreadCheckTime = System.currentTimeMillis();
         this.updaterStage.set("Starting update all flows.");
+        // TODO refresh active executors
+        // TODO BUT this needs to know the up-to-date list of active AND inactive executors. OR:
+        // TODO OR then this would need to call getFlowToExecutorMap() again (which returns all
+        // executors regardless of active=true|false - or null optional if it doesn't exist)
+        // ..so would that make "refresh active executors" just a side-effect?
 
         final Map<Optional<Executor>, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
         final ArrayList<ExecutableFlow> finalizeFlows =
