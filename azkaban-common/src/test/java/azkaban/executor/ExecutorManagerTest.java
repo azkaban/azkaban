@@ -70,6 +70,7 @@ public class ExecutorManagerTest {
   private ExecutorApiGateway apiGateway;
   private Alerter mailAlerter;
   private RunningExecutions runningExecutions;
+  private ExecutorManagerUpdaterStage updaterStage;
 
   @Before
   public void setup() {
@@ -79,6 +80,7 @@ public class ExecutorManagerTest {
     when(this.alertHolder.get("email")).thenReturn(this.mailAlerter);
     this.loader = new MockExecutorLoader();
     this.runningExecutions = new RunningExecutions();
+    this.updaterStage = new ExecutorManagerUpdaterStage();
   }
 
   @After
@@ -145,8 +147,10 @@ public class ExecutorManagerTest {
 
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
+    final ExecutionFinalizer executionFinalizer = new ExecutionFinalizer(this.loader, this.updaterStage,
+        this.alertHolder, this.runningExecutions);
     return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiGateway, this.runningExecutions);
+        this.apiGateway, this.runningExecutions, this.updaterStage, executionFinalizer);
   }
 
   /*
@@ -290,9 +294,8 @@ public class ExecutorManagerTest {
   }
 
   /**
-   * 1. Executor 1 throws an exception when trying to dispatch to it
-   * 2. ExecutorManager should try next executor
-   * 3. Executor 2 accepts the dispatched execution
+   * 1. Executor 1 throws an exception when trying to dispatch to it 2. ExecutorManager should try
+   * next executor 3. Executor 2 accepts the dispatched execution
    */
   @Test
   public void testDispatchException() throws Exception {

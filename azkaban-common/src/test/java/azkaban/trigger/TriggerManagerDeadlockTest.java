@@ -19,10 +19,12 @@ package azkaban.trigger;
 import static org.mockito.Mockito.mock;
 
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutionFinalizer;
 import azkaban.executor.ExecutorApiGateway;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorManagerUpdaterStage;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.RunningExecutions;
 import azkaban.metrics.CommonMetrics;
@@ -46,6 +48,8 @@ public class TriggerManagerDeadlockTest {
   ExecutorLoader execLoader;
   ExecutorApiGateway apiGateway;
   RunningExecutions runningExecutions;
+  private ExecutorManagerUpdaterStage updaterStage;
+  private ExecutionFinalizer executionFinalizer;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
@@ -56,9 +60,14 @@ public class TriggerManagerDeadlockTest {
     this.execLoader = new MockExecutorLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.runningExecutions = new RunningExecutions();
+    this.updaterStage = new ExecutorManagerUpdaterStage();
+    final AlerterHolder alertHolder = mock(AlerterHolder.class);
+    this.executionFinalizer = new ExecutionFinalizer(this.execLoader, this.updaterStage,
+        alertHolder, this.runningExecutions);
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        mock(AlerterHolder.class), commonMetrics, this.apiGateway, this.runningExecutions);
+        alertHolder, commonMetrics, this.apiGateway, this.runningExecutions,
+        this.updaterStage, this.executionFinalizer);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 

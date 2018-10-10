@@ -98,7 +98,7 @@ public class ExecutorManager extends EventHandler implements
   private final RunningExecutionsUpdaterThread updaterThread;
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
-  private final ExecutorManagerUpdaterStage updaterStage = new ExecutorManagerUpdaterStage();
+  private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
   QueuedExecutions queuedFlows;
   File cacheDir;
@@ -116,12 +116,16 @@ public class ExecutorManager extends EventHandler implements
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
-      final RunningExecutions runningExecutions) throws ExecutorManagerException {
+      final RunningExecutions runningExecutions,
+      final ExecutorManagerUpdaterStage updaterStage,
+      final ExecutionFinalizer executionFinalizer) throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
     this.executorLoader = loader;
     this.apiGateway = apiGateway;
     this.runningExecutions = runningExecutions;
+    this.updaterStage = updaterStage;
+    this.executionFinalizer = executionFinalizer;
     this.setupExecutors();
     this.loadRunningExecutions();
 
@@ -136,9 +140,6 @@ public class ExecutorManager extends EventHandler implements
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
-
-    this.executionFinalizer = new ExecutionFinalizer(this.executorLoader, this.updaterStage,
-        alerterHolder, runningExecutions);
 
     this.updaterThread = new RunningExecutionsUpdaterThread(
         this.updaterStage, alerterHolder, commonMetrics, apiGateway, runningExecutions,
