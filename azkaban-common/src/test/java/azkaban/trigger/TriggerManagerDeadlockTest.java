@@ -18,6 +18,7 @@ package azkaban.trigger;
 
 import static org.mockito.Mockito.mock;
 
+import azkaban.executor.ActiveExecutors;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionFinalizer;
 import azkaban.executor.ExecutorApiGateway;
@@ -68,15 +69,16 @@ public class TriggerManagerDeadlockTest {
     this.executionFinalizer = new ExecutionFinalizer(this.execLoader,
         this.updaterStage, this.alertHolder, this.runningExecutions);
     this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
-    final ExecutorManager executorManager = getExecutorManager(props, updaterThread);
+    final ExecutorManager executorManager = getExecutorManager(props);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 
-  private ExecutorManager getExecutorManager(final Props props,
-      final RunningExecutionsUpdaterThread updaterThread) throws ExecutorManagerException {
+  private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
+    final ActiveExecutors activeExecutors = new ActiveExecutors(props, this.execLoader);
+    final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
     return new ExecutorManager(props, this.execLoader, this.commonMetrics, this.apiGateway,
-        this.runningExecutions, this.updaterStage, this.executionFinalizer, updaterThread);
+        this.runningExecutions, activeExecutors, this.updaterStage, this.executionFinalizer,
+        updaterThread);
   }
 
   private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {

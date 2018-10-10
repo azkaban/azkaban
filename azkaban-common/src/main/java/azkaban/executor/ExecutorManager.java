@@ -33,7 +33,6 @@ import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import java.io.BufferedReader;
 import java.io.File;
@@ -100,10 +99,9 @@ public class ExecutorManager extends EventHandler implements
   private final int maxConcurrentRunsOneFlow;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
+  private final ActiveExecutors activeExecutors;
   QueuedExecutions queuedFlows;
   File cacheDir;
-  //make it immutable to ensure threadsafety
-  private volatile ImmutableSet<Executor> activeExecutors = null;
   private QueueProcessorThread queueProcessor;
   private volatile Pair<ExecutionReference, ExecutableFlow> runningCandidate = null;
   private List<String> filterList;
@@ -112,18 +110,20 @@ public class ExecutorManager extends EventHandler implements
   private ExecutorService executorInforRefresherService;
 
   @Inject
-  public ExecutorManager(final Props azkProps, final ExecutorLoader loader,
+  public ExecutorManager(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final RunningExecutions runningExecutions,
+      final ActiveExecutors activeExecutors,
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
-    this.executorLoader = loader;
+    this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.runningExecutions = runningExecutions;
+    this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
     this.updaterThread = updaterThread;
@@ -163,6 +163,11 @@ public class ExecutorManager extends EventHandler implements
       default:
         return false;
     }
+  }
+
+  // TODO switch to always use "multi executor mode" - even for single server
+  public static boolean isMultiExecutorMode(final Props props) {
+    return props.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false);
   }
 
   public void start() {
@@ -214,7 +219,7 @@ public class ExecutorManager extends EventHandler implements
                 Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
             this.azkProps.getInt(
                 Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
-                this.activeExecutors.size()));
+                this.activeExecutors.getAll().size()));
   }
 
   /**
@@ -224,48 +229,11 @@ public class ExecutorManager extends EventHandler implements
    */
   @Override
   public void setupExecutors() throws ExecutorManagerException {
-    final Set<Executor> newExecutors = new HashSet<>();
-
-    if (isMultiExecutorMode()) {
-      logger.info("Initializing multi executors from database.");
-      newExecutors.addAll(this.executorLoader.fetchActiveExecutors());
-    } else if (this.azkProps.containsKey(ConfigurationKeys.EXECUTOR_PORT)) {
-      // add local executor, if specified as per properties
-      final String executorHost = this.azkProps
-          .getString(Constants.ConfigurationKeys.EXECUTOR_HOST, "localhost");
-      final int executorPort = this.azkProps.getInt(ConfigurationKeys.EXECUTOR_PORT);
-      logger.info(String.format("Initializing local executor %s:%d",
-          executorHost, executorPort));
-      Executor executor =
-          this.executorLoader.fetchExecutor(executorHost, executorPort);
-      if (executor == null) {
-        executor = this.executorLoader.addExecutor(executorHost, executorPort);
-      } else if (!executor.isActive()) {
-        executor.setActive(true);
-        this.executorLoader.updateExecutor(executor);
-      }
-      newExecutors.add(new Executor(executor.getId(), executorHost,
-          executorPort, true));
-    } else {
-      // throw exception when in single executor mode and no executor port specified in azkaban
-      // properties
-      //todo chengren311: convert to slf4j and parameterized logging
-      final String error = "Missing" + ConfigurationKeys.EXECUTOR_PORT + " in azkaban properties.";
-      logger.error(error);
-      throw new ExecutorManagerException(error);
-    }
-
-    if (newExecutors.isEmpty()) {
-      final String error = "No active executor found";
-      logger.error(error);
-      throw new ExecutorManagerException(error);
-    } else {
-      this.activeExecutors = ImmutableSet.copyOf(newExecutors);
-    }
+    this.activeExecutors.setupExecutors();
   }
 
   private boolean isMultiExecutorMode() {
-    return this.azkProps.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false);
+    return isMultiExecutorMode(this.azkProps);
   }
 
   /**
@@ -275,7 +243,7 @@ public class ExecutorManager extends EventHandler implements
 
     final List<Pair<Executor, Future<ExecutorInfo>>> futures =
         new ArrayList<>();
-    for (final Executor executor : this.activeExecutors) {
+    for (final Executor executor : this.activeExecutors.getAll()) {
       // execute each executorInfo refresh task to fetch
       final Future<ExecutorInfo> fetchExecutionInfo =
           this.executorInforRefresherService.submit(
@@ -407,7 +375,7 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public Collection<Executor> getAllActiveExecutors() {
-    return Collections.unmodifiableCollection(this.activeExecutors);
+    return Collections.unmodifiableCollection(this.activeExecutors.getAll());
   }
 
   /**
@@ -417,7 +385,7 @@ public class ExecutorManager extends EventHandler implements
    */
   @Override
   public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
-    for (final Executor executor : this.activeExecutors) {
+    for (final Executor executor : this.activeExecutors.getAll()) {
       if (executor.getId() == executorId) {
         return executor;
       }
@@ -429,7 +397,7 @@ public class ExecutorManager extends EventHandler implements
   public Set<String> getPrimaryServerHosts() {
     // Only one for now. More probably later.
     final HashSet<String> ports = new HashSet<>();
-    for (final Executor executor : this.activeExecutors) {
+    for (final Executor executor : this.activeExecutors.getAll()) {
       ports.add(executor.getHost() + ":" + executor.getPort());
     }
     return ports;
@@ -439,7 +407,7 @@ public class ExecutorManager extends EventHandler implements
   public Set<String> getAllActiveExecutorServerHosts() {
     // Includes non primary server/hosts
     final HashSet<String> ports = new HashSet<>();
-    for (final Executor executor : this.activeExecutors) {
+    for (final Executor executor : this.activeExecutors.getAll()) {
       ports.add(executor.getHost() + ":" + executor.getPort());
     }
     // include executor which were initially active and still has flows running
@@ -1148,7 +1116,7 @@ public class ExecutorManager extends EventHandler implements
           this.queuedFlows.enqueue(exflow, reference);
         } else {
           // assign only local executor we have
-          final Executor choosenExecutor = this.activeExecutors.iterator().next();
+          final Executor choosenExecutor = this.activeExecutors.getAll().iterator().next();
           this.executorLoader.addActiveExecutableReference(reference);
           try {
             dispatch(reference, exflow, choosenExecutor);
@@ -1472,7 +1440,8 @@ public class ExecutorManager extends EventHandler implements
     private void selectExecutorAndDispatchFlow(final ExecutionReference reference,
         final ExecutableFlow exflow)
         throws ExecutorManagerException {
-      final Set<Executor> remainingExecutors = new HashSet<>(ExecutorManager.this.activeExecutors);
+      final Set<Executor> remainingExecutors = new HashSet<>(
+          ExecutorManager.this.activeExecutors.getAll());
       synchronized (exflow) {
         for (int i = 0; i <= this.maxDispatchingErrors; i++) {
           final String giveUpReason = checkGiveUpDispatching(reference, remainingExecutors);
@@ -1518,7 +1487,9 @@ public class ExecutorManager extends EventHandler implements
             + " (tried " + reference.getNumErrors() + " executors)";
       } else if (remainingExecutors.isEmpty()) {
         return "tried calling all executors (total: "
-            + ExecutorManager.this.activeExecutors.size() + ") but all failed";
+            // TODO rather use the original size (activeExecutors may have been reloaded in the
+            // meanwhile)
+            + ExecutorManager.this.activeExecutors.getAll().size() + ") but all failed";
       } else {
         return null;
       }
