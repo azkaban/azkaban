@@ -111,7 +111,6 @@ public class ExecutorManager extends EventHandler implements
   private volatile ImmutableSet<Executor> activeExecutors = null;
   private QueueProcessorThread queueProcessor;
   private volatile Pair<ExecutionReference, ExecutableFlow> runningCandidate = null;
-  private long lastCleanerThreadCheckTime = -1;
   private List<String> filterList;
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
@@ -1459,8 +1458,6 @@ public class ExecutorManager extends EventHandler implements
       while (!this.shutdown) {
         synchronized (this) {
           try {
-            ExecutorManager.this.lastCleanerThreadCheckTime = System.currentTimeMillis();
-
             // Cleanup old stuff.
             final long currentTime = System.currentTimeMillis();
             if (currentTime - CLEANER_THREAD_WAIT_INTERVAL_MS > this.lastLogCleanTime) {
