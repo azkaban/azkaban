@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import javax.inject.Inject;
 import org.apache.log4j.Logger;
 
 public class ActiveExecutors {
@@ -17,6 +18,7 @@ public class ActiveExecutors {
   private final Props azkProps;
   private final ExecutorLoader executorLoader;
 
+  @Inject
   public ActiveExecutors(final Props azkProps, final ExecutorLoader executorLoader) {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
