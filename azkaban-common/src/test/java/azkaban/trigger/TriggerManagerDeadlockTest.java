@@ -27,6 +27,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutorManagerUpdaterStage;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.RunningExecutions;
+import azkaban.executor.RunningExecutionsUpdaterThread;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
@@ -49,7 +50,9 @@ public class TriggerManagerDeadlockTest {
   ExecutorApiGateway apiGateway;
   RunningExecutions runningExecutions;
   private ExecutorManagerUpdaterStage updaterStage;
+  private AlerterHolder alertHolder;
   private ExecutionFinalizer executionFinalizer;
+  private CommonMetrics commonMetrics;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
@@ -61,14 +64,26 @@ public class TriggerManagerDeadlockTest {
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.runningExecutions = new RunningExecutions();
     this.updaterStage = new ExecutorManagerUpdaterStage();
-    final AlerterHolder alertHolder = mock(AlerterHolder.class);
-    this.executionFinalizer = new ExecutionFinalizer(this.execLoader, this.updaterStage,
-        alertHolder, this.runningExecutions);
-    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        alertHolder, commonMetrics, this.apiGateway, this.runningExecutions,
-        this.updaterStage, this.executionFinalizer);
+    this.alertHolder = mock(AlerterHolder.class);
+    this.executionFinalizer = new ExecutionFinalizer(this.execLoader,
+        this.updaterStage, this.alertHolder, this.runningExecutions);
+    this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
+    final ExecutorManager executorManager = getExecutorManager(props, updaterThread);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
+  }
+
+  private ExecutorManager getExecutorManager(Props props,
+      RunningExecutionsUpdaterThread updaterThread) throws ExecutorManagerException {
+    return new ExecutorManager(props, this.execLoader,
+          this.alertHolder, this.commonMetrics, this.apiGateway, this.runningExecutions,
+          this.updaterStage, this.executionFinalizer, updaterThread);
+  }
+
+  private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {
+    return new RunningExecutionsUpdaterThread(
+        this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, this.executionFinalizer);
   }
 
   @After

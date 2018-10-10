@@ -147,10 +147,15 @@ public class ExecutorManagerTest {
 
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
-    final ExecutionFinalizer executionFinalizer = new ExecutionFinalizer(this.loader, this.updaterStage,
-        this.alertHolder, this.runningExecutions);
+    // TODO rename this test to ExecutorManagerIntegrationTest & create separate unit tests as well?
+    final ExecutionFinalizer executionFinalizer = new ExecutionFinalizer(this.loader,
+        this.updaterStage, this.alertHolder, this.runningExecutions);
+    final RunningExecutionsUpdaterThread updaterThread = new RunningExecutionsUpdaterThread(
+        this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, executionFinalizer);
     return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiGateway, this.runningExecutions, this.updaterStage, executionFinalizer);
+        this.apiGateway, this.runningExecutions, this.updaterStage, executionFinalizer,
+        updaterThread);
   }
 
   /*

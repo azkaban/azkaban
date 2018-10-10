@@ -118,7 +118,8 @@ public class ExecutorManager extends EventHandler implements
       final ExecutorApiGateway apiGateway,
       final RunningExecutions runningExecutions,
       final ExecutorManagerUpdaterStage updaterStage,
-      final ExecutionFinalizer executionFinalizer) throws ExecutorManagerException {
+      final ExecutionFinalizer executionFinalizer,
+      final RunningExecutionsUpdaterThread updaterThread) throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
     this.executorLoader = loader;
@@ -126,6 +127,7 @@ public class ExecutorManager extends EventHandler implements
     this.runningExecutions = runningExecutions;
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
+    this.updaterThread = updaterThread;
     this.setupExecutors();
     this.loadRunningExecutions();
 
@@ -140,10 +142,6 @@ public class ExecutorManager extends EventHandler implements
     this.loadQueuedFlows();
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
-
-    this.updaterThread = new RunningExecutionsUpdaterThread(
-        this.updaterStage, alerterHolder, commonMetrics, apiGateway, runningExecutions,
-        this.executionFinalizer);
 
     if (isMultiExecutorMode()) {
       setupMultiExecutorMode();
