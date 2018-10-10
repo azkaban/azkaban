@@ -175,15 +175,14 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private void setupMultiExecutorMode() {
-    // initliatize hard filters for executor selector from azkaban.properties
+    // initialize hard filters for executor selector from azkaban.properties
     final String filters = this.azkProps
         .getString(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_FILTERS, "");
     if (filters != null) {
       this.filterList = Arrays.asList(StringUtils.split(filters, ","));
     }
 
-    // initliatize comparator feature weights for executor selector from
-    // azkaban.properties
+    // initialize comparator feature weights for executor selector from azkaban.properties
     final Map<String, String> compListStrings = this.azkProps
         .getMapByPrefix(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
     if (compListStrings != null) {
