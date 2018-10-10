@@ -69,6 +69,7 @@ public class ExecutorManagerTest {
   private AlerterHolder alertHolder;
   private ExecutorApiGateway apiGateway;
   private Alerter mailAlerter;
+  private RunningExecutions runningExecutions;
 
   @Before
   public void setup() {
@@ -77,6 +78,7 @@ public class ExecutorManagerTest {
     this.alertHolder = mock(AlerterHolder.class);
     when(this.alertHolder.get("email")).thenReturn(this.mailAlerter);
     this.loader = new MockExecutorLoader();
+    this.runningExecutions = new RunningExecutions();
   }
 
   @After
@@ -144,7 +146,7 @@ public class ExecutorManagerTest {
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
     return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiGateway);
+        this.apiGateway, this.runningExecutions);
   }
 
   /*

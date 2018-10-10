@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.inject.Inject;
 import org.apache.log4j.Logger;
 
 public class RunningExecutionsUpdaterThread extends Thread {
@@ -27,20 +28,22 @@ public class RunningExecutionsUpdaterThread extends Thread {
   private final AlerterHolder alerterHolder;
   private final CommonMetrics commonMetrics;
   private final ExecutorApiGateway apiGateway;
-  private final ExecutorManager executorManager;
+  private final RunningExecutions runningExecutions;
+  private final ExecutionFinalizer executionFinalizer;
   private boolean shutdown = false;
   private long lastThreadCheckTime = -1;
 
+  @Inject
   public RunningExecutionsUpdaterThread(final ExecutorManagerUpdaterStage updaterStage,
       final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
-      final ExecutorApiGateway apiGateway,
-      // TODO refactor more to remove this circular dependency
-      final ExecutorManager executorManager) {
+      final ExecutorApiGateway apiGateway, final RunningExecutions runningExecutions,
+      final ExecutionFinalizer executionFinalizer) {
     this.updaterStage = updaterStage;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
-    this.executorManager = executorManager;
+    this.runningExecutions = runningExecutions;
+    this.executionFinalizer = executionFinalizer;
     this.setName("ExecutorManagerUpdaterThread");
   }
 
@@ -103,7 +106,7 @@ public class RunningExecutionsUpdaterThread extends Thread {
               boolean sendUnresponsiveEmail = false;
               for (final ExecutableFlow flow : entry.getValue()) {
                 final Pair<ExecutionReference, ExecutableFlow> pair =
-                    this.executorManager.runningFlows.get(flow.getExecutionId());
+                    this.runningExecutions.get(flow.getExecutionId());
                 // TODO can runningFlows.get ever return null, causing NPE below?
 
                 this.updaterStage
@@ -153,20 +156,19 @@ public class RunningExecutionsUpdaterThread extends Thread {
           this.updaterStage.set("Finalizing " + finalizeFlows.size() + " error flows.");
 
           for (final ExecutableFlow flow : finalizeFlows) {
-            this.executorManager
-                .finalizeFlows(flow, "Not running on the assigned executor (any more)",
-                null);
+            this.executionFinalizer
+                .finalizeFlow(flow, "Not running on the assigned executor (any more)", null);
           }
         }
 
         this.updaterStage.set("Updated all active flows. Waiting for next round.");
 
-        synchronized (this.executorManager) {
+        synchronized (this.runningExecutions) {
           try {
-            if (this.executorManager.runningFlows.size() > 0) {
-              this.executorManager.wait(this.waitTimeMs);
+            if (this.runningExecutions.size() > 0) {
+              this.runningExecutions.wait(this.waitTimeMs);
             } else {
-              this.executorManager.wait(this.waitTimeIdleMs);
+              this.runningExecutions.wait(this.waitTimeIdleMs);
             }
           } catch (final InterruptedException e) {
           }
@@ -182,8 +184,8 @@ public class RunningExecutionsUpdaterThread extends Thread {
     final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
         new HashMap<>();
 
-    for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.executorManager
-        .runningFlows.values()) {
+    for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.runningExecutions
+        .values()) {
       final ExecutionReference ref = runningFlow.getFirst();
       final ExecutableFlow flow = runningFlow.getSecond();
       final Optional<Executor> executor = ref.getExecutor();
@@ -225,7 +227,7 @@ public class RunningExecutionsUpdaterThread extends Thread {
     }
 
     final Pair<ExecutionReference, ExecutableFlow> refPair =
-        this.executorManager.runningFlows.get(execId);
+        this.runningExecutions.get(execId);
     if (refPair == null) {
       throw new ExecutorManagerException(
           "No running flow found with the execution id. Removing " + execId);

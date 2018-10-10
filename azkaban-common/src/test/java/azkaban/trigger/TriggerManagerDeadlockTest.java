@@ -24,6 +24,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.MockExecutorLoader;
+import azkaban.executor.RunningExecutions;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
@@ -44,6 +45,7 @@ public class TriggerManagerDeadlockTest {
   TriggerManager triggerManager;
   ExecutorLoader execLoader;
   ExecutorApiGateway apiGateway;
+  RunningExecutions runningExecutions;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
@@ -53,9 +55,10 @@ public class TriggerManagerDeadlockTest {
     props.put("executor.port", 12321);
     this.execLoader = new MockExecutorLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
+    this.runningExecutions = new RunningExecutions();
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        mock(AlerterHolder.class), commonMetrics, this.apiGateway);
+        mock(AlerterHolder.class), commonMetrics, this.apiGateway, this.runningExecutions);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
 

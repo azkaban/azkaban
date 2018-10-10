@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.alert.Alerter;
 import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
@@ -50,13 +49,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -67,7 +64,6 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -94,9 +90,7 @@ public class ExecutorManager extends EventHandler implements
       * 24 * 60 * 60 * 1000L;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
-  final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
-      new ConcurrentHashMap<>();
-  private final AlerterHolder alerterHolder;
+  private final RunningExecutions runningExecutions;
   private final Props azkProps;
   private final CommonMetrics commonMetrics;
   private final ExecutorLoader executorLoader;
@@ -105,6 +99,7 @@ public class ExecutorManager extends EventHandler implements
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
   private final ExecutorManagerUpdaterStage updaterStage = new ExecutorManagerUpdaterStage();
+  private final ExecutionFinalizer executionFinalizer;
   QueuedExecutions queuedFlows;
   File cacheDir;
   //make it immutable to ensure threadsafety
@@ -120,14 +115,15 @@ public class ExecutorManager extends EventHandler implements
   public ExecutorManager(final Props azkProps, final ExecutorLoader loader,
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
-      final ExecutorApiGateway apiGateway) throws ExecutorManagerException {
-    this.alerterHolder = alerterHolder;
+      final ExecutorApiGateway apiGateway,
+      final RunningExecutions runningExecutions) throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
     this.executorLoader = loader;
     this.apiGateway = apiGateway;
+    this.runningExecutions = runningExecutions;
     this.setupExecutors();
-    this.loadRunningFlows();
+    this.loadRunningExecutions();
 
     this.queuedFlows = new QueuedExecutions(
         azkProps.getLong(Constants.ConfigurationKeys.WEBSERVER_QUEUE_SIZE, 100000));
@@ -141,8 +137,12 @@ public class ExecutorManager extends EventHandler implements
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
 
+    this.executionFinalizer = new ExecutionFinalizer(this.executorLoader, this.updaterStage,
+        alerterHolder, runningExecutions);
+
     this.updaterThread = new RunningExecutionsUpdaterThread(
-        this.updaterStage, alerterHolder, commonMetrics, apiGateway, this);
+        this.updaterStage, alerterHolder, commonMetrics, apiGateway, runningExecutions,
+        this.executionFinalizer);
 
     if (isMultiExecutorMode()) {
       setupMultiExecutorMode();
@@ -445,7 +445,7 @@ public class ExecutorManager extends EventHandler implements
       ports.add(executor.getHost() + ":" + executor.getPort());
     }
     // include executor which were initially active and still has flows running
-    for (final Pair<ExecutionReference, ExecutableFlow> running : this.runningFlows
+    for (final Pair<ExecutionReference, ExecutableFlow> running : this.runningExecutions
         .values()) {
       final ExecutionReference ref = running.getFirst();
       if (ref.getExecutor().isPresent()) {
@@ -456,12 +456,12 @@ public class ExecutorManager extends EventHandler implements
     return ports;
   }
 
-  private void loadRunningFlows() throws ExecutorManagerException {
+  private void loadRunningExecutions() throws ExecutorManagerException {
     logger.info("Loading running flows from database..");
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
         .fetchActiveFlows();
     logger.info("Loaded " + activeFlows.size() + " running flows");
-    this.runningFlows.putAll(activeFlows);
+    this.runningExecutions.putAll(activeFlows);
   }
 
   /*
@@ -498,7 +498,7 @@ public class ExecutorManager extends EventHandler implements
               getRunningFlowsHelper(projectId, flowId, Lists.newArrayList(this.runningCandidate)));
     }
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
-        this.runningFlows.values()));
+        this.runningExecutions.values()));
     Collections.sort(executionIds);
     return executionIds;
   }
@@ -527,7 +527,7 @@ public class ExecutorManager extends EventHandler implements
     final List<Pair<ExecutableFlow, Optional<Executor>>> flows =
         new ArrayList<>();
     getActiveFlowsWithExecutorHelper(flows, this.queuedFlows.getAllEntries());
-    getActiveFlowsWithExecutorHelper(flows, this.runningFlows.values());
+    getActiveFlowsWithExecutorHelper(flows, this.runningExecutions.values());
     return flows;
   }
 
@@ -554,7 +554,7 @@ public class ExecutorManager extends EventHandler implements
             || isFlowRunningHelper(projectId, flowId, this.queuedFlows.getAllEntries());
     isRunning =
         isRunning
-            || isFlowRunningHelper(projectId, flowId, this.runningFlows.values());
+            || isFlowRunningHelper(projectId, flowId, this.runningExecutions.values());
     return isRunning;
   }
 
@@ -592,7 +592,7 @@ public class ExecutorManager extends EventHandler implements
   public List<ExecutableFlow> getRunningFlows() {
     final ArrayList<ExecutableFlow> flows = new ArrayList<>();
     getActiveFlowHelper(flows, this.queuedFlows.getAllEntries());
-    getActiveFlowHelper(flows, this.runningFlows.values());
+    getActiveFlowHelper(flows, this.runningExecutions.values());
     return flows;
   }
 
@@ -617,7 +617,7 @@ public class ExecutorManager extends EventHandler implements
   public String getRunningFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     getRunningFlowsIdsHelper(allIds, this.queuedFlows.getAllEntries());
-    getRunningFlowsIdsHelper(allIds, this.runningFlows.values());
+    getRunningFlowsIdsHelper(allIds, this.runningExecutions.values());
     Collections.sort(allIds);
     return allIds.toString();
   }
@@ -720,7 +720,7 @@ public class ExecutorManager extends EventHandler implements
   public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
       final int length) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningFlows.get(exFlow.getExecutionId());
+        this.runningExecutions.get(exFlow.getExecutionId());
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "flow");
       final Pair<String, String> offsetParam =
@@ -744,7 +744,7 @@ public class ExecutorManager extends EventHandler implements
   public LogData getExecutionJobLog(final ExecutableFlow exFlow, final String jobId,
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningFlows.get(exFlow.getExecutionId());
+        this.runningExecutions.get(exFlow.getExecutionId());
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "job");
       final Pair<String, String> jobIdParam =
@@ -772,7 +772,7 @@ public class ExecutorManager extends EventHandler implements
   public List<Object> getExecutionJobStats(final ExecutableFlow exFlow, final String jobId,
       final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningFlows.get(exFlow.getExecutionId());
+        this.runningExecutions.get(exFlow.getExecutionId());
     if (pair == null) {
       return this.executorLoader.fetchAttachments(exFlow.getExecutionId(), jobId,
           attempt);
@@ -890,7 +890,7 @@ public class ExecutorManager extends EventHandler implements
       final String jobId, final int offset, final int length, final int attempt)
       throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningFlows.get(exFlow.getExecutionId());
+        this.runningExecutions.get(exFlow.getExecutionId());
     if (pair != null) {
 
       final Pair<String, String> typeParam = new Pair<>("type", "job");
@@ -923,14 +923,15 @@ public class ExecutorManager extends EventHandler implements
   public void cancelFlow(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
     synchronized (exFlow) {
-      if (this.runningFlows.containsKey(exFlow.getExecutionId())) {
+      if (this.runningExecutions.containsKey(exFlow.getExecutionId())) {
         final Pair<ExecutionReference, ExecutableFlow> pair =
-            this.runningFlows.get(exFlow.getExecutionId());
+            this.runningExecutions.get(exFlow.getExecutionId());
         this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
             userId);
       } else if (this.queuedFlows.hasExecution(exFlow.getExecutionId())) {
         this.queuedFlows.dequeue(exFlow.getExecutionId());
-        finalizeFlows(exFlow, "Cancelled before dispatching to executor", null);
+        this.executionFinalizer
+            .finalizeFlow(exFlow, "Cancelled before dispatching to executor", null);
       } else {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -944,7 +945,7 @@ public class ExecutorManager extends EventHandler implements
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningFlows.get(exFlow.getExecutionId());
+          this.runningExecutions.get(exFlow.getExecutionId());
       if (pair == null) {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -960,7 +961,7 @@ public class ExecutorManager extends EventHandler implements
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningFlows.get(exFlow.getExecutionId());
+          this.runningExecutions.get(exFlow.getExecutionId());
       if (pair == null) {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -1025,7 +1026,7 @@ public class ExecutorManager extends EventHandler implements
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningFlows.get(exFlow.getExecutionId());
+          this.runningExecutions.get(exFlow.getExecutionId());
       if (pair == null) {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -1160,7 +1161,7 @@ public class ExecutorManager extends EventHandler implements
             // this logic is only implemented in multiExecutorMode but
             // missed in single executor case.
             this.commonMetrics.markDispatchFail();
-            finalizeFlows(exflow, "Dispatching failed", e);
+            this.executionFinalizer.finalizeFlow(exflow, "Dispatching failed", e);
             throw e;
           }
         }
@@ -1235,145 +1236,6 @@ public class ExecutorManager extends EventHandler implements
     this.updaterThread.shutdown();
   }
 
-  void finalizeFlows(final ExecutableFlow flow, final String reason,
-      final Throwable originalError) {
-
-    final int execId = flow.getExecutionId();
-    boolean alertUser = true;
-    final String[] extraReasons = getFinalizeFlowReasons(reason, originalError);
-    this.updaterStage.set("finalizing flow " + execId);
-    // First we check if the execution in the datastore is complete
-    try {
-      final ExecutableFlow dsFlow;
-      if (isFinished(flow)) {
-        dsFlow = flow;
-      } else {
-        this.updaterStage.set("finalizing flow " + execId + " loading from db");
-        dsFlow = this.executorLoader.fetchExecutableFlow(execId);
-
-        // If it's marked finished, we're good. If not, we fail everything and
-        // then mark it finished.
-        if (!isFinished(dsFlow)) {
-          this.updaterStage.set("finalizing flow " + execId + " failing the flow");
-          failEverything(dsFlow);
-          this.executorLoader.updateExecutableFlow(dsFlow);
-        }
-      }
-
-      this.updaterStage.set("finalizing flow " + execId + " deleting active reference");
-
-      // Delete the executing reference.
-      if (flow.getEndTime() == -1) {
-        flow.setEndTime(System.currentTimeMillis());
-        this.executorLoader.updateExecutableFlow(dsFlow);
-      }
-      this.executorLoader.removeActiveExecutableReference(execId);
-
-      this.updaterStage.set("finalizing flow " + execId + " cleaning from memory");
-      this.runningFlows.remove(execId);
-    } catch (final ExecutorManagerException e) {
-      alertUser = false; // failed due to azkaban internal error, not to alert user
-      logger.error(e);
-    }
-
-    // TODO append to the flow log that we marked this flow as failed + the extraReasons
-
-    this.updaterStage.set("finalizing flow " + execId + " alerting and emailing");
-    if (alertUser) {
-      final ExecutionOptions options = flow.getExecutionOptions();
-      // But we can definitely email them.
-      final Alerter mailAlerter = this.alerterHolder.get("email");
-      if (flow.getStatus() != Status.SUCCEEDED) {
-        if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
-          try {
-            mailAlerter.alertOnError(flow, extraReasons);
-          } catch (final Exception e) {
-            logger.error(e);
-          }
-        }
-        if (options.getFlowParameters().containsKey("alert.type")) {
-          final String alertType = options.getFlowParameters().get("alert.type");
-          final Alerter alerter = this.alerterHolder.get(alertType);
-          if (alerter != null) {
-            try {
-              alerter.alertOnError(flow, extraReasons);
-            } catch (final Exception e) {
-              logger.error("Failed to alert by " + alertType, e);
-            }
-          } else {
-            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-          }
-        }
-      } else {
-        if (options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty()) {
-          try {
-
-            mailAlerter.alertOnSuccess(flow);
-          } catch (final Exception e) {
-            logger.error(e);
-          }
-        }
-        if (options.getFlowParameters().containsKey("alert.type")) {
-          final String alertType = options.getFlowParameters().get("alert.type");
-          final Alerter alerter = this.alerterHolder.get(alertType);
-          if (alerter != null) {
-            try {
-              alerter.alertOnSuccess(flow);
-            } catch (final Exception e) {
-              logger.error("Failed to alert by " + alertType, e);
-            }
-          } else {
-            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-          }
-        }
-      }
-    }
-
-  }
-
-  private String[] getFinalizeFlowReasons(final String reason, final Throwable originalError) {
-    final List<String> reasons = new LinkedList<>();
-    reasons.add(reason);
-    if (originalError != null) {
-      reasons.add(ExceptionUtils.getStackTrace(originalError));
-    }
-    return reasons.toArray(new String[reasons.size()]);
-  }
-
-  private void failEverything(final ExecutableFlow exFlow) {
-    final long time = System.currentTimeMillis();
-    for (final ExecutableNode node : exFlow.getExecutableNodes()) {
-      switch (node.getStatus()) {
-        case SUCCEEDED:
-        case FAILED:
-        case KILLED:
-        case SKIPPED:
-        case DISABLED:
-          continue;
-          // case UNKNOWN:
-        case READY:
-          node.setStatus(Status.KILLING);
-          break;
-        default:
-          node.setStatus(Status.FAILED);
-          break;
-      }
-
-      if (node.getStartTime() == -1) {
-        node.setStartTime(time);
-      }
-      if (node.getEndTime() == -1) {
-        node.setEndTime(time);
-      }
-    }
-
-    if (exFlow.getEndTime() == -1) {
-      exFlow.setEndTime(time);
-    }
-
-    exFlow.setStatus(Status.FAILED);
-  }
-
   @Override
   public int getExecutableFlows(final int projectId, final String flowId, final int from,
       final int length, final List<ExecutableFlow> outputList)
@@ -1413,13 +1275,16 @@ public class ExecutorManager extends EventHandler implements
     reference.setExecutor(choosenExecutor);
 
     // move from flow to running flows
-    this.runningFlows.put(exflow.getExecutionId(),
-        new Pair<>(reference, exflow));
-    synchronized (this) {
+    this.runningExecutions.put(exflow.getExecutionId(), new Pair<>(reference, exflow));
+    synchronized (this.runningExecutions) {
       // Wake up RunningExecutionsUpdaterThread from wait() so that it will immediately check status
       // from executor(s). Normally flows will run at least some time and can't be cleaned up
       // immediately, so there will be another wait round (or many, actually), but for unit tests
       // this is significant to let them run quickly.
+      this.runningExecutions.notifyAll();
+    }
+    synchronized (this) {
+      // wake up all internal waiting threads, too
       this.notifyAll();
     }
 
@@ -1616,7 +1481,8 @@ public class ExecutorManager extends EventHandler implements
           if (giveUpReason != null) {
             logger.error("Failed to dispatch queued execution " + exflow.getId() + " because "
                 + giveUpReason);
-            finalizeFlows(exflow, "Failed to dispatch because " + giveUpReason, null);
+            ExecutorManager.this.executionFinalizer
+                .finalizeFlow(exflow, "Failed to dispatch because " + giveUpReason, null);
             // GIVE UP DISPATCHING - exit
             return;
           } else {
