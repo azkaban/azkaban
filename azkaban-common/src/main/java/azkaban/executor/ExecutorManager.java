@@ -101,7 +101,7 @@ public class ExecutorManager extends EventHandler implements
   private final CommonMetrics commonMetrics;
   private final ExecutorLoader executorLoader;
   private final CleanerThread cleanerThread;
-  private final ExecutingManagerUpdaterThread executingManager;
+  private final RunningExecutionsUpdaterThread updaterThread;
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
   private final ExecutorManagerUpdaterStage updaterStage = new ExecutorManagerUpdaterStage();
@@ -141,7 +141,7 @@ public class ExecutorManager extends EventHandler implements
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
 
-    this.executingManager = new ExecutingManagerUpdaterThread(
+    this.updaterThread = new RunningExecutionsUpdaterThread(
         this.updaterStage, alerterHolder, commonMetrics, apiGateway, this);
 
     if (isMultiExecutorMode()) {
@@ -168,7 +168,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   public void start() {
-    this.executingManager.start();
+    this.updaterThread.start();
     this.cleanerThread.start();
     if (isMultiExecutorMode()) {
       this.queueProcessor.start();
@@ -390,7 +390,7 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public State getExecutorManagerThreadState() {
-    return this.executingManager.getState();
+    return this.updaterThread.getState();
   }
 
   public String getExecutorThreadStage() {
@@ -399,12 +399,12 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public boolean isExecutorManagerThreadActive() {
-    return this.executingManager.isAlive();
+    return this.updaterThread.isAlive();
   }
 
   @Override
   public long getLastExecutorManagerThreadCheckTime() {
-    return this.executingManager.getLastThreadCheckTime();
+    return this.updaterThread.getLastThreadCheckTime();
   }
 
   @Override
@@ -1232,7 +1232,7 @@ public class ExecutorManager extends EventHandler implements
     if (isMultiExecutorMode()) {
       this.queueProcessor.shutdown();
     }
-    this.executingManager.shutdown();
+    this.updaterThread.shutdown();
   }
 
   void finalizeFlows(final ExecutableFlow flow, final String reason,
@@ -1416,7 +1416,7 @@ public class ExecutorManager extends EventHandler implements
     this.runningFlows.put(exflow.getExecutionId(),
         new Pair<>(reference, exflow));
     synchronized (this) {
-      // Wake up ExecutingManagerUpdaterThread from wait() so that it will immediately check status
+      // Wake up RunningExecutionsUpdaterThread from wait() so that it will immediately check status
       // from executor(s). Normally flows will run at least some time and can't be cleaned up
       // immediately, so there will be another wait round (or many, actually), but for unit tests
       // this is significant to let them run quickly.

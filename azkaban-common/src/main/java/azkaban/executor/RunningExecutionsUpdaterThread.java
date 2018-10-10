@@ -11,9 +11,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.log4j.Logger;
 
-public class ExecutingManagerUpdaterThread extends Thread {
+public class RunningExecutionsUpdaterThread extends Thread {
 
-  private static final Logger logger = Logger.getLogger(ExecutingManagerUpdaterThread.class);
+  private static final Logger logger = Logger.getLogger(RunningExecutionsUpdaterThread.class);
 
   private final int waitTimeIdleMs = 2000;
   private final int waitTimeMs = 500;
@@ -31,7 +31,7 @@ public class ExecutingManagerUpdaterThread extends Thread {
   private boolean shutdown = false;
   private long lastThreadCheckTime = -1;
 
-  public ExecutingManagerUpdaterThread(final ExecutorManagerUpdaterStage updaterStage,
+  public RunningExecutionsUpdaterThread(final ExecutorManagerUpdaterStage updaterStage,
       final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       // TODO refactor more to remove this circular dependency
