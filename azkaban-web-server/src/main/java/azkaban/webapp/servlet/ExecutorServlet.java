@@ -867,6 +867,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     nodeObj.put("endTime", node.getEndTime());
     nodeObj.put("updateTime", node.getUpdateTime());
     nodeObj.put("type", node.getType());
+    nodeObj.put("condition", node.getCondition());
     nodeObj.put("nestedId", node.getNestedId());
 
     nodeObj.put("attempt", node.getAttempt());
