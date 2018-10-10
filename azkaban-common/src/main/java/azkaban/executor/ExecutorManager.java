@@ -113,7 +113,6 @@ public class ExecutorManager extends EventHandler implements
 
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader loader,
-      final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final RunningExecutions runningExecutions,

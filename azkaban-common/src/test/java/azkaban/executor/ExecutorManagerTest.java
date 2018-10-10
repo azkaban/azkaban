@@ -153,9 +153,8 @@ public class ExecutorManagerTest {
     final RunningExecutionsUpdaterThread updaterThread = new RunningExecutionsUpdaterThread(
         this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
         this.runningExecutions, executionFinalizer);
-    return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiGateway, this.runningExecutions, this.updaterStage, executionFinalizer,
-        updaterThread);
+    return new ExecutorManager(this.props, this.loader, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, this.updaterStage, executionFinalizer, updaterThread);
   }
 
   /*
