@@ -32,7 +32,6 @@ import azkaban.project.ProjectWhitelist;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableSet;
@@ -50,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -101,7 +99,7 @@ public class ExecutorManager extends EventHandler implements
   private final CommonMetrics commonMetrics;
   private final ExecutorLoader executorLoader;
   private final CleanerThread cleanerThread;
-  private final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
+  final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
       new ConcurrentHashMap<>();
   private final ExecutingManagerUpdaterThread executingManager;
   private final ExecutorApiGateway apiGateway;
@@ -113,8 +111,7 @@ public class ExecutorManager extends EventHandler implements
   private QueueProcessorThread queueProcessor;
   private volatile Pair<ExecutionReference, ExecutableFlow> runningCandidate = null;
   private long lastCleanerThreadCheckTime = -1;
-  private long lastThreadCheckTime = -1;
-  private String updaterStage = "not started";
+  private final ExecutorManagerUpdaterStage updaterStage = new ExecutorManagerUpdaterStage();
   private List<String> filterList;
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
@@ -145,7 +142,8 @@ public class ExecutorManager extends EventHandler implements
 
     this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
 
-    this.executingManager = new ExecutingManagerUpdaterThread();
+    this.executingManager = new ExecutingManagerUpdaterThread(
+        this.updaterStage, alerterHolder, commonMetrics, apiGateway, this);
 
     if (isMultiExecutorMode()) {
       setupMultiExecutorMode();
@@ -386,7 +384,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   public String getExecutorThreadStage() {
-    return this.updaterStage;
+    return this.updaterStage.get();
   }
 
   @Override
@@ -396,7 +394,7 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public long getLastExecutorManagerThreadCheckTime() {
-    return this.lastThreadCheckTime;
+    return this.executingManager.getLastThreadCheckTime();
   }
 
   @Override
@@ -1229,32 +1227,32 @@ public class ExecutorManager extends EventHandler implements
     this.executingManager.shutdown();
   }
 
-  private void finalizeFlows(final ExecutableFlow flow, final String reason,
+  void finalizeFlows(final ExecutableFlow flow, final String reason,
       final Throwable originalError) {
 
     final int execId = flow.getExecutionId();
     boolean alertUser = true;
     final String[] extraReasons = getFinalizeFlowReasons(reason, originalError);
-    this.updaterStage = "finalizing flow " + execId;
+    this.updaterStage.set("finalizing flow " + execId);
     // First we check if the execution in the datastore is complete
     try {
       final ExecutableFlow dsFlow;
       if (isFinished(flow)) {
         dsFlow = flow;
       } else {
-        this.updaterStage = "finalizing flow " + execId + " loading from db";
+        this.updaterStage.set("finalizing flow " + execId + " loading from db");
         dsFlow = this.executorLoader.fetchExecutableFlow(execId);
 
         // If it's marked finished, we're good. If not, we fail everything and
         // then mark it finished.
         if (!isFinished(dsFlow)) {
-          this.updaterStage = "finalizing flow " + execId + " failing the flow";
+          this.updaterStage.set("finalizing flow " + execId + " failing the flow");
           failEverything(dsFlow);
           this.executorLoader.updateExecutableFlow(dsFlow);
         }
       }
 
-      this.updaterStage = "finalizing flow " + execId + " deleting active reference";
+      this.updaterStage.set("finalizing flow " + execId + " deleting active reference");
 
       // Delete the executing reference.
       if (flow.getEndTime() == -1) {
@@ -1263,7 +1261,7 @@ public class ExecutorManager extends EventHandler implements
       }
       this.executorLoader.removeActiveExecutableReference(execId);
 
-      this.updaterStage = "finalizing flow " + execId + " cleaning from memory";
+      this.updaterStage.set("finalizing flow " + execId + " cleaning from memory");
       this.runningFlows.remove(execId);
     } catch (final ExecutorManagerException e) {
       alertUser = false; // failed due to azkaban internal error, not to alert user
@@ -1272,7 +1270,7 @@ public class ExecutorManager extends EventHandler implements
 
     // TODO append to the flow log that we marked this flow as failed + the extraReasons
 
-    this.updaterStage = "finalizing flow " + execId + " alerting and emailing";
+    this.updaterStage.set("finalizing flow " + execId + " alerting and emailing");
     if (alertUser) {
       final ExecutionOptions options = flow.getExecutionOptions();
       // But we can definitely email them.
@@ -1368,72 +1366,8 @@ public class ExecutorManager extends EventHandler implements
     exFlow.setStatus(Status.FAILED);
   }
 
-  private ExecutableFlow updateExecution(final Map<String, Object> updateData)
-      throws ExecutorManagerException {
-
-    final Integer execId =
-        (Integer) updateData.get(ConnectorParams.UPDATE_MAP_EXEC_ID);
-    if (execId == null) {
-      throw new ExecutorManagerException(
-          "Response is malformed. Need exec id to update.");
-    }
-
-    final Pair<ExecutionReference, ExecutableFlow> refPair =
-        this.runningFlows.get(execId);
-    if (refPair == null) {
-      throw new ExecutorManagerException(
-          "No running flow found with the execution id. Removing " + execId);
-    }
-
-    final ExecutionReference ref = refPair.getFirst();
-    final ExecutableFlow flow = refPair.getSecond();
-    if (updateData.containsKey("error")) {
-      // The flow should be finished here.
-      throw new ExecutorManagerException((String) updateData.get("error"), flow);
-    }
-
-    // Reset errors.
-    ref.setNextCheckTime(0);
-    ref.setNumErrors(0);
-    final Status oldStatus = flow.getStatus();
-    flow.applyUpdateObject(updateData);
-    final Status newStatus = flow.getStatus();
-
-    if (oldStatus != newStatus && newStatus == Status.FAILED) {
-      this.commonMetrics.markFlowFail();
-    }
-
-    final ExecutionOptions options = flow.getExecutionOptions();
-    if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
-      // We want to see if we should give an email status on first failure.
-      if (options.getNotifyOnFirstFailure()) {
-        final Alerter mailAlerter = this.alerterHolder.get("email");
-        try {
-          mailAlerter.alertOnFirstError(flow);
-        } catch (final Exception e) {
-          logger.error("Failed to send first error email." + e.getMessage(), e);
-        }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = this.alerterHolder.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnFirstError(flow);
-          } catch (final Exception e) {
-            logger.error("Failed to alert by " + alertType, e);
-          }
-        } else {
-          logger.error("Alerter type " + alertType
-              + " doesn't exist. Failed to alert.");
-        }
-      }
-    }
-
-    return flow;
-  }
-
-  public boolean isFinished(final ExecutableFlow flow) {
+  // TODO move to some common place
+  static boolean isFinished(final ExecutableFlow flow) {
     switch (flow.getStatus()) {
       case SUCCEEDED:
       case FAILED:
@@ -1442,43 +1376,6 @@ public class ExecutorManager extends EventHandler implements
       default:
         return false;
     }
-  }
-
-  private void fillUpdateTimeAndExecId(final List<ExecutableFlow> flows,
-      final List<Integer> executionIds, final List<Long> updateTimes) {
-    for (final ExecutableFlow flow : flows) {
-      executionIds.add(flow.getExecutionId());
-      updateTimes.add(flow.getUpdateTime());
-    }
-  }
-
-  /* Group Executable flow by Executors to reduce number of REST calls */
-  private Map<Optional<Executor>, List<ExecutableFlow>> getFlowToExecutorMap() {
-    final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
-        new HashMap<>();
-
-    for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.runningFlows
-        .values()) {
-      final ExecutionReference ref = runningFlow.getFirst();
-      final ExecutableFlow flow = runningFlow.getSecond();
-      final Optional<Executor> executor = ref.getExecutor();
-
-      // We can set the next check time to prevent the checking of certain
-      // flows.
-      if (ref.getNextCheckTime() >= System.currentTimeMillis()) {
-        continue;
-      }
-
-      List<ExecutableFlow> flows = exFlowMap.get(executor);
-      if (flows == null) {
-        flows = new ArrayList<>();
-        exFlowMap.put(executor, flows);
-      }
-
-      flows.add(flow);
-    }
-
-    return exFlowMap;
   }
 
   @Override
@@ -1533,160 +1430,6 @@ public class ExecutorManager extends EventHandler implements
     logger.info(String.format(
         "Successfully dispatched exec %d with error count %d",
         exflow.getExecutionId(), reference.getNumErrors()));
-  }
-
-  private class ExecutingManagerUpdaterThread extends Thread {
-
-    private final int waitTimeIdleMs = 2000;
-    private final int waitTimeMs = 500;
-    // When we have an http error, for that flow, we'll check every 10 secs, 360
-    // times (3600 seconds = 1 hour) before we send an email about unresponsive executor.
-    private final int numErrorsBetweenUnresponsiveEmail = 360;
-    // First email is sent after 1 minute of unresponsiveness
-    private final int numErrorsBeforeUnresponsiveEmail = 6;
-    private final long errorThreshold = 10000;
-    private boolean shutdown = false;
-
-    public ExecutingManagerUpdaterThread() {
-      this.setName("ExecutorManagerUpdaterThread");
-    }
-
-    private void shutdown() {
-      this.shutdown = true;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void run() {
-      while (!this.shutdown) {
-        try {
-          ExecutorManager.this.lastThreadCheckTime = System.currentTimeMillis();
-          ExecutorManager.this.updaterStage = "Starting update all flows.";
-
-          final Map<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
-              getFlowToExecutorMap();
-          final ArrayList<ExecutableFlow> finalizeFlows =
-              new ArrayList<>();
-
-          if (exFlowMap.size() > 0) {
-            for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap
-                .entrySet()) {
-              final List<Long> updateTimesList = new ArrayList<>();
-              final List<Integer> executionIdsList = new ArrayList<>();
-
-              final Optional<Executor> executorOption = entry.getKey();
-              if (!executorOption.isPresent()) {
-                for (final ExecutableFlow flow : entry.getValue()) {
-                  logger.warn("Finalizing execution " + flow.getExecutionId()
-                      + ". Executor id of this execution doesn't exist");
-                  finalizeFlows.add(flow);
-                }
-                continue;
-              }
-              final Executor executor = executorOption.get();
-
-              ExecutorManager.this.updaterStage =
-                  "Starting update flows on " + executor.getHost() + ":"
-                      + executor.getPort();
-
-              // We pack the parameters of the same host together before we
-              // query.
-              fillUpdateTimeAndExecId(entry.getValue(), executionIdsList,
-                  updateTimesList);
-
-              final Pair<String, String> updateTimes =
-                  new Pair<>(
-                      ConnectorParams.UPDATE_TIME_LIST_PARAM,
-                      JSONUtils.toJSON(updateTimesList));
-              final Pair<String, String> executionIds =
-                  new Pair<>(ConnectorParams.EXEC_ID_LIST_PARAM,
-                      JSONUtils.toJSON(executionIdsList));
-
-              Map<String, Object> results = null;
-              try {
-                results =
-                    ExecutorManager.this.apiGateway.callWithExecutionId(executor.getHost(),
-                        executor.getPort(), ConnectorParams.UPDATE_ACTION,
-                        null, null, executionIds, updateTimes);
-              } catch (final ExecutorManagerException e) {
-                logger.error("Failed to get update from executor " + executor.getHost(), e);
-                boolean sendUnresponsiveEmail = false;
-                for (final ExecutableFlow flow : entry.getValue()) {
-                  final Pair<ExecutionReference, ExecutableFlow> pair =
-                      ExecutorManager.this.runningFlows.get(flow.getExecutionId());
-                  // TODO can runningFlows.get ever return null, causing NPE below?
-
-                  ExecutorManager.this.updaterStage =
-                      "Failed to get update for flow " + pair.getSecond().getExecutionId();
-
-                  final ExecutionReference ref = pair.getFirst();
-                  ref.setNextCheckTime(System.currentTimeMillis() + this.errorThreshold);
-                  ref.setNumErrors(ref.getNumErrors() + 1);
-                  if (ref.getNumErrors() == this.numErrorsBeforeUnresponsiveEmail
-                      || ref.getNumErrors() % this.numErrorsBetweenUnresponsiveEmail == 0) {
-                    // if any of the executions has failed many enough updates, alert
-                    sendUnresponsiveEmail = true;
-                  }
-                }
-                if (sendUnresponsiveEmail) {
-                  final Alerter mailAlerter = ExecutorManager.this.alerterHolder.get("email");
-                  mailAlerter.alertOnFailedUpdate(executor, entry.getValue(), e);
-                }
-              }
-
-              // We gets results
-              if (results != null) {
-                final List<Map<String, Object>> executionUpdates =
-                    (List<Map<String, Object>>) results
-                        .get(ConnectorParams.RESPONSE_UPDATED_FLOWS);
-                for (final Map<String, Object> updateMap : executionUpdates) {
-                  try {
-                    final ExecutableFlow flow = updateExecution(updateMap);
-
-                    ExecutorManager.this.updaterStage = "Updated flow " + flow.getExecutionId();
-
-                    if (isFinished(flow)) {
-                      finalizeFlows.add(flow);
-                    }
-                  } catch (final ExecutorManagerException e) {
-                    final ExecutableFlow flow = e.getExecutableFlow();
-                    logger.error(e);
-
-                    if (flow != null) {
-                      logger.warn("Finalizing execution " + flow.getExecutionId());
-                      finalizeFlows.add(flow);
-                    }
-                  }
-                }
-              }
-            }
-
-            ExecutorManager.this.updaterStage =
-                "Finalizing " + finalizeFlows.size() + " error flows.";
-
-            // Kill error flows
-            for (final ExecutableFlow flow : finalizeFlows) {
-              finalizeFlows(flow, "Not running on the assigned executor (any more)", null);
-            }
-          }
-
-          ExecutorManager.this.updaterStage = "Updated all active flows. Waiting for next round.";
-
-          synchronized (ExecutorManager.this) {
-            try {
-              if (ExecutorManager.this.runningFlows.size() > 0) {
-                ExecutorManager.this.wait(this.waitTimeMs);
-              } else {
-                ExecutorManager.this.wait(this.waitTimeIdleMs);
-              }
-            } catch (final InterruptedException e) {
-            }
-          }
-        } catch (final Exception e) {
-          logger.error("Unexpected exception in updating executions", e);
-        }
-      }
-    }
   }
 
   /*
