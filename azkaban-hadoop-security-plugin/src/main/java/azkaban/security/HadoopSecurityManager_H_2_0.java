@@ -340,26 +340,26 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
   String userToProxy, final Logger jobLogger) {
     String credentialClassName = "unknown class";
-      try {
-        credentialClassName = props
-            .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
-        logger.info("custom credential class name: " + credentialClassName);
-        final Class credentialClass = Class.forName(credentialClassName);
+    try {
+      credentialClassName = props
+          .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+      logger.info("custom credential class name: " + credentialClassName);
+      final Class credentialClass = Class.forName(credentialClassName);
 
-        // The credential class must have a constructor accepting 3 parameters, Credentials,
-        // Props, and Logger in order.
-        Constructor constructor = credentialClass.getConstructor (new Class[]
-            {Credentials.class, Props.class, Logger.class});
-        final CredentialProvider customCredential = (CredentialProvider) constructor
-              .newInstance(hadoopCred, props, jobLogger);
-        customCredential.register(userToProxy);
+      // The credential class must have a constructor accepting 3 parameters, Credentials,
+      // Props, and Logger in order.
+      final Constructor constructor = credentialClass.getConstructor(new Class[]
+          {Credentials.class, Props.class, Logger.class});
+      final CredentialProvider customCredential = (CredentialProvider) constructor
+          .newInstance(hadoopCred, props, jobLogger);
+      customCredential.register(userToProxy);
 
-      } catch (final Exception e) {
-        logger.error("Encountered error while loading and instantiating "
-            + credentialClassName, e);
-        throw new IllegalStateException("Encountered error while loading and instantiating "
-            + credentialClassName, e);
-      }
+    } catch (final Exception e) {
+      logger.error("Encountered error while loading and instantiating "
+          + credentialClassName, e);
+      throw new IllegalStateException("Encountered error while loading and instantiating "
+          + credentialClassName, e);
+    }
   }
 
   @Override
@@ -543,7 +543,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       try {
 
         // first we fetch and save the default hcat token.
-        logger.info("Pre-fetching default Hive MetaStore token from hive");
+        logger.info(
+            String
+                .format("Pre-fetching default Hive MetaStore token for %s from hive", userToProxy));
 
         HiveConf hiveConf = new HiveConf();
         Token<DelegationTokenIdentifier> hcatToken =
@@ -558,7 +560,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           // start to process the user inputs.
           for (final String thriftUrls : extraHcatClusters) {
-            logger.info("Pre-fetching metaStore token from cluster : " + thriftUrls);
+            logger.info(String.format("Pre-fetching metaStore token user: %s from cluster : %s",
+                userToProxy, thriftUrls));
 
             hiveConf = new HiveConf();
             hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrls);
@@ -574,7 +577,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
             // start to process the user inputs.
             for (final String thriftUrl : extraHcatLocations) {
-              logger.info("Pre-fetching metaStore token from : " + thriftUrl);
+              logger.info(String.format("Pre-fetching metaStore token user: %s from : %s",
+                  userToProxy, thriftUrl));
 
               hiveConf = new HiveConf();
               hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrl);
