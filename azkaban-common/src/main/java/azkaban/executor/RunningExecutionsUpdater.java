@@ -161,7 +161,7 @@ public class RunningExecutionsUpdater {
     boolean sendUnresponsiveEmail = false;
     for (final ExecutableFlow flow : entry.getValue()) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningExecutions.get(flow.getExecutionId());
+          this.runningExecutions.get().get(flow.getExecutionId());
       // TODO can runningFlows.get ever return null, causing NPE below?
 
       this.updaterStage
@@ -187,7 +187,7 @@ public class RunningExecutionsUpdater {
     final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap =
         new HashMap<>();
 
-    for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.runningExecutions
+    for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this.runningExecutions.get()
         .values()) {
       final ExecutionReference ref = runningFlow.getFirst();
       final ExecutableFlow flow = runningFlow.getSecond();
@@ -230,7 +230,7 @@ public class RunningExecutionsUpdater {
     }
 
     final Pair<ExecutionReference, ExecutableFlow> refPair =
-        this.runningExecutions.get(execId);
+        this.runningExecutions.get().get(execId);
     if (refPair == null) {
       throw new ExecutorManagerException(
           "No running flow found with the execution id. Removing " + execId);

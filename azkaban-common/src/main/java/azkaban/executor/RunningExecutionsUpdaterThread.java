@@ -65,7 +65,7 @@ public class RunningExecutionsUpdaterThread extends Thread {
   private void waitForNewExecutions() {
     synchronized (this.runningExecutions) {
       try {
-        if (this.runningExecutions.size() > 0) {
+        if (this.runningExecutions.get().size() > 0) {
           this.runningExecutions.wait(this.waitTimeMs);
         } else {
           this.runningExecutions.wait(this.waitTimeIdleMs);

@@ -89,7 +89,7 @@ public class ExecutionFinalizer {
       this.executorLoader.removeActiveExecutableReference(execId);
 
       this.updaterStage.set("finalizing flow " + execId + " cleaning from memory");
-      this.runningExecutions.remove(execId);
+      this.runningExecutions.get().remove(execId);
     } catch (final ExecutorManagerException e) {
       alertUser = false; // failed due to azkaban internal error, not to alert user
       logger.error(e);

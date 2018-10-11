@@ -411,7 +411,7 @@ public class ExecutorManager extends EventHandler implements
       ports.add(executor.getHost() + ":" + executor.getPort());
     }
     // include executor which were initially active and still has flows running
-    for (final Pair<ExecutionReference, ExecutableFlow> running : this.runningExecutions
+    for (final Pair<ExecutionReference, ExecutableFlow> running : this.runningExecutions.get()
         .values()) {
       final ExecutionReference ref = running.getFirst();
       if (ref.getExecutor().isPresent()) {
@@ -427,7 +427,7 @@ public class ExecutorManager extends EventHandler implements
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
         .fetchActiveFlows();
     logger.info("Loaded " + activeFlows.size() + " running flows");
-    this.runningExecutions.putAll(activeFlows);
+    this.runningExecutions.get().putAll(activeFlows);
   }
 
   /*
@@ -464,7 +464,7 @@ public class ExecutorManager extends EventHandler implements
               getRunningFlowsHelper(projectId, flowId, Lists.newArrayList(this.runningCandidate)));
     }
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
-        this.runningExecutions.values()));
+        this.runningExecutions.get().values()));
     Collections.sort(executionIds);
     return executionIds;
   }
@@ -493,7 +493,7 @@ public class ExecutorManager extends EventHandler implements
     final List<Pair<ExecutableFlow, Optional<Executor>>> flows =
         new ArrayList<>();
     getActiveFlowsWithExecutorHelper(flows, this.queuedFlows.getAllEntries());
-    getActiveFlowsWithExecutorHelper(flows, this.runningExecutions.values());
+    getActiveFlowsWithExecutorHelper(flows, this.runningExecutions.get().values());
     return flows;
   }
 
@@ -520,7 +520,7 @@ public class ExecutorManager extends EventHandler implements
             || isFlowRunningHelper(projectId, flowId, this.queuedFlows.getAllEntries());
     isRunning =
         isRunning
-            || isFlowRunningHelper(projectId, flowId, this.runningExecutions.values());
+            || isFlowRunningHelper(projectId, flowId, this.runningExecutions.get().values());
     return isRunning;
   }
 
@@ -558,7 +558,7 @@ public class ExecutorManager extends EventHandler implements
   public List<ExecutableFlow> getRunningFlows() {
     final ArrayList<ExecutableFlow> flows = new ArrayList<>();
     getActiveFlowHelper(flows, this.queuedFlows.getAllEntries());
-    getActiveFlowHelper(flows, this.runningExecutions.values());
+    getActiveFlowHelper(flows, this.runningExecutions.get().values());
     return flows;
   }
 
@@ -583,7 +583,7 @@ public class ExecutorManager extends EventHandler implements
   public String getRunningFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     getRunningFlowsIdsHelper(allIds, this.queuedFlows.getAllEntries());
-    getRunningFlowsIdsHelper(allIds, this.runningExecutions.values());
+    getRunningFlowsIdsHelper(allIds, this.runningExecutions.get().values());
     Collections.sort(allIds);
     return allIds.toString();
   }
@@ -686,7 +686,7 @@ public class ExecutorManager extends EventHandler implements
   public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
       final int length) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get(exFlow.getExecutionId());
+        this.runningExecutions.get().get(exFlow.getExecutionId());
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "flow");
       final Pair<String, String> offsetParam =
@@ -710,7 +710,7 @@ public class ExecutorManager extends EventHandler implements
   public LogData getExecutionJobLog(final ExecutableFlow exFlow, final String jobId,
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get(exFlow.getExecutionId());
+        this.runningExecutions.get().get(exFlow.getExecutionId());
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "job");
       final Pair<String, String> jobIdParam =
@@ -738,7 +738,7 @@ public class ExecutorManager extends EventHandler implements
   public List<Object> getExecutionJobStats(final ExecutableFlow exFlow, final String jobId,
       final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get(exFlow.getExecutionId());
+        this.runningExecutions.get().get(exFlow.getExecutionId());
     if (pair == null) {
       return this.executorLoader.fetchAttachments(exFlow.getExecutionId(), jobId,
           attempt);
@@ -856,7 +856,7 @@ public class ExecutorManager extends EventHandler implements
       final String jobId, final int offset, final int length, final int attempt)
       throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get(exFlow.getExecutionId());
+        this.runningExecutions.get().get(exFlow.getExecutionId());
     if (pair != null) {
 
       final Pair<String, String> typeParam = new Pair<>("type", "job");
@@ -889,9 +889,9 @@ public class ExecutorManager extends EventHandler implements
   public void cancelFlow(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
     synchronized (exFlow) {
-      if (this.runningExecutions.containsKey(exFlow.getExecutionId())) {
+      if (this.runningExecutions.get().containsKey(exFlow.getExecutionId())) {
         final Pair<ExecutionReference, ExecutableFlow> pair =
-            this.runningExecutions.get(exFlow.getExecutionId());
+            this.runningExecutions.get().get(exFlow.getExecutionId());
         this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
             userId);
       } else if (this.queuedFlows.hasExecution(exFlow.getExecutionId())) {
@@ -911,7 +911,7 @@ public class ExecutorManager extends EventHandler implements
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningExecutions.get(exFlow.getExecutionId());
+          this.runningExecutions.get().get(exFlow.getExecutionId());
       if (pair == null) {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -927,7 +927,7 @@ public class ExecutorManager extends EventHandler implements
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningExecutions.get(exFlow.getExecutionId());
+          this.runningExecutions.get().get(exFlow.getExecutionId());
       if (pair == null) {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -992,7 +992,7 @@ public class ExecutorManager extends EventHandler implements
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
-          this.runningExecutions.get(exFlow.getExecutionId());
+          this.runningExecutions.get().get(exFlow.getExecutionId());
       if (pair == null) {
         throw new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -1241,13 +1241,13 @@ public class ExecutorManager extends EventHandler implements
     reference.setExecutor(choosenExecutor);
 
     // move from flow to running flows
-    this.runningExecutions.put(exflow.getExecutionId(), new Pair<>(reference, exflow));
-    synchronized (this.runningExecutions) {
+    this.runningExecutions.get().put(exflow.getExecutionId(), new Pair<>(reference, exflow));
+    synchronized (this.runningExecutions.get()) {
       // Wake up RunningExecutionsUpdaterThread from wait() so that it will immediately check status
       // from executor(s). Normally flows will run at least some time and can't be cleaned up
       // immediately, so there will be another wait round (or many, actually), but for unit tests
       // this is significant to let them run quickly.
-      this.runningExecutions.notifyAll();
+      this.runningExecutions.get().notifyAll();
     }
     synchronized (this) {
       // wake up all internal waiting threads, too

@@ -1,44 +1,41 @@
+/*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.executor;
 
 import azkaban.utils.Pair;
-import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Singleton;
 
+/**
+ * Provides access to running executions.
+ */
 @Singleton
 public class RunningExecutions {
 
-  final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
+  private final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningExecutions =
       new ConcurrentHashMap<>();
 
-  public Pair<ExecutionReference, ExecutableFlow> get(final int executionId) {
-    return this.runningFlows.get(executionId);
-  }
-
-  public int size() {
-    return this.runningFlows.size();
-  }
-
-  public Collection<Pair<ExecutionReference, ExecutableFlow>> values() {
-    return this.runningFlows.values();
-  }
-
-  public void putAll(final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows) {
-    this.runningFlows.putAll(activeFlows);
-  }
-
-  public boolean containsKey(final int executionId) {
-    return this.runningFlows.containsKey(executionId);
-  }
-
-  public void remove(final int execId) {
-    this.runningFlows.remove(execId);
-  }
-
-  public void put(final int executionId,
-      final Pair<ExecutionReference, ExecutableFlow> executionReferenceExecutableFlowPair) {
-    this.runningFlows.put(executionId, executionReferenceExecutableFlowPair);
+  /**
+   * Get running executions.
+   *
+   * @return executions.
+   */
+  public ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> get() {
+    return runningExecutions;
   }
 
 }
