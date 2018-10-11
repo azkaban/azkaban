@@ -155,6 +155,8 @@ public class ExecutorManagerTest {
         new RunningExecutionsUpdater(
             this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
             this.runningExecutions, executionFinalizer), runningExecutions);
+    updaterThread.waitTimeIdleMs = 0;
+    updaterThread.waitTimeMs = 0;
     return new ExecutorManager(this.props, this.loader, this.commonMetrics, this.apiGateway,
         this.runningExecutions, activeExecutors, this.updaterStage, executionFinalizer,
         updaterThread);

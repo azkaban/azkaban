@@ -26,8 +26,8 @@ public class RunningExecutionsUpdaterThread extends Thread {
 
   private static final Logger logger = Logger.getLogger(RunningExecutionsUpdaterThread.class);
 
-  private final int waitTimeIdleMs = 2000;
-  private final int waitTimeMs = 500;
+  volatile int waitTimeIdleMs = 2000;
+  volatile int waitTimeMs = 500;
 
   private final RunningExecutionsUpdater updater;
   private final RunningExecutions runningExecutions;
@@ -35,8 +35,8 @@ public class RunningExecutionsUpdaterThread extends Thread {
   private boolean shutdown = false;
 
   @Inject
-  public RunningExecutionsUpdaterThread(RunningExecutionsUpdater updater,
-      RunningExecutions runningExecutions) {
+  public RunningExecutionsUpdaterThread(final RunningExecutionsUpdater updater,
+      final RunningExecutions runningExecutions) {
     this.updater = updater;
     this.runningExecutions = runningExecutions;
     this.setName("ExecutorManagerUpdaterThread");
@@ -51,7 +51,7 @@ public class RunningExecutionsUpdaterThread extends Thread {
     while (!this.shutdown) {
       try {
         this.lastThreadCheckTime = System.currentTimeMillis();
-        updater.updateExecutions();
+        this.updater.updateExecutions();
         // TODO not sure why it would be important to check the status immediately in case of _new_
         // executions. This can only optimize finalizing executions that finish super-quickly after
         // being started.
@@ -65,10 +65,10 @@ public class RunningExecutionsUpdaterThread extends Thread {
   private void waitForNewExecutions() {
     synchronized (this.runningExecutions) {
       try {
-        if (this.runningExecutions.get().size() > 0) {
-          this.runningExecutions.wait(this.waitTimeMs);
-        } else {
-          this.runningExecutions.wait(this.waitTimeIdleMs);
+        final int waitTimeMillis =
+            this.runningExecutions.get().size() > 0 ? this.waitTimeMs : this.waitTimeIdleMs;
+        if (waitTimeMillis > 0) {
+          this.runningExecutions.wait(waitTimeMillis);
         }
       } catch (final InterruptedException e) {
       }
