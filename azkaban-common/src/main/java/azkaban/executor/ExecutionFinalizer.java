@@ -1,12 +1,32 @@
+/*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.executor;
 
 import azkaban.alert.Alerter;
 import java.util.LinkedList;
 import java.util.List;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 
+/**
+ * Handles removing of running executions (after they have been deemed to be be done or orphaned).
+ */
 public class ExecutionFinalizer {
 
   private static final Logger logger = Logger.getLogger(ExecutionFinalizer.class);
@@ -26,8 +46,16 @@ public class ExecutionFinalizer {
     this.runningExecutions = runningExecutions;
   }
 
+  /**
+   * If the current status of the execution is not one of the finished statuses, marks the execution
+   * as failed in the DB. Removes the execution from the running executions cache.
+   *
+   * @param flow the execution
+   * @param reason reason for finalizing the execution
+   * @param originalError the cause, if execution is being finalized because of an error
+   */
   public void finalizeFlow(final ExecutableFlow flow, final String reason,
-      final Throwable originalError) {
+      @Nullable final Throwable originalError) {
 
     final int execId = flow.getExecutionId();
     boolean alertUser = true;
