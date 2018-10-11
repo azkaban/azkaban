@@ -28,6 +28,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutorManagerUpdaterStage;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.RunningExecutions;
+import azkaban.executor.RunningExecutionsUpdater;
 import azkaban.executor.RunningExecutionsUpdaterThread;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
@@ -82,9 +83,9 @@ public class TriggerManagerDeadlockTest {
   }
 
   private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {
-    return new RunningExecutionsUpdaterThread(
+    return new RunningExecutionsUpdaterThread(new RunningExecutionsUpdater(
         this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
-        this.runningExecutions, this.executionFinalizer);
+        this.runningExecutions, this.executionFinalizer), runningExecutions);
   }
 
   @After
