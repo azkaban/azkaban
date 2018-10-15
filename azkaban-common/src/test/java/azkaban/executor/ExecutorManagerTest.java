@@ -69,6 +69,8 @@ public class ExecutorManagerTest {
   private AlerterHolder alertHolder;
   private ExecutorApiGateway apiGateway;
   private Alerter mailAlerter;
+  private RunningExecutions runningExecutions;
+  private ExecutorManagerUpdaterStage updaterStage;
 
   @Before
   public void setup() {
@@ -77,6 +79,8 @@ public class ExecutorManagerTest {
     this.alertHolder = mock(AlerterHolder.class);
     when(this.alertHolder.get("email")).thenReturn(this.mailAlerter);
     this.loader = new MockExecutorLoader();
+    this.runningExecutions = new RunningExecutions();
+    this.updaterStage = new ExecutorManagerUpdaterStage();
   }
 
   @After
@@ -143,8 +147,19 @@ public class ExecutorManagerTest {
 
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
-    return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiGateway);
+    // TODO rename this test to ExecutorManagerIntegrationTest & create separate unit tests as well?
+    final ActiveExecutors activeExecutors = new ActiveExecutors(this.props, this.loader);
+    final ExecutionFinalizer executionFinalizer = new ExecutionFinalizer(this.loader,
+        this.updaterStage, this.alertHolder, this.runningExecutions);
+    final RunningExecutionsUpdaterThread updaterThread = new RunningExecutionsUpdaterThread(
+        new RunningExecutionsUpdater(
+            this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
+            this.runningExecutions, executionFinalizer), runningExecutions);
+    updaterThread.waitTimeIdleMs = 0;
+    updaterThread.waitTimeMs = 0;
+    return new ExecutorManager(this.props, this.loader, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, activeExecutors, this.updaterStage, executionFinalizer,
+        updaterThread);
   }
 
   /*
@@ -288,9 +303,8 @@ public class ExecutorManagerTest {
   }
 
   /**
-   * 1. Executor 1 throws an exception when trying to dispatch to it
-   * 2. ExecutorManager should try next executor
-   * 3. Executor 2 accepts the dispatched execution
+   * 1. Executor 1 throws an exception when trying to dispatch to it 2. ExecutorManager should try
+   * next executor 3. Executor 2 accepts the dispatched execution
    */
   @Test
   public void testDispatchException() throws Exception {
