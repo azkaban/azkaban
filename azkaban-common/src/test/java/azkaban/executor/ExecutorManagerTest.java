@@ -18,7 +18,6 @@ package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -367,8 +366,7 @@ public class ExecutorManagerTest {
   @SuppressWarnings("unchecked")
   private void mockUpdateResponse(
       final Map<String, List<Map<String, Object>>> map) throws Exception {
-    doReturn(map).when(this.apiGateway).callWithExecutionId(
-        any(), anyInt(), eq(ConnectorParams.UPDATE_ACTION), any(), any(), any(), any());
+    doReturn(map).when(this.apiGateway).updateExecutions(any(), any());
   }
 
   /*

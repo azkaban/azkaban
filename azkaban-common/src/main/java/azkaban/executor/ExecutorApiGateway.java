@@ -125,4 +125,24 @@ public class ExecutorApiGateway {
     return this.apiClient.httpPost(uri, paramList);
   }
 
+  public Map<String, Object> updateExecutions(final Executor executor,
+      final List<ExecutableFlow> executions) throws ExecutorManagerException {
+    final List<Long> updateTimesList = new ArrayList<>();
+    final List<Integer> executionIdsList = new ArrayList<>();
+    // We pack the parameters of the same host together before query
+    for (final ExecutableFlow flow : executions) {
+      executionIdsList.add(flow.getExecutionId());
+      updateTimesList.add(flow.getUpdateTime());
+    }
+    final Pair<String, String> updateTimes = new Pair<>(
+        ConnectorParams.UPDATE_TIME_LIST_PARAM,
+        JSONUtils.toJSON(updateTimesList));
+    final Pair<String, String> executionIds = new Pair<>(
+        ConnectorParams.EXEC_ID_LIST_PARAM,
+        JSONUtils.toJSON(executionIdsList));
+
+    return callWithExecutionId(executor.getHost(), executor.getPort(),
+        ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
+  }
+
 }

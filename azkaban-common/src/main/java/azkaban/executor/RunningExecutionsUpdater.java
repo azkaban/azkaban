@@ -18,7 +18,6 @@ package azkaban.executor;
 
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,8 +74,6 @@ public class RunningExecutionsUpdater {
 
     for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap
         .entrySet()) {
-      final List<Long> updateTimesList = new ArrayList<>();
-      final List<Integer> executionIdsList = new ArrayList<>();
 
       final Optional<Executor> executorOption = entry.getKey();
       if (!executorOption.isPresent()) {
@@ -92,24 +89,9 @@ public class RunningExecutionsUpdater {
       this.updaterStage.set("Starting update flows on " + executor.getHost() + ":"
           + executor.getPort());
 
-      // We pack the parameters of the same host together before we
-      // query.
-      fillUpdateTimeAndExecId(entry.getValue(), executionIdsList,
-          updateTimesList);
-
-      final Pair<String, String> updateTimes =
-          new Pair<>(
-              ConnectorParams.UPDATE_TIME_LIST_PARAM,
-              JSONUtils.toJSON(updateTimesList));
-      final Pair<String, String> executionIds =
-          new Pair<>(ConnectorParams.EXEC_ID_LIST_PARAM,
-              JSONUtils.toJSON(executionIdsList));
-
       Map<String, Object> results = null;
       try {
-        results = this.apiGateway.callWithExecutionId(executor.getHost(),
-            executor.getPort(), ConnectorParams.UPDATE_ACTION,
-            null, null, executionIds, updateTimes);
+        results = this.apiGateway.updateExecutions(executor, entry.getValue());
       } catch (final ExecutorManagerException e) {
         handleException(entry, executor, e);
       }
@@ -204,14 +186,6 @@ public class RunningExecutionsUpdater {
     }
 
     return exFlowMap;
-  }
-
-  private void fillUpdateTimeAndExecId(final List<ExecutableFlow> flows,
-      final List<Integer> executionIds, final List<Long> updateTimes) {
-    for (final ExecutableFlow flow : flows) {
-      executionIds.add(flow.getExecutionId());
-      updateTimes.add(flow.getUpdateTime());
-    }
   }
 
   private ExecutableFlow updateExecution(final Map<String, Object> updateData)

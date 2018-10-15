@@ -1,8 +1,6 @@
 package azkaban.executor;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -118,14 +116,12 @@ public class RunningExecutionsUpdaterTest {
   }
 
   private void mockUpdateCallFails() throws ExecutorManagerException {
-    doThrow(API_CALL_EXCEPTION).when(this.apiGateway)
-        .callWithExecutionId(any(), anyInt(), eq(ConnectorParams.UPDATE_ACTION), any(), any(),
-            any(), any());
+    doThrow(API_CALL_EXCEPTION).when(this.apiGateway).updateExecutions(any(), any());
   }
 
   private void verifyCallUpdateApi() throws ExecutorManagerException {
-    verify(this.apiGateway).callWithExecutionId(
-        any(), anyInt(), eq(ConnectorParams.UPDATE_ACTION), any(), any(), any(), any());
+    verify(this.apiGateway).updateExecutions(
+        this.activeExecutor, Collections.singletonList(this.execution));
   }
 
   private void mockFlowDoesNotExist() throws Exception {
@@ -146,8 +142,7 @@ public class RunningExecutionsUpdaterTest {
   @SuppressWarnings("unchecked")
   private void mockUpdateResponse(
       final Map<String, List<Map<String, Object>>> map) throws Exception {
-    doReturn(map).when(this.apiGateway).callWithExecutionId(
-        any(), anyInt(), eq(ConnectorParams.UPDATE_ACTION), any(), any(), any(), any());
+    doReturn(map).when(this.apiGateway).updateExecutions(any(), any());
   }
 
   private void verifyFinalizeFlow() {
