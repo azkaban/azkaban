@@ -94,6 +94,8 @@ public class ReportalPrestoRunner extends ReportalAbstractRunner {
       String processedQuery = injectVariables(this.jobQuery);
       processedQuery = processedQuery.trim();
 
+      // jdbc presto driver doesn't work with query with trailing semicolon,
+      // if user query has semicolon, remove it.
       if (processedQuery.endsWith(";")) {
         processedQuery = processedQuery.substring(0, processedQuery.length() - 1);
       }
