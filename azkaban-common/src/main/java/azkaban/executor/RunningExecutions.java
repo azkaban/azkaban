@@ -35,7 +35,7 @@ public class RunningExecutions {
    * @return executions.
    */
   public ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> get() {
-    return runningExecutions;
+    return this.runningExecutions;
   }
 
 }
