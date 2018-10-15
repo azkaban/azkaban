@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import javax.inject.Inject;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 /**
  * Updates running executions.
@@ -40,8 +41,8 @@ public class RunningExecutionsUpdater {
   // times (3600 seconds = 1 hour) before we send an email about unresponsive executor.
   private final int numErrorsBetweenUnresponsiveEmail = 360;
   // First email is sent after 1 minute of unresponsiveness
-  private final int numErrorsBeforeUnresponsiveEmail = 6;
-  private final long errorThreshold = 10000;
+  final int numErrorsBeforeUnresponsiveEmail = 6;
+  final long errorThreshold = 10000;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final AlerterHolder alerterHolder;
   private final CommonMetrics commonMetrics;
@@ -149,8 +150,8 @@ public class RunningExecutionsUpdater {
     this.updaterStage.set("Updated all active flows. Waiting for next round.");
   }
 
-  private void handleException(Entry<Optional<Executor>, List<ExecutableFlow>> entry,
-      Executor executor, ExecutorManagerException e) {
+  private void handleException(final Entry<Optional<Executor>, List<ExecutableFlow>> entry,
+      final Executor executor, final ExecutorManagerException e) {
     logger.error("Failed to get update from executor " + executor.getHost(), e);
     boolean sendUnresponsiveEmail = false;
     for (final ExecutableFlow flow : entry.getValue()) {
@@ -162,7 +163,7 @@ public class RunningExecutionsUpdater {
           .set("Failed to get update for flow " + pair.getSecond().getExecutionId());
 
       final ExecutionReference ref = pair.getFirst();
-      ref.setNextCheckTime(System.currentTimeMillis() + this.errorThreshold);
+      ref.setNextCheckTime(DateTime.now().getMillis() + this.errorThreshold);
       ref.setNumErrors(ref.getNumErrors() + 1);
       if (ref.getNumErrors() == this.numErrorsBeforeUnresponsiveEmail
           || ref.getNumErrors() % this.numErrorsBetweenUnresponsiveEmail == 0) {
@@ -189,7 +190,7 @@ public class RunningExecutionsUpdater {
 
       // We can set the next check time to prevent the checking of certain
       // flows.
-      if (ref.getNextCheckTime() >= System.currentTimeMillis()) {
+      if (ref.getNextCheckTime() >= DateTime.now().getMillis()) {
         continue;
       }
 
@@ -226,8 +227,10 @@ public class RunningExecutionsUpdater {
     final Pair<ExecutionReference, ExecutableFlow> refPair =
         this.runningExecutions.get().get(execId);
     if (refPair == null) {
+      // this shouldn't ever happen on real azkaban runtime.
+      // but this can easily happen in unit tests if there's some inconsistent mocking.
       throw new ExecutorManagerException(
-          "No running flow found with the execution id. Removing " + execId);
+          "No execution found in the map with the execution id any more. Removing " + execId);
     }
 
     final ExecutionReference ref = refPair.getFirst();
