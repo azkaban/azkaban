@@ -36,6 +36,7 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableMap;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -161,7 +162,7 @@ public class ExecutorManagerTest {
     final ExecutorManager executorManager = new ExecutorManager(this.props, this.loader,
         this.commonMetrics, this.apiGateway, this.runningExecutions, activeExecutors,
         this.updaterStage, executionFinalizer, updaterThread);
-    executorManager.setSleepAfterDispatchFailureMillis(0L);
+    executorManager.setSleepAfterDispatchFailure(Duration.ZERO);
     return executorManager;
   }
 

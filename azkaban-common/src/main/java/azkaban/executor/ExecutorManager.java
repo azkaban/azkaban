@@ -109,7 +109,7 @@ public class ExecutorManager extends EventHandler implements
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
   private ExecutorService executorInforRefresherService;
-  private long sleepAfterDispatchFailureMillis = 1000L;
+  private Duration sleepAfterDispatchFailure = Duration.ofSeconds(1L);
 
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -222,7 +222,7 @@ public class ExecutorManager extends EventHandler implements
             this.azkProps.getInt(
                 Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
                 this.activeExecutors.getAll().size()),
-            this.sleepAfterDispatchFailureMillis);
+            this.sleepAfterDispatchFailure);
   }
 
   /**
@@ -1327,7 +1327,7 @@ public class ExecutorManager extends EventHandler implements
     private final int maxDispatchingErrors;
     private final long activeExecutorRefreshWindowInMillisec;
     private final int activeExecutorRefreshWindowInFlows;
-    private final long sleepAfterDispatchFailureMillis;
+    private final Duration sleepAfterDispatchFailure;
 
     private volatile boolean shutdown = false;
     private volatile boolean isActive = true;
@@ -1336,14 +1336,14 @@ public class ExecutorManager extends EventHandler implements
         final long activeExecutorRefreshWindowInTime,
         final int activeExecutorRefreshWindowInFlows,
         final int maxDispatchingErrors,
-        final long sleepAfterDispatchFailureMillis) {
+        final Duration sleepAfterDispatchFailure) {
       setActive(isActive);
       this.maxDispatchingErrors = maxDispatchingErrors;
       this.activeExecutorRefreshWindowInFlows =
           activeExecutorRefreshWindowInFlows;
       this.activeExecutorRefreshWindowInMillisec =
           activeExecutorRefreshWindowInTime;
-      this.sleepAfterDispatchFailureMillis = sleepAfterDispatchFailureMillis;
+      this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
       this.setName("AzkabanWebServer-QueueProcessor-Thread");
     }
 
@@ -1493,7 +1493,7 @@ public class ExecutorManager extends EventHandler implements
 
     private void sleepAfterDispatchFailure() {
       try {
-        Thread.sleep(this.sleepAfterDispatchFailureMillis);
+        Thread.sleep(this.sleepAfterDispatchFailure.toMillis());
       } catch (final InterruptedException e1) {
         ExecutorManager.logger.warn("Sleep after dispatch failure was interrupted - ignoring");
       }
@@ -1579,7 +1579,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @VisibleForTesting
-  void setSleepAfterDispatchFailureMillis(long sleepAfterDispatchFailureMillis) {
-    this.sleepAfterDispatchFailureMillis = sleepAfterDispatchFailureMillis;
+  void setSleepAfterDispatchFailure(Duration sleepAfterDispatchFailure) {
+    this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
   }
 }
