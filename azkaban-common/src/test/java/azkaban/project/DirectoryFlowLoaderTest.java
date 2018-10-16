@@ -87,7 +87,7 @@ public class DirectoryFlowLoaderTest {
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
     Assert.assertEquals(2, loader.getFlowMap().size());
-    Assert.assertEquals(0, loader.getPropsList().size());
+    Assert.assertEquals(1, loader.getPropsList().size());
     Assert.assertEquals(9, loader.getJobPropsMap().size());
   }
 

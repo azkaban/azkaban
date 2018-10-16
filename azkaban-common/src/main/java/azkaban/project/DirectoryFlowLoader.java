@@ -26,6 +26,7 @@ import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -323,7 +324,7 @@ public class DirectoryFlowLoader implements FlowLoader {
         final Flow flow = new Flow(base.getId());
         final Props jobProp = this.jobPropsMap.get(base.getId());
 
-        FlowLoaderUtils.addEmailPropsToFlow(flow, jobProp);
+        FlowLoaderUtils.addEmailPropsToFlow(flow, PropsUtils.resolveProps(jobProp));
 
         flow.addAllFlowProperties(this.flowPropsList);
         final Set<String> visitedNodesOnPath = new HashSet<>();
