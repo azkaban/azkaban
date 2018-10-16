@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -101,6 +102,7 @@ public class FlowTriggerServiceTest {
     return project;
   }
 
+  @Ignore("Too slow unit test - ignored until optimized")
   @Test
   public void testStartTriggerCancelledByTimeout() throws InterruptedException {
 
@@ -188,6 +190,7 @@ public class FlowTriggerServiceTest {
     }
   }
 
+  @Ignore("Too slow unit test - ignored until optimized")
   @Test
   public void testStartTriggerSuccess() throws InterruptedException {
     final List<FlowTriggerDependency> deps = new ArrayList<>();
@@ -207,6 +210,7 @@ public class FlowTriggerServiceTest {
     }
   }
 
+  @Ignore("Flaky test - ignored until stabilized")
   @Test
   public void testStartZeroDependencyTrigger()
       throws InterruptedException, ExecutorManagerException {
@@ -222,6 +226,7 @@ public class FlowTriggerServiceTest {
     verify(executorManager, times(30)).submitExecutableFlow(any(), anyString());
   }
 
+  @Ignore("Flaky test - ignored until stabilized")
   @Test
   public void testRecovery() throws Exception {
     final List<FlowTriggerDependency> deps = new ArrayList<>();
@@ -244,5 +249,3 @@ public class FlowTriggerServiceTest {
     }
   }
 }
-
-
