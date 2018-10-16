@@ -31,7 +31,7 @@ public class Md5Hasher {
 
   private static final int BYTE_BUFFER_SIZE = 1024;
 
-  public static MessageDigest getMd5Digest() {
+  private static MessageDigest getMd5Digest() {
     MessageDigest digest = null;
     try {
       digest = MessageDigest.getInstance("MD5");
