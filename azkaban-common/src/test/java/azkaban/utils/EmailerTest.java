@@ -113,7 +113,8 @@ public class EmailerTest {
     final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
         this.executorLoader);
     emailer.alertOnError(exFlow);
-    verify(this.message).addAllToAddress(this.receiveAddrList);
+    verify(this.message)
+        .addAllToAddress(Arrays.asList("receive2@domain.com", "receive@domain.com"));
     verify(this.message).setSubject("Flow 'jobe' has failed on azkaban");
     assertThat(TestUtils.readResource("errorEmail2.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
@@ -122,7 +123,6 @@ public class EmailerTest {
   @Test
   public void alertOnFailedUpdate() throws Exception {
     final Flow flow = this.project.getFlow("jobe");
-    flow.addFailureEmails(this.receiveAddrList);
     Assert.assertNotNull(flow);
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
@@ -132,7 +132,7 @@ public class EmailerTest {
     final List<ExecutableFlow> executions = Arrays.asList(exFlow, exFlow);
     final ExecutorManagerException exception = DefaultMailCreatorTest.createTestStracktrace();
     emailer.alertOnFailedUpdate(executor, executions, exception);
-    verify(this.message).addAllToAddress(this.receiveAddrList);
+    verify(this.message).addAllToAddress(Arrays.asList("receive2@domain.com"));
     verify(this.message)
         .setSubject("Flow status could not be updated from executor1-host on azkaban");
     assertThat(TestUtils.readResource("failedUpdateMessage2.html", this))
