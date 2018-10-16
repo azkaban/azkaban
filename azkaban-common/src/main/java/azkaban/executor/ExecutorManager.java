@@ -33,6 +33,7 @@ import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import java.io.BufferedReader;
 import java.io.File;
@@ -108,6 +109,7 @@ public class ExecutorManager extends EventHandler implements
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
   private ExecutorService executorInforRefresherService;
+  private long sleepAfterDispatchFailureMillis = 1000L;
 
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -219,7 +221,8 @@ public class ExecutorManager extends EventHandler implements
                 Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
             this.azkProps.getInt(
                 Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
-                this.activeExecutors.getAll().size()));
+                this.activeExecutors.getAll().size()),
+            this.sleepAfterDispatchFailureMillis);
   }
 
   /**
@@ -1324,6 +1327,7 @@ public class ExecutorManager extends EventHandler implements
     private final int maxDispatchingErrors;
     private final long activeExecutorRefreshWindowInMillisec;
     private final int activeExecutorRefreshWindowInFlows;
+    private final long sleepAfterDispatchFailureMillis;
 
     private volatile boolean shutdown = false;
     private volatile boolean isActive = true;
@@ -1331,13 +1335,15 @@ public class ExecutorManager extends EventHandler implements
     public QueueProcessorThread(final boolean isActive,
         final long activeExecutorRefreshWindowInTime,
         final int activeExecutorRefreshWindowInFlows,
-        final int maxDispatchingErrors) {
+        final int maxDispatchingErrors,
+        final long sleepAfterDispatchFailureMillis) {
       setActive(isActive);
       this.maxDispatchingErrors = maxDispatchingErrors;
       this.activeExecutorRefreshWindowInFlows =
           activeExecutorRefreshWindowInFlows;
       this.activeExecutorRefreshWindowInMillisec =
           activeExecutorRefreshWindowInTime;
+      this.sleepAfterDispatchFailureMillis = sleepAfterDispatchFailureMillis;
       this.setName("AzkabanWebServer-QueueProcessor-Thread");
     }
 
@@ -1442,56 +1448,54 @@ public class ExecutorManager extends EventHandler implements
         throws ExecutorManagerException {
       final Set<Executor> remainingExecutors = new HashSet<>(
           ExecutorManager.this.activeExecutors.getAll());
+      Throwable lastError;
       synchronized (exflow) {
-        for (int i = 0; i <= this.maxDispatchingErrors; i++) {
-          final String giveUpReason = checkGiveUpDispatching(reference, remainingExecutors);
-          if (giveUpReason != null) {
-            ExecutorManager.logger.error("Failed to dispatch queued execution " + exflow.getId() + " because "
-                + giveUpReason);
-            ExecutorManager.this.executionFinalizer
-                .finalizeFlow(exflow, "Failed to dispatch because " + giveUpReason, null);
-            // GIVE UP DISPATCHING - exit
+        do {
+          final Executor selectedExecutor = selectExecutor(exflow, remainingExecutors);
+          if (selectedExecutor == null) {
+            ExecutorManager.this.commonMetrics.markDispatchFail();
+            handleNoExecutorSelectedCase(reference, exflow);
+            // RE-QUEUED - exit
             return;
           } else {
-            final Executor selectedExecutor = selectExecutor(exflow, remainingExecutors);
-            if (selectedExecutor == null) {
-              ExecutorManager.this.commonMetrics.markDispatchFail();
-              handleNoExecutorSelectedCase(reference, exflow);
-              // RE-QUEUED - exit
+            try {
+              dispatch(reference, exflow, selectedExecutor);
+              ExecutorManager.this.commonMetrics.markDispatchSuccess();
+              // SUCCESS - exit
               return;
-            } else {
-              try {
-                dispatch(reference, exflow, selectedExecutor);
-                ExecutorManager.this.commonMetrics.markDispatchSuccess();
-                // SUCCESS - exit
-                return;
-              } catch (final ExecutorManagerException e) {
-                logFailedDispatchAttempt(reference, exflow, selectedExecutor, e);
-                ExecutorManager.this.commonMetrics.markDispatchFail();
-                reference.setNumErrors(reference.getNumErrors() + 1);
-                // FAILED ATTEMPT - try other executors except selectedExecutor
-                remainingExecutors.remove(selectedExecutor);
-              }
+            } catch (final ExecutorManagerException e) {
+              lastError = e;
+              logFailedDispatchAttempt(reference, exflow, selectedExecutor, e);
+              ExecutorManager.this.commonMetrics.markDispatchFail();
+              reference.setNumErrors(reference.getNumErrors() + 1);
+              // FAILED ATTEMPT - try other executors except selectedExecutor
+              updateRemainingExecutorsAndSleep(remainingExecutors, selectedExecutor);
             }
           }
-        }
-        throw new IllegalStateException(
-            "Unexpected error in dispatching " + exflow.getExecutionId());
+        } while (reference.getNumErrors() < this.maxDispatchingErrors);
+        // GAVE UP DISPATCHING
+        final String message = "Failed to dispatch queued execution " + exflow.getId() + " because "
+            + "reached " + ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED
+            + " (tried " + reference.getNumErrors() + " executors)";
+        ExecutorManager.logger.error(message);
+        executionFinalizer.finalizeFlow(exflow, message, lastError);
       }
     }
 
-    private String checkGiveUpDispatching(final ExecutionReference reference,
-        final Set<Executor> remainingExecutors) {
-      if (reference.getNumErrors() >= this.maxDispatchingErrors) {
-        return "reached " + ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED
-            + " (tried " + reference.getNumErrors() + " executors)";
-      } else if (remainingExecutors.isEmpty()) {
-        return "tried calling all executors (total: "
-            // TODO rather use the original size (activeExecutors may have been reloaded in the
-            // meanwhile)
-            + ExecutorManager.this.activeExecutors.getAll().size() + ") but all failed";
-      } else {
-        return null;
+    private void updateRemainingExecutorsAndSleep(final Set<Executor> remainingExecutors,
+        final Executor selectedExecutor) {
+      remainingExecutors.remove(selectedExecutor);
+      if (remainingExecutors.isEmpty()) {
+        remainingExecutors.addAll(activeExecutors.getAll());
+        sleepAfterDispatchFailure();
+      }
+    }
+
+    private void sleepAfterDispatchFailure() {
+      try {
+        Thread.sleep(this.sleepAfterDispatchFailureMillis);
+      } catch (final InterruptedException e1) {
+        ExecutorManager.logger.warn("Sleep after dispatch failure was interrupted - ignoring");
       }
     }
 
@@ -1572,5 +1576,10 @@ public class ExecutorManager extends EventHandler implements
       // schedule can starve all others
       ExecutorManager.this.queuedFlows.enqueue(exflow, reference);
     }
+  }
+
+  @VisibleForTesting
+  void setSleepAfterDispatchFailureMillis(long sleepAfterDispatchFailureMillis) {
+    this.sleepAfterDispatchFailureMillis = sleepAfterDispatchFailureMillis;
   }
 }
