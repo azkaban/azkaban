@@ -62,7 +62,7 @@ public class AzkabanSingleServerTest {
   }
 
   @AfterClass
-  public static void tearDown() throws Exception {
+  public static void tearDown() {
     deleteQuietly(new File("h2.mv.db"));
     deleteQuietly(new File("h2.trace.db"));
     deleteQuietly(new File("executor.port"));
@@ -79,7 +79,7 @@ public class AzkabanSingleServerTest {
     props.put("database.type", "h2");
     props.put("h2.path", "./h2");
 
-    props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "false");
+    props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     props.put("server.port", "0");
     props.put("jetty.port", "0");
     props.put("server.useSSL", "true");
@@ -98,13 +98,13 @@ public class AzkabanSingleServerTest {
   }
 
   @Test
-  public void testInjection() throws Exception {
+  public void testInjection() {
     SERVICE_PROVIDER.unsetInjector();
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(),
-        new AzkabanExecServerModule()
+        new AzkabanExecServerModule(),
+        new AzkabanWebServerModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
 

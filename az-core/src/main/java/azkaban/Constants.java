@@ -156,9 +156,6 @@ public class Constants {
 
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
-    // The property is used for the web server to get the host name of the executor when running in SOLO mode.
-    public static final String EXECUTOR_HOST = "executor.host";
-
     // The property is used for the web server to get the port of the executor when running in SOLO mode.
     public static final String EXECUTOR_PORT = "executor.port";
 

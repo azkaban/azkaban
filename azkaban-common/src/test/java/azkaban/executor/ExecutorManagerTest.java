@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -114,21 +115,15 @@ public class ExecutorManagerTest {
   }
 
   /*
-   * Test backward compatibility with just local executor
+   * Test error message with unsupported local executor conf
    */
   @Test
-  public void testLocalExecutorScenario() throws Exception {
+  public void testLocalExecutorScenario() {
     this.props.put("executor.port", 12345);
-    final ExecutorManager manager = createExecutorManager();
-    final Set<Executor> activeExecutors =
-        new HashSet(manager.getAllActiveExecutors());
-
-    Assert.assertEquals(activeExecutors.size(), 1);
-    final Executor executor = activeExecutors.iterator().next();
-    Assert.assertEquals(executor.getHost(), "localhost");
-    Assert.assertEquals(executor.getPort(), 12345);
-    Assert.assertArrayEquals(activeExecutors.toArray(), this.loader
-        .fetchActiveExecutors().toArray());
+    final Throwable thrown = catchThrowable(() -> createExecutorManager());
+    assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+    assertThat(thrown.getMessage()).isEqualTo(
+        "azkaban.use.multiple.executors must be true. Single executor mode is not supported any more.");
   }
 
   /*
@@ -150,7 +145,7 @@ public class ExecutorManagerTest {
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
     // TODO rename this test to ExecutorManagerIntegrationTest & create separate unit tests as well?
-    final ActiveExecutors activeExecutors = new ActiveExecutors(this.props, this.loader);
+    final ActiveExecutors activeExecutors = new ActiveExecutors(this.loader);
     final ExecutionFinalizer executionFinalizer = new ExecutionFinalizer(this.loader,
         this.updaterStage, this.alertHolder, this.runningExecutions);
     final RunningExecutionsUpdaterThread updaterThread = new RunningExecutionsUpdaterThread(
@@ -163,6 +158,7 @@ public class ExecutorManagerTest {
         this.commonMetrics, this.apiGateway, this.runningExecutions, activeExecutors,
         this.updaterStage, executionFinalizer, updaterThread);
     executorManager.setSleepAfterDispatchFailure(Duration.ZERO);
+    executorManager.initialize();
     return executorManager;
   }
 
