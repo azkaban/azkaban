@@ -839,7 +839,20 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public void killBySLA() {
     kill();
+
+    // demonstrate kill bug
+    try {
+      Thread.sleep(1000L);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+
     this.getNode().setKilledBySLA(true);
+
+    synchronized (this.syncObject) {
+      // TODO wrapping those calls with this should help
+    }
+
   }
 
   public void kill() {
