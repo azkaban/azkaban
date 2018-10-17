@@ -840,15 +840,8 @@ public class JobRunner extends EventHandler implements Runnable {
   public void killBySLA() {
     synchronized (this.syncObject) {
       kill();
-      // demonstrate that kill bug has been fixed - this doesn't cause a failure any more
-      try {
-        Thread.sleep(1000L);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
       this.getNode().setKilledBySLA(true);
     }
-
   }
 
   public void kill() {
