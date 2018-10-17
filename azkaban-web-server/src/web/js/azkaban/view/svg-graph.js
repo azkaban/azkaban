@@ -351,7 +351,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
     if (node.type == 'flow') {
       this.drawFlowNode(self, node, g);
     }
-    else {
+    else if (node.condition != null) {
+      this.drawConditionNode(self, node, g);
+    } else {
       this.drawBoxNode(self, node, g);
     }
   },
@@ -541,6 +543,40 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var totalHeight = labelBBox.height + 2 * verticalMargin;
     svg.change(borderRect, {width: totalWidth, height: totalHeight});
     svg.change(jobNameText, {y: (totalHeight + labelBBox.height) / 2 - 3});
+    svg.change(innerG,
+        {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
+
+    node.width = totalWidth;
+    node.height = totalHeight;
+
+    node.gNode = nodeG;
+    nodeG.data = node;
+  },
+
+  drawConditionNode: function (self, node, g) {
+    var svg = this.svg;
+    var horizontalMargin = 8;
+    var verticalMargin = 2;
+
+    var nodeG = svg.group(g, "", {class: "node jobnode"});
+
+    var innerG = svg.group(nodeG, "", {class: "nodebox"});
+    var borderRect = svg.rect(innerG, 0, 0, 10, 10, 3, 3, {class: "border"});
+    var conditionRect = svg.rect(innerG, 0, 0, 10, 10, 0, 0, {class: "border"});
+    var jobNameText = svg.text(innerG, horizontalMargin, 16, node.label);
+    var conditionText = svg.text(innerG, horizontalMargin, 12, "condition",
+        {"font-size": 12});
+    nodeG.innerG = innerG;
+    innerG.borderRect = borderRect;
+
+    var labelBBox = jobNameText.getBBox();
+    var conditionlabelBBox = conditionText.getBBox();
+    var totalWidth = labelBBox.width + 2 * horizontalMargin;
+    var totalHeight = 2 * labelBBox.height + 2 * verticalMargin;
+    svg.change(borderRect, {width: totalWidth, height: totalHeight});
+    svg.change(conditionRect, {width: totalWidth, height: labelBBox.height});
+    svg.change(conditionText, {x: (totalWidth - conditionlabelBBox.width) / 2});
+    svg.change(jobNameText, {y: (totalHeight + labelBBox.height) / 2 + 6});
     svg.change(innerG,
         {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
 

@@ -365,15 +365,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     final String flowName = getParam(req, "flow");
 
-    Flow flow = null;
     try {
-      flow = project.getFlow(flowName);
+      final Flow flow = project.getFlow(flowName);
       if (flow == null) {
         ret.put("error", "Flow " + flowName + " not found.");
         return;
       }
 
       ret.put("jobTypes", getFlowJobTypes(flow));
+      if (flow.getCondition() != null) {
+        ret.put("condition", flow.getCondition());
+      }
     } catch (final AccessControlException e) {
       ret.put("error", e.getMessage());
     }
@@ -799,6 +801,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> nodeObj = new HashMap<>();
       nodeObj.put("id", node.getId());
       nodeObj.put("type", node.getType());
+      nodeObj.put("condition", node.getCondition());
       if (node.getEmbeddedFlowId() != null) {
         nodeObj.put("flowId", node.getEmbeddedFlowId());
         fillFlowInfo(project, node.getEmbeddedFlowId(), nodeObj);
@@ -1355,6 +1358,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       page.add("jobid", node.getId());
       page.add("jobtype", node.getType());
+      if (node.getCondition() != null) {
+        page.add("condition", node.getCondition());
+      }
 
       final ArrayList<String> dependencies = new ArrayList<>();
       final Set<Edge> inEdges = flow.getInEdges(node.getId());
@@ -1671,11 +1677,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
     final Project project = this.projectManager.getProject(projectName);
-    if (!project.isActive()) {
-      registerError(ret, "Installation Failed. Project '" + project.getName()
-          + "' was already removed.", resp, 410);
+    if(project == null || !project.isActive()) {
+      final String failureCause = project == null ? "doesn't exist." : "was already removed.";
+      registerError(ret, "Installation Failed. Project '" + projectName + " "
+          + failureCause, resp, 410);
       return;
     }
+
     logger.info(
         "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
 

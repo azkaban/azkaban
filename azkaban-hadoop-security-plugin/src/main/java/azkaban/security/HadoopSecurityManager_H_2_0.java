@@ -528,16 +528,17 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * Gets hadoop tokens for a user to run mapred/hive jobs on a secured cluster
    */
   @Override
-  public synchronized void prefetchToken(final File tokenFile,
-      final Props props, final Logger logger)
+  public void prefetchToken(final File tokenFile, final Props props, final Logger logger)
       throws HadoopSecurityManagerException {
-
     final String userToProxy = props.getString(JobProperties.USER_TO_PROXY);
 
     logger.info("Getting hadoop tokens based on props for " + userToProxy);
+    doPrefetch(tokenFile, props, logger, userToProxy);
+  }
 
+  private synchronized void doPrefetch(File tokenFile, Props props, Logger logger,
+      String userToProxy) throws HadoopSecurityManagerException {
     final Credentials cred = new Credentials();
-
     if (props.getBoolean(OBTAIN_HCAT_TOKEN, false)) {
       try {
 
@@ -713,7 +714,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
           + t.getMessage() + t.getCause(), t);
     }
-
   }
 
   /**

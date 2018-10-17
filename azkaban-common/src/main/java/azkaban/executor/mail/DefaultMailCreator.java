@@ -20,6 +20,8 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Utils;
@@ -29,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.commons.lang.exception.ExceptionUtils;
 
 public class DefaultMailCreator implements MailCreator {
 
@@ -76,7 +79,7 @@ public class DefaultMailCreator implements MailCreator {
   @Override
   public boolean createFirstErrorMessage(final ExecutableFlow flow,
       final EmailMessage message, final String azkabanName, final String scheme,
-      final String clientHostname, final String clientPortNumber, final String... vars) {
+      final String clientHostname, final String clientPortNumber) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
     final List<String> emailList = option.getFailureEmails();
@@ -139,7 +142,7 @@ public class DefaultMailCreator implements MailCreator {
   @Override
   public boolean createErrorEmail(final ExecutableFlow flow, final List<ExecutableFlow>
       pastExecutions, final EmailMessage message, final String azkabanName, final String scheme,
-      final String clientHostname, final String clientPortNumber, final String... vars) {
+      final String clientHostname, final String clientPortNumber, final String... reasons) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
@@ -180,8 +183,8 @@ public class DefaultMailCreator implements MailCreator {
         message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
             + "\">Failed job '" + jobId + "' Link</a></li>");
       }
-      for (final String reasons : vars) {
-        message.println("<li>" + reasons + "</li>");
+      for (final String reason : reasons) {
+        message.println("<li>" + reason + "</li>");
       }
 
       message.println("</ul>");
@@ -217,7 +220,7 @@ public class DefaultMailCreator implements MailCreator {
   @Override
   public boolean createSuccessEmail(final ExecutableFlow flow, final EmailMessage message,
       final String azkabanName, final String scheme, final String clientHostname,
-      final String clientPortNumber, final String... vars) {
+      final String clientPortNumber) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
     final List<String> emailList = option.getSuccessEmails();
@@ -251,6 +254,53 @@ public class DefaultMailCreator implements MailCreator {
           + " Execution Link</a>");
       return true;
     }
+    return false;
+  }
+
+  @Override
+  public boolean createFailedUpdateMessage(final List<ExecutableFlow> flows,
+      final Executor executor, final ExecutorManagerException updateException,
+      final EmailMessage message, final String azkabanName,
+      final String scheme, final String clientHostname, final String clientPortNumber) {
+
+    final ExecutionOptions option = flows.get(0).getExecutionOptions();
+    final List<String> emailList = option.getFailureEmails();
+
+    if (emailList != null && !emailList.isEmpty()) {
+      message.addAllToAddress(emailList);
+      message.setMimeType("text/html");
+      message.setSubject(
+          "Flow status could not be updated from " + executor.getHost() + " on " + azkabanName);
+
+      message.println(
+          "<h2 style=\"color:#FF0000\"> Flow status could not be updated from " + executor.getHost()
+              + " on " + azkabanName + "</h2>");
+
+      message.println("The actual status of these executions is unknown, "
+          + "because getting status update from azkaban executor is failing");
+
+      message.println("");
+      message.println("<h3>Error detail</h3>");
+      message.println("<pre>" + ExceptionUtils.getStackTrace(updateException) + "</pre>");
+
+      message.println("");
+      message.println("<h3>Affected executions</h3>");
+      message.println("<ul>");
+      for (final ExecutableFlow flow : flows) {
+        final int execId = flow.getExecutionId();
+        final String executionUrl =
+            scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
+                + "executor?" + "execid=" + execId;
+
+        message.println("<li>Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId()
+            + "' of project '" + flow.getProjectName() + "' - " +
+            " <a href=\"" + executionUrl + "\">Execution Link</a></li>");
+      }
+
+      message.println("</ul>");
+      return true;
+    }
+
     return false;
   }
 }

@@ -16,16 +16,19 @@
 
 apply plugin: 'distribution'
 
+
 dependencies {
     compile project(':az-core')
-    compile project(":azkaban-common")
-    compile project(":azkaban-web-server")
-    compile project(":azkaban-hadoop-security-plugin")
+    compileOnly project(":azkaban-web-server")
+    compileOnly project(":azkaban-common")
+    compileOnly project(":azkaban-hadoop-security-plugin")
+    compile project(':az-crypto')
 
+    compileOnly deps.bcprov
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore
-    compileOnly (deps.hiveCli) {
+    compileOnly(deps.hiveCli) {
         transitive = false
     }
     compileOnly deps.hiveMetastore
@@ -41,6 +44,19 @@ dependencies {
 distributions {
     main {
         contents {
+            from(jar) {
+                into 'lib'
+            }
+        }
+    }
+}
+
+distributions {
+    main {
+        contents {
+            from(configurations.runtime) {
+                into 'lib'
+            }
             from(jar) {
                 into 'lib'
             }

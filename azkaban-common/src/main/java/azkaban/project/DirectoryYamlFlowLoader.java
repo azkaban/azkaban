@@ -48,10 +48,10 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   // Pattern to match job variables in condition expressions: ${jobName:variable}
   public static final Pattern CONDITION_VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([^:{}]+):([^:{}]+)\\}");
-  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
   // Pattern to match conditionOnJobStatus macros, e.g. one_success, all_done
-  private static final Pattern CONDITION_ON_JOB_STATUS_PATTERN =
+  public static final Pattern CONDITION_ON_JOB_STATUS_PATTERN =
       Pattern.compile("(?i)\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b");
+  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
   // Pattern to match a number or a string, e.g. 1234, "hello", 'foo'
   private static final Pattern DIGIT_STRING_PATTERN = Pattern.compile("\\d+|'.*'|\".*\"");
   // Valid operators in condition expressions: &&, ||, ==, !=, >, >=, <, <=
@@ -178,6 +178,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     final Node node = new Node(azkabanNode.getName());
     node.setType(azkabanNode.getType());
     validateCondition(node, azkabanNode, azkabanFlow);
+    node.setCondition(azkabanNode.getCondition());
     node.setPropsSource(flowFile.getName());
     node.setJobSource(flowFile.getName());
 
@@ -187,6 +188,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       final Flow flowNode = convertAzkabanFlowToFlow((AzkabanFlow) azkabanNode, embeddedFlowId,
           flowFile);
       flowNode.setEmbeddedFlow(true);
+      flowNode.setCondition(node.getCondition());
       this.flowMap.put(flowNode.getId(), flowNode);
     }
 
@@ -233,9 +235,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
 
   private void validateCondition(final Node node, final AzkabanNode azkabanNode,
       final AzkabanFlow azkabanFlow) {
-    boolean valid = true;
     boolean foundConditionOnJobStatus = false;
-    String condition = azkabanNode.getCondition();
+    final String condition = azkabanNode.getCondition();
     if (condition == null) {
       return;
     }
@@ -252,11 +253,9 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
         if (foundConditionOnJobStatus) {
           this.errors.add("Invalid condition for " + node.getId()
               + ": cannot combine more than one conditionOnJobStatus macros.");
-          valid = false;
         }
         foundConditionOnJobStatus = true;
         node.setConditionOnJobStatus(ConditionOnJobStatus.fromString(matcher.group(1)));
-        condition = condition.replace(matcher.group(1), "true");
       } else {
         if (operands[i].startsWith("!")) {
           // Remove the operator '!' from the operand.
@@ -265,25 +264,15 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
         if (operands[i].equals("")) {
           this.errors
               .add("Invalid condition for " + node.getId() + ": operand is an empty string.");
-          valid = false;
-        } else if (!DIGIT_STRING_PATTERN.matcher(operands[i]).matches() &&
-            !isValidVariableSubstitution(operands[i], azkabanNode, azkabanFlow)) {
-          valid = false;
+        } else if (!DIGIT_STRING_PATTERN.matcher(operands[i]).matches()) {
+          validateVariableSubstitution(operands[i], azkabanNode, azkabanFlow);
         }
       }
     }
-    if (valid) {
-      node.setCondition(condition);
-    } else {
-      this.logger.info("Condition of " + node.getId() + ": " + azkabanNode.getCondition()
-          + " is invalid, set it to false");
-      node.setCondition("false");
-    }
   }
 
-  private boolean isValidVariableSubstitution(final String operand, final AzkabanNode azkabanNode,
+  private void validateVariableSubstitution(final String operand, final AzkabanNode azkabanNode,
       final AzkabanFlow azkabanFlow) {
-    boolean result = false;
     final Matcher matcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(operand);
     if (matcher.matches()) {
       final String jobName = matcher.group(1);
@@ -296,14 +285,11 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       else if (isDescendantNode(conditionNode, azkabanNode, azkabanFlow)) {
         this.errors.add("Invalid condition for " + azkabanNode.getName()
             + ": should not define condition on its descendant node " + jobName + ".");
-      } else {
-        result = true;
       }
     } else {
       this.errors.add("Invalid condition for " + azkabanNode.getName()
           + ": cannot resolve the condition. Please check the syntax for supported conditions.");
     }
-    return result;
   }
 
   private boolean isDescendantNode(final AzkabanNode current, final AzkabanNode target,

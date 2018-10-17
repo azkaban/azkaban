@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -35,6 +36,7 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableMap;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,6 +71,8 @@ public class ExecutorManagerTest {
   private AlerterHolder alertHolder;
   private ExecutorApiGateway apiGateway;
   private Alerter mailAlerter;
+  private RunningExecutions runningExecutions;
+  private ExecutorManagerUpdaterStage updaterStage;
 
   @Before
   public void setup() {
@@ -77,6 +81,8 @@ public class ExecutorManagerTest {
     this.alertHolder = mock(AlerterHolder.class);
     when(this.alertHolder.get("email")).thenReturn(this.mailAlerter);
     this.loader = new MockExecutorLoader();
+    this.runningExecutions = new RunningExecutions();
+    this.updaterStage = new ExecutorManagerUpdaterStage();
   }
 
   @After
@@ -143,8 +149,21 @@ public class ExecutorManagerTest {
 
   private ExecutorManager createExecutorManager()
       throws ExecutorManagerException {
-    return new ExecutorManager(this.props, this.loader, this.alertHolder, this.commonMetrics,
-        this.apiGateway);
+    // TODO rename this test to ExecutorManagerIntegrationTest & create separate unit tests as well?
+    final ActiveExecutors activeExecutors = new ActiveExecutors(this.props, this.loader);
+    final ExecutionFinalizer executionFinalizer = new ExecutionFinalizer(this.loader,
+        this.updaterStage, this.alertHolder, this.runningExecutions);
+    final RunningExecutionsUpdaterThread updaterThread = new RunningExecutionsUpdaterThread(
+        new RunningExecutionsUpdater(
+            this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
+            this.runningExecutions, executionFinalizer), this.runningExecutions);
+    updaterThread.waitTimeIdleMs = 0;
+    updaterThread.waitTimeMs = 0;
+    final ExecutorManager executorManager = new ExecutorManager(this.props, this.loader,
+        this.commonMetrics, this.apiGateway, this.runningExecutions, activeExecutors,
+        this.updaterStage, executionFinalizer, updaterThread);
+    executorManager.setSleepAfterDispatchFailure(Duration.ZERO);
+    return executorManager;
   }
 
   /*
@@ -288,16 +307,15 @@ public class ExecutorManagerTest {
   }
 
   /**
-   * 1. Executor 1 throws an exception when trying to dispatch to it
-   * 2. ExecutorManager should try next executor
-   * 3. Executor 2 accepts the dispatched execution
+   * 1. Executor 1 throws an exception when trying to dispatch to it 2. ExecutorManager should try
+   * next executor 3. Executor 2 accepts the dispatched execution
    */
   @Test
   public void testDispatchException() throws Exception {
     testSetUpForRunningFlows();
     this.manager.start();
     final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
-    when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
+    doReturn(flow1).when(this.loader).fetchExecutableFlow(-1);
     mockFlowDoesNotExist();
     when(this.apiGateway.callWithExecutable(any(), any(), eq(ConnectorParams.EXECUTE_ACTION)))
         .thenThrow(new ExecutorManagerException("Mocked dispatch exception"))
@@ -331,7 +349,10 @@ public class ExecutorManagerTest {
     verify(this.apiGateway)
         .callWithExecutable(flow1, this.manager.fetchExecutor(2), ConnectorParams.EXECUTE_ACTION);
     verify(this.loader, Mockito.times(2)).unassignExecutor(-1);
-    verify(this.mailAlerter).alertOnError(flow1);
+    verify(this.mailAlerter).alertOnError(eq(flow1),
+        eq("Failed to dispatch queued execution derived-member-data because reached "
+            + "azkaban.maxDispatchingErrors (tried 2 executors)"),
+        contains("Mocked dispatch exception"));
   }
 
   private void mockFlowDoesNotExist() throws Exception {
@@ -430,6 +451,43 @@ public class ExecutorManagerTest {
         activeExecutorServerHosts.contains(executor1.getHost() + ":" + executor1.getPort()));
     Assert.assertTrue(
         activeExecutorServerHosts.contains(executor2.getHost() + ":" + executor2.getPort()));
+  }
+
+  /**
+   * ExecutorManager should try to dispatch to all executors until it succeeds.
+   */
+  @Test
+  public void testDispatchMultipleRetries() throws Exception {
+    this.props.put(Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED, 4);
+    testSetUpForRunningFlows();
+    this.manager.start();
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    flow1.getExecutionOptions().setFailureEmails(Arrays.asList("test@example.com"));
+    when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
+
+    // fail 2 first dispatch attempts, then succeed
+    when(this.apiGateway.callWithExecutable(any(), any(), eq(ConnectorParams.EXECUTE_ACTION)))
+        .thenThrow(new ExecutorManagerException("Mocked dispatch exception 1"))
+        .thenThrow(new ExecutorManagerException("Mocked dispatch exception 2"))
+        .thenReturn(null);
+
+    // this is just to clean up the execution as FAILED after it has been submitted
+    mockFlowDoesNotExist();
+
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    waitFlowFinished(flow1);
+
+    // it's random which executor is chosen each time, but both should have been tried at least once
+    verify(this.apiGateway, Mockito.atLeast(1))
+        .callWithExecutable(flow1, this.manager.fetchExecutor(1), ConnectorParams.EXECUTE_ACTION);
+    verify(this.apiGateway, Mockito.atLeast(1))
+        .callWithExecutable(flow1, this.manager.fetchExecutor(2), ConnectorParams.EXECUTE_ACTION);
+
+    // verify that there was a 3rd (successful) dispatch call
+    verify(this.apiGateway, Mockito.times(3))
+        .callWithExecutable(eq(flow1), any(), eq(ConnectorParams.EXECUTE_ACTION));
+
+    verify(this.loader, Mockito.times(2)).unassignExecutor(-1);
   }
 
   /*

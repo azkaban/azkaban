@@ -16,6 +16,21 @@
 
 package azkaban.viewer.reportal;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.executor.mail.MailCreator;
+import azkaban.project.Project;
+import azkaban.reportal.util.IStreamProvider;
+import azkaban.reportal.util.ReportalHelper;
+import azkaban.reportal.util.ReportalUtil;
+import azkaban.reportal.util.StreamProviderHDFS;
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.EmailMessage;
+import azkaban.webapp.AzkabanWebServer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -32,23 +47,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
-
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionOptions;
-import azkaban.executor.mail.DefaultMailCreator;
-import azkaban.executor.mail.MailCreator;
-import azkaban.project.Project;
-import azkaban.reportal.util.IStreamProvider;
-import azkaban.reportal.util.ReportalHelper;
-import azkaban.reportal.util.ReportalUtil;
-import azkaban.reportal.util.StreamProviderHDFS;
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.utils.EmailMessage;
-import azkaban.webapp.AzkabanWebServer;
+import org.apache.log4j.Logger;
 
 public class ReportalMailCreator implements MailCreator {
   public static final String REPORTAL_MAIL_CREATOR = "ReportalMailCreator";
@@ -62,6 +63,8 @@ public class ReportalMailCreator implements MailCreator {
   public static String reportalStorageUser = "";
   public static File reportalMailTempDirectory;
 
+  private static final Logger logger = Logger.getLogger(ReportalMailCreator.class);
+
   static {
     DefaultMailCreator.registerCreator(REPORTAL_MAIL_CREATOR,
         new ReportalMailCreator());
@@ -70,7 +73,7 @@ public class ReportalMailCreator implements MailCreator {
   @Override
   public boolean createFirstErrorMessage(ExecutableFlow flow,
       EmailMessage message, String azkabanName, String scheme,
-      String clientHostname, String clientPortNumber, String... vars) {
+      String clientHostname, String clientPortNumber) {
 
     ExecutionOptions option = flow.getExecutionOptions();
     Set<String> emailList = new HashSet<String>(option.getFailureEmails());
@@ -82,7 +85,7 @@ public class ReportalMailCreator implements MailCreator {
   @Override
   public boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow>
       pastExecutions, EmailMessage message, String azkabanName, String scheme, String clientHostname,
-      String clientPortNumber, String... vars) {
+      String clientPortNumber, String... reasons) {
 
     ExecutionOptions option = flow.getExecutionOptions();
     Set<String> emailList = new HashSet<String>(option.getFailureEmails());
@@ -94,13 +97,27 @@ public class ReportalMailCreator implements MailCreator {
   @Override
   public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
-      String clientPortNumber, String... vars) {
+      String clientPortNumber) {
 
     ExecutionOptions option = flow.getExecutionOptions();
     Set<String> emailList = new HashSet<String>(option.getSuccessEmails());
 
     return createEmail(flow, emailList, message, "Success", azkabanName,
         scheme, clientHostname, clientPortNumber, true);
+  }
+
+  @Override
+  public boolean createFailedUpdateMessage(List<ExecutableFlow> flows, Executor executor,
+      ExecutorManagerException updateException, EmailMessage message, String azkabanName,
+      String scheme, String clientHostname, String clientPortNumber) {
+
+    ExecutableFlow flow = flows.get(0);
+
+    ExecutionOptions option = flow.getExecutionOptions();
+    Set<String> emailList = new HashSet<String>(option.getFailureEmails());
+
+    return createEmail(flow, emailList, message, "FailedUpdate", azkabanName,
+        scheme, clientHostname, clientPortNumber, false);
   }
 
   private boolean createEmail(ExecutableFlow flow, Set<String> emailList,
@@ -121,7 +138,7 @@ public class ReportalMailCreator implements MailCreator {
       try {
         return createMessage(project, flow, message, urlPrefix, printData);
       } catch (Exception e) {
-        e.printStackTrace();
+        logger.error("Message creation failed for " + flow.getId(), e);
       }
     }
 
@@ -265,7 +282,7 @@ public class ReportalMailCreator implements MailCreator {
       try {
         streamProvider.cleanUp();
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.error("Stream provider cleanup failed for " + flow.getId(), e);
       }
 
       boolean emptyResults = true;

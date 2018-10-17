@@ -300,6 +300,7 @@
                   <option id="ReportalHive" value="ReportalHive">Hive</option>
                   <option value="ReportalTeraData">Teradata</option>
                   <option value="ReportalPig">Pig</option>
+                  <option value="ReportalPresto">Presto</option>
                   <option value="ReportalTableau">Tableau</option>
                 </select>
               </div>

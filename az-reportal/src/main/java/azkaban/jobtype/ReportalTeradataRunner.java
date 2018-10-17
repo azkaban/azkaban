@@ -18,8 +18,7 @@ package azkaban.jobtype;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.reportal.util.CompositeException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import azkaban.reportal.util.ReportalUtil;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -96,7 +95,7 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
           final PreparedStatement stmt = prepareStatement(conn, queryLine);
           stmt.execute();
           final ResultSet rs = stmt.getResultSet();
-          outputQueryResult(rs, this.outputStream);
+          ReportalUtil.outputQueryResult(rs, this.outputStream);
           stmt.close();
         } else {
           try {
@@ -167,56 +166,6 @@ public class ReportalTeradataRunner extends ReportalAbstractRunner {
       return line.trim();
     }
     return null;
-  }
-
-  private void outputQueryResult(final ResultSet result, final OutputStream outputStream)
-      throws SQLException {
-    final PrintStream outFile = new PrintStream(outputStream);
-    final String delim = ",";
-    boolean isHeaderPending = true;
-    if (result != null) {
-      while (result.next()) {
-        final int numColumns = result.getMetaData().getColumnCount();
-        final StringBuilder dataString = new StringBuilder();
-
-        if (isHeaderPending) {
-          final StringBuilder headerString = new StringBuilder();
-          for (int j = 1; j <= numColumns; j++) {
-            final String colName = formatValue(result.getMetaData().getColumnName(j));
-            if (j > 1) {
-              headerString.append(delim).append(colName);
-            } else {
-              headerString.append(colName);
-            }
-          }
-          isHeaderPending = false;
-          outFile.println(headerString.toString());
-        }
-
-        for (int j = 1; j <= numColumns; j++) {
-          String colVal = result.getString(j);
-
-          if (colVal == null) {
-            colVal = "\"null\"";
-          } else {
-            colVal = formatValue(colVal);
-          }
-
-          if (j > 1) {
-            dataString.append(delim).append(colVal);
-          } else {
-            dataString.append(colVal);
-          }
-        }
-
-        outFile.println(dataString.toString());
-      }
-    }
-    outFile.close();
-  }
-
-  private String formatValue(final String value) {
-    return "\"" + value.replace("\"", "") + "\"";
   }
 
   private PreparedStatement prepareStatement(final Connection conn, String line)

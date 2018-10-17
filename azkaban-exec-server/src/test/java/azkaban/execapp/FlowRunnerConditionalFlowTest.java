@@ -147,11 +147,12 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     setUp(CONDITIONAL_FLOW_3, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     flow.getExecutableNode("jobC").setConditionOnJobStatus(null);
-    InteractiveTestJob.getTestJob("jobA").failJob();
-    assertStatus(flow, "jobA", Status.FAILED);
+    InteractiveTestJob.getTestJob("jobA").succeedJob();
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    InteractiveTestJob.getTestJob("jobB").succeedJob();
     assertStatus(flow, "jobB", Status.SUCCEEDED);
-    assertStatus(flow, "jobC", Status.CANCELLED);
-    assertFlowStatus(flow, Status.FAILED);
+    assertStatus(flow, "jobC", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
   }
 
   /**
