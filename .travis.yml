@@ -1,31 +1,31 @@
 languages: java
 # TODO: Add openjdk8 once it is available in Travis.
 jdk:
-- oraclejdk8
+  - oraclejdk8
 sudo: false
 script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
 before_cache:
-- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-  - $HOME/.gradle/caches/
-  - $HOME/.gradle/wrapper/
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
 
 notifications:
   email:
     recipients:
-    - azkaban-dev@linkedin.com
+      - azkaban-dev@linkedin.com
     on_success: never
     on_failure: always
 
 env:
   global:
-  # Reduce the memory pressure on Travis CI to reduce build failures.
-  - GRADLE_OPTS="-Xms128m"
+    # Reduce the memory pressure on Travis CI to reduce build failures.
+    - GRADLE_OPTS="-Xms128m"
 
 after_success:
-- ./gradlew coveralls --no-daemon
-- bash <(curl -s https://codecov.io/bash)
+  - ./gradlew coveralls --no-daemon
+  - bash <(curl -s https://codecov.io/bash)
