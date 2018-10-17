@@ -130,27 +130,33 @@ public class ExecutorManager extends EventHandler implements
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
     this.updaterThread = updaterThread;
-    this.maxConcurrentRunsOneFlow = azkProps
-        .getInt(ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
-            DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
-    final long executionLogsRetentionMs =
-        azkProps.getLong("execution.logs.retention.ms",
-            DEFAULT_EXECUTION_LOGS_RETENTION_MS);
-    this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
+    this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
+    this.cleanerThread = createCleanerThread();
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
   }
 
+  private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
+    // The default threshold is set to 30 for now, in case some users are affected. We may
+    // decrease this number in future, to better prevent DDos attacks.
+    return azkProps.getInt(ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
+        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
+  }
+
+  private CleanerThread createCleanerThread() {
+    final long executionLogsRetentionMs = this.azkProps.getLong("execution.logs.retention.ms",
+        DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+    return new CleanerThread(executionLogsRetentionMs);
+  }
+
   void initialize() throws ExecutorManagerException {
-    if (initialized) {
+    if (this.initialized) {
       return;
     }
-    initialized = true;
+    this.initialized = true;
     this.setupExecutors();
     this.loadRunningExecutions();
     this.queuedFlows = new QueuedExecutions(
         this.azkProps.getLong(ConfigurationKeys.WEBSERVER_QUEUE_SIZE, 100000));
-    // The default threshold is set to 30 for now, in case some users are affected. We may
-    // decrease this number in future, to better prevent DDos attacks.
     this.loadQueuedFlows();
     this.cacheDir = new File(this.azkProps.getString("cache.directory", "cache"));
     // TODO extract QueueProcessor as a separate class, move all of this into it
