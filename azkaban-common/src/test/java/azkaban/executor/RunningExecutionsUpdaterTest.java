@@ -75,6 +75,14 @@ public class RunningExecutionsUpdaterTest {
   }
 
   @Test
+  public void updateExecutionsSucceeded() throws Exception {
+    mockFlowSucceeded();
+    this.updater.updateExecutions();
+    verifyCallUpdateApi();
+    verifyFinalizeFlow();
+  }
+
+  @Test
   public void updateExecutionsExecutorDoesNotExist() throws Exception {
     mockExecutorDoesNotExist();
     this.updater.updateExecutions();
@@ -110,6 +118,11 @@ public class RunningExecutionsUpdaterTest {
     mockUpdateResponse();
   }
 
+  private void mockFlowSucceeded() throws Exception {
+    final Map<String, Object> executionMap = mockUpdateResponse();
+    executionMap.put(ExecutableNode.STATUS_PARAM, Status.SUCCEEDED.getNumVal());
+  }
+
   private void mockExecutorDoesNotExist() {
     this.runningExecutions.get().put(EXECUTION_ID_77, new Pair<>(
         new ExecutionReference(EXECUTION_ID_77, null), this.execution));
@@ -126,7 +139,7 @@ public class RunningExecutionsUpdaterTest {
 
   private void mockFlowDoesNotExist() throws Exception {
     final Map<String, Object> executionMap = mockUpdateResponse();
-    executionMap.put("error", "Flow does not exist");
+    executionMap.put(ConnectorParams.RESPONSE_ERROR, "Flow does not exist");
   }
 
   private Map<String, Object> mockUpdateResponse() throws Exception {
