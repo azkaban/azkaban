@@ -905,7 +905,7 @@ public class JdbcProjectImpl implements ProjectLoader {
                   propsName);
 
       if (properties == null || properties.isEmpty()) {
-        logger.warn("Project " + projectId + " version " + projectVer + " property " + propsName
+        logger.debug("Project " + projectId + " version " + projectVer + " property " + propsName
             + " is empty.");
         return null;
       }
