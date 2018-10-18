@@ -19,11 +19,13 @@ package azkaban.executor;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 
 /**
  * Loads & provides executors.
  */
+@Singleton
 public class ActiveExecutors {
 
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
