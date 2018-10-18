@@ -3,7 +3,7 @@ languages: java
 jdk:
   - oraclejdk8
 sudo: false
-script: ./gradlew clean build coveralls --scan --no-daemon --info
+script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
 before_cache:
@@ -27,4 +27,5 @@ env:
     - GRADLE_OPTS="-Xms128m"
 
 after_success:
+  - ./gradlew coveralls --no-daemon
   - bash <(curl -s https://codecov.io/bash)
