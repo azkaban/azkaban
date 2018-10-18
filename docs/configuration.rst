@@ -216,13 +216,6 @@ Executor Manager Properties
 +-----------------------+-----------------------+-----------------------+
 | Parameter             | Description           | Default               |
 +=======================+=======================+=======================+
-| executor.port         | The port for the      | 12321                 |
-|                       | azkaban executor      |                       |
-|                       | server                |                       |
-+-----------------------+-----------------------+-----------------------+
-| executor.host         | The host for azkaban  | localhost             |
-|                       | executor server       |                       |
-+-----------------------+-----------------------+-----------------------+
 | execution.logs.retent | Time in milliseconds  | 7257600000L (12       |
 | ion.ms                | that execution logs   | weeks)                |
 |                       | are retained          |                       |
@@ -288,7 +281,7 @@ Executor Server Properties
 +-----------------------+-----------------------+-----------------------+
 | Parameter             | Description           | Default               |
 +=======================+=======================+=======================+
-|   executor.port       | The port for azkaban  | 12321                 |
+|   executor.port       | The port for azkaban  | 0 (any free port)     |
 |                       | executor server       |                       |
 +-----------------------+-----------------------+-----------------------+
 |   executor.global.pro | A path to the         |   none                |

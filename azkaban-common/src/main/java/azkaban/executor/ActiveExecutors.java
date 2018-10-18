@@ -16,8 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.Constants.ConfigurationKeys;
-import azkaban.utils.Props;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import javax.inject.Inject;
@@ -31,12 +29,10 @@ public class ActiveExecutors {
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
 
   private volatile ImmutableSet<Executor> activeExecutors;
-  private final Props azkProps;
   private final ExecutorLoader executorLoader;
 
   @Inject
-  public ActiveExecutors(final Props azkProps, final ExecutorLoader executorLoader) {
-    this.azkProps = azkProps;
+  public ActiveExecutors(final ExecutorLoader executorLoader) {
     this.executorLoader = executorLoader;
   }
 
@@ -47,13 +43,7 @@ public class ActiveExecutors {
    * fails.
    */
   public void setupExecutors() throws ExecutorManagerException {
-    final ImmutableSet<Executor> newExecutors;
-    if (ExecutorManager.isMultiExecutorMode(this.azkProps)) {
-      newExecutors = setupMultiExecutors();
-    } else {
-      // TODO remove this - switch everything to use multi-executor mode
-      newExecutors = setupSingleExecutor();
-    }
+    final ImmutableSet<Executor> newExecutors = loadExecutors();
     if (newExecutors.isEmpty()) {
       final String error = "No active executors found";
       logger.error(error);
@@ -72,38 +62,9 @@ public class ActiveExecutors {
     return this.activeExecutors;
   }
 
-  private ImmutableSet<Executor> setupMultiExecutors() throws ExecutorManagerException {
-    logger.info("Initializing multi executors from database.");
+  private ImmutableSet<Executor> loadExecutors() throws ExecutorManagerException {
+    logger.info("Initializing executors from database.");
     return ImmutableSet.copyOf(this.executorLoader.fetchActiveExecutors());
-  }
-
-  private ImmutableSet<Executor> setupSingleExecutor() throws ExecutorManagerException {
-    if (this.azkProps.containsKey(ConfigurationKeys.EXECUTOR_PORT)) {
-      return getOrAddSingleExecutor();
-    } else {
-      // throw exception when in single executor mode and no executor port specified in azkaban
-      // properties
-      //todo chengren311: convert to slf4j and parameterized logging
-      final String error = "Missing" + ConfigurationKeys.EXECUTOR_PORT + " in azkaban properties.";
-      logger.error(error);
-      throw new ExecutorManagerException(error);
-    }
-  }
-
-  private ImmutableSet<Executor> getOrAddSingleExecutor() throws ExecutorManagerException {
-    // add single executor, if specified as per properties
-    final String executorHost = this.azkProps
-        .getString(ConfigurationKeys.EXECUTOR_HOST, "localhost");
-    final int executorPort = this.azkProps.getInt(ConfigurationKeys.EXECUTOR_PORT);
-    logger.info(String.format("Initializing single executor %s:%d", executorHost, executorPort));
-    Executor executor = this.executorLoader.fetchExecutor(executorHost, executorPort);
-    if (executor == null) {
-      executor = this.executorLoader.addExecutor(executorHost, executorPort);
-    } else if (!executor.isActive()) {
-      executor.setActive(true);
-      this.executorLoader.updateExecutor(executor);
-    }
-    return ImmutableSet.of(new Executor(executor.getId(), executorHost, executorPort, true));
   }
 
 }

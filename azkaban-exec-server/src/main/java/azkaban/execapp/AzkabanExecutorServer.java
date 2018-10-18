@@ -16,7 +16,7 @@
 
 package azkaban.execapp;
 
-import static azkaban.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
+import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
 import static azkaban.Constants.ConfigurationKeys;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.execapp.ExecJettyServerModule.EXEC_JETTY_SERVER;
@@ -289,7 +289,7 @@ public class AzkabanExecutorServer {
   private void dumpPortToFile() throws IOException {
     // By default this should write to the working directory
     final String portFileName = this.props
-        .getString(Constants.AZKABAN_EXECUTOR_PORT_FILE, AZKABAN_EXECUTOR_PORT_FILENAME);
+        .getString(ConfigurationKeys.EXECUTOR_PORT_FILE, DEFAULT_EXECUTOR_PORT_FILE);
     FileIOUtils.dumpNumberToFile(Paths.get(portFileName), getPort());
   }
 
@@ -468,7 +468,7 @@ public class AzkabanExecutorServer {
    * @return hostname
    */
   public String getHost() {
-    if (this.props.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME)) {
+    if (this.props.containsKey(ConfigurationKeys.AZKABAN_SERVER_HOST_NAME)) {
       final String hostName = this.props
           .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME);
       if (!StringUtils.isEmpty(hostName)) {

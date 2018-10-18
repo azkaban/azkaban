@@ -108,8 +108,9 @@ public class ExecutorManager extends EventHandler implements
   private List<String> filterList;
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
-  private ExecutorService executorInforRefresherService;
+  private final ExecutorService executorInfoRefresherService;
   private Duration sleepAfterDispatchFailure = Duration.ofSeconds(1L);
+  private boolean initialized = false;
 
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -129,30 +130,39 @@ public class ExecutorManager extends EventHandler implements
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
     this.updaterThread = updaterThread;
-    this.setupExecutors();
-    this.loadRunningExecutions();
+    this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
+    this.cleanerThread = createCleanerThread();
+    this.executorInfoRefresherService = createExecutorInfoRefresherService();
+  }
 
-    this.queuedFlows = new QueuedExecutions(
-        azkProps.getLong(Constants.ConfigurationKeys.WEBSERVER_QUEUE_SIZE, 100000));
-
+  private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
     // The default threshold is set to 30 for now, in case some users are affected. We may
     // decrease this number in future, to better prevent DDos attacks.
-    this.maxConcurrentRunsOneFlow = azkProps
-        .getInt(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
-            DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
-    this.loadQueuedFlows();
+    return azkProps.getInt(ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
+        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
+  }
 
-    this.cacheDir = new File(azkProps.getString("cache.directory", "cache"));
+  private CleanerThread createCleanerThread() {
+    final long executionLogsRetentionMs = this.azkProps.getLong("execution.logs.retention.ms",
+        DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+    return new CleanerThread(executionLogsRetentionMs);
+  }
 
-    if (isMultiExecutorMode()) {
-      setupMultiExecutorMode();
+  void initialize() throws ExecutorManagerException {
+    if (this.initialized) {
+      return;
     }
-
-    final long executionLogsRetentionMs =
-        azkProps.getLong("execution.logs.retention.ms",
-            DEFAULT_EXECUTION_LOGS_RETENTION_MS);
-
-    this.cleanerThread = new CleanerThread(executionLogsRetentionMs);
+    this.initialized = true;
+    this.setupExecutors();
+    this.loadRunningExecutions();
+    this.queuedFlows = new QueuedExecutions(
+        this.azkProps.getLong(ConfigurationKeys.WEBSERVER_QUEUE_SIZE, 100000));
+    this.loadQueuedFlows();
+    this.cacheDir = new File(this.azkProps.getString("cache.directory", "cache"));
+    // TODO extract QueueProcessor as a separate class, move all of this into it
+    setupExecutotrComparatorWeightsMap();
+    setupExecutorFilterList();
+    this.queueProcessor = setupQueueProcessor();
   }
 
   // TODO move to some common place
@@ -167,17 +177,11 @@ public class ExecutorManager extends EventHandler implements
     }
   }
 
-  // TODO switch to always use "multi executor mode" - even for single server
-  public static boolean isMultiExecutorMode(final Props props) {
-    return props.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false);
-  }
-
-  public void start() {
+  public void start() throws ExecutorManagerException {
+    initialize();
     this.updaterThread.start();
     this.cleanerThread.start();
-    if (isMultiExecutorMode()) {
-      this.queueProcessor.start();
-    }
+    this.queueProcessor.start();
   }
 
   private String findApplicationIdFromLog(final String logData) {
@@ -190,39 +194,42 @@ public class ExecutorManager extends EventHandler implements
     return appId;
   }
 
-  private void setupMultiExecutorMode() {
-    // initialize hard filters for executor selector from azkaban.properties
-    final String filters = this.azkProps
-        .getString(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_FILTERS, "");
-    if (filters != null) {
-      this.filterList = Arrays.asList(StringUtils.split(filters, ","));
-    }
+  private QueueProcessorThread setupQueueProcessor() {
+    return new QueueProcessorThread(
+        this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true),
+        this.azkProps.getLong(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000),
+        this.azkProps.getInt(
+            Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
+        this.azkProps.getInt(
+            Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
+            this.activeExecutors.getAll().size()),
+        this.sleepAfterDispatchFailure);
+  }
 
+  private void setupExecutotrComparatorWeightsMap() {
     // initialize comparator feature weights for executor selector from azkaban.properties
     final Map<String, String> compListStrings = this.azkProps
-        .getMapByPrefix(Constants.ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
+        .getMapByPrefix(ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
     if (compListStrings != null) {
       this.comparatorWeightsMap = new TreeMap<>();
       for (final Map.Entry<String, String> entry : compListStrings.entrySet()) {
         this.comparatorWeightsMap.put(entry.getKey(), Integer.valueOf(entry.getValue()));
       }
     }
+  }
 
-    this.executorInforRefresherService =
-        Executors.newFixedThreadPool(this.azkProps.getInt(
-            Constants.ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5));
+  private void setupExecutorFilterList() {
+    // initialize hard filters for executor selector from azkaban.properties
+    final String filters = this.azkProps
+        .getString(ConfigurationKeys.EXECUTOR_SELECTOR_FILTERS, "");
+    if (filters != null) {
+      this.filterList = Arrays.asList(StringUtils.split(filters, ","));
+    }
+  }
 
-    // configure queue processor
-    this.queueProcessor =
-        new QueueProcessorThread(
-            this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true),
-            this.azkProps.getLong(Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_MS, 50000),
-            this.azkProps.getInt(
-                Constants.ConfigurationKeys.ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 5),
-            this.azkProps.getInt(
-                Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED,
-                this.activeExecutors.getAll().size()),
-            this.sleepAfterDispatchFailure);
+  private ExecutorService createExecutorInfoRefresherService() {
+    return Executors.newFixedThreadPool(this.azkProps.getInt(
+        ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5));
   }
 
   /**
@@ -232,11 +239,21 @@ public class ExecutorManager extends EventHandler implements
    */
   @Override
   public void setupExecutors() throws ExecutorManagerException {
+    checkMultiExecutorMode();
     this.activeExecutors.setupExecutors();
   }
 
-  private boolean isMultiExecutorMode() {
-    return isMultiExecutorMode(this.azkProps);
+  // TODO Enforced for now to ensure that users migrate to multi-executor mode acknowledgingly.
+  // TODO Remove this once confident enough that all active users have already updated to some
+  // version new enough to have this change - for example after 1 year has passed.
+  // TODO Then also delete ConfigurationKeys.USE_MULTIPLE_EXECUTORS.
+  @Deprecated
+  private void checkMultiExecutorMode() {
+    if (!this.azkProps.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false)) {
+      throw new IllegalArgumentException(
+          Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS +
+              " must be true. Single executor mode is not supported any more.");
+    }
   }
 
   /**
@@ -249,7 +266,7 @@ public class ExecutorManager extends EventHandler implements
     for (final Executor executor : this.activeExecutors.getAll()) {
       // execute each executorInfo refresh task to fetch
       final Future<ExecutorInfo> fetchExecutionInfo =
-          this.executorInforRefresherService.submit(
+          this.executorInfoRefresherService.submit(
               () -> this.apiGateway.callForJsonType(executor.getHost(),
                   executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
       futures.add(new Pair<>(executor,
@@ -286,41 +303,23 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /**
-   * Throws exception if running in local mode {@inheritDoc}
-   *
    * @see azkaban.executor.ExecutorManagerAdapter#disableQueueProcessorThread()
    */
   @Override
-  public void disableQueueProcessorThread() throws ExecutorManagerException {
-    if (isMultiExecutorMode()) {
-      this.queueProcessor.setActive(false);
-    } else {
-      throw new ExecutorManagerException(
-          "Cannot disable QueueProcessor in local mode");
-    }
+  public void disableQueueProcessorThread() {
+    this.queueProcessor.setActive(false);
   }
 
   /**
-   * Throws exception if running in local mode {@inheritDoc}
-   *
    * @see azkaban.executor.ExecutorManagerAdapter#enableQueueProcessorThread()
    */
   @Override
-  public void enableQueueProcessorThread() throws ExecutorManagerException {
-    if (isMultiExecutorMode()) {
-      this.queueProcessor.setActive(true);
-    } else {
-      throw new ExecutorManagerException(
-          "Cannot enable QueueProcessor in local mode");
-    }
+  public void enableQueueProcessorThread() {
+    this.queueProcessor.setActive(true);
   }
 
   public State getQueueProcessorThreadState() {
-    if (isMultiExecutorMode()) {
-      return this.queueProcessor.getState();
-    } else {
-      return State.NEW; // not started in local mode
-    }
+    return this.queueProcessor.getState();
   }
 
   /**
@@ -328,11 +327,7 @@ public class ExecutorManager extends EventHandler implements
    * dispatched as expected
    */
   public boolean isQueueProcessorThreadActive() {
-    if (isMultiExecutorMode()) {
-      return this.queueProcessor.isActive();
-    } else {
-      return false;
-    }
+    return this.queueProcessor.isActive();
   }
 
   /**
@@ -1113,30 +1108,9 @@ public class ExecutorManager extends EventHandler implements
         final ExecutionReference reference =
             new ExecutionReference(exflow.getExecutionId());
 
-        if (isMultiExecutorMode()) {
-          //Take MultiExecutor route
-          this.executorLoader.addActiveExecutableReference(reference);
-          this.queuedFlows.enqueue(exflow, reference);
-        } else {
-          // assign only local executor we have
-          final Executor choosenExecutor = this.activeExecutors.getAll().iterator().next();
-          this.executorLoader.addActiveExecutableReference(reference);
-          try {
-            dispatch(reference, exflow, choosenExecutor);
-            this.commonMetrics.markDispatchSuccess();
-          } catch (final ExecutorManagerException e) {
-            // When flow dispatch fails, should update the flow status
-            // to FAILED in execution_flows DB table as well. Currently
-            // this logic is only implemented in multiExecutorMode but
-            // missed in single executor case.
-            this.commonMetrics.markDispatchFail();
-            this.executionFinalizer.finalizeFlow(exflow, "Dispatching failed", e);
-            throw e;
-          }
-        }
-        message +=
-            "Execution submitted successfully with exec id "
-                + exflow.getExecutionId();
+        this.executorLoader.addActiveExecutableReference(reference);
+        this.queuedFlows.enqueue(exflow, reference);
+        message += "Execution queued successfully with exec id " + exflow.getExecutionId();
       }
       return message;
     }
@@ -1199,9 +1173,7 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public void shutdown() {
-    if (isMultiExecutorMode()) {
-      this.queueProcessor.shutdown();
-    }
+    this.queueProcessor.shutdown();
     this.updaterThread.shutdown();
   }
 
@@ -1478,7 +1450,7 @@ public class ExecutorManager extends EventHandler implements
             + "reached " + ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED
             + " (tried " + reference.getNumErrors() + " executors)";
         ExecutorManager.logger.error(message);
-        executionFinalizer.finalizeFlow(exflow, message, lastError);
+        ExecutorManager.this.executionFinalizer.finalizeFlow(exflow, message, lastError);
       }
     }
 
@@ -1486,7 +1458,7 @@ public class ExecutorManager extends EventHandler implements
         final Executor selectedExecutor) {
       remainingExecutors.remove(selectedExecutor);
       if (remainingExecutors.isEmpty()) {
-        remainingExecutors.addAll(activeExecutors.getAll());
+        remainingExecutors.addAll(ExecutorManager.this.activeExecutors.getAll());
         sleepAfterDispatchFailure();
       }
     }
@@ -1579,7 +1551,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @VisibleForTesting
-  void setSleepAfterDispatchFailure(Duration sleepAfterDispatchFailure) {
+  void setSleepAfterDispatchFailure(final Duration sleepAfterDispatchFailure) {
     this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
   }
 }
