@@ -24,6 +24,7 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorResponseErrorException;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
@@ -133,7 +134,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           } else if (action.equals(ATTACHMENTS_ACTION)) {
             handleFetchAttachmentsEvent(execid, req, resp, respMap);
           } else if (action.equals(EXECUTE_ACTION)) {
-            handleAjaxExecute(req, respMap, execid);
+            handleAjaxExecute(respMap, execid);
           } else if (action.equals(STATUS_ACTION)) {
             handleAjaxFlowStatus(respMap, execid);
           } else if (action.equals(CANCEL_ACTION)) {
@@ -282,13 +283,21 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     respMap.put(RESPONSE_UPDATED_FLOWS, updateList);
   }
 
-  private void handleAjaxExecute(final HttpServletRequest req,
-      final Map<String, Object> respMap, final int execId) {
+  private void handleAjaxExecute(final Map<String, Object> respMap, final int execId) {
     try {
       this.flowRunnerManager.submitFlow(execId);
     } catch (final ExecutorManagerException e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
+      respMap.put(RESPONSE_ERROR_TYPE, getErrorType(e).toString());
+    }
+  }
+
+  private ResponseErrorType getErrorType(ExecutorManagerException e) {
+    if (e instanceof ExecutorResponseErrorException) {
+      return ((ExecutorResponseErrorException) e).getErrorType();
+    } else {
+      return ResponseErrorType.UNKNOWN;
     }
   }
 

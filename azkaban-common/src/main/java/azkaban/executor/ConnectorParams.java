@@ -59,6 +59,26 @@ public interface ConnectorParams {
 
   public static final String RESPONSE_NOTFOUND = "notfound";
   public static final String RESPONSE_ERROR = "error";
+  public static final String RESPONSE_ERROR_TYPE = "errortype";
+
+  public static enum ResponseErrorType {
+    /**
+     * Bad request means that such request will never succeed. Client should give up.
+     */
+    BAD_REQUEST,
+    /**
+     * Unknown means that the request might succeed on a retry, but it could also be a problem in
+     * the request itself. Client should give it some retries, but not too many.
+     */
+    UNKNOWN,
+    /**
+     * Service unavailable means that this executor is not accepting new requests right now. The
+     * request itself is supposedly fine. Client should retry as long as it makes sense from
+     * client's own perspective.
+     */
+    SERVICE_UNAVAILABLE
+  }
+
   public static final String RESPONSE_SUCCESS = "success";
   public static final String RESPONSE_ALIVE = "alive";
   public static final String RESPONSE_UPDATETIME = "lasttime";

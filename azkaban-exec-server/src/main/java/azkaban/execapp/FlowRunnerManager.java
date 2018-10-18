@@ -24,10 +24,12 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.executor.ConnectorParams.ResponseErrorType;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorResponseErrorException;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
@@ -348,15 +350,12 @@ public class FlowRunnerManager implements EventListener,
   public void submitFlow(final int execId) throws ExecutorManagerException {
     // Load file and submit
     if (this.runningFlows.containsKey(execId)) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is already running.");
+      throw createAlreadyRunningException(execId);
     }
 
-    ExecutableFlow flow = null;
-    flow = this.executorLoader.fetchExecutableFlow(execId);
+    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
-      throw new ExecutorManagerException("Error loading flow with exec "
-          + execId);
+      throw new ExecutorManagerException("Error loading flow with exec " + execId);
     }
 
     // Sets up the project files and execution directory.
@@ -390,10 +389,8 @@ public class FlowRunnerManager implements EventListener,
           numJobThreads = numJobs;
         }
       } catch (final Exception e) {
-        throw new ExecutorManagerException(
-            "Failed to set the number of job threads "
-                + options.getFlowParameters().get(FLOW_NUM_JOB_THREADS)
-                + " for flow " + execId, e);
+        throw new ExecutorManagerException("Failed to set the number of job threads "
+            + options.getFlowParameters().get(FLOW_NUM_JOB_THREADS) + " for flow " + execId, e);
       }
     }
 
@@ -409,8 +406,7 @@ public class FlowRunnerManager implements EventListener,
 
     // Check again.
     if (this.runningFlows.containsKey(execId)) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is already running.");
+      throw createAlreadyRunningException(execId);
     }
 
     // Finally, queue the sucker.
@@ -432,8 +428,14 @@ public class FlowRunnerManager implements EventListener,
       if (this.executorService.isShutdown()) {
         errorMsg.append("The executor is being shut down.");
       }
-      throw new ExecutorManagerException(errorMsg.toString(), re);
+      throw new ExecutorResponseErrorException(errorMsg.toString(), re,
+          ResponseErrorType.SERVICE_UNAVAILABLE);
     }
+  }
+
+  private static ExecutorResponseErrorException createAlreadyRunningException(final int execId) {
+    return new ExecutorResponseErrorException("Execution " + execId + " is already running.",
+        ResponseErrorType.BAD_REQUEST);
   }
 
   /**
