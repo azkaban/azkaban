@@ -24,6 +24,7 @@ import static azkaban.project.JdbcProjectHandlerSet.ProjectPropertiesResultsHand
 import static azkaban.project.JdbcProjectHandlerSet.ProjectResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectVersionResultHandler;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
 import azkaban.db.EncodingType;
@@ -469,6 +470,13 @@ public class JdbcProjectImpl implements ProjectLoader {
       return null;
     }
     final int numChunks = projHandler.getNumChunks();
+    if (numChunks <= 0) {
+      throw new ProjectManagerException(String.format("Got numChunks=%s for version %s of project "
+              + "%s - seems like this version has been cleaned up already, because enough newer "
+              + "versions have been uploaded. To increase the retention of project versions, set "
+              + "%s", numChunks, version, projectId,
+          ConfigurationKeys.PROJECT_VERSION_RETENTION));
+    }
     BufferedOutputStream bStream = null;
     File file;
     try {

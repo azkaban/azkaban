@@ -368,7 +368,7 @@ public class JdbcProjectImplTest {
     this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
 
     assertNumChunks(project, newVersion, 0);
-    assertGetUploadedFileOfCleanedVersion(project, newVersion);
+    assertGetUploadedFileOfCleanedVersion(project.getId(), newVersion);
   }
 
   private void assertNumChunks(final Project project, final int version, final int expectedChunks) {
@@ -377,14 +377,11 @@ public class JdbcProjectImplTest {
     Assert.assertEquals(expectedChunks, fileHandler.getNumChunks());
   }
 
-  private void assertGetUploadedFileOfCleanedVersion(final Project project, final int version) {
-    final Throwable thrown = catchThrowable(
-        () -> this.loader.getUploadedFile(project.getId(), version));
-    // TODO this is a really misleading error
-    // in reality the project has been cleaned and that's why it can't retrieve any real Md5 hash
+  private void assertGetUploadedFileOfCleanedVersion(final int project, final int version) {
+    final Throwable thrown = catchThrowable(() -> this.loader.getUploadedFile(project, version));
     assertThat(thrown).isInstanceOf(ProjectManagerException.class);
-    assertThat(thrown).hasMessageStartingWith(String.format(
-        "Md5 Hash failed on project %s version %s retrieval of file", project.getId(), version));
+    assertThat(thrown).hasMessageStartingWith(String.format("Got numChunks=0 for version %s of "
+        + "project %s - seems like this version has been cleaned up", version, project));
   }
 
   @Test
