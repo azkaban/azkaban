@@ -243,6 +243,11 @@ public class ExecutorManager extends EventHandler implements
     this.activeExecutors.setupExecutors();
   }
 
+  // TODO Enforced for now to ensure that users migrate to multi-executor mode acknowledgingly.
+  // TODO Remove this once confident enough that all active users have already updated to some
+  // version new enough to have this change - for example after 1 year has passed.
+  // TODO Then also delete ConfigurationKeys.USE_MULTIPLE_EXECUTORS.
+  @Deprecated
   private void checkMultiExecutorMode() {
     if (!this.azkProps.getBoolean(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, false)) {
       throw new IllegalArgumentException(
