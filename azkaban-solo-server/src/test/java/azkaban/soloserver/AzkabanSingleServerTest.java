@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.execapp.AzkabanExecServerModule;
@@ -65,7 +66,7 @@ public class AzkabanSingleServerTest {
   public static void tearDown() {
     deleteQuietly(new File("h2.mv.db"));
     deleteQuietly(new File("h2.trace.db"));
-    deleteQuietly(new File("executor.port"));
+    deleteQuietly(new File(Constants.DEFAULT_EXECUTOR_PORT_FILE));
     deleteQuietly(new File("executions"));
     deleteQuietly(new File("projects"));
   }
@@ -85,7 +86,7 @@ public class AzkabanSingleServerTest {
     props.put("server.useSSL", "true");
     props.put("jetty.use.ssl", "false");
     props.put("user.manager.xml.file", new File(confPath, "azkaban-users.xml").getPath());
-    props.put("executor.port", "12321");
+    props.put(ConfigurationKeys.EXECUTOR_PORT, "12321");
 
     // Quartz settings
     props.put("org.quartz.threadPool.class", "org.quartz.simpl.SimpleThreadPool");

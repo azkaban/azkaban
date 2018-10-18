@@ -58,8 +58,7 @@ public class Constants {
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
   public static final String DEFAULT_CONF_PATH = "conf";
-  public static final String AZKABAN_EXECUTOR_PORT_FILENAME = "executor.port";
-  public static final String AZKABAN_EXECUTOR_PORT_FILE = "executor.portfile";
+  public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
 
@@ -156,7 +155,8 @@ public class Constants {
 
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
-    // The property is used for the web server to get the port of the executor when running in SOLO mode.
+    public static final String EXECUTOR_PORT_FILE = "executor.portfile";
+    // To set a fixed port for executor-server. Otherwise some available port is used.
     public static final String EXECUTOR_PORT = "executor.port";
 
     // Max flow running time in mins, server will kill flows running longer than this setting.

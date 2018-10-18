@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
@@ -119,7 +120,7 @@ public class ExecutorManagerTest {
    */
   @Test
   public void testLocalExecutorScenario() {
-    this.props.put("executor.port", 12345);
+    this.props.put(ConfigurationKeys.EXECUTOR_PORT, 12345);
     final Throwable thrown = catchThrowable(() -> createExecutorManager());
     assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
     assertThat(thrown.getMessage()).isEqualTo(

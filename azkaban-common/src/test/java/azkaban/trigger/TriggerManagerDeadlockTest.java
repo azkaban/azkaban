@@ -18,6 +18,7 @@ package azkaban.trigger;
 
 import static org.mockito.Mockito.mock;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ActiveExecutors;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionFinalizer;
@@ -61,7 +62,7 @@ public class TriggerManagerDeadlockTest {
     this.loader = new MockTriggerLoader();
     final Props props = new Props();
     props.put("trigger.scan.interval", 1000);
-    props.put("executor.port", 12321);
+    props.put(ConfigurationKeys.EXECUTOR_PORT, 12321);
     this.execLoader = new MockExecutorLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.runningExecutions = new RunningExecutions();

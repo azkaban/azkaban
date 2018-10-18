@@ -281,7 +281,7 @@ Executor Server Properties
 +-----------------------+-----------------------+-----------------------+
 | Parameter             | Description           | Default               |
 +=======================+=======================+=======================+
-|   executor.port       | The port for azkaban  | 12321                 |
+|   executor.port       | The port for azkaban  | 0 (any free port)     |
 |                       | executor server       |                       |
 +-----------------------+-----------------------+-----------------------+
 |   executor.global.pro | A path to the         |   none                |
