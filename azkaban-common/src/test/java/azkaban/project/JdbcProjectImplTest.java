@@ -17,6 +17,7 @@ package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.flow.Flow;
@@ -353,7 +354,7 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void cleanOlderProjectVersion() throws Exception {
+  public void cleanOlderProjectVersion() {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
@@ -362,12 +363,28 @@ public class JdbcProjectImplTest {
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
+    assertNumChunks(project, newVersion, 1);
 
     this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
 
-    final ProjectFileHandler fileHandler2 = this.loader
-        .fetchProjectMetaData(project.getId(), newVersion);
-    Assert.assertEquals(fileHandler2.getNumChunks(), 0);
+    assertNumChunks(project, newVersion, 0);
+    assertGetUploadedFileOfCleanedVersion(project, newVersion);
+  }
+
+  private void assertNumChunks(final Project project, final int version, final int expectedChunks) {
+    final ProjectFileHandler fileHandler = this.loader
+        .fetchProjectMetaData(project.getId(), version);
+    Assert.assertEquals(expectedChunks, fileHandler.getNumChunks());
+  }
+
+  private void assertGetUploadedFileOfCleanedVersion(final Project project, final int version) {
+    final Throwable thrown = catchThrowable(
+        () -> this.loader.getUploadedFile(project.getId(), version));
+    // TODO this is a really misleading error
+    // in reality the project has been cleaned and that's why it can't retrieve any real Md5 hash
+    assertThat(thrown).isInstanceOf(ProjectManagerException.class);
+    assertThat(thrown).hasMessageStartingWith(String.format(
+        "Md5 Hash failed on project %s version %s retrieval of file", project.getId(), version));
   }
 
   @Test
