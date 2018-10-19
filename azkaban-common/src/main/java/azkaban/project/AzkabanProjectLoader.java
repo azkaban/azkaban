@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.executor.RunningExecutions;
 import azkaban.flow.Flow;
 import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
@@ -37,8 +38,10 @@ import azkaban.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -59,16 +62,19 @@ class AzkabanProjectLoader {
   private final FlowLoaderFactory flowLoaderFactory;
   private final File tempDir;
   private final int projectVersionRetention;
+  private final RunningExecutions runningExecutions;
 
   @Inject
   AzkabanProjectLoader(final Props props, final ProjectLoader projectLoader,
-      final StorageManager storageManager, final FlowLoaderFactory flowLoaderFactory) {
+      final StorageManager storageManager, final FlowLoaderFactory flowLoaderFactory,
+      final RunningExecutions runningExecutions) {
     this.props = requireNonNull(props, "Props is null");
     this.projectLoader = requireNonNull(projectLoader, "project Loader is null");
     this.storageManager = requireNonNull(storageManager, "Storage Manager is null");
     this.flowLoaderFactory = requireNonNull(flowLoaderFactory, "Flow Loader Factory is null");
 
     this.tempDir = new File(props.getString(ConfigurationKeys.PROJECT_TEMP_DIR, "temp"));
+    this.runningExecutions = runningExecutions;
     if (!this.tempDir.exists()) {
       log.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
       this.tempDir.mkdirs();
@@ -236,11 +242,16 @@ class AzkabanProjectLoader {
   }
 
   private void cleanUpProjectOldInstallations(final Project project)
-      throws ProjectManagerException{
+      throws ProjectManagerException {
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
+    final List<Integer> versionsWithRunningExecutions = this.runningExecutions.get().values()
+        .stream().map(pair -> pair.getSecond())
+        .filter(exflow -> exflow.getProjectId() == project.getId())
+        .map(exflow -> exflow.getVersion())
+        .collect(Collectors.toList());
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() - this.projectVersionRetention);
+        project.getVersion() - this.projectVersionRetention, versionsWithRunningExecutions);
 
     // Clean up storage
     this.storageManager.cleanupProjectArtifacts(project.getId());

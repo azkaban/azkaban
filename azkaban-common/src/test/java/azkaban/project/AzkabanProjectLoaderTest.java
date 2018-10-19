@@ -26,14 +26,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.RunningExecutions;
+import azkaban.flow.Flow;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
 import azkaban.storage.StorageManager;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import java.io.File;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +62,7 @@ public class AzkabanProjectLoaderTest {
   private AzkabanProjectLoader azkabanProjectLoader;
   private StorageManager storageManager;
   private ProjectLoader projectLoader;
+  private RunningExecutions runningExecutions;
 
   @Before
   public void setUp() throws Exception {
@@ -65,13 +71,14 @@ public class AzkabanProjectLoaderTest {
 
     this.storageManager = mock(StorageManager.class);
     this.projectLoader = mock(ProjectLoader.class);
+    this.runningExecutions = new RunningExecutions();
 
     this.azkabanProjectLoader = new AzkabanProjectLoader(props, this.projectLoader,
-        this.storageManager, new FlowLoaderFactory(props));
+        this.storageManager, new FlowLoaderFactory(props), this.runningExecutions);
   }
 
   @Test
-  public void uploadProject() throws Exception {
+  public void uploadProject() {
     when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
 
     final URL resource = requireNonNull(
@@ -79,11 +86,19 @@ public class AzkabanProjectLoaderTest {
     final File projectZipFile = new File(resource.getPath());
     final User uploader = new User("test_user");
 
+    // to test excluding running versions in args of cleanOlderProjectVersion
+    final ExecutableFlow runningFlow = new ExecutableFlow(this.project, new Flow("x"));
+    runningFlow.setVersion(this.VERSION);
+    this.runningExecutions.get().put(-1, new Pair<>(null, runningFlow));
+
+    this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
         .uploadProject(this.project, projectZipFile, "zip", uploader, null));
 
     verify(this.storageManager)
         .uploadProject(this.project, this.VERSION + 1, projectZipFile, uploader);
+    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
+        Arrays.asList(this.VERSION));
   }
 
   @Test

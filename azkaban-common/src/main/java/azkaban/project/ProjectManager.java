@@ -35,6 +35,7 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -309,7 +310,7 @@ public class ProjectManager {
   public synchronized Project purgeProject(final Project project, final User deleter)
       throws ProjectManagerException {
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() + 1);
+        project.getVersion() + 1, Collections.emptyList());
     this.projectLoader
         .postEvent(project, EventType.PURGE, deleter.getUserId(), String
             .format("Purged versions before %d", project.getVersion() + 1));
