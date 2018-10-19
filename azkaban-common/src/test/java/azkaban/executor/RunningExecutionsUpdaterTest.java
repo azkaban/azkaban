@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,6 +46,7 @@ public class RunningExecutionsUpdaterTest {
   private ExecutableFlow execution;
   private RunningExecutions runningExecutions;
   private Executor activeExecutor;
+  private Props props;
 
   private RunningExecutionsUpdater updater;
 
@@ -56,8 +59,10 @@ public class RunningExecutionsUpdaterTest {
     this.runningExecutions = new RunningExecutions();
     this.runningExecutions.get().put(EXECUTION_ID_77, new Pair<>(
         new ExecutionReference(EXECUTION_ID_77, this.activeExecutor), this.execution));
+    this.props = new Props();
     this.updater = new RunningExecutionsUpdater(this.updaterStage, this.alerterHolder,
-        this.commonMetrics, this.apiGateway, this.runningExecutions, this.executionFinalizer);
+        this.commonMetrics, this.apiGateway, this.runningExecutions, this.executionFinalizer,
+        this.props);
     when(this.alerterHolder.get("email")).thenReturn(this.mailAlerter);
   }
 
@@ -98,10 +103,11 @@ public class RunningExecutionsUpdaterTest {
   }
 
   @Test
-  public void updateExecutionsUpdateCallFails() throws Exception {
+  public void updateExecutionsUpdateCallFailsNoEviction() throws Exception {
+    this.props.put(RunningExecutionsUpdater.EVICT_UNRESPONSIVE_EXECUTIONS_KEY, "false");
     mockUpdateCallFails();
     DateTimeUtils.setCurrentMillisFixed(System.currentTimeMillis());
-    for (int i = 0; i < this.updater.numErrorsBeforeUnresponsiveEmail; i++) {
+    for (int i = 0; i < this.updater.numErrorsBeforeUnresponsive; i++) {
       this.updater.updateExecutions();
       DateTimeUtils.setCurrentMillisFixed(
           DateTimeUtils.currentTimeMillis() + this.updater.errorThreshold + 1L);
@@ -112,6 +118,21 @@ public class RunningExecutionsUpdaterTest {
     // TODO change to checking if executor exist in the DB any more
     verifyZeroInteractions(this.executionFinalizer);
     // verify(this.executionFinalizer).finalizeFlow(this.execution, "TODO", null);
+  }
+
+  @Test
+  public void updateExecutionsUpdateCallFails() throws Exception {
+    mockUpdateCallFails();
+    DateTimeUtils.setCurrentMillisFixed(System.currentTimeMillis());
+    for (int i = 0; i < this.updater.numErrorsBeforeUnresponsive; i++) {
+      this.updater.updateExecutions();
+      DateTimeUtils.setCurrentMillisFixed(
+          DateTimeUtils.currentTimeMillis() + this.updater.errorThreshold + 1L);
+    }
+    verifyZeroInteractions(this.mailAlerter);
+    verify(this.executionFinalizer).finalizeFlow(eq(this.execution),
+        eq("Evicting execution because executor is unresponsive"),
+        any(ExecutorManagerException.class));
   }
 
   private void mockFlowStillRunning() throws Exception {

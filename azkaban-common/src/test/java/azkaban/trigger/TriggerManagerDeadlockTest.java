@@ -56,13 +56,14 @@ public class TriggerManagerDeadlockTest {
   private AlerterHolder alertHolder;
   private ExecutionFinalizer executionFinalizer;
   private CommonMetrics commonMetrics;
+  private Props props;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
     this.loader = new MockTriggerLoader();
-    final Props props = new Props();
-    props.put("trigger.scan.interval", 1000);
-    props.put(ConfigurationKeys.EXECUTOR_PORT, 12321);
+    this.props = new Props();
+    this.props.put("trigger.scan.interval", 1000);
+    this.props.put(ConfigurationKeys.EXECUTOR_PORT, 12321);
     this.execLoader = new MockExecutorLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.runningExecutions = new RunningExecutions();
@@ -71,14 +72,14 @@ public class TriggerManagerDeadlockTest {
     this.executionFinalizer = new ExecutionFinalizer(this.execLoader,
         this.updaterStage, this.alertHolder, this.runningExecutions);
     this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final ExecutorManager executorManager = getExecutorManager(props);
-    this.triggerManager = new TriggerManager(props, this.loader, executorManager);
+    final ExecutorManager executorManager = getExecutorManager();
+    this.triggerManager = new TriggerManager(this.props, this.loader, executorManager);
   }
 
-  private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
+  private ExecutorManager getExecutorManager() throws ExecutorManagerException {
     final ActiveExecutors activeExecutors = new ActiveExecutors(this.execLoader);
     final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
-    return new ExecutorManager(props, this.execLoader, this.commonMetrics, this.apiGateway,
+    return new ExecutorManager(this.props, this.execLoader, this.commonMetrics, this.apiGateway,
         this.runningExecutions, activeExecutors, this.updaterStage, this.executionFinalizer,
         updaterThread);
   }
@@ -86,7 +87,7 @@ public class TriggerManagerDeadlockTest {
   private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {
     return new RunningExecutionsUpdaterThread(new RunningExecutionsUpdater(
         this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
-        this.runningExecutions, this.executionFinalizer), runningExecutions);
+        this.runningExecutions, this.executionFinalizer, this.props), this.runningExecutions);
   }
 
   @After

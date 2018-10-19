@@ -19,6 +19,7 @@ package azkaban.executor;
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,11 +37,16 @@ public class RunningExecutionsUpdater {
 
   private static final Logger logger = Logger.getLogger(RunningExecutionsUpdater.class);
 
-  // When we have an http error, for that flow, we'll check every 10 secs, 360
+  // TODO this is a temporary property until problems have been fixed - not adding it to Constants
+  // Default is true. If set to false, executions on unresponsive executors are not evicted and
+  // email alerts are sent instead
+  static final String EVICT_UNRESPONSIVE_EXECUTIONS_KEY = "azkaban.evictUnresponsiveExecutions";
+
+  // When we have an http error, for that flow, we'll check every 10 secs (errorThreshold), 360
   // times (3600 seconds = 1 hour) before we send an email about unresponsive executor.
   private final int numErrorsBetweenUnresponsiveEmail = 360;
-  // First email is sent after 1 minute of unresponsiveness
-  final int numErrorsBeforeUnresponsiveEmail = 6;
+  // After 1 minute of unresponsiveness the execution is either evicted or the first email is sent
+  final int numErrorsBeforeUnresponsive = 6;
   final long errorThreshold = 10000;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final AlerterHolder alerterHolder;
@@ -48,18 +54,20 @@ public class RunningExecutionsUpdater {
   private final ExecutorApiGateway apiGateway;
   private final RunningExecutions runningExecutions;
   private final ExecutionFinalizer executionFinalizer;
+  private final Props props;
 
   @Inject
   public RunningExecutionsUpdater(final ExecutorManagerUpdaterStage updaterStage,
       final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final RunningExecutions runningExecutions,
-      final ExecutionFinalizer executionFinalizer) {
+      final ExecutionFinalizer executionFinalizer, final Props props) {
     this.updaterStage = updaterStage;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.runningExecutions = runningExecutions;
     this.executionFinalizer = executionFinalizer;
+    this.props = props;
   }
 
   /**
@@ -147,7 +155,13 @@ public class RunningExecutionsUpdater {
       final ExecutionReference ref = pair.getFirst();
       ref.setNextCheckTime(DateTime.now().getMillis() + this.errorThreshold);
       ref.setNumErrors(ref.getNumErrors() + 1);
-      if (ref.getNumErrors() == this.numErrorsBeforeUnresponsiveEmail
+
+      if (this.props.getBoolean(EVICT_UNRESPONSIVE_EXECUTIONS_KEY, true)) {
+        if (ref.getNumErrors() >= this.numErrorsBeforeUnresponsive) {
+          this.executionFinalizer
+              .finalizeFlow(flow, "Evicting execution because executor is unresponsive", e);
+        }
+      } else if (ref.getNumErrors() == this.numErrorsBeforeUnresponsive
           || ref.getNumErrors() % this.numErrorsBetweenUnresponsiveEmail == 0) {
         // if any of the executions has failed many enough updates, alert
         sendUnresponsiveEmail = true;
