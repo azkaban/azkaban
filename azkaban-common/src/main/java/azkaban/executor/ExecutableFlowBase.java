@@ -368,29 +368,6 @@ public class ExecutableFlowBase extends ExecutableNode {
     applyUpdateObject(typedMapWrapper, null);
   }
 
-  public void reEnableDependents(final ExecutableNode... nodes) {
-    for (final ExecutableNode node : nodes) {
-      for (final String dependent : node.getOutNodes()) {
-        final ExecutableNode dependentNode = getExecutableNode(dependent);
-
-        if (dependentNode.getStatus() == Status.KILLED) {
-          dependentNode.setStatus(Status.READY);
-          dependentNode.setUpdateTime(System.currentTimeMillis());
-          reEnableDependents(dependentNode);
-
-          if (dependentNode instanceof ExecutableFlowBase) {
-
-            ((ExecutableFlowBase) dependentNode).reEnableDependents();
-          }
-        } else if (dependentNode.getStatus() == Status.SKIPPED) {
-          dependentNode.setStatus(Status.DISABLED);
-          dependentNode.setUpdateTime(System.currentTimeMillis());
-          reEnableDependents(dependentNode);
-        }
-      }
-    }
-  }
-
   public String getFlowPath() {
     if (this.getParentFlow() == null) {
       return this.getFlowId();
