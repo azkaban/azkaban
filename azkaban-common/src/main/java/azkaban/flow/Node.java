@@ -62,12 +62,15 @@ public class Node {
 
     final String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
     final String condition = (String) mapObj.get("condition");
+    final ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus
+        .fromString((String) mapObj.get("conditionOnJobStatus"));
 
     node.setJobSource(jobSource);
     node.setPropsSource(propSource);
     node.setType(jobType);
     node.setEmbeddedFlowId(embeddedFlowId);
     node.setCondition(condition);
+    node.setConditionOnJobStatus(conditionOnJobStatus);
 
     final Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
     if (expectedRuntime != null) {
@@ -182,6 +185,7 @@ public class Node {
     layoutInfo.put("level", this.level);
     objMap.put("layout", layoutInfo);
     objMap.put("condition", this.condition);
+    objMap.put("conditionOnJobStatus", this.conditionOnJobStatus);
 
     return objMap;
   }
