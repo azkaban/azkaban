@@ -19,7 +19,6 @@ package azkaban.trigger.builtin;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
@@ -224,13 +223,9 @@ public class ExecuteFlowAction implements TriggerAction {
       exflow.setSlaOptions(this.slaOptions);
     }
 
-    try {
-      logger.info("Invoking flow " + project.getName() + "." + this.flowName);
-      executorManager.submitExecutableFlow(exflow, this.submitUser);
-      logger.info("Invoked flow " + project.getName() + "." + this.flowName);
-    } catch (final ExecutorManagerException e) {
-      throw new RuntimeException(e);
-    }
+    logger.info("Invoking flow " + project.getName() + "." + this.flowName);
+    executorManager.submitExecutableFlow(exflow, this.submitUser);
+    logger.info("Invoked flow " + project.getName() + "." + this.flowName);
   }
 
   @Override
