@@ -27,7 +27,6 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
-import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -372,18 +371,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
   private void setActiveInternal(final boolean value)
       throws ExecutorManagerException {
-    final ExecutorLoader executorLoader = this.application.getExecutorLoader();
-    final Executor executor = executorLoader.fetchExecutor(this.application.getHost(),
-        this.application.getPort());
-    Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
-    if (executor.isActive() != value) {
-      executor.setActive(value);
-      executorLoader.updateExecutor(executor);
-      this.flowRunnerManager.setExecutorActive(value);
-    } else {
-      logger.warn(
-          "Set active action ignored. Executor is already " + (value ? "active" : "inactive"));
-    }
+    this.flowRunnerManager.setExecutorActive(value,
+        this.application.getHost(), this.application.getPort());
   }
 
   /**
