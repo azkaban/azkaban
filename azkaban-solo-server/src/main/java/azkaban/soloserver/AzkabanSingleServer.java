@@ -53,7 +53,16 @@ public class AzkabanSingleServer {
     this.executor = executor;
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
+    try {
+      start(args);
+    } catch (Exception e) {
+      log.error("Failed to start single server. Shutting down.", e);
+      System.exit(1);
+    }
+  }
+
+  public static void start(String[] args) throws Exception {
     log.info("Starting Azkaban Server");
 
     if (System.getSecurityManager() == null) {
