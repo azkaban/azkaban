@@ -277,7 +277,10 @@ public class AzkabanExecutorServer {
       checkState(port != -1);
       final Executor executor = this.executionLoader.fetchExecutor(host, port);
       if (executor == null) {
+        logger.info("This executor wasn't found in the DB. Adding self.");
         this.executionLoader.addExecutor(host, port);
+      } else {
+        logger.info("This executor is already in the DB. Found: " + executor);
       }
       // If executor already exists, ignore it
     } catch (final ExecutorManagerException e) {

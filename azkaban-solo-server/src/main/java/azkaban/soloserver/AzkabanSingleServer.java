@@ -124,6 +124,10 @@ public class AzkabanSingleServer {
     AzkabanExecutorServer.launch(this.executor);
     log.info("Azkaban Exec Server started...");
 
+    this.executor.getFlowRunnerManager()
+        .setExecutorActive(true, this.executor.getHost(), this.executor.getPort());
+    log.info("Azkaban Exec Server activated...");
+
     AzkabanWebServer.launch(this.webServer);
     log.info("Azkaban Web Server started...");
   }

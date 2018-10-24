@@ -26,6 +26,7 @@ import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
+import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -48,6 +49,7 @@ import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
+import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -320,13 +322,20 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
-  // todo chengren311: this method will be invoked by executor activate API, but in SOLO mode
-  // the API is not called. So we should either have everything run in "multi-executor" mode
-  // or make SOLO server mode call the API.
-  public void setExecutorActive(final boolean isActive) {
-    this.isExecutorActive = isActive;
-    if (this.isExecutorActive) {
-      this.installedProjects = this.loadExistingProjectsAsCache();
+  public void setExecutorActive(final boolean isActive, final String host, final int port)
+      throws ExecutorManagerException {
+    final Executor executor = this.executorLoader.fetchExecutor(host, port);
+    Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
+    if (executor.isActive() != isActive) {
+      executor.setActive(isActive);
+      this.executorLoader.updateExecutor(executor);
+      this.isExecutorActive = isActive;
+      if (this.isExecutorActive) {
+        this.installedProjects = this.loadExistingProjectsAsCache();
+      }
+    } else {
+      logger.info(
+          "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
   }
 
