@@ -16,8 +16,8 @@
 
 package azkaban.execapp;
 
-import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
 import static azkaban.Constants.ConfigurationKeys;
+import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.execapp.ExecJettyServerModule.EXEC_JETTY_SERVER;
 import static azkaban.execapp.ExecJettyServerModule.EXEC_ROOT_CONTEXT;
@@ -174,34 +174,34 @@ public class AzkabanExecutorServer {
         try {
           logTopMemoryConsumers();
         } catch (final Exception e) {
-          logger.info(("Exception when logging top memory consumers"), e);
+          AzkabanExecutorServer.logger.info(("Exception when logging top memory consumers"), e);
         }
 
-        final String host = app.getHost();
-        final int port = app.getPort();
+        final String host = AzkabanExecutorServer.app.getHost();
+        final int port = AzkabanExecutorServer.app.getPort();
         try {
-          logger.info(String
+          AzkabanExecutorServer.logger.info(String
               .format("Removing executor(host: %s, port: %s) entry from database...", host, port));
-          app.getExecutorLoader().removeExecutor(host, port);
+          AzkabanExecutorServer.app.getExecutorLoader().removeExecutor(host, port);
         } catch (final ExecutorManagerException ex) {
-          logger.error(
+          AzkabanExecutorServer.logger.error(
               String.format("Exception when removing executor(host: %s, port: %s)", host, port),
               ex);
         }
 
-        logger.warn("Shutting down executor...");
+        AzkabanExecutorServer.logger.warn("Shutting down executor...");
         try {
-          app.shutdownNow();
-          app.getFlowRunnerManager().deleteExecutionDirectory();
+          AzkabanExecutorServer.app.shutdownNow();
+          AzkabanExecutorServer.app.getFlowRunnerManager().deleteExecutionDirectory();
         } catch (final Exception e) {
-          logger.error("Error while shutting down http server.", e);
+          AzkabanExecutorServer.logger.error("Error while shutting down http server.", e);
         }
       }
 
       public void logTopMemoryConsumers() throws Exception, IOException {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          logger.info("logging top memory consumer");
+          AzkabanExecutorServer.logger.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
@@ -214,7 +214,7 @@ public class AzkabanExecutorServer {
               new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
-            logger.info(line);
+            AzkabanExecutorServer.logger.info(line);
           }
           is.close();
         }
