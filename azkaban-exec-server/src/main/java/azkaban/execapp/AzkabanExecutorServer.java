@@ -62,6 +62,7 @@ import java.nio.file.Paths;
 import java.security.Permission;
 import java.security.Policy;
 import java.security.ProtectionDomain;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -505,6 +506,14 @@ public class AzkabanExecutorServer {
     return getHost() + ":" + getPort();
   }
 
+  private void sleep(final Duration duration) {
+    try {
+      Thread.sleep(duration.toMillis());
+    } catch (final InterruptedException e) {
+      logger.error(e);
+    }
+  }
+
   /**
    * Shutdown the server. - performs a safe shutdown. Waits for completion of current tasks - spawns
    * a shutdown thread and returns immediately.
@@ -512,12 +521,8 @@ public class AzkabanExecutorServer {
   public void shutdown() {
     logger.warn("Shutting down AzkabanExecutorServer...");
     new Thread(() -> {
-      try {
-        // Hack: Sleep for a little time to allow API calls to complete
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        logger.error(e);
-      }
+      // Hack: Sleep for a little time to allow API calls to complete
+      sleep(Duration.ofSeconds(2));
       shutdownInternal();
     }, "shutdown").start();
   }
@@ -529,6 +534,9 @@ public class AzkabanExecutorServer {
    */
   private void shutdownInternal() {
     getFlowRunnerManager().shutdown();
+    // Sleep for an hour to wait for web server updater thread
+    // {@link azkaban.executor.RunningExecutionsUpdaterThread#updateExecutions} to finalize updating
+    sleep(Duration.ofHours(1));
     // trigger shutdown hook
     System.exit(0);
   }
