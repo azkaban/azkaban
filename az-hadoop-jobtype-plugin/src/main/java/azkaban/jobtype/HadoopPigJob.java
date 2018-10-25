@@ -319,29 +319,30 @@ public class HadoopPigJob extends JavaProcessJob {
     return udfImports;
   }
 
-  protected List<String> getAdditionalJarsList() {
-    List<String> additionalJars = new ArrayList<String>();
-    mergeAdditionalJars(additionalJars, PIG_ADDITIONAL_JARS);
-    mergeAdditionalJars(additionalJars, DEFAULT_PIG_ADDITIONAL_JARS);
-    return additionalJars;
-  }
-
   /**
    * Merging all additional jars first from user specified/plugin.properties
    * then private.properties for additionalJarProperty property
+   * TODO kunkun-tang: A refactor is necessary here. Recommend using Java Optional to better handle
+   * parsing exceptions.
    */
-  private void mergeAdditionalJars(List<String> additionalJars,
-      String additionalJarProperty) {
+  protected List<String> getAdditionalJarsList() {
+    List<String> additionalJars = new ArrayList<>();
     List<String> jobJars =
-        getJobProps().getStringList(additionalJarProperty, null, ",");
+        getJobProps().getStringList(PIG_ADDITIONAL_JARS, null, ",");
     List<String> typeJars =
-        getSysProps().getStringList(additionalJarProperty, null, ",");
+        getSysProps().getStringList(DEFAULT_PIG_ADDITIONAL_JARS, null, ",");
+
+    /*
+      if user defines the custom pig additional Jar, we only incorporate the user
+      settings; otherwise, if system configurations have it, we add the system
+      additional jar settings only.
+     */
     if (jobJars != null) {
       additionalJars.addAll(jobJars);
-    }
-    if (typeJars != null) {
+    } else if (typeJars != null) {
       additionalJars.addAll(typeJars);
     }
+    return additionalJars;
   }
 
   protected String getHadoopUGI() {
