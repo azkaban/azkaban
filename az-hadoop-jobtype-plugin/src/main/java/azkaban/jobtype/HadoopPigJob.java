@@ -334,7 +334,7 @@ public class HadoopPigJob extends JavaProcessJob {
     /*
       if user defines the custom pig additional Jar, we only incorporate the user
       settings; otherwise, only when system configurations have it, we add the system
-      additional jar settings.
+      additional jar settings. We don't accept both at the same time.
      */
     if (jobJars != null) {
       return jobJars;
