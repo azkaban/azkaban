@@ -162,7 +162,7 @@ public class HadoopPigJob extends JavaProcessJob {
     }
 
     List<String> additionalJars = getAdditionalJarsList();
-    if (additionalJars.size() > 0) {
+    if (additionalJars != null && additionalJars.size() > 0) {
       args +=
           " -Dpig.additional.jars="
               + super.createArguments(additionalJars, ":");
@@ -326,7 +326,6 @@ public class HadoopPigJob extends JavaProcessJob {
    * parsing exceptions.
    */
   protected List<String> getAdditionalJarsList() {
-    List<String> additionalJars = new ArrayList<>();
     List<String> jobJars =
         getJobProps().getStringList(PIG_ADDITIONAL_JARS, null, ",");
     List<String> typeJars =
@@ -334,15 +333,15 @@ public class HadoopPigJob extends JavaProcessJob {
 
     /*
       if user defines the custom pig additional Jar, we only incorporate the user
-      settings; otherwise, if system configurations have it, we add the system
-      additional jar settings only.
+      settings; otherwise, only when system configurations have it, we add the system
+      additional jar settings.
      */
     if (jobJars != null) {
-      additionalJars.addAll(jobJars);
+      return jobJars;
     } else if (typeJars != null) {
-      additionalJars.addAll(typeJars);
+      return typeJars;
     }
-    return additionalJars;
+    return null;
   }
 
   protected String getHadoopUGI() {
