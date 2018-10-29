@@ -150,7 +150,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createSuccessEmail(flow, message, this.azkabanName,
         this.scheme, this.clientHostname, this.clientPortNumber);
-    sendEmail(message, mailCreated, "success email message for execution" + flow.getExecutionId());
+    sendEmail(message, mailCreated, "success email message for execution " + flow.getExecutionId());
   }
 
   /**
