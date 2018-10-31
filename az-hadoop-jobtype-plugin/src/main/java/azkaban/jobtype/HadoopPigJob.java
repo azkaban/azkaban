@@ -319,29 +319,39 @@ public class HadoopPigJob extends JavaProcessJob {
     return udfImports;
   }
 
-  protected List<String> getAdditionalJarsList() {
-    List<String> additionalJars = new ArrayList<String>();
-    mergeAdditionalJars(additionalJars, PIG_ADDITIONAL_JARS);
-    mergeAdditionalJars(additionalJars, DEFAULT_PIG_ADDITIONAL_JARS);
-    return additionalJars;
-  }
-
   /**
-   * Merging all additional jars first from user specified/plugin.properties
-   * then private.properties for additionalJarProperty property
+   * Merging all additional jars first from user specified property
+   * and private.properties (in the jobtype property) for additionalJarProperty
+   * TODO kunkun-tang: A refactor is necessary here. Recommend using Java Optional to better handle
+   * parsing exceptions.
    */
-  private void mergeAdditionalJars(List<String> additionalJars,
-      String additionalJarProperty) {
-    List<String> jobJars =
-        getJobProps().getStringList(additionalJarProperty, null, ",");
-    List<String> typeJars =
-        getSysProps().getStringList(additionalJarProperty, null, ",");
-    if (jobJars != null) {
-      additionalJars.addAll(jobJars);
+  protected List<String> getAdditionalJarsList() {
+
+    List<String> wholeAdditionalJarsList = new ArrayList<>();
+
+    List<String> jobAdditionalJars =
+        getJobProps().getStringList(PIG_ADDITIONAL_JARS, null, ",");
+
+    List<String> jobDefinedDefaultJars =
+        getJobProps().getStringList(DEFAULT_PIG_ADDITIONAL_JARS, null, ",");
+    List<String> systemDefinedDefaultJars =
+        getSysProps().getStringList(DEFAULT_PIG_ADDITIONAL_JARS, null, ",");
+
+    /*
+      if user defines the custom default pig Jar, we only incorporate the user
+      settings; otherwise, only when system configurations have it, we add the system
+      additional jar settings. We don't accept both at the same time.
+     */
+    if (jobAdditionalJars != null) {
+      wholeAdditionalJarsList.addAll(jobAdditionalJars);
     }
-    if (typeJars != null) {
-      additionalJars.addAll(typeJars);
+
+    if (jobDefinedDefaultJars != null) {
+      wholeAdditionalJarsList.addAll(jobDefinedDefaultJars);
+    } else if (systemDefinedDefaultJars != null) {
+      wholeAdditionalJarsList.addAll(systemDefinedDefaultJars);
     }
+    return wholeAdditionalJarsList;
   }
 
   protected String getHadoopUGI() {
