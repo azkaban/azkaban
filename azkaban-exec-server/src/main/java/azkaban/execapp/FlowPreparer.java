@@ -277,13 +277,14 @@ public class FlowPreparer {
                 .getVersion()));
             sizeToFreeInBytes -= version.getDirSizeInBytes();
           } catch (final IOException ex) {
-            log.error(ex);
+            FlowPreparer.log.error(ex);
           }
         }
       }
     }
 
-    void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes) throws IOException {
+    void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes)
+        throws IOException {
       final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes();
       if (this.projectDirMaxSizeInMb != null
           && (currentSpaceInBytes + spaceToDeleteInBytes) >= this
