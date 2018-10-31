@@ -320,8 +320,8 @@ public class HadoopPigJob extends JavaProcessJob {
   }
 
   /**
-   * Merging all additional jars first from user specified/plugin.properties
-   * then private.properties for additionalJarProperty property
+   * Merging all additional jars first from user specified property
+   * and private.properties (in the jobtype property) for additionalJarProperty
    * TODO kunkun-tang: A refactor is necessary here. Recommend using Java Optional to better handle
    * parsing exceptions.
    */
