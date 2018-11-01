@@ -60,7 +60,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -826,22 +825,11 @@ public class FlowRunnerManager implements EventListener,
     return activeProjectVersions;
   }
 
-  /**
-   * Checks if the project version contains any running flow
-   */
-  private boolean isActiveProject(final ProjectVersion version) {
-    final Pair<Integer, Integer> versionKey = new Pair<>(version.getProjectId(),
-        version.getVersion());
-    return getActiveProjectVersions().contains(versionKey);
-  }
-
 
   private class CleanerThread extends Thread {
 
     // Every hour, clean execution dir.
     private static final long EXECUTION_DIR_CLEAN_INTERVAL_MS = 60 * 60 * 1000;
-    // Every 5 mins clean the old project dir
-    private static final long OLD_PROJECT_DIR_INTERVAL_MS = 5 * 60 * 1000;
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
     // Every 5 mins kill flows running longer than allowed max running time
@@ -850,7 +838,6 @@ public class FlowRunnerManager implements EventListener,
         Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, -1);
     private boolean shutdown = false;
     private long lastExecutionDirCleanTime = -1;
-    private long lastOldProjectCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;
 
@@ -887,13 +874,6 @@ public class FlowRunnerManager implements EventListener,
               FlowRunnerManager.logger.info("Cleaning recently finished");
               cleanRecentlyFinished();
               this.lastRecentlyFinishedCleanTime = currentTime;
-            }
-
-            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > this.lastOldProjectCleanTime
-                && FlowRunnerManager.this.isExecutorActive) {
-              FlowRunnerManager.logger.info("Cleaning old projects");
-              cleanProjectsOfOldVersion();
-              this.lastOldProjectCleanTime = currentTime;
             }
 
             if (currentTime - EXECUTION_DIR_CLEAN_INTERVAL_MS > this.lastExecutionDirCleanTime) {
@@ -981,49 +961,6 @@ public class FlowRunnerManager implements EventListener,
         FlowRunnerManager.this.recentlyFinishedFlows.remove(id);
       }
     }
-
-    private void cleanProjectsOfOldVersion() {
-      final Map<Integer, ArrayList<ProjectVersion>> projectVersions =
-          new HashMap<>();
-      for (final ProjectVersion version : FlowRunnerManager.this.installedProjects.values()) {
-        ArrayList<ProjectVersion> versionList =
-            projectVersions.get(version.getProjectId());
-        if (versionList == null) {
-          versionList = new ArrayList<>();
-          projectVersions.put(version.getProjectId(), versionList);
-        }
-        versionList.add(version);
-      }
-
-      for (final Map.Entry<Integer, ArrayList<ProjectVersion>> entry : projectVersions
-          .entrySet()) {
-        // Integer projectId = entry.getKey();
-        final ArrayList<ProjectVersion> installedVersions = entry.getValue();
-
-        // Keep one version of the project around.
-        if (installedVersions.size() == 1) {
-          continue;
-        }
-
-        Collections.sort(installedVersions);
-        for (int i = 0; i < installedVersions.size() - 1; ++i) {
-          final ProjectVersion version = installedVersions.get(i);
-          if (!isActiveProject(version)) {
-            try {
-              FlowRunnerManager.logger.info("Removing old unused installed project "
-                  + version.getProjectId() + ":" + version.getVersion());
-              FlowRunnerManager.deleteDirectory(version);
-              FlowRunnerManager.this.installedProjects.remove(new Pair<>(version
-                  .getProjectId(), version.getVersion()));
-            } catch (final IOException e) {
-              FlowRunnerManager.logger.error(e);
-            }
-          }
-        }
-      }
-    }
-
   }
-
 
 }
