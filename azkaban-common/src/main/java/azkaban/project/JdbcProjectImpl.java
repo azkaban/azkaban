@@ -522,7 +522,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
 
     // Check md5.
-    byte[] md5 = null;
+    byte[] md5;
     try {
       md5 = Md5Hasher.md5Hash(file);
     } catch (final IOException e) {
@@ -533,9 +533,10 @@ public class JdbcProjectImpl implements ProjectLoader {
       logger.info("Md5 Hash is valid");
     } else {
       throw new ProjectManagerException(
-          "Md5 Hash failed on project " + projHandler.getProjectId() + " version " + projHandler
-              .getVersion() + " retrieval of file " + file.getAbsolutePath() + ". Expected hash: " +
-              Arrays.toString(projHandler.getMd5Hash()) + " , got hash: " + Arrays.toString(md5));
+          String.format("Md5 Hash failed on project %s version %s retrieval of file %s. "
+                  + "Expected hash: %s , got hash: %s",
+              projHandler.getProjectId(), projHandler.getVersion(), file.getAbsolutePath(),
+              Arrays.toString(projHandler.getMd5Hash()), Arrays.toString(md5)));
     }
 
     projHandler.setLocalFile(file);
