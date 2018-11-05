@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -40,6 +41,8 @@ public class RunningExecutionsUpdaterTest {
   ExecutionFinalizer executionFinalizer;
   @Mock
   private Alerter mailAlerter;
+  @Mock
+  private ExecutorLoader executorLoader;
 
   private ExecutableFlow execution;
   private RunningExecutions runningExecutions;
@@ -57,7 +60,8 @@ public class RunningExecutionsUpdaterTest {
     this.runningExecutions.get().put(EXECUTION_ID_77, new Pair<>(
         new ExecutionReference(EXECUTION_ID_77, this.activeExecutor), this.execution));
     this.updater = new RunningExecutionsUpdater(this.updaterStage, this.alerterHolder,
-        this.commonMetrics, this.apiGateway, this.runningExecutions, this.executionFinalizer);
+        this.commonMetrics, this.apiGateway, this.runningExecutions, this.executionFinalizer,
+        this.executorLoader);
     when(this.alerterHolder.get("email")).thenReturn(this.mailAlerter);
   }
 
@@ -100,6 +104,7 @@ public class RunningExecutionsUpdaterTest {
   @Test
   public void updateExecutionsUpdateCallFails() throws Exception {
     mockUpdateCallFails();
+    when(this.executorLoader.fetchExecutor(anyInt())).thenReturn(this.activeExecutor);
     DateTimeUtils.setCurrentMillisFixed(System.currentTimeMillis());
     for (int i = 0; i < this.updater.numErrorsBeforeUnresponsiveEmail; i++) {
       this.updater.updateExecutions();
@@ -108,10 +113,33 @@ public class RunningExecutionsUpdaterTest {
     }
     verify(this.mailAlerter).alertOnFailedUpdate(
         this.activeExecutor, Collections.singletonList(this.execution), API_CALL_EXCEPTION);
-
-    // TODO change to checking if executor exist in the DB any more
     verifyZeroInteractions(this.executionFinalizer);
-    // verify(this.executionFinalizer).finalizeFlow(this.execution, "TODO", null);
+  }
+
+  /**
+   * Shuold finalize execution if executor doesn't exist in the DB.
+   */
+  @Test
+  public void updateExecutionsUpdateCallFailsExecutorDoesntExist() throws Exception {
+    mockUpdateCallFails();
+    when(this.executorLoader.fetchExecutor(anyInt())).thenReturn(null);
+    DateTimeUtils.setCurrentMillisFixed(System.currentTimeMillis());
+    this.updater.updateExecutions();
+    verify(this.executionFinalizer).finalizeFlow(
+        this.execution, "Not running on the assigned executor (any more)", null);
+  }
+
+  /**
+   * Shouldn't finalize executions if executor's existence can't be checked.
+   */
+  @Test
+  public void updateExecutionsUpdateCallFailsExecutorCheckThrows() throws Exception {
+    mockUpdateCallFails();
+    when(this.executorLoader.fetchExecutor(anyInt()))
+        .thenThrow(new ExecutorManagerException("Mocked fetchExecutor failure"));
+    DateTimeUtils.setCurrentMillisFixed(System.currentTimeMillis());
+    this.updater.updateExecutions();
+    verifyZeroInteractions(this.executionFinalizer);
   }
 
   private void mockFlowStillRunning() throws Exception {
