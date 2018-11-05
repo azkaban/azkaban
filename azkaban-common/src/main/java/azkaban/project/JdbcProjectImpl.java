@@ -24,6 +24,7 @@ import static azkaban.project.JdbcProjectHandlerSet.ProjectPropertiesResultsHand
 import static azkaban.project.JdbcProjectHandlerSet.ProjectResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectVersionResultHandler;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
 import azkaban.db.EncodingType;
@@ -469,6 +470,13 @@ public class JdbcProjectImpl implements ProjectLoader {
       return null;
     }
     final int numChunks = projHandler.getNumChunks();
+    if (numChunks <= 0) {
+      throw new ProjectManagerException(String.format("Got numChunks=%s for version %s of project "
+              + "%s - seems like this version has been cleaned up already, because enough newer "
+              + "versions have been uploaded. To increase the retention of project versions, set "
+              + "%s", numChunks, version, projectId,
+          ConfigurationKeys.PROJECT_VERSION_RETENTION));
+    }
     BufferedOutputStream bStream = null;
     File file;
     try {
@@ -514,7 +522,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
 
     // Check md5.
-    byte[] md5 = null;
+    byte[] md5;
     try {
       md5 = Md5Hasher.md5Hash(file);
     } catch (final IOException e) {
@@ -524,7 +532,11 @@ public class JdbcProjectImpl implements ProjectLoader {
     if (Arrays.equals(projHandler.getMd5Hash(), md5)) {
       logger.info("Md5 Hash is valid");
     } else {
-      throw new ProjectManagerException("Md5 Hash failed on retrieval of file");
+      throw new ProjectManagerException(
+          String.format("Md5 Hash failed on project %s version %s retrieval of file %s. "
+                  + "Expected hash: %s , got hash: %s",
+              projHandler.getProjectId(), projHandler.getVersion(), file.getAbsolutePath(),
+              Arrays.toString(projHandler.getMd5Hash()), Arrays.toString(md5)));
     }
 
     projHandler.setLocalFile(file);

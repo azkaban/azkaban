@@ -75,7 +75,7 @@ class AzkabanProjectLoader {
     } else {
       log.info("Using temp dir: " + this.tempDir.getAbsolutePath());
     }
-    this.projectVersionRetention = props.getInt("project.version.retention", 3);
+    this.projectVersionRetention = props.getInt(ConfigurationKeys.PROJECT_VERSION_RETENTION, 3);
     log.info("Project version retention is set to " + this.projectVersionRetention);
   }
 
