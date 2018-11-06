@@ -117,7 +117,7 @@ public class RunningExecutionsUpdaterTest {
   }
 
   /**
-   * Shuold finalize execution if executor doesn't exist in the DB.
+   * Should finalize execution if executor doesn't exist in the DB.
    */
   @Test
   public void updateExecutionsUpdateCallFailsExecutorDoesntExist() throws Exception {

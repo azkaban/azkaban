@@ -81,7 +81,7 @@ public class RunningExecutionsUpdater {
       if (!executorOption.isPresent()) {
         for (final ExecutableFlow flow : entry.getValue()) {
           logger.warn("Finalizing execution " + flow.getExecutionId()
-              + ". Executor id of this execution doesn't exist");
+              + ". Executor is removed");
           finalizeFlows.add(flow);
         }
         continue;
@@ -139,7 +139,7 @@ public class RunningExecutionsUpdater {
       final ArrayList<ExecutableFlow> finalizeFlows) {
     logger.error("Failed to get update from executor " + executor.getHost(), e);
     boolean sendUnresponsiveEmail = false;
-    final boolean executorRemoved = executorRemoved(executor.getId());
+    final boolean executorRemoved = isExecutorRemoved(executor.getId());
     for (final ExecutableFlow flow : entry.getValue()) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
           this.runningExecutions.get().get(flow.getExecutionId());
@@ -168,7 +168,7 @@ public class RunningExecutionsUpdater {
     }
   }
 
-  private boolean executorRemoved(final int id) {
+  private boolean isExecutorRemoved(final int id) {
     Executor fetchedExecutor;
     try {
       fetchedExecutor = this.executorLoader.fetchExecutor(id);
