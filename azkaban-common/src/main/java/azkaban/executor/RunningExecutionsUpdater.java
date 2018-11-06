@@ -48,18 +48,20 @@ public class RunningExecutionsUpdater {
   private final ExecutorApiGateway apiGateway;
   private final RunningExecutions runningExecutions;
   private final ExecutionFinalizer executionFinalizer;
+  private final ExecutorLoader executorLoader;
 
   @Inject
   public RunningExecutionsUpdater(final ExecutorManagerUpdaterStage updaterStage,
       final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final RunningExecutions runningExecutions,
-      final ExecutionFinalizer executionFinalizer) {
+      final ExecutionFinalizer executionFinalizer, final ExecutorLoader executorLoader) {
     this.updaterStage = updaterStage;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.runningExecutions = runningExecutions;
     this.executionFinalizer = executionFinalizer;
+    this.executorLoader = executorLoader;
   }
 
   /**
@@ -93,7 +95,7 @@ public class RunningExecutionsUpdater {
       try {
         results = this.apiGateway.updateExecutions(executor, entry.getValue());
       } catch (final ExecutorManagerException e) {
-        handleException(entry, executor, e);
+        handleException(entry, executor, e, finalizeFlows);
       }
 
       if (results != null) {
@@ -133,30 +135,49 @@ public class RunningExecutionsUpdater {
   }
 
   private void handleException(final Entry<Optional<Executor>, List<ExecutableFlow>> entry,
-      final Executor executor, final ExecutorManagerException e) {
+      final Executor executor, final ExecutorManagerException e,
+      final ArrayList<ExecutableFlow> finalizeFlows) {
     logger.error("Failed to get update from executor " + executor.getHost(), e);
     boolean sendUnresponsiveEmail = false;
+    final boolean executorRemoved = isExecutorRemoved(executor.getId());
     for (final ExecutableFlow flow : entry.getValue()) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
           this.runningExecutions.get().get(flow.getExecutionId());
-      // TODO can runningFlows.get ever return null, causing NPE below?
 
       this.updaterStage
           .set("Failed to get update for flow " + pair.getSecond().getExecutionId());
 
-      final ExecutionReference ref = pair.getFirst();
-      ref.setNextCheckTime(DateTime.now().getMillis() + this.errorThreshold);
-      ref.setNumErrors(ref.getNumErrors() + 1);
-      if (ref.getNumErrors() == this.numErrorsBeforeUnresponsiveEmail
-          || ref.getNumErrors() % this.numErrorsBetweenUnresponsiveEmail == 0) {
-        // if any of the executions has failed many enough updates, alert
-        sendUnresponsiveEmail = true;
+      if (executorRemoved) {
+        logger.warn("Finalizing execution " + flow.getExecutionId()
+            + ". Executor is removed");
+        finalizeFlows.add(flow);
+      } else {
+        final ExecutionReference ref = pair.getFirst();
+        ref.setNextCheckTime(DateTime.now().getMillis() + this.errorThreshold);
+        ref.setNumErrors(ref.getNumErrors() + 1);
+        if (ref.getNumErrors() == this.numErrorsBeforeUnresponsiveEmail
+            || ref.getNumErrors() % this.numErrorsBetweenUnresponsiveEmail == 0) {
+          // if any of the executions has failed many enough updates, alert
+          sendUnresponsiveEmail = true;
+        }
       }
     }
     if (sendUnresponsiveEmail) {
       final Alerter mailAlerter = this.alerterHolder.get("email");
       mailAlerter.alertOnFailedUpdate(executor, entry.getValue(), e);
     }
+  }
+
+  private boolean isExecutorRemoved(final int id) {
+    Executor fetchedExecutor;
+    try {
+      fetchedExecutor = this.executorLoader.fetchExecutor(id);
+    } catch (final ExecutorManagerException e) {
+      logger.error("Couldn't check if executor exists", e);
+      // don't know if removed or not -> default to false
+      return false;
+    }
+    return fetchedExecutor == null;
   }
 
   /* Group Executable flow by Executors to reduce number of REST calls */

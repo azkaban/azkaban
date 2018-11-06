@@ -86,7 +86,7 @@ public class TriggerManagerDeadlockTest {
   private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {
     return new RunningExecutionsUpdaterThread(new RunningExecutionsUpdater(
         this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
-        this.runningExecutions, this.executionFinalizer), runningExecutions);
+        this.runningExecutions, this.executionFinalizer, this.execLoader), this.runningExecutions);
   }
 
   @After
