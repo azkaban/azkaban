@@ -81,7 +81,7 @@ public class RunningExecutionsUpdater {
       if (!executorOption.isPresent()) {
         for (final ExecutableFlow flow : entry.getValue()) {
           logger.warn("Finalizing execution " + flow.getExecutionId()
-              + ". Executor is removed");
+              + ". Executor id of this execution doesn't exist");
           finalizeFlows.add(flow);
         }
         continue;
@@ -149,7 +149,7 @@ public class RunningExecutionsUpdater {
 
       if (executorRemoved) {
         logger.warn("Finalizing execution " + flow.getExecutionId()
-            + ". Executor id of this execution doesn't exist");
+            + ". Executor is removed");
         finalizeFlows.add(flow);
       } else {
         final ExecutionReference ref = pair.getFirst();
