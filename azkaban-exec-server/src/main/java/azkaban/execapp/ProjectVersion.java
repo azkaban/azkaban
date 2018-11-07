@@ -88,10 +88,14 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 
   @Override
   public String toString() {
-    return "ProjectVersion{" + "projectId=" + this.projectId + ", version=" + this.version
-        + ", installedDir="
-        + this.installedDir
-        + '}';
+    return "ProjectVersion{" +
+        "projectId=" + this.projectId +
+        ", version=" + this.version +
+        ", installedDir=" + this.installedDir +
+        ", dirSize=" + this.dirSize +
+        ", fileCount=" + this.fileCount +
+        ", lastAccessTime=" + this.lastAccessTime +
+        '}';
   }
 
   public FileTime getLastAccessTime() {
