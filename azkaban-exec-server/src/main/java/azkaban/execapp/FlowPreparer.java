@@ -78,10 +78,12 @@ public class FlowPreparer {
    */
   static void updateDirSize(final File dir, final ProjectVersion pv) {
     final long sizeInByte = FileUtils.sizeOfDirectory(dir);
-    pv.setDirSizeInBytes(sizeInByte);
     try {
-      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_SIZE_FILE_NAME),
-          sizeInByte);
+      final Path path = Paths.get(dir.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+      if (!Files.exists(path)) {
+        FileIOUtils.dumpNumberToFile(path, sizeInByte);
+      }
+      pv.setDirSizeInBytes(FileIOUtils.readNumberFromFile(path));
     } catch (final IOException e) {
       log.error("error when dumping dir size to file", e);
     }
@@ -94,11 +96,14 @@ public class FlowPreparer {
    * @param pv the projectVersion whose size needs to updated.
    */
   static void updateFileCount(final File dir, final ProjectVersion pv) {
-    final int fileCount = dir.listFiles().length;
-    pv.setFileCount(fileCount);
     try {
-      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_COUNT_FILE_NAME),
-          fileCount);
+      final Path path = Paths.get(dir.getPath(), PROJECT_DIR_COUNT_FILE_NAME);
+      if (!Files.exists(path)) {
+        // count itself
+        final int fileCount = FileIOUtils.getFileCount(dir) + 1;
+        FileIOUtils.dumpNumberToFile(path, fileCount);
+      }
+      pv.setFileCount((int) FileIOUtils.readNumberFromFile(path));
     } catch (final IOException e) {
       log.error("error when dumping file count to file", e);
     }
@@ -236,18 +241,11 @@ public class FlowPreparer {
 
     /*
      * Delete the project dir associated with {@code version}.
-     * It first acquires object lock of {@code version} waiting for other threads creating
-     * execution dir to finish to avoid race condition. An example of race condition scenario:
-     * delete the dir of a project while an execution of a flow in the same project is being setup
-     * and the flow's execution dir is being created({@link FlowPreparer#setup}).
      */
     private void deleteDirectory(final ProjectVersion pv) throws IOException {
-      synchronized (pv.toString().intern()) {
-        FlowPreparer.log.warn("Deleting project: " + pv);
-        final File installedDir = pv.getInstalledDir();
-        if (installedDir != null && installedDir.exists()) {
-          FileUtils.deleteDirectory(installedDir);
-        }
+      final File installedDir = pv.getInstalledDir();
+      if (installedDir != null && installedDir.exists()) {
+        FileUtils.deleteDirectory(installedDir);
       }
     }
 
@@ -283,22 +281,17 @@ public class FlowPreparer {
           final String fileName = project.getFileName().toString();
           final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
           final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+
           final ProjectVersion projVersion =
               new ProjectVersion(projectId, versionNum, project.toFile());
-          final Path projectDirSizeFile = Paths
-              .get(projVersion.getInstalledDir().toString(),
-                  FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
-          if (!Files.exists(projectDirSizeFile)) {
-            FlowPreparer.updateDirSize(projVersion.getInstalledDir(), projVersion);
-          }
+
+          FlowPreparer.updateDirSize(projVersion.getInstalledDir(), projVersion);
+          FlowPreparer.updateFileCount(projVersion.getInstalledDir(), projVersion);
 
           final Path projectDirFileCount = Paths.get(projVersion.getInstalledDir().toString(),
-              FlowPreparer.PROJECT_DIR_COUNT_FILE_NAME);
-          if (!Files.exists(projectDirFileCount)) {
-            FlowPreparer.updateFileCount(projVersion.getInstalledDir(), projVersion);
-          }
+              FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
-          projVersion.setLastAccessTime(Files.getLastModifiedTime(projectDirSizeFile));
+          projVersion.setLastAccessTime(Files.getLastModifiedTime(projectDirFileCount));
           allProjects.add(projVersion);
         } catch (final Exception e) {
           FlowPreparer.log
@@ -329,6 +322,7 @@ public class FlowPreparer {
           try {
             // delete the project directory even if flow within is running. It's OK to
             // delete the directory since execution dir is HARD linked to project dir.
+            FlowPreparer.log.info(String.format("deleting project version %s", version));
             deleteDirectory(version);
             sizeToFreeInBytes -= version.getDirSizeInBytes();
           } catch (final IOException ex) {
@@ -350,8 +344,8 @@ public class FlowPreparer {
         if (currentSpaceInBytes + spaceToDeleteInBytes
             >= this.projectDirMaxSizeInMb * 1024 * 1024) {
           FlowPreparer.log.info(String.format("Project dir disk usage[%s bytes] exceeds the "
-                  + "limit, start cleaning up project dirs",
-              currentSpaceInBytes + spaceToDeleteInBytes));
+                  + "limit[%s mb], start cleaning up project dirs",
+              currentSpaceInBytes + spaceToDeleteInBytes, this.projectDirMaxSizeInMb.longValue()));
           deleteLeastRecentlyUsedProjects(spaceToDeleteInBytes, allProjects);
         }
       }

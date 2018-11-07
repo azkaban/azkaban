@@ -90,6 +90,11 @@ public class FlowPreparerTest {
     assertThat(FileIOUtils.readNumberFromFile(
         Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);
+
+    assertThat(FileIOUtils.readNumberFromFile(
+        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_COUNT_FILE_NAME)))
+        .isEqualTo(8);
+
     assertTrue(pv.getInstalledDir().exists());
     assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
   }
