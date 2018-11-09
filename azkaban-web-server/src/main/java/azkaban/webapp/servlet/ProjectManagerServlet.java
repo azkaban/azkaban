@@ -801,7 +801,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> nodeObj = new HashMap<>();
       nodeObj.put("id", node.getId());
       nodeObj.put("type", node.getType());
-      nodeObj.put("condition", node.getCondition());
+      if (node.getCondition() != null) {
+        nodeObj.put("condition", node.getCondition());
+      }
       if (node.getEmbeddedFlowId() != null) {
         nodeObj.put("flowId", node.getEmbeddedFlowId());
         fillFlowInfo(project, node.getEmbeddedFlowId(), nodeObj);
