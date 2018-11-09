@@ -77,10 +77,10 @@ public class FlowPreparer {
    * @param pv the projectVersion whose size needs to updated.
    */
   static void updateDirSize(final File dir, final ProjectVersion pv) {
-    final long sizeInByte = FileUtils.sizeOfDirectory(dir);
     try {
       final Path path = Paths.get(dir.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
       if (!Files.exists(path)) {
+        final long sizeInByte = FileUtils.sizeOfDirectory(dir);
         FileIOUtils.dumpNumberToFile(path, sizeInByte);
       }
       pv.setDirSizeInBytes(FileIOUtils.readNumberFromFile(path));
@@ -114,7 +114,7 @@ public class FlowPreparer {
    *
    * @param flow Executable Flow instance.
    */
-  synchronized void setup(final ExecutableFlow flow) {
+  void setup(final ExecutableFlow flow) {
     File execDir = null;
     try {
       // First get the ProjectVersion
@@ -126,8 +126,10 @@ public class FlowPreparer {
 
       // Create the execution directory
       execDir = createExecDir(flow);
+
       // Create the symlinks from the project
       copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
+
       log.info(String
           .format("Flow Preparation complete. [execid: %d, path: %s]", flow.getExecutionId(),
               execDir.getPath()));
@@ -197,7 +199,8 @@ public class FlowPreparer {
     ProjectFileHandler projectFileHandler = null;
     try {
       log.info(String.format("Downloading zip file for Project Version {%s}", pv));
-      projectFileHandler = requireNonNull(this.storageManager.getProjectFile(projectId, version));
+      projectFileHandler = requireNonNull(
+          this.storageManager.getProjectFile(pv.getProjectId(), pv.getVersion()));
       checkState("zip".equals(projectFileHandler.getFileType()));
       final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
       final ZipFile zip = new ZipFile(zipFile);
@@ -205,10 +208,8 @@ public class FlowPreparer {
       updateDirSize(tempDir, pv);
       updateFileCount(tempDir, pv);
       log.info(String.format("Downloading zip file for Project Version {%s} completes", pv));
-
       this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
-
       log.warn(String.format("Project preparation completes. [%s]", pv));
     } finally {
       if (projectFileHandler != null) {
@@ -332,7 +333,7 @@ public class FlowPreparer {
       }
     }
 
-    void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes) {
+    synchronized void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes) {
       if (this.projectDirMaxSizeInMb != null) {
         final long start = System.currentTimeMillis();
         final List<ProjectVersion> allProjects = loadAllProjects();
