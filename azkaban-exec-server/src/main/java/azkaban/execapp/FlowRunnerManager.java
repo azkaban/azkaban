@@ -424,6 +424,10 @@ public class FlowRunnerManager implements EventListener,
     // Finally, queue the sucker.
     this.runningFlows.put(execId, runner);
 
+    submitFlowRunner(runner);
+  }
+
+  private void submitFlowRunner(FlowRunner runner) throws ExecutorManagerException {
     try {
       // The executorService already has a queue.
       // The submit method below actually returns an instance of FutureTask,
