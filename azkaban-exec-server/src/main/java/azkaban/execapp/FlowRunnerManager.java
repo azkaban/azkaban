@@ -360,7 +360,22 @@ public class FlowRunnerManager implements EventListener,
           + " is already running.");
     }
 
-    ExecutableFlow flow = null;
+    final FlowRunner runner = createFlowRunner(execId);
+
+    // Check again.
+    if (this.runningFlows.containsKey(execId)) {
+      throw new ExecutorManagerException("Execution " + execId
+          + " is already running.");
+    }
+
+    // Finally, queue the sucker.
+    this.runningFlows.put(execId, runner);
+
+    submitFlowRunner(runner);
+  }
+
+  private FlowRunner createFlowRunner(int execId) throws ExecutorManagerException {
+    ExecutableFlow flow;
     flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
       throw new ExecutorManagerException("Error loading flow with exec "
@@ -414,17 +429,7 @@ public class FlowRunnerManager implements EventListener,
         .setNumJobThreads(numJobThreads).addListener(this);
 
     configureFlowLevelMetrics(runner);
-
-    // Check again.
-    if (this.runningFlows.containsKey(execId)) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is already running.");
-    }
-
-    // Finally, queue the sucker.
-    this.runningFlows.put(execId, runner);
-
-    submitFlowRunner(runner);
+    return runner;
   }
 
   private void submitFlowRunner(FlowRunner runner) throws ExecutorManagerException {
