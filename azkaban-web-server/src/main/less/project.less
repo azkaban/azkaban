@@ -43,6 +43,8 @@
 }
 
 #project-sidebar {
+  overflow-wrap: break-word;
+
   h3 {
     margin-bottom: 5px;
   }
@@ -81,6 +83,11 @@
   .list-group-item {
     .job-buttons {
       visibility: hidden;
+    }
+
+    a {
+      display: block;
+      overflow-wrap: break-word;
     }
 
     &:hover {
