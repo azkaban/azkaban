@@ -88,7 +88,7 @@ var nodeClickCallback = function (event, model, node) {
           }
         },
         {
-          title: "Collapse all Flows...", callback: function () {
+          title: "Collapse All Flows...", callback: function () {
             model.trigger("collapseAllFlows", node);
             model.trigger("resetPanZoom");
           }
@@ -103,7 +103,7 @@ var nodeClickCallback = function (event, model, node) {
           }
         },
         {
-          title: "Expand all Flows...", callback: function () {
+          title: "Expand All Flows...", callback: function () {
             model.trigger("expandAllFlows", node);
             model.trigger("resetPanZoom");
           }

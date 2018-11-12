@@ -445,9 +445,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
       // expands all embedded flows inside given node
       if (node.type == 'flow') {
         this.expandFlow(node);
-      }
 
-      if (node.nodes && node.nodes.length > 0) {
         for (var i = 0; i < node.nodes.length; ++i) {
           this.expandAllFlows(node.nodes[i]);
         }
