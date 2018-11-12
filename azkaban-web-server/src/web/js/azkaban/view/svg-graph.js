@@ -83,7 +83,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
   },
 
   render: function () {
-    console.log("graph render");
     $(this.mainG).empty();
 
     this.graphBounds = this.renderGraph(this.model.get("data"), this.mainG);
@@ -469,9 +468,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
       // collapse already rendered nodes of type flow
       if (node.type == 'flow' && node.gNode) {
         this.collapseFlow(node);
-      }
 
-      if (node.nodes && node.nodes.length > 0) {
         for (var i = 0; i < node.nodes.length; ++i) {
           this.collapseAllFlows(node.nodes[i]);
         }

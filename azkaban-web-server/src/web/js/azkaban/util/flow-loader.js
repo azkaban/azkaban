@@ -252,13 +252,13 @@ var graphClickCallback = function (event, model) {
 
   var menu = [
     {
-      title: "Expand all Flows...", callback: function () {
+      title: "Expand All Flows...", callback: function () {
         model.trigger("expandAllFlows");
         model.trigger("resetPanZoom");
       }
     },
     {
-      title: "Collapse all Flows...", callback: function () {
+      title: "Collapse All Flows...", callback: function () {
         model.trigger("collapseAllFlows");
         model.trigger("resetPanZoom");
       }

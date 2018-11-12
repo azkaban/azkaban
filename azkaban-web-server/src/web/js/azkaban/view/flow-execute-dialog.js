@@ -773,13 +773,13 @@ var expanelGraphClickCallback = function (event) {
 
   var menu = [
     {
-      title: "Expand all Flows...", callback: function () {
+      title: "Expand All Flows...", callback: function () {
         executableGraphModel.trigger("expandAllFlows");
         executableGraphModel.trigger("resetPanZoom");
       }
     },
     {
-      title: "Collapse all Flows...", callback: function () {
+      title: "Collapse All Flows...", callback: function () {
         executableGraphModel.trigger("collapseAllFlows");
         executableGraphModel.trigger("resetPanZoom");
       }
