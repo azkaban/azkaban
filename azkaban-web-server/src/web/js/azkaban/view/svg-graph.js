@@ -33,6 +33,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.model.bind('change:updateAll', this.handleUpdateAllStatus, this);
     this.model.bind('expandFlow', this.expandFlow, this);
     this.model.bind('collapseFlow', this.collapseFlow, this);
+    this.model.bind('expandAllFlows', this.expandAllFlows, this);
+    this.model.bind('collapseAllFlows', this.collapseAllFlows, this);
 
     this.graphMargin = settings.graphMargin ? settings.graphMargin : 25;
     this.svgns = "http://www.w3.org/2000/svg";
@@ -81,7 +83,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
   },
 
   render: function () {
-    console.log("graph render");
     $(this.mainG).empty();
 
     this.graphBounds = this.renderGraph(this.model.get("data"), this.mainG);
@@ -437,6 +438,46 @@ azkaban.SvgGraphView = Backbone.View.extend({
     bounds.maxX = bounds.maxX ? bounds.maxX + margin : margin;
     bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
     this.graphBounds = bounds;
+  },
+
+  expandAllFlows: function (node) {
+    if (node) {
+      // expands all embedded flows inside given node
+      if (node.type == 'flow') {
+        this.expandFlow(node);
+
+        for (var i = 0; i < node.nodes.length; ++i) {
+          this.expandAllFlows(node.nodes[i]);
+        }
+      }
+    } else {
+      // expands all embedded flows in the graph
+      var nodes = this.model.get("data").nodes;
+      for (var i = 0; i < nodes.length; ++i) {
+        this.expandAllFlows(nodes[i]);
+      }
+    }
+  },
+
+  collapseAllFlows: function (node) {
+    if (node) {
+      // collapse all embedded flows inside given node
+
+      // collapse already rendered nodes of type flow
+      if (node.type == 'flow' && node.gNode) {
+        this.collapseFlow(node);
+
+        for (var i = 0; i < node.nodes.length; ++i) {
+          this.collapseAllFlows(node.nodes[i]);
+        }
+      }
+    } else {
+      // collapse all embedded flows in the graph
+      var nodes = this.model.get("data").nodes;
+      for (var i = 0; i < nodes.length; ++i) {
+        this.collapseAllFlows(nodes[i]);
+      }
+    }
   },
 
   relayoutFlow: function (node) {
