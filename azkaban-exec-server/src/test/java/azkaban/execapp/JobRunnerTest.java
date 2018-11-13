@@ -34,8 +34,15 @@ import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
@@ -80,7 +87,7 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testBasicRun() {
+  public void testBasicRun() throws IOException {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
@@ -103,7 +110,11 @@ public class JobRunnerTest {
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps != null);
-    Assert.assertTrue(logFile.exists());
+    try (final BufferedReader br = getLogReader(logFile)) {
+      final String firstLine = br.readLine();
+      Assert.assertTrue("Unexpected default layout",
+          firstLine.startsWith(new SimpleDateFormat("dd-MM-yyyy").format(new Date())));
+    }
     // Verify that user.to.proxy is default to submit user.
     Assert.assertEquals(SUBMIT_USER, runner.getProps().get(JobProperties.USER_TO_PROXY));
 
@@ -111,6 +122,11 @@ public class JobRunnerTest {
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
+  }
+
+  private BufferedReader getLogReader(File logFile) throws FileNotFoundException {
+    return new BufferedReader(new InputStreamReader(new FileInputStream(logFile),
+        Charset.defaultCharset()));
   }
 
   @Test
@@ -324,8 +340,23 @@ public class JobRunnerTest {
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 
-  private Props createProps(final int sleepSec, final boolean fail) {
-    final Props props = new Props();
+  @Test
+  public void testCustomLogLayout() throws IOException {
+    final MockExecutorLoader loader = new MockExecutorLoader();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final Props azkabanProps = new Props();
+    azkabanProps.put(JobProperties.JOB_LOG_LAYOUT, "TEST %c{1} %p - %m\n");
+    final JobRunner runner =
+        createJobRunner(1, "testJob", 0, false, loader, eventCollector, azkabanProps);
+    runner.run();
+    try (final BufferedReader br = getLogReader(runner.getLogFile())) {
+      final String firstLine = br.readLine();
+      Assert.assertTrue("Unexpected default layout",
+          firstLine.startsWith("TEST"));
+    }
+  }
+
+  private Props createProps(final int sleepSec, final boolean fail, Props props) {
     props.put("type", "test");
     props.put("seconds", sleepSec);
     props.put("fail", String.valueOf(fail));
@@ -334,6 +365,11 @@ public class JobRunnerTest {
 
   private JobRunner createJobRunner(final int execId, final String name, final int time,
       final boolean fail, final ExecutorLoader loader, final EventCollectorListener listener) {
+    return createJobRunner(execId, name, time, fail, loader, listener, new Props());
+  }
+
+  private JobRunner createJobRunner(final int execId, final String name, final int time,
+      final boolean fail, final ExecutorLoader loader, final EventCollectorListener listener, Props jobProps) {
     final Props azkabanProps = new Props();
     final ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(execId);
@@ -342,7 +378,7 @@ public class JobRunnerTest {
     node.setId(name);
     node.setParentFlow(flow);
 
-    final Props props = createProps(time, fail);
+    final Props props = createProps(time, fail, jobProps);
     node.setInputProps(props);
     final HashSet<String> proxyUsers = new HashSet<>();
     proxyUsers.add(flow.getSubmitUser());

@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
@@ -82,6 +83,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
   @Override
   public void run() throws Exception {
+    final File[] propFiles = initPropsFiles();
     final String nestedFlowPath =
         this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
     final String jobIdPrefix = this.getJobProps().getString(JOB_ID_PREFIX, null);
@@ -100,6 +102,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
     if (this.jobProps.getBoolean("fail", false)) {
       final int passRetry = this.jobProps.getInt("passRetry", -1);
       if (passRetry > 0 && passRetry < this.jobProps.getInt(JOB_ATTEMPT)) {
+        generateProperties(propFiles[1]);
         succeedJob();
       } else {
         failJob();
@@ -109,27 +112,36 @@ public class InteractiveTestJob extends AbstractProcessJob {
       throw new RuntimeException("Forced failure of " + getId());
     }
 
+    boolean succeedAfterSleep = this.jobProps.containsKey("fail");
+
+    final long waitMillis;
+    if (succeedAfterSleep) {
+      waitMillis = this.jobProps.getInt("seconds", 10) * 1000L;
+    } else {
+      // this means that job should not exit without external interaction, so exact wait time
+      // doesn't matter. have some non-zero value to avoid busy-looping.
+      waitMillis = 10_000L;
+    }
+
     while (this.isWaiting) {
       synchronized (this) {
-        final int waitMillis = this.jobProps.getInt("seconds", 10) * 1000;
         if (waitMillis > 0) {
           try {
             wait(waitMillis);
           } catch (final InterruptedException e) {
           }
         }
-        if (this.jobProps.containsKey("fail")) {
+        if (succeedAfterSleep) {
+          generateProperties(propFiles[1]);
           succeedJob();
         }
-
-        if (!this.isWaiting) {
-          if (!this.succeed) {
-            throw new RuntimeException("Forced failure of " + getId());
-          } else {
-            info("Job " + getId() + " succeeded.");
-          }
-        }
       }
+    }
+
+    if (!this.succeed) {
+      throw new RuntimeException("Forced failure of " + getId());
+    } else {
+      info("Job " + getId() + " succeeded.");
     }
   }
 

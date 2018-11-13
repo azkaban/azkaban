@@ -20,14 +20,15 @@ import azkaban.flowtrigger.DependencyCheck;
 import azkaban.flowtrigger.DependencyPluginConfig;
 import azkaban.flowtrigger.DependencyPluginConfigImpl;
 import azkaban.utils.Utils;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,19 +49,38 @@ public class FlowTriggerDependencyPluginManager {
   public static final String PRIVATE_CONFIG_FILE = "private.properties";
   public static final String DEPENDENCY_CLASS = "dependency.class";
   public static final String CLASS_PATH = "dependency.classpath";
-
   private static final Logger logger = LoggerFactory
       .getLogger(FlowTriggerDependencyPluginManager.class);
-
   private final String pluginDir;
-
   private final Map<String, DependencyCheck> dependencyTypeMap;
+  private final ClassLoader prevClassLoader;
 
   @Inject
-  public FlowTriggerDependencyPluginManager(final String pluginDir) throws
-      FlowTriggerDependencyPluginException {
+  public FlowTriggerDependencyPluginManager(final String pluginDir)
+      throws FlowTriggerDependencyPluginException {
     this.dependencyTypeMap = new ConcurrentHashMap<>();
     this.pluginDir = pluginDir;
+    this.prevClassLoader = Thread.currentThread().getContextClassLoader();
+  }
+
+  /**
+   * retrieve files with wildcard matching.
+   * Only support "dir/*". Pattern like "dir/foo*" or "dir/*foo*" will not be supported
+   * since user shouldn't upload the jars they don't want to import
+   * the reason for supporting dir/* is to provide another packaging option
+   * which let user upload a dir of all required jars
+   * in addition to one fat jar.
+   */
+  private File[] getFilesMatchingPath(final String path) {
+    if (path.endsWith("*")) {
+      final File dir = new File(path.substring(0, path.lastIndexOf("/") + 1));
+      final FileFilter fileFilter = new WildcardFileFilter(path.substring(path.lastIndexOf("/")
+          + 1));
+      final File[] files = dir.listFiles(fileFilter);
+      return files;
+    } else {
+      return new File[]{new File(path)};
+    }
   }
 
   private Map<String, String> readConfig(final File file) throws
@@ -87,12 +108,12 @@ public class FlowTriggerDependencyPluginManager {
 
   private void validatePluginConfig(final DependencyPluginConfig pluginConfig)
       throws FlowTriggerDependencyPluginException {
-    if (StringUtils.isEmpty(pluginConfig.get(DEPENDENCY_CLASS))) {
-      throw new FlowTriggerDependencyPluginException("missing " + DEPENDENCY_CLASS + " in "
-          + "dependency plugin properties");
-    } else if (StringUtils.isEmpty(pluginConfig.get(CLASS_PATH))) {
-      throw new FlowTriggerDependencyPluginException("missing " + CLASS_PATH + " in "
-          + "dependency plugin properties");
+    for (final String requiredField : ImmutableSet
+        .of(DEPENDENCY_CLASS, CLASS_PATH)) {
+      if (StringUtils.isEmpty(pluginConfig.get(requiredField))) {
+        throw new FlowTriggerDependencyPluginException("missing " + requiredField + " in "
+            + "dependency plugin properties");
+      }
     }
   }
 
@@ -108,35 +129,41 @@ public class FlowTriggerDependencyPluginManager {
     return new DependencyPluginConfigImpl(combined);
   }
 
-
   private DependencyCheck createDependencyCheck(final DependencyPluginConfig pluginConfig)
       throws FlowTriggerDependencyPluginException {
     final String classPath = pluginConfig.get(CLASS_PATH);
+
     final String[] cpList = classPath.split(",");
 
     final List<URL> resources = new ArrayList<>();
 
     try {
       for (final String cp : cpList) {
-        final URL cpItem = new File(cp).toURI().toURL();
-        if (!resources.contains(cpItem)) {
-          logger.info("adding to classpath " + cpItem);
-          resources.add(cpItem);
+        final File[] files = getFilesMatchingPath(cp);
+        if (files != null) {
+          for (final File file : files) {
+            final URL cpItem = file.toURI().toURL();
+            if (!resources.contains(cpItem)) {
+              logger.info("adding to classpath " + cpItem);
+              resources.add(cpItem);
+            }
+          }
         }
       }
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
     }
 
-    final ClassLoader dependencyClassloader =
-        new URLClassLoader(resources.toArray(new URL[resources.size()]));
+    final ClassLoader dependencyClassloader = new ParentLastURLClassLoader(
+        resources.toArray(new URL[resources.size()]), this.getClass().getClassLoader());
+
+    Thread.currentThread().setContextClassLoader(dependencyClassloader);
+
     Class<? extends DependencyCheck> clazz = null;
     try {
       clazz = (Class<? extends DependencyCheck>) dependencyClassloader.loadClass(pluginConfig.get
           (DEPENDENCY_CLASS));
-      final DependencyCheck dependencyCheck =
-          (DependencyCheck) Utils.callConstructor(clazz);
-      return dependencyCheck;
+      return (DependencyCheck) Utils.callConstructor(clazz);
     } catch (final Exception ex) {
       throw new FlowTriggerDependencyPluginException(ex);
     }
@@ -170,6 +197,9 @@ public class FlowTriggerDependencyPluginManager {
     for (final File dir : pluginDir.listFiles()) {
       loadDependencyPlugin(dir);
     }
+    //reset thread context loader so that other azkaban class will be loaded with the old
+    // classloader
+    Thread.currentThread().setContextClassLoader(this.prevClassLoader);
   }
 
   private String getPluginName(final File dependencyPluginDir) {

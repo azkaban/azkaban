@@ -23,8 +23,12 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.project.Project;
+import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
+import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,14 +37,13 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("FutureReturnValueIgnored")
 @Singleton
+@SuppressWarnings("FutureReturnValueIgnored")
 public class TriggerInstanceProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
-  private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for %s "
-      + "cancelled from %s";
-  private static final String FAILURE_EMAIL_BODY = "Your flow trigger cancelled [id: %s]";
+  private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for flow '%s', project '%s' "
+      + "has been cancelled on %s";
   private final static int THREAD_POOL_SIZE = 32;
   private final ExecutorManager executorManager;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
@@ -70,9 +73,9 @@ public class TriggerInstanceProcessor {
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
     } catch (final Exception ex) {
-      logger.error(String.format(
-          "exception when executing the associated flow and updating flow exec id for trigger instance[id: %s]",
-          triggerInst.getId()), ex);
+      logger.error("exception when executing the associated flow and updating flow exec id for "
+              + "trigger instance[id: {}]",
+          triggerInst.getId(), ex);
       // if flow fails to be executed(e.g. running execution exceeds the allowed concurrent run
       // limit), set associated flow exec id to Constants.FAILED_EXEC_ID. Upon web server
       // restart, recovery process will skip those flows.
@@ -83,22 +86,57 @@ public class TriggerInstanceProcessor {
   }
 
   private String generateFailureEmailSubject(final TriggerInstance triggerInstance) {
-    final String flowFullName =
-        triggerInstance.getProjectName() + "." + triggerInstance.getFlowId();
-    return String.format(FAILURE_EMAIL_SUBJECT, flowFullName, this.emailer.getAzkabanName());
+    return String.format(FAILURE_EMAIL_SUBJECT, triggerInstance.getFlowId(), triggerInstance
+        .getProjectName(), this.emailer.getAzkabanName());
   }
 
-  private String generateFailureEmailBody(final TriggerInstance triggerInstance) {
-    final String triggerInstFullName =
-        triggerInstance.getProjectName() + "." + triggerInstance.getFlowId();
-    return String.format(FAILURE_EMAIL_BODY, triggerInstFullName);
+  private EmailMessage createFlowTriggerFailureEmailMessage(final TriggerInstance triggerInst) {
+    final EmailMessage message = this.emailer.createEmailMessage(generateFailureEmailSubject
+        (triggerInst), "text/html", triggerInst.getFailureEmails());
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    message.addAllToAddress(triggerInst.getFailureEmails());
+    message.setMimeType("text/html");
+    message.println("<table>");
+    message.println("<tr><td>Start Time</td><td>");
+    message.println("<tr><td>" + sdf.format(new Date(triggerInst.getStartTime())) + "</td><td>");
+
+    message.println("<tr><td>End Time</td><td>");
+    message.println("<tr><td>" + sdf.format(new Date(triggerInst.getEndTime())) + "</td><td>");
+    message.println("<tr><td>Duration</td><td>"
+        + Utils.formatDuration(triggerInst.getStartTime(), triggerInst.getEndTime())
+        + "</td></tr>");
+    message.println("<tr><td>Status</td><td>" + triggerInst.getStatus() + "</td></tr>");
+    message.println("</table>");
+    message.println("");
+    final String executionUrl = this.emailer.getAzkabanURL() + "/executor?triggerinstanceid="
+        + triggerInst.getId();
+
+    message.println("<a href=\"" + executionUrl + "\">" + triggerInst.getFlowId()
+        + " Flow Trigger Instance Link</a>");
+
+    message.println("");
+    message.println("<h3>Cancelled Dependencies</h3>");
+
+    for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+      if (depInst.getStatus() == Status.CANCELLED) {
+        message.println("<table>");
+        message.println("<tr><td>Dependency Name: " + depInst.getDepName() + "</td><td>");
+        message
+            .println("<tr><td>Cancellation Cause: " + depInst.getCancellationCause() + "</td><td>");
+        message.println("</table>");
+      }
+    }
+
+    return message;
   }
 
   private void sendFailureEmailIfConfigured(final TriggerInstance triggerInstance) {
     final List<String> failureEmails = triggerInstance.getFailureEmails();
     if (!failureEmails.isEmpty()) {
-      this.emailer.sendEmail(failureEmails, generateFailureEmailSubject(triggerInstance),
-          generateFailureEmailBody(triggerInstance));
+      final EmailMessage message = this.createFlowTriggerFailureEmailMessage(triggerInstance);
+      this.emailer.sendEmail(message, true, "email message failure email for flow trigger "
+          + triggerInstance.getId());
     }
   }
 
@@ -106,16 +144,14 @@ public class TriggerInstanceProcessor {
    * Process the case where status of trigger instance becomes success
    */
   public void processSucceed(final TriggerInstance triggerInst) {
-    logger.debug("process succeed for " + triggerInst);
     //todo chengren311: publishing Trigger events to Azkaban Project Events page
-    executeFlowAndUpdateExecID(triggerInst);
+    this.executorService.submit(() -> executeFlowAndUpdateExecID(triggerInst));
   }
 
   /**
    * Process the case where status of trigger instance becomes cancelled
    */
   public void processTermination(final TriggerInstance triggerInst) {
-    logger.debug("process termination for " + triggerInst);
     //sendFailureEmailIfConfigured takes 1/3 secs
     this.executorService.submit(() -> sendFailureEmailIfConfigured(triggerInst));
   }
@@ -124,7 +160,11 @@ public class TriggerInstanceProcessor {
    * Process the case where a new trigger instance is created
    */
   public void processNewInstance(final TriggerInstance triggerInst) {
-    logger.debug("process new instance for " + triggerInst);
     this.flowTriggerInstanceLoader.uploadTriggerInstance(triggerInst);
+  }
+
+  public void shutdown() {
+    this.executorService.shutdown();
+    this.executorService.shutdownNow();
   }
 }

@@ -16,48 +16,55 @@
 
 package azkaban.utils;
 
-import java.io.IOException;
-import javax.mail.MessagingException;
-import org.junit.After;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import javax.mail.Address;
+import javax.mail.Message;
+import javax.mail.Message.RecipientType;
+import javax.mail.internet.InternetAddress;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class EmailMessageTest {
 
-  String host = "";
-  int port = 25;
-  String sender = "";
-  String user = "";
-  String password = "";
-
-  String toAddr = "";
+  private final String host = "example.com";
+  private final int port = 25;
+  private final String sender = "from@example.com";
+  private final String user = "user";
+  private final String password = "pass";
+  private final String toAddr = "to@example.com";
 
   private EmailMessage em;
+  private JavaxMailSender mailSender;
+  private Message mimeMessage;
+  private Address[] addresses;
+  private EmailMessageCreator creator;
 
   @Before
   public void setUp() throws Exception {
-    this.em = new EmailMessage(this.host, this.port, this.user, this.password);
-    this.em.setFromAddress(this.sender);
+    this.creator = mock(EmailMessageCreator.class);
+    this.mailSender = mock(JavaxMailSender.class);
+    this.mimeMessage = mock(Message.class);
+    this.addresses = new Address[]{new InternetAddress(this.toAddr, false)};
+    when(this.creator.createSender(any())).thenReturn(this.mailSender);
+    when(this.mailSender.createMessage()).thenReturn(this.mimeMessage);
+    when(this.mimeMessage.getRecipients(Message.RecipientType.TO)).thenReturn(this.addresses);
+    this.em = new EmailMessage(this.host, this.port, this.user, this.password, this.creator);
   }
 
-  @After
-  public void tearDown() throws Exception {
-  }
-
-  @Ignore
   @Test
-  public void testSendEmail() throws IOException {
+  public void testSendEmail() throws Exception {
+    this.em.setTLS("true");
     this.em.addToAddress(this.toAddr);
-    // em.addToAddress("cyu@linkedin.com");
+    this.em.setFromAddress(this.sender);
     this.em.setSubject("azkaban test email");
     this.em.setBody("azkaban test email");
-    try {
-      this.em.sendEmail();
-    } catch (final MessagingException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    this.em.sendEmail();
+    verify(this.mimeMessage).addRecipient(RecipientType.TO, this.addresses[0]);
+    verify(this.mailSender).sendMessage(this.mimeMessage, this.addresses);
   }
 
 }

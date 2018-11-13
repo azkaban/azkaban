@@ -66,7 +66,6 @@ public class FlowTriggerScheduler {
    */
   public void scheduleAll(final Project project, final String submitUser)
       throws SchedulerException, ProjectManagerException {
-    //todo chengren311: schedule on uploading via CRT
 
     for (final Flow flow : project.getFlows()) {
       //todo chengren311: we should validate embedded flow shouldn't have flow trigger defined.
@@ -98,10 +97,12 @@ public class FlowTriggerScheduler {
             logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
             this.scheduler
                 .registerJob(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
-                    (FlowTriggerQuartzJob.class, generateGroupName(flow), contextMap));
+                    (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
+                        generateGroupName(flow), contextMap));
           }
         } catch (final Exception ex) {
-          logger.error("error in getting flow file", ex);
+          logger.error(String.format("error in registering flow [project: %s, flow: %s]", project
+              .getName(), flow.getId()), ex);
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
         }
@@ -109,17 +110,30 @@ public class FlowTriggerScheduler {
     }
   }
 
+  public void pauseFlowTrigger(final int projectId, final String flowId) throws SchedulerException {
+    logger.info(String.format("pausing flow trigger for [projectId:%s, flowId:%s]", projectId,
+        flowId));
+    this.scheduler.pauseJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
+  }
+
+  public void resumeFlowTrigger(final int projectId, final String flowId) throws
+      SchedulerException {
+    logger.info(
+        String.format("resuming flow trigger for [projectId:%s, flowId:%s]", projectId, flowId));
+    this.scheduler.resumeJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
+  }
+
   /**
    * Retrieve the list of scheduled flow triggers from quartz database
    */
   public List<ScheduledFlowTrigger> getScheduledFlowTriggerJobs() {
-    final Scheduler quartzScheduler = this.scheduler.getScheduler();
     try {
+      final Scheduler quartzScheduler = this.scheduler.getScheduler();
       final List<String> groupNames = quartzScheduler.getJobGroupNames();
 
       final List<ScheduledFlowTrigger> flowTriggerJobDetails = new ArrayList<>();
       for (final String groupName : groupNames) {
-        final JobKey jobKey = new JobKey(QuartzScheduler.DEFAULT_JOB_NAME, groupName);
+        final JobKey jobKey = new JobKey(FlowTriggerQuartzJob.JOB_NAME, groupName);
         ScheduledFlowTrigger scheduledFlowTrigger = null;
         try {
           final JobDetail job = quartzScheduler.getJobDetail(jobKey);
@@ -131,10 +145,12 @@ public class FlowTriggerScheduler {
               .get(FlowTriggerQuartzJob.FLOW_TRIGGER);
           final String submitUser = jobDataMap.getString(FlowTriggerQuartzJob.SUBMIT_USER);
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
-          scheduledFlowTrigger = new ScheduledFlowTrigger(
+          final boolean isPaused = this.scheduler
+              .isJobPaused(FlowTriggerQuartzJob.JOB_NAME, groupName);
+          scheduledFlowTrigger = new ScheduledFlowTrigger(projectId,
               this.projectManager.getProject(projectId).getName(),
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
-              : quartzTriggers.get(0));
+              : quartzTriggers.get(0), isPaused);
         } catch (final Exception ex) {
           logger.error(String.format("unable to get flow trigger by job key %s", jobKey), ex);
           scheduledFlowTrigger = null;
@@ -143,7 +159,7 @@ public class FlowTriggerScheduler {
         flowTriggerJobDetails.add(scheduledFlowTrigger);
       }
       return flowTriggerJobDetails;
-    } catch (final SchedulerException ex) {
+    } catch (final Exception ex) {
       logger.error("unable to get scheduled flow triggers", ex);
       return new ArrayList<>();
     }
@@ -157,13 +173,21 @@ public class FlowTriggerScheduler {
       logger.info("unscheduling flow" + flow.getProjectId() + "." + flow.getId() + " if it has "
           + " schedule");
       if (!flow.isEmbeddedFlow()) {
-        this.scheduler.unregisterJob(generateGroupName(flow));
+        try {
+          this.scheduler.unregisterJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
+        } catch (final Exception ex) {
+          logger.info("error when unregistering job", ex);
+        }
       }
     }
   }
 
   private String generateGroupName(final Flow flow) {
-    return String.valueOf(flow.getProjectId()) + "." + flow.getId();
+    return generateGroupName(flow.getProjectId(), flow.getId());
+  }
+
+  private String generateGroupName(final int projectId, final String flowId) {
+    return String.valueOf(projectId) + "." + flowId;
   }
 
   public void start() {
@@ -176,20 +200,32 @@ public class FlowTriggerScheduler {
 
   public static class ScheduledFlowTrigger {
 
+    private final int projectId;
     private final String projectName;
     private final String flowId;
     private final FlowTrigger flowTrigger;
     private final Trigger quartzTrigger;
     private final String submitUser;
+    private final boolean isPaused;
 
-    public ScheduledFlowTrigger(final String projectName, final String flowId,
+    public ScheduledFlowTrigger(final int projectId, final String projectName, final String flowId,
         final FlowTrigger flowTrigger, final String submitUser,
-        final Trigger quartzTrigger) {
+        final Trigger quartzTrigger, final boolean isPaused) {
+      this.projectId = projectId;
       this.projectName = projectName;
       this.flowId = flowId;
       this.flowTrigger = flowTrigger;
       this.submitUser = submitUser;
       this.quartzTrigger = quartzTrigger;
+      this.isPaused = isPaused;
+    }
+
+    public boolean isPaused() {
+      return this.isPaused;
+    }
+
+    public int getProjectId() {
+      return this.projectId;
     }
 
     public String getProjectName() {

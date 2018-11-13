@@ -33,6 +33,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.model.bind('change:updateAll', this.handleUpdateAllStatus, this);
     this.model.bind('expandFlow', this.expandFlow, this);
     this.model.bind('collapseFlow', this.collapseFlow, this);
+    this.model.bind('expandAllFlows', this.expandAllFlows, this);
+    this.model.bind('collapseAllFlows', this.collapseAllFlows, this);
 
     this.graphMargin = settings.graphMargin ? settings.graphMargin : 25;
     this.svgns = "http://www.w3.org/2000/svg";
@@ -81,7 +83,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
   },
 
   render: function () {
-    console.log("graph render");
     $(this.mainG).empty();
 
     this.graphBounds = this.renderGraph(this.model.get("data"), this.mainG);
@@ -351,7 +352,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
     if (node.type == 'flow') {
       this.drawFlowNode(self, node, g);
     }
-    else {
+    else if (node.condition != null) {
+      this.drawConditionNode(self, node, g);
+    } else {
       this.drawBoxNode(self, node, g);
     }
   },
@@ -435,6 +438,46 @@ azkaban.SvgGraphView = Backbone.View.extend({
     bounds.maxX = bounds.maxX ? bounds.maxX + margin : margin;
     bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
     this.graphBounds = bounds;
+  },
+
+  expandAllFlows: function (node) {
+    if (node) {
+      // expands all embedded flows inside given node
+      if (node.type == 'flow') {
+        this.expandFlow(node);
+
+        for (var i = 0; i < node.nodes.length; ++i) {
+          this.expandAllFlows(node.nodes[i]);
+        }
+      }
+    } else {
+      // expands all embedded flows in the graph
+      var nodes = this.model.get("data").nodes;
+      for (var i = 0; i < nodes.length; ++i) {
+        this.expandAllFlows(nodes[i]);
+      }
+    }
+  },
+
+  collapseAllFlows: function (node) {
+    if (node) {
+      // collapse all embedded flows inside given node
+
+      // collapse already rendered nodes of type flow
+      if (node.type == 'flow' && node.gNode) {
+        this.collapseFlow(node);
+
+        for (var i = 0; i < node.nodes.length; ++i) {
+          this.collapseAllFlows(node.nodes[i]);
+        }
+      }
+    } else {
+      // collapse all embedded flows in the graph
+      var nodes = this.model.get("data").nodes;
+      for (var i = 0; i < nodes.length; ++i) {
+        this.collapseAllFlows(nodes[i]);
+      }
+    }
   },
 
   relayoutFlow: function (node) {
@@ -541,6 +584,40 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var totalHeight = labelBBox.height + 2 * verticalMargin;
     svg.change(borderRect, {width: totalWidth, height: totalHeight});
     svg.change(jobNameText, {y: (totalHeight + labelBBox.height) / 2 - 3});
+    svg.change(innerG,
+        {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
+
+    node.width = totalWidth;
+    node.height = totalHeight;
+
+    node.gNode = nodeG;
+    nodeG.data = node;
+  },
+
+  drawConditionNode: function (self, node, g) {
+    var svg = this.svg;
+    var horizontalMargin = 8;
+    var verticalMargin = 2;
+
+    var nodeG = svg.group(g, "", {class: "node jobnode"});
+
+    var innerG = svg.group(nodeG, "", {class: "nodebox"});
+    var borderRect = svg.rect(innerG, 0, 0, 10, 10, 3, 3, {class: "border"});
+    var conditionRect = svg.rect(innerG, 0, 0, 10, 10, 0, 0, {class: "border"});
+    var jobNameText = svg.text(innerG, horizontalMargin, 16, node.label);
+    var conditionText = svg.text(innerG, horizontalMargin, 12, "condition",
+        {"font-size": 12});
+    nodeG.innerG = innerG;
+    innerG.borderRect = borderRect;
+
+    var labelBBox = jobNameText.getBBox();
+    var conditionlabelBBox = conditionText.getBBox();
+    var totalWidth = labelBBox.width + 2 * horizontalMargin;
+    var totalHeight = 2 * labelBBox.height + 2 * verticalMargin;
+    svg.change(borderRect, {width: totalWidth, height: totalHeight});
+    svg.change(conditionRect, {width: totalWidth, height: labelBBox.height});
+    svg.change(conditionText, {x: (totalWidth - conditionlabelBBox.width) / 2});
+    svg.change(jobNameText, {y: (totalHeight + labelBBox.height) / 2 + 6});
     svg.change(innerG,
         {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
 

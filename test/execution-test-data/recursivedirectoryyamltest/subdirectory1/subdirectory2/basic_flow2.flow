@@ -1,0 +1,26 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: shell_end
+    type: noop
+    dependsOn:
+      - shell_pwd
+      - shell_echo
+      - shell_bash
+
+  - name: shell_echo
+    type: command
+    config:
+      command: echo "This is an echoed text."
+
+  - name: shell_pwd
+    type: command
+    config:
+      command: pwd
+
+  - name: shell_bash
+    type: command
+    config:
+      command: bash ./subdirectory1/subdirectory2/sample_script.sh

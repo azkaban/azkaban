@@ -26,11 +26,11 @@ import java.util.Map;
 public class QuartzJobDescription<T extends AbstractQuartzJob> {
 
   private final String groupName;
+  private final String jobName;
   private final Class<T> jobClass;
   private final Map<String, ? extends Serializable> contextMap;
-
   public QuartzJobDescription(final Class<T> jobClass,
-      final String groupName,
+      final String jobName, final String groupName,
       final Map<String, ? extends Serializable> contextMap) {
 
     /**
@@ -41,23 +41,18 @@ public class QuartzJobDescription<T extends AbstractQuartzJob> {
       throw new ClassCastException("jobClass must extend AbstractQuartzJob class");
     }
     this.jobClass = jobClass;
+    this.jobName = jobName;
     this.groupName = groupName;
     this.contextMap = contextMap;
   }
 
   public QuartzJobDescription(final Class<T> jobClass,
-      final String groupName) {
+      final String jobName, final String groupName) {
+    this(jobClass, jobName, groupName, new HashMap<String, String>());
+  }
 
-    /**
-     * This check is necessary for raw type. Please see test
-     * {@link QuartzJobDescriptionTest#testCreateQuartzJobDescription2}
-     */
-    if (jobClass.getSuperclass() != AbstractQuartzJob.class) {
-      throw new ClassCastException("jobClass must extend AbstractQuartzJob class");
-    }
-    this.jobClass = jobClass;
-    this.groupName = groupName;
-    this.contextMap = new HashMap<String, String>();
+  public String getJobName() {
+    return jobName;
   }
 
   public Class<? extends AbstractQuartzJob> getJobClass() {

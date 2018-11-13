@@ -71,40 +71,49 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class FlowTriggerService {
 
-  private static final Duration CANCELLING_GRACE_PERIOD_AFTER_RESTART = Duration.ofMinutes(1);
-  private static final int RECENTLY_FINISHED_TRIGGER_LIMIT = 20;
-  private static final int CANCEL_EXECUTOR_POOL_SIZE = 32;
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerService.class);
-  private final ExecutorService singleThreadExecutorService;
-  private final ExecutorService multiThreadsExecutorService;
-  private final List<TriggerInstance> runningTriggers;
+
+  private static final Duration CANCELLING_GRACE_PERIOD_AFTER_RESTART = Duration.ofMinutes(1);
+  private static final int RECENTLY_FINISHED_TRIGGER_LIMIT = 50;
+  private static final int CANCEL_EXECUTOR_POOL_SIZE = 32;
+  private static final int TIMEOUT_EXECUTOR_POOL_SIZE = 8;
+
+  private final ExecutorService flowTriggerExecutorService;
+  private final ExecutorService cancelExecutorService;
   private final ScheduledExecutorService timeoutService;
+  private final List<TriggerInstance> runningTriggers;
   private final FlowTriggerDependencyPluginManager triggerPluginManager;
   private final TriggerInstanceProcessor triggerProcessor;
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
   private final DependencyInstanceProcessor dependencyProcessor;
+  private final FlowTriggerExecutionCleaner cleaner;
 
   @Inject
   public FlowTriggerService(final FlowTriggerDependencyPluginManager pluginManager,
       final TriggerInstanceProcessor triggerProcessor, final DependencyInstanceProcessor
-      dependencyProcessor, final FlowTriggerInstanceLoader flowTriggerInstanceLoader) {
+      dependencyProcessor, final FlowTriggerInstanceLoader flowTriggerInstanceLoader,
+      final FlowTriggerExecutionCleaner cleaner) {
     // Give the thread a name to make debugging easier.
-    final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+    ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
         .setNameFormat("FlowTrigger-service").build();
-    this.singleThreadExecutorService = Executors.newSingleThreadExecutor(namedThreadFactory);
-    this.multiThreadsExecutorService = Executors
+    this.flowTriggerExecutorService = Executors.newSingleThreadExecutor(namedThreadFactory);
+    namedThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat("FlowTrigger-cancel").build();
+    this.cancelExecutorService = Executors
         .newFixedThreadPool(CANCEL_EXECUTOR_POOL_SIZE, namedThreadFactory);
-    this.timeoutService = Executors.newScheduledThreadPool(8);
+    this.timeoutService = Executors.newScheduledThreadPool(TIMEOUT_EXECUTOR_POOL_SIZE);
     this.runningTriggers = new ArrayList<>();
     this.triggerPluginManager = pluginManager;
     this.triggerProcessor = triggerProcessor;
     this.dependencyProcessor = dependencyProcessor;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
+    this.cleaner = cleaner;
   }
 
   public void start() throws FlowTriggerDependencyPluginException {
     this.triggerPluginManager.loadAllPlugins();
     this.recoverIncompleteTriggerInstances();
+    this.cleaner.start();
   }
 
   private DependencyInstanceContext createDepContext(final FlowTriggerDependency dep, final long
@@ -137,8 +146,8 @@ public class FlowTriggerService {
       try {
         context = createDepContext(dep, startTime, triggerInstId);
       } catch (final Exception ex) {
-        logger.error(String.format("unable to create dependency context for trigger instance[id ="
-            + " %s]", triggerInstId), ex);
+        logger.error("unable to create dependency context for trigger instance[id = {}]",
+            triggerInstId, ex);
       }
       // if dependency instance context fails to be created, then its status is cancelled and
       // cause is failure
@@ -164,10 +173,10 @@ public class FlowTriggerService {
   private void scheduleKill(final TriggerInstance triggerInst, final Duration duration, final
   CancellationCause cause) {
     logger
-        .debug(String.format("Cancel trigger instance %s in %s secs", triggerInst.getId(), duration
-            .getSeconds()));
+        .debug("cancel trigger instance {} in {} secs", triggerInst.getId(), duration
+            .getSeconds());
     this.timeoutService.schedule(() -> {
-      cancel(triggerInst, cause);
+      cancelTriggerInstance(triggerInst, cause);
     }, duration.toMillis(), TimeUnit.MILLISECONDS);
   }
 
@@ -189,6 +198,10 @@ public class FlowTriggerService {
     return this.flowTriggerInstanceLoader.getTriggerInstanceById(triggerInstanceId);
   }
 
+  public TriggerInstance findTriggerInstanceByExecId(final int flowExecId) {
+    return this.flowTriggerInstanceLoader.getTriggerInstanceByFlowExecId(flowExecId);
+  }
+
   private boolean isDoneButFlowNotExecuted(final TriggerInstance triggerInstance) {
     return triggerInstance.getStatus() == Status.SUCCEEDED && triggerInstance.getFlowExecId() ==
         Constants.UNASSIGNED_EXEC_ID;
@@ -208,8 +221,8 @@ public class FlowTriggerService {
         } catch (final Exception ex) {
           logger
               .error(
-                  String.format("unable to create dependency context for trigger instance[id ="
-                      + " %s]", triggerInstance.getId()), ex);
+                  "unable to create dependency context for trigger instance[id ="
+                      + " {}]", triggerInstance.getId(), ex);
         }
         depInst.setDependencyInstanceContext(context);
         if (context == null) {
@@ -228,18 +241,19 @@ public class FlowTriggerService {
     }
   }
 
+  private void recoverTriggerInstance(final TriggerInstance triggerInstance) {
+    this.flowTriggerExecutorService.submit(() -> recover(triggerInstance));
+  }
+
   private void recover(final TriggerInstance triggerInstance) {
-    this.singleThreadExecutorService.submit(() -> {
-      logger.info(String.format("recovering pending trigger instance %s", triggerInstance.getId
-          ()));
-      if (isDoneButFlowNotExecuted(triggerInstance)) {
-        // if trigger instance succeeds but the associated flow hasn't been started yet, then start
-        // the flow
-        this.triggerProcessor.processSucceed(triggerInstance);
-      } else {
-        recoverRunningOrCancelling(triggerInstance);
-      }
-    });
+    logger.info("recovering pending trigger instance {}", triggerInstance.getId());
+    if (isDoneButFlowNotExecuted(triggerInstance)) {
+      // if trigger instance succeeds but the associated flow hasn't been started yet, then start
+      // the flow
+      this.triggerProcessor.processSucceed(triggerInstance);
+    } else {
+      recoverRunningOrCancelling(triggerInstance);
+    }
   }
 
   /**
@@ -248,13 +262,34 @@ public class FlowTriggerService {
   public void recoverIncompleteTriggerInstances() {
     final Collection<TriggerInstance> unfinishedTriggerInstances = this.flowTriggerInstanceLoader
         .getIncompleteTriggerInstances();
-    //todo chengren311: what if flow trigger is not found?
     for (final TriggerInstance triggerInstance : unfinishedTriggerInstances) {
       if (triggerInstance.getFlowTrigger() != null) {
-        recover(triggerInstance);
+        recoverTriggerInstance(triggerInstance);
       } else {
-        logger.error(String.format("cannot recover the trigger instance %s, flow trigger is null ",
-            triggerInstance.getId()));
+        logger.error("cannot recover the trigger instance {}, flow trigger is null,"
+            + " cancelling it ", triggerInstance.getId());
+
+        //finalize unrecoverable trigger instances
+        // the following situation would cause trigger instances unrecoverable:
+        // 1. project A with flow A associated with flow trigger A is uploaded
+        // 2. flow trigger A starts to run
+        // 3. project A with flow B without any flow trigger is uploaded
+        // 4. web server restarts
+        // in this case, flow trigger instance of flow trigger A will be equipped with latest
+        // project, thus failing to find the flow trigger since new project doesn't contain flow
+        // trigger at all
+        if (isDoneButFlowNotExecuted(triggerInstance)) {
+          triggerInstance.setFlowExecId(Constants.FAILED_EXEC_ID);
+          this.flowTriggerInstanceLoader.updateAssociatedFlowExecId(triggerInstance);
+        } else {
+          for (final DependencyInstance depInst : triggerInstance.getDepInstances()) {
+            if (!Status.isDone(depInst.getStatus())) {
+              processStatusAndCancelCauseUpdate(depInst, Status.CANCELLED,
+                  CancellationCause.FAILURE);
+              this.triggerProcessor.processTermination(depInst.getTriggerInstance());
+            }
+          }
+        }
       }
     }
   }
@@ -330,7 +365,7 @@ public class FlowTriggerService {
   private long remainingTimeBeforeTimeout(final TriggerInstance triggerInst) {
     final long now = System.currentTimeMillis();
     return Math.max(0,
-        triggerInst.getFlowTrigger().getMaxWaitDuration().toMillis() - (now - triggerInst
+        triggerInst.getFlowTrigger().getMaxWaitDuration().get().toMillis() - (now - triggerInst
             .getStartTime()));
   }
 
@@ -339,49 +374,42 @@ public class FlowTriggerService {
    */
   public void startTrigger(final FlowTrigger flowTrigger, final String flowId,
       final int flowVersion, final String submitUser, final Project project) {
-    this.singleThreadExecutorService.submit(() -> {
-      final TriggerInstance triggerInst = createTriggerInstance(flowTrigger, flowId, flowVersion,
-          submitUser, project);
-
-      logger.info(
-          String.format("Starting the flow trigger %s[trigger instance id: %s] by %s", flowTrigger,
-              triggerInst.getId(), submitUser));
-
-      this.triggerProcessor.processNewInstance(triggerInst);
-      if (triggerInst.getStatus() == Status.CANCELLED) {
-        // all dependency instances failed
-        logger.info(String.format("Trigger instance[id: %s] is cancelled since all dependency "
-            + "instances fail to be created", triggerInst.getId()));
-        this.triggerProcessor.processTermination(triggerInst);
-      } else if (triggerInst.getStatus() == Status.CANCELLING) {
-        // some of the dependency instances failed
-        logger.info(
-            String.format("Trigger instance[id: %s] is being cancelled since some dependency "
-                + "instances fail to be created", triggerInst.getId()));
-        addToRunningListAndCancel(triggerInst);
-      } else if (triggerInst.getStatus() == Status.SUCCEEDED) {
-        this.triggerProcessor.processSucceed(triggerInst);
-      } else {
-        // todo chengren311: it's possible web server restarts before the db update, then
-        // new instance will not be recoverable from db.
-        addToRunningListAndScheduleKill(triggerInst, triggerInst.getFlowTrigger()
-            .getMaxWaitDuration(), CancellationCause.TIMEOUT);
-      }
+    final TriggerInstance triggerInst = createTriggerInstance(flowTrigger, flowId, flowVersion,
+        submitUser, project);
+    this.flowTriggerExecutorService.submit(() -> {
+      logger.info("Starting the flow trigger [trigger instance id: {}] by {}",
+          triggerInst.getId(), submitUser);
+      start(triggerInst);
     });
   }
 
-  private FlowTriggerDependency getFlowTriggerDepByName(final FlowTrigger flowTrigger,
-      final String depName) {
-    return flowTrigger.getDependencies().stream().filter(ftd -> ftd.getName().equals(depName))
-        .findFirst().orElse(null);
+  private void start(final TriggerInstance triggerInst) {
+    this.triggerProcessor.processNewInstance(triggerInst);
+    if (triggerInst.getStatus() == Status.CANCELLED) {
+      // all dependency instances failed
+      logger.info(
+          "Trigger instance[id: {}] is cancelled since all dependency instances fail to be created",
+          triggerInst.getId());
+      this.triggerProcessor.processTermination(triggerInst);
+    } else if (triggerInst.getStatus() == Status.CANCELLING) {
+      // some of the dependency instances failed
+      logger.info(
+          "Trigger instance[id: {}] is being cancelled since some dependency instances fail to be created",
+          triggerInst.getId());
+      addToRunningListAndCancel(triggerInst);
+    } else if (triggerInst.getStatus() == Status.SUCCEEDED) {
+      this.triggerProcessor.processSucceed(triggerInst);
+    } else {
+      // todo chengren311: it's possible web server restarts before the db update, then
+      // new instance will not be recoverable from db.
+      addToRunningListAndScheduleKill(triggerInst, triggerInst.getFlowTrigger()
+          .getMaxWaitDuration().get(), CancellationCause.TIMEOUT);
+    }
   }
 
   public TriggerInstance findRunningTriggerInstById(final String triggerInstId) {
-    //todo chengren311: make the method single threaded
-    final Future<TriggerInstance> future = this.singleThreadExecutorService.submit(
-        () -> this.runningTriggers.stream()
-            .filter(triggerInst -> triggerInst.getId().equals(triggerInstId)).findFirst()
-            .orElse(null)
+    final Future<TriggerInstance> future = this.flowTriggerExecutorService.submit(
+        () -> getTriggerInstanceById(triggerInstId)
     );
     try {
       return future.get();
@@ -391,8 +419,14 @@ public class FlowTriggerService {
     }
   }
 
+  private TriggerInstance getTriggerInstanceById(final String triggerInstId) {
+    return this.runningTriggers.stream()
+        .filter(triggerInst -> triggerInst.getId().equals(triggerInstId)).findFirst()
+        .orElse(null);
+  }
+
   private void cancelContextAsync(final DependencyInstanceContext context) {
-    this.multiThreadsExecutorService.submit(() -> context.cancel());
+    this.cancelExecutorService.submit(() -> context.cancel());
   }
 
   /**
@@ -401,27 +435,28 @@ public class FlowTriggerService {
    * @param triggerInst trigger instance to be cancelled
    * @param cause cause of cancelling
    */
-  public void cancel(final TriggerInstance triggerInst, final CancellationCause cause) {
-    this.singleThreadExecutorService.submit(
-        () -> {
-          logger.info(
-              String.format("cancelling trigger instance with id %s", triggerInst.getId()));
-          if (triggerInst != null) {
-            for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
-              // cancel only running dependencies, no need to cancel a killed/successful dependency
-              // instance
-              if (depInst.getStatus() == Status.RUNNING) {
-                this.processStatusAndCancelCauseUpdate(depInst, Status.CANCELLING, cause);
-                cancelContextAsync(depInst.getContext());
-              }
-            }
-          } else {
-            logger.debug(String
-                .format("unable to cancel a trigger instance in non-running state with id %s",
-                    triggerInst.getId()));
-          }
+  public void cancelTriggerInstance(final TriggerInstance triggerInst,
+      final CancellationCause cause) {
+    if (triggerInst.getStatus() == Status.RUNNING) {
+      this.flowTriggerExecutorService.submit(() -> cancel(triggerInst, cause));
+    }
+  }
+
+  private void cancel(final TriggerInstance triggerInst, final CancellationCause cause) {
+    logger.info("cancelling trigger instance with id {}", triggerInst.getId());
+    if (triggerInst != null) {
+      for (final DependencyInstance depInst : triggerInst.getDepInstances()) {
+        // cancel running dependencies only, no need to cancel a killed/successful dependency
+        // instance
+        if (depInst.getStatus() == Status.RUNNING) {
+          this.processStatusAndCancelCauseUpdate(depInst, Status.CANCELLING, cause);
+          cancelContextAsync(depInst.getContext());
         }
-    );
+      }
+    } else {
+      logger.debug("unable to cancel a trigger instance in non-running state with id {}",
+          triggerInst.getId());
+    }
   }
 
   private DependencyInstance findDependencyInstanceByContext(
@@ -436,34 +471,31 @@ public class FlowTriggerService {
    * Mark the dependency instance context as success
    */
   public void markDependencySuccess(final DependencyInstanceContext context) {
-    this.singleThreadExecutorService.submit(() -> {
-      final DependencyInstance depInst = findDependencyInstanceByContext(context);
-      if (depInst != null) {
-        if (Status.isDone(depInst.getStatus())) {
-          logger.warn(String.format("OnSuccess of dependency instance[id: %s, name: %s] is ignored",
-              depInst.getTriggerInstance().getId(), depInst.getDepName()));
-          return;
-        }
+    this.flowTriggerExecutorService.submit(() -> markSuccess(context));
+  }
 
-        logger.info(
-            String.format("setting dependency instance[id: %s, name: %s] status to succeeded",
-                depInst.getTriggerInstance().getId(), depInst.getDepName()));
-        // if the status transits from cancelling to succeeded, then cancellation cause was set,
-        // we need to unset cancellation cause.
-        this.processStatusAndCancelCauseUpdate(depInst, Status.SUCCEEDED, CancellationCause.NONE);
-        // if associated trigger instance becomes success, then remove it from running list
-        if (depInst.getTriggerInstance().getStatus() == Status.SUCCEEDED) {
-          logger.info(String.format("trigger instance[id: %s] succeeded",
-              depInst.getTriggerInstance().getId()));
-          this.triggerProcessor.processSucceed(depInst.getTriggerInstance());
-          this.runningTriggers.remove(depInst.getTriggerInstance());
-        }
-      } else {
-        logger.debug(String.format("unable to find trigger instance with context %s when marking "
-                + "it success",
-            context));
+  private void markSuccess(final DependencyInstanceContext context) {
+    final DependencyInstance depInst = findDependencyInstanceByContext(context);
+    if (depInst != null) {
+      if (Status.isDone(depInst.getStatus())) {
+        logger.warn("OnSuccess of dependency instance[id: {}, name: {}] is ignored",
+            depInst.getTriggerInstance().getId(), depInst.getDepName());
+        return;
       }
-    });
+
+      // if the status transits from cancelling to succeeded, then cancellation cause was set,
+      // we need to unset cancellation cause.
+      this.processStatusAndCancelCauseUpdate(depInst, Status.SUCCEEDED, CancellationCause.NONE);
+      // if associated trigger instance becomes success, then remove it from running list
+      if (depInst.getTriggerInstance().getStatus() == Status.SUCCEEDED) {
+        logger.info("trigger instance[id: {}] succeeded", depInst.getTriggerInstance().getId());
+        this.triggerProcessor.processSucceed(depInst.getTriggerInstance());
+        this.runningTriggers.remove(depInst.getTriggerInstance());
+      }
+    } else {
+      logger.debug("unable to find trigger instance with context {} when marking it success",
+          context);
+    }
   }
 
   private boolean cancelledByAzkaban(final DependencyInstance depInst) {
@@ -478,44 +510,56 @@ public class FlowTriggerService {
   }
 
   public void markDependencyCancelled(final DependencyInstanceContext context) {
-    this.singleThreadExecutorService.submit(() -> {
-      final DependencyInstance depInst = findDependencyInstanceByContext(context);
-      if (depInst != null) {
-        logger.info(String.format("set dependency instance[id: %s, name: %s] status to "
-            + "cancelled", depInst.getTriggerInstance().getId(), depInst.getDepName()));
-        if (cancelledByDependencyPlugin(depInst)) {
-          processStatusAndCancelCauseUpdate(depInst, Status.CANCELLED, CancellationCause.FAILURE);
-          cancelTriggerInstance(depInst.getTriggerInstance());
-        } else if (cancelledByAzkaban(depInst)) {
-          processStatusUpdate(depInst, Status.CANCELLED);
-        } else {
-          logger.warn(String.format("OnCancel of dependency instance[id: %s, name: %s] is ignored",
-              depInst.getTriggerInstance().getId(), depInst.getDepName()));
-          return;
-        }
-
-        if (depInst.getTriggerInstance().getStatus() == Status.CANCELLED) {
-          logger.info(
-              String.format("trigger instance with execId %s is cancelled",
-                  depInst.getTriggerInstance().getId()));
-          this.triggerProcessor.processTermination(depInst.getTriggerInstance());
-          this.runningTriggers.remove(depInst.getTriggerInstance());
-        }
-      } else {
-        logger.warn(String.format("unable to find trigger instance with context %s when marking "
-            + "it cancelled", context));
-      }
+    this.flowTriggerExecutorService.submit(() -> {
+      markCancelled(context);
     });
+  }
+
+  private void markCancelled(final DependencyInstanceContext context) {
+    final DependencyInstance depInst = findDependencyInstanceByContext(context);
+    if (depInst != null) {
+      if (cancelledByDependencyPlugin(depInst)) {
+        processStatusAndCancelCauseUpdate(depInst, Status.CANCELLED, CancellationCause.FAILURE);
+        cancelTriggerInstance(depInst.getTriggerInstance());
+      } else if (cancelledByAzkaban(depInst)) {
+        processStatusUpdate(depInst, Status.CANCELLED);
+      } else {
+        logger.warn("OnCancel of dependency instance[id: {}, name: {}] is ignored",
+            depInst.getTriggerInstance().getId(), depInst.getDepName());
+        return;
+      }
+
+      if (depInst.getTriggerInstance().getStatus() == Status.CANCELLED) {
+        logger.info("trigger instance with execId {} is cancelled",
+            depInst.getTriggerInstance().getId());
+        this.triggerProcessor.processTermination(depInst.getTriggerInstance());
+        this.runningTriggers.remove(depInst.getTriggerInstance());
+      }
+    } else {
+      logger.warn("unable to find trigger instance with context {} when marking "
+          + "it cancelled", context);
+    }
   }
 
   /**
    * Shuts down the service immediately.
    */
   public void shutdown() {
-    this.singleThreadExecutorService.shutdown(); // Disable new tasks from being submitted
-    this.singleThreadExecutorService.shutdownNow(); // Cancel currently executing tasks
-    this.multiThreadsExecutorService.shutdown();
-    this.multiThreadsExecutorService.shutdownNow();
+    this.flowTriggerExecutorService.shutdown();
+    this.cancelExecutorService.shutdown();
+    this.timeoutService.shutdown();
+
+    this.flowTriggerExecutorService.shutdownNow();
+    this.cancelExecutorService.shutdownNow();
+    this.timeoutService.shutdownNow();
+
+    this.triggerProcessor.shutdown();
     this.triggerPluginManager.shutdown();
+    this.cleaner.shutdown();
+  }
+
+  public Collection<TriggerInstance> getTriggerInstances(final int projectId, final String flowId,
+      final int from, final int length) {
+    return this.flowTriggerInstanceLoader.getTriggerInstances(projectId, flowId, from, length);
   }
 }

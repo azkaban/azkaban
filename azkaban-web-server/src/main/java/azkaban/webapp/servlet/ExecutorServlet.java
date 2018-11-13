@@ -31,6 +31,8 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.flowtrigger.FlowTriggerService;
+import azkaban.flowtrigger.TriggerInstance;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
@@ -55,6 +57,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -70,6 +73,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private WebMetrics webMetrics;
   private ProjectManager projectManager;
+  private FlowTriggerService flowTriggerService;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
@@ -82,6 +86,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     this.projectManager = server.getProjectManager();
     this.executorManager = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
+    this.flowTriggerService = server.getFlowTriggerService();
     // TODO: reallocf fully guicify
     this.webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   }
@@ -95,8 +100,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       if (hasParam(req, "job")) {
         handleExecutionJobDetailsPage(req, resp, session);
       } else {
-        handleExecutionFlowPage(req, resp, session);
+        handleExecutionFlowPageByExecId(req, resp, session);
       }
+    } else if (hasParam(req, "triggerinstanceid")) {
+      handleExecutionFlowPageByTriggerInstanceId(req, resp, session);
     } else {
       handleExecutionsPage(req, resp, session);
     }
@@ -351,7 +358,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/executionspage.vm");
 
-    final List<Pair<ExecutableFlow, Executor>> runningFlows =
+    final List<Pair<ExecutableFlow, Optional<Executor>>> runningFlows =
         this.executorManager.getActiveFlowsWithExecutor();
     page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
 
@@ -362,7 +369,64 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleExecutionFlowPage(final HttpServletRequest req,
+  private void handleExecutionFlowPageByTriggerInstanceId(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
+      IOException {
+    final Page page =
+        newPage(req, resp, session,
+            "azkaban/webapp/servlet/velocity/executingflowpage.vm");
+    final User user = session.getUser();
+    final String triggerInstanceId = getParam(req, "triggerinstanceid");
+
+    final TriggerInstance triggerInst = this.flowTriggerService
+        .findTriggerInstanceById(triggerInstanceId);
+
+    if (triggerInst == null) {
+      page.add("errorMsg", "Error loading trigger instance " + triggerInstanceId
+          + " not found.");
+      page.render();
+      return;
+    }
+
+    page.add("triggerInstanceId", triggerInstanceId);
+    page.add("execid", triggerInst.getFlowExecId());
+
+    final int projectId = triggerInst.getProject().getId();
+    final Project project =
+        getProjectPageByPermission(page, projectId, user, Type.READ);
+
+    if (project == null) {
+      page.render();
+      return;
+    }
+
+    addExternalLinkLabel(req, page);
+
+    page.add("projectId", project.getId());
+    page.add("projectName", project.getName());
+    page.add("flowid", triggerInst.getFlowId());
+
+    page.render();
+  }
+
+  private void addExternalLinkLabel(final HttpServletRequest req, final Page page) {
+    final Props props = getApplication().getServerProps();
+    final String execExternalLinkURL = ExternalLinkUtils.getExternalAnalyzerOnReq(props, req);
+
+    if (execExternalLinkURL.length() > 0) {
+      page.add("executionExternalLinkURL", execExternalLinkURL);
+      logger.debug("Added an External analyzer to the page");
+      logger.debug("External analyzer url: " + execExternalLinkURL);
+
+      final String execExternalLinkLabel =
+          props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
+              "External Analyzer");
+      page.add("executionExternalLinkLabel", execExternalLinkLabel);
+      logger.debug("External analyzer label set to : " + execExternalLinkLabel);
+    }
+  }
+
+  private void handleExecutionFlowPageByExecId(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
     final Page page =
@@ -371,6 +435,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final int execId = getIntParam(req, "execid");
     page.add("execid", execId);
+    page.add("triggerInstanceId", "-1");
 
     ExecutableFlow flow = null;
     try {
@@ -395,20 +460,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final Props props = getApplication().getServerProps();
-    final String execExternalLinkURL = ExternalLinkUtils.getExternalAnalyzerOnReq(props, req);
-
-    if (execExternalLinkURL.length() > 0) {
-      page.add("executionExternalLinkURL", execExternalLinkURL);
-      logger.debug("Added an External analyzer to the page");
-      logger.debug("External analyzer url: " + execExternalLinkURL);
-
-      final String execExternalLinkLabel =
-          props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
-              "External Analyzer");
-      page.add("executionExternalLinkLabel", execExternalLinkLabel);
-      logger.debug("External analyzer label set to : " + execExternalLinkLabel);
-    }
+    addExternalLinkLabel(req, page);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
@@ -815,6 +867,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     nodeObj.put("endTime", node.getEndTime());
     nodeObj.put("updateTime", node.getUpdateTime());
     nodeObj.put("type", node.getType());
+    if (node.getCondition() != null) {
+      nodeObj.put("condition", node.getCondition());
+    }
     nodeObj.put("nestedId", node.getNestedId());
 
     nodeObj.put("attempt", node.getAttempt());

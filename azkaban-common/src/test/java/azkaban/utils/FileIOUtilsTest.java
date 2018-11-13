@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -108,6 +109,31 @@ public class FileIOUtilsTest {
     FileUtils.deleteDirectory(this.destDir);
   }
 
+
+  private File dumpNumberToTempFile(final String fileName, final long num) throws IOException {
+    final File fileToDump = this.temp.newFile(fileName);
+    FileIOUtils.dumpNumberToFile(fileToDump.toPath(), num);
+    return fileToDump;
+  }
+
+  @Test
+  public void testDumpNumberToFileAndReadFromFile() throws IOException {
+    final String fileName = "number";
+    final long num = 94127;
+    final File fileToDump = dumpNumberToTempFile(fileName, num);
+    assertThat(FileIOUtils.readNumberFromFile(fileToDump.toPath())).isEqualTo(num);
+  }
+
+  @Test
+  public void testDumpNumberToExistingFile() throws IOException {
+    final String fileName = "number";
+    final long firstNum = 94127;
+    final long secondNum = 94128;
+    dumpNumberToTempFile(fileName, firstNum);
+    assertThatThrownBy(() -> dumpNumberToTempFile(fileName, secondNum))
+        .isInstanceOf(IOException.class).hasMessageContaining("already exists");
+  }
+
   @Test
   public void testHardlinkCopy() throws IOException {
     FileIOUtils.createDeepHardlink(this.sourceDir, this.destDir);
@@ -116,6 +142,7 @@ public class FileIOUtilsTest {
     assertThat(areDirsEqual(this.baseDir, this.sourceDir, true)).isTrue();
   }
 
+  @Ignore("Slow test (over 30s) - run manually if need to touch createDeepHardlink()")
   @Test
   public void testHardlinkCopyOfBigDir() throws IOException {
     final File bigDir = new File(this.baseDir.getAbsolutePath() + "/bigdir");

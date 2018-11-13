@@ -17,6 +17,11 @@
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
+import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
+import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
+import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
+import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_ON_JOB_STATUS_PATTERN;
+import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN;
 
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
@@ -38,6 +43,7 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.jobExecutor.ProcessJob;
@@ -56,6 +62,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,6 +78,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.regex.Matcher;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
@@ -453,21 +467,17 @@ public class FlowRunner extends EventHandler implements Runnable {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
-          propagateStatus(node.getParentFlow(),
-              node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
-          if (this.failureAction == FailureAction.CANCEL_ALL) {
-            this.kill();
-          }
-          this.flowFailed = true;
+          setFlowFailed(node);
         } else {
           nodesToCheck.add(node);
           continue;
         }
       }
 
-      if (outNodeIds.isEmpty()) {
-        // There's no outnodes means it's the end of a flow, so we finalize
-        // and fire an event.
+      if (outNodeIds.isEmpty() && isFlowReadytoFinalize(parentFlow)) {
+        // Todo jamiesjc: For conditional workflows, if conditionOnJobStatus is ONE_SUCCESS or
+        // ONE_FAILED, some jobs might still be running when the end nodes have finished. In this
+        // case, we need to kill all running jobs before finalizing the flow.
         finalizeFlow(parentFlow);
         finishExecutableNode(parentFlow);
 
@@ -506,6 +516,31 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     return false;
+  }
+
+  private void setFlowFailed(final ExecutableNode node) {
+    boolean shouldFail = true;
+    // As long as there is no outNodes or at least one outNode has conditionOnJobStatus of
+    // ALL_SUCCESS, we should set the flow to failed. Otherwise, it could still statisfy the
+    // condition of conditional workflows, so don't set the flow to failed.
+    for (final String outNodeId : node.getOutNodes()) {
+      if (node.getParentFlow().getExecutableNode(outNodeId).getConditionOnJobStatus()
+          .equals(ConditionOnJobStatus.ALL_SUCCESS)) {
+        shouldFail = true;
+        break;
+      } else {
+        shouldFail = false;
+      }
+    }
+
+    if (shouldFail) {
+      propagateStatus(node.getParentFlow(),
+          node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
+      if (this.failureAction == FailureAction.CANCEL_ALL) {
+        this.kill();
+      }
+      this.flowFailed = true;
+    }
   }
 
   private boolean notReadyToRun(final Status status) {
@@ -589,6 +624,16 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.finishedNodes.add(node);
     final EventData eventData = new EventData(node.getStatus(), node.getNestedId());
     fireEventListeners(Event.create(this, EventType.JOB_FINISHED, eventData));
+  }
+
+  private boolean isFlowReadytoFinalize(final ExecutableFlowBase flow) {
+    // Only when all the end nodes are finished, the flow is ready to finalize.
+    for (final String end : flow.getEndNodes()) {
+      if (!Status.isStatusFinished(flow.getExecutableNode(end).getStatus())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private void finalizeFlow(final ExecutableFlowBase flow) {
@@ -829,19 +874,24 @@ public class FlowRunner extends EventHandler implements Runnable {
     // Go through the node's dependencies. If all of the previous job's
     // statuses is finished and not FAILED or KILLED, than we can safely
     // run this job.
-    final ExecutableFlowBase flow = node.getParentFlow();
-    boolean shouldKill = false;
-    for (final String dependency : node.getInNodes()) {
-      final ExecutableNode dependencyNode = flow.getExecutableNode(dependency);
-      final Status depStatus = dependencyNode.getStatus();
+    Status status = Status.READY;
 
-      if (!Status.isStatusFinished(depStatus)) {
+    // Check if condition on job status is satisfied
+    switch (checkConditionOnJobStatus(node)) {
+      case FAILED:
+        this.logger.info("Condition on job status: " + node.getConditionOnJobStatus() + " is "
+            + "evaluated to false for " + node.getId());
+        status = Status.CANCELLED;
+        break;
+      // Condition not satisfied yet, need to wait
+      case PENDING:
         return null;
-      } else if (depStatus == Status.FAILED || depStatus == Status.CANCELLED
-          || depStatus == Status.KILLED) {
-        // We propagate failures as KILLED states.
-        shouldKill = true;
-      }
+      default:
+        break;
+    }
+
+    if (status != Status.CANCELLED && !isConditionOnRuntimeVariableMet(node)) {
+      status = Status.CANCELLED;
     }
 
     // If it's disabled but ready to run, we want to make sure it continues
@@ -857,12 +907,87 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (this.flowFailed
         && this.failureAction == ExecutionOptions.FailureAction.FINISH_CURRENTLY_RUNNING) {
       return Status.CANCELLED;
-    } else if (shouldKill || isKilled()) {
+    } else if (isKilled()) {
       return Status.CANCELLED;
     }
 
-    // All good to go, ready to run.
-    return Status.READY;
+    return status;
+  }
+
+  private Boolean isConditionOnRuntimeVariableMet(final ExecutableNode node) {
+    final String condition = node.getCondition();
+    if (condition == null) {
+      return true;
+    }
+
+    String replaced = condition;
+    // Replace the condition on job status macro with "true" to skip the evaluation by Script
+    // Engine since it has already been evaluated.
+    final Matcher jobStatusMatcher = CONDITION_ON_JOB_STATUS_PATTERN.matcher
+        (condition);
+    if (jobStatusMatcher.find()) {
+      replaced = condition.replace(jobStatusMatcher.group(1), "true");
+    }
+
+    final Matcher variableMatcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(replaced);
+
+    while (variableMatcher.find()) {
+      final String value = findValueForJobVariable(node, variableMatcher.group(1),
+          variableMatcher.group(2));
+      if (value != null) {
+        replaced = replaced.replace(variableMatcher.group(), "'" + value + "'");
+      }
+      this.logger.info("Resolved condition of " + node.getId() + " is " + replaced);
+    }
+
+    // Evaluate string expression using script engine
+    return evaluateExpression(replaced);
+  }
+
+  private String findValueForJobVariable(final ExecutableNode node, final String jobName, final
+  String variable) {
+    // Get job output props
+    final ExecutableNode target = node.getParentFlow().getExecutableNode(jobName);
+    if (target == null) {
+      this.logger.error("Not able to load props from output props file, job name " + jobName
+          + " might be invalid.");
+      return null;
+    }
+
+    final Props outputProps = target.getOutputProps();
+    if (outputProps != null && outputProps.containsKey(variable)) {
+      return outputProps.get(variable);
+    }
+
+    return null;
+  }
+
+  private boolean evaluateExpression(final String expression) {
+    boolean result = false;
+    final ScriptEngineManager sem = new ScriptEngineManager();
+    final ScriptEngine se = sem.getEngineByName("JavaScript");
+
+    // Restrict permission using the two-argument form of doPrivileged()
+    try {
+      final Object object = AccessController.doPrivileged(
+          new PrivilegedExceptionAction<Object>() {
+            @Override
+            public Object run() throws ScriptException {
+              return se.eval(expression);
+            }
+          },
+          new AccessControlContext(
+              new ProtectionDomain[]{new ProtectionDomain(null, null)}) // no permissions
+      );
+      if (object != null) {
+        result = (boolean) object;
+      }
+    } catch (final Exception e) {
+      this.logger.error("Failed to evaluate the condition.", e);
+    }
+
+    this.logger.info("Condition is evaluated to " + result);
+    return result;
   }
 
   private Props collectOutputProps(final ExecutableNode node) {

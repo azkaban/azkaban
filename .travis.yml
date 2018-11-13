@@ -14,7 +14,18 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
 
+notifications:
+  email:
+    recipients:
+      - azkaban-dev@linkedin.com
+    on_success: never
+    on_failure: always
+
 env:
   global:
     # Reduce the memory pressure on Travis CI to reduce build failures.
     - GRADLE_OPTS="-Xms128m"
+
+after_success:
+  - ./gradlew coveralls --no-daemon
+  - bash <(curl -s https://codecov.io/bash)

@@ -34,6 +34,8 @@ public class FlowTriggerQuartzJob extends AbstractQuartzJob {
   public static final String FLOW_ID = "FLOW_ID";
   public static final String FLOW_VERSION = "FLOW_VERSION";
 
+  public static final String JOB_NAME = "FLOW_TRIGGER";
+
   private final FlowTriggerService triggerService;
   private final ProjectManager projectManager;
 

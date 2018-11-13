@@ -28,6 +28,7 @@ public class FlowLoaderFactoryTest {
 
   private static final String FLOW_10_TEST_DIRECTORY = "exectest1";
   private static final String FLOW_20_TEST_DIRECTORY = "basicflowyamltest";
+  private static final String FLOW_20_TEST_RECURSIVE_DIRECTORY = "recursivedirectoryyamltest";
   private static final String DUPLICATE_PROJECT_DIRECTORY = "duplicateprojectyamltest";
   private static final String INVALID_FLOW_VERSION_DIRECTORY = "invalidflowversiontest";
   private static final String NO_FLOW_VERSION_DIRECTORY = "noflowversiontest";
@@ -44,6 +45,14 @@ public class FlowLoaderFactoryTest {
   public void testCreateDirectoryYamlFlowLoader() {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final File projectDir = ExecutionsTestUtil.getFlowDir(FLOW_20_TEST_DIRECTORY);
+    final FlowLoader loader = loaderFactory.createFlowLoader(projectDir);
+    assertThat(loader instanceof DirectoryYamlFlowLoader).isTrue();
+  }
+
+  @Test
+  public void testCreateDirectoryYamlFlowLoaderWithRecursiveDirectory() {
+    final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
+    final File projectDir = ExecutionsTestUtil.getFlowDir(FLOW_20_TEST_RECURSIVE_DIRECTORY);
     final FlowLoader loader = loaderFactory.createFlowLoader(projectDir);
     assertThat(loader instanceof DirectoryYamlFlowLoader).isTrue();
   }

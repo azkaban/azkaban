@@ -21,7 +21,6 @@
   #parse("azkaban/webapp/servlet/velocity/style.vm")
   #parse("azkaban/webapp/servlet/velocity/javascript.vm")
   <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
-  #
   <script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
   <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
   <script type="text/javascript">
@@ -36,17 +35,47 @@
       jobTable.tablesorter();
     });
   </script>
+
+  <script type="text/javascript">
+    function pauseTrigger(projectId, flowId) {
+      var requestURL = document.location.href;
+      var requestData = {"projectId": projectId, "flowId": flowId, "ajax": "pauseTrigger"};
+      var successHandler = function (data) {
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          window.location = requestURL;
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+
+    function resumeTrigger(projectId, flowId) {
+      var requestURL = document.location.href;
+      var requestData = {"projectId": projectId, "flowId": flowId, "ajax": "resumeTrigger"};
+      var successHandler = function (data) {
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          window.location = requestURL;
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+  </script>
 </head>
 <body>
 
-  #set ($current_page="executing")
+  #set ($current_page="flowtrigger")
   #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 ## Page header.
 
 <div class="az-page-header">
   <div class="container-full">
-    <h1><a href="${context}/executor">Scheduled Flow Triggers</a></h1>
+    <h1><a href="${context}/flowtrigger">Scheduled Flow Triggers</a></h1>
   </div>
 </div>
 
@@ -75,6 +104,8 @@
           <th>Schedule</th>
           <th>Max Wait Mins</th>
           <th>Dependencies</th>
+          <th>Is Paused</th>
+          <th>Pause/Resume</th>
         </tr>
         </thead>
         <tbody>
@@ -99,7 +130,12 @@
               <td>$utils.formatDate(${trigger.getQuartzTrigger().getNextFireTime().getTime()})</td>
 
               <td>${trigger.getFlowTrigger().getSchedule().getCronExpression()}</td>
-              <td>${trigger.getFlowTrigger().getMaxWaitDuration().toMinutes()}</td>
+
+              #if (${trigger.getFlowTrigger().getMaxWaitDuration().isPresent()} == "true")
+                <td>${trigger.getFlowTrigger().getMaxWaitDuration().get().toMinutes()}</td>
+              #else
+                <td>-</td>
+              #end
 
 
             ## adopted from template to show executionOption in scheduledflowpage.vm
@@ -131,6 +167,23 @@
                   </div>
                 </div>
               </div>
+
+              <td>${trigger.isPaused()}</td>
+
+            ##todo chengren311: add pause/resume button in flow page.
+              <td>
+                #if (${trigger.isPaused()} == "false")
+                  <button type="button" id="pausebtn" class="btn btn-danger btn-sm"
+                          onclick="pauseTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">
+                    Pause
+                  </button>
+                #else
+                  <button type="button" id="resumebtn" class="btn btn-info btn-sm"
+                          onclick="resumeTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">
+                    Resume
+                  </button>
+                #end
+              </td>
 
             </tr>
             #end

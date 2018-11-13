@@ -23,6 +23,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class DirectoryYamlFlowLoaderTest {
 
   private static final String BASIC_FLOW_YAML_DIR = "basicflowyamltest";
   private static final String MULTIPLE_FLOW_YAML_DIR = "multipleflowyamltest";
+  private static final String RECURSIVE_DIRECTORY_FLOW_YAML_DIR = "recursivedirectoryyamltest";
   private static final String EMBEDDED_FLOW_YAML_DIR = "embeddedflowyamltest";
   private static final String MULTIPLE_EMBEDDED_FLOW_YAML_DIR = "multipleembeddedflowyamltest";
   private static final String CYCLE_FOUND_YAML_DIR = "cyclefoundyamltest";
@@ -42,6 +44,8 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String DEPENDENCY_UNDEFINED_YAML_DIR = "dependencyundefinedyamltest";
   private static final String INVALID_JOBPROPS_YAML_DIR = "invalidjobpropsyamltest";
   private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
+  private static final String CONDITION_YAML_DIR = "conditionalflowyamltest";
+  private static final String INVALID_CONDITION_YAML_DIR = "invalidconditionalflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
   private static final String EMBEDDED_FLOW = "embedded_flow";
@@ -56,6 +60,7 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String EMBEDDED_FLOW_B2 =
       "embedded_flow_b" + Constants.PATH_DELIMITER + "embedded_flow1" + Constants.PATH_DELIMITER
           + "embedded_flow2";
+  private static final String CONDITIONAL_FLOW = "conditional_flow6";
   private static final String DUPLICATE_NODENAME_FLOW_FILE = "duplicate_nodename.flow";
   private static final String DEPENDENCY_UNDEFINED_FLOW_FILE = "dependency_undefined.flow";
   private static final String CYCLE_FOUND_FLOW = "cycle_found";
@@ -83,6 +88,16 @@ public class DirectoryYamlFlowLoaderTest {
     checkFlowLoaderProperties(loader, 0, 2, 2);
     checkFlowProperties(loader, BASIC_FLOW_1, 0, 4, 1, 3, null);
     checkFlowProperties(loader, BASIC_FLOW_2, 0, 3, 1, 2, null);
+  }
+
+  @Test
+  public void testLoadYamlFileRecursively() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project,
+        ExecutionsTestUtil.getFlowDir(RECURSIVE_DIRECTORY_FLOW_YAML_DIR));
+    checkFlowLoaderProperties(loader, 0, 2, 2);
+    checkFlowProperties(loader, BASIC_FLOW_1, 0, 3, 1, 2, null);
+    checkFlowProperties(loader, BASIC_FLOW_2, 0, 4, 1, 3, null);
   }
 
   @Test
@@ -155,6 +170,38 @@ public class DirectoryYamlFlowLoaderTest {
     final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
     loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(NO_FLOW_YAML_DIR));
     checkFlowLoaderProperties(loader, 0, 0, 0);
+  }
+
+  @Test
+  public void testFlowYamlFileWithValidCondition() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(CONDITION_YAML_DIR));
+    assertThat(loader.getFlowMap().containsKey(CONDITIONAL_FLOW)).isTrue();
+    checkFlowProperties(loader, CONDITIONAL_FLOW, 0, 4, 1, 4, null);
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobA").getCondition()).isNull();
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobB").getCondition())
+        .isEqualTo("${jobA:props} == 'foo'");
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobC").getCondition())
+        .isEqualTo("${jobA:props} == 'bar'");
+    assertThat(loader.getFlowMap().get(CONDITIONAL_FLOW).getNode("jobD").getCondition())
+        .isEqualTo("one_success && ${jobA:props} == 'foo'");
+  }
+
+  @Test
+  public void testFlowYamlFileWithInvalidConditions() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir(INVALID_CONDITION_YAML_DIR));
+    checkFlowLoaderProperties(loader, 5, 5, 5);
+    Assert.assertTrue(
+        loader.getErrors().contains("Invalid condition for jobB: jobC doesn't exist in the flow."));
+    Assert.assertTrue(loader.getErrors().contains(
+        "Invalid condition for jobA: should not define condition on its descendant node jobD."));
+    Assert.assertTrue(
+        loader.getErrors().contains("Invalid condition for jobB: operand is an empty string."));
+    Assert.assertTrue(loader.getErrors().contains(
+        "Invalid condition for jobB: cannot resolve the condition. Please check the syntax for supported conditions."));
+    Assert.assertTrue(loader.getErrors().contains(
+        "Invalid condition for jobB: cannot combine more than one conditionOnJobStatus macros."));
   }
 
   private void checkFlowLoaderProperties(final DirectoryYamlFlowLoader loader, final int numError,

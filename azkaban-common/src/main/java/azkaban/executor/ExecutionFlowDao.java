@@ -16,8 +16,8 @@
 
 package azkaban.executor;
 
-import azkaban.db.EncodingType;
 import azkaban.db.DatabaseOperator;
+import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
@@ -108,9 +108,24 @@ public class ExecutionFlowDao {
     }
   }
 
+  /**
+   * fetch flow execution history with specified {@code projectId}, {@code flowId} and flow start
+   * time >= {@code startTime}
+   *
+   * @return the list of flows meeting the specified criteria
+   */
+  public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId, final
+  long startTime) throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_START_TIME,
+          new FetchExecutableFlows(), projectId, flowId, startTime);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching historic flows", e);
+    }
+  }
+
   List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-      final int skip, final int num,
-      final Status status)
+      final int skip, final int num, final Status status)
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_STATUS,
@@ -142,7 +157,7 @@ public class ExecutionFlowDao {
 
     boolean first = true;
     if (projContain != null && !projContain.isEmpty()) {
-      query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
+      query += " JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
       params.add('%' + projContain + '%');
       first = false;
     }
@@ -267,8 +282,11 @@ public class ExecutionFlowDao {
   public static class FetchExecutableFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
 
+    static String FETCH_EXECUTABLE_FLOW_BY_START_TIME =
+        "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef WHERE project_id=? "
+            + "AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
     static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
+        "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef";
     static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE exec_id=?";

@@ -46,14 +46,16 @@ public class ExecutorApiGateway {
 
   Map<String, Object> callWithReference(final ExecutionReference ref, final String action,
       final Pair<String, String>... params) throws ExecutorManagerException {
-    return callWithExecutionId(ref.getHost(), ref.getPort(), action, ref.getExecId(),
+    final Executor executor = ref.getExecutor().get();
+    return callWithExecutionId(executor.getHost(), executor.getPort(), action, ref.getExecId(),
         null, params);
   }
 
   Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
       final String action, final String user, final Pair<String, String>... params)
       throws ExecutorManagerException {
-    return callWithExecutionId(ref.getHost(), ref.getPort(), action,
+    final Executor executor = ref.getExecutor().get();
+    return callWithExecutionId(executor.getHost(), executor.getPort(), action,
         ref.getExecId(), user, params);
   }
 
@@ -121,6 +123,26 @@ public class ExecutorApiGateway {
         ExecutorApiClient.buildUri(host, port, path, true);
 
     return this.apiClient.httpPost(uri, paramList);
+  }
+
+  public Map<String, Object> updateExecutions(final Executor executor,
+      final List<ExecutableFlow> executions) throws ExecutorManagerException {
+    final List<Long> updateTimesList = new ArrayList<>();
+    final List<Integer> executionIdsList = new ArrayList<>();
+    // We pack the parameters of the same host together before query
+    for (final ExecutableFlow flow : executions) {
+      executionIdsList.add(flow.getExecutionId());
+      updateTimesList.add(flow.getUpdateTime());
+    }
+    final Pair<String, String> updateTimes = new Pair<>(
+        ConnectorParams.UPDATE_TIME_LIST_PARAM,
+        JSONUtils.toJSON(updateTimesList));
+    final Pair<String, String> executionIds = new Pair<>(
+        ConnectorParams.EXEC_ID_LIST_PARAM,
+        JSONUtils.toJSON(executionIdsList));
+
+    return callWithExecutionId(executor.getHost(), executor.getPort(),
+        ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
   }
 
 }

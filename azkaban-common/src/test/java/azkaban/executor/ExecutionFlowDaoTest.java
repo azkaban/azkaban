@@ -20,14 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.project.JdbcProjectImpl;
+import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import java.io.File;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,20 +43,20 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ExecutionFlowDaoTest {
 
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(1);
   private static final Duration FLOW_FINISHED_TIME = Duration.ofMinutes(2);
-
+  private static final Props props = new Props();
   private static DatabaseOperator dbOperator;
   private ExecutionFlowDao executionFlowDao;
   private ExecutorDao executorDao;
   private AssignExecutorDao assignExecutor;
   private FetchActiveFlowDao fetchActiveFlowDao;
   private ExecutionJobDao executionJobDao;
+  private ProjectLoader loader;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -73,6 +80,7 @@ public class ExecutionFlowDaoTest {
     this.assignExecutor = new AssignExecutorDao(dbOperator, this.executorDao);
     this.fetchActiveFlowDao = new FetchActiveFlowDao(dbOperator);
     this.executionJobDao = new ExecutionJobDao(dbOperator);
+    this.loader = new JdbcProjectImpl(props, dbOperator);
   }
 
   @After
@@ -80,6 +88,7 @@ public class ExecutionFlowDaoTest {
     try {
       dbOperator.update("DELETE FROM execution_flows");
       dbOperator.update("DELETE FROM executors");
+      dbOperator.update("DELETE FROM projects");
     } catch (final SQLException e) {
       e.printStackTrace();
     }
@@ -87,6 +96,13 @@ public class ExecutionFlowDaoTest {
 
   private ExecutableFlow createTestFlow() throws Exception {
     return TestUtils.createTestExecutableFlow("exectest1", "exec1");
+  }
+
+  private void createTestProject() {
+    final String projectName = "exectest1";
+    final String projectDescription = "This is my new project";
+    final User user = new User("testUser1");
+    this.loader.createNewProject(projectName, projectDescription, user);
   }
 
   @Test
@@ -101,7 +117,6 @@ public class ExecutionFlowDaoTest {
     assertThat(flow).isNotSameAs(fetchFlow);
     assertTwoFlowSame(flow, fetchFlow);
   }
-
 
   @Test
   public void testUpdateExecutableFlow() throws Exception {
@@ -134,6 +149,62 @@ public class ExecutionFlowDaoTest {
     final ExecutableFlow fetchFlow =
         this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), flowList2.get(0));
+    assertTwoFlowSame(flowList1.get(0), fetchFlow);
+  }
+
+  @Test
+  public void fetchFlowHistoryWithStartTime() throws Exception {
+    class DateUtil {
+
+      private long dateStrToLong(final String dateStr) throws ParseException {
+        final SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        final Date d = f.parse(dateStr);
+        final long milliseconds = d.getTime();
+        return milliseconds;
+      }
+    }
+
+    final DateUtil dateUtil = new DateUtil();
+    final ExecutableFlow flow1 = createTestFlow();
+    flow1.setStartTime(dateUtil.dateStrToLong("2018-09-01 10:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow1);
+
+    final ExecutableFlow flow2 = createTestFlow();
+    flow2.setStartTime(dateUtil.dateStrToLong("2018-09-01 09:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow2);
+
+    final ExecutableFlow flow3 = createTestFlow();
+    flow3.setStartTime(dateUtil.dateStrToLong("2018-09-01 09:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow3);
+
+    final ExecutableFlow flow4 = createTestFlow();
+    flow4.setStartTime(dateUtil.dateStrToLong("2018-09-01 08:00:00"));
+    this.executionFlowDao.uploadExecutableFlow(flow4);
+
+    final List<ExecutableFlow> flowList = this.executionFlowDao.fetchFlowHistory
+        (flow1.getProjectId(), flow1.getFlowId(), dateUtil.dateStrToLong("2018-09-01 09:00:00"));
+    final List<ExecutableFlow> expected = new ArrayList<>();
+    expected.add(flow1);
+    expected.add(flow2);
+    expected.add(flow3);
+
+    assertThat(flowList).hasSize(3);
+    for (int i = 0; i < flowList.size(); i++) {
+      assertTwoFlowSame(flowList.get(i), expected.get(i));
+    }
+  }
+
+  @Test
+  public void testAdvancedFilter() throws Exception {
+    createTestProject();
+    final ExecutableFlow flow = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final List<ExecutableFlow> flowList1 = this.executionFlowDao
+        .fetchFlowHistory("exectest1", "", "", 0, -1, -1, 0, 16);
+    assertThat(flowList1.size()).isEqualTo(1);
+
+    final ExecutableFlow fetchFlow =
+        this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
     assertTwoFlowSame(flowList1.get(0), fetchFlow);
   }
 
@@ -254,7 +325,11 @@ public class ExecutionFlowDaoTest {
         this.fetchActiveFlowDao.fetchActiveFlows();
 
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isTrue();
-    assertThat(activeFlows1.containsKey(flow2.getExecutionId())).isFalse();
+    assertThat(activeFlows1.get(flow1.getExecutionId()).getFirst().getExecutor().isPresent())
+        .isTrue();
+    assertThat(activeFlows1.containsKey(flow2.getExecutionId())).isTrue();
+    assertThat(activeFlows1.get(flow2.getExecutionId()).getFirst().getExecutor().isPresent())
+        .isFalse();
     final ExecutableFlow flow1Result =
         activeFlows1.get(flow1.getExecutionId()).getSecond();
     assertTwoFlowSame(flow1Result, flow1);
@@ -287,20 +362,6 @@ public class ExecutionFlowDaoTest {
     this.executionFlowDao.updateExecutableFlow(flow1);
     activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows();
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isFalse();
-  }
-
-  @Test
-  @Ignore
-  // TODO jamiesjc: Active_execution_flow table is already deprecated. we should remove related
-  // test methods as well.
-  public void testFetchActiveFlowsReferenceChanged() throws Exception {
-  }
-
-  @Test
-  @Ignore
-  // TODO jamiesjc: Active_execution_flow table is already deprecated. we should remove related
-  // test methods as well.
-  public void testFetchActiveFlowByExecId() throws Exception {
   }
 
   @Test
@@ -348,13 +409,21 @@ public class ExecutionFlowDaoTest {
     assertThat(flow1.getStatus()).isEqualTo(flow2.getStatus());
     assertThat(flow1.getEndTime()).isEqualTo(flow2.getEndTime());
     assertThat(flow1.getStartTime()).isEqualTo(flow2.getStartTime());
-    assertThat(flow1.getSubmitTime()).isEqualTo(flow2.getStartTime());
+    assertThat(flow1.getSubmitTime()).isEqualTo(flow2.getSubmitTime());
     assertThat(flow1.getFlowId()).isEqualTo(flow2.getFlowId());
     assertThat(flow1.getProjectId()).isEqualTo(flow2.getProjectId());
     assertThat(flow1.getVersion()).isEqualTo(flow2.getVersion());
     assertThat(flow1.getExecutionOptions().getFailureAction())
         .isEqualTo(flow2.getExecutionOptions().getFailureAction());
     assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
+  }
+
+  /**
+   * restores the clock; see {@link #testFetchEmptyRecentlyFinishedFlows()}
+   */
+  @After
+  public void clockReset() {
+    DateTimeUtils.setCurrentMillisOffset(0);
   }
 
 }

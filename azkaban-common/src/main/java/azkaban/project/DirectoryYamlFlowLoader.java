@@ -17,10 +17,12 @@
 package azkaban.project;
 
 import azkaban.Constants;
+import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
@@ -32,6 +34,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +45,17 @@ import org.slf4j.LoggerFactory;
  */
 public class DirectoryYamlFlowLoader implements FlowLoader {
 
+  // Pattern to match job variables in condition expressions: ${jobName:variable}
+  public static final Pattern CONDITION_VARIABLE_REPLACEMENT_PATTERN = Pattern
+      .compile("\\$\\{([^:{}]+):([^:{}]+)\\}");
+  // Pattern to match conditionOnJobStatus macros, e.g. one_success, all_done
+  public static final Pattern CONDITION_ON_JOB_STATUS_PATTERN =
+      Pattern.compile("(?i)\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b");
   private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
+  // Pattern to match a number or a string, e.g. 1234, "hello", 'foo'
+  private static final Pattern DIGIT_STRING_PATTERN = Pattern.compile("\\d+|'.*'|\".*\"");
+  // Valid operators in condition expressions: &&, ||, ==, !=, >, >=, <, <=
+  private static final String VALID_CONDITION_OPERATORS = "&&|\\|\\||==|!=|>|>=|<|<=";
 
   private final Props props;
   private final Set<String> errors = new HashSet<>();
@@ -112,13 +127,21 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
               + ". Duplicate nodes found or dependency undefined.");
         } else {
           final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
-          final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
-          this.flowMap.put(flow.getId(), flow);
+          if (this.flowMap.containsKey(azkabanFlow.getName())) {
+            this.errors.add("Duplicate flows found in the project with name " + azkabanFlow
+                .getName());
+          } else {
+            final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
+            this.flowMap.put(flow.getId(), flow);
+          }
         }
       } catch (final Exception e) {
         this.errors.add("Error loading flow yaml file " + file.getName() + ":"
             + e.getMessage());
       }
+    }
+    for (final File file : projectDir.listFiles(new DirFilter())) {
+      convertYamlFiles(file);
     }
   }
 
@@ -134,7 +157,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
 
     // Convert azkabanNodes to nodes inside the flow.
     azkabanFlow.getNodes().values().stream()
-        .map(n -> convertAzkabanNodeToNode(n, flowName, flowFile))
+        .map(n -> convertAzkabanNodeToNode(n, flowName, flowFile, azkabanFlow))
         .forEach(n -> flow.addNode(n));
 
     // Add edges for the flow.
@@ -151,9 +174,11 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   }
 
   private Node convertAzkabanNodeToNode(final AzkabanNode azkabanNode, final String flowName,
-      final File flowFile) {
+      final File flowFile, final AzkabanFlow azkabanFlow) {
     final Node node = new Node(azkabanNode.getName());
     node.setType(azkabanNode.getType());
+    validateCondition(node, azkabanNode, azkabanFlow);
+    node.setCondition(azkabanNode.getCondition());
     node.setPropsSource(flowFile.getName());
     node.setJobSource(flowFile.getName());
 
@@ -163,6 +188,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       final Flow flowNode = convertAzkabanFlowToFlow((AzkabanFlow) azkabanNode, embeddedFlowId,
           flowFile);
       flowNode.setEmbeddedFlow(true);
+      flowNode.setCondition(node.getCondition());
       this.flowMap.put(flowNode.getId(), flowNode);
     }
 
@@ -207,4 +233,81 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     }
   }
 
+  private void validateCondition(final Node node, final AzkabanNode azkabanNode,
+      final AzkabanFlow azkabanFlow) {
+    boolean foundConditionOnJobStatus = false;
+    final String condition = azkabanNode.getCondition();
+    if (condition == null) {
+      return;
+    }
+    // First, remove all the whitespaces and parenthesis ().
+    final String replacedCondition = condition.replaceAll("\\s+|\\(|\\)", "");
+    // Second, split the condition by operators &&, ||, ==, !=, >, >=, <, <=
+    final String[] operands = replacedCondition.split(VALID_CONDITION_OPERATORS);
+    // Third, check whether all the operands are valid: only conditionOnJobStatus macros, numbers,
+    // strings, and variable substitution ${jobName:param} are allowed.
+    for (int i = 0; i < operands.length; i++) {
+      final Matcher matcher = CONDITION_ON_JOB_STATUS_PATTERN.matcher(operands[i]);
+      if (matcher.matches()) {
+        this.logger.info("Operand " + operands[i] + " is a condition on job status.");
+        if (foundConditionOnJobStatus) {
+          this.errors.add("Invalid condition for " + node.getId()
+              + ": cannot combine more than one conditionOnJobStatus macros.");
+        }
+        foundConditionOnJobStatus = true;
+        node.setConditionOnJobStatus(ConditionOnJobStatus.fromString(matcher.group(1)));
+      } else {
+        if (operands[i].startsWith("!")) {
+          // Remove the operator '!' from the operand.
+          operands[i] = operands[i].substring(1);
+        }
+        if (operands[i].equals("")) {
+          this.errors
+              .add("Invalid condition for " + node.getId() + ": operand is an empty string.");
+        } else if (!DIGIT_STRING_PATTERN.matcher(operands[i]).matches()) {
+          validateVariableSubstitution(operands[i], azkabanNode, azkabanFlow);
+        }
+      }
+    }
+  }
+
+  private void validateVariableSubstitution(final String operand, final AzkabanNode azkabanNode,
+      final AzkabanFlow azkabanFlow) {
+    final Matcher matcher = CONDITION_VARIABLE_REPLACEMENT_PATTERN.matcher(operand);
+    if (matcher.matches()) {
+      final String jobName = matcher.group(1);
+      final AzkabanNode conditionNode = azkabanFlow.getNode(jobName);
+      if (conditionNode == null) {
+        this.errors.add("Invalid condition for " + azkabanNode.getName() + ": " + jobName
+            + " doesn't exist in the flow.");
+      }
+      // If a job defines condition on its descendant nodes, then that condition is invalid.
+      else if (isDescendantNode(conditionNode, azkabanNode, azkabanFlow)) {
+        this.errors.add("Invalid condition for " + azkabanNode.getName()
+            + ": should not define condition on its descendant node " + jobName + ".");
+      }
+    } else {
+      this.errors.add("Invalid condition for " + azkabanNode.getName()
+          + ": cannot resolve the condition. Please check the syntax for supported conditions.");
+    }
+  }
+
+  private boolean isDescendantNode(final AzkabanNode current, final AzkabanNode target,
+      final AzkabanFlow azkabanFlow) {
+    // Check if the current node is a descendant of the target node.
+    if (current == null || target == null) {
+      return false;
+    } else if (current.getDependsOn() == null) {
+      return false;
+    } else if (current.getDependsOn().contains(target.getName())) {
+      return true;
+    } else {
+      for (final String nodeName : current.getDependsOn()) {
+        if (isDescendantNode(azkabanFlow.getNode(nodeName), target, azkabanFlow)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

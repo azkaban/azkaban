@@ -18,6 +18,8 @@ package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
+import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
@@ -68,6 +70,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
 
+  private int displayExecutionPageSize;
+
   public static String createJsonResponse(final String status, final String message,
       final String action, final Map<String, Object> params) {
     final HashMap<String, Object> response = new HashMap<>();
@@ -106,6 +110,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
+    this.displayExecutionPageSize = props.getInt(ConfigurationKeys.DISPLAY_EXECUTION_PAGE_SIZE, 16);
 
     if (this.application instanceof AzkabanWebServer) {
       final AzkabanWebServer server = (AzkabanWebServer) this.application;
@@ -290,6 +295,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("utils", utils);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
+    page.add("size", getDisplayExecutionPageSize());
+    
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());
     }
@@ -339,6 +346,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("context", req.getContextPath());
+    page.add("size", getDisplayExecutionPageSize());
 
     // @TODO, allow more than one type of viewer. For time sake, I only install
     // the first one
@@ -368,5 +376,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       throws IOException {
     resp.setContentType(JSON_MIME_TYPE);
     JSONUtils.toJSON(obj, resp.getOutputStream(), true);
+  }
+
+  protected int getDisplayExecutionPageSize() {
+    return displayExecutionPageSize;
   }
 }

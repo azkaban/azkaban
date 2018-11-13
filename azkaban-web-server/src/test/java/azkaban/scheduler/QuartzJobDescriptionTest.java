@@ -26,19 +26,18 @@ import org.junit.Test;
 public class QuartzJobDescriptionTest {
 
   @Test
-  public void testCreateQuartzJobDescription() throws Exception{
+  public void testCreateQuartzJobDescription() throws Exception {
     final Map<String, SampleService> contextMap = new HashMap<>();
     assertThatCode(() -> {
-          new QuartzJobDescription<>(SampleQuartzJob.class,
-          "SampleService",
-          contextMap);
+      new QuartzJobDescription<>(SampleQuartzJob.class, "SampleJob",
+          "SampleService", contextMap);
     }).doesNotThrowAnyException();
   }
 
   @Test
   public void testCreateQuartzJobDescriptionRawType2() throws Exception {
     assertThatThrownBy(
-        () -> new QuartzJobDescription(SampleService.class, "SampleService"))
+        () -> new QuartzJobDescription(SampleService.class, "SampleJob", "SampleService"))
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("jobClass must extend AbstractQuartzJob class");
   }

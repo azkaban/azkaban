@@ -171,6 +171,9 @@ distributions {
                 into 'bin'
                 fileMode = 0755
             }
+            from('src/main/resources/conf') {
+                into 'conf'
+            }
             from(configurations.runtime) {
                 into 'lib'
             }

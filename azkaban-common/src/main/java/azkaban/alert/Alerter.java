@@ -17,7 +17,10 @@
 package azkaban.alert;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.sla.SlaOption;
+import java.util.List;
 
 public interface Alerter {
 
@@ -28,4 +31,7 @@ public interface Alerter {
   void alertOnFirstError(ExecutableFlow exflow) throws Exception;
 
   void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
+
+  void alertOnFailedUpdate(Executor executor, List<ExecutableFlow> executions,
+      ExecutorManagerException e);
 }

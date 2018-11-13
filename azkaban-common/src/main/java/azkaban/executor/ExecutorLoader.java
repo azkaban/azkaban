@@ -39,9 +39,6 @@ public interface ExecutorLoader {
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException;
 
-  Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)
-      throws ExecutorManagerException;
-
   List<ExecutableFlow> fetchFlowHistory(int skip, int num)
       throws ExecutorManagerException;
 
@@ -54,6 +51,9 @@ public interface ExecutorLoader {
   List<ExecutableFlow> fetchFlowHistory(String projContain,
       String flowContains, String userNameContains, int status, long startData,
       long endData, int skip, int num) throws ExecutorManagerException;
+
+  List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
+      final long startTime) throws ExecutorManagerException;
 
   /**
    * <pre>

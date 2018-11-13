@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -27,9 +28,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -67,6 +70,39 @@ public class FileIOUtils {
       }
     }
     return true;
+  }
+
+
+  /**
+   * Dumps a number into a new file.
+   *
+   * @param filePath the target file
+   * @param num the number to dump
+   * @throws IOException if file already exists
+   */
+  public static void dumpNumberToFile(final Path filePath, final long num) throws IOException {
+    try (BufferedWriter writer = Files
+        .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
+      writer.write(String.valueOf(num));
+    } catch (final IOException e) {
+      logger.error(String.format("Failed to write the number %s to the file %s", num, filePath), e);
+      throw e;
+    }
+  }
+
+  /**
+   * Reads a number from a file.
+   *
+   * @param filePath the target file
+   */
+  public static long readNumberFromFile(final Path filePath)
+      throws IOException, NumberFormatException {
+    final List<String> allLines = Files.readAllLines(filePath);
+    if (!allLines.isEmpty()) {
+      return Long.parseLong(allLines.get(0));
+    } else {
+      throw new NumberFormatException("unable to parse empty file " + filePath.toString());
+    }
   }
 
   public static String getSourcePathFromClass(final Class<?> containedClass) {
@@ -115,6 +151,8 @@ public class FileIOUtils {
       for (final File targetFile : targetFiles) {
         if (targetFile.isFile()) {
           final File linkFile = new File(path, targetFile.getName());
+          // NOTE!! If modifying this, you must run this ignored test manually to validate:
+          // FileIOUtilsTest#testHardlinkCopyOfBigDir
           Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
         }
       }

@@ -1,0 +1,382 @@
+#*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reportal</title>
+
+  <link href="${context}/reportal/css/bootstrap.min.css" rel="stylesheet">
+
+  <link href="${context}/css/jquery-ui.css" rel="stylesheet">
+  <script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
+  <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+
+  <script type="text/javascript" src="${context}/js/bootstrap.min.js"></script>
+  <link href="${context}/css/bootstrap-datetimepicker.css" rel="stylesheet">
+  <script type="text/javascript" src="${context}/js/moment.min.js"></script>
+  <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+
+  <link href="${context}/reportal/css/codemirror.css" rel="stylesheet">
+  <link href="${context}/reportal/css/solarized.css" rel="stylesheet">
+  <script type="text/javascript" src="${context}/reportal/js/codemirror.js"></script>
+  <script type="text/javascript" src="${context}/reportal/js/mode/sql/sql.js"></script>
+  <script type="text/javascript" src="${context}/reportal/js/mode/pig/pig.js"></script>
+
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var startQueries = [
+      #if($queries)
+        #foreach($query in $queries)
+          #set($num = $velocityCount - 1)
+
+        ## Escape the query title and script strings as JavaScript strings before loading them.
+          #set($queryTitle = $esc.javascript(${query.title}))
+          #set($queryScript = $esc.javascript(${query.script}))
+          {
+            "num": "${num}",
+          "title" : #if($queryTitle) "$queryTitle" #else "" #end,
+            "type": "${query.type}",
+          "script" : #if($queryScript) "$queryScript" #else "" #end
+          },
+        #end
+      #end];
+    var startVariables = [
+      #if($variables)
+        #foreach($variable in $variables)
+          #set($num = $velocityCount - 1)
+          {
+            "num": "${num}",
+            "title": "${variable.title}",
+            "name": "${variable.name}",
+          },
+        #end
+      #end];
+  </script>
+  <script type="text/javascript">
+    function change(select) {
+      if (select.value == "ReportalTableau") {
+        select.parentNode.parentNode.nextElementSibling.firstElementChild.innerHTML = "Workbook";
+      } else {
+        select.parentNode.parentNode.nextElementSibling.firstElementChild.innerHTML = "Script";
+      }
+    }
+  </script>
+
+  <script type="text/javascript" src="${context}/reportal/js/reportal.js"></script>
+  <script type="text/javascript" src="${context}/reportal/js/reportal-edit.js"></script>
+  <link href="${context}/reportal/css/reportal.css" rel="stylesheet">
+</head>
+<body>
+  #set($current_page="$viewerName")
+  #if(!$hideNavigation)
+    #parse("azkaban/webapp/servlet/velocity/nav.vm")
+  #end
+
+  #parse("azkaban/viewer/reportal/reportalnavigation.vm")
+
+<div class="content" style="margin-top: 41px;">
+  <div id="box-error">
+    #if($errorMsgs)
+      <div class="box-error-message">
+        #foreach($errorMsg in $errorMsgs)
+          #set($num = $velocityCount - 1)
+
+          #if($num > 0)
+            <br/>
+          #end
+
+          $esc.html($errorMsg)
+        #end
+      </div>
+    #else
+      #if($error_message != "null")
+        <div class="box-error-message">$esc.html($error_message)</div>
+      #elseif($success_message != "null")
+        <div class="box-success-message">$success_message</div>
+      #end
+    #end
+  </div>
+  <div>&nbsp;</div>
+  <form method="post" class="form-horizontal">
+    <div style="text-align: center;">
+      <a class="btn btn-primary" href="${context}/reportal">Reportal Home</a>
+      #if($projectId)
+        <a class="btn btn-info" href="${context}/reportal?view&amp;id=${projectId}">Report
+          History</a>
+        <input type="submit" class="btn btn-primary" name="submit" value="Save"/>
+        <input type="submit" class="btn btn-success" name="submit" value="Save and Run"/>
+      #end
+    </div>
+    #set($title = $esc.html($title))
+    <div>&nbsp;</div>
+    <div class="container">
+      <input id="queryNumber" type="hidden" name="queryNumber"
+             value="#if($queryNumber)${queryNumber}#{else}1#end">
+      <input id="variableNumber" type="hidden" name="variableNumber"
+             value="#if($variableNumber)${variableNumber}#{else}1#end">
+      <fieldset>
+        <legend>Report</legend>
+        <div class="control-group required">
+          <label class="control-label">Title<abbr title="Required"
+                                                  class="required-mark">*</abbr></label>
+          <div class="controls"><input type="text" name="title"#if($title) value="$title"#end></div>
+        </div>
+        <div class="control-group required">
+          <label class="control-label">Description<abbr title="Required"
+                                                        class="required-mark">*</abbr></label>
+          <div class="controls"><textarea class="span8" name="description">${description}</textarea>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="controls">
+            <label class="checkbox">
+              <input name="render-results-as-html" type="checkbox"#if($renderResultsAsHtml)
+                     checked#end/>Render results as HTML
+            </label>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="controls">
+            <label class="checkbox">
+              <input id="schedule-options" name="schedule" type="checkbox"#if($schedule)
+                     checked#end/>Schedule
+            </label>
+          </div>
+        </div>
+        <div id="schedule-fields">
+          <div class="control-group">
+            <label for="schedule-time" class="control-label">Time</label>
+            <div id="schedule-time" class="controls">
+              #set($TWELVE=12)
+              #set($ZERO_ZERO="00")
+              <input name="schedule-hour" type="text" maxlength="2"
+                     value="#if($scheduleHour && $scheduleHour !="")${scheduleHour}#else$TWELVE#end"
+                     style="width:20px;"/>:<input name="schedule-minute" type="text" size="2"
+                                                  maxlength="2"
+                                                  value="#if($scheduleMinute && $scheduleMinute !=
+                                                    "")${scheduleMinute}#else$ZERO_ZERO#end"
+                                                  style="width:20px;"/>
+              <select name="schedule-am_pm" style="width:60px;">
+                <option#if($scheduleAmPm=="am") selected#end>am</option>
+                <option#if($scheduleAmPm=="pm") selected#end>pm</option>
+              </select>
+              <select name="schedule-timezone" style="width:70px;">
+                <option#if($scheduleTimeZone==$timezone) selected#end>${timezone}</option>
+                <option#if($scheduleTimeZone=="UTC") selected#end>UTC</option>
+              </select>
+            </div>
+          </div>
+          <div class="control-group">
+            <label for="date" class="control-label">Date</label>
+            <div id="date" class="controls" style="position: relative">
+              <input type="text" id="schedule-date"
+                     name="schedule-date"#if($scheduleDate && $scheduleDate != "")
+                     value="$scheduleDate"#end/>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="controls">
+              <label class="checkbox">
+                <input id="schedule-repeat" name="schedule-repeat"
+                       type="checkbox"#if($scheduleRepeat) checked#end/>Repeat
+              </label>
+            </div>
+          </div>
+          <div id="schedule-repeat-fields">
+            <div class="control-group">
+              <label for="interval" class="control-label">Every</label>
+              <div id="interval" class="controls">
+                #set($ONE=1)
+                <input name="schedule-interval-quantity" type="text" maxlength="2"
+                       value="#if($scheduleIntervalQuantity)${scheduleIntervalQuantity}#else$ONE#end"
+                       style="width:20px;"/>
+                <select name="schedule-interval" style="width:100px;">
+                  <option value="M"#if($scheduleInterval=="M") selected#end>Minute(s)</option>
+                  <option value="h"#if($scheduleInterval=="h") selected#end>Hour(s)</option>
+                  <option value="d"#if($scheduleInterval=="d") selected#end>Day(s)</option>
+                  <option value="w"#if($scheduleInterval=="w") selected#end>Week(s)</option>
+                  <option value="m"#if($scheduleInterval=="m") selected#end>Month(s)</option>
+                  <option value="y"#if($scheduleInterval=="y") selected#end>Year(s)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="control-group" id='endScheduleId' data-max="$max_allowed_schedule_dates"
+                 data-default="$default_schedule_dates">
+              <label for="endSchedule" class="control-label"> <span style="color:#ff1059">End Schedule Time</span>
+              </label>
+              <div id="interval_2" class="controls" style="position: relative">
+                <input type="text" id="end-schedule-date"
+                       name="end-schedule-date"#if($endScheduleDate && $endScheduleDate != "")
+                       value="$endScheduleDate"#end/>
+              </div>
+              <div id="expireNote" class="controls" data-end="$endScheduleDate">
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <div id="variable-fields">
+          <legend>Variables</legend>
+          <ol id="variable-list" class="reportal-list">
+          </ol>
+          <ol id="variable-template" style="display:none;">
+            <li class="reportal-list-item">
+              <div class="query-actions" style="float: right;">
+                <a class="btn btn-icon btn-left bump-up" title="Move the variable up."><span
+                    class="icon icon-arrow-up icon-gray-light icon-medium"></span></a>
+                <a class="btn btn-icon btn-right bump-down disabled"
+                   title="Move the variable down."><span
+                    class="icon icon-arrow-down icon-gray-light icon-medium"></span></a>
+                <a class="btn btn-danger btn-icon delete" style="float: right; margin-left:5px;"
+                   title="Remove">Remove</a>
+              </div>
+              <div class="control-group required">
+                <label class="control-label">Title<abbr title="Required"
+                                                        class="required-mark">*</abbr></label>
+                <div class="controls"><input type="text" class="variabletitle"
+                                             nametemplate="variable#title" value=""></div>
+              </div>
+              <div class="control-group required">
+                <label class="control-label">Name<abbr title="Required"
+                                                       class="required-mark">*</abbr></label>
+                <div class="controls"><input type="text" class="variablename"
+                                             nametemplate="variable#name" value=""></div>
+              </div>
+            </li>
+          </ol>
+          <div class="control-group">
+            <label class="control-label"></label>
+            <div class="controls">
+              <button id="buttonAddVariable" type="button" class="btn btn-success"
+                      value="Add another Variable"><span
+                  class="icon icon-plus-alt icon-white icon-small"></span>Add Another Variable
+              </button>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <legend>Queries</legend>
+      <fieldset>
+        <ol id="query-list" class="reportal-list">
+        </ol>
+        <ol id="query-template" style="display:none;">
+          <li class="reportal-list-item">
+            <div class="query-actions" style="float: right;">
+              <a class="btn btn-icon btn-left bump-up"
+                 title="Move the query up in execution order."><span
+                  class="icon icon-arrow-up icon-gray-light icon-medium"></span></a>
+              <a class="btn btn-icon btn-right bump-down disabled"
+                 title="Move the query down in execution order."><span
+                  class="icon icon-arrow-down icon-gray-light icon-medium"></span></a>
+              <a class="btn btn-danger btn-icon delete" style="float: right; margin-left:5px;"
+                 title="Remove">Remove</a>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Title</label>
+              <div class="controls"><input type="text" class="querytitle" nametemplate="query#title"
+                                           value="" maxlength="249"></div>
+            </div>
+            <div class="control-group required">
+              <label class="control-label">Type<abbr title="Required" class="required-mark">*</abbr></label>
+              <div class="controls">
+                <select id="querytype" class="querytype" onChange="change(this)"
+                        nametemplate="query#type">
+                  <option id="ReportalHive" value="ReportalHive">Hive</option>
+                  <option value="ReportalTeraData">Teradata</option>
+                  <option value="ReportalPig">Pig</option>
+                  <option value="ReportalPresto">Presto</option>
+                  <option value="ReportalTableau">Tableau</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="query" class="control-group">
+              <label class="control-label" id="queryLabel">Script</label>
+              <div class="controls"><textarea class="span8 queryscript"
+                                              nametemplate="query#script"></textarea></div>
+            </div>
+
+          </li>
+        </ol>
+
+        <div class="control-group">
+          <label class="control-label"></label>
+          <div class="controls">
+            <button id="buttonAddQuery" type="button" class="btn btn-success"
+                    value="Add another Query"><span
+                class="icon icon-plus-alt icon-white icon-small"></span>Add Another Query
+            </button>
+          </div>
+        </div>
+
+      </fieldset>
+      <fieldset>
+        <legend>Access</legend>
+        <div class="control-group">
+          <label class="control-label">Viewers</label>
+          <div class="controls">
+            <textarea class="span8" name="access-viewer">$accessViewer</textarea>
+            <br/>Separate usernames (e.g.: jdoe) by commas, spaces, or semicolons. If left blank,
+            the runs of this report are viewable by everyone.
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Executors</label>
+          <div class="controls">
+            <textarea class="span8" name="access-executor">$accessExecutor</textarea>
+            <br/>Separate usernames (e.g.: jdoe) by commas, spaces, or semicolons. If left blank,
+            anyone can execute this report.
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Owners</label>
+          <div class="controls">
+            <textarea class="span8" name="access-owner">$accessOwner</textarea>
+            <br/>Separate usernames (e.g.: jdoe) by commas, spaces, or semicolons.
+          </div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Notification</legend>
+        <div class="control-group">
+          <label class="control-label">Success Emails</label>
+          <div class="controls">
+            <textarea class="span8" name="notifications">$notifications</textarea>
+            <br/>Separate emails (e.g.: jdoe@example.com) by commas, spaces, or semicolons. Note: If
+            the report returns no results, no email is sent, except for unscheduled runs.
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Failure Emails</label>
+          <div class="controls">
+            <textarea class="span8" name="failure-notifications">$failureNotifications</textarea>
+            <br/>Separate emails (e.g.: jdoe@example.com) by commas, spaces, or semicolons.
+          </div>
+        </div>
+      </fieldset>
+      <div class="form-actions">
+        <input type="submit" class="btn btn-primary" name="submit" value="Save">
+        <input type="submit" class="btn btn-success" name="submit" value="Save and Run"/>
+        <a href="${context}/reportal" class="btn">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+</body>
+</html>

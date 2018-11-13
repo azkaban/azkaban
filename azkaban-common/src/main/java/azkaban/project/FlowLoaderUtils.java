@@ -332,4 +332,15 @@ public class FlowLoaderUtils {
           && name.length() > this.suffix.length() && name.endsWith(this.suffix);
     }
   }
+
+  /**
+   * Implements Directory filter.
+   */
+  public static class DirFilter implements FileFilter {
+
+    @Override
+    public boolean accept(final File pathname) {
+      return pathname.isDirectory();
+    }
+  }
 }

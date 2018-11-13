@@ -48,6 +48,7 @@
     var projectName = "${project.name}";
     var flowId = "${flowid}";
     var execId = null;
+    var pageSize = "${size}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
@@ -101,6 +102,7 @@
     <ul class="nav nav-tabs nav-sm" id="headertabs">
       <li id="graphViewLink"><a href="#graph">Graph</a></li>
       <li id="executionsViewLink"><a href="#executions">Executions</a></li>
+      <li id="flowtriggersViewLink"><a href="#flowtriggers">Flow Triggers</a></li>
       <li id="summaryViewLink"><a href="#summary">Summary</a></li>
     </ul>
   </div>
@@ -131,6 +133,40 @@
           </tr>
           </thead>
           <tbody id="execTableBody">
+          </tbody>
+        </table>
+        <ul id="pageSelection" class="pagination">
+          <li id="previous" class="first"><a><span class="arrow">&larr;</span>Previous</a></li>
+          <li id="page1"><a href="#page1">1</a></li>
+          <li id="page2"><a href="#page2">2</a></li>
+          <li id="page3"><a href="#page3">3</a></li>
+          <li id="page4"><a href="#page4">4</a></li>
+          <li id="page5"><a href="#page5">5</a></li>
+          <li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
+        </ul>
+      </div>
+    </div>
+  </div><!-- /.container-fill -->
+
+  ## Flow trigger view.
+  <div class="container-full" id="flowtriggerView">
+    <div class="row">
+      <div class="col-xs-12">
+
+        <table class="table table-striped table-bordered table-condensed table-hover"
+               id="execTable">
+          <thead>
+          <tr>
+            <th>Flow Trigger Instance Id</th>
+            <th>Submitting user</th>
+            <th class="date">Start Time</th>
+            <th class="date">End Time</th>
+            <th class="elapse">Elapsed</th>
+            <th class="status">Status</th>
+            <th class="action">Action</th>
+          </tr>
+          </thead>
+          <tbody id="triggerTableBody">
           </tbody>
         </table>
         <ul id="pageSelection" class="pagination">

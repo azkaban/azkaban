@@ -13,3 +13,6 @@ CREATE TABLE execution_dependencies(
   flow_exec_id INT not null,
   primary key(trigger_instance_id, dep_name)
 );
+
+CREATE INDEX ex_end_time
+  ON execution_dependencies (endtime);

@@ -15,6 +15,8 @@
  */
 package azkaban.restli;
 
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
@@ -39,6 +41,7 @@ import java.util.Map;
 import javax.servlet.ServletException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+import org.quartz.SchedulerException;
 
 @RestLiActions(name = "project", namespace = "azkaban.restli")
 public class ProjectManagerResource extends ResourceContextHolder {
@@ -55,18 +58,29 @@ public class ProjectManagerResource extends ResourceContextHolder {
       @ActionParam("projectName") final String projectName,
       @ActionParam("packageUrl") final String packageUrl)
       throws ProjectManagerException, RestLiServiceException, UserManagerException,
-      ServletException, IOException {
+      ServletException, IOException, SchedulerException {
     logger.info("Deploy called. {projectName: " + projectName + ", packageUrl:" + packageUrl + "}");
 
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
     final User user = ResourceUtils.getUserFromSessionId(sessionId);
     final ProjectManager projectManager = getAzkaban().getProjectManager();
     final Project project = projectManager.getProject(projectName);
+
+    final FlowTriggerScheduler scheduler = getAzkaban().getScheduler();
+    final boolean enableQuartz = getAzkaban().getServerProps().getBoolean(ConfigurationKeys
+        .ENABLE_QUARTZ, false);
+
     logger.info("Deploy: reference of project " + projectName + " is " + System.identityHashCode
         (project));
     if (project == null) {
       final String errorMsg = "Project '" + projectName + "' not found.";
       throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
+    }
+
+    if (!project.isActive()) {
+      final String errorMsg =
+          "Installation Failed. Project '" + projectName + "' was already removed.";
+      throw new RestLiServiceException(HttpStatus.S_410_GONE, errorMsg);
     }
 
     if (!ResourceUtils.hasPermission(project, user, Permission.Type.WRITE)) {
@@ -111,16 +125,26 @@ public class ProjectManagerResource extends ResourceContextHolder {
     }
 
     try {
+      if (enableQuartz) {
+        //todo chengren311: should maintain atomicity,
+        // e.g, if uploadProject fails, associated schedule shouldn't be added.
+        scheduler.unscheduleAll(project);
+      }
       // Check if project upload runs into any errors, such as the file
       // having blacklisted jars
       final Props props = new Props();
       final Map<String, ValidationReport> reports = projectManager
           .uploadProject(project, archiveFile, "zip", user, props);
+
+      if (enableQuartz) {
+        scheduler.scheduleAll(project, user.getUserId());
+      }
+
       checkReports(reports);
       logger.info("Deploy: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       return Integer.toString(project.getVersion());
-    } catch (final ProjectManagerException e) {
+    } catch (final ProjectManagerException | SchedulerException e) {
       final String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
       logger.error(errorMsg, e);
       throw e;

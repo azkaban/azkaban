@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,12 +23,14 @@ buildscript {
     }
     dependencies {
         classpath 'com.cinnober.gradle:semver-git:2.2.3'
-        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.11'
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.14'
     }
 }
 
 plugins {
     id 'com.gradle.build-scan' version '1.9'
+    id 'com.github.kt3k.coveralls' version '2.6.3'
+    id 'jacoco'
 }
 
 buildScan {
@@ -45,6 +47,8 @@ compareGradleBuilds {
 }
 
 allprojects {
+    apply plugin: 'jacoco'
+
     repositories {
         mavenCentral()
         mavenLocal()
@@ -54,6 +58,7 @@ allprojects {
 ext.versions = [
         hadoop: '2.6.1',
         hive  : '1.1.0',
+        pig   : '0.11.0',
         restli: '1.15.7',
         slf4j : '1.7.18',
 ]
@@ -63,6 +68,7 @@ ext.deps = [
         assertj             : 'org.assertj:assertj-core:3.8.0',
         awaitility          : 'org.awaitility:awaitility:3.0.0',
         collections         : 'commons-collections:commons-collections:3.2.2',
+        commonsCli          : 'commons-cli:commons-cli:1.3.1',
         commonsLang         : 'commons-lang:commons-lang:2.6',
         commonsCompress     : 'org.apache.commons:commons-compress:1.16.1',
         dbcp2               : 'org.apache.commons:commons-dbcp2:2.1.1',
@@ -78,6 +84,7 @@ ext.deps = [
         hadoopHdfs          : "org.apache.hadoop:hadoop-hdfs:" + versions.hadoop,
         hadoopMRClientCommon: "org.apache.hadoop:hadoop-mapreduce-client-common:" + versions.hadoop,
         hadoopMRClientCore  : "org.apache.hadoop:hadoop-mapreduce-client-core:" + versions.hadoop,
+        hiveCli             : "org.apache.hive:hive-cli:" + versions.hive,
         hiveExecCore        : "org.apache.hive:hive-exec:" + versions.hive + ":core",
         hiveMetastore       : "org.apache.hive:hive-metastore:" + versions.hive,
         httpclient          : 'org.apache.httpcomponents:httpclient:4.5.3',
@@ -98,16 +105,26 @@ ext.deps = [
         metricsCore         : 'io.dropwizard.metrics:metrics-core:3.1.0',
         metricsJvm          : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
         mockito             : 'org.mockito:mockito-core:2.10.0',
+        mongoDriver         : 'org.mongodb:mongo-java-driver:2.14.0',
         mysqlConnector      : 'mysql:mysql-connector-java:5.1.28',
+        pig                 : 'org.apache.pig:pig:' + versions.pig,
+        parquetAvro         : 'com.twitter:parquet-avro:1.3.2',
+        parquetBundle       : 'com.twitter:parquet-hadoop-bundle:1.3.2',
         quartz              : 'org.quartz-scheduler:quartz:2.2.1',
         restliGenerator     : 'com.linkedin.pegasus:generator:' + versions.restli,
         restliServer        : 'com.linkedin.pegasus:restli-server:' + versions.restli,
         restliTools         : 'com.linkedin.pegasus:restli-tools:' + versions.restli,
         slf4j               : 'org.slf4j:slf4j-api:' + versions.slf4j,
         slf4jLog4j          : 'org.slf4j:slf4j-log4j12:' + versions.slf4j,
+        sparkCore           : 'org.apache.spark:spark-core_2.10:1.4.0',
         snakeyaml           : 'org.yaml:snakeyaml:1.18',
         velocity            : 'org.apache.velocity:velocity:1.7',
         velocityTools       : 'org.apache.velocity:velocity-tools:2.0',
+        bcprov              : 'org.bouncycastle:bcprov-jdk15on:1.54',
+        jacksonAnnotation   : 'com.fasterxml.jackson.core:jackson-annotations:2.7.4',
+        jacksonDatabind     : 'com.fasterxml.jackson.core:jackson-databind:2.7.4',
+        jasypt              : 'org.jasypt:jasypt:1.9.2',
+        jacksonCore         : 'com.fasterxml.jackson.core:jackson-core:2.9.2'
 ]
 
 subprojects {
@@ -207,7 +224,6 @@ subprojects {
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.1'
     distributionType('ALL')
 }
 
@@ -219,4 +235,38 @@ if (System.env.TRAVIS == 'true') {
             minHeapSize = '128m'
         }
     }
+}
+
+def publishedProjects = subprojects.findAll()
+
+// Aggregate all subproject reports into one.
+task jacocoAggregateReport(type: JacocoReport, group: 'Coverage reports') {
+    description = 'Generates an aggregate report from all subprojects'
+
+    dependsOn(publishedProjects.test)
+
+    // JacocoReport-type task requires users to specify which classes to be covered
+    // See details in
+    // https://docs.gradle.org/current/dsl/org.gradle.testing.jacoco.tasks.JacocoReport.html
+    sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    classDirectories = files(publishedProjects.sourceSets.main.output)
+    executionData = files(publishedProjects.jacocoTestReport.executionData)
+
+    doFirst {
+        executionData = files(executionData.findAll { it.exists() })
+    }
+
+    reports {
+        html.enabled = true // human readable
+        xml.enabled = true // required by coveralls
+    }
+}
+
+coveralls {
+    sourceDirs = publishedProjects.sourceSets.main.allSource.srcDirs.flatten()
+    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml"
+}
+
+tasks.coveralls {
+    dependsOn jacocoAggregateReport
 }

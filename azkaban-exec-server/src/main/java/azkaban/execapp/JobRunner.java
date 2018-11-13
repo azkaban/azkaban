@@ -63,8 +63,10 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
   private static final Object logCreatorLock = new Object();
-  private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
-      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+
+  private static final String DEFAULT_LAYOUT =
+      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n";
+
   private final Object syncObject = new Object();
   private final JobTypeManager jobtypeManager;
   private final ExecutorLoader loader;
@@ -72,7 +74,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private final Props azkabanProps;
   private final ExecutableNode node;
   private final File workingDir;
-  private final Layout loggerLayout = this.DEFAULT_LAYOUT;
+  private final Layout loggerLayout;
   private final String jobId;
   private final Set<String> pipelineJobs = new HashSet<>();
   private Logger logger = null;
@@ -106,6 +108,10 @@ public class JobRunner extends EventHandler implements Runnable {
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
+    final String jobLogLayout = props.getString(
+        JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
+
+    this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {

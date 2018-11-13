@@ -171,14 +171,16 @@ public class BasicTimeChecker implements ConditionChecker {
         break;
       } else if (this.cronExecutionTime != null) {
         final Date nextDate = this.cronExecutionTime.getNextValidTimeAfter(date.toDate());
-        date = new DateTime(nextDate);
+        // Some Cron Expressions possibly do not have follow-up occurrences
+        if (nextDate != null) {
+          date = new DateTime(nextDate);
+        } else {
+          break;
+        }
       } else {
         date = date.plus(this.period);
       }
       count += 1;
-      if (!this.skipPastChecks) {
-        continue;
-      }
     }
     return date.getMillis();
   }
