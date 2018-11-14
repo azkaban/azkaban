@@ -536,7 +536,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     doPrefetch(tokenFile, props, logger, userToProxy);
   }
 
-  private synchronized void doPrefetch(final File tokenFile, final Props props, final Logger logger,
+  private void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
     final Credentials cred = new Credentials();
     fetchMetaStoreToken(props, logger, userToProxy, cred);
