@@ -19,6 +19,7 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.File;
+import java.nio.file.attribute.FileTime;
 
 
 public class ProjectVersion implements Comparable<ProjectVersion> {
@@ -28,6 +29,8 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 
   private File installedDir;
   private Long dirSize;
+  private Integer fileCount;
+  private FileTime lastAccessTime;
 
   public ProjectVersion(final int projectId, final int version) {
     checkArgument(projectId > 0);
@@ -48,6 +51,14 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 
   public void setDirSizeInBytes(final Long dirSize) {
     this.dirSize = dirSize;
+  }
+
+  public Integer getFileCount() {
+    return this.fileCount;
+  }
+
+  public void setFileCount(final Integer fileCount) {
+    this.fileCount = fileCount;
   }
 
   public int getProjectId() {
@@ -77,9 +88,21 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 
   @Override
   public String toString() {
-    return "ProjectVersion{" + "projectId=" + this.projectId + ", version=" + this.version
-        + ", installedDir="
-        + this.installedDir
-        + '}';
+    return "ProjectVersion{" +
+        "projectId=" + this.projectId +
+        ", version=" + this.version +
+        ", installedDir=" + this.installedDir +
+        ", dirSize=" + this.dirSize +
+        ", fileCount=" + this.fileCount +
+        ", lastAccessTime=" + this.lastAccessTime +
+        '}';
+  }
+
+  public FileTime getLastAccessTime() {
+    return this.lastAccessTime;
+  }
+
+  public void setLastAccessTime(final FileTime lastAccessTime) {
+    this.lastAccessTime = lastAccessTime;
   }
 }

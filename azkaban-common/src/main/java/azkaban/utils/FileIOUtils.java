@@ -72,6 +72,19 @@ public class FileIOUtils {
     return true;
   }
 
+  public static int getFileCount(final File file) {
+    final File[] files = file.listFiles();
+    int count = 0;
+    for (final File f : files) {
+      if (f.isDirectory()) {
+        count += getFileCount(f);
+      } else {
+        count++;
+      }
+    }
+    return count;
+  }
+
 
   /**
    * Dumps a number into a new file.
@@ -81,7 +94,7 @@ public class FileIOUtils {
    * @throws IOException if file already exists
    */
   public static void dumpNumberToFile(final Path filePath, final long num) throws IOException {
-    try (BufferedWriter writer = Files
+    try (final BufferedWriter writer = Files
         .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
     } catch (final IOException e) {
