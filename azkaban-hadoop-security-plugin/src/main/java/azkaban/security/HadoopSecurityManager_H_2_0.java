@@ -313,7 +313,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final UserGroupInformation ugi = getProxiedUser(user);
 
       if (ugi != null) {
-        fs = ugi.doAs(new PrivilegedAction<>() {
+        fs = ugi.doAs(new PrivilegedAction<FileSystem>() {
 
           @Override
           public FileSystem run() {
