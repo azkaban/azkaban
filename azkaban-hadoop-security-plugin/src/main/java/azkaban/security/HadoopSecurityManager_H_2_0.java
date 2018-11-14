@@ -313,7 +313,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final UserGroupInformation ugi = getProxiedUser(user);
 
       if (ugi != null) {
-        fs = ugi.doAs(new PrivilegedAction<FileSystem>() {
+        fs = ugi.doAs(new PrivilegedAction<>() {
 
           @Override
           public FileSystem run() {
@@ -348,7 +348,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
         // The credential class must have a constructor accepting 3 parameters, Credentials,
         // Props, and Logger in order.
-        Constructor constructor = credentialClass.getConstructor (new Class[]
+        final Constructor constructor = credentialClass.getConstructor(new Class[]
             {Credentials.class, Props.class, Logger.class});
         final CredentialProvider customCredential = (CredentialProvider) constructor
               .newInstance(hadoopCred, props, jobLogger);
@@ -536,10 +536,158 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     doPrefetch(tokenFile, props, logger, userToProxy);
   }
 
-  private synchronized void doPrefetch(File tokenFile, Props props, Logger logger,
-      String userToProxy) throws HadoopSecurityManagerException {
+  private synchronized void doPrefetch(final File tokenFile, final Props props, final Logger logger,
+      final String userToProxy) throws HadoopSecurityManagerException {
     final Credentials cred = new Credentials();
-    if (props.getBoolean(OBTAIN_HCAT_TOKEN, false)) {
+    fetchMetaStoreToken(props, logger, userToProxy, cred);
+    fetchJHSToken(props, logger, userToProxy, cred);
+
+    try {
+      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
+        @Override
+        public Void run() throws Exception {
+          getToken(userToProxy);
+          return null;
+        }
+
+        private void getToken(final String userToProxy) throws InterruptedException,
+            IOException, HadoopSecurityManagerException {
+          logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN + ": "
+              + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
+
+          // Register user secrets by custom credential Object
+          if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
+            registerCustomCredential(props, cred, userToProxy, logger);
+          }
+
+          fetchNameNodeToken(userToProxy, props, logger, cred);
+
+          fetchJobTrackerToken(userToProxy, props, logger, cred);
+
+        }
+      });
+
+      prepareTokenFile(userToProxy, cred, tokenFile, logger);
+      // stash them to cancel after use.
+
+      logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
+
+    } catch (final Exception e) {
+      throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
+          + e.getMessage() + e.getCause(), e);
+    } catch (final Throwable t) {
+      throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
+          + t.getMessage() + t.getCause(), t);
+    }
+  }
+
+  private void fetchJobTrackerToken(final String userToProxy, final Props props,
+      final Logger logger,
+      final Credentials cred)
+      throws IOException, InterruptedException, HadoopSecurityManagerException {
+    if (props.getBoolean(HadoopSecurityManager.OBTAIN_JOBTRACKER_TOKEN, false)) {
+      final JobConf jobConf = new JobConf();
+      final JobClient jobClient = new JobClient(jobConf);
+      logger.info("Pre-fetching JT token from JobTracker");
+
+      final Token<DelegationTokenIdentifier> mrdt =
+          jobClient
+              .getDelegationToken(getMRTokenRenewerInternal(jobConf));
+      if (mrdt == null) {
+        logger.error("Failed to fetch JT token");
+        throw new HadoopSecurityManagerException(
+            "Failed to fetch JT token for " + userToProxy);
+      }
+      logger.info("Created JT token.");
+      logger.info("Token kind: " + mrdt.getKind());
+      logger.info("Token service: " + mrdt.getService());
+      cred.addToken(mrdt.getService(), mrdt);
+    }
+  }
+
+  private void fetchNameNodeToken(final String userToProxy, final Props props, final Logger logger,
+      final Credentials cred)
+      throws IOException, HadoopSecurityManagerException {
+    if (props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN, false)) {
+      final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
+      // check if we get the correct FS, and most importantly, the
+      // conf
+      logger.info("Getting DFS token from " + fs.getUri());
+      final Token<?> fsToken =
+          fs.getDelegationToken(getMRTokenRenewerInternal(new JobConf())
+              .toString());
+      if (fsToken == null) {
+        logger.error("Failed to fetch DFS token for ");
+        throw new HadoopSecurityManagerException(
+            "Failed to fetch DFS token for " + userToProxy);
+      }
+      logger.info("Created DFS token.");
+      logger.info("Token kind: " + fsToken.getKind());
+      logger.info("Token service: " + fsToken.getService());
+
+      cred.addToken(fsToken.getService(), fsToken);
+
+      // getting additional name nodes tokens
+      final String otherNamenodes = props.get(
+          HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN);
+      if ((otherNamenodes != null) && (otherNamenodes.length() > 0)) {
+        logger.info(
+            HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN + ": '" + otherNamenodes
+                + "'");
+        final String[] nameNodeArr = otherNamenodes.split(",");
+        final Path[] ps = new Path[nameNodeArr.length];
+        for (int i = 0; i < ps.length; i++) {
+          ps[i] = new Path(nameNodeArr[i].trim());
+        }
+        TokenCache.obtainTokensForNamenodes(cred, ps, HadoopSecurityManager_H_2_0.this.conf);
+        logger.info("Successfully fetched tokens for: " + otherNamenodes);
+      } else {
+        logger.info(
+            HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN + " was not configured");
+      }
+    }
+  }
+
+  private void fetchJHSToken(
+      final Props props, final Logger logger, final String userToProxy, final Credentials cred)
+      throws HadoopSecurityManagerException {
+    if (props.getBoolean(OBTAIN_JOBHISTORYSERVER_TOKEN, false)) {
+      final YarnRPC rpc = YarnRPC.create(this.conf);
+      final String serviceAddr = this.conf.get(JHAdminConfig.MR_HISTORY_ADDRESS);
+
+      logger.debug("Connecting to HistoryServer at: " + serviceAddr);
+      final HSClientProtocol hsProxy =
+          (HSClientProtocol) rpc.getProxy(HSClientProtocol.class,
+              NetUtils.createSocketAddr(serviceAddr), this.conf);
+      logger.info("Pre-fetching JH token from job history server");
+
+      Token<?> jhsdt = null;
+      try {
+        jhsdt = getDelegationTokenFromHS(hsProxy);
+      } catch (final Exception e) {
+        logger.error("Failed to fetch JH token", e);
+        throw new HadoopSecurityManagerException(
+            "Failed to fetch JH token for " + userToProxy);
+      }
+
+      if (jhsdt == null) {
+        logger.error("getDelegationTokenFromHS() returned null");
+        throw new HadoopSecurityManagerException(
+            "Unable to fetch JH token for " + userToProxy);
+      }
+
+      logger.info("Created JH token.");
+      logger.info("Token kind: " + jhsdt.getKind());
+      logger.info("Token service: " + jhsdt.getService());
+
+      cred.addToken(jhsdt.getService(), jhsdt);
+    }
+  }
+
+  private void fetchMetaStoreToken(final Props props, final Logger logger, final String userToProxy,
+      final Credentials cred)
+      throws HadoopSecurityManagerException {
+    if (props.getBoolean(HadoopSecurityManager.OBTAIN_HCAT_TOKEN, false)) {
       try {
 
         // first we fetch and save the default hcat token.
@@ -592,127 +740,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         logger.error(message, t);
         throw new HadoopSecurityManagerException(message);
       }
-    }
-
-    if (props.getBoolean(OBTAIN_JOBHISTORYSERVER_TOKEN, false)) {
-      final YarnRPC rpc = YarnRPC.create(this.conf);
-      final String serviceAddr = this.conf.get(JHAdminConfig.MR_HISTORY_ADDRESS);
-
-      logger.debug("Connecting to HistoryServer at: " + serviceAddr);
-      final HSClientProtocol hsProxy =
-          (HSClientProtocol) rpc.getProxy(HSClientProtocol.class,
-              NetUtils.createSocketAddr(serviceAddr), this.conf);
-      logger.info("Pre-fetching JH token from job history server");
-
-      Token<?> jhsdt = null;
-      try {
-        jhsdt = getDelegationTokenFromHS(hsProxy);
-      } catch (final Exception e) {
-        logger.error("Failed to fetch JH token", e);
-        throw new HadoopSecurityManagerException(
-            "Failed to fetch JH token for " + userToProxy);
-      }
-
-      if (jhsdt == null) {
-        logger.error("getDelegationTokenFromHS() returned null");
-        throw new HadoopSecurityManagerException(
-            "Unable to fetch JH token for " + userToProxy);
-      }
-
-      logger.info("Created JH token.");
-      logger.info("Token kind: " + jhsdt.getKind());
-      logger.info("Token service: " + jhsdt.getService());
-
-      cred.addToken(jhsdt.getService(), jhsdt);
-    }
-
-    try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          getToken(userToProxy);
-          return null;
-        }
-
-        private void getToken(final String userToProxy) throws InterruptedException,
-            IOException, HadoopSecurityManagerException {
-          logger.info("Here is the props for " + OBTAIN_NAMENODE_TOKEN + ": "
-              + props.getBoolean(OBTAIN_NAMENODE_TOKEN));
-
-          // Register user secrets by custom credential Object
-          if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger);
-          }
-
-          if (props.getBoolean(OBTAIN_NAMENODE_TOKEN, false)) {
-            final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
-            // check if we get the correct FS, and most importantly, the
-            // conf
-            logger.info("Getting DFS token from " + fs.getUri());
-            final Token<?> fsToken =
-                fs.getDelegationToken(getMRTokenRenewerInternal(new JobConf())
-                    .toString());
-            if (fsToken == null) {
-              logger.error("Failed to fetch DFS token for ");
-              throw new HadoopSecurityManagerException(
-                  "Failed to fetch DFS token for " + userToProxy);
-            }
-            logger.info("Created DFS token.");
-            logger.info("Token kind: " + fsToken.getKind());
-            logger.info("Token service: " + fsToken.getService());
-
-            cred.addToken(fsToken.getService(), fsToken);
-
-            // getting additional name nodes tokens
-            final String otherNamenodes = props.get(OTHER_NAMENODES_TO_GET_TOKEN);
-            if ((otherNamenodes != null) && (otherNamenodes.length() > 0)) {
-              logger.info(OTHER_NAMENODES_TO_GET_TOKEN + ": '" + otherNamenodes
-                  + "'");
-              final String[] nameNodeArr = otherNamenodes.split(",");
-              final Path[] ps = new Path[nameNodeArr.length];
-              for (int i = 0; i < ps.length; i++) {
-                ps[i] = new Path(nameNodeArr[i].trim());
-              }
-              TokenCache.obtainTokensForNamenodes(cred, ps, HadoopSecurityManager_H_2_0.this.conf);
-              logger.info("Successfully fetched tokens for: " + otherNamenodes);
-            } else {
-              logger.info(OTHER_NAMENODES_TO_GET_TOKEN + " was not configured");
-            }
-          }
-
-          if (props.getBoolean(OBTAIN_JOBTRACKER_TOKEN, false)) {
-            final JobConf jobConf = new JobConf();
-            final JobClient jobClient = new JobClient(jobConf);
-            logger.info("Pre-fetching JT token from JobTracker");
-
-            final Token<DelegationTokenIdentifier> mrdt =
-                jobClient
-                    .getDelegationToken(getMRTokenRenewerInternal(jobConf));
-            if (mrdt == null) {
-              logger.error("Failed to fetch JT token");
-              throw new HadoopSecurityManagerException(
-                  "Failed to fetch JT token for " + userToProxy);
-            }
-            logger.info("Created JT token.");
-            logger.info("Token kind: " + mrdt.getKind());
-            logger.info("Token service: " + mrdt.getService());
-            cred.addToken(mrdt.getService(), mrdt);
-          }
-
-        }
-      });
-
-      prepareTokenFile(userToProxy, cred, tokenFile, logger);
-      // stash them to cancel after use.
-
-      logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
-
-    } catch (final Exception e) {
-      throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
-          + e.getMessage() + e.getCause(), e);
-    } catch (final Throwable t) {
-      throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
-          + t.getMessage() + t.getCause(), t);
     }
   }
 
@@ -851,7 +878,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
               HiveUtils.getStorageHandler(hiveConf, tbl.getParameters().get(META_TABLE_STORAGE));
           return storageHandler == null ? null : storageHandler.getMetaHook();
         } catch (final HiveException e) {
-          logger.error(e.toString());
+          HadoopSecurityManager_H_2_0.logger.error(e.toString());
           throw new MetaException("Failed to get storage handler: " + e);
         }
       }
