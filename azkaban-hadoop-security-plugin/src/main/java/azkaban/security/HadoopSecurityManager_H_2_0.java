@@ -583,8 +583,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void fetchJobTrackerToken(final String userToProxy, final Props props,
-      final Logger logger,
-      final Credentials cred)
+      final Logger logger, final Credentials cred)
       throws IOException, InterruptedException, HadoopSecurityManagerException {
     if (props.getBoolean(HadoopSecurityManager.OBTAIN_JOBTRACKER_TOKEN, false)) {
       final JobConf jobConf = new JobConf();
@@ -599,9 +598,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         throw new HadoopSecurityManagerException(
             "Failed to fetch JT token for " + userToProxy);
       }
-      logger.info("Created JT token.");
-      logger.info("Token kind: " + mrdt.getKind());
-      logger.info("Token service: " + mrdt.getService());
+
+      logger.info(String.format("JT token pre-fetched, token kind: %s, token service: %s",
+          mrdt.getKind(), mrdt.getService()));
       cred.addToken(mrdt.getService(), mrdt);
     }
   }
@@ -620,9 +619,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         throw new HadoopSecurityManagerException(
             "Failed to fetch DFS token for " + userToProxy);
       }
-      logger.info("Created DFS token.");
-      logger.info("Token kind: " + fsToken.getKind());
-      logger.info("Token service: " + fsToken.getService());
+
+      logger.info(String
+          .format("DFS token from namenode pre-fetched, token kind: %s, token service: %s",
+              fsToken.getKind(), fsToken.getService()));
 
       cred.addToken(fsToken.getService(), fsToken);
 
@@ -676,9 +676,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             "Unable to fetch JH token for " + userToProxy);
       }
 
-      logger.info("Created JH token.");
-      logger.info("Token kind: " + jhsdt.getKind());
-      logger.info("Token service: " + jhsdt.getService());
+      logger.info(String
+          .format("JH token from job history server pre-fetched, token Kind: %s, token service: %s",
+              jhsdt.getKind(), jhsdt.getService()));
 
       cred.addToken(jhsdt.getService(), jhsdt);
     }
@@ -733,7 +733,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           }
         }
 
-        logger.info("Hive metaStore token(s) prefetched");
+        logger.info("Hive metastore token(s) prefetched");
 
       } catch (final Throwable t) {
         final String message =
