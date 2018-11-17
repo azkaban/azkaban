@@ -141,7 +141,7 @@ public class FileIOUtils {
   /**
    * Hard link files and recurse into directories.
    */
-  public static void createDeepHardlink(final File sourceDir, final File destDir)
+  public static int createDeepHardlink(final File sourceDir, final File destDir)
       throws IOException {
     if (!sourceDir.exists()) {
       throw new IOException("Source directory " + sourceDir.getPath()
@@ -156,6 +156,7 @@ public class FileIOUtils {
     final Set<String> paths = new HashSet<>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
+    int linkCount = 0;
     for (String path : paths) {
       final File sourceLink = new File(sourceDir, path);
       path = destDir + path;
@@ -167,9 +168,11 @@ public class FileIOUtils {
           // NOTE!! If modifying this, you must run this ignored test manually to validate:
           // FileIOUtilsTest#testHardlinkCopyOfBigDir
           Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
+          linkCount++;
         }
       }
     }
+    return linkCount;
   }
 
   private static void createDirsFindFiles(final File baseDir, final File sourceDir,
