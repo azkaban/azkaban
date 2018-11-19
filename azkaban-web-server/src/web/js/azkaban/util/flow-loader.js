@@ -85,6 +85,7 @@ var nodeClickCallback = function (event, model, node) {
         {
           title: "Collapse Flow...", callback: function () {
             model.trigger("collapseFlow", node);
+            model.trigger("resetPanZoom");
           }
         },
         {
@@ -100,6 +101,7 @@ var nodeClickCallback = function (event, model, node) {
         {
           title: "Expand Flow...", callback: function () {
             model.trigger("expandFlow", node);
+            model.trigger("resetPanZoom");
           }
         },
         {
