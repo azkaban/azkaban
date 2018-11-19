@@ -105,7 +105,7 @@ public class FlowPreparer {
       }
       pv.setFileCount((int) FileIOUtils.readNumberFromFile(path));
     } catch (final IOException e) {
-      log.error("error when dumping file count to file", e);
+      log.error("error when updating file count", e);
     }
   }
 
