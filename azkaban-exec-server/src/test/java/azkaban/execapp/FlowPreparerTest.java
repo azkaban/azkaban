@@ -183,4 +183,39 @@ public class FlowPreparerTest {
     assertThat(this.projectsDir.listFiles()).containsExactlyInAnyOrder(expectedRemainingFiles
         .toArray(new File[expectedRemainingFiles.size()]));
   }
+
+  @Test
+  public void testProjectsCacheMetricsZeroHit() {
+    //given
+    final FlowPreparer.ProjectsDirCacheMetrics cacheMetrics =
+        new FlowPreparer(null, null, null, null).new ProjectsDirCacheMetrics();
+
+    //when zero hit and zero miss then
+    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
+
+    //when
+    cacheMetrics.incrementCacheMiss();
+    //then
+    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
+
+  }
+
+  @Test
+  public void testProjectsCacheMetricsHit() {
+    //given
+    final FlowPreparer.ProjectsDirCacheMetrics cacheMetrics =
+        new FlowPreparer(null, null, null, null).new ProjectsDirCacheMetrics();
+
+    //when
+    cacheMetrics.incrementCacheHit();
+    //then
+    assertThat(cacheMetrics.getHitRatio()).isEqualTo(1);
+
+    //when
+    cacheMetrics.incrementCacheMiss();
+    //then
+    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0.5);
+
+
+  }
 }

@@ -59,6 +59,30 @@ public class FlowPreparer {
   private final File projectsDir;
   private final StorageManager storageManager;
   private final ProjectCacheDirCleaner projectDirCleaner;
+  private final ProjectsDirCacheMetrics cacheMetrics;
+
+  @VisibleForTesting
+  class ProjectsDirCacheMetrics {
+
+    private long cacheHit;
+    private long cacheMiss;
+
+    /**
+     * @return hit ratio of project dirs cache
+     */
+    synchronized double getHitRatio() {
+      final long total = this.cacheHit + this.cacheMiss;
+      return total == 0 ? 0 : this.cacheHit * 1.0 / total;
+    }
+
+    synchronized void incrementCacheHit() {
+      this.cacheHit++;
+    }
+
+    synchronized void incrementCacheMiss() {
+      this.cacheMiss++;
+    }
+  }
 
   public FlowPreparer(final StorageManager storageManager, final File executionsDir,
       final File projectsDir, final Long projectDirMaxSizeInMb) {
@@ -66,7 +90,12 @@ public class FlowPreparer {
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
     this.projectDirCleaner = new ProjectCacheDirCleaner(projectDirMaxSizeInMb);
+    this.cacheMetrics = new ProjectsDirCacheMetrics();
+  }
 
+
+  public double getProjectDirCacheHitRatio() {
+    return this.cacheMetrics.getHitRatio();
   }
 
   /**
@@ -183,6 +212,7 @@ public class FlowPreparer {
     // If directory exists. Assume its prepared and skip.
     if (pv.getInstalledDir().exists()) {
       log.info("Project already cached. Skipping download. " + pv);
+      this.cacheMetrics.incrementCacheHit();
       touchIfExists(
           Paths.get(pv.getInstalledDir().getPath(), PROJECT_DIR_SIZE_FILE_NAME));
       return;
@@ -199,6 +229,7 @@ public class FlowPreparer {
     ProjectFileHandler projectFileHandler = null;
     try {
       log.info(String.format("Downloading zip file for Project Version {%s}", pv));
+      this.cacheMetrics.incrementCacheMiss();
       projectFileHandler = requireNonNull(
           this.storageManager.getProjectFile(pv.getProjectId(), pv.getVersion()));
       checkState("zip".equals(projectFileHandler.getFileType()));
