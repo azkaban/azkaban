@@ -62,7 +62,7 @@ public class FlowPreparer {
   private final ProjectsDirCacheMetrics cacheMetrics;
 
   @VisibleForTesting
-  class ProjectsDirCacheMetrics {
+  static class ProjectsDirCacheMetrics {
 
     private long cacheHit;
     private long cacheMiss;
