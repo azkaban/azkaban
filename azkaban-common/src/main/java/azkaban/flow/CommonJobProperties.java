@@ -86,6 +86,11 @@ public class CommonJobProperties {
       "azkaban.job.attachment.file";
 
   /**
+   * The job's log file absolute path.
+   */
+  public static final String JOB_LOG_FILE = "azkaban.job.log.file";
+  
+  /**
    * The executing flow id
    */
   public static final String FLOW_ID = "azkaban.flow.flowid";
