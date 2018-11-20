@@ -129,6 +129,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       .getLogger(HadoopSecurityManager_H_2_0.class);
   private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
+
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
   private final ExecuteAsUser executeAsUser;
   private final Configuration conf;
@@ -367,69 +368,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     return this.securityEnabled;
   }
 
-  /*
-   * Gets hadoop tokens for a user to run mapred/pig jobs on a secured cluster
-   */
-  @Override
-  public synchronized void prefetchToken(final File tokenFile,
-      final String userToProxy, final Logger logger)
-      throws HadoopSecurityManagerException {
-    logger.info("Getting hadoop tokens for " + userToProxy);
-
-    final UserGroupInformation proxiedUser = getProxiedUser(userToProxy);
-    try {
-      proxiedUser.doAs(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          getToken(userToProxy);
-          return null;
-        }
-
-        private void getToken(final String userToProxy) throws InterruptedException,
-            IOException, HadoopSecurityManagerException {
-
-          final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
-          // check if we get the correct FS, and most importantly, the conf
-          logger.info("Getting DFS token from " + fs.getCanonicalServiceName()
-              + fs.getUri());
-          final Token<?> fsToken = fs.getDelegationToken(userToProxy);
-          if (fsToken == null) {
-            logger.error("Failed to fetch DFS token for ");
-            throw new HadoopSecurityManagerException(
-                "Failed to fetch DFS token for " + userToProxy);
-          }
-          logger.info("Created DFS token.");
-          logger.info("Token kind: " + fsToken.getKind());
-          logger.info("Token service: " + fsToken.getService());
-
-          final JobConf jc = new JobConf(HadoopSecurityManager_H_2_0.this.conf);
-          final JobClient jobClient = new JobClient(jc);
-          logger.info("Pre-fetching JT token: Got new JobClient: " + jc);
-
-          final Token<DelegationTokenIdentifier> mrdt =
-              jobClient.getDelegationToken(new Text("mr token"));
-          if (mrdt == null) {
-            logger.error("Failed to fetch JT token for ");
-            throw new HadoopSecurityManagerException(
-                "Failed to fetch JT token for " + userToProxy);
-          }
-          logger.info("Created JT token.");
-          logger.info("Token kind: " + mrdt.getKind());
-          logger.info("Token service: " + mrdt.getService());
-
-          jc.getCredentials().addToken(mrdt.getService(), mrdt);
-          jc.getCredentials().addToken(fsToken.getService(), fsToken);
-
-          prepareTokenFile(userToProxy, jc.getCredentials(), tokenFile, logger);
-          // stash them to cancel after use.
-          logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
-        }
-      });
-    } catch (final Exception e) {
-      throw new HadoopSecurityManagerException(
-          "Failed to get hadoop tokens! " + e.getMessage() + e.getCause());
-    }
-  }
 
   private void cancelHiveToken(final Token<? extends TokenIdentifier> t,
       final String userToProxy) throws HadoopSecurityManagerException {
