@@ -43,12 +43,6 @@ public interface ConnectorParams {
   public static final String MODIFY_EXECUTION_ACTION = "modifyExecution";
   public static final String MODIFY_EXECUTION_ACTION_TYPE = "modifyType";
   public static final String MODIFY_RETRY_FAILURES = "retryFailures";
-  public static final String MODIFY_RETRY_JOBS = "retryJobs";
-  public static final String MODIFY_CANCEL_JOBS = "cancelJobs";
-  public static final String MODIFY_DISABLE_JOBS = "skipJobs";
-  public static final String MODIFY_ENABLE_JOBS = "enableJobs";
-  public static final String MODIFY_PAUSE_JOBS = "pauseJobs";
-  public static final String MODIFY_RESUME_JOBS = "resumeJobs";
   public static final String MODIFY_JOBS_LIST = "jobIds";
 
   public static final String START_PARAM = "start";

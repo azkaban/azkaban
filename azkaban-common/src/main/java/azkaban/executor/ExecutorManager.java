@@ -29,7 +29,6 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
 import azkaban.utils.AuthenticationUtils;
-import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -101,6 +100,7 @@ public class ExecutorManager extends EventHandler implements
   private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
   private final ActiveExecutors activeExecutors;
+  private final ExecutorService executorInfoRefresherService;
   QueuedExecutions queuedFlows;
   File cacheDir;
   private QueueProcessorThread queueProcessor;
@@ -108,7 +108,6 @@ public class ExecutorManager extends EventHandler implements
   private List<String> filterList;
   private Map<String, Integer> comparatorWeightsMap;
   private long lastSuccessfulExecutorInfoRefresh;
-  private final ExecutorService executorInfoRefresherService;
   private Duration sleepAfterDispatchFailure = Duration.ofSeconds(1L);
   private boolean initialized = false;
 
@@ -133,6 +132,18 @@ public class ExecutorManager extends EventHandler implements
     this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
     this.cleanerThread = createCleanerThread();
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
+  }
+
+  // TODO move to some common place
+  static boolean isFinished(final ExecutableFlow flow) {
+    switch (flow.getStatus()) {
+      case SUCCEEDED:
+      case FAILED:
+      case KILLED:
+        return true;
+      default:
+        return false;
+    }
   }
 
   private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
@@ -163,18 +174,6 @@ public class ExecutorManager extends EventHandler implements
     setupExecutotrComparatorWeightsMap();
     setupExecutorFilterList();
     this.queueProcessor = setupQueueProcessor();
-  }
-
-  // TODO move to some common place
-  static boolean isFinished(final ExecutableFlow flow) {
-    switch (flow.getStatus()) {
-      case SUCCEEDED:
-      case FAILED:
-      case KILLED:
-        return true;
-      default:
-        return false;
-    }
   }
 
   public void start() throws ExecutorManagerException {
@@ -626,14 +625,6 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
-  public List<ExecutableFlow> getExecutableFlows(final Project project,
-      final String flowId, final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableFlow> flows =
-        this.executorLoader.fetchFlowHistory(project.getId(), flowId, skip, size);
-    return flows;
-  }
-
-  @Override
   public List<ExecutableFlow> getExecutableFlows(final int skip, final int size)
       throws ExecutorManagerException {
     final List<ExecutableFlow> flows = this.executorLoader.fetchFlowHistory(skip, size);
@@ -672,12 +663,6 @@ public class ExecutorManager extends EventHandler implements
   public int getNumberOfJobExecutions(final Project project, final String jobId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchNumExecutableNodes(project.getId(), jobId);
-  }
-
-  @Override
-  public int getNumberOfExecutions(final Project project, final String flowId)
-      throws ExecutorManagerException {
-    return this.executorLoader.fetchNumExecutableFlows(project.getId(), flowId);
   }
 
   @Override
@@ -849,33 +834,6 @@ public class ExecutorManager extends EventHandler implements
     return null;
   }
 
-  @Override
-  public JobMetaData getExecutionJobMetaData(final ExecutableFlow exFlow,
-      final String jobId, final int offset, final int length, final int attempt)
-      throws ExecutorManagerException {
-    final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get().get(exFlow.getExecutionId());
-    if (pair != null) {
-
-      final Pair<String, String> typeParam = new Pair<>("type", "job");
-      final Pair<String, String> jobIdParam =
-          new Pair<>("jobId", jobId);
-      final Pair<String, String> offsetParam =
-          new Pair<>("offset", String.valueOf(offset));
-      final Pair<String, String> lengthParam =
-          new Pair<>("length", String.valueOf(length));
-      final Pair<String, String> attemptParam =
-          new Pair<>("attempt", String.valueOf(attempt));
-
-      @SuppressWarnings("unchecked") final Map<String, Object> result =
-          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.METADATA_ACTION,
-              typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
-      return JobMetaData.createJobMetaDataFromObject(result);
-    } else {
-      return null;
-    }
-  }
-
   /**
    * if flows was dispatched to an executor, cancel by calling Executor else if flow is still in
    * queue, remove from queue and finalize {@inheritDoc}
@@ -937,51 +895,9 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
-  public void pauseExecutingJobs(final ExecutableFlow exFlow, final String userId,
-      final String... jobIds) throws ExecutorManagerException {
-    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_PAUSE_JOBS, userId,
-        jobIds);
-  }
-
-  @Override
-  public void resumeExecutingJobs(final ExecutableFlow exFlow, final String userId,
-      final String... jobIds) throws ExecutorManagerException {
-    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RESUME_JOBS, userId,
-        jobIds);
-  }
-
-  @Override
   public void retryFailures(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
     modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
-  }
-
-  @Override
-  public void retryExecutingJobs(final ExecutableFlow exFlow, final String userId,
-      final String... jobIds) throws ExecutorManagerException {
-    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_JOBS, userId,
-        jobIds);
-  }
-
-  @Override
-  public void disableExecutingJobs(final ExecutableFlow exFlow, final String userId,
-      final String... jobIds) throws ExecutorManagerException {
-    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_DISABLE_JOBS, userId,
-        jobIds);
-  }
-
-  @Override
-  public void enableExecutingJobs(final ExecutableFlow exFlow, final String userId,
-      final String... jobIds) throws ExecutorManagerException {
-    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_ENABLE_JOBS, userId,
-        jobIds);
-  }
-
-  @Override
-  public void cancelExecutingJobs(final ExecutableFlow exFlow, final String userId,
-      final String... jobIds) throws ExecutorManagerException {
-    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_CANCEL_JOBS, userId,
-        jobIds);
   }
 
   @SuppressWarnings("unchecked")
@@ -1232,6 +1148,11 @@ public class ExecutorManager extends EventHandler implements
     logger.info(String.format(
         "Successfully dispatched exec %d with error count %d",
         exflow.getExecutionId(), reference.getNumErrors()));
+  }
+
+  @VisibleForTesting
+  void setSleepAfterDispatchFailure(final Duration sleepAfterDispatchFailure) {
+    this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
   }
 
   /*
@@ -1548,10 +1469,5 @@ public class ExecutorManager extends EventHandler implements
       // schedule can starve all others
       ExecutorManager.this.queuedFlows.enqueue(exflow, reference);
     }
-  }
-
-  @VisibleForTesting
-  void setSleepAfterDispatchFailure(final Duration sleepAfterDispatchFailure) {
-    this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
   }
 }
