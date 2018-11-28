@@ -18,13 +18,11 @@ package azkaban.trigger;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
@@ -51,16 +49,15 @@ import org.junit.Test;
 public class TriggerManagerTest {
 
   private static TriggerLoader triggerLoader;
-  private static ExecutorManager executorManager;
+  private static ExecutorManagerAdapter executorManagerAdapter;
   private static ProjectManager projectManager;
   private TriggerManager triggerManager;
 
   @BeforeClass
   public static void prepare() {
     triggerLoader = new MockTriggerLoader();
-    executorManager = mock(ExecutorManager.class);
+    executorManagerAdapter = mock(ExecutorManagerAdapter.class);
     projectManager = mock(ProjectManager.class);
-    doNothing().when(executorManager).addListener(anyObject());
   }
 
   @Before
@@ -68,15 +65,15 @@ public class TriggerManagerTest {
     final Project project = new Project(1, "test-project");
     project.setFlows(ImmutableMap.of("test-flow", new Flow("test-flow")));
     when(projectManager.getProject(1)).thenReturn(project);
-    when(executorManager.submitExecutableFlow(any(), any()))
+    when(executorManagerAdapter.submitExecutableFlow(any(), any()))
         .thenThrow(new ExecutorManagerException("Flow is already running. Skipping execution.",
             ExecutorManagerException.Reason.SkippedExecution));
-    ExecuteFlowAction.setExecutorManager(this.executorManager);
+    ExecuteFlowAction.setExecutorManagerAdapter(this.executorManagerAdapter);
     ExecuteFlowAction.setProjectManager(this.projectManager);
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
     final Props props = new Props();
     props.put("trigger.scan.interval", 300);
-    this.triggerManager = new TriggerManager(props, triggerLoader, executorManager);
+    this.triggerManager = new TriggerManager(props, triggerLoader, executorManagerAdapter);
     this.triggerManager.registerCheckerType(ThresholdChecker.type,
         ThresholdChecker.class);
     this.triggerManager.registerActionType(DummyTriggerAction.type,

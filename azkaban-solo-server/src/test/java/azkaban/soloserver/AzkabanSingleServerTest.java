@@ -105,7 +105,7 @@ public class AzkabanSingleServerTest {
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanExecServerModule(),
-        new AzkabanWebServerModule()
+        new AzkabanWebServerModule(props)
     );
     SERVICE_PROVIDER.setInjector(injector);
 

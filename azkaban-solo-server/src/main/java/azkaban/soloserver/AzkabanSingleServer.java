@@ -53,10 +53,10 @@ public class AzkabanSingleServer {
     this.executor = executor;
   }
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     try {
       start(args);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Failed to start single server. Shutting down.", e);
       System.exit(1);
     }
@@ -96,7 +96,7 @@ public class AzkabanSingleServer {
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(),
+        new AzkabanWebServerModule(props),
         new AzkabanExecServerModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
