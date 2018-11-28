@@ -36,10 +36,10 @@ import azkaban.spi.EventType;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
@@ -98,7 +98,7 @@ public class JobRunnerTest {
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
-        || runner.getStatus() != Status.FAILED);
+        && runner.getStatus() != Status.FAILED);
 
     runner.run();
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
@@ -135,7 +135,6 @@ public class JobRunnerTest {
       jobField = runner.getClass().getDeclaredField("job");
     } catch (NoSuchFieldException e) {
       Assert.fail("'job' field not found");
-      e.printStackTrace();
     }
     jobField.setAccessible(true);
     InteractiveTestJob job = null;
@@ -143,11 +142,8 @@ public class JobRunnerTest {
       job = (InteractiveTestJob) jobField.get(runner);
     } catch (IllegalAccessException e) {
       Assert.fail("'job' field not accessible");
-      e.printStackTrace();
     }
     Props jobProps = job.getJobProps();
-    Assert.assertNotNull("Log file path not found in properties",
-        jobProps.get(CommonJobProperties.JOB_LOG_FILE));
     Assert.assertEquals("Unexpected log file path in properties",
         logFile.getAbsolutePath(),
         jobProps.get(CommonJobProperties.JOB_LOG_FILE));
