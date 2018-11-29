@@ -29,17 +29,19 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
+import azkaban.flow.CommonJobProperties;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -96,7 +98,7 @@ public class JobRunnerTest {
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
-        || runner.getStatus() != Status.FAILED);
+        && runner.getStatus() != Status.FAILED);
 
     runner.run();
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
@@ -110,6 +112,9 @@ public class JobRunnerTest {
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps != null);
+
+    checkRequiredJobProperties(runner, logFile);
+
     try (final BufferedReader br = getLogReader(logFile)) {
       final String firstLine = br.readLine();
       Assert.assertTrue("Unexpected default layout",
@@ -122,6 +127,26 @@ public class JobRunnerTest {
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
+  }
+
+  private void checkRequiredJobProperties(JobRunner runner, File logFile) {
+    Field jobField = null;
+    try {
+      jobField = runner.getClass().getDeclaredField("job");
+    } catch (NoSuchFieldException e) {
+      Assert.fail("'job' field not found");
+    }
+    jobField.setAccessible(true);
+    InteractiveTestJob job = null;
+    try {
+      job = (InteractiveTestJob) jobField.get(runner);
+    } catch (IllegalAccessException e) {
+      Assert.fail("'job' field not accessible");
+    }
+    Props jobProps = job.getJobProps();
+    Assert.assertEquals("Unexpected log file path in properties",
+        logFile.getAbsolutePath(),
+        jobProps.get(CommonJobProperties.JOB_LOG_FILE));
   }
 
   private BufferedReader getLogReader(File logFile) throws FileNotFoundException {

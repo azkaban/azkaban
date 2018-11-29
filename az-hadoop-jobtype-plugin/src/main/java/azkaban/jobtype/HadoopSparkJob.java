@@ -681,11 +681,8 @@ public class HadoopSparkJob extends JavaProcessJob {
 
     info("Cancel called.  Killing the Spark job on the cluster");
 
-    final String azExecId = this.jobProps.getString(CommonJobProperties.EXEC_ID);
-    final String logFilePath =
-        String.format("%s/_job.%s.%s.log", getWorkingDirectory(), azExecId,
-            getId());
-    info("log file path is: " + logFilePath);
+    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+    info("Log file path is: " + logFilePath);
 
     HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, this.jobProps,
         this.tokenFile, getLog());

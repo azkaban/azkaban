@@ -396,11 +396,8 @@ public class HadoopPigJob extends JavaProcessJob {
 
     info("Cancel called.  Killing the Pig launched MR jobs on the cluster");
 
-    String azExecId = jobProps.getString(CommonJobProperties.EXEC_ID);
-    final String logFilePath =
-        String.format("%s/_job.%s.%s.log", getWorkingDirectory(), azExecId,
-            getId());
-    info("log file path is: " + logFilePath);
+    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+    info("Log file path is: " + logFilePath);
 
     HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, jobProps,
         tokenFile, getLog());
