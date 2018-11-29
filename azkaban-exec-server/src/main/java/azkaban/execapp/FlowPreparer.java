@@ -105,7 +105,23 @@ public class FlowPreparer {
       }
       pv.setFileCount((int) FileIOUtils.readNumberFromFile(path));
     } catch (final IOException e) {
-      log.error("error when dumping file count to file", e);
+      log.error("error when updating file count", e);
+    }
+  }
+
+
+  /**
+   * check if number of files inside the project dir equals to target
+   */
+  private boolean isFileCountEqual(final ProjectVersion pv, final int target) {
+    final int fileCount;
+    try {
+      final Path path = Paths.get(pv.getInstalledDir().getPath(), PROJECT_DIR_COUNT_FILE_NAME);
+      fileCount = (int) FileIOUtils.readNumberFromFile(path);
+      return fileCount == target;
+    } catch (final IOException e) {
+      log.error(e);
+      return false;
     }
   }
 
@@ -128,7 +144,14 @@ public class FlowPreparer {
       execDir = createExecDir(flow);
 
       // Create the symlinks from the project
-      copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
+      final int linkCount = FileIOUtils
+          .createDeepHardlink(projectVersion.getInstalledDir(), execDir);
+
+      if (!isFileCountEqual(projectVersion, linkCount)) {
+        throw new Exception(String.format("File count check failed for execid: %d, project dir %s"
+                + " are being deleted when setting this execution up",
+            flow.getExecutionId(), projectVersion.getInstalledDir()));
+      }
 
       log.info(String
           .format("Flow Preparation complete. [execid: %d, path: %s]", flow.getExecutionId(),
@@ -220,10 +243,6 @@ public class FlowPreparer {
     }
   }
 
-  private void copyCreateHardlinkDirectory(final File projectDir, final File execDir)
-      throws IOException {
-    FileIOUtils.createDeepHardlink(projectDir, execDir);
-  }
 
   private File createExecDir(final ExecutableFlow flow) {
     final int execId = flow.getExecutionId();
