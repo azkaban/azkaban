@@ -23,11 +23,15 @@ import azkaban.Constants;
 import azkaban.utils.Props;
 import javax.inject.Inject;
 import com.google.inject.Provider;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
+import org.mortbay.jetty.security.Constraint;
+import org.mortbay.jetty.security.ConstraintMapping;
+import org.mortbay.jetty.security.SecurityHandler;
 import org.mortbay.jetty.security.SslSocketConnector;
 
 
@@ -61,10 +65,39 @@ public class WebServerProvider implements Provider<Server> {
 
     // setting stats configuration for connectors
     setStatsOnConnectors(server);
+    disableHttpMethods(server);
 
     logger.info(String.format(
         "Starting %sserver on port: %d # Max threads: %d", useSsl ? "SSL " : "", port, maxThreads));
     return server;
+  }
+
+    /**
+     * Disable HTTP methods defined in jetty.disable.http-methods property
+     *
+     * Multiple methods can be separated by coma eg. TRACE,OPTION
+     * @param server - jetty server instance
+     */
+  private void disableHttpMethods(Server server) {
+    String toDisable = props.getString("jetty.disable.http-methods","");
+    if (!toDisable.trim().isEmpty()) {
+      Constraint c = new Constraint();
+      c.setAuthenticate(true);
+
+        ArrayList<ConstraintMapping> mappings = new ArrayList<>();
+
+        for(String methodToDisable : toDisable.split(",")) {
+        ConstraintMapping cmt = new ConstraintMapping();
+        cmt.setConstraint(c);
+        cmt.setMethod(methodToDisable);
+        cmt.setPathSpec("/*");
+        mappings.add(cmt);
+      }
+
+      SecurityHandler sh = new SecurityHandler();
+      sh.setConstraintMappings(mappings.toArray(new ConstraintMapping[]{}));
+      server.addHandler(sh);
+    }
   }
 
   private void setStatsOnConnectors(final Server server) {
