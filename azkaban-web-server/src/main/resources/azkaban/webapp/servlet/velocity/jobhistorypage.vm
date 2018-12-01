@@ -109,7 +109,7 @@
                   <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}&job=${jobid}">${jobid}</a>
                 </td>
                 <td>
-                  <a href="${context}/manager?project=${projectName}&flow=${job.headFlowId}">${job.flowId}</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}">${job.immediateFlowId}</a>
                 </td>
                 <td>$utils.formatDate(${job.startTime})</td>
                 <td>$utils.formatDate(${job.endTime})</td>

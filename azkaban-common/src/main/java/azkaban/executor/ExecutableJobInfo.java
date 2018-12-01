@@ -74,12 +74,6 @@ public class ExecutableJobInfo {
     return this.immediateFlowId;
   }
 
-  public String getHeadFlowId() {
-    final Pair<String, String> pair = this.jobPath.get(0);
-
-    return pair.getFirst();
-  }
-
   public String getJobId() {
     return this.jobId;
   }
