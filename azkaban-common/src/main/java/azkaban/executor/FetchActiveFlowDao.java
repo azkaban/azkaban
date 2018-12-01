@@ -68,7 +68,13 @@ public class FetchActiveFlowDao {
             + " Where ex.status NOT IN ("
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")";
+            + Status.FAILED.getNumVal() + ")"
+            // exclude queued flows that haven't been assigned yet -- this is the opposite of
+            // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
+            + " AND NOT ("
+            + "   ex.executor_id IS NULL"
+            + "   AND ex.status = " + Status.PREPARING.getNumVal()
+            + " )";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(

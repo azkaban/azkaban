@@ -15,6 +15,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+/**
+ * Also @see ExecutionFlowDaoTest - DB operations of FetchActiveFlowDao are tested there.
+ */
 public class FetchActiveFlowDaoTest {
 
   private ResultSet rs;
