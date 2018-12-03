@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Assert;
@@ -383,6 +384,9 @@ public class ExecutorManagerTest {
   @Test(expected = ExecutorManagerException.class)
   public void testTooManySubmitFlows() throws Exception {
     testSetUpForRunningFlows();
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new
+        ConcurrentHashMap<>();
+    when(this.loader.fetchUnfinishedFlows()).thenReturn(unfinishedFlows);
     final ExecutableFlow flow1 = TestUtils
         .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
     flow1.setExecutionId(101);
@@ -395,11 +399,15 @@ public class ExecutorManagerTest {
     final ExecutableFlow flow4 = TestUtils
         .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
     flow4.setExecutionId(104);
+    unfinishedFlows.put(101, new Pair<>(new ExecutionReference(101), flow1));
     this.manager.submitExecutableFlow(flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(flow1);
+    unfinishedFlows.put(102, new Pair<>(new ExecutionReference(102), flow1));
     this.manager.submitExecutableFlow(flow2, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(flow2);
+    unfinishedFlows.put(103, new Pair<>(new ExecutionReference(103), flow1));
     this.manager.submitExecutableFlow(flow3, this.user.getUserId());
+    unfinishedFlows.put(104, new Pair<>(new ExecutionReference(104), flow1));
     this.manager.submitExecutableFlow(flow4, this.user.getUserId());
   }
 

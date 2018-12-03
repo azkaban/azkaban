@@ -33,7 +33,6 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -442,27 +441,21 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /**
-   * Gets a list of all the active (running flows and non-dispatched flows) executions for a given
-   * project and flow {@inheritDoc}. Results should be sorted as we assume this while setting up
-   * pipelined execution Id.
+   * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a
+   * given project and flow {@inheritDoc}.
    *
    * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
    */
   @Override
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
     final List<Integer> executionIds = new ArrayList<>();
-    executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
-        this.queuedFlows.getAllEntries()));
-    // it's possible an execution is runningCandidate, meaning it's in dispatching state neither in queuedFlows nor runningFlows,
-    // so checks the runningCandidate as well.
-    if (this.runningCandidate != null) {
-      executionIds
-          .addAll(
-              getRunningFlowsHelper(projectId, flowId, Lists.newArrayList(this.runningCandidate)));
+    try {
+      executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
+          this.executorLoader.fetchUnfinishedFlows().values()));
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to fetch unfinished flows for project: " + projectId + ", flow: "
+          + flowId);
     }
-    executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
-        this.runningExecutions.get().values()));
-    Collections.sort(executionIds);
     return executionIds;
   }
 
@@ -668,8 +661,8 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
       final int length) throws ExecutorManagerException {
-    final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get().get(exFlow.getExecutionId());
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "flow");
       final Pair<String, String> offsetParam =
@@ -692,8 +685,8 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public LogData getExecutionJobLog(final ExecutableFlow exFlow, final String jobId,
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
-    final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.runningExecutions.get().get(exFlow.getExecutionId());
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "job");
       final Pair<String, String> jobIdParam =
