@@ -38,7 +38,7 @@ public class ExecuteFlowAction implements TriggerAction {
 
   public static final String EXEC_ID = "ExecuteFlowAction.execid";
 
-  private static ExecutorManagerAdapter executorManager;
+  private static ExecutorManagerAdapter executorManagerAdapter;
   private static TriggerManager triggerManager;
   private static ProjectManager projectManager;
   private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
@@ -66,12 +66,13 @@ public class ExecuteFlowAction implements TriggerAction {
     ExecuteFlowAction.logger = logger;
   }
 
-  public static ExecutorManagerAdapter getExecutorManager() {
-    return executorManager;
+  public static ExecutorManagerAdapter getExecutorManagerAdapter() {
+    return executorManagerAdapter;
   }
 
-  public static void setExecutorManager(final ExecutorManagerAdapter executorManager) {
-    ExecuteFlowAction.executorManager = executorManager;
+  public static void setExecutorManagerAdapter(
+      final ExecutorManagerAdapter executorManagerAdapter) {
+    ExecuteFlowAction.executorManagerAdapter = executorManagerAdapter;
   }
 
   public static TriggerManager getTriggerManager() {
@@ -197,7 +198,7 @@ public class ExecuteFlowAction implements TriggerAction {
 
   @Override
   public void doAction() throws Exception {
-    if (projectManager == null || executorManager == null) {
+    if (projectManager == null || executorManagerAdapter == null) {
       throw new Exception("ExecuteFlowAction not properly initialized!");
     }
 
@@ -224,7 +225,7 @@ public class ExecuteFlowAction implements TriggerAction {
     }
 
     logger.info("Invoking flow " + project.getName() + "." + this.flowName);
-    executorManager.submitExecutableFlow(exflow, this.submitUser);
+    executorManagerAdapter.submitExecutableFlow(exflow, this.submitUser);
     logger.info("Invoked flow " + project.getName() + "." + this.flowName);
   }
 

@@ -103,7 +103,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
   };
   private ProjectManager projectManager;
-  private ExecutorManagerAdapter executorManager;
+  private ExecutorManagerAdapter executorManagerAdapter;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
   private FlowTriggerScheduler scheduler;
@@ -118,7 +118,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.projectManager = server.getProjectManager();
-    this.executorManager = server.getExecutorManager();
+    this.executorManagerAdapter = server.getExecutorManagerAdapter();
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
     this.scheduler = server.getScheduler();
@@ -388,7 +388,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     List<ExecutableFlow> exFlows = null;
     try {
       exFlows =
-          this.executorManager.getExecutableFlows(project.getId(), flowId, 0, 1,
+          this.executorManagerAdapter.getExecutableFlows(project.getId(), flowId, 0, 1,
               Status.SUCCEEDED);
     } catch (final ExecutorManagerException e) {
       ret.put("error", "Error retrieving executable flows");
@@ -417,7 +417,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     int total = 0;
     try {
       total =
-          this.executorManager.getExecutableFlows(project.getId(), flowId, from,
+          this.executorManagerAdapter.getExecutableFlows(project.getId(), flowId, from,
               length, exFlows);
     } catch (final ExecutorManagerException e) {
       ret.put("error", "Error retrieving executable flows");
@@ -1179,10 +1179,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     int numResults = 0;
     try {
-      numResults = this.executorManager.getNumberOfJobExecutions(project, jobId);
+      numResults = this.executorManagerAdapter.getNumberOfJobExecutions(project, jobId);
       final int maxPage = (numResults / pageSize) + 1;
       List<ExecutableJobInfo> jobInfo =
-          this.executorManager.getExecutableJobs(project, jobId, skipPage, pageSize);
+          this.executorManagerAdapter.getExecutableJobs(project, jobId, skipPage, pageSize);
 
       if (jobInfo == null || jobInfo.isEmpty()) {
         jobInfo = null;

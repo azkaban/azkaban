@@ -60,7 +60,7 @@ public class QuartzSchedulerTest {
     props.put("h2.path", "./h2");
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule()
+        new AzkabanWebServerModule(props)
     );
 
     SERVICE_PROVIDER.unsetInjector();

@@ -24,6 +24,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.jmx.JmxExecutorManager;
@@ -137,7 +138,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private final Server server;
   private final UserManager userManager;
   private final ProjectManager projectManager;
-  private final ExecutorManager executorManager;
+  private final ExecutorManagerAdapter executorManagerAdapter;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
   private final MetricsManager metricsManager;
@@ -152,7 +153,7 @@ public class AzkabanWebServer extends AzkabanServer {
   @Inject
   public AzkabanWebServer(final Props props,
       final Server server,
-      final ExecutorManager executorManager,
+      final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
       final MetricsManager metricsManager,
@@ -165,7 +166,8 @@ public class AzkabanWebServer extends AzkabanServer {
       final StatusService statusService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
-    this.executorManager = requireNonNull(executorManager, "executorManager is null.");
+    this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
+        "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
     this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
@@ -217,7 +219,7 @@ public class AzkabanWebServer extends AzkabanServer {
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule()
+        new AzkabanWebServerModule(props)
     );
     SERVICE_PROVIDER.setInjector(injector);
 
@@ -228,7 +230,10 @@ public class AzkabanWebServer extends AzkabanServer {
     /* This creates the Web Server instance */
     app = webServer;
 
-    webServer.executorManager.start();
+    // Todo jamiesjc: also start the threads in ExecutionController if needed.
+    if (webServer.executorManagerAdapter instanceof ExecutorManager) {
+      ((ExecutorManager) webServer.executorManagerAdapter).start();
+    }
 
     // TODO refactor code into ServerProvider
     webServer.prepareAndStartServer();
@@ -544,7 +549,9 @@ public class AzkabanWebServer extends AzkabanServer {
     createThreadPool();
     configureRoutes();
 
-    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
+    // Todo jamiesjc: enable web metrics for azkaban poll model later
+    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)
+        && !this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
       startWebMetrics();
     }
 
@@ -589,7 +596,9 @@ public class AzkabanWebServer extends AzkabanServer {
 
 
   private void startWebMetrics() throws Exception {
-    this.metricsManager.addGauge("WEB-NumQueuedFlows", this.executorManager::getQueuedFlowSize);
+    this.metricsManager
+        .addGauge("WEB-NumQueuedFlows", ((ExecutorManager) this
+            .executorManagerAdapter)::getQueuedFlowSize);
     /*
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
      * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
@@ -598,7 +607,8 @@ public class AzkabanWebServer extends AzkabanServer {
      * a thread safe subtraction. We need to fix this in the future.
      */
     this.metricsManager
-        .addGauge("WEB-NumRunningFlows", () -> this.executorManager.getRunningFlows().size());
+        .addGauge("WEB-NumRunningFlows",
+            () -> ((ExecutorManager) this.executorManagerAdapter).getRunningFlows().size());
 
     logger.info("starting reporting Web Server Metrics");
     this.metricsManager.startReporting("AZ-WEB", this.props);
@@ -606,12 +616,12 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    ExecuteFlowAction.setExecutorManager(this.executorManager);
+    ExecuteFlowAction.setExecutorManagerAdapter(this.executorManagerAdapter);
     ExecuteFlowAction.setProjectManager(this.projectManager);
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
-    KillExecutionAction.setExecutorManager(this.executorManager);
+    KillExecutionAction.setExecutorManagerAdapter(this.executorManagerAdapter);
     CreateTriggerAction.setTriggerManager(this.triggerManager);
-    ExecutionChecker.setExecutorManager(this.executorManager);
+    ExecutionChecker.setExecutorManagerAdapter(this.executorManagerAdapter);
 
     this.triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
     this.triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
@@ -647,8 +657,8 @@ public class AzkabanWebServer extends AzkabanServer {
     return this.projectManager;
   }
 
-  public ExecutorManager getExecutorManager() {
-    return this.executorManager;
+  public ExecutorManagerAdapter getExecutorManagerAdapter() {
+    return this.executorManagerAdapter;
   }
 
   public ScheduleManager getScheduleManager() {
@@ -681,8 +691,11 @@ public class AzkabanWebServer extends AzkabanServer {
 
     registerMbean("jetty", new JmxJettyServer(this.server));
     registerMbean("triggerManager", new JmxTriggerManager(this.triggerManager));
-    if (this.executorManager != null) {
-      registerMbean("executorManager", new JmxExecutorManager(this.executorManager));
+    // Todo jamiesjc: enable Jmx for executionController later
+    if (this.executorManagerAdapter != null
+        && this.executorManagerAdapter instanceof ExecutorManager) {
+      registerMbean("executorManager",
+          new JmxExecutorManager((ExecutorManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
@@ -712,7 +725,7 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error("Failed to cleanup MBeanServer", e);
     }
     this.scheduleManager.shutdown();
-    this.executorManager.shutdown();
+    this.executorManagerAdapter.shutdown();
     try {
       this.server.stop();
     } catch (final Exception e) {

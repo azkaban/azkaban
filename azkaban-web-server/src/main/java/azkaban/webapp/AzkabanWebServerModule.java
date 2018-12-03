@@ -18,11 +18,13 @@
 package azkaban.webapp;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
-import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -50,6 +52,11 @@ public class AzkabanWebServerModule extends AbstractModule {
   private static final Logger log = Logger.getLogger(AzkabanWebServerModule.class);
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
+  private final Props props;
+
+  public AzkabanWebServerModule(final Props props) {
+    this.props = props;
+  }
 
   @Provides
   @Singleton
@@ -71,6 +78,12 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(Server.class).toProvider(WebServerProvider.class);
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
+    bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
+  }
+
+  private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
+    return this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)
+        ? ExecutionController.class : ExecutorManager.class;
   }
 
   @Inject

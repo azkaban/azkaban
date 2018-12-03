@@ -19,11 +19,9 @@ package azkaban.trigger;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.event.EventHandler;
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.Props;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -57,10 +57,10 @@ public class TriggerManager extends EventHandler implements
 
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
-      final ExecutorManager executorManager) throws TriggerManagerException {
+      final ExecutorManagerAdapter executorManagerAdapter) throws TriggerManagerException {
 
     requireNonNull(props);
-    requireNonNull(executorManager);
+    requireNonNull(executorManagerAdapter);
     this.triggerLoader = requireNonNull(triggerLoader);
 
     final long scannerInterval =
