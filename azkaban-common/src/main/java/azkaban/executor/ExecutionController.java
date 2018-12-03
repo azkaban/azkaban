@@ -32,7 +32,8 @@ import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controls flow executions on web server. This module implements the polling model
@@ -42,7 +43,7 @@ import org.apache.log4j.Logger;
 @Singleton
 public class ExecutionController extends EventHandler implements ExecutorManagerAdapter {
 
-  private static final Logger logger = Logger.getLogger(ExecutionController.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
