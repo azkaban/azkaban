@@ -44,6 +44,6 @@ public class ExecMetrics {
     this.metricsManager
         .addGauge("EXEC-NumQueuedFlows", flowRunnerManager::getNumQueuedFlows);
     this.metricsManager
-        .addGauge("EXEC-ProjectDirCacheHitRatio", flowRunnerManager::getProjectDirHitRatio);
+        .addGauge("EXEC-ProjectDirCacheHitRatio", flowRunnerManager::getProjectDirCacheHitRatio);
   }
 }

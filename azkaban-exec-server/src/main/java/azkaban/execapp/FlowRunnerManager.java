@@ -202,7 +202,7 @@ public class FlowRunnerManager implements EventListener,
     this.cleanerThread.start();
   }
 
-  public double getProjectDirHitRatio() {
+  public double getProjectDirCacheHitRatio() {
     return this.flowPreparer.getProjectDirCacheHitRatio();
   }
 

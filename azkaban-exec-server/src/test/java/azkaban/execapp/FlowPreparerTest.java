@@ -197,7 +197,6 @@ public class FlowPreparerTest {
     cacheMetrics.incrementCacheMiss();
     //then
     assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
-
   }
 
   @Test
@@ -205,16 +204,14 @@ public class FlowPreparerTest {
     //given
     final FlowPreparer.ProjectsDirCacheMetrics cacheMetrics = new ProjectsDirCacheMetrics();
 
-    //when
+    //when one hit
     cacheMetrics.incrementCacheHit();
     //then
     assertThat(cacheMetrics.getHitRatio()).isEqualTo(1);
 
-    //when
+    //when one miss
     cacheMetrics.incrementCacheMiss();
     //then
     assertThat(cacheMetrics.getHitRatio()).isEqualTo(0.5);
-
-
   }
 }
