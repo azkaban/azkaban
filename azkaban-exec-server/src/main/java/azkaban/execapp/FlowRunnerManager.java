@@ -202,6 +202,10 @@ public class FlowRunnerManager implements EventListener,
     this.cleanerThread.start();
   }
 
+  public double getProjectDirCacheHitRatio() {
+    return this.flowPreparer.getProjectDirCacheHitRatio();
+  }
+
   /**
    * Setting the gid bit on the execution directory forces all files/directories created within the
    * directory to be a part of the group associated with the azkaban process. Then, when users
