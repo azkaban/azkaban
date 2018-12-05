@@ -66,11 +66,11 @@ public class ExecuteFlowAction implements TriggerAction {
     ExecuteFlowAction.logger = logger;
   }
 
-  public static ExecutorManagerAdapter getExecutorManagerAdapter() {
+  public static ExecutorManagerAdapter getExecutorManager() {
     return executorManagerAdapter;
   }
 
-  public static void setExecutorManagerAdapter(
+  public static void setExecutorManager(
       final ExecutorManagerAdapter executorManagerAdapter) {
     ExecuteFlowAction.executorManagerAdapter = executorManagerAdapter;
   }

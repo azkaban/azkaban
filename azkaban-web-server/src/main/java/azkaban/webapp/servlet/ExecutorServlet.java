@@ -84,7 +84,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
-    this.executorManagerAdapter = server.getExecutorManagerAdapter();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.flowTriggerService = server.getFlowTriggerService();
     // TODO: reallocf fully guicify

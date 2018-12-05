@@ -616,12 +616,12 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    ExecuteFlowAction.setExecutorManagerAdapter(this.executorManagerAdapter);
+    ExecuteFlowAction.setExecutorManager(this.executorManagerAdapter);
     ExecuteFlowAction.setProjectManager(this.projectManager);
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
-    KillExecutionAction.setExecutorManagerAdapter(this.executorManagerAdapter);
+    KillExecutionAction.setExecutorManager(this.executorManagerAdapter);
     CreateTriggerAction.setTriggerManager(this.triggerManager);
-    ExecutionChecker.setExecutorManagerAdapter(this.executorManagerAdapter);
+    ExecutionChecker.setExecutorManager(this.executorManagerAdapter);
 
     this.triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
     this.triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
@@ -657,7 +657,7 @@ public class AzkabanWebServer extends AzkabanServer {
     return this.projectManager;
   }
 
-  public ExecutorManagerAdapter getExecutorManagerAdapter() {
+  public ExecutorManagerAdapter getExecutorManager() {
     return this.executorManagerAdapter;
   }
 

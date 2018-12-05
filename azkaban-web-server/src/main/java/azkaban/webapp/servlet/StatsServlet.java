@@ -54,7 +54,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.userManager = server.getUserManager();
-    this.execManagerAdapter = server.getExecutorManagerAdapter();
+    this.execManagerAdapter = server.getExecutorManager();
   }
 
   @Override

@@ -118,7 +118,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.projectManager = server.getProjectManager();
-    this.executorManagerAdapter = server.getExecutorManagerAdapter();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
     this.scheduler = server.getScheduler();

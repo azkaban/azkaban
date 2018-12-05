@@ -42,7 +42,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.executorManagerAdapter = server.getExecutorManagerAdapter();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
   }
 
