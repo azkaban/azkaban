@@ -1713,6 +1713,6 @@ A response sample:
 
                 ... 
               ],
-  "project" : "DP-Saleshub",
+  "project" : "Test Project",
   "projectId" : 40
 }
