@@ -1645,3 +1645,74 @@ A response sample:
      "flow" : "test",
      "endTime" : 1407778404705
    }
+
+Fetch Logs of a Project
+------------------------
+
+Given a project name, this API call fetches all logs of a project.
+
+-  **Method:** GET
+-  **Request URL:** /manager?ajax=fetchProjectLogs
+-  **Parameter Location:** Request Query String
+
+.. _request-parameters-4:
+
+**Request Parameters**
+~~~~~~~~~~~~~~~~~~~~~~
+
++-----------------------------------+-----------------------------------+
+| Parameter                         | Description                       |
++===================================+===================================+
+| session.id                        | The user session id.              |
++-----------------------------------+-----------------------------------+
+| ajax=fetchProjectLogs             | The fixed parameter indicating    |
+|                                   | the fetchProjectLogs action.      |
++-----------------------------------+-----------------------------------+
+| project                           | The project name to be fetched.   |
++-----------------------------------+-----------------------------------+
+
+.. _response-object-2:
+
+**Response Object**
+~~~~~~~~~~~~~~~~~~~
+
++-----------------------------------+-----------------------------------+
+| Parameter                         | Description                       |
++===================================+===================================+
+| project                           | The project name.                 |
++-----------------------------------+-----------------------------------+
+| projectId                         | The numerical id of the project.  |
++-----------------------------------+-----------------------------------+
+| columns                           | "user", "time", "type", "message" |
+|                                   | columns                           |
++-----------------------------------+-----------------------------------+
+| logData                           | Array of log data                 |
+|                                   | **Example values:** [             |
+|                                   | [ "test_user",                    |
+|                                   |   1540885820913,                  |
+|                                   |   "PROPERTY_OVERRIDE",            | 
+|                                   |   "some description" ],           | 
+|                                   | [ ... ], [ ... ],  ]              |
++-----------------------------------+-----------------------------------+
+
+Here's a curl command sample:
+
+.. code-block:: guess
+
+   curl -k --get --data "session.id=6c96e7d8-4df5-470d-88fe-259392c09eea&ajax=fetchProjectLogs&project=azkaban-test-project" https://localhost:8443/manager
+
+A response sample:
+
+.. code-block:: guess
+
+{
+  "columns" : [ "user", "time", "type", "message" ],
+  "logData" : [ 
+    [ "test_user1", 1543615522936, "PROPERTY_OVERRIDE", "Modified Properties: .... " ],
+    [ "test_user2", 1542346639933, "UPLOADED", "Uploaded project files zip " ],
+    [ "test_user3", 1519908889338, "CREATED", null ],
+    ... 
+  ],
+  "project" : "azkaban-test-project",
+  "projectId" : 1
+}
