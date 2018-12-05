@@ -288,7 +288,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       final int offset = getIntParam(req, "offset");
       final int length = getIntParam(req, "length");
       final ExecutableFlow exec;
-      final ExecutorManagerAdapter executorManagerAdapter = this.server.getExecutorManagerAdapter();
+      final ExecutorManagerAdapter executorManagerAdapter = this.server.getExecutorManager();
       try {
         exec = executorManagerAdapter.getExecutableFlow(execId);
       } catch (final Exception e) {
@@ -364,7 +364,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     preparePage(page, session);
 
     final ProjectManager projectManager = this.server.getProjectManager();
-    final ExecutorManagerAdapter executorManagerAdapter = this.server.getExecutorManagerAdapter();
+    final ExecutorManagerAdapter executorManagerAdapter = this.server.getExecutorManager();
 
     final Project project = projectManager.getProject(id);
     final Reportal reportal = Reportal.loadFromProject(project);
@@ -1218,7 +1218,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
     try {
       final String message =
-          this.server.getExecutorManagerAdapter().submitExecutableFlow(exflow,
+          this.server.getExecutorManager().submitExecutableFlow(exflow,
               session.getUser().getUserId())
               + ".";
       ret.put("message", message);

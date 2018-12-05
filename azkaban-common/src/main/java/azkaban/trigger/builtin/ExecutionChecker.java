@@ -43,7 +43,7 @@ public class ExecutionChecker implements ConditionChecker {
     this.wantedStatus = wantedStatus;
   }
 
-  public static void setExecutorManagerAdapter(final ExecutorManagerAdapter em) {
+  public static void setExecutorManager(final ExecutorManagerAdapter em) {
     executorManagerAdapter = em;
   }
 

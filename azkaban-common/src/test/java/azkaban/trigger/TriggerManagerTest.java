@@ -68,7 +68,7 @@ public class TriggerManagerTest {
     when(executorManagerAdapter.submitExecutableFlow(any(), any()))
         .thenThrow(new ExecutorManagerException("Flow is already running. Skipping execution.",
             ExecutorManagerException.Reason.SkippedExecution));
-    ExecuteFlowAction.setExecutorManagerAdapter(this.executorManagerAdapter);
+    ExecuteFlowAction.setExecutorManager(this.executorManagerAdapter);
     ExecuteFlowAction.setProjectManager(this.projectManager);
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
     final Props props = new Props();

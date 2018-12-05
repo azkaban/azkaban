@@ -60,7 +60,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
     this.server = (AzkabanWebServer) getApplication();
     this.userManager = this.server.getUserManager();
-    this.executorManagerAdapter = this.server.getExecutorManagerAdapter();
+    this.executorManagerAdapter = this.server.getExecutorManager();
 
     this.triggerManager = this.server.getTriggerManager();
   }

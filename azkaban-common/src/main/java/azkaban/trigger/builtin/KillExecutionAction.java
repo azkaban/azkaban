@@ -48,7 +48,7 @@ public class KillExecutionAction implements TriggerAction {
     this.actionId = actionId;
   }
 
-  public static void setExecutorManagerAdapter(final ExecutorManagerAdapter em) {
+  public static void setExecutorManager(final ExecutorManagerAdapter em) {
     executorManagerAdapter = em;
   }
 
