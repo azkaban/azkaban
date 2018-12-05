@@ -92,11 +92,12 @@ public class WebServerProvider implements Provider<Server> {
         cmt.setMethod(methodToDisable);
         cmt.setPathSpec("/*");
         mappings.add(cmt);
-      }
+        }
 
       SecurityHandler sh = new SecurityHandler();
       sh.setConstraintMappings(mappings.toArray(new ConstraintMapping[]{}));
       server.addHandler(sh);
+      logger.info("Block HTTP methods " + toDisable);
     }
   }
 
