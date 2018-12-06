@@ -17,69 +17,40 @@
 package azkaban.webapp.servlet;
 
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableJobInfo;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
+import azkaban.executor.*;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
-import azkaban.project.Project;
-import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLogEvent;
-import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
-import azkaban.project.ProjectWhitelist;
+import azkaban.project.*;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
-import azkaban.user.Permission;
+import azkaban.user.*;
 import azkaban.user.Permission.Type;
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserUtils;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
+import azkaban.utils.*;
 import azkaban.webapp.AzkabanWebServer;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.quartz.SchedulerException;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.security.AccessControlException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
@@ -217,10 +188,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void handleAJAXAction(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    final String projectName = getParam(req, "project");
+    final String ajaxName = getParam(req, "ajax");
     final User user = session.getUser();
-
     final HashMap<String, Object> ret = new HashMap<>();
+    String projectName;
+
+    if (HttpRequestUtils.hasParam(req, "project")) { 
+      projectName = getParam(req, "project");
+    } else if (ajaxName.equals("fetchProjectsAndFlows")) {
+        ajaxFetchProjects(ret, user);
+        
+        this.writeJSON(resp, ret);
+        return;
+    } else {
+        throw new ServletException("Missing required parameter 'project'"); 
+    }
+
     ret.put("project", projectName);
 
     final Project project = this.projectManager.getProject(projectName);
@@ -228,7 +211,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", "Project " + projectName + " doesn't exist.");
     } else {
       ret.put("projectId", project.getId());
-      final String ajaxName = getParam(req, "ajax");
       if (ajaxName.equals("getProjectId")) {
         // Do nothing, since projectId is added to all AJAX requests.
       } else if (ajaxName.equals("fetchProjectLogs")) {
@@ -309,6 +291,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.writeJSON(resp, ret);
+  }
+
+  private void ajaxFetchProjects(HashMap<String, Object> ret, User user) { 
+    List<Project> projects = this.projectManager.getUserProjects(user);
+    for (Project project : projects) { 
+      ret.put(project.getName(), project.getFlowMap().keySet());
+    }
   }
 
   private boolean handleAjaxPermission(final Project project, final User user, final Type type,
