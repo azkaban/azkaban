@@ -949,6 +949,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final String projectName = getParam(req, "project");
     final String flowId = getParam(req, "flow");
 
+    // check proxy
+    final  Map<String,String> props = getParamGroup(req, "flowOverride");
+    if (props != null){
+      for (String key : props.keySet()){
+         if ("user.to.proxy".equals(key) && !userManager.validateProxyUser(props.get(key), user)){
+              ret.put("error", String.format("User %s can not act as proxy for %s", user.getUserId(), props.get(key)));
+              return;
+            }
+          }
+    }
+
     final Project project =
         getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
     if (project == null) {
