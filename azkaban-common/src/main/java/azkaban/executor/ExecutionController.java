@@ -25,13 +25,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,8 +90,13 @@ public class ExecutionController extends EventHandler implements ExecutorManager
 
   @Override
   public Collection<Executor> getAllActiveExecutors() {
-    // Todo: get the executor info from DB
-    return Collections.emptyList();
+    List<Executor> executors = new ArrayList<>();
+    try {
+      executors = this.executorLoader.fetchActiveExecutors();
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get all active executors.", e);
+    }
+    return executors;
   }
 
   @Override
@@ -100,31 +106,88 @@ public class ExecutionController extends EventHandler implements ExecutorManager
 
   @Override
   public Set<String> getPrimaryServerHosts() {
-    // Todo: get the primary executor host info from DB
-    return Collections.emptySet();
+    final HashSet<String> ports = new HashSet<>();
+    try {
+      for (final Executor executor : this.executorLoader.fetchActiveExecutors()) {
+        ports.add(executor.getHost() + ":" + executor.getPort());
+      }
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get primary server hosts.", e);
+    }
+    return ports;
   }
 
   @Override
   public Set<String> getAllActiveExecutorServerHosts() {
-    // Todo: get all executor host info from DB
-    return Collections.emptySet();
+    final Set<String> ports = getPrimaryServerHosts();
+    // include executor which were initially active and still has flows running
+    try {
+      for (final Pair<ExecutionReference, ExecutableFlow> running : this.executorLoader
+          .fetchActiveFlows().values()) {
+        final ExecutionReference ref = running.getFirst();
+        if (ref.getExecutor().isPresent()) {
+          final Executor executor = ref.getExecutor().get();
+          ports.add(executor.getHost() + ":" + executor.getPort());
+        }
+      }
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get all active executor server hosts.", e);
+    }
+    return ports;
   }
 
   /**
-   * Gets a list of all the active (running flows and non-dispatched flows) executions for a given
-   * project and flow from database. {@inheritDoc}
+   * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a
+   * given project and flow {@inheritDoc}.
+   *
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
    */
   @Override
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
-    // Todo: get running flows from DB
-    return Collections.emptyList();
+    final List<Integer> executionIds = new ArrayList<>();
+    try {
+      executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
+          this.executorLoader.fetchUnfinishedFlows().values()));
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get running flows for project " + projectId + ", flow "
+          + flowId, e);
+    }
+    return executionIds;
+  }
+
+  /* Helper method for getRunningFlows */
+  private List<Integer> getRunningFlowsHelper(final int projectId, final String flowId,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    final List<Integer> executionIds = new ArrayList<>();
+    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
+      if (ref.getSecond().getFlowId().equals(flowId)
+          && ref.getSecond().getProjectId() == projectId) {
+        executionIds.add(ref.getFirst().getExecId());
+      }
+    }
+    return executionIds;
   }
 
   @Override
   public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
       throws IOException {
-    // Todo: get active flows with executor from DB
-    return Collections.emptyList();
+    final List<Pair<ExecutableFlow, Optional<Executor>>> flows = new ArrayList<>();
+    try {
+      getActiveFlowsWithExecutorHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get active flows with executor.", e);
+    }
+    return flows;
+  }
+
+  /* Helper method for getActiveFlowsWithExecutor */
+  private void getActiveFlowsWithExecutorHelper(
+      final List<Pair<ExecutableFlow, Optional<Executor>>> flows,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
+      flows.add(new Pair<>(ref.getSecond(), ref
+          .getFirst().getExecutor()));
+    }
   }
 
   /**
@@ -133,8 +196,29 @@ public class ExecutionController extends EventHandler implements ExecutorManager
    */
   @Override
   public boolean isFlowRunning(final int projectId, final String flowId) {
-    // Todo: check DB to see if flow is running
-    return true;
+    boolean isRunning = false;
+    try {
+      isRunning = isFlowRunningHelper(projectId, flowId,
+          this.executorLoader.fetchUnfinishedFlows().values());
+
+    } catch (final ExecutorManagerException e) {
+      this.logger.error(
+          "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
+          e);
+    }
+    return isRunning;
+  }
+
+  /* Search a running flow in a collection */
+  private boolean isFlowRunningHelper(final int projectId, final String flowId,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
+      if (ref.getSecond().getProjectId() == projectId
+          && ref.getSecond().getFlowId().equals(flowId)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -151,8 +235,24 @@ public class ExecutionController extends EventHandler implements ExecutorManager
    */
   @Override
   public List<ExecutableFlow> getRunningFlows() {
-    // Todo: get running flows from DB
-    return Collections.emptyList();
+    final ArrayList<ExecutableFlow> flows = new ArrayList<>();
+    try {
+      getActiveFlowHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get running flows.", e);
+    }
+    return flows;
+  }
+
+  /**
+   * Helper method to get all running flows from a Pair<ExecutionReference,
+   * ExecutableFlow collection
+   */
+  private void getActiveFlowHelper(final ArrayList<ExecutableFlow> flows,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
+      flows.add(ref.getSecond());
+    }
   }
 
   @Override
@@ -211,22 +311,77 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
       final int length) throws ExecutorManagerException {
-    // Todo: get the flow log from executor if the flow is running, else get it from DB.
-    return new LogData(0, 0, "dummy");
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
+    if (pair != null) {
+      final Pair<String, String> typeParam = new Pair<>("type", "flow");
+      final Pair<String, String> offsetParam =
+          new Pair<>("offset", String.valueOf(offset));
+      final Pair<String, String> lengthParam =
+          new Pair<>("length", String.valueOf(length));
+
+      @SuppressWarnings("unchecked") final Map<String, Object> result =
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
+              typeParam, offsetParam, lengthParam);
+      return LogData.createLogDataFromObject(result);
+    } else {
+      final LogData value =
+          this.executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
+              length);
+      return value;
+    }
   }
 
   @Override
   public LogData getExecutionJobLog(final ExecutableFlow exFlow, final String jobId,
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
-    // Todo: get the job log from executor if the flow is running, else get it from DB.
-    return new LogData(0, 0, "dummy");
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
+    if (pair != null) {
+      final Pair<String, String> typeParam = new Pair<>("type", "job");
+      final Pair<String, String> jobIdParam =
+          new Pair<>("jobId", jobId);
+      final Pair<String, String> offsetParam =
+          new Pair<>("offset", String.valueOf(offset));
+      final Pair<String, String> lengthParam =
+          new Pair<>("length", String.valueOf(length));
+      final Pair<String, String> attemptParam =
+          new Pair<>("attempt", String.valueOf(attempt));
+
+      @SuppressWarnings("unchecked") final Map<String, Object> result =
+          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
+              typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
+      return LogData.createLogDataFromObject(result);
+    } else {
+      final LogData value =
+          this.executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
+              offset, length);
+      return value;
+    }
   }
 
   @Override
   public List<Object> getExecutionJobStats(final ExecutableFlow exFlow, final String jobId,
       final int attempt) throws ExecutorManagerException {
-    // Todo: get execution job status from executor if the flow is running, else get if from DB.
-    return Collections.emptyList();
+    final Pair<ExecutionReference, ExecutableFlow> pair =
+        this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
+    if (pair == null) {
+      return this.executorLoader.fetchAttachments(exFlow.getExecutionId(), jobId,
+          attempt);
+    }
+
+    final Pair<String, String> jobIdParam = new Pair<>("jobId", jobId);
+    final Pair<String, String> attemptParam =
+        new Pair<>("attempt", String.valueOf(attempt));
+
+    @SuppressWarnings("unchecked") final Map<String, Object> result =
+        this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.ATTACHMENTS_ACTION,
+            jobIdParam, attemptParam);
+
+    @SuppressWarnings("unchecked") final List<Object> jobStats = (List<Object>) result
+        .get("attachments");
+
+    return jobStats;
   }
 
   @Override
@@ -249,19 +404,83 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public void resumeFlow(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
-    // Todo: call executor to resume the flow
+    synchronized (exFlow) {
+      final Pair<ExecutionReference, ExecutableFlow> pair =
+          this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
+      if (pair == null) {
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
+            + " isn't running.");
+      }
+      this.apiGateway
+          .callWithReferenceByUser(pair.getFirst(), ConnectorParams.RESUME_ACTION, userId);
+    }
   }
 
   @Override
   public void pauseFlow(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
-    // Todo: call executor to pause the flow
+    synchronized (exFlow) {
+      final Pair<ExecutionReference, ExecutableFlow> pair =
+          this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
+      if (pair == null) {
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
+            + " isn't running.");
+      }
+      this.apiGateway
+          .callWithReferenceByUser(pair.getFirst(), ConnectorParams.PAUSE_ACTION, userId);
+    }
   }
 
   @Override
   public void retryFailures(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
-    // Todo: call executor to retry failed flows
+    modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> modifyExecutingJobs(final ExecutableFlow exFlow,
+      final String command, final String userId, final String... jobIds)
+      throws ExecutorManagerException {
+    synchronized (exFlow) {
+      final Pair<ExecutionReference, ExecutableFlow> pair =
+          this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
+      if (pair == null) {
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
+            + " isn't running.");
+      }
+
+      final Map<String, Object> response;
+      if (jobIds != null && jobIds.length > 0) {
+        for (final String jobId : jobIds) {
+          if (!jobId.isEmpty()) {
+            final ExecutableNode node = exFlow.getExecutableNode(jobId);
+            if (node == null) {
+              throw new ExecutorManagerException("Job " + jobId
+                  + " doesn't exist in execution " + exFlow.getExecutionId()
+                  + ".");
+            }
+          }
+        }
+        final String ids = StringUtils.join(jobIds, ',');
+        response =
+            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
+                ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
+                new Pair<>(
+                    ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command),
+                new Pair<>(ConnectorParams.MODIFY_JOBS_LIST, ids));
+      } else {
+        response =
+            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
+                ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
+                new Pair<>(
+                    ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command));
+      }
+
+      return response;
+    }
   }
 
   /**
