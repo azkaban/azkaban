@@ -129,6 +129,18 @@ public class FlowPreparerTest {
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }
 
+  @Test
+  public void testIsFileCountEqual() {
+    //given
+    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
+        this.executionsDir, this.projectsDir, 1L);
+    final File projectDir = new File(this.projectsDir, "sample_project_01");
+    projectDir.mkdir();
+    final ProjectVersion pv = new ProjectVersion(1, 1, projectDir);
+
+    //then
+    assertThat(flowPreparer.isFileCountEqual(pv, 1)).isEqualTo(true);
+  }
 
   @Test
   public void testProjectCacheDirCleanerNotEnabled() throws IOException {
