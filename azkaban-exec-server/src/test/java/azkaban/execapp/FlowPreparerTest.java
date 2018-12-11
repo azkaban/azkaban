@@ -117,7 +117,7 @@ public class FlowPreparerTest {
   }
 
   @Test
-  public void testSetupFlow() throws Exception {
+  public void testSetupFlow() {
     final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
     when(executableFlow.getExecutionId()).thenReturn(12345);
     when(executableFlow.getProjectId()).thenReturn(12);
@@ -127,6 +127,21 @@ public class FlowPreparerTest {
     final File execDir = new File(this.executionsDir, "12345");
     assertTrue(execDir.exists());
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
+  }
+
+  @Test
+  public void testFileCountCheckNotCalled() {
+    //given
+    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
+    when(executableFlow.getExecutionId()).thenReturn(12345);
+    when(executableFlow.getProjectId()).thenReturn(12);
+    when(executableFlow.getVersion()).thenReturn(34);
+
+    //when
+    this.instance.setup(executableFlow);
+
+    //then
+    verify(this.instance, never()).isFileCountEqual(any(), anyInt());
   }
 
   @Test

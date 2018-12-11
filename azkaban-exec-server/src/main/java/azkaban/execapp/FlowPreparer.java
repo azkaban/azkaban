@@ -182,7 +182,7 @@ public class FlowPreparer {
       final int linkCount = FileIOUtils
           .createDeepHardlink(projectVersion.getInstalledDir(), execDir);
 
-      if (this.isProjectCacheSizeLimitEnabled() && !isFileCountEqual(projectVersion, linkCount)) {
+      if (isProjectCacheSizeLimitEnabled() && !isFileCountEqual(projectVersion, linkCount)) {
         throw new Exception(String.format("File count check failed for execid: %d, project dir %s"
                 + " are being deleted when setting this execution up",
             flow.getExecutionId(), projectVersion.getInstalledDir()));
@@ -268,7 +268,9 @@ public class FlowPreparer {
       updateDirSize(tempDir, pv);
       updateFileCount(tempDir, pv);
       log.info(String.format("Downloading zip file for Project Version {%s} completes", pv));
-      this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
+      if (this.projectDirCleaner != null) {
+        this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
+      }
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
       log.warn(String.format("Project preparation completes. [%s]", pv));
     } finally {
