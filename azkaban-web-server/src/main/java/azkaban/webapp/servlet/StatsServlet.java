@@ -184,6 +184,10 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       final Collection<Executor> executors = this.execManagerAdapter.getAllActiveExecutors();
       page.add("executorList", executors);
 
+      if (executors.isEmpty()) {
+        throw new ExecutorManagerException("Executor list is empty.");
+      }
+
       final Map<String, Object> result =
           this.execManagerAdapter.callExecutorStats(executors.iterator().next().getId(),
               ConnectorParams.STATS_GET_ALLMETRICSNAME,
