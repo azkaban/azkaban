@@ -29,6 +29,7 @@ import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -311,9 +312,50 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFetchActiveFlowsExecutorAssigned() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.fetchActiveFlowDao
+        .fetchActiveFlows();
+    assertFound(activeFlows, flows.get(0), true);
+    assertNotFound(activeFlows, flows.get(1), "Returned a queued execution");
+    assertFound(activeFlows, flows.get(2), true);
+    assertNotFound(activeFlows, flows.get(3), "Returned an execution with a finished status");
+    assertFound(activeFlows, flows.get(4), false);
+    assertTwoFlowSame(activeFlows.get(flows.get(0).getExecutionId()).getSecond(), flows.get(0));
+  }
 
+  @Test
+  public void testFetchUnfinishedFlows() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows =
+        this.fetchActiveFlowDao.fetchUnfinishedFlows();
+    assertFound(unfinishedFlows, flows.get(0), true);
+    assertFound(unfinishedFlows, flows.get(1), false);
+    assertFound(unfinishedFlows, flows.get(2), true);
+    assertNotFound(unfinishedFlows, flows.get(3), "Returned an execution with a finished status");
+    assertFound(unfinishedFlows, flows.get(4), false);
+    assertTwoFlowSame(unfinishedFlows.get(flows.get(0).getExecutionId()).getSecond(), flows.get(0));
+  }
+
+  @Test
+  public void testFetchActiveFlowByExecId() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    assertTwoFlowSame(
+        this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(0).getExecutionId()).getSecond(),
+        flows.get(0));
+    assertThat(this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(1).getExecutionId()))
+        .isNull();
+    assertTwoFlowSame(
+        this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(2).getExecutionId()).getSecond(),
+        flows.get(2));
+    assertThat(this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(3).getExecutionId()))
+        .isNull();
+    assertTwoFlowSame(
+        this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(4).getExecutionId()).getSecond(),
+        flows.get(4));
+  }
+
+  private List<ExecutableFlow> createExecutions() throws Exception {
     final Executor executor = this.executorDao.addExecutor("test", 1);
-
     final ExecutableFlow flow1 = createExecutionAndAssign(Status.PREPARING, executor);
     // flow2 is not assigned
     final ExecutableFlow flow2 = createExecution(Status.PREPARING);
@@ -324,19 +366,7 @@ public class ExecutionFlowDaoTest {
     // flow5 is assigned to an executor that is then removed
     final ExecutableFlow flow5 = createExecutionAndAssign(Status.RUNNING, executor2);
     this.executorDao.removeExecutor(executor2.getHost(), executor2.getPort());
-
-    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
-        this.fetchActiveFlowDao.fetchActiveFlows();
-
-    assertFound(activeFlows, flow1, true);
-    assertNotFound(activeFlows, flow2, "Returned a queued execution");
-    assertFound(activeFlows, flow3, true);
-    assertNotFound(activeFlows, flow4, "Returned an execution with a finished status");
-    assertFound(activeFlows, flow5, false);
-
-    final ExecutableFlow flow1Result =
-        activeFlows.get(flow1.getExecutionId()).getSecond();
-    assertTwoFlowSame(flow1Result, flow1);
+    return ImmutableList.of(flow1, flow2, flow3, flow4, flow5);
   }
 
   private void assertNotFound(
