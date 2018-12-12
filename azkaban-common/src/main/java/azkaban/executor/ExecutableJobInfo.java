@@ -104,8 +104,10 @@ public class ExecutableJobInfo {
     final String[] flowPairs = this.flowId.split(",");
 
     for (final String flowPair : flowPairs) {
-      // splitting last pair of flow (name,path) by first occurrence of ':' only
-      // because embeddedFlowPath also uses ':' as delimiter
+      // splitting each embeddedFlowName:embeddedFlowPath pair by the first occurrence of ':'
+      // only because embeddedFlowPath also uses ':' as delimiter.
+      // Ex: "embeddedFlow3:rootFlow:embeddedFlow1:embeddedFlow2:embeddedFlow3" will result in
+      // ["embeddedFlow3", "rootFlow:embeddedFlow1:embeddedFlow2:embeddedFlow3"]
       final String[] pairSplit = flowPair.split(":", 2);
       final Pair<String, String> pair;
       if (pairSplit.length == 1) {

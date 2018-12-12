@@ -33,14 +33,14 @@ public class ExecutableJobInfoTest {
   public void testParseFlowId() throws Exception {
     // flowId pattern: flowRootName[,embeddedFlowName:embeddedFlowPath]*
     Assert.assertEquals("Unexpected immediate flow id",
-        "embedded", parseImmediateFlowId("embedded"));
+        "root", parseImmediateFlowId("root"));
 
     Assert.assertEquals("Unexpected immediate flow id",
-        "embedded:emb_1", parseImmediateFlowId("embedded,emb_1:embedded:emb_1"));
+        "root:emb_1", parseImmediateFlowId("root,emb_1:root:emb_1"));
 
     Assert.assertEquals("Unexpected immediate flow id",
-        "embedded:emb_2:emb_3:emb_4",
+        "root:emb_1:emb_2:emb_3",
         parseImmediateFlowId(
-            "embedded,emb_2:embedded:emb_2,emb_3:embedded:emb_2:emb_3,emb_4:embedded:emb_2:emb_3:emb_4"));
+            "root,emb_1:root:emb_1,emb_2:root:emb_1:emb_2,emb_3:root:emb_1:emb_2:emb_3"));
   }
 }
