@@ -35,6 +35,7 @@ public class ExecutableJobInfo {
   private final int attempt;
 
   private ArrayList<Pair<String, String>> jobPath;
+  private String immediateFlowId;
 
   public ExecutableJobInfo(final int execId, final int projectId, final int version,
       final String flowId, final String jobId, final long startTime, final long endTime,
@@ -70,17 +71,7 @@ public class ExecutableJobInfo {
   }
 
   public String getImmediateFlowId() {
-    if (this.jobPath.size() == 1) {
-      return this.flowId;
-    }
-    final Pair<String, String> pair = this.jobPath.get(this.jobPath.size() - 1);
-    return pair.getSecond();
-  }
-
-  public String getHeadFlowId() {
-    final Pair<String, String> pair = this.jobPath.get(0);
-
-    return pair.getFirst();
+    return this.immediateFlowId;
   }
 
   public String getJobId() {
@@ -109,10 +100,15 @@ public class ExecutableJobInfo {
 
   private void parseFlowId() {
     this.jobPath = new ArrayList<>();
+    // parsing pattern: flowRootName[,embeddedFlowName:embeddedFlowPath]*
     final String[] flowPairs = this.flowId.split(",");
 
     for (final String flowPair : flowPairs) {
-      final String[] pairSplit = flowPair.split(":");
+      // splitting each embeddedFlowName:embeddedFlowPath pair by the first occurrence of ':'
+      // only because embeddedFlowPath also uses ':' as delimiter.
+      // Ex: "embeddedFlow3:rootFlow:embeddedFlow1:embeddedFlow2:embeddedFlow3" will result in
+      // ["embeddedFlow3", "rootFlow:embeddedFlow1:embeddedFlow2:embeddedFlow3"]
+      final String[] pairSplit = flowPair.split(":", 2);
       final Pair<String, String> pair;
       if (pairSplit.length == 1) {
         pair = new Pair<>(pairSplit[0], pairSplit[0]);
@@ -122,6 +118,8 @@ public class ExecutableJobInfo {
 
       this.jobPath.add(pair);
     }
+
+    this.immediateFlowId = this.jobPath.get(this.jobPath.size() - 1).getSecond();
   }
 
   public String getJobIdPath() {
