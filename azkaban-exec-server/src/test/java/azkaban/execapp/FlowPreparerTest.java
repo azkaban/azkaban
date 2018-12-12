@@ -117,7 +117,7 @@ public class FlowPreparerTest {
   }
 
   @Test
-  public void testSetupFlow() throws Exception {
+  public void testSetupFlow() {
     final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
     when(executableFlow.getExecutionId()).thenReturn(12345);
     when(executableFlow.getProjectId()).thenReturn(12);
@@ -129,6 +129,33 @@ public class FlowPreparerTest {
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }
 
+  @Test
+  public void testFileCountCheckNotCalled() {
+    //given
+    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
+    when(executableFlow.getExecutionId()).thenReturn(12345);
+    when(executableFlow.getProjectId()).thenReturn(12);
+    when(executableFlow.getVersion()).thenReturn(34);
+
+    //when
+    this.instance.setup(executableFlow);
+
+    //then
+    verify(this.instance, never()).isFileCountEqual(any(), anyInt());
+  }
+
+  @Test
+  public void testIsFileCountEqual() {
+    //given
+    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
+        this.executionsDir, this.projectsDir, 1L);
+    final File projectDir = new File(this.projectsDir, "sample_project_01");
+    projectDir.mkdir();
+    final ProjectVersion pv = new ProjectVersion(1, 1, projectDir);
+
+    //then
+    assertThat(flowPreparer.isFileCountEqual(pv, 1)).isEqualTo(true);
+  }
 
   @Test
   public void testProjectCacheDirCleanerNotEnabled() throws IOException {

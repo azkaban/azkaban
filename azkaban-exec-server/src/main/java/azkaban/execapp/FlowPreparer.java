@@ -89,10 +89,14 @@ public class FlowPreparer {
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
-    this.projectDirCleaner = new ProjectCacheDirCleaner(projectDirMaxSizeInMb);
+    this.projectDirCleaner =
+        projectDirMaxSizeInMb != null ? new ProjectCacheDirCleaner(projectDirMaxSizeInMb) : null;
     this.cacheMetrics = new ProjectsDirCacheMetrics();
   }
 
+  private boolean isProjectCacheSizeLimitEnabled() {
+    return this.projectDirCleaner != null;
+  }
 
   public double getProjectDirCacheHitRatio() {
     return this.cacheMetrics.getHitRatio();
@@ -142,9 +146,11 @@ public class FlowPreparer {
   /**
    * check if number of files inside the project dir equals to target
    */
-  private boolean isFileCountEqual(final ProjectVersion pv, final int target) {
+  @VisibleForTesting
+  boolean isFileCountEqual(final ProjectVersion pv, final int target) {
     final int fileCount;
     try {
+      updateFileCount(pv.getInstalledDir(), pv);
       final Path path = Paths.get(pv.getInstalledDir().getPath(), PROJECT_DIR_COUNT_FILE_NAME);
       fileCount = (int) FileIOUtils.readNumberFromFile(path);
       return fileCount == target;
@@ -176,7 +182,7 @@ public class FlowPreparer {
       final int linkCount = FileIOUtils
           .createDeepHardlink(projectVersion.getInstalledDir(), execDir);
 
-      if (!isFileCountEqual(projectVersion, linkCount)) {
+      if (isProjectCacheSizeLimitEnabled() && !isFileCountEqual(projectVersion, linkCount)) {
         throw new Exception(String.format("File count check failed for execid: %d, project dir %s"
                 + " are being deleted when setting this execution up",
             flow.getExecutionId(), projectVersion.getInstalledDir()));
@@ -262,7 +268,9 @@ public class FlowPreparer {
       updateDirSize(tempDir, pv);
       updateFileCount(tempDir, pv);
       log.info(String.format("Downloading zip file for Project Version {%s} completes", pv));
-      this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
+      if (this.projectDirCleaner != null) {
+        this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
+      }
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
       log.warn(String.format("Project preparation completes. [%s]", pv));
     } finally {
@@ -288,7 +296,7 @@ public class FlowPreparer {
 
   private class ProjectCacheDirCleaner {
 
-    private final Long projectDirMaxSizeInMb;
+    private final long projectDirMaxSizeInMb;
 
     /*
      * Delete the project dir associated with {@code version}.
@@ -300,7 +308,7 @@ public class FlowPreparer {
       }
     }
 
-    ProjectCacheDirCleaner(final Long projectDirMaxSizeInMb) {
+    ProjectCacheDirCleaner(final long projectDirMaxSizeInMb) {
       this.projectDirMaxSizeInMb = projectDirMaxSizeInMb;
     }
 
@@ -384,7 +392,6 @@ public class FlowPreparer {
     }
 
     synchronized void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes) {
-      if (this.projectDirMaxSizeInMb != null) {
         final long start = System.currentTimeMillis();
         final List<ProjectVersion> allProjects = loadAllProjects();
         FlowPreparer.log
@@ -396,10 +403,9 @@ public class FlowPreparer {
             >= this.projectDirMaxSizeInMb * 1024 * 1024) {
           FlowPreparer.log.info(String.format("Project dir disk usage[%s bytes] exceeds the "
                   + "limit[%s mb], start cleaning up project dirs",
-              currentSpaceInBytes + spaceToDeleteInBytes, this.projectDirMaxSizeInMb.longValue()));
+              currentSpaceInBytes + spaceToDeleteInBytes, this.projectDirMaxSizeInMb));
           deleteLeastRecentlyUsedProjects(spaceToDeleteInBytes, allProjects);
         }
-      }
     }
   }
 }
