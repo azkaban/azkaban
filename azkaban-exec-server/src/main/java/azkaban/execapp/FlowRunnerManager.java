@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.Event;
@@ -126,16 +128,17 @@ public class FlowRunnerManager implements EventListener,
   private final Object executionDirDeletionSync = new Object();
 
   private final int numThreads;
-  private int threadPoolQueueSize = -1;
   private final int numJobThreadPerFlow;
-  private Props globalProps;
-  private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
   // We want to limit the log sizes to about 20 megs
   private final String jobLogChunkSize;
   private final int jobLogNumFiles;
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private final boolean validateProxyUser;
+  private PollingThread pollingThread;
+  private int threadPoolQueueSize = -1;
+  private Props globalProps;
+  private long lastCleanerThreadCheckTime = -1;
+  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
 
@@ -200,6 +203,13 @@ public class FlowRunnerManager implements EventListener,
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
+
+    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.logger.info("Starting polling thread.");
+      this.pollingThread = new PollingThread(this.azkabanProps.getLong
+          (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, 1000));
+      this.pollingThread.start();
+    }
   }
 
   public double getProjectDirCacheHitRatio() {
@@ -290,7 +300,7 @@ public class FlowRunnerManager implements EventListener,
     submitFlowRunner(runner);
   }
 
-  private boolean isAlreadyRunning(int execId) throws ExecutorManagerException {
+  private boolean isAlreadyRunning(final int execId) throws ExecutorManagerException {
     if (this.runningFlows.containsKey(execId)) {
       logger.info("Execution " + execId + " is already in running.");
       if (!this.submittedFlows.containsValue(execId)) {
@@ -723,6 +733,9 @@ public class FlowRunnerManager implements EventListener,
    */
   public void shutdown() {
     logger.warn("Shutting down FlowRunnerManager...");
+    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.pollingThread.shutdown();
+    }
     this.executorService.shutdown();
     boolean result = false;
     while (!result) {
@@ -742,6 +755,9 @@ public class FlowRunnerManager implements EventListener,
    */
   public void shutdownNow() {
     logger.warn("Shutting down FlowRunnerManager now...");
+    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.pollingThread.shutdown();
+    }
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
   }
@@ -906,4 +922,54 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
+  private class PollingThread extends Thread {
+
+    private final long pollingIntervalMs;
+    private boolean shutdown = false;
+
+    public PollingThread(final long pollingIntervalMs) {
+      this.setName("FlowRunnerManager-Polling-Thread");
+      this.pollingIntervalMs = pollingIntervalMs;
+    }
+
+    @Override
+    public void run() {
+      while (!this.shutdown) {
+        synchronized (this) {
+          try {
+            if (AzkabanExecutorServer.getApp() == null) {
+              continue;
+            }
+
+            final Executor executor = requireNonNull(FlowRunnerManager.this.executorLoader
+                    .fetchExecutor(AzkabanExecutorServer.getApp().getHost(),
+                        AzkabanExecutorServer.getApp().getPort()),
+                "The executor can not be null");
+
+            // Todo jamiesjc: check executor capacity before polling from DB
+            try {
+              final int execId = FlowRunnerManager.this.executorLoader
+                  .selectAndUpdateExecution(executor.getId());
+
+              if (execId != -1) {
+                logger.info("Submit flow " + execId);
+                submitFlow(execId);
+              }
+
+            } catch (final ExecutorManagerException e) {
+              logger.info("Failed to submit flow ", e);
+            }
+            wait(this.pollingIntervalMs);
+          } catch (final Exception e) {
+            logger.info("shutting down", e);
+          }
+        }
+      }
+    }
+
+    public void shutdown() {
+      this.shutdown = true;
+      this.interrupt();
+    }
+  }
 }

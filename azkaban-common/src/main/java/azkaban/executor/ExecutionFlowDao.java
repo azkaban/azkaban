@@ -279,6 +279,53 @@ public class ExecutionFlowDao {
     }
   }
 
+  public int selectAndUpdateExecution(final int executorId) throws ExecutorManagerException {
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ? where exec_id = ?";
+
+    final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
+      final List<Integer> execIds = transOperator.query(SelectFromExecutionFlows
+          .SELECT_EXECUTION_FOR_UPDATE, new SelectFromExecutionFlows());
+
+      int execId = -1;
+      if (!execIds.isEmpty()) {
+        execId = execIds.get(0);
+        transOperator.update(UPDATE_EXECUTION, executorId, execId);
+      }
+      transOperator.getConnection().commit();
+      return execId;
+    };
+
+    try {
+      return this.dbOperator.transaction(selectAndUpdateExecution);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error selecting and updating execution with executor "
+          + executorId, e);
+    }
+  }
+
+  public static class SelectFromExecutionFlows implements
+      ResultSetHandler<List<Integer>> {
+
+    static String SELECT_EXECUTION_FOR_UPDATE = "SELECT exec_id from execution_flows where "
+        + "status = " + Status.PREPARING.getNumVal()
+        + " and executor_id is NULL and flow_data is NOT NULL ORDER BY submit_time ASC LIMIT 1 FOR "
+        + "UPDATE";
+
+    @Override
+    public List<Integer> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+      final List<Integer> execIds = new ArrayList<>();
+      do {
+        final int execId = rs.getInt(1);
+        execIds.add(execId);
+      } while (rs.next());
+
+      return execIds;
+    }
+  }
+
   public static class FetchExecutableFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
 

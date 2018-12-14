@@ -339,4 +339,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
     this.assignExecutorDao.unassignExecutor(executionId);
   }
+
+  @Override
+  public int selectAndUpdateExecution(final int executorId) throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecution(executorId);
+  }
 }

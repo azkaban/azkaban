@@ -420,4 +420,9 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     return new ArrayList<>();
   }
+
+  @Override
+  public int selectAndUpdateExecution(final int executorId) throws ExecutorManagerException {
+    return 1;
+  }
 }
