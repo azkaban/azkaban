@@ -212,7 +212,7 @@ For quick start, we may directly use the Installation directory `azkaban/azkaban
 
 Then run::
 
-  cd azkaban-solo-server/build/install/azkaban-exec-server
+  cd azkaban-exec-server/build/install/azkaban-exec-server
   ./bin/start-exec.sh
 
 After that, remember to activate the executor by calling::
