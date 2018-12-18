@@ -35,7 +35,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
   renderJobs: function (evt) {
     var data = this.model.get("data");
-    var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
     var executingBody = $("#executableBody");
     this.updateJobRow(data.nodes, executingBody);
 
@@ -67,9 +66,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
   updateJobs: function (evt) {
     var update = this.model.get("update");
-    var lastTime = update.endTime == -1
-        ? (new Date()).getTime()
-        : update.endTime;
     var executingBody = $("#executableBody");
 
     if (update.nodes) {
@@ -176,6 +172,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
         this.updateJobRow(node.nodes, subtableBody);
       }
     }
+
+    this.expandFailedJobs(nodes);
   },
 
   updateProgressBar: function (data, flowStartTime, flowLastTime) {
@@ -266,26 +264,53 @@ azkaban.ExecutionListView = Backbone.View.extend({
     }
   },
 
-  toggleExpandFlow: function (flow) {
-    console.log("Toggle Expand");
+  /**
+   * Expands or collapses a flow node according to the value of the expand
+   * parameter.
+   *
+   * @param expand - if value true -> expand, false: collapse,
+   *                 undefined -> toggles node status
+   */
+  setFlowExpansion: function (flow, expand) {
     var tr = flow.joblistrow;
     var subFlowRow = tr.subflowrow;
     var expandIcon = $(tr).find("> td > .listExpand");
-    if (tr.expanded) {
-      tr.expanded = false;
-      $(expandIcon).removeClass("glyphicon-chevron-up");
-      $(expandIcon).addClass("glyphicon-chevron-down");
 
-      $(tr).removeClass("expanded");
-      $(subFlowRow).hide();
-    }
-    else {
+    var needs_expansion = !tr.expanded && (expand === undefined || expand);
+    var needs_collapsing = tr.expanded && (expand === undefined || !expand);
+
+    if (needs_expansion) {
       tr.expanded = true;
       $(expandIcon).addClass("glyphicon-chevron-up");
       $(expandIcon).removeClass("glyphicon-chevron-down");
       $(tr).addClass("expanded");
       $(subFlowRow).show();
+
+    } else if (needs_collapsing) {
+      tr.expanded = false;
+      $(expandIcon).removeClass("glyphicon-chevron-up");
+      $(expandIcon).addClass("glyphicon-chevron-down");
+      $(tr).removeClass("expanded");
+      $(subFlowRow).hide();
+    } // else do nothing
+  },
+
+  expandFailedJobs: function (nodes) {
+    var failed = false;
+    for (var i = 0; i < nodes.length; ++i) {
+      var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
+
+      if (node.type === "flow") {
+        if (this.expandFailedJobs(node.nodes || [])) {
+          failed = true;
+          this.setFlowExpansion(node, true);
+        }
+
+      } else if (node.status === "FAILED") {
+        failed = true;
+      }
     }
+    return failed;
   },
 
   addNodeRow: function (node, body) {
@@ -352,7 +377,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
       $(expandIcon).addClass("expandarrow glyphicon glyphicon-chevron-down");
       $(expandIcon).click(function (evt) {
         var parent = $(evt.currentTarget).parents("tr")[0];
-        self.toggleExpandFlow(parent.node);
+        self.setFlowExpansion(parent.node);
       });
     }
 
@@ -410,13 +435,13 @@ var attemptRightClick = function (event) {
   var menu = [
     {
       title: "Open Attempt Log...", callback: function () {
-      window.location.href = requestURL;
-    }
+        window.location.href = requestURL;
+      }
     },
     {
       title: "Open Attempt Log in New Window...", callback: function () {
-      window.open(requestURL);
-    }
+        window.open(requestURL);
+      }
     }
   ];
 
