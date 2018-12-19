@@ -63,9 +63,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -922,54 +924,56 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
-  private class PollingThread extends Thread {
+  /**
+   * Polls new executions from DB periodically and submits the executions to run on the executor.
+   */
+  @SuppressWarnings("FutureReturnValueIgnored")
+  private class PollingThread {
 
     private final long pollingIntervalMs;
-    private boolean shutdown = false;
+    private final ScheduledExecutorService scheduler;
+    private int executorId = -1;
 
     public PollingThread(final long pollingIntervalMs) {
-      this.setName("FlowRunnerManager-Polling-Thread");
       this.pollingIntervalMs = pollingIntervalMs;
+      this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
-    @Override
-    public void run() {
-      while (!this.shutdown) {
-        synchronized (this) {
+    public void start() {
+      this.scheduler.scheduleAtFixedRate(() -> pollingExecution(), 0L, this.pollingIntervalMs,
+          TimeUnit.MILLISECONDS);
+    }
+
+    private void pollingExecution() {
+      if (this.executorId == -1) {
+        if (AzkabanExecutorServer.getApp() != null) {
           try {
-            if (AzkabanExecutorServer.getApp() == null) {
-              continue;
-            }
-
             final Executor executor = requireNonNull(FlowRunnerManager.this.executorLoader
-                    .fetchExecutor(AzkabanExecutorServer.getApp().getHost(),
-                        AzkabanExecutorServer.getApp().getPort()),
-                "The executor can not be null");
-
-            // Todo jamiesjc: check executor capacity before polling from DB
-            try {
-              final int execId = FlowRunnerManager.this.executorLoader
-                  .selectAndUpdateExecution(executor.getId());
-
-              if (execId != -1) {
-                logger.info("Submit flow " + execId);
-                submitFlow(execId);
-              }
-
-            } catch (final ExecutorManagerException e) {
-              logger.info("Failed to submit flow ", e);
-            }
-            wait(this.pollingIntervalMs);
+                .fetchExecutor(AzkabanExecutorServer.getApp().getHost(),
+                    AzkabanExecutorServer.getApp().getPort()), "The executor can not be null");
+            this.executorId = executor.getId();
           } catch (final Exception e) {
-            logger.info("shutting down", e);
+            logger.error("Failed to fetch executor ", e);
           }
+        }
+      } else {
+        try {
+          // Todo jamiesjc: check executor capacity before polling from DB
+          final int execId = FlowRunnerManager.this.executorLoader
+              .selectAndUpdateExecution(this.executorId);
+          if (execId != -1) {
+            logger.info("Submitting flow " + execId);
+            submitFlow(execId);
+          }
+        } catch (final Exception e) {
+          logger.error("Failed to submit flow ", e);
         }
       }
     }
 
     public void shutdown() {
-      this.shutdown = true;
-      this.interrupt();
+      this.scheduler.shutdown();
+      this.scheduler.shutdownNow();
     }
   }
 }
