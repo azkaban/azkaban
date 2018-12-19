@@ -136,7 +136,7 @@ public class FlowRunnerManager implements EventListener,
   private final int jobLogNumFiles;
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private final boolean validateProxyUser;
-  private PollingThread pollingThread;
+  private PollingService pollingService;
   private int threadPoolQueueSize = -1;
   private Props globalProps;
   private long lastCleanerThreadCheckTime = -1;
@@ -207,10 +207,10 @@ public class FlowRunnerManager implements EventListener,
     this.cleanerThread.start();
 
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-      this.logger.info("Starting polling thread.");
-      this.pollingThread = new PollingThread(this.azkabanProps.getLong
+      this.logger.info("Starting polling service.");
+      this.pollingService = new PollingService(this.azkabanProps.getLong
           (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, 1000));
-      this.pollingThread.start();
+      this.pollingService.start();
     }
   }
 
@@ -736,7 +736,7 @@ public class FlowRunnerManager implements EventListener,
   public void shutdown() {
     logger.warn("Shutting down FlowRunnerManager...");
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-      this.pollingThread.shutdown();
+      this.pollingService.shutdown();
     }
     this.executorService.shutdown();
     boolean result = false;
@@ -758,7 +758,7 @@ public class FlowRunnerManager implements EventListener,
   public void shutdownNow() {
     logger.warn("Shutting down FlowRunnerManager now...");
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-      this.pollingThread.shutdown();
+      this.pollingService.shutdown();
     }
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
@@ -928,23 +928,23 @@ public class FlowRunnerManager implements EventListener,
    * Polls new executions from DB periodically and submits the executions to run on the executor.
    */
   @SuppressWarnings("FutureReturnValueIgnored")
-  private class PollingThread {
+  private class PollingService {
 
     private final long pollingIntervalMs;
     private final ScheduledExecutorService scheduler;
     private int executorId = -1;
 
-    public PollingThread(final long pollingIntervalMs) {
+    public PollingService(final long pollingIntervalMs) {
       this.pollingIntervalMs = pollingIntervalMs;
       this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
     public void start() {
-      this.scheduler.scheduleAtFixedRate(() -> pollingExecution(), 0L, this.pollingIntervalMs,
+      this.scheduler.scheduleAtFixedRate(() -> pollExecution(), 0L, this.pollingIntervalMs,
           TimeUnit.MILLISECONDS);
     }
 
-    private void pollingExecution() {
+    private void pollExecution() {
       if (this.executorId == -1) {
         if (AzkabanExecutorServer.getApp() != null) {
           try {
