@@ -329,6 +329,7 @@ public class ExecutorManagerTest {
    * ExecutorManager should try to dispatch to all executors & when both fail it should remove the
    * execution from queue and finalize it.
    */
+  @Ignore
   @Test
   public void testDispatchFailed() throws Exception {
     testSetUpForRunningFlows();
