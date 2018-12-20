@@ -15,16 +15,21 @@
 */
 package azkaban.executor;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
+import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
+import azkaban.project.ProjectWhitelist;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +51,24 @@ public class ExecutionController extends EventHandler implements ExecutorManager
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
+  private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
+  private final int maxConcurrentRunsOneFlow;
 
   @Inject
-  ExecutionController(final ExecutorLoader executorLoader, final ExecutorApiGateway apiGateway) {
+  ExecutionController(final Props azkProps, final ExecutorLoader executorLoader, final
+  ExecutorApiGateway apiGateway) {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
+    this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
+  }
+
+  private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
+    // The default threshold is set to 30 for now, in case some users are affected. We may
+    // decrease this number in future, to better prevent DDos attacks.
+    return azkProps.getInt(ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
+        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
   }
 
   @Override
@@ -489,8 +505,71 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
       throws ExecutorManagerException {
-    // Todo: insert the execution to DB queue
-    return null;
+    final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
+    // Use project and flow name to prevent race condition when same flow is submitted by API and
+    // schedule at the same time
+    // causing two same flow submission entering this piece.
+    synchronized (exFlowKey.intern()) {
+      final String flowId = exflow.getFlowId();
+      logger.info("Submitting execution flow " + flowId + " by " + userId);
+
+      String message = "";
+
+      final int projectId = exflow.getProjectId();
+      exflow.setSubmitUser(userId);
+      exflow.setSubmitTime(System.currentTimeMillis());
+
+      final List<Integer> running = getRunningFlows(projectId, flowId);
+
+      ExecutionOptions options = exflow.getExecutionOptions();
+      if (options == null) {
+        options = new ExecutionOptions();
+      }
+
+      if (options.getDisabledJobs() != null) {
+        FlowUtils.applyDisabledJobs(options.getDisabledJobs(), exflow);
+      }
+
+      if (!running.isEmpty()) {
+        if (running.size() > this.maxConcurrentRunsOneFlow) {
+          throw new ExecutorManagerException("Flow " + flowId
+              + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
+              ExecutorManagerException.Reason.SkippedExecution);
+        } else if (options.getConcurrentOption().equals(
+            ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
+          Collections.sort(running);
+          final Integer runningExecId = running.get(running.size() - 1);
+
+          options.setPipelineExecutionId(runningExecId);
+          message =
+              "Flow " + flowId + " is already running with exec id "
+                  + runningExecId + ". Pipelining level "
+                  + options.getPipelineLevel() + ". \n";
+        } else if (options.getConcurrentOption().equals(
+            ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
+          throw new ExecutorManagerException("Flow " + flowId
+              + " is already running. Skipping execution.",
+              ExecutorManagerException.Reason.SkippedExecution);
+        } else {
+          message =
+              "Flow " + flowId + " is already running with exec id "
+                  + StringUtils.join(running, ",")
+                  + ". Will execute concurrently. \n";
+        }
+      }
+
+      final boolean memoryCheck =
+          !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectId(),
+              ProjectWhitelist.WhitelistType.MemoryCheck);
+      options.setMemoryCheck(memoryCheck);
+
+      // The exflow id is set by the loader. So it's unavailable until after
+      // this call.
+      this.executorLoader.uploadExecutableFlow(exflow);
+
+      message += "Execution queued successfully with exec id " + exflow.getExecutionId();
+      return message;
+    }
   }
 
   @Override

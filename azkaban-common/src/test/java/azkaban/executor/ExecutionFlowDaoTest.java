@@ -469,6 +469,18 @@ public class ExecutionFlowDaoTest {
     assertThat(inOutProps.getSecond().get("hello")).isEqualTo("output");
   }
 
+  @Test
+  public void testSelectAndUpdateExecution() throws Exception {
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    flow.setExecutionId(1);
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final Executor executor = this.executorDao.addExecutor("localhost", 12345);
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId())).isEqualTo(flow
+        .getExecutionId());
+    assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo
+        (executor);
+  }
+
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {
     assertThat(flow1.getExecutionId()).isEqualTo(flow2.getExecutionId());
     assertThat(flow1.getStatus()).isEqualTo(flow2.getStatus());

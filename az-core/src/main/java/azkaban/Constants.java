@@ -92,6 +92,7 @@ public class Constants {
 
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
+    public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
 
     // Configures Azkaban Flow Version in project YAML file
     public static final String AZKABAN_FLOW_VERSION = "azkaban-flow-version";
