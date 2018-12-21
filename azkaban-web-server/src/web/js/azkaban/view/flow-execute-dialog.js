@@ -638,13 +638,11 @@ var expanelNodeClickCallback = function (event, model, node) {
         {
           title: "Collapse Flow...", callback: function () {
             model.trigger("collapseFlow", node);
-            model.trigger("resetPanZoom");
           }
         },
         {
           title: "Collapse All Flows...", callback: function () {
             model.trigger("collapseAllFlows", node);
-            model.trigger("resetPanZoom");
           }
         },
         {
@@ -660,13 +658,11 @@ var expanelNodeClickCallback = function (event, model, node) {
         {
           title: "Expand Flow...", callback: function () {
             model.trigger("expandFlow", node);
-            model.trigger("resetPanZoom");
           }
         },
         {
           title: "Expand All Flows...", callback: function () {
             model.trigger("expandAllFlows", node);
-            model.trigger("resetPanZoom");
           }
         },
         {
