@@ -42,6 +42,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
         : data.endTime;
     var flowStartTime = data.startTime;
     this.updateProgressBar(data, flowStartTime, flowLastTime);
+
+    this.expandFailedOrKilledJobs(data.nodes);
   },
 
 //
@@ -70,6 +72,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
     if (update.nodes) {
       this.updateJobRow(update.nodes, executingBody);
+      this.expandFailedOrKilledJobs(update.nodes);
     }
 
     var data = this.model.get("data");
@@ -172,8 +175,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
         this.updateJobRow(node.nodes, subtableBody);
       }
     }
-
-    this.expandFailedJobs(nodes);
   },
 
   updateProgressBar: function (data, flowStartTime, flowLastTime) {
@@ -268,6 +269,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
    * Expands or collapses a flow node according to the value of the expand
    * parameter.
    *
+   * @param flow - node to expand/collapse
    * @param expand - if value true -> expand, false: collapse,
    *                 undefined -> toggles node status
    */
@@ -276,17 +278,17 @@ azkaban.ExecutionListView = Backbone.View.extend({
     var subFlowRow = tr.subflowrow;
     var expandIcon = $(tr).find("> td > .listExpand");
 
-    var needs_expansion = !tr.expanded && (expand === undefined || expand);
-    var needs_collapsing = tr.expanded && (expand === undefined || !expand);
+    var needsExpansion = !tr.expanded && (expand === undefined || expand);
+    var needsCollapsing = tr.expanded && (expand === undefined || !expand);
 
-    if (needs_expansion) {
+    if (needsExpansion) {
       tr.expanded = true;
       $(expandIcon).addClass("glyphicon-chevron-up");
       $(expandIcon).removeClass("glyphicon-chevron-down");
       $(tr).addClass("expanded");
       $(subFlowRow).show();
 
-    } else if (needs_collapsing) {
+    } else if (needsCollapsing) {
       tr.expanded = false;
       $(expandIcon).removeClass("glyphicon-chevron-up");
       $(expandIcon).addClass("glyphicon-chevron-down");
@@ -295,22 +297,22 @@ azkaban.ExecutionListView = Backbone.View.extend({
     } // else do nothing
   },
 
-  expandFailedJobs: function (nodes) {
-    var failed = false;
+  expandFailedOrKilledJobs: function (nodes) {
+    var hasFailedOrKilled = false;
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 
       if (node.type === "flow") {
-        if (this.expandFailedJobs(node.nodes || [])) {
-          failed = true;
+        if (this.expandFailedOrKilledJobs(node.nodes || [])) {
+          hasFailedOrKilled = true;
           this.setFlowExpansion(node, true);
         }
 
-      } else if (node.status === "FAILED") {
-        failed = true;
+      } else if (node.status === "FAILED" || node.status === "KILLED") {
+        hasFailedOrKilled = true;
       }
     }
-    return failed;
+    return hasFailedOrKilled;
   },
 
   addNodeRow: function (node, body) {
