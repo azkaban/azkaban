@@ -17,6 +17,7 @@ package azkaban.executor;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
+import azkaban.executor.selector.ExecutionControllerUtils;
 import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
@@ -54,13 +55,15 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
+  private final AlerterHolder alerterHolder;
   private final int maxConcurrentRunsOneFlow;
 
   @Inject
-  ExecutionController(final Props azkProps, final ExecutorLoader executorLoader, final
-  ExecutorApiGateway apiGateway) {
+  ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
+      final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder) {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
+    this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
   }
 
@@ -407,14 +410,33 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   /**
-   * If a flow was dispatched to an executor, cancel by calling Executor. Else if it's still
-   * queued in database, remove it from database queue and finalize. {@inheritDoc}
+   * If a flow is already dispatched to an executor, cancel by calling Executor. Else if it's still
+   * queued in DB, remove it from DB queue and finalize. {@inheritDoc}
    */
   @Override
   public void cancelFlow(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
-    // Todo: call executor to cancel the flow if it's running or remove from DB queue if it
-    // hasn't started
+    synchronized (exFlow) {
+      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+          .fetchUnfinishedFlows();
+      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
+        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
+            .get(exFlow.getExecutionId());
+        if (pair.getFirst().getExecutor().isPresent()) {
+          // Flow is already dispatched to an executor, so call that executor to cancel the flow.
+          this.apiGateway
+              .callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
+        } else {
+          // Flow is still queued, need to finalize it and update the status in DB.
+          ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder, exFlow,
+              "Cancelled before dispatching to executor", null);
+        }
+      } else {
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
+            + " isn't running.");
+      }
+    }
   }
 
   @Override

@@ -16,12 +16,9 @@
 
 package azkaban.executor;
 
-import azkaban.alert.Alerter;
-import java.util.LinkedList;
-import java.util.List;
+import azkaban.executor.selector.ExecutionControllerUtils;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -59,12 +56,11 @@ public class ExecutionFinalizer {
 
     final int execId = flow.getExecutionId();
     boolean alertUser = true;
-    final String[] extraReasons = getFinalizeFlowReasons(reason, originalError);
     this.updaterStage.set("finalizing flow " + execId);
     // First we check if the execution in the datastore is complete
     try {
       final ExecutableFlow dsFlow;
-      if (ExecutorManager.isFinished(flow)) {
+      if (ExecutionControllerUtils.isFinished(flow)) {
         dsFlow = flow;
       } else {
         this.updaterStage.set("finalizing flow " + execId + " loading from db");
@@ -72,9 +68,9 @@ public class ExecutionFinalizer {
 
         // If it's marked finished, we're good. If not, we fail everything and
         // then mark it finished.
-        if (!ExecutorManager.isFinished(dsFlow)) {
+        if (!ExecutionControllerUtils.isFinished(dsFlow)) {
           this.updaterStage.set("finalizing flow " + execId + " failing the flow");
-          failEverything(dsFlow);
+          ExecutionControllerUtils.failEverything(dsFlow);
           this.executorLoader.updateExecutableFlow(dsFlow);
         }
       }
@@ -99,98 +95,10 @@ public class ExecutionFinalizer {
 
     this.updaterStage.set("finalizing flow " + execId + " alerting and emailing");
     if (alertUser) {
-      final ExecutionOptions options = flow.getExecutionOptions();
-      // But we can definitely email them.
-      final Alerter mailAlerter = this.alerterHolder.get("email");
-      if (flow.getStatus() != Status.SUCCEEDED) {
-        if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
-          try {
-            mailAlerter.alertOnError(flow, extraReasons);
-          } catch (final Exception e) {
-            logger.error(e);
-          }
-        }
-        if (options.getFlowParameters().containsKey("alert.type")) {
-          final String alertType = options.getFlowParameters().get("alert.type");
-          final Alerter alerter = this.alerterHolder.get(alertType);
-          if (alerter != null) {
-            try {
-              alerter.alertOnError(flow, extraReasons);
-            } catch (final Exception e) {
-              logger.error("Failed to alert by " + alertType, e);
-            }
-          } else {
-            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-          }
-        }
-      } else {
-        if (options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty()) {
-          try {
-
-            mailAlerter.alertOnSuccess(flow);
-          } catch (final Exception e) {
-            logger.error(e);
-          }
-        }
-        if (options.getFlowParameters().containsKey("alert.type")) {
-          final String alertType = options.getFlowParameters().get("alert.type");
-          final Alerter alerter = this.alerterHolder.get(alertType);
-          if (alerter != null) {
-            try {
-              alerter.alertOnSuccess(flow);
-            } catch (final Exception e) {
-              logger.error("Failed to alert by " + alertType, e);
-            }
-          } else {
-            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-          }
-        }
-      }
+      ExecutionControllerUtils.alertUser(flow, this.alerterHolder,
+          ExecutionControllerUtils.getFinalizeFlowReasons(reason,
+              originalError));
     }
-
-  }
-
-  private String[] getFinalizeFlowReasons(final String reason, final Throwable originalError) {
-    final List<String> reasons = new LinkedList<>();
-    reasons.add(reason);
-    if (originalError != null) {
-      reasons.add(ExceptionUtils.getStackTrace(originalError));
-    }
-    return reasons.toArray(new String[reasons.size()]);
-  }
-
-  private void failEverything(final ExecutableFlow exFlow) {
-    final long time = System.currentTimeMillis();
-    for (final ExecutableNode node : exFlow.getExecutableNodes()) {
-      switch (node.getStatus()) {
-        case SUCCEEDED:
-        case FAILED:
-        case KILLED:
-        case SKIPPED:
-        case DISABLED:
-          continue;
-          // case UNKNOWN:
-        case READY:
-          node.setStatus(Status.KILLING);
-          break;
-        default:
-          node.setStatus(Status.FAILED);
-          break;
-      }
-
-      if (node.getStartTime() == -1) {
-        node.setStartTime(time);
-      }
-      if (node.getEndTime() == -1) {
-        node.setEndTime(time);
-      }
-    }
-
-    if (exFlow.getEndTime() == -1) {
-      exFlow.setEndTime(time);
-    }
-
-    exFlow.setStatus(Status.FAILED);
   }
 
 }

@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import azkaban.alert.Alerter;
+import azkaban.executor.selector.ExecutionControllerUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
 import java.util.ArrayList;
@@ -35,13 +36,12 @@ import org.joda.time.DateTime;
 public class RunningExecutionsUpdater {
 
   private static final Logger logger = Logger.getLogger(RunningExecutionsUpdater.class);
-
-  // When we have an http error, for that flow, we'll check every 10 secs, 360
-  // times (3600 seconds = 1 hour) before we send an email about unresponsive executor.
-  private final int numErrorsBetweenUnresponsiveEmail = 360;
   // First email is sent after 1 minute of unresponsiveness
   final int numErrorsBeforeUnresponsiveEmail = 6;
   final long errorThreshold = 10000;
+  // When we have an http error, for that flow, we'll check every 10 secs, 360
+  // times (3600 seconds = 1 hour) before we send an email about unresponsive executor.
+  private final int numErrorsBetweenUnresponsiveEmail = 360;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final AlerterHolder alerterHolder;
   private final CommonMetrics commonMetrics;
@@ -108,7 +108,7 @@ public class RunningExecutionsUpdater {
 
             this.updaterStage.set("Updated flow " + flow.getExecutionId());
 
-            if (ExecutorManager.isFinished(flow)) {
+            if (ExecutionControllerUtils.isFinished(flow)) {
               finalizeFlows.add(flow);
             }
           } catch (final ExecutorManagerException e) {
@@ -169,7 +169,7 @@ public class RunningExecutionsUpdater {
   }
 
   private boolean isExecutorRemoved(final int id) {
-    Executor fetchedExecutor;
+    final Executor fetchedExecutor;
     try {
       fetchedExecutor = this.executorLoader.fetchExecutor(id);
     } catch (final ExecutorManagerException e) {
