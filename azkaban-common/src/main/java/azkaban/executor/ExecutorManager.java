@@ -134,18 +134,6 @@ public class ExecutorManager extends EventHandler implements
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
   }
 
-  // TODO move to some common place
-  static boolean isFinished(final ExecutableFlow flow) {
-    switch (flow.getStatus()) {
-      case SUCCEEDED:
-      case FAILED:
-      case KILLED:
-        return true;
-      default:
-        return false;
-    }
-  }
-
   private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
     // The default threshold is set to 30 for now, in case some users are affected. We may
     // decrease this number in future, to better prevent DDos attacks.

@@ -48,6 +48,7 @@ public class ExecutionControllerTest {
   private ExecutionController controller;
   private ExecutorLoader loader;
   private ExecutorApiGateway apiGateway;
+  private AlerterHolder alertHolder;
   private Props props;
   private User user;
   private ExecutableFlow flow1;
@@ -65,7 +66,9 @@ public class ExecutionControllerTest {
     this.loader = mock(ExecutorLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
-    this.controller = new ExecutionController(this.props, this.loader, this.apiGateway);
+    this.alertHolder = mock(AlerterHolder.class);
+    this.controller = new ExecutionController(this.props, this.loader, this.apiGateway,
+        this.alertHolder);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
@@ -90,12 +93,6 @@ public class ExecutionControllerTest {
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
-
-    this.unfinishedFlows = ImmutableMap
-        .of(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1),
-            this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
-            this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
   }
 
   @After
@@ -107,6 +104,7 @@ public class ExecutionControllerTest {
 
   @Test
   public void testFetchAllActiveFlows() throws Exception {
+    initializeUnfinishedFlows();
     final List<ExecutableFlow> flows = this.controller.getRunningFlows();
     this.unfinishedFlows.values()
         .forEach(pair -> assertThat(flows.contains(pair.getSecond())).isTrue());
@@ -114,6 +112,7 @@ public class ExecutionControllerTest {
 
   @Test
   public void testFetchActiveFlowByProject() throws Exception {
+    initializeUnfinishedFlows();
     final List<Integer> executions = this.controller
         .getRunningFlows(this.flow2.getProjectId(), this.flow2.getFlowId());
     assertThat(executions.contains(this.flow2.getExecutionId())).isTrue();
@@ -126,6 +125,7 @@ public class ExecutionControllerTest {
 
   @Test
   public void testFetchActiveFlowWithExecutor() throws Exception {
+    initializeUnfinishedFlows();
     final List<Pair<ExecutableFlow, Optional<Executor>>> activeFlowsWithExecutor =
         this.controller.getActiveFlowsWithExecutor();
     this.unfinishedFlows.values().forEach(pair -> assertThat(activeFlowsWithExecutor
@@ -149,16 +149,8 @@ public class ExecutionControllerTest {
 
   @Test
   public void testSubmitFlowsExceedingMaxConcurrentRuns() throws Exception {
-    this.unfinishedFlows = new HashMap<>();
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
-    this.controller.submitExecutableFlow(this.flow2, this.user.getUserId());
-    verify(this.loader).uploadExecutableFlow(this.flow2);
-    this.unfinishedFlows.put(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2));
-
-    this.controller.submitExecutableFlow(this.flow3, this.user.getUserId());
-    verify(this.loader).uploadExecutableFlow(this.flow3);
-    this.unfinishedFlows.put(this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-
+    submitFlow(this.flow2, this.ref2);
+    submitFlow(this.flow3, this.ref3);
     assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
         ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
         .flow4.getId() + " has more than 1 concurrent runs. Skipping");
@@ -166,14 +158,51 @@ public class ExecutionControllerTest {
 
   @Test
   public void testSubmitFlowsWithSkipOption() throws Exception {
-    this.unfinishedFlows = new HashMap<>();
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
-    this.controller.submitExecutableFlow(this.flow2, this.user.getUserId());
-    this.unfinishedFlows.put(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2));
+    submitFlow(this.flow2, this.ref2);
     this.flow3.getExecutionOptions().setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
     assertThatThrownBy(
         () -> this.controller.submitExecutableFlow(this.flow3, this.user.getUserId()))
         .isInstanceOf(ExecutorManagerException.class).hasMessageContaining(
         "Flow " + this.flow3.getId() + " is already running. Skipping execution.");
+  }
+
+  @Test
+  public void testKillQueuedFlow() throws Exception {
+    // Flow1 is not assigned to any executor and is in PREPARING status.
+    submitFlow(this.flow1, this.ref1);
+    this.flow1.setStatus(Status.PREPARING);
+    this.controller.cancelFlow(this.flow1, this.user.getUserId());
+    // Verify that the status of flow1 is finalized.
+    assertThat(this.flow1.getStatus()).isEqualTo(Status.FAILED);
+    this.flow1.getExecutableNodes().forEach(node -> {
+      assertThat(node.getStatus()).isEqualTo(Status.KILLING);
+    });
+  }
+
+  @Test
+  public void testKillRunningFlow() throws Exception {
+    // Flow2 is assigned to executor2 and is in RUNNING status.
+    submitFlow(this.flow2, this.ref2);
+    this.flow2.setStatus(Status.RUNNING);
+    this.controller.cancelFlow(this.flow2, this.user.getUserId());
+    // Verify that executor is called to cancel flow2.
+    verify(this.apiGateway).callWithReferenceByUser(this.ref2, ConnectorParams.CANCEL_ACTION,
+        this.user.getUserId());
+  }
+
+  private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
+      Exception {
+    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
+    when(this.loader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    this.controller.submitExecutableFlow(flow, this.user.getUserId());
+    this.unfinishedFlows.put(flow.getExecutionId(), new Pair<>(ref, flow));
+  }
+
+  private void initializeUnfinishedFlows() throws Exception {
+    this.unfinishedFlows = ImmutableMap
+        .of(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1),
+            this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
+            this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
+    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
   }
 }
