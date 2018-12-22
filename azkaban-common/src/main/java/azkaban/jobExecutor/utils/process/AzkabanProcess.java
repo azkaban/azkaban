@@ -16,7 +16,6 @@
 
 package azkaban.jobExecutor.utils.process;
 
-import azkaban.utils.LogGobbler;
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -98,17 +96,6 @@ public class AzkabanProcess {
 
       this.startupLatch.countDown();
 
-      final LogGobbler outputGobbler =
-          new LogGobbler(
-              new InputStreamReader(this.process.getInputStream(), StandardCharsets.UTF_8),
-              this.logger, Level.INFO, 30);
-      final LogGobbler errorGobbler =
-          new LogGobbler(
-              new InputStreamReader(this.process.getErrorStream(), StandardCharsets.UTF_8),
-              this.logger, Level.ERROR, 30);
-
-      outputGobbler.start();
-      errorGobbler.start();
       int exitCode = -1;
       try {
         exitCode = this.process.waitFor();
@@ -118,17 +105,8 @@ public class AzkabanProcess {
 
       this.completeLatch.countDown();
 
-      // try to wait for everything to get logged out before exiting
-      outputGobbler.awaitCompletion(5000);
-      errorGobbler.awaitCompletion(5000);
-
       if (exitCode != 0) {
-        final String output =
-            new StringBuilder().append("Stdout:\n")
-                .append(outputGobbler.getRecentLog()).append("\n\n")
-                .append("Stderr:\n").append(errorGobbler.getRecentLog())
-                .append("\n").toString();
-        throw new ProcessFailureException(exitCode, output);
+        throw new ProcessFailureException();
       }
 
     } finally {
