@@ -18,6 +18,7 @@ package azkaban.jobExecutor.utils.process;
 
 import azkaban.utils.LogGobbler;
 import com.google.common.base.Joiner;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -178,21 +179,13 @@ public class AzkabanProcess {
       throws InterruptedException {
     checkStarted();
     if (this.processId != 0 && isStarted()) {
-      try {
-        if (this.isExecuteAsUser) {
-          final String cmd =
-              String.format("%s %s %s %d", this.executeAsUserBinary,
-                  this.effectiveUser, KILL_COMMAND, this.processId);
-          Runtime.getRuntime().exec(cmd);
-        } else {
-          final String cmd = String.format("%s %d", KILL_COMMAND, this.processId);
-          Runtime.getRuntime().exec(cmd);
-        }
-        return this.completeLatch.await(time, unit);
-      } catch (final IOException e) {
-        this.logger.error("Kill attempt failed.", e);
+      String cmd = String.format("%s %d", KILL_COMMAND, this.processId);
+      if (this.isExecuteAsUser) {
+        cmd = String.format("%s %s %s", this.executeAsUserBinary, this.effectiveUser, cmd);
       }
-      return false;
+      executeAndWaitForKillCmd(cmd);
+      return this.completeLatch.await(time, unit);
+
     }
     return false;
   }
@@ -204,21 +197,35 @@ public class AzkabanProcess {
     checkStarted();
     if (isRunning()) {
       if (this.processId != 0) {
-        try {
-          if (this.isExecuteAsUser) {
-            final String cmd =
-                String.format("%s %s %s -9 %d", this.executeAsUserBinary,
-                    this.effectiveUser, KILL_COMMAND, this.processId);
-            Runtime.getRuntime().exec(cmd);
-          } else {
-            final String cmd = String.format("%s -9 %d", KILL_COMMAND, this.processId);
-            Runtime.getRuntime().exec(cmd);
-          }
-        } catch (final IOException e) {
-          this.logger.error("Kill attempt failed.", e);
+        String cmd = String.format("%s -9 %d", KILL_COMMAND, this.processId);
+        if (this.isExecuteAsUser) {
+          cmd = String.format("%s %s %s", this.executeAsUserBinary, this.effectiveUser, cmd);
         }
+        executeAndWaitForKillCmd(cmd);
       }
       this.process.destroy();
+    }
+  }
+
+  private void executeAndWaitForKillCmd(final String cmd) {
+    try {
+      final Process p = Runtime.getRuntime().exec(cmd);
+      // kill should return immediately since it only sends a signal
+      final int exitCode = p.waitFor();
+      if (exitCode != 0) {
+        this.logger.error("Kill terminated with exit code " + exitCode);
+        final BufferedReader b = new BufferedReader(
+            new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8));
+        String line;
+        while ((line = b.readLine()) != null) {
+          // log why kill failed
+          this.logger.error(line);
+        }
+      }
+    } catch (final IOException e) {
+      this.logger.error("Kill attempt failed.", e);
+    } catch (final InterruptedException e) {
+      this.logger.error("Interrupted while waiting for kill command to complete.", e);
     }
   }
 
