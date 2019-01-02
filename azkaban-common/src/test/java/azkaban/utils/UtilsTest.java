@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import java.util.Calendar;
 import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
@@ -59,13 +60,14 @@ public class UtilsTest {
   public void testValidCronExpressionV() {
 
     final DateTimeZone timezone = DateTimeZone.getDefault();
+    final int year = Calendar.getInstance().get(Calendar.YEAR);
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * *", timezone));
-    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2018", timezone));
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * " + year, timezone));
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 * ? * *", timezone));
     Assert.assertTrue(Utils.isCronExpressionValid("0 0 * ? * FRI", timezone));
 
     // This is a bug from Quartz Cron. It looks like Quartz will parse the preceding 7 fields of a String.
-    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2018 22", timezone));
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * " + year + " 22", timezone));
   }
 
   /* Test CronExpression invalid cases*/
