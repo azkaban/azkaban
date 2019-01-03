@@ -26,6 +26,7 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Executor;
@@ -123,6 +124,7 @@ public class FlowRunnerManager implements EventListener,
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
   private final TriggerManager triggerManager;
+  private final AlerterHolder alerterHolder;
   private final AzkabanEventReporter azkabanEventReporter;
   private final Props azkabanProps;
   private final File executionDirectory;
@@ -150,6 +152,7 @@ public class FlowRunnerManager implements EventListener,
       final ProjectLoader projectLoader,
       final StorageManager storageManager,
       final TriggerManager triggerManager,
+      final AlerterHolder alerterHolder,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -176,6 +179,7 @@ public class FlowRunnerManager implements EventListener,
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
     this.triggerManager = triggerManager;
+    this.alerterHolder = alerterHolder;
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -366,7 +370,7 @@ public class FlowRunnerManager implements EventListener,
 
     final FlowRunner runner =
         new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
-            this.azkabanProps, this.azkabanEventReporter);
+            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
