@@ -148,6 +148,11 @@
                 <a href="$!context/$trigger.pluginPath">$trigger.pluginName</a></li>
             #end
           #end
+
+          <li#if($current_page == 'doc') class="active"#end
+                                         onClick="navMenuClick('https://azkaban.readthedocs.io/en/latest/')">
+            <a href="https://azkaban.readthedocs.io/en/latest/">Documentation</a></li>
+
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
