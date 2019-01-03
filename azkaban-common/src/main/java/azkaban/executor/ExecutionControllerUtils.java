@@ -14,16 +14,9 @@
  * the License.
  */
 
-package azkaban.executor.selector;
+package azkaban.executor;
 
 import azkaban.alert.Alerter;
-import azkaban.executor.AlerterHolder;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -36,7 +29,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ExecutionControllerUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(ExecutionControllerUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(
+      ExecutionControllerUtils.class);
 
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution

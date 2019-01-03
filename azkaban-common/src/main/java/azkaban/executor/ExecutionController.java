@@ -17,7 +17,6 @@ package azkaban.executor;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
-import azkaban.executor.selector.ExecutionControllerUtils;
 import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
