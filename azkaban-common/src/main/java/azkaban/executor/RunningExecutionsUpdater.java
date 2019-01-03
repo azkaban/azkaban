@@ -17,7 +17,6 @@
 package azkaban.executor;
 
 import azkaban.alert.Alerter;
-import azkaban.executor.selector.ExecutionControllerUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
 import java.util.ArrayList;

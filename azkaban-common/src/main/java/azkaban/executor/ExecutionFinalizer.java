@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.executor.selector.ExecutionControllerUtils;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import org.apache.log4j.Logger;
