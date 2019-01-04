@@ -1716,3 +1716,55 @@ A response sample:
   "project" : "azkaban-test-project",
   "projectId" : 1
 }
+
+
+Fetch Projects with their Flows
+-------------------------------
+
+-  **Method:** GET
+-  **Request URL:** /manager?ajax=fetchProjectsAndFlows
+-  **Parameter Location:** Request Query String
+
+.. _request-parameters-21:
+
+**Request Parameters**
+~~~~~~~~~~~~~~~~~~~~~~
+
++-----------------------------------+-----------------------------------+
+| Parameter                         | Description                       |
++===================================+===================================+
+| session.id                        | The user session id.              |
++-----------------------------------+-----------------------------------+
+| ajax=fetchProjectsAndFlows        | The fixed parameter indicating    |
+|                                   | the fetchProjectsAndFlows action. |
++-----------------------------------+-----------------------------------+
+
+.. _response-object-10:
+
+**Response Object**
+~~~~~~~~~~~~~~~~~~~
+
++-----------------------------------+-----------------------------------+
+| Parameter                         | Description                       |
++===================================+===================================+
+| project                           | Projects' name as a key           |
++-----------------------------------+-----------------------------------+
+| flows                             | A list of flow ids as a value for |
+|                                   | each project                      |
++-----------------------------------+-----------------------------------+
+
+Here's a curl command sample:
+
+.. code-block:: guess
+
+   curl -k --get --data "session.id=6c96e7d8-4df5-470d-88fe-259392c09eea&ajax=fetchProjectsAndFlows" https://localhost:8443/manager
+
+A response sample:
+
+.. code-block:: guess
+
+   [
+     "test-azkaban-project1" :  [ "flow1", "flow2, flow3" ],
+     "test-azkaban-project2" :  [ "flow10", "flow20, flow30" ],
+     ...
+   ]
