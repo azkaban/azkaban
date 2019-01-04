@@ -145,6 +145,8 @@ public class FlowRunnerManager implements EventListener,
   private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
+  // Indicate if the executor is set to active.
+  private boolean active;
 
   @Inject
   public FlowRunnerManager(final Props props,
@@ -277,6 +279,7 @@ public class FlowRunnerManager implements EventListener,
       logger.info(
           "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
+    this.active = isActive;
   }
 
   public long getLastFlowSubmittedTime() {
@@ -417,7 +420,6 @@ public class FlowRunnerManager implements EventListener,
     }
 
   }
-
 
   public void cancelJobBySLA(final int execId, final String jobId)
       throws ExecutorManagerException {
@@ -960,7 +962,7 @@ public class FlowRunnerManager implements EventListener,
             logger.error("Failed to fetch executor ", e);
           }
         }
-      } else {
+      } else if (FlowRunnerManager.this.active) {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
           final int execId = FlowRunnerManager.this.executorLoader
