@@ -18,6 +18,9 @@ package azkaban.jmx;
 
 import java.util.List;
 
+/**
+ * JMX API for execution controller to monitor executions.
+ */
 public interface JmxExecutionControllerMBean {
 
   @DisplayName("OPERATION: getNumRunningFlows")

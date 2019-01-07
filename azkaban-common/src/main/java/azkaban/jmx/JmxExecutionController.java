@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Execution controller JMX info.
+ * JMX for execution controller to monitor executions.
  */
 public class JmxExecutionController implements JmxExecutionControllerMBean {
 
