@@ -19,6 +19,7 @@ package azkaban.project;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
@@ -502,7 +503,7 @@ public class ProjectManager {
 
   public Map<String, ValidationReport> uploadProject(final Project project,
       final File archive, final String fileType, final User uploader, final Props additionalProps)
-      throws ProjectManagerException {
+      throws ProjectManagerException, ExecutorManagerException {
     return this.azkabanProjectLoader
         .uploadProject(project, archive, fileType, uploader, additionalProps);
   }

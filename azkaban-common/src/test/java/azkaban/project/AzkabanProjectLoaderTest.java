@@ -27,7 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.RunningExecutions;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
@@ -36,6 +37,7 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
@@ -62,7 +64,7 @@ public class AzkabanProjectLoaderTest {
   private AzkabanProjectLoader azkabanProjectLoader;
   private StorageManager storageManager;
   private ProjectLoader projectLoader;
-  private RunningExecutions runningExecutions;
+  private ExecutorLoader executorLoader;
 
   @Before
   public void setUp() throws Exception {
@@ -71,14 +73,14 @@ public class AzkabanProjectLoaderTest {
 
     this.storageManager = mock(StorageManager.class);
     this.projectLoader = mock(ProjectLoader.class);
-    this.runningExecutions = new RunningExecutions();
+    this.executorLoader = mock(ExecutorLoader.class);
 
     this.azkabanProjectLoader = new AzkabanProjectLoader(props, this.projectLoader,
-        this.storageManager, new FlowLoaderFactory(props), this.runningExecutions);
+        this.storageManager, new FlowLoaderFactory(props), this.executorLoader);
   }
 
   @Test
-  public void uploadProject() {
+  public void uploadProject() throws ExecutorManagerException {
     when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
 
     final URL resource = requireNonNull(
@@ -89,7 +91,8 @@ public class AzkabanProjectLoaderTest {
     // to test excluding running versions in args of cleanOlderProjectVersion
     final ExecutableFlow runningFlow = new ExecutableFlow(this.project, new Flow("x"));
     runningFlow.setVersion(this.VERSION);
-    this.runningExecutions.get().put(-1, new Pair<>(null, runningFlow));
+    when(this.executorLoader.fetchActiveFlows())
+        .thenReturn(ImmutableMap.of(-1, new Pair<>(null, runningFlow)));
 
     this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
