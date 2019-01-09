@@ -20,7 +20,8 @@ public class JdbcSqlJobTest {
   private final Logger log = Logger.getLogger(ProcessJob.class);
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private Props props = null;
+  private Props props = AllJobExecutorTests.setUpCommonProps();;
+  private Props sysProps = new Props();
   private DB db;
 
   @Before
@@ -30,7 +31,6 @@ public class JdbcSqlJobTest {
     db = DB.newEmbeddedDB(3306);
     db.start();
     // Initialize job
-    this.props = AllJobExecutorTests.setUpCommonProps();
     this.props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     this.props.put("type", "jdbcSql");
 
@@ -42,9 +42,9 @@ public class JdbcSqlJobTest {
     this.props.put("jdbcSql.postexecution_file",
         "src/test/resources/plugins/jobtypes/jdbcSql/testpostSQL.sql");
     // clean derby db if exists
-    this.props.put("jdbcSql.myxyzDB.connectionurl", "jdbc:mysql://localhost:3306/test");
-    this.props.put("jdbcSql.myxyzDB.username", "root");
-    this.props.put("jdbcSql.myxyzDB.password", "");
+    this.sysProps.put("jdbcSql.myxyzDB.connectionurl", "jdbc:mysql://localhost:3306/test");
+    this.sysProps.put("jdbcSql.myxyzDB.username", "root");
+    this.sysProps.put("jdbcSql.myxyzDB.password", "");
     this.props.put("jdbcSql.database", "myxyzDB");
     this.props.put("jdbcSql.sqlparam.schema_name", "TEST_SCHEMA");
     this.props.put("jdbcSql.sqlparam.table_name", "PERSONS");
@@ -60,18 +60,18 @@ public class JdbcSqlJobTest {
   @Test(expected = AssertionError.class)
   public void testCheckJobParameters() {
     this.props.removeLocal("jdbcSql.file");
-    this.job = new JdbcSqlJob("TestProcess", this.props, this.props, this.log);
+    this.job = new JdbcSqlJob("TestProcess", this.sysProps, this.props, this.log);
   }
 
   @Test(expected = AssertionError.class)
   public void testCheckJobParameters2() {
-    this.props.removeLocal("jdbcSql.myxyzDB.password");
-    this.job = new JdbcSqlJob("TestProcess", this.props, this.props, this.log);
+    this.sysProps.removeLocal("jdbcSql.myxyzDB.password");
+    this.job = new JdbcSqlJob("TestProcess", this.sysProps, this.props, this.log);
   }
 
   @Test
   public void testrun() throws Exception {
-    this.job = new JdbcSqlJob("TestProcess", this.props, this.props, this.log);
+    this.job = new JdbcSqlJob("TestProcess", this.sysProps, this.props, this.log);
     this.job.run();
   }
 }

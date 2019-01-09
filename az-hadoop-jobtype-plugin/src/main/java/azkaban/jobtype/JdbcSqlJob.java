@@ -27,6 +27,7 @@ public class JdbcSqlJob extends AbstractJob {
   private static final String SQL_POST_EXECUTION_FILE = "jdbcSql.postexecution_file";
 
   private final Props jobProps;
+  private final Props sysProps;
   private Connection connection;
   private BasicDataSource dataSource;
   private final String sqlDatabase;
@@ -36,6 +37,10 @@ public class JdbcSqlJob extends AbstractJob {
     super(jobId, log);
 
     this.jobProps = jobProps;
+    this.sysProps = sysProps;
+
+    sysProps.logProperties(log,"");
+    jobProps.logProperties(log,"");
     sqlDatabase = jobProps.getString(SQL_DATABASE, "default");
     checkJobParameters();
 
@@ -120,17 +125,17 @@ public class JdbcSqlJob extends AbstractJob {
     // "+SQL_DATABASE+" parameter in job properties";
 
     assert
-        jobProps.containsKey("jdbcSql." + sqlDatabase + ".connectionurl") :
+        sysProps.containsKey("jdbcSql." + sqlDatabase + ".connectionurl") :
         "please set " + "jdbcSql."
-            + sqlDatabase + ".connectionurl" + " parameter in plugin properties";
+            + sqlDatabase + ".connectionurl" + " parameter in plugin private.properties";
     assert
-        jobProps.containsKey("jdbcSql." + sqlDatabase + ".username") :
+        sysProps.containsKey("jdbcSql." + sqlDatabase + ".username") :
         "please set " + "jdbcSql."
-            + sqlDatabase + ".username" + " parameter in plugin properties";
+            + sqlDatabase + ".username" + " parameter in plugin private.properties";
     assert
-        jobProps.containsKey("jdbcSql." + sqlDatabase + ".password") :
+        sysProps.containsKey("jdbcSql." + sqlDatabase + ".password") :
         "please set " + "jdbcSql."
-            + sqlDatabase + ".password" + " parameter in plugin properties";
+            + sqlDatabase + ".password" + " parameter in plugin private.properties";
   }
 
   private String replaceSQLParams(String sql) {
@@ -192,9 +197,9 @@ public class JdbcSqlJob extends AbstractJob {
   private BasicDataSource getDataSource() {
     if (dataSource == null) {
       BasicDataSource ds = new BasicDataSource();
-      ds.setUrl(jobProps.getString("jdbcSql." + sqlDatabase + ".connectionurl"));
-      ds.setUsername(jobProps.getString("jdbcSql." + sqlDatabase + ".username"));
-      ds.setPassword(jobProps.getString("jdbcSql." + sqlDatabase + ".password"));
+      ds.setUrl(sysProps.getString("jdbcSql." + sqlDatabase + ".connectionurl"));
+      ds.setUsername(sysProps.getString("jdbcSql." + sqlDatabase + ".username"));
+      ds.setPassword(sysProps.getString("jdbcSql." + sqlDatabase + ".password"));
       dataSource = ds;
     }
     return dataSource;
