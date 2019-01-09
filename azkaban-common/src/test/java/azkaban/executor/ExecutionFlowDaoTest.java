@@ -337,6 +337,24 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
+  public void testFetchUnfinishedExecutions() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows =
+        this.fetchActiveFlowDao.fetchUnfinishedExecutions();
+    assertFound(unfinishedFlows, flows.get(0), true);
+    assertFound(unfinishedFlows, flows.get(1), false);
+    assertFound(unfinishedFlows, flows.get(2), true);
+    assertNotFound(unfinishedFlows, flows.get(3), "Returned an execution with a finished status");
+    assertFound(unfinishedFlows, flows.get(4), false);
+    assertTwoFlowSame(unfinishedFlows.get(flows.get(0).getExecutionId()).getSecond(), flows.get(0),
+        false);
+    assertTwoFlowSame(unfinishedFlows.get(flows.get(1).getExecutionId()).getSecond(), flows.get(1),
+        false);
+    assertTwoFlowSame(unfinishedFlows.get(flows.get(2).getExecutionId()).getSecond(), flows.get(2),
+        false);
+  }
+
+  @Test
   public void testFetchActiveFlowByExecId() throws Exception {
     final List<ExecutableFlow> flows = createExecutions();
     assertTwoFlowSame(
@@ -356,15 +374,27 @@ public class ExecutionFlowDaoTest {
 
   private List<ExecutableFlow> createExecutions() throws Exception {
     final Executor executor = this.executorDao.addExecutor("test", 1);
+
     final ExecutableFlow flow1 = createExecutionAndAssign(Status.PREPARING, executor);
+
     // flow2 is not assigned
     final ExecutableFlow flow2 = createExecution(Status.PREPARING);
+
     final ExecutableFlow flow3 = createExecutionAndAssign(Status.RUNNING, executor);
+    flow3.setStartTime(System.currentTimeMillis() + 1);
+    this.executionFlowDao.updateExecutableFlow(flow3);
+
     final ExecutableFlow flow4 = createExecutionAndAssign(Status.SUCCEEDED, executor);
+    flow4.setStartTime(System.currentTimeMillis() - 2);
+    flow4.setEndTime(System.currentTimeMillis() - 1);
+    this.executionFlowDao.updateExecutableFlow(flow4);
 
     final Executor executor2 = this.executorDao.addExecutor("test2", 2);
     // flow5 is assigned to an executor that is then removed
     final ExecutableFlow flow5 = createExecutionAndAssign(Status.RUNNING, executor2);
+    flow5.setStartTime(System.currentTimeMillis() + 1);
+    this.executionFlowDao.updateExecutableFlow(flow5);
+
     this.executorDao.removeExecutor(executor2.getHost(), executor2.getPort());
     return ImmutableList.of(flow1, flow2, flow3, flow4, flow5);
   }
@@ -482,6 +512,11 @@ public class ExecutionFlowDaoTest {
   }
 
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {
+    assertTwoFlowSame(flow1, flow2, true);
+  }
+
+  private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2,
+      final boolean compareFlowData) {
     assertThat(flow1.getExecutionId()).isEqualTo(flow2.getExecutionId());
     assertThat(flow1.getStatus()).isEqualTo(flow2.getStatus());
     assertThat(flow1.getEndTime()).isEqualTo(flow2.getEndTime());
@@ -490,9 +525,11 @@ public class ExecutionFlowDaoTest {
     assertThat(flow1.getFlowId()).isEqualTo(flow2.getFlowId());
     assertThat(flow1.getProjectId()).isEqualTo(flow2.getProjectId());
     assertThat(flow1.getVersion()).isEqualTo(flow2.getVersion());
-    assertThat(flow1.getExecutionOptions().getFailureAction())
-        .isEqualTo(flow2.getExecutionOptions().getFailureAction());
-    assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
+    if (compareFlowData) {
+      assertThat(flow1.getExecutionOptions().getFailureAction())
+          .isEqualTo(flow2.getExecutionOptions().getFailureAction());
+      assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
+    }
   }
 
   /**

@@ -249,16 +249,15 @@ class AzkabanProjectLoader {
       throws ProjectManagerException, ExecutorManagerException {
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
-    // TODO fetch high level metadata without DAG object
-    Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
-        .fetchActiveFlows();
-    final List<Integer> versionsWithRunningExecutions = activeFlows.values()
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
+        .fetchUnfinishedExecutions();
+    final List<Integer> versionsWithUnfinishedExecutions = activeFlows.values()
         .stream().map(pair -> pair.getSecond())
         .filter(exflow -> exflow.getProjectId() == project.getId())
         .map(exflow -> exflow.getVersion())
         .collect(Collectors.toList());
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() - this.projectVersionRetention, versionsWithRunningExecutions);
+        project.getVersion() - this.projectVersionRetention, versionsWithUnfinishedExecutions);
 
     // Clean up storage
     this.storageManager.cleanupProjectArtifacts(project.getId());

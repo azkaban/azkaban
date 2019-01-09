@@ -107,6 +107,12 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedExecutions()
+      throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchUnfinishedExecutions();
+  }
+
+  @Override
   public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId)
       throws ExecutorManagerException {
     return this.fetchActiveFlowDao.fetchActiveFlowByExecId(execId);

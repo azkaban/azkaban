@@ -78,7 +78,13 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException {
-    return new ConcurrentHashMap<>();
+    return this.activeFlows;
+  }
+
+  @Override
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedExecutions()
+      throws ExecutorManagerException {
+    return this.activeFlows;
   }
 
   @Override
