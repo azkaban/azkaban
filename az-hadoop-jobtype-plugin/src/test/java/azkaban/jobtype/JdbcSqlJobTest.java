@@ -20,7 +20,7 @@ public class JdbcSqlJobTest {
   private final Logger log = Logger.getLogger(ProcessJob.class);
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-  private Props props = AllJobExecutorTests.setUpCommonProps();;
+  private Props props = AllJobExecutorTests.setUpCommonProps();
   private Props sysProps = new Props();
   private DB db;
 

@@ -39,8 +39,6 @@ public class JdbcSqlJob extends AbstractJob {
     this.jobProps = jobProps;
     this.sysProps = sysProps;
 
-    sysProps.logProperties(log,"");
-    jobProps.logProperties(log,"");
     sqlDatabase = jobProps.getString(SQL_DATABASE, "default");
     checkJobParameters();
 
