@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 /**
  *
  */
+@SuppressWarnings("PointlessBooleanExpression")
 public class JdbcSqlJob extends AbstractJob {
 
   private static final String WORKING_DIR = "working.dir";
@@ -76,6 +77,10 @@ public class JdbcSqlJob extends AbstractJob {
       info("Running postSQL statement...");
       executeSql(postSQL);
     }
+
+    if (connection.getAutoCommit() == false) {
+      connection.commit();
+    }
   }
 
   /**
@@ -93,10 +98,12 @@ public class JdbcSqlJob extends AbstractJob {
       Statement stmt = connection.createStatement();
       stmt.execute(sql);
     } catch (Exception e) {
-      if (!jobProps.getBoolean("jdbcSql.logsql", false)) {
+      if (jobProps.getBoolean("jdbcSql.logsql", false)) {
         info(sql);
       }
-      connection.rollback();
+      if (connection.getAutoCommit() == false) {
+        connection.rollback();
+      }
       throw e;
     }
   }
@@ -200,7 +207,9 @@ public class JdbcSqlJob extends AbstractJob {
   @Override
   public void cancel() throws Exception {
     if (connection != null) {
-      connection.rollback();
+      if (connection.getAutoCommit() == false) {
+        connection.rollback();
+      }
       connection.close();
     }
     if (dataSource != null) {

@@ -3,9 +3,10 @@ package azkaban.jobtype;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.Props;
+import ch.vorburger.exec.ManagedProcessException;
+import ch.vorburger.mariadb4j.DB;
 import java.io.File;
 import java.io.IOException;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -20,11 +21,14 @@ public class JdbcSqlJobTest {
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
   private Props props = null;
+  private DB db;
 
   @Before
-  public void setUp() throws IOException {
+  public void setUp() throws IOException, ManagedProcessException {
     final File workingDir = this.temp.newFolder("TestProcess");
 
+    db = DB.newEmbeddedDB(3306);
+    db.start();
     // Initialize job
     this.props = AllJobExecutorTests.setUpCommonProps();
     this.props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
@@ -38,8 +42,7 @@ public class JdbcSqlJobTest {
     this.props.put("jdbcSql.postexecution_file",
         "src/test/resources/plugins/jobtypes/jdbcSql/testpostSQL.sql");
     // clean derby db if exists
-    FileUtils.deleteDirectory(new File("tempderbydb"));
-    this.props.put("jdbcSql.myxyzDB.connectionurl", "jdbc:derby:tempderbydb/mydb;create=true");
+    this.props.put("jdbcSql.myxyzDB.connectionurl", "jdbc:mysql://localhost:3306/test");
     this.props.put("jdbcSql.myxyzDB.username", "root");
     this.props.put("jdbcSql.myxyzDB.password", "");
     this.props.put("jdbcSql.database", "myxyzDB");
@@ -51,7 +54,7 @@ public class JdbcSqlJobTest {
 
   @After
   public void tearDown() throws Exception {
-    FileUtils.deleteDirectory(new File("tempderbydb"));
+    db.stop();
   }
 
   @Test(expected = AssertionError.class)
@@ -71,5 +74,4 @@ public class JdbcSqlJobTest {
     this.job = new JdbcSqlJob("TestProcess", this.props, this.props, this.log);
     this.job.run();
   }
-
 }
