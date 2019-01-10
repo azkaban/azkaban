@@ -525,6 +525,7 @@ public class ExecutionFlowDaoTest {
     assertThat(flow1.getFlowId()).isEqualTo(flow2.getFlowId());
     assertThat(flow1.getProjectId()).isEqualTo(flow2.getProjectId());
     assertThat(flow1.getVersion()).isEqualTo(flow2.getVersion());
+    assertThat(flow1.getSubmitUser()).isEqualTo(flow2.getSubmitUser());
     if (compareFlowData) {
       assertThat(flow1.getExecutionOptions().getFailureAction())
           .isEqualTo(flow2.getExecutionOptions().getFailureAction());
