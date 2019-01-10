@@ -340,7 +340,7 @@ public class ExecutionFlowDaoTest {
   public void testFetchUnfinishedExecutions() throws Exception {
     final List<ExecutableFlow> flows = createExecutions();
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows =
-        this.fetchActiveFlowDao.fetchUnfinishedExecutions();
+        this.fetchActiveFlowDao.fetchUnfinishedFlowsMetadata();
     assertFound(unfinishedFlows, flows.get(0), true);
     assertFound(unfinishedFlows, flows.get(1), false);
     assertFound(unfinishedFlows, flows.get(2), true);

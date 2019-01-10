@@ -121,18 +121,18 @@ public class FetchActiveFlowDao {
   }
 
   /**
-   * Fetch unfinished executions as {@link #fetchUnfinishedFlows}, excluding flow data.
+   * Fetch unfinished flows similar to {@link #fetchUnfinishedFlows}, excluding flow data.
    *
    * @return unfinished flows map
    * @throws ExecutorManagerException the executor manager exception
    */
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedExecutions()
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException {
     try {
-      return this.dbOperator.query(FetchActiveExecutions.FETCH_UNFINISHED_EXECUTIONS,
-          new FetchActiveExecutions());
+      return this.dbOperator.query(FetchUnfinishedFlowsMetadata.FETCH_UNFINISHED_FLOWS_METADATA,
+          new FetchUnfinishedFlowsMetadata());
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching unfinished flows", e);
+      throw new ExecutorManagerException("Error fetching unfinished flows metadata", e);
     }
   }
 
@@ -223,13 +223,12 @@ public class FetchActiveFlowDao {
     }
   }
 
-  // TODO create unit test
   @VisibleForTesting
-  static class FetchActiveExecutions implements
+  static class FetchUnfinishedFlowsMetadata implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
 
     // Select flows that are not in finished status
-    private static final String FETCH_UNFINISHED_EXECUTIONS =
+    private static final String FETCH_UNFINISHED_FLOWS_METADATA =
         "SELECT ex.exec_id exec_id, ex.project_id project_id, ex.version version, "
             + "ex.flow_id flow_id, et.host host, et.port port, ex.executor_id executorId, "
             + "ex.status status, ex.submit_time submit_time, ex.start_time start_time, "
