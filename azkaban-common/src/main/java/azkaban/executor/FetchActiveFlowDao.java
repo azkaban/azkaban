@@ -88,7 +88,7 @@ public class FetchActiveFlowDao {
     return new Pair<>(ref, exFlow);
   }
 
-  private static Pair<ExecutionReference, ExecutableFlow> getExecutionHelper(
+  private static Pair<ExecutionReference, ExecutableFlow> getExecutableFlowMetadataHelper(
       final ResultSet rs) throws SQLException {
     final Flow flow = new Flow(rs.getString("flow_id"));
     final Project project = new Project(rs.getInt("project_id"), null);
@@ -252,7 +252,7 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutionHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowMetadataHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
