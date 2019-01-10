@@ -186,7 +186,8 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Cleans all project versions less than the provided version.
+   * Cleans all project versions less than the provided version, except the versions to exclude
+   * given as argument
    */
   void cleanOlderProjectVersion(int projectId, int version, final List<Integer> excludedVersions)
       throws ProjectManagerException;
