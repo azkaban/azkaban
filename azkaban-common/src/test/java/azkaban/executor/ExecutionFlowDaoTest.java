@@ -337,7 +337,7 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
-  public void testFetchUnfinishedExecutions() throws Exception {
+  public void testFetchUnfinishedFlowsMetadata() throws Exception {
     final List<ExecutableFlow> flows = createExecutions();
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows =
         this.fetchActiveFlowDao.fetchUnfinishedFlowsMetadata();
