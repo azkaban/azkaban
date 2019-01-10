@@ -249,9 +249,9 @@ class AzkabanProjectLoader {
       throws ProjectManagerException, ExecutorManagerException {
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
-    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
-        .fetchUnfinishedExecutions();
-    final List<Integer> versionsWithUnfinishedExecutions = activeFlows.values()
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+        .fetchUnfinishedFlowsMetadata();
+    final List<Integer> versionsWithUnfinishedExecutions = unfinishedFlows.values()
         .stream().map(pair -> pair.getSecond())
         .filter(exflow -> exflow.getProjectId() == project.getId())
         .map(exflow -> exflow.getVersion())

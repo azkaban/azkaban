@@ -42,7 +42,7 @@ public interface ExecutorLoader {
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException;
 
-  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedExecutions()
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException;
 
   Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)

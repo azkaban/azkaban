@@ -91,7 +91,7 @@ public class AzkabanProjectLoaderTest {
     // to test excluding running versions in args of cleanOlderProjectVersion
     final ExecutableFlow runningFlow = new ExecutableFlow(this.project, new Flow("x"));
     runningFlow.setVersion(this.VERSION);
-    when(this.executorLoader.fetchUnfinishedExecutions())
+    when(this.executorLoader.fetchUnfinishedFlowsMetadata())
         .thenReturn(ImmutableMap.of(-1, new Pair<>(null, runningFlow)));
 
     this.project.setVersion(this.VERSION);

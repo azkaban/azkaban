@@ -82,7 +82,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedExecutions()
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException {
     return this.activeFlows;
   }
