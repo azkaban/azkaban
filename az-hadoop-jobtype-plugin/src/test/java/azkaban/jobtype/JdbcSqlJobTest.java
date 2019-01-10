@@ -28,7 +28,7 @@ public class JdbcSqlJobTest {
   public void setUp() throws IOException, ManagedProcessException {
     final File workingDir = this.temp.newFolder("TestProcess");
 
-    db = DB.newEmbeddedDB(3306);
+    db = DB.newEmbeddedDB(33071);
     db.start();
     // Initialize job
     this.props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
@@ -42,7 +42,7 @@ public class JdbcSqlJobTest {
     this.props.put("jdbcSql.postexecution_file",
         "src/test/resources/plugins/jobtypes/jdbcSql/testpostSQL.sql");
     // clean derby db if exists
-    this.sysProps.put("jdbcSql.myxyzDB.connectionurl", "jdbc:mysql://localhost:3306/test");
+    this.sysProps.put("jdbcSql.myxyzDB.connectionurl", "jdbc:mysql://localhost:33071/test");
     this.sysProps.put("jdbcSql.myxyzDB.username", "root");
     this.sysProps.put("jdbcSql.myxyzDB.password", "");
     this.props.put("jdbcSql.database", "myxyzDB");
