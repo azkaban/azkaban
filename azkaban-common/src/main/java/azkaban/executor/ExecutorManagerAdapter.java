@@ -38,10 +38,6 @@ public interface ExecutorManagerAdapter {
 
   public List<ExecutableFlow> getRunningFlows();
 
-  public String getRunningFlowIds();
-
-  public String getQueuedFlowIds();
-
   public long getQueuedFlowSize();
 
   /**

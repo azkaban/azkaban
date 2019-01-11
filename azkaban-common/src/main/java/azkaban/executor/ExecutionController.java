@@ -271,31 +271,29 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   /**
-   * Get execution ids of all running (unfinished) flows from database. {@inheritDoc}
+   * Get execution ids of all running (unfinished) flows from database.
    */
-  @Override
-  public String getRunningFlowIds() {
+  public List<Integer> getRunningFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
       this.logger.error("Failed to get running flow ids.", e);
     }
-    return allIds.toString();
+    return allIds;
   }
 
   /**
-   * Get execution ids of all non-dispatched flows from database. {@inheritDoc}
+   * Get execution ids of all non-dispatched flows from database.
    */
-  @Override
-  public String getQueuedFlowIds() {
+  public List<Integer> getQueuedFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows());
     } catch (final ExecutorManagerException e) {
       this.logger.error("Failed to get queued flow ids.", e);
     }
-    return allIds.toString();
+    return allIds;
   }
 
   /* Helper method to get all execution ids from collection in sorted order. */

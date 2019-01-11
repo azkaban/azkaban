@@ -118,13 +118,13 @@ public class ExecutionControllerTest {
   public void testFetchAllActiveFlowIds() throws Exception {
     initializeUnfinishedFlows();
     assertThat(this.controller.getRunningFlowIds())
-        .isEqualTo(this.unfinishedFlows.keySet().toString());
+        .isEqualTo(new ArrayList<>(this.unfinishedFlows.keySet()));
   }
 
   @Test
   public void testFetchAllQueuedFlowIds() throws Exception {
     assertThat(this.controller.getQueuedFlowIds())
-        .isEqualTo(ImmutableList.of(this.flow1.getExecutionId()).toString());
+        .isEqualTo(ImmutableList.of(this.flow1.getExecutionId()));
   }
 
   @Test

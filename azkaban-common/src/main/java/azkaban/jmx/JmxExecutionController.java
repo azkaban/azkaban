@@ -43,12 +43,12 @@ public class JmxExecutionController implements JmxExecutionControllerMBean {
 
   @Override
   public String getRunningFlows() {
-    return this.controller.getRunningFlowIds();
+    return this.controller.getRunningFlowIds().toString();
   }
 
   @Override
   public String getQueuedFlows() {
-    return this.controller.getQueuedFlowIds();
+    return this.controller.getQueuedFlowIds().toString();
   }
 
 }

@@ -560,12 +560,7 @@ public class ExecutorManager extends EventHandler implements
 
   /**
    * Get execution Ids of all running (unfinished) flows
-   *
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlowIds()
    */
-  @Override
   public String getRunningFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     getRunningFlowsIdsHelper(allIds, this.queuedFlows.getAllEntries());
@@ -576,12 +571,7 @@ public class ExecutorManager extends EventHandler implements
 
   /**
    * Get execution Ids of all non-dispatched flows
-   *
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#getQueuedFlowIds()
    */
-  @Override
   public String getQueuedFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     getRunningFlowsIdsHelper(allIds, this.queuedFlows.getAllEntries());
