@@ -53,6 +53,7 @@ dependencies {
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
     testCompile("ch.vorburger.mariaDB4j:mariaDB4j:2.3.0")
+    testCompile project(path: ':azkaban-common', configuration: 'testOutput')
 }
 
 /**

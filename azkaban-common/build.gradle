@@ -58,3 +58,16 @@ dependencies {
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier = 'test'
+}
+
+configurations {
+    testOutput.extendsFrom(testCompile)
+}
+
+artifacts {
+    testOutput testJar
+}

@@ -1,6 +1,7 @@
 package azkaban.jobtype;
 
 import azkaban.jobExecutor.AbstractProcessJob;
+import azkaban.jobExecutor.AllJobExecutorTests;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.Props;
 import ch.vorburger.exec.ManagedProcessException;
