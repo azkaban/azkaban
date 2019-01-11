@@ -52,6 +52,7 @@ public class ExecutionFlowDao {
         + "values (?,?,?,?,?,?,?)";
     final long submitTime = System.currentTimeMillis();
     flow.setStatus(Status.PREPARING);
+    flow.setSubmitTime(submitTime);
 
     /**
      * Why we need a transaction to get last insert ID?

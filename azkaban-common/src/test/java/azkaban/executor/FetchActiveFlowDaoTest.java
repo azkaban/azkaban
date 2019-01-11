@@ -60,19 +60,19 @@ public class FetchActiveFlowDaoTest {
   private void mockExecution(final int encodingType, final byte[] flowData) throws SQLException {
     when(this.rs.next()).thenReturn(true).thenReturn(false);
     // execution id
-    when(this.rs.getInt(1)).thenReturn(1);
+    when(this.rs.getInt("exec_id")).thenReturn(1);
     // encodingType
-    when(this.rs.getInt(2)).thenReturn(encodingType);
+    when(this.rs.getInt("enc_type")).thenReturn(encodingType);
     // data
-    when(this.rs.getBytes(3)).thenReturn(flowData);
+    when(this.rs.getBytes("flow_data")).thenReturn(flowData);
     // executor host
-    when(this.rs.getString(4)).thenReturn(null);
+    when(this.rs.getString("host")).thenReturn(null);
     // executor port
-    when(this.rs.getInt(5)).thenReturn(0);
+    when(this.rs.getInt("port")).thenReturn(0);
     // executorId
-    when(this.rs.getInt(6)).thenReturn(1);
+    when(this.rs.getInt("executorId")).thenReturn(1);
     // executorStatus
-    when(this.rs.getBoolean(7)).thenReturn(false);
+    when(this.rs.getBoolean("executorStatus")).thenReturn(false);
   }
 
 }

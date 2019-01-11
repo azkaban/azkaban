@@ -365,10 +365,29 @@ public class JdbcProjectImplTest {
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
     assertNumChunks(project, newVersion, 1);
 
-    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1, Collections.emptyList());
 
     assertNumChunks(project, newVersion, 0);
     assertGetUploadedFileOfCleanedVersion(project.getId(), newVersion);
+  }
+
+  @Test
+  public void cleanOlderProjectVersionExcludedVersion() {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    final int newVersion2 = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion2, testFile, "uploadUser1");
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
+        Arrays.asList(newVersion, newVersion2));
+    assertNumChunks(project, newVersion, 1);
+    assertNumChunks(project, newVersion2, 1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
+        Arrays.asList(newVersion));
+    assertNumChunks(project, newVersion, 1);
+    assertNumChunks(project, newVersion2, 0);
   }
 
   private void assertNumChunks(final Project project, final int version, final int expectedChunks) {

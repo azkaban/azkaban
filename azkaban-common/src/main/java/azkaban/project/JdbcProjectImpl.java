@@ -54,6 +54,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
@@ -959,12 +960,22 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   @Override
-  public void cleanOlderProjectVersion(final int projectId, final int version)
-      throws ProjectManagerException {
-    final String DELETE_FLOW = "DELETE FROM project_flows WHERE project_id=? AND version<?";
-    final String DELETE_PROPERTIES = "DELETE FROM project_properties WHERE project_id=? AND version<?";
-    final String DELETE_PROJECT_FILES = "DELETE FROM project_files WHERE project_id=? AND version<?";
-    final String UPDATE_PROJECT_VERSIONS = "UPDATE project_versions SET num_chunks=0 WHERE project_id=? AND version<?";
+  public void cleanOlderProjectVersion(final int projectId, final int version,
+      final List<Integer> excludedVersions) throws ProjectManagerException {
+
+    // Would use param of type Array from transOperator.getConnection().createArrayOf() but
+    // h2 doesn't support the Array type, so format the filter manually.
+    final String EXCLUDED_VERSIONS_FILTER = excludedVersions.stream()
+        .map(excluded -> " AND version != " + excluded).collect(Collectors.joining());
+    final String VERSION_FILTER = " AND version < ?" + EXCLUDED_VERSIONS_FILTER;
+
+    final String DELETE_FLOW = "DELETE FROM project_flows WHERE project_id=?" + VERSION_FILTER;
+    final String DELETE_PROPERTIES =
+        "DELETE FROM project_properties WHERE project_id=?" + VERSION_FILTER;
+    final String DELETE_PROJECT_FILES =
+        "DELETE FROM project_files WHERE project_id=?" + VERSION_FILTER;
+    final String UPDATE_PROJECT_VERSIONS =
+        "UPDATE project_versions SET num_chunks=0 WHERE project_id=?" + VERSION_FILTER;
     // Todo jamiesjc: delete flow files
 
     final SQLTransaction<Integer> cleanOlderProjectTransaction = transOperator -> {

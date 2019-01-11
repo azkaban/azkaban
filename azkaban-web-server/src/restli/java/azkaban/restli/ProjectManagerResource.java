@@ -16,6 +16,7 @@
 package azkaban.restli;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -58,7 +59,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       @ActionParam("projectName") final String projectName,
       @ActionParam("packageUrl") final String packageUrl)
       throws ProjectManagerException, RestLiServiceException, UserManagerException,
-      ServletException, IOException, SchedulerException {
+      ServletException, IOException, SchedulerException, ExecutorManagerException {
     logger.info("Deploy called. {projectName: " + projectName + ", packageUrl:" + packageUrl + "}");
 
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
@@ -144,7 +145,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       logger.info("Deploy: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       return Integer.toString(project.getVersion());
-    } catch (final ProjectManagerException | SchedulerException e) {
+    } catch (final ProjectManagerException | SchedulerException | ExecutorManagerException e) {
       final String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
       logger.error(errorMsg, e);
       throw e;
