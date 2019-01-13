@@ -14,6 +14,15 @@
  * the License.
  */
 
+repositories {
+    mavenCentral()
+    maven {
+      url 'https://mvnrepository.com/artifact/org.apache.shiro/shiro-core'
+    }
+    maven {
+      url 'https://mvnrepository.com/artifact/org.apache.shiro/shiro-web'
+    }
+}
 dependencies {
     compile project(':az-core')
     compile project(':azkaban-spi')
@@ -40,6 +49,10 @@ dependencies {
     compile deps.mysqlConnector
     compile deps.snakeyaml
     compile deps.velocity
+    
+  	compile group: 'org.apache.shiro', name: 'shiro-web', version: '1.4.0'
+	compile group: 'org.apache.shiro', name: 'shiro-core', version: '1.4.0'
+	    
 
     testRuntime deps.h2
 
