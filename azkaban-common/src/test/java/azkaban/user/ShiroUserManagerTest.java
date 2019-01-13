@@ -57,6 +57,18 @@ public class ShiroUserManagerTest {
   }
 
   @Test
+  public void tesUserRoles() throws UserManagerException {
+    // load the user first! login!
+    User u = shiroUserManager.getUser("user0", "password0");
+    assertEquals(u.getRoles().size(),1);
+    u = shiroUserManager.getUser("user1", "password1");
+    assertEquals(u.getRoles().size(),2);
+    assertTrue(u.getRoles().contains("role1"));
+    u = shiroUserManager.getUser("azkaban", "azkaban");
+    assertTrue(u.getRoles().contains("admin"));
+  }
+
+  @Test
   public void validateUser() {
     assertTrue(shiroUserManager.validateUser("user1"));
     assertTrue(shiroUserManager.validateUser("azkaban"));

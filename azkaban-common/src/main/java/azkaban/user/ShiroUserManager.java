@@ -21,6 +21,7 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.log4j.Logger;
 import org.apache.shiro.SecurityUtils;
@@ -123,8 +124,17 @@ public class ShiroUserManager implements UserManager {
     // we found shiro user! now lets convert it to azkaban user!
     logger.info("User [" + currentUser.getPrincipal() + "] found successfully.");
     azkaban.user.User user = new User(currentUser.getPrincipal().toString());
-    getUserPermission(currentUser);
+
     user.setPermissions(getUserPermission(currentUser));
+
+    // find user roles and add it to azkaban user!
+    for (Entry<String, SimpleRole> sr : this.shiroRoles.entrySet()){
+      if(currentUser.hasRole(sr.getValue().getName())) {
+        user.addRole(sr.getValue().getName());
+        logger.info("User [" + currentUser.getPrincipal() + "] has role:"+sr.getValue().getName());
+      }
+    }
+
     return user;
   }
 
@@ -146,7 +156,9 @@ public class ShiroUserManager implements UserManager {
 
   @Override
   public boolean validateUser(final String username) {
-    return this.shiroUsers.containsKey(username);
+    boolean validate = this.shiroUsers.containsKey(username);
+    logger.info("ShiroUserManager:validateUser: User "+username+" is valid ? " + validate);
+    return validate;
   }
 
   @Override
@@ -171,6 +183,7 @@ public class ShiroUserManager implements UserManager {
   @Override
   public boolean validateGroup(final String group) {
     // Return true. Validation should be added when groups are added to the xml.
+    logger.info("ShiroUserManager:validateGroup: Group "+group+" is valid ? " + true);
     return true;
   }
 
