@@ -27,7 +27,7 @@ public class WebServerProviderTest {
         props.put("jetty.port", "0");
         props.put("server.useSSL", "true");
         props.put("jetty.use.ssl", "false");
-        props.put("jetty.disable.http-methods", "TRACE");
+        props.put("jetty.disable.http-methods", "TRACE,PUT");
 
         AbstractModule propsInjector = new AbstractModule() {
             @Override
@@ -57,6 +57,26 @@ public class WebServerProviderTest {
 
         server.handle("/some", requestMock, responseMock, REQUEST);
         Mockito.verify(responseMock, Mockito.atLeastOnce()).sendError(403);
+    }
+
+    @Test
+    public void whenPutIsDisabledThen403Return() throws Exception {
+        HttpServletRequest requestMock = Mockito.mock(Request.class);
+        Mockito.when(requestMock.getMethod()).thenReturn("PUT");
+        HttpServletResponse responseMock = Mockito.mock(Response.class);
+
+        server.handle("/some", requestMock, responseMock, REQUEST);
+        Mockito.verify(responseMock, Mockito.atLeastOnce()).sendError(403);
+    }
+
+    @Test
+    public void whenGetIsAllowedThenNotHandledAsError() throws Exception {
+        HttpServletRequest requestMock = Mockito.mock(Request.class);
+        Mockito.when(requestMock.getMethod()).thenReturn("GET");
+        HttpServletResponse responseMock = Mockito.mock(Response.class);
+
+        server.handle("/some", requestMock, responseMock, REQUEST);
+        Mockito.verify(responseMock, Mockito.never()).sendError(403);
     }
 
 }
