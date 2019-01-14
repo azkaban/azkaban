@@ -22,16 +22,21 @@ public class AzkabanIniRealm extends IniRealm {
     this();
     this.processDefinitions(ini);
   }
-
+/*
+make shiro users accessible to azkaban
+ */
   public Map<String, SimpleAccount> getUsers() {
     return users;
   }
 
+  /*
+  make shiro roles accessible to azkaban
+   */
   public Map<String, SimpleRole> getRoles() {
     return roles;
   }
 
-  private void processDefinitions(Ini ini) {
+  protected void processDefinitions(Ini ini) {
     if (CollectionUtils.isEmpty(ini)) {
       log.warn("{} defined, but the ini instance is null or empty.",
           this.getClass().getSimpleName());
