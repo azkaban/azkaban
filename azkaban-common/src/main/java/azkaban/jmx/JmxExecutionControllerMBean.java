@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2019 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,26 +18,21 @@ package azkaban.jmx;
 
 import java.util.List;
 
-public interface JmxExecutorManagerAdapterMBean {
+/**
+ * JMX API for execution controller to monitor executions.
+ */
+public interface JmxExecutionControllerMBean {
 
   @DisplayName("OPERATION: getNumRunningFlows")
   public int getNumRunningFlows();
 
-  @DisplayName("OPERATION: getExecutorThreadState")
-  public String getExecutorManagerThreadState();
-
-  @DisplayName("OPERATION: isThreadActive")
-  public boolean isExecutorManagerThreadActive();
-
-  @DisplayName("OPERATION: getLastThreadCheckTime")
-  public Long getLastExecutorManagerThreadCheckTime();
+  @DisplayName("OPERATION: getRunningFlows")
+  public String getRunningFlows();
 
   @DisplayName("OPERATION: getPrimaryExecutorHostPorts")
   public List<String> getPrimaryExecutorHostPorts();
 
-  // @DisplayName("OPERATION: getExecutorThreadStage")
-  // public String getExecutorThreadStage();
-  //
-  // @DisplayName("OPERATION: getRunningFlows")
-  // public String getRunningFlows();
+  @DisplayName("OPERATION: getQueuedFlows")
+  public String getQueuedFlows();
+
 }

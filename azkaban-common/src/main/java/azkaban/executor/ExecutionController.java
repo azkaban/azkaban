@@ -249,13 +249,13 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   /**
-   * Get all active (running, non-dispatched) flows from database. {@inheritDoc}
+   * Get all running (unfinished) flows from database. {@inheritDoc}
    */
   @Override
   public List<ExecutableFlow> getRunningFlows() {
     final ArrayList<ExecutableFlow> flows = new ArrayList<>();
     try {
-      getActiveFlowHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+      getFlowsHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
       this.logger.error("Failed to get running flows.", e);
     }
@@ -263,14 +263,58 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   /**
-   * Helper method to get all running flows from a Pair<ExecutionReference,
-   * ExecutableFlow collection
+   * Helper method to get all flows from collection.
    */
-  private void getActiveFlowHelper(final ArrayList<ExecutableFlow> flows,
+  private void getFlowsHelper(final ArrayList<ExecutableFlow> flows,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      flows.add(ref.getSecond());
+    collection.stream().forEach(ref -> flows.add(ref.getSecond()));
+  }
+
+  /**
+   * Get execution ids of all running (unfinished) flows from database.
+   */
+  public List<Integer> getRunningFlowIds() {
+    final List<Integer> allIds = new ArrayList<>();
+    try {
+      getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get running flow ids.", e);
     }
+    return allIds;
+  }
+
+  /**
+   * Get execution ids of all non-dispatched flows from database.
+   */
+  public List<Integer> getQueuedFlowIds() {
+    final List<Integer> allIds = new ArrayList<>();
+    try {
+      getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows());
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get queued flow ids.", e);
+    }
+    return allIds;
+  }
+
+  /* Helper method to get all execution ids from collection in sorted order. */
+  private void getExecutionIdsHelper(final List<Integer> allIds,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    collection.stream().forEach(ref -> allIds.add(ref.getSecond().getExecutionId()));
+    Collections.sort(allIds);
+  }
+
+  /**
+   * Get the number of non-dispatched flows from database. {@inheritDoc}
+   */
+  @Override
+  public long getQueuedFlowSize() {
+    long size = 0L;
+    try {
+      size = this.executorLoader.fetchQueuedFlows().size();
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get queued flow size.", e);
+    }
+    return size;
   }
 
   @Override

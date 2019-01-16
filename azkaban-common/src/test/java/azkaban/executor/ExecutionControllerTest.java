@@ -43,6 +43,8 @@ public class ExecutionControllerTest {
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new
       HashMap<>();
+  private List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows = new
+      ArrayList<>();
   private List<Executor> activeExecutors = new ArrayList<>();
   private List<Executor> allExecutors = new ArrayList<>();
   private ExecutionController controller;
@@ -93,6 +95,8 @@ public class ExecutionControllerTest {
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
+    this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
+    when(this.loader.fetchQueuedFlows()).thenReturn(this.queuedFlows);
   }
 
   @After
@@ -108,6 +112,24 @@ public class ExecutionControllerTest {
     final List<ExecutableFlow> flows = this.controller.getRunningFlows();
     this.unfinishedFlows.values()
         .forEach(pair -> assertThat(flows.contains(pair.getSecond())).isTrue());
+  }
+
+  @Test
+  public void testFetchAllActiveFlowIds() throws Exception {
+    initializeUnfinishedFlows();
+    assertThat(this.controller.getRunningFlowIds())
+        .isEqualTo(new ArrayList<>(this.unfinishedFlows.keySet()));
+  }
+
+  @Test
+  public void testFetchAllQueuedFlowIds() throws Exception {
+    assertThat(this.controller.getQueuedFlowIds())
+        .isEqualTo(ImmutableList.of(this.flow1.getExecutionId()));
+  }
+
+  @Test
+  public void testFetchQueuedFlowSize() throws Exception {
+    assertThat(this.controller.getQueuedFlowSize()).isEqualTo(this.queuedFlows.size());
   }
 
   @Test

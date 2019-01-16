@@ -36,7 +36,9 @@ public interface ExecutorManagerAdapter {
 
   public List<Integer> getRunningFlows(int projectId, String flowId);
 
-  public List<ExecutableFlow> getRunningFlows() throws IOException;
+  public List<ExecutableFlow> getRunningFlows();
+
+  public long getQueuedFlowSize();
 
   /**
    * <pre>
