@@ -70,8 +70,9 @@ public class ExecutorHealthChecker {
   }
 
   public void start() {
+    this.logger.info("Starting executor health checker.");
     this.scheduler.scheduleAtFixedRate(() -> checkExecutorHealth(), 0L, this.healthCheckIntervalMin,
-        TimeUnit.SECONDS);
+        TimeUnit.MINUTES);
   }
 
   public void shutdown() {
