@@ -230,10 +230,7 @@ public class AzkabanWebServer extends AzkabanServer {
     /* This creates the Web Server instance */
     app = webServer;
 
-    // Todo jamiesjc: also start the threads in ExecutionController if needed.
-    if (webServer.executorManagerAdapter instanceof ExecutorManager) {
-      ((ExecutorManager) webServer.executorManagerAdapter).start();
-    }
+    webServer.executorManagerAdapter.start();
 
     // TODO refactor code into ServerProvider
     webServer.prepareAndStartServer();

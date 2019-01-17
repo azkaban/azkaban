@@ -164,6 +164,7 @@ public class ExecutorManager extends EventHandler implements
     this.queueProcessor = setupQueueProcessor();
   }
 
+  @Override
   public void start() throws ExecutorManagerException {
     initialize();
     this.updaterThread.start();

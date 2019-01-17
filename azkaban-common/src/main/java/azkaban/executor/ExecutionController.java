@@ -55,14 +55,17 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
   private final AlerterHolder alerterHolder;
+  private final ExecutorHealthChecker executorHealthChecker;
   private final int maxConcurrentRunsOneFlow;
 
   @Inject
   ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
-      final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder) {
+      final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
+  ExecutorHealthChecker executorHealthChecker) {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
+    this.executorHealthChecker = executorHealthChecker;
     this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
   }
 
@@ -625,10 +628,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
   }
 
+  @Override
+  public void start() {
+    this.executorHealthChecker.start();
+  }
 
   @Override
   public void shutdown() {
-    //Todo: shutdown any thread that is running
+    this.executorHealthChecker.shutdown();
   }
 
   @Override

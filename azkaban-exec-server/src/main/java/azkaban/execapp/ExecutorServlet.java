@@ -104,7 +104,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         if (action.equals(UPDATE_ACTION)) {
           handleAjaxUpdateRequest(req, respMap);
         } else if (action.equals(PING_ACTION)) {
-          respMap.put("status", "alive");
+          respMap.put(STATUS_PARAM, RESPONSE_ALIVE);
         } else if (action.equals(RELOAD_JOBTYPE_PLUGINS_ACTION)) {
           logger.info("Reloading Jobtype plugins");
           handleReloadJobTypePlugins(respMap);

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,6 +48,7 @@ public class ExecutionControllerTest {
   private ExecutorLoader loader;
   private ExecutorApiGateway apiGateway;
   private AlerterHolder alertHolder;
+  private ExecutorHealthChecker executorHealthChecker;
   private Props props;
   private User user;
   private ExecutableFlow flow1;
@@ -67,8 +67,9 @@ public class ExecutionControllerTest {
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.alertHolder = mock(AlerterHolder.class);
+    this.executorHealthChecker = mock(ExecutorHealthChecker.class);
     this.controller = new ExecutionController(this.props, this.loader, this.apiGateway,
-        this.alertHolder);
+        this.alertHolder, this.executorHealthChecker);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
@@ -93,13 +94,6 @@ public class ExecutionControllerTest {
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
-  }
-
-  @After
-  public void tearDown() {
-    if (this.controller != null) {
-      this.controller.shutdown();
-    }
   }
 
   @Test
