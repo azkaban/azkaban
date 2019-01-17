@@ -26,6 +26,9 @@ public interface JmxExecutorManagerMBean {
   @DisplayName("OPERATION: getRunningFlows")
   public String getRunningFlows();
 
+  @DisplayName("OPERATION: getQueuedFlowSize")
+  public long getQueuedFlowSize();
+
   @DisplayName("OPERATION: getExecutorThreadState")
   public String getExecutorThreadState();
 

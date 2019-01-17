@@ -64,6 +64,11 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
   }
 
   @Override
+  public long getQueuedFlowSize() {
+    return this.manager.getQueuedFlowSize();
+  }
+
+  @Override
   public boolean isQueueProcessorActive() {
     return this.manager.isQueueProcessorThreadActive();
   }
