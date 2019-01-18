@@ -55,7 +55,7 @@ public class ExecutorHealthCheckerTest {
   @Before
   public void setUp() throws Exception {
     this.props = new Props();
-    this.props.put(ConfigurationKeys.AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, 1);
+    this.props.put(ConfigurationKeys.AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, 2);
     this.props.put(ConfigurationKeys.AZKABAN_ADMIN_ALERT_EMAIL, AZ_ADMIN_ALERT_EMAIL);
     this.loader = mock(ExecutorLoader.class);
     this.mailAlerter = mock(Alerter.class);
@@ -100,15 +100,33 @@ public class ExecutorHealthCheckerTest {
   }
 
   /**
-   * Test alert emails are sent when there is no response from the executor.
+   * Test alert emails are sent when there are consecutive failures to contact the executor.
    */
   @Test
-  public void checkExecutorHealthNoResponseFromExecutor() throws Exception {
+  public void checkExecutorHealthConsecutiveFailures() throws Exception {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
+    // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     this.executorHealthChecker.checkExecutorHealth();
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
         ConnectorParams.PING_ACTION, null, null);
+    verifyZeroInteractions(this.alerterHolder);
+
+    // Pinged executor successfully. Failure count (=0) < MAX_FAILURE_COUNT (=2). Do not alert.
+    when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
+        ConnectorParams.PING_ACTION, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
+        .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
+    this.executorHealthChecker.checkExecutorHealth();
+    verifyZeroInteractions(this.alerterHolder);
+
+    // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
+    when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
+        ConnectorParams.PING_ACTION, null, null)).thenReturn(null);
+    this.executorHealthChecker.checkExecutorHealth();
+    verifyZeroInteractions(this.alerterHolder);
+
+    // Failed to ping executor again. Failure count (=2) = MAX_FAILURE_COUNT (=2). Alert AZ admin.
+    this.executorHealthChecker.checkExecutorHealth();
     verify((this.alerterHolder).get("email"))
         .alertOnFailedUpdate(eq(this.executor1), eq(Arrays.asList(this.flow1)),
             any(ExecutorManagerException.class));

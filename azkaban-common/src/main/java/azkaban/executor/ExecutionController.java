@@ -115,7 +115,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       executors = this.executorLoader.fetchActiveExecutors();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get all active executors.", e);
+      logger.error("Failed to get all active executors.", e);
     }
     return executors;
   }
@@ -133,7 +133,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         ports.add(executor.getHost() + ":" + executor.getPort());
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get primary server hosts.", e);
+      logger.error("Failed to get primary server hosts.", e);
     }
     return ports;
   }
@@ -152,7 +152,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         }
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get all active executor server hosts.", e);
+      logger.error("Failed to get all active executor server hosts.", e);
     }
     return ports;
   }
@@ -170,7 +170,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
           this.executorLoader.fetchUnfinishedFlows().values()));
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flows for project " + projectId + ", flow "
+      logger.error("Failed to get running flows for project " + projectId + ", flow "
           + flowId, e);
     }
     return executionIds;
@@ -196,7 +196,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getActiveFlowsWithExecutorHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get active flows with executor.", e);
+      logger.error("Failed to get active flows with executor.", e);
     }
     return flows;
   }
@@ -223,7 +223,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
           this.executorLoader.fetchUnfinishedFlows().values());
 
     } catch (final ExecutorManagerException e) {
-      this.logger.error(
+      logger.error(
           "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
           e);
     }
@@ -260,7 +260,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getActiveFlowHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flows.", e);
+      logger.error("Failed to get running flows.", e);
     }
     return flows;
   }

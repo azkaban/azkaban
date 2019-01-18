@@ -70,14 +70,21 @@ public class ExecutorHealthChecker {
   }
 
   public void start() {
-    this.logger.info("Starting executor health checker.");
+    logger.info("Starting executor health checker.");
     this.scheduler.scheduleAtFixedRate(() -> checkExecutorHealth(), 0L, this.healthCheckIntervalMin,
         TimeUnit.MINUTES);
   }
 
   public void shutdown() {
     this.scheduler.shutdown();
-    this.scheduler.shutdownNow();
+    try {
+      if (!this.scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+        this.scheduler.shutdownNow();
+      }
+    } catch (final InterruptedException ex) {
+      this.scheduler.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 
   /**
@@ -91,7 +98,7 @@ public class ExecutorHealthChecker {
       if (!executorOption.isPresent()) {
         final String finalizeReason = "Executor id of this execution doesn't exist.";
         for (final ExecutableFlow flow : entry.getValue()) {
-          this.logger.warn(
+          logger.warn(
               String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
           ExecutionControllerUtils
               .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
@@ -101,6 +108,7 @@ public class ExecutorHealthChecker {
 
       final Executor executor = executorOption.get();
       try {
+        // Todo jamiesjc: add metrics to monitor the http call return time
         final Map<String, Object> results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
                 ConnectorParams.PING_ACTION, null, null);
@@ -109,6 +117,11 @@ public class ExecutorHealthChecker {
             .equals(ConnectorParams.RESPONSE_ALIVE)) {
           throw new ExecutorManagerException("Status of executor " + executor.getId() + " is "
               + "not alive.");
+        } else {
+          // Executor is alive. Clear the failure count.
+          if (this.executorFailureCount.containsKey(executor.getId())) {
+            this.executorFailureCount.put(executor.getId(), 0);
+          }
         }
       } catch (final ExecutorManagerException e) {
         handleExecutorNotAliveCase(entry, executor, e);
@@ -118,6 +131,8 @@ public class ExecutorHealthChecker {
 
   /**
    * Groups Executable flow by Executors to reduce number of REST calls.
+   *
+   * @return executor to list of flows map
    */
   private Map<Optional<Executor>, List<ExecutableFlow>> getFlowToExecutorMap() {
     final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap = new HashMap<>();
@@ -133,7 +148,7 @@ public class ExecutorHealthChecker {
         flows.add(runningFlow.getSecond());
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get flow to executor map");
+      logger.error("Failed to get flow to executor map");
     }
     return exFlowMap;
   }
@@ -141,17 +156,23 @@ public class ExecutorHealthChecker {
   /**
    * Increments executor failure count. If it reaches max failure count, sends alert emails to AZ
    * admin.
+   *
+   * @param entry executor to list of flows map entry
+   * @param executor the executor
+   * @param e Exception thrown when the executor is not alive
    */
   private void handleExecutorNotAliveCase(
       final Entry<Optional<Executor>, List<ExecutableFlow>> entry, final Executor executor,
       final ExecutorManagerException e) {
-    this.logger.error("Failed to get update from executor " + executor.getId(), e);
+    logger.error("Failed to get update from executor " + executor.getId(), e);
     this.executorFailureCount.put(executor.getId(), this.executorFailureCount.getOrDefault
         (executor.getId(), 0) + 1);
     if (this.executorFailureCount.get(executor.getId()) % this.executorMaxFailureCount == 0
         && !this.alertEmails.isEmpty()) {
       entry.getValue().stream().forEach(flow -> flow
           .getExecutionOptions().setFailureEmails(this.alertEmails));
+      logger.info(String.format("Executor failure count is %d. Sending alert emails to %s.",
+          this.executorFailureCount.get(executor.getId()), this.alertEmails));
       this.alerterHolder.get("email").alertOnFailedUpdate(executor, entry.getValue(), e);
     }
   }
