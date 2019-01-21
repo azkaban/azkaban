@@ -26,6 +26,8 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.execapp.metric.NumFinishedFlowMetric;
+import azkaban.execapp.metric.NumSucceededFlowMetric;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
@@ -414,6 +416,13 @@ public class FlowRunnerManager implements EventListener,
       // Adding NumFailedFlow Metric listener
       flowRunner.addListener((NumFailedFlowMetric) metricManager
           .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
+      // Adding NumFailedFlow Metric listener
+      flowRunner.addListener((NumSucceededFlowMetric) metricManager
+              .getMetricFromName(NumSucceededFlowMetric.NUM_SUCCEEDED_FLOW_METRIC_NAME));
+      // Adding NumFailedFlow Metric listener
+      flowRunner.addListener((NumFinishedFlowMetric) metricManager
+              .getMetricFromName(NumFinishedFlowMetric.NUM_FINISHED_FLOW_METRIC_NAME));
+
     }
 
   }
