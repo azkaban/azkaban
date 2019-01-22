@@ -60,6 +60,7 @@ import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -221,6 +222,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     return this.execDir;
   }
 
+  @VisibleForTesting
+  AlerterHolder getAlerterHolder() {
+    return this.alerterHolder;
+  }
+
   @Override
   public void run() {
     try {
@@ -268,7 +274,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-          ExecutionControllerUtils.alertUser(this.flow, this.alerterHolder,
+          ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
       }
@@ -623,12 +629,28 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
   }
 
+  /**
+   * Recursively propagate status to parent flow. Alert on first error of the flow in new AZ
+   * dispatching design.
+   *
+   * @param base the base flow
+   * @param status the status to be propagated
+   */
   private void propagateStatus(final ExecutableFlowBase base, final Status status) {
     if (!Status.isStatusFinished(base.getStatus()) && base.getStatus() != Status.KILLING) {
       this.logger.info("Setting " + base.getNestedId() + " to " + status);
-      base.setStatus(status);
+      boolean shouldAlert = false;
+      if (base.getStatus() != status) {
+        base.setStatus(status);
+        shouldAlert = true;
+      }
       if (base.getParentFlow() != null) {
         propagateStatus(base.getParentFlow(), status);
+      } else if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+        // Alert on the root flow if the first error is encountered.
+        if (shouldAlert && base.getStatus() == Status.FAILED_FINISHING) {
+          ExecutionControllerUtils.alertUserOnFirstError((ExecutableFlow) base, this.alerterHolder);
+        }
       }
     }
   }

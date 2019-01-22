@@ -94,7 +94,7 @@ public class ExecutionFinalizer {
 
     this.updaterStage.set("finalizing flow " + execId + " alerting and emailing");
     if (alertUser) {
-      ExecutionControllerUtils.alertUser(flow, this.alerterHolder,
+      ExecutionControllerUtils.alertUserOnFlowFinished(flow, this.alerterHolder,
           ExecutionControllerUtils.getFinalizeFlowReasons(reason,
               originalError));
     }

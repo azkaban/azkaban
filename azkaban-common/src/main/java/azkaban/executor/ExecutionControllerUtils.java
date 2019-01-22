@@ -74,7 +74,7 @@ public class ExecutionControllerUtils {
     }
 
     if (alertUser) {
-      alertUser(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
+      alertUserOnFlowFinished(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
     }
   }
 
@@ -85,8 +85,8 @@ public class ExecutionControllerUtils {
    * @param alerterHolder the alerter holder
    * @param extraReasons the extra reasons for alerting
    */
-  public static void alertUser(final ExecutableFlow flow, final AlerterHolder alerterHolder,
-      final String[] extraReasons) {
+  public static void alertUserOnFlowFinished(final ExecutableFlow flow, final AlerterHolder
+      alerterHolder, final String[] extraReasons) {
     final ExecutionOptions options = flow.getExecutionOptions();
     final Alerter mailAlerter = alerterHolder.get("email");
     if (flow.getStatus() != Status.SUCCEEDED) {
@@ -128,6 +128,40 @@ public class ExecutionControllerUtils {
           } catch (final Exception e) {
             logger.error("Failed to alert on success by " + alertType + " for execution " + flow
                 .getExecutionId(), e);
+          }
+        } else {
+          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+        }
+      }
+    }
+  }
+
+  /**
+   * Alert the user when the flow has encountered the first error.
+   *
+   * @param flow the execution
+   * @param alerterHolder the alerter holder
+   */
+  public static void alertUserOnFirstError(final ExecutableFlow flow,
+      final AlerterHolder alerterHolder) {
+    final ExecutionOptions options = flow.getExecutionOptions();
+    if (options.getNotifyOnFirstFailure()) {
+      logger.info("Alert on first error of execution " + flow.getExecutionId());
+      final Alerter mailAlerter = alerterHolder.get("email");
+      try {
+        mailAlerter.alertOnFirstError(flow);
+      } catch (final Exception e) {
+        logger.error("Failed to send first error email." + e.getMessage(), e);
+      }
+
+      if (options.getFlowParameters().containsKey("alert.type")) {
+        final String alertType = options.getFlowParameters().get("alert.type");
+        final Alerter alerter = alerterHolder.get(alertType);
+        if (alerter != null) {
+          try {
+            alerter.alertOnFirstError(flow);
+          } catch (final Exception e) {
+            logger.error("Failed to alert by " + alertType, e);
           }
         } else {
           logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");

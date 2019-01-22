@@ -245,31 +245,8 @@ public class RunningExecutionsUpdater {
       this.commonMetrics.markFlowFail();
     }
 
-    final ExecutionOptions options = flow.getExecutionOptions();
     if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
-      // We want to see if we should give an email status on first failure.
-      if (options.getNotifyOnFirstFailure()) {
-        final Alerter mailAlerter = this.alerterHolder.get("email");
-        try {
-          mailAlerter.alertOnFirstError(flow);
-        } catch (final Exception e) {
-          logger.error("Failed to send first error email." + e.getMessage(), e);
-        }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = this.alerterHolder.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnFirstError(flow);
-          } catch (final Exception e) {
-            logger.error("Failed to alert by " + alertType, e);
-          }
-        } else {
-          logger.error("Alerter type " + alertType
-              + " doesn't exist. Failed to alert.");
-        }
-      }
+      ExecutionControllerUtils.alertUserOnFirstError(flow, this.alerterHolder);
     }
 
     return flow;

@@ -176,5 +176,4 @@ public class ExecutorHealthChecker {
       this.alerterHolder.get("email").alertOnFailedUpdate(executor, entry.getValue(), e);
     }
   }
-
 }
