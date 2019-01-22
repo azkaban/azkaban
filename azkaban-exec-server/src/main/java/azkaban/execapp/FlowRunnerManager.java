@@ -110,6 +110,7 @@ public class FlowRunnerManager implements EventListener,
 
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
   private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
+  private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
 
   // this map is used to store the flows that have been submitted to
   // the executor service. Once a flow has been submitted, it is either
@@ -215,7 +216,7 @@ public class FlowRunnerManager implements EventListener,
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
       this.logger.info("Starting polling service.");
       this.pollingService = new PollingService(this.azkabanProps.getLong
-          (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, 1000));
+          (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, DEFAULT_POLLING_INTERVAL_MS));
       this.pollingService.start();
     }
   }

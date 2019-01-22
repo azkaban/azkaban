@@ -55,14 +55,17 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
   private final AlerterHolder alerterHolder;
+  private final ExecutorHealthChecker executorHealthChecker;
   private final int maxConcurrentRunsOneFlow;
 
   @Inject
   ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
-      final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder) {
+      final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
+  ExecutorHealthChecker executorHealthChecker) {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
+    this.executorHealthChecker = executorHealthChecker;
     this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
   }
 
@@ -112,7 +115,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       executors = this.executorLoader.fetchActiveExecutors();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get all active executors.", e);
+      logger.error("Failed to get all active executors.", e);
     }
     return executors;
   }
@@ -130,7 +133,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         ports.add(executor.getHost() + ":" + executor.getPort());
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get primary server hosts.", e);
+      logger.error("Failed to get primary server hosts.", e);
     }
     return ports;
   }
@@ -149,7 +152,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         }
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get all active executor server hosts.", e);
+      logger.error("Failed to get all active executor server hosts.", e);
     }
     return ports;
   }
@@ -167,7 +170,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
           this.executorLoader.fetchUnfinishedFlows().values()));
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flows for project " + projectId + ", flow "
+      logger.error("Failed to get running flows for project " + projectId + ", flow "
           + flowId, e);
     }
     return executionIds;
@@ -193,7 +196,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getActiveFlowsWithExecutorHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get active flows with executor.", e);
+      logger.error("Failed to get active flows with executor.", e);
     }
     return flows;
   }
@@ -220,7 +223,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
           this.executorLoader.fetchUnfinishedFlows().values());
 
     } catch (final ExecutorManagerException e) {
-      this.logger.error(
+      logger.error(
           "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
           e);
     }
@@ -257,7 +260,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getFlowsHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flows.", e);
+      logger.error("Failed to get running flows.", e);
     }
     return flows;
   }
@@ -669,10 +672,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
   }
 
+  @Override
+  public void start() {
+    this.executorHealthChecker.start();
+  }
 
   @Override
   public void shutdown() {
-    //Todo: shutdown any thread that is running
+    this.executorHealthChecker.shutdown();
   }
 
   @Override

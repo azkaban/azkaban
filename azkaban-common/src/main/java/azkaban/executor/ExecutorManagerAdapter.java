@@ -116,6 +116,8 @@ public interface ExecutorManagerAdapter {
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;
 
+  public void start() throws ExecutorManagerException;
+
   public void shutdown();
 
   public Set<String> getAllActiveExecutorServerHosts();
