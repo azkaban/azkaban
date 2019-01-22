@@ -600,7 +600,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
-  public List<ExecutableFlow> getRecentlyFinishedFlows() {
+  public List<ExecutableFlow> getRecentlyFinishedFlows(Duration du) {
     List<ExecutableFlow> flows = new ArrayList<>();
     try {
       flows = this.executorLoader.fetchRecentlyFinishedFlows(

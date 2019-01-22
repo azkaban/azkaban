@@ -53,6 +53,7 @@ import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -172,6 +173,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       final String flowName = getParam(req, "flow");
       ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName,
           flowName);
+    } else if (ajaxName.equals("getRecentFinishAndRunningFlows")) {
+      final String duration = getParam(req, "duration");
+      ajaxGetRecentFinishAndRunningFlows(req, resp, ret, session.getUser(), duration);
     } else {
       final String projectName = getParam(req, "project");
 
@@ -362,8 +366,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         this.executorManagerAdapter.getActiveFlowsWithExecutor();
     page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
 
+    Duration duration = Duration.ofMinutes(10);
     final List<ExecutableFlow> finishedFlows =
-        this.executorManagerAdapter.getRecentlyFinishedFlows();
+        this.executorManagerAdapter.getRecentlyFinishedFlows(duration);
     page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
     page.add("vmutils", new VelocityUtil(this.projectManager));
     page.render();
@@ -785,6 +790,60 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (!refs.isEmpty()) {
       ret.put("execIds", refs);
     }
+  }
+
+  private void ajaxGetRecentFinishAndRunningFlows(final HttpServletRequest req,
+                                  final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
+                                  final String duration) throws ServletException, IOException {
+
+    if (!HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
+      ret.put(ConnectorParams.RESPONSE_ERROR, "Only Admins are allowed to getActiveFlow");
+      return;
+    }
+
+    final List<ExecutableFlow> runningFlows = this.executorManagerAdapter.getRunningFlows();
+    final List<ExecutableFlow> recentlyFinishedFlows =
+            this.executorManagerAdapter.getRecentlyFinishedFlows(Duration.ofMinutes(Long.parseLong(duration)));
+
+    List<Map<String, Object>> runningFlowsInfo = new ArrayList<>();
+    if (!runningFlows.isEmpty()) {
+      for (int i = runningFlows.size() - 1; i >= 0; i--) {
+        ExecutableFlow runningExFlow = runningFlows.get(i);
+        final Map<String, Object> runningExFlowInfo = getExecutableNodeInfo(runningExFlow);
+        runningExFlowInfo.put("submitTime", runningExFlow.getSubmitTime());
+        runningExFlowInfo.put("submitUser", runningExFlow.getSubmitUser());
+        runningExFlowInfo.put("execid", runningExFlow.getExecutionId());
+        runningExFlowInfo.put("projectId", runningExFlow.getProjectId());
+        runningExFlowInfo.put("project", this.projectManager.getProject(runningExFlow.getProjectId()).getName());
+        runningFlowsInfo.add(runningExFlowInfo);
+
+        // remove flow exist in both runningFlows and recentlyFinishedFlows
+        if (!recentlyFinishedFlows.isEmpty()) {
+          for (int j = 0; j <recentlyFinishedFlows.size(); j++) {
+            if (runningFlows.get(i).getExecutionId() == recentlyFinishedFlows.get(i).getExecutionId()) {
+              runningFlows.remove(i);
+              break;
+            }
+          }
+        }
+      }
+    }
+    ret.put("runningFlows", runningFlowsInfo);
+
+    List<Map<String, Object>> recentlyFinishedFlowsInfo = new ArrayList<>();
+    if (!recentlyFinishedFlows.isEmpty()) {
+      for (int i = 0; i < recentlyFinishedFlows.size(); i++) {
+        ExecutableFlow recentFinishedExFlow = recentlyFinishedFlows.get(i);
+        final Map<String, Object> recentFinishedExflowInfo = getExecutableNodeInfo(recentFinishedExFlow);
+        recentFinishedExflowInfo.put("submitTime", recentFinishedExFlow.getSubmitTime());
+        recentFinishedExflowInfo.put("submitUser", recentFinishedExFlow.getSubmitUser());
+        recentFinishedExflowInfo.put("execid", recentFinishedExFlow.getExecutionId());
+        recentFinishedExflowInfo.put("projectId", recentFinishedExFlow.getProjectId());
+        recentFinishedExflowInfo.put("project", this.projectManager.getProject(recentFinishedExFlow.getProjectId()).getName());
+        recentlyFinishedFlowsInfo.add(recentFinishedExflowInfo);
+      }
+    }
+    ret.put("recentlyFinishedFlows", recentlyFinishedFlowsInfo);
   }
 
   private void ajaxPauseFlow(final HttpServletRequest req, final HttpServletResponse resp,

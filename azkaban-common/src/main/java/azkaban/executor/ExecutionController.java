@@ -274,11 +274,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   @Override
-  public List<ExecutableFlow> getRecentlyFinishedFlows() {
+  public List<ExecutableFlow> getRecentlyFinishedFlows(Duration duration) {
     List<ExecutableFlow> flows = new ArrayList<>();
     try {
       flows = this.executorLoader.fetchRecentlyFinishedFlows(
-          RECENTLY_FINISHED_LIFETIME);
+              duration);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to fetch recently finished flows.", e);
     }
