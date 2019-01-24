@@ -554,7 +554,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     if (shouldFail) {
-      propagateStatus(node.getParentFlow(),
+      propagateStatusAndAlert(node.getParentFlow(),
           node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
       if (this.failureAction == FailureAction.CANCEL_ALL) {
         this.kill();
@@ -637,7 +637,7 @@ public class FlowRunner extends EventHandler implements Runnable {
    * @param base the base flow
    * @param status the status to be propagated
    */
-  private void propagateStatus(final ExecutableFlowBase base, final Status status) {
+  private void propagateStatusAndAlert(final ExecutableFlowBase base, final Status status) {
     if (!Status.isStatusFinished(base.getStatus()) && base.getStatus() != Status.KILLING) {
       this.logger.info("Setting " + base.getNestedId() + " to " + status);
       boolean shouldAlert = false;
@@ -646,7 +646,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         shouldAlert = true;
       }
       if (base.getParentFlow() != null) {
-        propagateStatus(base.getParentFlow(), status);
+        propagateStatusAndAlert(base.getParentFlow(), status);
       } else if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
         // Alert on the root flow if the first error is encountered.
         // Todo jamiesjc: Add a new FLOW_STATUS_CHANGED event type and alert on that event.
