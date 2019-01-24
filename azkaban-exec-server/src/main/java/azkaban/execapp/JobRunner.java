@@ -841,8 +841,10 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public void killBySLA() {
-    kill();
-    this.getNode().setKilledBySLA(true);
+    synchronized (this.syncObject) {
+      kill();
+      this.getNode().setKilledBySLA(true);
+    }
   }
 
   public void kill() {
