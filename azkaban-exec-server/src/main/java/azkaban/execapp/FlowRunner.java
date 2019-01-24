@@ -273,6 +273,7 @@ public class FlowRunner extends EventHandler implements Runnable {
             Event.create(this, EventType.FLOW_FINISHED, new EventData(this.flow)));
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
+        // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
         if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
           ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
@@ -648,6 +649,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         propagateStatus(base.getParentFlow(), status);
       } else if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
         // Alert on the root flow if the first error is encountered.
+        // Todo jamiesjc: Add a new FLOW_STATUS_CHANGED event type and alert on that event.
         if (shouldAlert && base.getStatus() == Status.FAILED_FINISHING) {
           ExecutionControllerUtils.alertUserOnFirstError((ExecutableFlow) base, this.alerterHolder);
         }
