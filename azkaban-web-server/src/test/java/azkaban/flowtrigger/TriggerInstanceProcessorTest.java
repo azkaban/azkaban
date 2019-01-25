@@ -16,6 +16,7 @@
 package azkaban.flowtrigger;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -149,6 +150,7 @@ public class TriggerInstanceProcessorTest {
     final TriggerInstance triggerInstance = createTriggerInstance();
     this.processor.processTermination(triggerInstance);
     this.sendEmailLatch.await(10L, TimeUnit.SECONDS);
+    assertEquals(0, sendEmailLatch.getCount());
     verify(this.message).setSubject(
         "flow trigger for flow 'flowId', project 'proj' has been cancelled on azkaban");
     assertThat(TestUtils.readResource("/emailTemplate/flowtriggerfailureemail.html", this))
