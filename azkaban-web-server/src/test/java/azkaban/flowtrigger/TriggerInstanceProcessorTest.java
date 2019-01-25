@@ -18,6 +18,7 @@ package azkaban.flowtrigger;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -117,7 +118,7 @@ public class TriggerInstanceProcessorTest {
     doAnswer(invocation -> {
       this.sendEmailLatch.countDown();
       return null;
-    }).when(this.emailer).sendEmail(any(), any(), any());
+    }).when(this.emailer).sendEmail(any(EmailMessage.class), anyBoolean(), anyString());
 
     this.submitFlowLatch = new CountDownLatch(1);
     doAnswer(invocation -> {
