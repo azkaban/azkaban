@@ -110,7 +110,7 @@ View condition from Azkaban web UI
 *****
 A job or embedded flow with condition will show up with a condition tag from the flow graph page.
 
-.. image:: figures/conditionflowgraph.png
+.. image:: figures/conditionFlowGraph.png
 
 You can view the job condition in the job page:
 
@@ -125,7 +125,6 @@ Download Examples
 *****
 You can download the simple conditional workflow project zip example to try out this feature:
 
-* `conditionalFlowProject.zip <https://github
-.com/azkaban/azkaban/blob/master/az-examples/conditional-flow/conditionalFlowProject.zip>`_
+* `conditionalFlowProject.zip <https://github.com/azkaban/azkaban/blob/master/az-examples/conditional-flow/conditionalFlowProject.zip>`_
 
 
