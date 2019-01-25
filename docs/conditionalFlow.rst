@@ -125,7 +125,6 @@ Download Examples
 *****
 You can download the simple conditional workflow project zip example to try out this feature:
 
-* `conditionalFlowProject.zip <https://github
-.com/azkaban/azkaban/blob/master/az-examples/conditional-flow/conditionalFlowProject.zip>`_
+* `conditionalFlowProject.zip <https://github.com/azkaban/azkaban/blob/master/az-examples/conditional-flow/conditionalFlowProject.zip>`_
 
 
