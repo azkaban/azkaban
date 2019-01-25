@@ -37,6 +37,7 @@ Features
    userManager
    createFlows
    useAzkaban
+   conditionalFlow
    eventTrigger
    ajaxApi
    howTo
