@@ -18,6 +18,7 @@ package azkaban.flow;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -67,28 +68,22 @@ public class FlowUtils {
   /**
    * Change job status to disabled in exflow if the job is in disabledJobs
    */
-  public static void applyDisabledJobs(final List<Object> disabledJobs,
+  public static void applyDisabledJobs(final List<DisabledJob> disabledJobs,
       final ExecutableFlowBase exflow) {
-    for (final Object disabled : disabledJobs) {
-      if (disabled instanceof String) {
-        final String nodeName = (String) disabled;
-        final ExecutableNode node = exflow.getExecutableNode(nodeName);
+    for (final DisabledJob disabled : disabledJobs) {
+      if (disabled.isJob()) {
+        final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
         if (node != null) {
           node.setStatus(Status.DISABLED);
         }
-      } else if (disabled instanceof Map) {
-        final Map<String, Object> nestedDisabled = (Map<String, Object>) disabled;
-        final String nodeName = (String) nestedDisabled.get("id");
-        final List<Object> subDisabledJobs =
-            (List<Object>) nestedDisabled.get("children");
-
-        if (nodeName == null || subDisabledJobs == null) {
+      } else {
+        if (disabled.getName() == null) {
+          // not a valid embedded flow
           return;
         }
-
-        final ExecutableNode node = exflow.getExecutableNode(nodeName);
+        final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
         if (node != null && node instanceof ExecutableFlowBase) {
-          applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase) node);
+          applyDisabledJobs(disabled.getChildren(), (ExecutableFlowBase) node);
         }
       }
     }

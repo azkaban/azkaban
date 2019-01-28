@@ -22,8 +22,10 @@ import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
+import azkaban.sla.SlaOptionDeprecated;
 import azkaban.trigger.TriggerAction;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
@@ -60,8 +62,15 @@ public class SlaAlertAction implements TriggerAction {
           + jsonObj.get("type"));
     }
     final String actionId = (String) jsonObj.get("actionId");
-    final SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
+
+    SlaOption slaOption;
+    List<String> emails;
+    // TODO edlu: is this being written? Handle both old and new formats, when written in new
+    // format
+     final SlaOptionDeprecated slaOptionDeprecated = SlaOptionDeprecated.fromObject(jsonObj.get("slaOption"));
+    slaOption = new SlaOption(slaOptionDeprecated);
     final int execId = Integer.valueOf((String) jsonObj.get("execId"));
+
     return new SlaAlertAction(actionId, slaOption, execId);
   }
 
@@ -85,7 +94,8 @@ public class SlaAlertAction implements TriggerAction {
     final Map<String, Object> jsonObj = new HashMap<>();
     jsonObj.put("actionId", this.actionId);
     jsonObj.put("type", type);
-    jsonObj.put("slaOption", this.slaOption.toObject());
+    // TODO edlu: keeping the old format for now, upgrade to new format.
+    jsonObj.put("slaAction", this.slaOption.toObject());
     jsonObj.put("execId", String.valueOf(this.execId));
 
     return jsonObj;
@@ -94,20 +104,18 @@ public class SlaAlertAction implements TriggerAction {
   @Override
   public void doAction() throws Exception {
     logger.info("Alerting on sla failure.");
-    final Map<String, Object> alert = this.slaOption.getInfo();
-    if (alert.containsKey(SlaOption.ALERT_TYPE)) {
-      final String alertType = (String) alert.get(SlaOption.ALERT_TYPE);
-      final Alerter alerter = this.alerters.get(alertType);
+    if (slaOption.isAlert()) {
+      final Alerter alerter = this.alerters.get(SlaOption.ALERT_TYPE_EMAIL);
       if (alerter != null) {
         try {
           final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
-          alerter.alertOnSla(this.slaOption, SlaOption.createSlaMessage(this.slaOption, flow));
+          alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow));
         } catch (final Exception e) {
           e.printStackTrace();
-          logger.error("Failed to alert by " + alertType);
+          logger.error("Failed to alert by " + SlaOption.ALERT_TYPE_EMAIL);
         }
       } else {
-        logger.error("Alerter type " + alertType
+        logger.error("Alerter type " + SlaOption.ALERT_TYPE_EMAIL
             + " doesn't exist. Failed to alert.");
       }
     }

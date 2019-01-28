@@ -60,26 +60,24 @@ public class TriggerManager {
 
   private List<TriggerAction> createActions(final SlaOption sla, final int execId) {
     final List<TriggerAction> actions = new ArrayList<>();
-    final List<String> slaActions = sla.getActions();
-    for (final String act : slaActions) {
-      TriggerAction action = null;
-      switch (act) {
-        case SlaOption.ACTION_ALERT:
-          action = new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId);
-          break;
-        case SlaOption.ACTION_CANCEL_FLOW:
-          action = new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId);
-          break;
-        case SlaOption.ACTION_KILL_JOB:
-          final String jobId = (String) sla.getInfo().get(SlaOption.INFO_JOB_NAME);
-          action = new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, jobId);
+    if (sla.isAlert()) {
+      TriggerAction action = new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId);
+    }
+
+    if (sla.isAlert()) {
+      actions.add(new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId));
+    }
+    if(sla.isKill()) {
+      switch(sla.getType().getComponent()) {
+        case FLOW:
+         actions.add(new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId));
+         break;
+        case JOB:
+        actions.add(new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, sla.getJobName()));
           break;
         default:
-          logger.info("Unknown action type " + act);
+          logger.info("Unknown action type " + sla.getType().getComponent());
           break;
-      }
-      if (action != null) {
-        actions.add(action);
       }
     }
     return actions;
@@ -87,19 +85,20 @@ public class TriggerManager {
 
   @SuppressWarnings("FutureReturnValueIgnored")
   public void addTrigger(final int execId, final List<SlaOption> slaOptions) {
-    for (final SlaOption sla : slaOptions) {
-      final Condition triggerCond = createCondition(sla, execId, "slaFailChecker", "isSlaFailed()");
+    for (final SlaOption slaOption : slaOptions) {
+      final Condition triggerCond = createCondition(slaOption, execId, "slaFailChecker",
+          "isSlaFailed()");
 
       // if whole flow finish before violating sla, just expire the checker
-      final Condition expireCond = createCondition(sla, execId, "slaPassChecker", "isSlaPassed()");
+      final Condition expireCond = createCondition(slaOption, execId, "slaPassChecker", "isSlaPassed"
+          + "()");
 
-      final List<TriggerAction> actions = createActions(sla, execId);
+      final List<TriggerAction> actions = createActions(slaOption, execId);
       final Trigger trigger = new Trigger(execId, triggerCond, expireCond, actions);
-      final ReadablePeriod duration = Utils
-          .parsePeriodString((String) sla.getInfo().get(SlaOption.INFO_DURATION));
+      final ReadablePeriod duration = Utils.parsePeriodString(slaOption.getDuration());
       final long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
 
-      logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId
+      logger.info("Adding sla trigger " + slaOption.toString() + " to execution " + execId
           + ", scheduled to trigger in " + durationInMillis / 1000 + " seconds");
       this.scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
     }

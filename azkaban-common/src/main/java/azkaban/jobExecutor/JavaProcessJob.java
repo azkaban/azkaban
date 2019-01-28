@@ -103,7 +103,7 @@ public class JavaProcessJob extends ProcessJob {
       if (path != null) {
         for (final File file : path.listFiles()) {
           if (file.getName().endsWith(".jar")) {
-            // log.info("Adding to classpath:" + file.getName());
+            // log.info("Adding to classpath:" + file.getJobName());
             classpathList.add(file.getName());
           }
         }
