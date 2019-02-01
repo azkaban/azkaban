@@ -695,7 +695,7 @@ public class JobRunner extends EventHandler implements Runnable {
       } else {
         final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
         this.props.put(JobProperties.USER_TO_PROXY, submitUser);
-        this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
+        this.logger.info("JobProperties: user.to.proxy property was not set, defaulting to submit user " +
             submitUser);
       }
 
