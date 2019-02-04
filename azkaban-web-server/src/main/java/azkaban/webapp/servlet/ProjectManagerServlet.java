@@ -1151,6 +1151,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/jobhistorypage.vm");
+
+    final String jobId = getParam(req, "job");
+    page.add("jobId", jobId);
+
+    int pageNum = Math.max(1, getIntParam(req, "page", 1));
+    page.add("page", pageNum);
+
+    final int pageSize = Math.max(1, getIntParam(req, "size", 25));
+    page.add("pageSize", pageSize);
+
+    page.add("recordCount", 0);
+    page.add("projectId", "");
+    page.add("projectName", "");
+    page.add("dataSeries", "[]");
+    page.add("history", null);
+
     final String projectName = getParam(req, "project");
     final User user = session.getUser();
 
@@ -1166,87 +1182,35 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final String jobId = getParam(req, "job");
-    final int pageNum = getIntParam(req, "page", 1);
-    final int pageSize = getIntParam(req, "size", 25);
-
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
-    page.add("jobid", jobId);
-    page.add("page", pageNum);
 
-    final int skipPage = (pageNum - 1) * pageSize;
-
-    int numResults = 0;
     try {
-      numResults = this.executorManagerAdapter.getNumberOfJobExecutions(project, jobId);
-      final int maxPage = (numResults / pageSize) + 1;
-      List<ExecutableJobInfo> jobInfo =
-          this.executorManagerAdapter.getExecutableJobs(project, jobId, skipPage, pageSize);
+      final int numResults = this.executorManagerAdapter.getNumberOfJobExecutions(project, jobId);
+      page.add("recordCount", numResults);
 
-      if (jobInfo == null || jobInfo.isEmpty()) {
-        jobInfo = null;
+      final int totalPages = ((numResults - 1) / pageSize) + 1;
+      if (pageNum > totalPages) {
+        pageNum = totalPages;
+        page.add("page", pageNum);
       }
-      page.add("history", jobInfo);
+      final int elementsToSkip = (pageNum - 1) * pageSize;
+      final List<ExecutableJobInfo> jobInfo =
+          this.executorManagerAdapter.getExecutableJobs(project, jobId, elementsToSkip, pageSize);
 
-      page.add("previous", new PageSelection("Previous", pageSize, true, false,
-          Math.max(pageNum - 1, 1)));
+      if (jobInfo != null && !jobInfo.isEmpty()) {
+        page.add("history", jobInfo);
 
-      page.add(
-          "next",
-          new PageSelection("Next", pageSize, false, false, Math.min(
-              pageNum + 1, maxPage)));
-
-      if (jobInfo != null) {
         final ArrayList<Object> dataSeries = new ArrayList<>();
         for (final ExecutableJobInfo info : jobInfo) {
           final Map<String, Object> map = info.toObject();
           dataSeries.add(map);
         }
         page.add("dataSeries", JSONUtils.toJSON(dataSeries));
-      } else {
-        page.add("dataSeries", "[]");
       }
     } catch (final ExecutorManagerException e) {
       page.add("errorMsg", e.getMessage());
     }
-
-    // Now for the 5 other values.
-    int pageStartValue = 1;
-    if (pageNum > 3) {
-      pageStartValue = pageNum - 2;
-    }
-    final int maxPage = (numResults / pageSize) + 1;
-
-    page.add(
-        "page1",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-            pageStartValue, maxPage)));
-    pageStartValue++;
-    page.add(
-        "page2",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-            pageStartValue, maxPage)));
-    pageStartValue++;
-    page.add(
-        "page3",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-            pageStartValue, maxPage)));
-    pageStartValue++;
-    page.add(
-        "page4",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-            pageStartValue, maxPage)));
-    pageStartValue++;
-    page.add(
-        "page5",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-            pageStartValue, maxPage)));
 
     page.render();
   }
@@ -1657,7 +1621,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         status = "error";
       }
     }
-    final String response = createJsonResponse(status, message, action, params);
+    final String response = AbstractAzkabanServlet
+        .createJsonResponse(status, message, action, params);
     try {
       final Writer write = resp.getWriter();
       write.append(response);
@@ -1679,7 +1644,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
     final Project project = this.projectManager.getProject(projectName);
-    if(project == null || !project.isActive()) {
+    if (project == null || !project.isActive()) {
       final String failureCause = project == null ? "doesn't exist." : "was already removed.";
       registerError(ret, "Installation Failed. Project '" + projectName + " "
           + failureCause, resp, 410);
