@@ -25,6 +25,7 @@
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
   <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
   <script type="text/javascript" src="${context}/js/morris.min.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery.twbsPagination.min.js"></script>
 
   <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
   <script type="text/javascript" src="${context}/js/flowsummary.js?version=20161003"></script>
@@ -49,6 +50,28 @@
     var flowId = "${flowid}";
     var execId = null;
     var pageSize = "${size}";
+
+    var flowPageSettings = {
+      projectId: ${project.id},
+      projectName: "${project.name}",
+      flowId: "${flowid}",
+      pageSize: ${size},
+
+      executionUrl: contextURL + "/executor",
+      triggerInstanceUrl: contextURL + "/executor",
+      fetchFlowExecutionsUrl: contextURL + "/manager",
+      fetchTriggerInstancesUrl: contextURL + "/flowtriggerinstance",
+      fetchFlowDetailsUrl: contextURL + "/manager",
+      fetchScheduleUrl: contextURL + "/schedule",
+      slaInfoUrl: contextURL + "/schedule",
+      fetchLastSuccessfulFlowExecutionUrl: contextURL + "/manager",
+      fetchTriggerUrl: contextURL + "/flowtrigger",
+      fetchFlowGraphUrl: contextURL + "/manager",
+    };
+
+    $(function () {
+      initFlowPage(flowPageSettings);
+    });
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
@@ -74,8 +97,8 @@
         </div>
         <div class="header-control">
           <div class="pull-right header-form">
-            <button type="button" class="btn btn-sm btn-success" id="executebtn">Schedule / Execute
-              Flow
+            <button type="button" class="btn btn-sm btn-success" id="executebtn">
+              Schedule / Execute Flow
             </button>
           </div>
         </div>
@@ -135,15 +158,8 @@
           <tbody id="execTableBody">
           </tbody>
         </table>
-        <ul id="pageSelection" class="pagination">
-          <li id="previous" class="first"><a><span class="arrow">&larr;</span>Previous</a></li>
-          <li id="page1"><a href="#page1">1</a></li>
-          <li id="page2"><a href="#page2">2</a></li>
-          <li id="page3"><a href="#page3">3</a></li>
-          <li id="page4"><a href="#page4">4</a></li>
-          <li id="page5"><a href="#page5">5</a></li>
-          <li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
-        </ul>
+
+        <ul id="executionsPagination" class="pagination"></ul>
       </div>
     </div>
   </div><!-- /.container-fill -->
@@ -154,7 +170,7 @@
       <div class="col-xs-12">
 
         <table class="table table-striped table-bordered table-condensed table-hover"
-               id="execTable">
+               id="flowtriggerTable">
           <thead>
           <tr>
             <th>Flow Trigger Instance Id</th>
@@ -166,18 +182,11 @@
             <th class="action">Action</th>
           </tr>
           </thead>
-          <tbody id="triggerTableBody">
+          <tbody id="flowtriggerTableBody">
           </tbody>
         </table>
-        <ul id="pageSelection" class="pagination">
-          <li id="previous" class="first"><a><span class="arrow">&larr;</span>Previous</a></li>
-          <li id="page1"><a href="#page1">1</a></li>
-          <li id="page2"><a href="#page2">2</a></li>
-          <li id="page3"><a href="#page3">3</a></li>
-          <li id="page4"><a href="#page4">4</a></li>
-          <li id="page5"><a href="#page5">5</a></li>
-          <li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
-        </ul>
+
+        <ul id="flowtriggerPagination" class="pagination"></ul>
       </div>
     </div>
   </div><!-- /.container-fill -->
@@ -192,8 +201,8 @@
         <div class="col-xs-12">
           <div class="callout callout-info">
             <h4>Analyze last run</h4>
-            <p>Analyze the last run for aggregate performance statistics. Note: this may take a few
-              minutes, especially if your flow is large.</p>
+            <p>Analyze the last run for aggregate performance statistics.
+              Note: this may take a few minutes, especially if your flow is large.</p>
             <p>
               <button type="button" id="analyze-btn" class="btn btn-primary">Analyze</button>
             </p>
@@ -215,5 +224,4 @@
     #parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
   </div><!-- /.container -->
   #end
-</body>
 </body>
