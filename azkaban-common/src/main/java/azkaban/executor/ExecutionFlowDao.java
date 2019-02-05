@@ -51,7 +51,7 @@ public class ExecutionFlowDao {
 
     final String useExecutorParam =
         flow.getExecutionOptions().getFlowParameters().get(ExecutionOptions.USE_EXECUTOR);
-    final String executorId = StringUtils.isNotEmpty(useExecutorParam) ? useExecutorParam : "-1";
+    final String executorId = StringUtils.isNotEmpty(useExecutorParam) ? useExecutorParam : null;
 
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
@@ -318,8 +318,8 @@ public class ExecutionFlowDao {
     static String selectExecutionForUpdateQueryString(final int executorId,
         final boolean isActive) {
       final String useExecutorCondition = isActive ?
-          " (use_executor = -1 or use_executor = " + executorId + ")" :
-          " use_executor = " + executorId;
+          String.format("(use_executor is NULL or use_executor = %d)", executorId) :
+          String.format("use_executor = %d", executorId);
       return "SELECT exec_id from execution_flows where"
           + " status = " + Status.PREPARING.getNumVal()
           + " and executor_id is NULL and flow_data is NOT NULL and " + useExecutorCondition
