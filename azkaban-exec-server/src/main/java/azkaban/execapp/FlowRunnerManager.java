@@ -960,20 +960,20 @@ public class FlowRunnerManager implements EventListener,
                     AzkabanExecutorServer.getApp().getPort()), "The executor can not be null");
             this.executorId = executor.getId();
           } catch (final Exception e) {
-            logger.error("Failed to fetch executor ", e);
+            FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
         }
-      } else if (FlowRunnerManager.this.active) {
+      } else {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
           final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId);
+              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
           if (execId != -1) {
-            logger.info("Submitting flow " + execId);
+            FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
           }
         } catch (final Exception e) {
-          logger.error("Failed to submit flow ", e);
+          FlowRunnerManager.logger.error("Failed to submit flow ", e);
         }
       }
     }
