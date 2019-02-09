@@ -27,6 +27,7 @@ import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -111,6 +112,7 @@ public class FlowPreparer {
    * @param pv the projectVersion whose size needs to updated.
    */
   static void updateDirSize(final File dir, final ProjectVersion pv) {
+    Preconditions.checkArgument(dir.exists() && dir.isDirectory());
     try {
       final Path path = Paths.get(dir.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
       if (!Files.exists(path)) {
@@ -118,7 +120,7 @@ public class FlowPreparer {
         FileIOUtils.dumpNumberToFile(path, sizeInByte);
       }
       pv.setDirSizeInBytes(FileIOUtils.readNumberFromFile(path));
-    } catch (final IOException | IllegalArgumentException e) {
+    } catch (final IOException e) {
       log.error("error when dumping dir size to file", e);
     }
   }
@@ -130,6 +132,7 @@ public class FlowPreparer {
    * @param pv the projectVersion whose size needs to updated.
    */
   static void updateFileCount(final File dir, final ProjectVersion pv) {
+    Preconditions.checkArgument(dir.exists() && dir.isDirectory());
     try {
       final Path path = Paths.get(dir.getPath(), PROJECT_DIR_COUNT_FILE_NAME);
       if (!Files.exists(path)) {
