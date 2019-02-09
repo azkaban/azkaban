@@ -117,7 +117,7 @@ public class FlowPreparer {
         FileIOUtils.dumpNumberToFile(path, sizeInByte);
       }
       pv.setDirSizeInBytes(FileIOUtils.readNumberFromFile(path));
-    } catch (final IOException e) {
+    } catch (final IOException | IllegalArgumentException e) {
       log.error("error when dumping dir size to file", e);
     }
   }
@@ -137,7 +137,7 @@ public class FlowPreparer {
         FileIOUtils.dumpNumberToFile(path, fileCount);
       }
       pv.setFileCount((int) FileIOUtils.readNumberFromFile(path));
-    } catch (final IOException e) {
+    } catch (final IOException | IllegalArgumentException e) {
       log.error("error when updating file count", e);
     }
   }
