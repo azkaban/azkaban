@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -271,8 +272,13 @@ public class FlowPreparer {
       if (this.projectDirCleaner != null) {
         this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
       }
-      Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
+      try {
+        Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
+      } catch (final FileAlreadyExistsException ex) {
+        log.warn(ex);
+      }
       log.warn(String.format("Project preparation completes. [%s]", pv));
+
     } finally {
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
