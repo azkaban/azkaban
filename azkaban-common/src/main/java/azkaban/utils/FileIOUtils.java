@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -70,6 +71,19 @@ public class FileIOUtils {
       }
     }
     return true;
+  }
+
+  /**
+   * Delete a directory.
+   */
+  public static void deleteDirectory(final File dir) {
+    if (dir != null) {
+      try {
+        FileUtils.deleteDirectory(dir);
+      } catch (final IOException e) {
+        logger.error(String.format("error when deleting dir {}", dir), e);
+      }
+    }
   }
 
   public static int getFileCount(final File file) {

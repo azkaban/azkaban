@@ -30,17 +30,14 @@ import static org.mockito.Mockito.when;
 
 import azkaban.execapp.FlowPreparer.ProjectsDirCacheMetrics;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
 import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.Pair;
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +47,7 @@ import org.junit.rules.TemporaryFolder;
 public class FlowPreparerTest {
 
   public static final String SAMPLE_FLOW_01 = "sample_flow_01";
+
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File executionsDir;
@@ -76,48 +74,64 @@ public class FlowPreparerTest {
 
     this.instance = spy(
         new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir, null));
-    doNothing().when(this.instance).touchIfExists(any());
+    doNothing().when(this.instance).updateLastModifiedTime(any());
   }
 
   @Test
-  public void testSetupProject() throws Exception {
-    final ProjectVersion pv = new ProjectVersion(12, 34,
+  public void testProjectDirSizeIsSet() throws Exception {
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, "sample_project_01"));
-    this.instance.setupProject(pv);
+
+    final File tmp = this.temporaryFolder.newFolder("tmp");
+    this.instance.downloadProjectIfNotExists(proj, tmp);
 
     final long actualDirSize = 1048835;
 
-    assertThat(pv.getDirSizeInBytes()).isEqualTo(actualDirSize);
+    assertThat(proj.getDirSizeInBytes()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(
-        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
+        Paths.get(tmp.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);
-
-    assertThat(FileIOUtils.readNumberFromFile(
-        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_COUNT_FILE_NAME)))
-        .isEqualTo(8);
-
-    assertTrue(pv.getInstalledDir().exists());
-    assertTrue(new File(pv.getInstalledDir(), "sample_flow_01").exists());
   }
 
   @Test
-  public void testSetupProjectTouchesTheDirSizeFile() throws Exception {
-    //verifies setup project touches project dir size file.
-    final ProjectVersion pv = new ProjectVersion(12, 34,
+  public void testDownloadingProjectIfNotExists() throws Exception {
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, "sample_project_01"));
+    final File tmp = this.temporaryFolder.newFolder("tmp");
 
-    //setup project 1st time will not do touch
-    this.instance.setupProject(pv);
-    verify(this.instance, never()).touchIfExists(
-        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
+    final boolean isDownloaded = this.instance.downloadProjectIfNotExists(proj, tmp);
 
-    this.instance.setupProject(pv);
-    verify(this.instance).touchIfExists(
-        Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
+    final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+
+    verify(this.instance, never()).updateLastModifiedTime(projectDirSizeFile);
+    assertThat(tmp.list()).contains("sample_flow_01");
+    assertThat(isDownloaded).isTrue();
   }
 
   @Test
-  public void testSetupFlow() {
+  public void testNotDownloadingProjectIfExists() throws Exception {
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
+        new File(this.projectsDir, "sample_project_01"));
+    final File tmp = this.temporaryFolder.newFolder("tmp");
+
+    this.instance.downloadProjectIfNotExists(proj, tmp);
+
+    Files.move(tmp.toPath(), proj.getInstalledDir().toPath());
+
+    // Try downloading the same project again
+    final boolean isDownloaded = this.instance.downloadProjectIfNotExists(proj, tmp);
+
+    final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+
+    verify(this.instance).updateLastModifiedTime(projectDirSizeFile);
+    assertThat(tmp.list()).isNullOrEmpty();
+    assertThat(isDownloaded).isFalse();
+  }
+
+  @Test
+  public void testSetupFlow() throws ExecutorManagerException {
     final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
     when(executableFlow.getExecutionId()).thenReturn(12345);
     when(executableFlow.getProjectId()).thenReturn(12);
@@ -129,88 +143,6 @@ public class FlowPreparerTest {
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }
 
-  @Test
-  public void testFileCountCheckNotCalled() {
-    //given
-    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
-    when(executableFlow.getExecutionId()).thenReturn(12345);
-    when(executableFlow.getProjectId()).thenReturn(12);
-    when(executableFlow.getVersion()).thenReturn(34);
-
-    //when
-    this.instance.setup(executableFlow);
-
-    //then
-    verify(this.instance, never()).isFileCountEqual(any(), anyInt());
-  }
-
-  @Test
-  public void testIsFileCountEqual() {
-    //given
-    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
-        this.executionsDir, this.projectsDir, 1L);
-    final File projectDir = new File(this.projectsDir, "sample_project_01");
-    projectDir.mkdir();
-    final ProjectVersion pv = new ProjectVersion(1, 1, projectDir);
-
-    //then
-    assertThat(flowPreparer.isFileCountEqual(pv, 1)).isEqualTo(true);
-  }
-
-  @Test
-  public void testProjectCacheDirCleanerNotEnabled() throws IOException {
-    final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects = new HashMap<>();
-
-    //given
-    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
-        this.executionsDir, this.projectsDir, null);
-
-    //when
-    final List<File> expectedRemainingFiles = new ArrayList<>();
-    for (int i = 1; i <= 3; i++) {
-      final int projectId = i;
-      final int version = 1;
-      final ProjectVersion pv = new ProjectVersion(projectId, version, null);
-      installedProjects.put(new Pair<>(projectId, version), pv);
-      flowPreparer.setupProject(pv);
-      expectedRemainingFiles.add(pv.getInstalledDir());
-    }
-
-    //then
-    assertThat(this.projectsDir.listFiles()).containsExactlyInAnyOrder(expectedRemainingFiles
-        .toArray(new File[expectedRemainingFiles.size()]));
-  }
-
-  @Test
-  public void testProjectCacheDirCleaner() throws IOException, InterruptedException {
-    final Long projectDirMaxSize = 3L;
-
-    //given
-    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
-        this.executionsDir, this.projectsDir, projectDirMaxSize);
-
-    //when
-    final List<File> expectedRemainingFiles = new ArrayList<>();
-    for (int i = 1; i <= 3; i++) {
-      final int projectId = i;
-      final int version = 1;
-      final ProjectVersion pv = new ProjectVersion(projectId, version, null);
-      flowPreparer.setupProject(pv);
-
-      if (i >= 2) {
-        //the first file will be deleted
-        expectedRemainingFiles.add(pv.getInstalledDir());
-      }
-      // last modified time of millis second granularity of a file is not supported by all file
-      // systems, so sleep for 1 second between creation of each project dir to make their last
-      // modified time different.
-      Thread.sleep(1000);
-    }
-
-    //then
-    assertThat(this.projectsDir.listFiles()).containsExactlyInAnyOrder(expectedRemainingFiles
-        .toArray(new File[expectedRemainingFiles.size()]));
-  }
 
   @Test
   public void testProjectsCacheMetricsZeroHit() {
