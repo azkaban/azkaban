@@ -27,6 +27,7 @@ import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class FlowPreparer {
+class FlowPreparer {
 
   // Name of the file which keeps project directory size
   static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
@@ -50,14 +51,13 @@ public class FlowPreparer {
   // TODO spyne: move to config class
   private final File executionsDir;
   // TODO spyne: move to config class
-  private final File projectsDir;
+  private final File projectCacheDir;
   private final StorageManager storageManager;
-  private final ProjectCacheCleaner projectDirCleaner;
-  private final ProjectsDirCacheMetrics cacheMetrics;
+  private final ProjectCacheCleaner projectCacheCleaner;
+  private final ProjectCacheMetrics cacheMetrics;
 
   @VisibleForTesting
-  static class ProjectsDirCacheMetrics {
-
+  static class ProjectCacheMetrics {
     private long cacheHit;
     private long cacheMiss;
 
@@ -78,16 +78,24 @@ public class FlowPreparer {
     }
   }
 
-  public FlowPreparer(final StorageManager storageManager, final File executionsDir,
+  FlowPreparer(final StorageManager storageManager, final File executionsDir,
       final File projectsDir, final ProjectCacheCleaner cleaner) {
+    Preconditions.checkNotNull(storageManager);
+    Preconditions.checkNotNull(executionsDir);
+    Preconditions.checkNotNull(projectsDir);
+    Preconditions.checkNotNull(cleaner);
+
+    Preconditions.checkArgument(projectsDir.exists());
+    Preconditions.checkArgument(executionsDir.exists());
+
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
-    this.projectsDir = projectsDir;
-    this.projectDirCleaner = cleaner;
-    this.cacheMetrics = new ProjectsDirCacheMetrics();
+    this.projectCacheDir = projectsDir;
+    this.projectCacheCleaner = cleaner;
+    this.cacheMetrics = new ProjectCacheMetrics();
   }
 
-  public double getProjectDirCacheHitRatio() {
+  double getProjectDirCacheHitRatio() {
     return this.cacheMetrics.getHitRatio();
   }
 
@@ -145,8 +153,8 @@ public class FlowPreparer {
         if (!project.getInstalledDir().exists()) {
           // If new project is downloaded and project dir cache clean-up feature is enabled, then
           // perform clean-up if size of all project dirs exceeds the cache size.
-          if (isDownloaded && this.projectDirCleaner != null) {
-            this.projectDirCleaner.deleteProjectDirsIfNecessary(project.getDirSizeInBytes());
+          if (isDownloaded && this.projectCacheCleaner != null) {
+            this.projectCacheCleaner.deleteProjectDirsIfNecessary(project.getDirSizeInBytes());
           }
 
           // Rename temp dir to a proper project directory name.
@@ -198,7 +206,7 @@ public class FlowPreparer {
     try {
       Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
     } catch (final IOException ex) {
-      log.warn("error when updating last modified time for {}", path, ex);
+      log.warn("Error when updating last modified time for {}", path, ex);
     }
   }
 
@@ -208,7 +216,7 @@ public class FlowPreparer {
 
   private File createTempDir(final ProjectDirectoryMetadata proj) {
     final String projectDir = generateProjectDirName(proj);
-    final File tempDir = new File(this.projectsDir,
+    final File tempDir = new File(this.projectCacheDir,
         "_temp." + projectDir + "." + System.currentTimeMillis());
     tempDir.mkdirs();
     return tempDir;
@@ -242,7 +250,7 @@ public class FlowPreparer {
       throws IOException {
     final String projectDir = generateProjectDirName(proj);
     if (proj.getInstalledDir() == null) {
-      proj.setInstalledDir(new File(this.projectsDir, projectDir));
+      proj.setInstalledDir(new File(this.projectCacheDir, projectDir));
     }
 
     // If directory exists, assume it's prepared and skip.

@@ -17,7 +17,13 @@
 
 package azkaban.execapp;
 
+import azkaban.utils.Utils;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.zip.ZipFile;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,36 +34,44 @@ public class ProjectCacheCleanerTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private File projectsDir;
+  private File cacheDir;
+
+  private void unzip(final Path srcZipFile, final Path dest) throws IOException {
+    final ZipFile zip = new ZipFile(srcZipFile.toFile());
+    Utils.unzip(zip, dest.toFile());
+  }
 
   @Before
   public void setUp() throws Exception {
-    this.projectsDir = this.temporaryFolder.newFolder("projects");
+    this.cacheDir = this.temporaryFolder.newFolder("projects");
+    final ClassLoader classLoader = getClass().getClassLoader();
+
+    unzip(Paths.get(classLoader.getResource("sample_flow_01.zip").getPath()),
+        this.cacheDir.toPath());
+    Files.move(Paths.get(this.cacheDir.toPath() + "/sample_flow_01"),
+        Paths.get(this.cacheDir.toPath() + "/1.1"));
+
+    unzip(Paths.get(classLoader.getResource("sample_flow_02.zip").getPath()),
+        this.cacheDir.toPath());
+    Files.move(Paths.get(this.cacheDir.toPath() + "/sample_flow_02"),
+        Paths.get(this.cacheDir.toPath() + "/2.1"));
+
+    unzip(Paths.get(classLoader.getResource("sample_flow_03.zip").getPath()),
+        this.cacheDir.toPath());
+    Files.move(Paths.get(this.cacheDir.toPath() + "/sample_flow_03"),
+        Paths.get(this.cacheDir.toPath() + "/3.1"));
   }
 
   @Test
   public void testProjectCacheDirCleaner() throws InterruptedException {
-    /*
     final Long projectDirMaxSize = 3L;
-    final ProjectCacheCleaner cleaner = null;
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    cleaner.deleteProjectDirsIfNecessary(1);
 
-    //given
-    final FlowPreparer flowPreparer = new FlowPreparer(createMockStorageManager(),
-        this.executionsDir, this.projectsDir, projectDirMaxSize);
-
-    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
-    when(executableFlow.getExecutionId()).thenReturn(12345);
-    when(executableFlow.getProjectId()).thenReturn(12);
-    when(executableFlow.getVersion()).thenReturn(34);
-
-    //when
+    /*
     final List<File> expectedRemainingFiles = new ArrayList<>();
-    for (int i = 1; i <= 3; i++) {
-      final int projectId = i;
-      final int version = 1;
-      final ProjectVersion pv = new ProjectVersion(projectId, version, null);
-      flowPreparer.setup(pv);
 
+    for (int i = 1; i <= 3; i++) {
       if (i >= 2) {
         //the first file will be deleted
         expectedRemainingFiles.add(pv.getInstalledDir());

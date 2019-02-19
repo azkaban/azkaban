@@ -179,7 +179,7 @@ subprojects {
         test {
             // Set maxParallelForks to a large number and let gradle to force it to a the
             // max-workers number when needed.
-            maxParallelForks = 12
+            maxParallelForks = 1
         }
     }
 

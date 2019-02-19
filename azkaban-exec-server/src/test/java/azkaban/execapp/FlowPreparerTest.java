@@ -28,7 +28,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.execapp.FlowPreparer.ProjectsDirCacheMetrics;
+import azkaban.execapp.FlowPreparer.ProjectCacheMetrics;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
@@ -147,7 +147,7 @@ public class FlowPreparerTest {
   @Test
   public void testProjectsCacheMetricsZeroHit() {
     //given
-    final FlowPreparer.ProjectsDirCacheMetrics cacheMetrics = new ProjectsDirCacheMetrics();
+    final ProjectCacheMetrics cacheMetrics = new ProjectCacheMetrics();
 
     //when zero hit and zero miss then
     assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
@@ -161,7 +161,7 @@ public class FlowPreparerTest {
   @Test
   public void testProjectsCacheMetricsHit() {
     //given
-    final FlowPreparer.ProjectsDirCacheMetrics cacheMetrics = new ProjectsDirCacheMetrics();
+    final ProjectCacheMetrics cacheMetrics = new ProjectCacheMetrics();
 
     //when one hit
     cacheMetrics.incrementCacheHit();
