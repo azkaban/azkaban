@@ -952,6 +952,7 @@ public class ExecutorManager extends EventHandler implements
                     "Failed to submit %s for project %s. Azkaban has overrun its webserver queue capacity",
                     flowId, exflow.getProjectName());
         logger.error(message);
+        this.commonMetrics.markSubmitFlowFail();
       } else {
         final int projectId = exflow.getProjectId();
         exflow.setSubmitUser(userId);
@@ -971,6 +972,7 @@ public class ExecutorManager extends EventHandler implements
 
         if (!running.isEmpty()) {
           if (running.size() > this.maxConcurrentRunsOneFlow) {
+            this.commonMetrics.markSubmitFlowSkip();
             throw new ExecutorManagerException("Flow " + flowId
                 + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
                 ExecutorManagerException.Reason.SkippedExecution);
@@ -986,6 +988,7 @@ public class ExecutorManager extends EventHandler implements
                     + options.getPipelineLevel() + ". \n";
           } else if (options.getConcurrentOption().equals(
               ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
+            this.commonMetrics.markSubmitFlowSkip();
             throw new ExecutorManagerException("Flow " + flowId
                 + " is already running. Skipping execution.",
                 ExecutorManagerException.Reason.SkippedExecution);
@@ -1015,6 +1018,7 @@ public class ExecutorManager extends EventHandler implements
         this.executorLoader.addActiveExecutableReference(reference);
         this.queuedFlows.enqueue(exflow, reference);
         message += "Execution queued successfully with exec id " + exflow.getExecutionId();
+        this.commonMetrics.markSubmitFlowSuccess();
       }
       return message;
     }

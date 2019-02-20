@@ -173,7 +173,7 @@ public class FlowPreparer {
           flow.getVersion());
 
       // Setup the project
-      setupProject(projectVersion);
+      setupProject(projectVersion, flow.getExecutionId());
 
       // Create the execution directory
       execDir = createExecDir(flow);
@@ -192,7 +192,8 @@ public class FlowPreparer {
           .format("Flow Preparation complete. [execid: %d, path: %s]", flow.getExecutionId(),
               execDir.getPath()));
     } catch (final Exception e) {
-      log.error("Error in setting up project directory: " + this.projectsDir + ", Exception: " + e);
+      log.error("Error in setting up project directory: " + this.projectsDir +
+              ",  for execid: " + flow.getExecutionId() + ", Exception: " + e);
       cleanup(execDir);
       throw new RuntimeException(e);
     }
@@ -226,9 +227,10 @@ public class FlowPreparer {
    * Prepare the project directory.
    *
    * @param pv ProjectVersion object
+   * @param execId execution ID, used for logging
    */
   @VisibleForTesting
-  void setupProject(final ProjectVersion pv)
+  void setupProject(final ProjectVersion pv, int execId)
       throws ProjectManagerException, IOException {
     final int projectId = pv.getProjectId();
     final int version = pv.getVersion();
@@ -240,14 +242,14 @@ public class FlowPreparer {
 
     // If directory exists. Assume its prepared and skip.
     if (pv.getInstalledDir().exists()) {
-      log.info("Project already cached. Skipping download. " + pv);
+      log.info("ExecId: " + execId + ": Project already cached. Skipping download. " + pv);
       this.cacheMetrics.incrementCacheHit();
       touchIfExists(
           Paths.get(pv.getInstalledDir().getPath(), PROJECT_DIR_SIZE_FILE_NAME));
       return;
     }
 
-    log.info("Preparing Project: " + pv);
+    log.info("ExecId: " + execId + ": Preparing Project: " + pv);
 
     final File tempDir = new File(this.projectsDir,
         "_temp." + projectDir + "." + System.currentTimeMillis());
@@ -257,7 +259,8 @@ public class FlowPreparer {
 
     ProjectFileHandler projectFileHandler = null;
     try {
-      log.info(String.format("Downloading zip file for Project Version {%s}", pv));
+      log.info(String.format("ExecId: %d. Downloading zip file for Project Version {%s}",
+          execId, pv));
       this.cacheMetrics.incrementCacheMiss();
       projectFileHandler = requireNonNull(
           this.storageManager.getProjectFile(pv.getProjectId(), pv.getVersion()));
@@ -267,12 +270,13 @@ public class FlowPreparer {
       Utils.unzip(zip, tempDir);
       updateDirSize(tempDir, pv);
       updateFileCount(tempDir, pv);
-      log.info(String.format("Downloading zip file for Project Version {%s} completes", pv));
+      log.info(String.format("ExecId: %d. Downloading zip file for Project Version {%s} "
+          + "completes", execId, pv));
       if (this.projectDirCleaner != null) {
         this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
       }
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
-      log.warn(String.format("Project preparation completes. [%s]", pv));
+      log.warn(String.format("ExecId: %d. Project preparation completes. [%s]", execId, pv));
     } finally {
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();

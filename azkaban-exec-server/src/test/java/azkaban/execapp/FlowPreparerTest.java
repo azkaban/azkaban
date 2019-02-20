@@ -83,7 +83,7 @@ public class FlowPreparerTest {
   public void testSetupProject() throws Exception {
     final ProjectVersion pv = new ProjectVersion(12, 34,
         new File(this.projectsDir, "sample_project_01"));
-    this.instance.setupProject(pv);
+    this.instance.setupProject(pv, 123);
 
     final long actualDirSize = 1048835;
 
@@ -107,11 +107,11 @@ public class FlowPreparerTest {
         new File(this.projectsDir, "sample_project_01"));
 
     //setup project 1st time will not do touch
-    this.instance.setupProject(pv);
+    this.instance.setupProject(pv, 124);
     verify(this.instance, never()).touchIfExists(
         Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
 
-    this.instance.setupProject(pv);
+    this.instance.setupProject(pv, 125);
     verify(this.instance).touchIfExists(
         Paths.get(pv.getInstalledDir().getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME));
   }
@@ -172,7 +172,7 @@ public class FlowPreparerTest {
       final int version = 1;
       final ProjectVersion pv = new ProjectVersion(projectId, version, null);
       installedProjects.put(new Pair<>(projectId, version), pv);
-      flowPreparer.setupProject(pv);
+      flowPreparer.setupProject(pv, 126);
       expectedRemainingFiles.add(pv.getInstalledDir());
     }
 
@@ -195,7 +195,7 @@ public class FlowPreparerTest {
       final int projectId = i;
       final int version = 1;
       final ProjectVersion pv = new ProjectVersion(projectId, version, null);
-      flowPreparer.setupProject(pv);
+      flowPreparer.setupProject(pv, 127);
 
       if (i >= 2) {
         //the first file will be deleted
