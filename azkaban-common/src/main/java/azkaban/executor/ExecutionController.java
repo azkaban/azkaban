@@ -18,6 +18,7 @@ package azkaban.executor;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
 import azkaban.flow.FlowUtils;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
 import azkaban.utils.FileIOUtils.LogData;
@@ -56,11 +57,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   private final ExecutorApiGateway apiGateway;
   private final AlerterHolder alerterHolder;
   private final int maxConcurrentRunsOneFlow;
+  private final CommonMetrics commonMetrics;
 
   @Inject
   ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
+      final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder) {
     this.executorLoader = executorLoader;
+    this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
@@ -553,6 +557,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
 
       if (!running.isEmpty()) {
         if (running.size() > this.maxConcurrentRunsOneFlow) {
+          this.commonMetrics.markSubmitFlowSkip();
           throw new ExecutorManagerException("Flow " + flowId
               + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
               ExecutorManagerException.Reason.SkippedExecution);
@@ -568,6 +573,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
                   + options.getPipelineLevel() + ". \n";
         } else if (options.getConcurrentOption().equals(
             ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
+          this.commonMetrics.markSubmitFlowSkip();
           throw new ExecutorManagerException("Flow " + flowId
               + " is already running. Skipping execution.",
               ExecutorManagerException.Reason.SkippedExecution);
@@ -588,6 +594,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       // this call.
       this.executorLoader.uploadExecutableFlow(exflow);
 
+      this.commonMetrics.markSubmitFlowSuccess();
       message += "Execution queued successfully with exec id " + exflow.getExecutionId();
       return message;
     }
