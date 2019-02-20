@@ -25,7 +25,7 @@ var initJobHistoryPage = function (settings) {
   dataModel = new azkaban.DataModel({
     page: settings.page,
     pageSize: settings.pageSize,
-    visiblePages: 5,
+    visiblePages: settings.visiblePages,
     recordCount: settings.recordCount,
     dataSeries: settings.dataSeries,
     projectName: settings.projectName,

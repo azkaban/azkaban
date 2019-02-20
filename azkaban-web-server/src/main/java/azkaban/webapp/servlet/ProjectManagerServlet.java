@@ -74,6 +74,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -1198,7 +1199,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final List<ExecutableJobInfo> jobInfo =
           this.executorManagerAdapter.getExecutableJobs(project, jobId, elementsToSkip, pageSize);
 
-      if (jobInfo != null && !jobInfo.isEmpty()) {
+      if (CollectionUtils.isNotEmpty(jobInfo)) {
         page.add("history", jobInfo);
 
         final ArrayList<Object> dataSeries = new ArrayList<>();

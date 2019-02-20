@@ -45,6 +45,7 @@
       dataSeries: ${dataSeries},
       page: ${page},
       pageSize: ${pageSize},
+      visiblePages: 5,
       recordCount: ${recordCount},
       fetchJobHistoryUrl: contextURL + "/manager"
     };
