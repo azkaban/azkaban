@@ -135,7 +135,7 @@ class FlowPreparer {
       // Download project to a temp dir if not exists in local cache.
       final long start = System.currentTimeMillis();
 
-      tempDir = downloadProjectIfNotExists(project);
+      tempDir = downloadProjectIfNotExists(project, flow.getExecutionId());
 
       log.info("Downloading zip file for project {} when preparing execution [execid {}] "
               + "completed in {} second(s)", project, flow.getExecutionId(),
@@ -247,7 +247,7 @@ class FlowPreparer {
    * @throws IOException if downloading or unzipping fails.
    */
   @VisibleForTesting
-  File downloadProjectIfNotExists(final ProjectDirectoryMetadata proj)
+  File downloadProjectIfNotExists(final ProjectDirectoryMetadata proj, int execId)
       throws IOException {
     final String projectDir = generateProjectDirName(proj);
     if (proj.getInstalledDir() == null) {
@@ -256,7 +256,7 @@ class FlowPreparer {
 
     // If directory exists, assume it's prepared and skip.
     if (proj.getInstalledDir().exists()) {
-      log.info("Project {} already cached. Skipping download.", proj);
+	log.info("Project {} already cached. Skipping download. ExecId: {}", proj, execId);
       // Hit the local cache.
       this.cacheMetrics.incrementCacheHit();
       // Update last modified time of the file keeping project dir size when the project is

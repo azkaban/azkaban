@@ -97,7 +97,7 @@ public class FlowPreparerTest {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, SAMPLE_FLOW_01));
 
-    final File tmp = this.instance.downloadProjectIfNotExists(proj);
+    final File tmp = this.instance.downloadProjectIfNotExists(proj, 123);
 
     final long actualDirSize = 1048835;
 
@@ -111,7 +111,7 @@ public class FlowPreparerTest {
   public void testDownloadingProjectIfNotExists() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, SAMPLE_FLOW_01));
-    final File tmp = this.instance.downloadProjectIfNotExists(proj);
+    final File tmp = this.instance.downloadProjectIfNotExists(proj, 124);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
         FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
@@ -125,11 +125,11 @@ public class FlowPreparerTest {
   public void testNotDownloadingProjectIfExists() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, SAMPLE_FLOW_01));
-    File tmp = this.instance.downloadProjectIfNotExists(proj);
+    File tmp = this.instance.downloadProjectIfNotExists(proj, 125);
     Files.move(tmp.toPath(), proj.getInstalledDir().toPath());
 
     // Try downloading the same project again
-    tmp = this.instance.downloadProjectIfNotExists(proj);
+    tmp = this.instance.downloadProjectIfNotExists(proj, 126);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
         FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
