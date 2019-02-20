@@ -22,10 +22,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
@@ -52,6 +55,9 @@ public class ExecutionControllerTest {
   private AlerterHolder alertHolder;
   private ExecutorHealthChecker executorHealthChecker;
   private Props props;
+  private final CommonMetrics commonMetrics = new CommonMetrics(
+      new MetricsManager(new MetricRegistry()));
+
   private User user;
   private ExecutableFlow flow1;
   private ExecutableFlow flow2;
@@ -70,8 +76,8 @@ public class ExecutionControllerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
-    this.controller = new ExecutionController(this.props, this.loader, this.apiGateway,
-        this.alertHolder, this.executorHealthChecker);
+    this.controller = new ExecutionController(this.props, this.loader, this.commonMetrics,
+        this.apiGateway, this.alertHolder, this.executorHealthChecker);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
