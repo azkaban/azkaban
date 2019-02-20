@@ -1101,7 +1101,7 @@ public class ExecutorManager extends EventHandler implements
 
   /**
    * Calls executor to dispatch the flow, update db to assign the executor and in-memory state of
-   * executableFlow
+   * executableFlow.
    */
   private void dispatch(final ExecutionReference reference, final ExecutableFlow exflow,
       final Executor choosenExecutor) throws ExecutorManagerException {
