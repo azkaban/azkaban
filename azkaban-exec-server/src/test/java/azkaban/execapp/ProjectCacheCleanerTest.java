@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.zip.ZipFile;
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,27 +47,52 @@ public class ProjectCacheCleanerTest {
     this.cacheDir = this.temporaryFolder.newFolder("projects");
     final ClassLoader classLoader = getClass().getClassLoader();
 
-    unzip(Paths.get(classLoader.getResource("sample_flow_01.zip").getPath()),
+    final long current = System.currentTimeMillis();
+    unzip(Paths.get(classLoader.getResource("1.1.zip").getPath()),
         this.cacheDir.toPath());
-    Files.move(Paths.get(this.cacheDir.toPath() + "/sample_flow_01"),
-        Paths.get(this.cacheDir.toPath() + "/1.1"));
+    Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "1.1",
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current));
 
-    unzip(Paths.get(classLoader.getResource("sample_flow_02.zip").getPath()),
+    unzip(Paths.get(classLoader.getResource("2.1.zip").getPath()),
         this.cacheDir.toPath());
-    Files.move(Paths.get(this.cacheDir.toPath() + "/sample_flow_02"),
-        Paths.get(this.cacheDir.toPath() + "/2.1"));
+    Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "2.1",
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 1000));
 
-    unzip(Paths.get(classLoader.getResource("sample_flow_03.zip").getPath()),
+    unzip(Paths.get(classLoader.getResource("3.1.zip").getPath()),
         this.cacheDir.toPath());
-    Files.move(Paths.get(this.cacheDir.toPath() + "/sample_flow_03"),
-        Paths.get(this.cacheDir.toPath() + "/3.1"));
+    Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "3.1",
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 2000));
   }
 
   @Test
-  public void testProjectCacheDirCleaner() throws InterruptedException {
+  /**
+   * There's still space in the cache, no deletion.
+   */
+  public void testNotDeleting() throws InterruptedException {
     final Long projectDirMaxSize = 3L;
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
     cleaner.deleteProjectDirsIfNecessary(1);
+  }
+
+  @Test
+  /**
+   * deleting everything in the cache to accommodate new item.
+   */
+  public void testDeletingAll() throws InterruptedException {
+    final Long projectDirMaxSize = 3L;
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    cleaner.deleteProjectDirsIfNecessary(1);
+  }
+
+  @Test
+  /**
+   * deleting least recently used two items in the cache to accommodate new item.
+   */
+  public void testDeletingLRU2Items() throws InterruptedException {
+    final Long projectDirMaxSize = 3L;
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    cleaner.deleteProjectDirsIfNecessary(1);
+  }
 
     /*
     final List<File> expectedRemainingFiles = new ArrayList<>();

@@ -160,7 +160,6 @@ class FlowPreparer {
           // Rename temp dir to a proper project directory name.
           Files.move(tempDir.toPath(), project.getInstalledDir().toPath(),
               StandardCopyOption.ATOMIC_MOVE);
-
         }
         execDir = setupExecutionDir(project.getInstalledDir(), flow);
       }

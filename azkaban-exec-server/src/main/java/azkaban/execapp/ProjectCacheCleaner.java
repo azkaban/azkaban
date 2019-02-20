@@ -110,7 +110,7 @@ class ProjectCacheCleaner {
     for (final ProjectDirectoryMetadata proj : projectDirMetadataList) {
       if (sizeToFreeInBytes > 0) {
         // Delete the project directory even if flow within is running. It's OK to
-        // Delete the directory since execution dir is HARD linked to project dir.
+        // delete the directory since execution dir is HARD linked to project dir.
         log.debug("deleting project {}", proj);
         FileIOUtils.deleteDirectory(proj.getInstalledDir());
         sizeToFreeInBytes -= proj.getDirSizeInBytes();
