@@ -18,6 +18,7 @@
 package azkaban.execapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -38,6 +39,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,6 +71,15 @@ public class FlowPreparerTest {
     final StorageManager storageManager = mock(StorageManager.class);
     when(storageManager.getProjectFile(anyInt(), anyInt())).thenReturn(projectFileHandler);
     return storageManager;
+  }
+
+  private ExecutableFlow mockExecutableFlow(final int execId, final int projectId,
+      final int version) {
+    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
+    when(executableFlow.getExecutionId()).thenReturn(execId);
+    when(executableFlow.getProjectId()).thenReturn(projectId);
+    when(executableFlow.getVersion()).thenReturn(version);
+    return executableFlow;
   }
 
   @Before
@@ -128,6 +143,40 @@ public class FlowPreparerTest {
     verify(this.instance).updateLastModifiedTime(projectDirSizeFile);
     assertThat(tmp.list()).isNullOrEmpty();
     assertThat(isDownloaded).isFalse();
+  }
+
+  @Test
+  public void testSetupFlowByMultipleThreads() {
+    final int threadNum = 4;
+
+    final ExecutableFlow[] executableFlows = new ExecutableFlow[]{
+        mockExecutableFlow(1, 12, 34),
+        mockExecutableFlow(2, 12, 34),
+        mockExecutableFlow(3, 12, 34),
+        mockExecutableFlow(4, 12, 34)
+    };
+
+    final ExecutorService service = Executors.newFixedThreadPool(threadNum);
+
+    final List<Future> futures = new ArrayList<>();
+    for (int i = 0; i < threadNum; i++) {
+      final int finalI = i;
+      futures.add(service.submit(() -> {
+        assertThatCode(() -> this.instance.setup(executableFlows[finalI])
+        ).doesNotThrowAnyException();
+      }));
+    }
+
+    for (final Future future : futures) {
+      assertThatCode(() -> future.get()).doesNotThrowAnyException();
+    }
+
+    service.shutdownNow();
+    for (final ExecutableFlow flow : executableFlows) {
+      final File execDir = new File(this.executionsDir, String.valueOf(flow.getExecutionId()));
+      assertTrue(execDir.exists());
+      assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
+    }
   }
 
   @Test

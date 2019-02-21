@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.util.Optional;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ class FlowPreparer {
   // TODO spyne: move to config class
   private final File projectCacheDir;
   private final StorageManager storageManager;
-  private final ProjectCacheCleaner projectCacheCleaner;
+  private final Optional<ProjectCacheCleaner> projectCacheCleaner;
   private final ProjectCacheMetrics cacheMetrics;
 
   @VisibleForTesting
@@ -83,7 +83,6 @@ class FlowPreparer {
     Preconditions.checkNotNull(storageManager);
     Preconditions.checkNotNull(executionsDir);
     Preconditions.checkNotNull(projectsDir);
-    Preconditions.checkNotNull(cleaner);
 
     Preconditions.checkArgument(projectsDir.exists());
     Preconditions.checkArgument(executionsDir.exists());
@@ -91,7 +90,7 @@ class FlowPreparer {
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectCacheDir = projectsDir;
-    this.projectCacheCleaner = cleaner;
+    this.projectCacheCleaner = Optional.ofNullable(cleaner);
     this.cacheMetrics = new ProjectCacheMetrics();
   }
 
@@ -153,13 +152,13 @@ class FlowPreparer {
         if (!project.getInstalledDir().exists()) {
           // If new project is downloaded and project dir cache clean-up feature is enabled, then
           // perform clean-up if size of all project dirs exceeds the cache size.
-          if (isDownloaded && this.projectCacheCleaner != null) {
-            this.projectCacheCleaner.deleteProjectDirsIfNecessary(project.getDirSizeInBytes());
+          if (isDownloaded && this.projectCacheCleaner.isPresent()) {
+            this.projectCacheCleaner.get()
+                .deleteProjectDirsIfNecessary(project.getDirSizeInBytes());
           }
 
           // Rename temp dir to a proper project directory name.
-          Files.move(tempDir.toPath(), project.getInstalledDir().toPath(),
-              StandardCopyOption.ATOMIC_MOVE);
+          Files.move(tempDir.toPath(), project.getInstalledDir().toPath());
         }
         execDir = setupExecutionDir(project.getInstalledDir(), flow);
       }

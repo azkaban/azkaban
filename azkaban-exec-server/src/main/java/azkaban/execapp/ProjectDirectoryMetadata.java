@@ -26,7 +26,7 @@ class ProjectDirectoryMetadata /*implements Comparable<ProjectDirectoryMetadata>
   private final int projectId;
   private final int version;
   private File installedDir;
-  private Long dirSize;
+  private Long dirSizeInByte;
   private FileTime lastAccessTime;
 
   public ProjectDirectoryMetadata(final int projectId, final int version) {
@@ -43,11 +43,11 @@ class ProjectDirectoryMetadata /*implements Comparable<ProjectDirectoryMetadata>
   }
 
   public Long getDirSizeInBytes() {
-    return this.dirSize;
+    return this.dirSizeInByte;
   }
 
   public void setDirSizeInBytes(final Long dirSize) {
-    this.dirSize = dirSize;
+    this.dirSizeInByte = dirSize;
   }
 
   public int getProjectId() {
@@ -81,7 +81,7 @@ class ProjectDirectoryMetadata /*implements Comparable<ProjectDirectoryMetadata>
         "projectId=" + this.projectId +
         ", version=" + this.version +
         ", installedDir=" + this.installedDir +
-        ", dirSize=" + this.dirSize +
+        ", dirSize=" + this.dirSizeInByte +
         ", lastAccessTime=" + this.lastAccessTime +
         '}';
   }

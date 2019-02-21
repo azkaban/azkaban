@@ -37,16 +37,16 @@ import org.slf4j.LoggerFactory;
 class ProjectCacheCleaner {
 
   private final File projectCacheDir;
-  private final long projectCacheMaxSizeInMb;
+  private final long projectCacheMaxSizeInMB;
   private static final Logger log = LoggerFactory.getLogger(ProjectCacheCleaner.class);
 
-  ProjectCacheCleaner(final File projectCacheDir, final long projectCacheMaxSizeInMb) {
+  ProjectCacheCleaner(final File projectCacheDir, final long projectCacheMaxSizeInMB) {
     Preconditions.checkNotNull(projectCacheDir);
     Preconditions.checkArgument(projectCacheDir.exists());
-    Preconditions.checkArgument(projectCacheMaxSizeInMb > 0);
+    Preconditions.checkArgument(projectCacheMaxSizeInMB > 0);
 
     this.projectCacheDir = projectCacheDir;
-    this.projectCacheMaxSizeInMb = projectCacheMaxSizeInMb;
+    this.projectCacheMaxSizeInMB = projectCacheMaxSizeInMB;
   }
 
   private List<Path> loadAllProjectDirs() {
@@ -131,12 +131,16 @@ class ProjectCacheCleaner {
 
     final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
     if (currentSpaceInBytes + newProjectSizeInBytes
-        >= this.projectCacheMaxSizeInMb * 1024 * 1024) {
+        >= this.projectCacheMaxSizeInMB * 1024 * 1024) {
       log.info(
-          "project dir disk usage[{} MB] exceeds the limit[%s MB], start cleaning up project dirs",
+          "project cache usage[{} MB] exceeds the limit[{} MB], start cleaning up project dirs",
           (currentSpaceInBytes + newProjectSizeInBytes) / (1024 * 1024),
-          this.projectCacheMaxSizeInMb);
-      deleteLeastRecentlyUsedProjects(newProjectSizeInBytes, allProjects);
+          this.projectCacheMaxSizeInMB);
+
+      final long freeCacheSpaceInBytes =
+          this.projectCacheMaxSizeInMB * 1024 * 1024 - currentSpaceInBytes;
+
+      deleteLeastRecentlyUsedProjects(newProjectSizeInBytes - freeCacheSpaceInBytes, allProjects);
     }
   }
 }

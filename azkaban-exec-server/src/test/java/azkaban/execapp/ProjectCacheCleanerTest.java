@@ -17,6 +17,8 @@
 
 package azkaban.execapp;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import azkaban.utils.Utils;
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +53,7 @@ public class ProjectCacheCleanerTest {
     unzip(Paths.get(classLoader.getResource("1.1.zip").getPath()),
         this.cacheDir.toPath());
     Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "1.1",
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current));
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 2000));
 
     unzip(Paths.get(classLoader.getResource("2.1.zip").getPath()),
         this.cacheDir.toPath());
@@ -61,56 +63,56 @@ public class ProjectCacheCleanerTest {
     unzip(Paths.get(classLoader.getResource("3.1.zip").getPath()),
         this.cacheDir.toPath());
     Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "3.1",
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 2000));
+        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current));
   }
 
   @Test
   /**
    * There's still space in the cache, no deletion.
    */
-  public void testNotDeleting() throws InterruptedException {
-    final Long projectDirMaxSize = 3L;
-    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+  public void testNotDeleting() {
+    final Long projectDirMaxSizeInMB = 7L;
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir,
+        projectDirMaxSizeInMB);
     cleaner.deleteProjectDirsIfNecessary(1);
+
+    assertThat(this.cacheDir.list()).hasSize(3);
   }
 
   @Test
   /**
-   * deleting everything in the cache to accommodate new item.
+   * Deleting everything in the cache to accommodate new item.
    */
-  public void testDeletingAll() throws InterruptedException {
+  public void testDeletingAll() {
     final Long projectDirMaxSize = 3L;
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
-    cleaner.deleteProjectDirsIfNecessary(1);
+    cleaner.deleteProjectDirsIfNecessary(7000000);
+
+    assertThat(this.cacheDir.list()).hasSize(0);
   }
 
   @Test
   /**
-   * deleting least recently used two items in the cache to accommodate new item.
+   * Deleting two least recently used items in the cache to accommodate new item.
    */
-  public void testDeletingLRU2Items() throws InterruptedException {
-    final Long projectDirMaxSize = 3L;
+  public void testDeletingTwoLRUItems() {
+    final Long projectDirMaxSize = 7L;
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
-    cleaner.deleteProjectDirsIfNecessary(1);
+    cleaner.deleteProjectDirsIfNecessary(3000000);
+    assertThat(this.cacheDir.list()).hasSize(1);
+    assertThat(this.cacheDir.list()).contains("3.1");
   }
 
-    /*
-    final List<File> expectedRemainingFiles = new ArrayList<>();
-
-    for (int i = 1; i <= 3; i++) {
-      if (i >= 2) {
-        //the first file will be deleted
-        expectedRemainingFiles.add(pv.getInstalledDir());
-      }
-      // last modified time of millis second granularity of a file is not supported by all file
-      // systems, so sleep for 1 second between creation of each project dir to make their last
-      // modified time different.
-      Thread.sleep(1000);
-    }
-
-    //then
-    assertThat(this.projectsDir.listFiles()).containsExactlyInAnyOrder(expectedRemainingFiles
-        .toArray(new File[expectedRemainingFiles.size()]));*/
+  @Test
+  /**
+   * Deleting the least recently used item in the cache to accommodate new item.
+   */
+  public void testDeletingOneLRUItem() {
+    final Long projectDirMaxSize = 7L;
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    cleaner.deleteProjectDirsIfNecessary(2000000);
+    assertThat(this.cacheDir.list()).hasSize(2);
+    assertThat(this.cacheDir.list()).contains("3.1");
+    assertThat(this.cacheDir.list()).contains("2.1");
   }
-
 }
