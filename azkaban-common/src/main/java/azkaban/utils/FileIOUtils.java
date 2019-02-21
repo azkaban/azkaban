@@ -86,19 +86,6 @@ public class FileIOUtils {
     }
   }
 
-  public static int getFileCount(final File file) {
-    final File[] files = file.listFiles();
-    int count = 0;
-    for (final File f : files) {
-      if (f.isDirectory()) {
-        count += getFileCount(f);
-      } else {
-        count++;
-      }
-    }
-    return count;
-  }
-
 
   /**
    * Dumps a number into a new file.
