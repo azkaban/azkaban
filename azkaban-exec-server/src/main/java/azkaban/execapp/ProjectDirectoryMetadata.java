@@ -22,14 +22,14 @@ import java.io.File;
 import java.nio.file.attribute.FileTime;
 
 
-class ProjectDirectoryMetadata /*implements Comparable<ProjectDirectoryMetadata>*/ {
+class ProjectDirectoryMetadata {
   private final int projectId;
   private final int version;
   private File installedDir;
   private Long dirSizeInByte;
   private FileTime lastAccessTime;
 
-  public ProjectDirectoryMetadata(final int projectId, final int version) {
+  ProjectDirectoryMetadata(final int projectId, final int version) {
     checkArgument(projectId > 0);
     checkArgument(version > 0);
 
@@ -37,43 +37,34 @@ class ProjectDirectoryMetadata /*implements Comparable<ProjectDirectoryMetadata>
     this.version = version;
   }
 
-  public ProjectDirectoryMetadata(final int projectId, final int version, final File installedDir) {
+  ProjectDirectoryMetadata(final int projectId, final int version, final File installedDir) {
     this(projectId, version);
     this.installedDir = installedDir;
   }
 
-  public Long getDirSizeInBytes() {
+  Long getDirSizeInByte() {
     return this.dirSizeInByte;
   }
 
-  public void setDirSizeInBytes(final Long dirSize) {
+  void setDirSizeInByte(final Long dirSize) {
     this.dirSizeInByte = dirSize;
   }
 
-  public int getProjectId() {
+  int getProjectId() {
     return this.projectId;
   }
 
-  public int getVersion() {
+  int getVersion() {
     return this.version;
   }
 
-  public File getInstalledDir() {
+  File getInstalledDir() {
     return this.installedDir;
   }
 
-  public void setInstalledDir(final File installedDir) {
+  void setInstalledDir(final File installedDir) {
     this.installedDir = installedDir;
   }
-
-//  @Override
-//  public int compareTo(final ProjectDirectoryMetadata o) {
-//    if (this.projectId == o.projectId) {
-//      return this.version - o.version;
-//    }
-//
-//    return this.projectId - o.projectId;
-//  }
 
   @Override
   public String toString() {
@@ -81,16 +72,16 @@ class ProjectDirectoryMetadata /*implements Comparable<ProjectDirectoryMetadata>
         "projectId=" + this.projectId +
         ", version=" + this.version +
         ", installedDir=" + this.installedDir +
-        ", dirSize=" + this.dirSizeInByte +
+        ", dirSizeInByte=" + this.dirSizeInByte +
         ", lastAccessTime=" + this.lastAccessTime +
         '}';
   }
 
-  public FileTime getLastAccessTime() {
+  FileTime getLastAccessTime() {
     return this.lastAccessTime;
   }
 
-  public void setLastAccessTime(final FileTime lastAccessTime) {
+  void setLastAccessTime(final FileTime lastAccessTime) {
     this.lastAccessTime = lastAccessTime;
   }
 }

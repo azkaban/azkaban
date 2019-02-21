@@ -80,7 +80,7 @@ class ProjectCacheCleaner {
         final ProjectDirectoryMetadata projectDirMetadata =
             new ProjectDirectoryMetadata(projectId, versionNum, project.toFile());
 
-        projectDirMetadata.setDirSizeInBytes(
+        projectDirMetadata.setDirSizeInByte(
             FlowPreparer.calculateDirSizeAndSave(projectDirMetadata.getInstalledDir()));
         projectDirMetadata.setLastAccessTime(
             Files.getLastModifiedTime(Paths.get(projectDirMetadata.getInstalledDir().toString(),
@@ -99,7 +99,7 @@ class ProjectCacheCleaner {
    */
   private long getProjectDirsTotalSizeInBytes(final List<ProjectDirectoryMetadata> allProjects) {
     final long totalSizeInBytes = allProjects.stream()
-        .mapToLong(ProjectDirectoryMetadata::getDirSizeInBytes).sum();
+        .mapToLong(ProjectDirectoryMetadata::getDirSizeInByte).sum();
     return totalSizeInBytes;
   }
 
@@ -113,7 +113,7 @@ class ProjectCacheCleaner {
         // delete the directory since execution dir is HARD linked to project dir.
         log.debug("deleting project {}", proj);
         FileIOUtils.deleteDirectory(proj.getInstalledDir());
-        sizeToFreeInBytes -= proj.getDirSizeInBytes();
+        sizeToFreeInBytes -= proj.getDirSizeInByte();
       } else {
         break;
       }

@@ -102,7 +102,7 @@ public class FlowPreparerTest {
 
     final long actualDirSize = 1048835;
 
-    assertThat(proj.getDirSizeInBytes()).isEqualTo(actualDirSize);
+    assertThat(proj.getDirSizeInByte()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(
         Paths.get(tmp.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);

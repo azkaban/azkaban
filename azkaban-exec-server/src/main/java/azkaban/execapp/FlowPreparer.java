@@ -154,7 +154,7 @@ class FlowPreparer {
           // perform clean-up if size of all project dirs exceeds the cache size.
           if (isDownloaded && this.projectCacheCleaner.isPresent()) {
             this.projectCacheCleaner.get()
-                .deleteProjectDirsIfNecessary(project.getDirSizeInBytes());
+                .deleteProjectDirsIfNecessary(project.getDirSizeInByte());
           }
 
           // Rename temp dir to a proper project directory name.
@@ -229,7 +229,7 @@ class FlowPreparer {
       final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
       final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, dest);
-      proj.setDirSizeInBytes(calculateDirSizeAndSave(dest));
+      proj.setDirSizeInByte(calculateDirSizeAndSave(dest));
     } finally {
       projectFileHandler.deleteLocalFile();
     }
