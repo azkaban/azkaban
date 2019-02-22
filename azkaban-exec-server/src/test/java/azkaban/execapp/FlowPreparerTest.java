@@ -97,8 +97,7 @@ public class FlowPreparerTest {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, "sample_project_01"));
 
-    final File tmp = this.temporaryFolder.newFolder("tmp");
-    this.instance.downloadProjectIfNotExists(proj, tmp);
+    final File tmp = this.instance.downloadProjectIfNotExists(proj);
 
     final long actualDirSize = 1048835;
 
@@ -112,37 +111,31 @@ public class FlowPreparerTest {
   public void testDownloadingProjectIfNotExists() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, "sample_project_01"));
-    final File tmp = this.temporaryFolder.newFolder("tmp");
-
-    final boolean isDownloaded = this.instance.downloadProjectIfNotExists(proj, tmp);
+    final File tmp = this.instance.downloadProjectIfNotExists(proj);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
         FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
     verify(this.instance, never()).updateLastModifiedTime(projectDirSizeFile);
+    assertThat(tmp).isNotNull();
     assertThat(tmp.list()).contains("sample_flow_01");
-    assertThat(isDownloaded).isTrue();
   }
 
   @Test
   public void testNotDownloadingProjectIfExists() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
         new File(this.projectsDir, "sample_project_01"));
-    final File tmp = this.temporaryFolder.newFolder("tmp");
-
-    this.instance.downloadProjectIfNotExists(proj, tmp);
-
+    File tmp = this.instance.downloadProjectIfNotExists(proj);
     Files.move(tmp.toPath(), proj.getInstalledDir().toPath());
 
     // Try downloading the same project again
-    final boolean isDownloaded = this.instance.downloadProjectIfNotExists(proj, tmp);
+    tmp = this.instance.downloadProjectIfNotExists(proj);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
         FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
     verify(this.instance).updateLastModifiedTime(projectDirSizeFile);
-    assertThat(tmp.list()).isNullOrEmpty();
-    assertThat(isDownloaded).isFalse();
+    assertThat(tmp).isNull();
   }
 
   @Test

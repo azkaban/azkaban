@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.utils.ExecutorServiceUtils;
 import azkaban.utils.FileIOUtils;
 import com.google.common.base.Preconditions;
 import java.io.File;
@@ -27,6 +28,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +52,9 @@ class ProjectCacheCleaner {
     this.projectCacheMaxSizeInMB = projectCacheMaxSizeInMB;
   }
 
+  /**
+   * @return a list of project directories.
+   */
   private List<Path> loadAllProjectDirs() {
     final List<Path> projects = new ArrayList<>();
     for (final File project : this.projectCacheDir.listFiles(new FilenameFilter() {
@@ -69,6 +75,9 @@ class ProjectCacheCleaner {
     return projects;
   }
 
+  /**
+   * @return a list of {@link ProjectDirectoryMetadata} for all project directories
+   */
   private List<ProjectDirectoryMetadata> loadAllProjects() {
     final List<ProjectDirectoryMetadata> allProjects = new ArrayList<>();
     for (final Path project : this.loadAllProjectDirs()) {
@@ -103,25 +112,59 @@ class ProjectCacheCleaner {
     return totalSizeInBytes;
   }
 
-  private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes,
-      final List<ProjectDirectoryMetadata> projectDirMetadataList) {
-    // Sort projects by last reference time in ascending order
-    projectDirMetadataList.sort(Comparator.comparing(ProjectDirectoryMetadata::getLastAccessTime));
-    for (final ProjectDirectoryMetadata proj : projectDirMetadataList) {
-      if (sizeToFreeInBytes > 0) {
-        // Delete the project directory even if flow within is running. It's OK to
-        // delete the directory since execution dir is HARD linked to project dir.
-        log.debug("deleting project {}", proj);
-        FileIOUtils.deleteDirectory(proj.getInstalledDir());
-        sizeToFreeInBytes -= proj.getDirSizeInByte();
-      } else {
-        break;
-      }
+  /**
+   * Delete all the files in parallel
+   *
+   * @param filesToDelete a list of files to delete
+   */
+  private void deleteFilesInParallel(final List<File> filesToDelete) {
+    final int CLEANING_SERVICE_THREAD_NUM = 8;
+    final ExecutorService deletionService = Executors
+        .newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM);
+
+    for (final File toDelete : filesToDelete) {
+      deletionService.submit(() -> FileIOUtils.deleteDirectorySilently(toDelete));
+    }
+
+    try {
+      new ExecutorServiceUtils().gracefulShutdown(deletionService, Duration.ofDays(1));
+    } catch (final InterruptedException e) {
+      log.warn("error when deleting files", e);
     }
   }
 
   /**
-   * Deleting least recently accessed project dirs when there's no room to accommodate new project.
+   * Delete least recently used projects to free up space
+   *
+   * @param sizeToFreeInBytes space to free up
+   * @param projectDirMetadataList a list of candidate files to delete
+   */
+  private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes,
+      final List<ProjectDirectoryMetadata> projectDirMetadataList) {
+    // Sort projects by last reference time in ascending order
+    projectDirMetadataList.sort(Comparator.comparing(ProjectDirectoryMetadata::getLastAccessTime));
+    final List<File> filesToDelete = new ArrayList<>();
+
+    for (final ProjectDirectoryMetadata proj : projectDirMetadataList) {
+      if (sizeToFreeInBytes > 0) {
+        // Delete the project directory even if flow within is running. It's OK to
+        // delete the directory since execution dir is HARD linked to project dir. Note that even
+        // if project is deleted, disk space will be freed up only when all associated execution
+        // dirs are deleted.
+        log.debug("deleting project {}", proj);
+        if (proj.getInstalledDir() != null) {
+          filesToDelete.add(proj.getInstalledDir());
+          sizeToFreeInBytes -= proj.getDirSizeInByte();
+        }
+      } else {
+        break;
+      }
+    }
+    deleteFilesInParallel(filesToDelete);
+  }
+
+  /**
+   * Deleting least recently accessed project dirs when there's no room to accommodate new project
    */
   void deleteProjectDirsIfNecessary(final long newProjectSizeInBytes) {
     final long start = System.currentTimeMillis();

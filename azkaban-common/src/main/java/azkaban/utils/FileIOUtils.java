@@ -74,9 +74,9 @@ public class FileIOUtils {
   }
 
   /**
-   * Delete a directory.
+   * Delete a directory, log the error if deletion fails.
    */
-  public static void deleteDirectory(final File dir) {
+  public static void deleteDirectorySilently(final File dir) {
     if (dir != null) {
       try {
         FileUtils.deleteDirectory(dir);

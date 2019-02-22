@@ -53,6 +53,7 @@ class FlowPreparer {
   // TODO spyne: move to config class
   private final File projectCacheDir;
   private final StorageManager storageManager;
+  // Null if cache clean-up is disabled
   private final Optional<ProjectCacheCleaner> projectCacheCleaner;
   private final ProjectCacheMetrics cacheMetrics;
 
@@ -109,8 +110,10 @@ class FlowPreparer {
     if (!Files.exists(path)) {
       final long sizeInByte = FileUtils.sizeOfDirectory(dir);
       FileIOUtils.dumpNumberToFile(path, sizeInByte);
+      return sizeInByte;
+    } else {
+      return FileIOUtils.readNumberFromFile(path);
     }
-    return FileIOUtils.readNumberFromFile(path);
   }
 
 
@@ -130,10 +133,9 @@ class FlowPreparer {
       final long flowPrepStartTime = System.currentTimeMillis();
 
       // Download project to a temp dir if not exists in local cache.
-      tempDir = createTempDir(project);
       final long start = System.currentTimeMillis();
 
-      final boolean isDownloaded = downloadProjectIfNotExists(project, tempDir);
+      tempDir = downloadProjectIfNotExists(project);
 
       log.info("Downloading zip file for project {} when preparing execution [execid {}] "
               + "completed in {} second(s)", project, flow.getExecutionId(),
@@ -149,14 +151,13 @@ class FlowPreparer {
 
       synchronized (this) {
         criticalSectionStartTime = System.currentTimeMillis();
-        if (!project.getInstalledDir().exists()) {
+        if (tempDir != null) {
           // If new project is downloaded and project dir cache clean-up feature is enabled, then
           // perform clean-up if size of all project dirs exceeds the cache size.
-          if (isDownloaded && this.projectCacheCleaner.isPresent()) {
+          if (this.projectCacheCleaner.isPresent()) {
             this.projectCacheCleaner.get()
                 .deleteProjectDirsIfNecessary(project.getDirSizeInByte());
           }
-
           // Rename temp dir to a proper project directory name.
           Files.move(tempDir.toPath(), project.getInstalledDir().toPath());
         }
@@ -170,13 +171,13 @@ class FlowPreparer {
           (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
           flow.getExecutionId(), execDir.getPath());
     } catch (final Exception ex) {
+      FileIOUtils.deleteDirectorySilently(tempDir);
       log.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
       throw new ExecutorManagerException(ex);
     } finally {
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
       }
-      FileIOUtils.deleteDirectory(tempDir);
     }
   }
 
@@ -189,7 +190,7 @@ class FlowPreparer {
       FileIOUtils.createDeepHardlink(installedDir, execDir);
       return execDir;
     } catch (final Exception ex) {
-      FileIOUtils.deleteDirectory(execDir);
+      FileIOUtils.deleteDirectorySilently(execDir);
       throw ex;
     }
   }
@@ -239,12 +240,11 @@ class FlowPreparer {
    * Download project zip and unzip it if not exists locally.
    *
    * @param proj project to download
-   * @param dest destination directory which project is downloaded and unzipped to
-   * @return true if a new project is downloaded, false otherwise.
+   * @return the temp dir where the new project is downloaded to, null if no project is downloaded.
    * @throws IOException if downloading or unzipping fails.
    */
   @VisibleForTesting
-  boolean downloadProjectIfNotExists(final ProjectDirectoryMetadata proj, final File dest)
+  File downloadProjectIfNotExists(final ProjectDirectoryMetadata proj)
       throws IOException {
     final String projectDir = generateProjectDirName(proj);
     if (proj.getInstalledDir() == null) {
@@ -261,12 +261,13 @@ class FlowPreparer {
       // projects when performing project directory clean-up.
       updateLastModifiedTime(
           Paths.get(proj.getInstalledDir().getPath(), PROJECT_DIR_SIZE_FILE_NAME));
-      return false;
+      return null;
     }
 
     this.cacheMetrics.incrementCacheMiss();
-    downloadAndUnzipProject(proj, dest);
-    return true;
+    final File tempDir = createTempDir(proj);
+    downloadAndUnzipProject(proj, tempDir);
+    return tempDir;
   }
 
   private File createExecDir(final ExecutableFlow flow) {
