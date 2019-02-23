@@ -52,7 +52,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FlowPreparerTest {
 
-  public static final String SAMPLE_FLOW_01 = "sample_flow_01";
+  public static final String SAMPLE_FLOW_04 = "sample_flow_04";
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -62,7 +62,7 @@ public class FlowPreparerTest {
 
   private StorageManager createMockStorageManager() {
     final ClassLoader classLoader = getClass().getClassLoader();
-    final File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
+    final File file = new File(classLoader.getResource(SAMPLE_FLOW_04 + ".zip").getFile());
 
     final ProjectFileHandler projectFileHandler = mock(ProjectFileHandler.class);
     when(projectFileHandler.getFileType()).thenReturn("zip");
@@ -95,7 +95,7 @@ public class FlowPreparerTest {
   @Test
   public void testProjectDirSizeIsSet() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
-        new File(this.projectsDir, "sample_project_01"));
+        new File(this.projectsDir, SAMPLE_FLOW_04));
 
     final File tmp = this.instance.downloadProjectIfNotExists(proj);
 
@@ -110,7 +110,7 @@ public class FlowPreparerTest {
   @Test
   public void testDownloadingProjectIfNotExists() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
-        new File(this.projectsDir, "sample_project_01"));
+        new File(this.projectsDir, SAMPLE_FLOW_04));
     final File tmp = this.instance.downloadProjectIfNotExists(proj);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
@@ -118,13 +118,13 @@ public class FlowPreparerTest {
 
     verify(this.instance, never()).updateLastModifiedTime(projectDirSizeFile);
     assertThat(tmp).isNotNull();
-    assertThat(tmp.list()).contains("sample_flow_01");
+    assertThat(tmp.list()).contains(SAMPLE_FLOW_04);
   }
 
   @Test
   public void testNotDownloadingProjectIfExists() throws Exception {
     final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
-        new File(this.projectsDir, "sample_project_01"));
+        new File(this.projectsDir, SAMPLE_FLOW_04));
     File tmp = this.instance.downloadProjectIfNotExists(proj);
     Files.move(tmp.toPath(), proj.getInstalledDir().toPath());
 
@@ -168,7 +168,7 @@ public class FlowPreparerTest {
     for (final ExecutableFlow flow : executableFlows) {
       final File execDir = new File(this.executionsDir, String.valueOf(flow.getExecutionId()));
       assertTrue(execDir.exists());
-      assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
+      assertTrue(new File(execDir, SAMPLE_FLOW_04).exists());
     }
   }
 
@@ -182,7 +182,7 @@ public class FlowPreparerTest {
     this.instance.setup(executableFlow);
     final File execDir = new File(this.executionsDir, "12345");
     assertTrue(execDir.exists());
-    assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
+    assertTrue(new File(execDir, SAMPLE_FLOW_04).exists());
   }
 
 
