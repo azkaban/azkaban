@@ -151,7 +151,7 @@ class FlowPreparer {
 
       synchronized (this) {
         criticalSectionStartTime = System.currentTimeMillis();
-        if (tempDir != null) {
+        if (!project.getInstalledDir().exists() && tempDir != null) {
           // If new project is downloaded and project dir cache clean-up feature is enabled, then
           // perform clean-up if size of all project dirs exceeds the cache size.
           if (this.projectCacheCleaner.isPresent()) {
@@ -209,6 +209,9 @@ class FlowPreparer {
     }
   }
 
+  /**
+   * @return the project directory name of a project
+   */
   private String generateProjectDirName(final ProjectDirectoryMetadata proj) {
     return String.valueOf(proj.getProjectId()) + "." + String.valueOf(proj.getVersion());
   }
