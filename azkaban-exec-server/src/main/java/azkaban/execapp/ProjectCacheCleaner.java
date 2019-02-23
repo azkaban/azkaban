@@ -117,6 +117,7 @@ class ProjectCacheCleaner {
    *
    * @param filesToDelete a list of files to delete
    */
+  @SuppressWarnings("FutureReturnValueIgnored")
   private void deleteFilesInParallel(final List<File> filesToDelete) {
     final int CLEANING_SERVICE_THREAD_NUM = 8;
     final ExecutorService deletionService = Executors
