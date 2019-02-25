@@ -303,6 +303,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxSetJobOverrideProperty(project, ret, req, user);
         }
+      } else if (ajaxName.equals("checkForWritePermission")) {
+        ajaxCheckForWritePermission(project, user, ret);
       } else {
         ret.put("error", "Cannot execute command " + ajaxName);
       }
@@ -1088,6 +1090,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void ajaxGetProxyUsers(final Project project, final HashMap<String, Object> ret) {
     final String[] proxyUsers = project.getProxyUsers().toArray(new String[0]);
     ret.put("proxyUsers", proxyUsers);
+  }
+
+  private void ajaxCheckForWritePermission(final Project project, final User user,
+      final HashMap<String, Object> ret) {
+    ret.put("hasWritePermission", hasPermission(project, user, Type.WRITE));
   }
 
   private void handleProjectLogsPage(final HttpServletRequest req,
