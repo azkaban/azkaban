@@ -201,14 +201,16 @@ public class FlowRunnerManager implements EventListener,
             getClass().getClassLoader());
 
     Long projectDirMaxSize = null;
+    ProjectCacheCleaner cleaner = null;
     try {
       projectDirMaxSize = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE_IN_MB);
+      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectDirMaxSize);
     } catch (final UndefinedPropertyException ex) {
     }
 
     // Create a flow preparer
     this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, projectDirMaxSize);
+        this.projectDirectory, cleaner);
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
@@ -960,7 +962,7 @@ public class FlowRunnerManager implements EventListener,
                     AzkabanExecutorServer.getApp().getPort()), "The executor can not be null");
             this.executorId = executor.getId();
           } catch (final Exception e) {
-            logger.error("Failed to fetch executor ", e);
+            FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
         }
       } else if (FlowRunnerManager.this.active) {
@@ -969,11 +971,11 @@ public class FlowRunnerManager implements EventListener,
           final int execId = FlowRunnerManager.this.executorLoader
               .selectAndUpdateExecution(this.executorId);
           if (execId != -1) {
-            logger.info("Submitting flow " + execId);
+            FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
           }
         } catch (final Exception e) {
-          logger.error("Failed to submit flow ", e);
+          FlowRunnerManager.logger.error("Failed to submit flow ", e);
         }
       }
     }
