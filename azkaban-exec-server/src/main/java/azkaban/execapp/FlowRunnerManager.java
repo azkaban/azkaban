@@ -338,11 +338,6 @@ public class FlowRunnerManager implements EventListener,
     try {
       this.preparingFlowCount.getAndIncrement();
       runner = createFlowRunner(execId);
-      try {
-        Thread.sleep(1000 * 20);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-      }
     } finally {
       this.preparingFlowCount.decrementAndGet();
     }
