@@ -78,6 +78,7 @@ public class ExecutionControllerTest {
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
     this.controller = new ExecutionController(this.props, this.loader, this.commonMetrics,
         this.apiGateway, this.alertHolder, this.executorHealthChecker);
+
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
     final Executor executor3 = new Executor(3, "localhost", 12347, false);
