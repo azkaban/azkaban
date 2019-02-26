@@ -290,8 +290,8 @@ public class FlowRunnerManager implements EventListener,
     if (!this.active) {
       // When deactivating this executor, this call will return until every thread in {@link
       // #createFlowRunner} to finish. When deploying new executor, old running executor will be
-      // deactivated before activating new one and only one executor is allowed to
-      // delete/hardlinking project cache to avoid race condition described in {@link
+      // deactivated before new one is activated and only one executor is allowed to
+      // delete/hard-linking project dirs to avoid race condition described in {@link
       // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
       // finishes guarantees the old executor won't access {@link FlowPreparer#setup} after
       // deactivation.
