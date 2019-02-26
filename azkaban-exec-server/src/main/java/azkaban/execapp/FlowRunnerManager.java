@@ -303,8 +303,10 @@ public class FlowRunnerManager implements EventListener,
    * Wait until ongoing flow preparation work finishes.
    */
   private void waitUntilFlowPreparationFinish() {
-    while (this.preparingFlowCount.intValue() == 0) {
+    while (this.preparingFlowCount.intValue() != 0) {
       try {
+        logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
+            + "deactivation.");
         Thread.sleep(Duration.ofSeconds(5).toMillis());
       } catch (final InterruptedException ex) {
         logger.debug(ex);
@@ -336,6 +338,11 @@ public class FlowRunnerManager implements EventListener,
     try {
       this.preparingFlowCount.getAndIncrement();
       runner = createFlowRunner(execId);
+      try {
+        Thread.sleep(1000 * 20);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+      }
     } finally {
       this.preparingFlowCount.decrementAndGet();
     }
