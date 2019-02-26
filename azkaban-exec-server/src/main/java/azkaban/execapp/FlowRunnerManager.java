@@ -56,6 +56,7 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,6 +71,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -117,6 +119,7 @@ public class FlowRunnerManager implements EventListener,
   // in the queue waiting to be executed or in executing state.
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
+  private AtomicInteger preparingFlowCount;
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
@@ -147,7 +150,7 @@ public class FlowRunnerManager implements EventListener,
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
-  private boolean active;
+  private volatile boolean active;
 
   @Inject
   public FlowRunnerManager(final Props props,
@@ -283,6 +286,28 @@ public class FlowRunnerManager implements EventListener,
           "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
     this.active = isActive;
+    if (!this.active) {
+      // When deactivating this executor, the call will return until flow preparation
+      // work in {@link #createFlowRunner} to finish. When deploying new executor, old running
+      // executor will be deactivated before activating new one and only one executor is allowed
+      // to delete/hardlinking project cache to avoid race condition described in {@link
+      // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
+      // guarantees the old executor won't access {@link FlowPreparer#setup} after deactivation.
+      waitUntilFlowPreparationFinish();
+    }
+  }
+
+  /**
+   * Wait until ongoing flow preparation work finishes.
+   */
+  private void waitUntilFlowPreparationFinish() {
+    while (this.preparingFlowCount.intValue() == 0) {
+      try {
+        Thread.sleep(Duration.ofSeconds(5).toMillis());
+      } catch (final InterruptedException ex) {
+        logger.debug(ex);
+      }
+    }
   }
 
   public long getLastFlowSubmittedTime() {
@@ -304,13 +329,22 @@ public class FlowRunnerManager implements EventListener,
     if (isAlreadyRunning(execId)) {
       return;
     }
-    final FlowRunner runner = createFlowRunner(execId);
+
+    FlowRunner runner = null;
+    try {
+      this.preparingFlowCount.getAndIncrement();
+      runner = createFlowRunner(execId);
+    } finally {
+      this.preparingFlowCount.decrementAndGet();
+    }
+
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
     }
     submitFlowRunner(runner);
   }
+
 
   private boolean isAlreadyRunning(final int execId) throws ExecutorManagerException {
     if (this.runningFlows.containsKey(execId)) {
