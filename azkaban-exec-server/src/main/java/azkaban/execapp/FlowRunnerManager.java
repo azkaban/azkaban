@@ -119,7 +119,8 @@ public class FlowRunnerManager implements EventListener,
   // in the queue waiting to be executed or in executing state.
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
-  private AtomicInteger preparingFlowCount;
+  // keep track of the number of flow being setup({@link createFlowRunner()})
+  private final AtomicInteger preparingFlowCount = new AtomicInteger(0);
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
@@ -287,12 +288,13 @@ public class FlowRunnerManager implements EventListener,
     }
     this.active = isActive;
     if (!this.active) {
-      // When deactivating this executor, the call will return until flow preparation
-      // work in {@link #createFlowRunner} to finish. When deploying new executor, old running
-      // executor will be deactivated before activating new one and only one executor is allowed
-      // to delete/hardlinking project cache to avoid race condition described in {@link
+      // When deactivating this executor, this call will return until every thread in {@link
+      // #createFlowRunner} to finish. When deploying new executor, old running executor will be
+      // deactivated before activating new one and only one executor is allowed to
+      // delete/hardlinking project cache to avoid race condition described in {@link
       // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
-      // guarantees the old executor won't access {@link FlowPreparer#setup} after deactivation.
+      // finishes guarantees the old executor won't access {@link FlowPreparer#setup} after
+      // deactivation.
       waitUntilFlowPreparationFinish();
     }
   }
