@@ -288,8 +288,8 @@ public class FlowRunnerManager implements EventListener,
     }
     this.active = isActive;
     if (!this.active) {
-      // When deactivating this executor, this call will return until every thread in {@link
-      // #createFlowRunner} to finish. When deploying new executor, old running executor will be
+      // When deactivating this executor, this call will wait to return until every thread in {@link
+      // #createFlowRunner} has finished. When deploying new executor, old running executor will be
       // deactivated before new one is activated and only one executor is allowed to
       // delete/hard-linking project dirs to avoid race condition described in {@link
       // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
@@ -334,13 +334,7 @@ public class FlowRunnerManager implements EventListener,
       return;
     }
 
-    FlowRunner runner = null;
-    try {
-      this.preparingFlowCount.getAndIncrement();
-      runner = createFlowRunner(execId);
-    } finally {
-      this.preparingFlowCount.decrementAndGet();
-    }
+    final FlowRunner runner = createFlowRunner(execId);
 
     // Check again.
     if (isAlreadyRunning(execId)) {
@@ -1005,6 +999,7 @@ public class FlowRunnerManager implements EventListener,
         }
       } else if (FlowRunnerManager.this.active) {
         try {
+          FlowRunnerManager.this.preparingFlowCount.getAndIncrement();
           // Todo jamiesjc: check executor capacity before polling from DB
           final int execId = FlowRunnerManager.this.executorLoader
               .selectAndUpdateExecution(this.executorId);
@@ -1014,6 +1009,8 @@ public class FlowRunnerManager implements EventListener,
           }
         } catch (final Exception e) {
           FlowRunnerManager.logger.error("Failed to submit flow ", e);
+        } finally {
+          FlowRunnerManager.this.preparingFlowCount.getAndIncrement();
         }
       }
     }
