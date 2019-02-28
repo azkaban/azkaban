@@ -53,10 +53,10 @@ import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -304,13 +304,9 @@ public class FlowRunnerManager implements EventListener,
    */
   private void waitUntilFlowPreparationFinish() {
     while (this.preparingFlowCount.intValue() != 0) {
-      try {
-        logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
-            + "deactivation.");
-        Thread.sleep(Duration.ofSeconds(5).toMillis());
-      } catch (final InterruptedException ex) {
-        logger.debug(ex);
-      }
+      logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
+          + "deactivation.");
+      Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
     }
   }
 
@@ -998,19 +994,24 @@ public class FlowRunnerManager implements EventListener,
           }
         }
       } else if (FlowRunnerManager.this.active) {
-        try {
-          FlowRunnerManager.this.preparingFlowCount.getAndIncrement();
-          // Todo jamiesjc: check executor capacity before polling from DB
-          final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId);
-          if (execId != -1) {
-            FlowRunnerManager.logger.info("Submitting flow " + execId);
-            submitFlow(execId);
+        FlowRunnerManager.this.preparingFlowCount.getAndIncrement();
+        if (FlowRunnerManager.this.active) {
+          try {
+            // Todo jamiesjc: check executor capacity before polling from DB
+            final int execId = FlowRunnerManager.this.executorLoader
+                .selectAndUpdateExecution(this.executorId);
+            if (execId != -1) {
+              FlowRunnerManager.logger.info("Submitting flow " + execId);
+              Thread.sleep(1000 * 30);
+              submitFlow(execId);
+            }
+          } catch (final Exception e) {
+            FlowRunnerManager.logger.error("Failed to submit flow ", e);
+          } finally {
+            FlowRunnerManager.this.preparingFlowCount.getAndDecrement();
           }
-        } catch (final Exception e) {
-          FlowRunnerManager.logger.error("Failed to submit flow ", e);
-        } finally {
-          FlowRunnerManager.this.preparingFlowCount.getAndIncrement();
+        } else {
+          FlowRunnerManager.this.preparingFlowCount.getAndDecrement();
         }
       }
     }
