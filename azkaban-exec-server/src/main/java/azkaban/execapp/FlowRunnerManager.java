@@ -53,10 +53,10 @@ import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -276,7 +276,7 @@ public class FlowRunnerManager implements EventListener,
   }
 
   public void setExecutorActive(final boolean isActive, final String host, final int port)
-      throws ExecutorManagerException {
+      throws ExecutorManagerException, InterruptedException {
     final Executor executor = this.executorLoader.fetchExecutor(host, port);
     Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
     if (executor.isActive() != isActive) {
@@ -302,11 +302,12 @@ public class FlowRunnerManager implements EventListener,
   /**
    * Wait until ongoing flow preparation work finishes.
    */
-  private void waitUntilFlowPreparationFinish() {
+  private void waitUntilFlowPreparationFinish() throws InterruptedException {
+    final Duration SLEEP_INTERVAL = Duration.ofSeconds(5);
     while (this.preparingFlowCount.intValue() != 0) {
       logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
           + "deactivation.");
-      Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+      Thread.sleep(SLEEP_INTERVAL.toMillis());
     }
   }
 
@@ -1002,7 +1003,6 @@ public class FlowRunnerManager implements EventListener,
                 .selectAndUpdateExecution(this.executorId);
             if (execId != -1) {
               FlowRunnerManager.logger.info("Submitting flow " + execId);
-              Thread.sleep(1000 * 30);
               submitFlow(execId);
             }
           } catch (final Exception e) {

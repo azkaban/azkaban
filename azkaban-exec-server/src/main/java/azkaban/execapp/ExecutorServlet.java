@@ -370,7 +370,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   }
 
   private void setActiveInternal(final boolean value)
-      throws ExecutorManagerException {
+      throws ExecutorManagerException, InterruptedException {
     this.flowRunnerManager.setExecutorActive(value,
         this.application.getHost(), this.application.getPort());
   }
