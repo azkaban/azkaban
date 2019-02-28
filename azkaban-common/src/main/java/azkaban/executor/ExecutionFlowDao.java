@@ -289,11 +289,13 @@ public class ExecutionFlowDao {
   public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ? where exec_id = ?";
+    final String selectExecutionForUpdate = isActive ?
+        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
+        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
-      final List<Integer> execIds = transOperator.query(
-          SelectFromExecutionFlows.selectExecutionForUpdateQueryString(executorId, isActive),
-          new SelectFromExecutionFlows());
+      final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
+          new SelectFromExecutionFlows(), executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
@@ -315,16 +317,17 @@ public class ExecutionFlowDao {
   public static class SelectFromExecutionFlows implements
       ResultSetHandler<List<Integer>> {
 
-    static String selectExecutionForUpdateQueryString(final int executorId,
-        final boolean isActive) {
-      final String useExecutorCondition = isActive ?
-          String.format("(use_executor is NULL or use_executor = %d)", executorId) :
-          String.format("use_executor = %d", executorId);
-      return "SELECT exec_id from execution_flows where"
-          + " status = " + Status.PREPARING.getNumVal()
-          + " and executor_id is NULL and flow_data is NOT NULL and " + useExecutorCondition
-          + " ORDER BY submit_time ASC LIMIT 1 FOR UPDATE";
-    }
+    private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
+        "SELECT exec_id from execution_flows WHERE status = " + Status.PREPARING.getNumVal()
+            + " and executor_id is NULL and flow_data is NOT NULL and %s"
+            + " ORDER BY submit_time ASC LIMIT 1 FOR UPDATE";
+
+    public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
+        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
+            "(use_executor is NULL or use_executor = ?)");
+
+    public static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
+        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "use_executor = ?");
 
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {
