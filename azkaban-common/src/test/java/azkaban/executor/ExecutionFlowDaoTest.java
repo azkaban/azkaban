@@ -505,8 +505,8 @@ public class ExecutionFlowDaoTest {
     flow.setExecutionId(1);
     this.executionFlowDao.uploadExecutableFlow(flow);
     final Executor executor = this.executorDao.addExecutor("localhost", 12345);
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId())).isEqualTo(flow
-        .getExecutionId());
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true))
+        .isEqualTo(flow.getExecutionId());
     assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo
         (executor);
   }

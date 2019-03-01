@@ -981,11 +981,11 @@ public class FlowRunnerManager implements EventListener,
             FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
         }
-      } else if (FlowRunnerManager.this.active) {
+      } else {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
           final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId);
+              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
           if (execId != -1) {
             FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
