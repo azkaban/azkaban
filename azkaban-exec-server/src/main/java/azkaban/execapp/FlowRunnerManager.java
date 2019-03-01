@@ -356,6 +356,11 @@ public class FlowRunnerManager implements EventListener,
     return false;
   }
 
+  private boolean isExecutorSpecified(final ExecutableFlow flow) {
+    return flow.getExecutionOptions().getFlowParameters()
+        .containsKey(ExecutionOptions.USE_EXECUTOR);
+  }
+
   private FlowRunner createFlowRunner(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow;
     flow = this.executorLoader.fetchExecutableFlow(execId);
@@ -367,8 +372,7 @@ public class FlowRunnerManager implements EventListener,
     // Sets up the project files and execution directory.
     this.preparingFlowCount.incrementAndGet();
     try {
-      if (this.active || flow.getExecutionOptions().getFlowParameters()
-          .containsKey(ExecutionOptions.USE_EXECUTOR)) {
+      if (this.active || isExecutorSpecified(flow)) {
         this.flowPreparer.setup(flow);
       } else {
         // Unset the executor.
