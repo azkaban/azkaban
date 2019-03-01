@@ -96,7 +96,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   private ExecutableFlow getExecutableFlowMetadata(
-      ExecutableFlow fullExFlow) {
+      final ExecutableFlow fullExFlow) {
     final Flow flow = new Flow(fullExFlow.getId());
     final Project project = new Project(fullExFlow.getProjectId(), null);
     project.setVersion(fullExFlow.getVersion());
@@ -452,7 +452,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId) throws ExecutorManagerException {
+  public int selectAndUpdateExecution(final int executorId) {
     return 1;
+  }
+
+  @Override
+  public void unsetExecutorIdForExecution(final int executionId) {
   }
 }

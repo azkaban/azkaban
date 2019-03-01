@@ -333,6 +333,7 @@ public class FlowRunnerManager implements EventListener,
 
     final FlowRunner runner = createFlowRunner(execId);
 
+
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -366,7 +367,21 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Sets up the project files and execution directory.
-    this.flowPreparer.setup(flow);
+    if (this.active) {
+      this.preparingFlowCount.incrementAndGet();
+      try {
+        if (this.active) {
+          this.flowPreparer.setup(flow);
+        } else {
+          // Unset the executor.
+          this.executorLoader.unsetExecutorIdForExecution(execId);
+          throw new ExecutorManagerException("executor became inactive before setting up the "
+              + "flow " + execId);
+        }
+      } finally {
+        this.preparingFlowCount.decrementAndGet();
+      }
+    }
 
     // Setup flow runner
     FlowWatcher watcher = null;
@@ -995,23 +1010,16 @@ public class FlowRunnerManager implements EventListener,
           }
         }
       } else if (FlowRunnerManager.this.active) {
-        FlowRunnerManager.this.preparingFlowCount.getAndIncrement();
-        if (FlowRunnerManager.this.active) {
-          try {
-            // Todo jamiesjc: check executor capacity before polling from DB
-            final int execId = FlowRunnerManager.this.executorLoader
-                .selectAndUpdateExecution(this.executorId);
-            if (execId != -1) {
-              FlowRunnerManager.logger.info("Submitting flow " + execId);
-              submitFlow(execId);
-            }
-          } catch (final Exception e) {
-            FlowRunnerManager.logger.error("Failed to submit flow ", e);
-          } finally {
-            FlowRunnerManager.this.preparingFlowCount.getAndDecrement();
+        try {
+          // Todo jamiesjc: check executor capacity before polling from DB
+          final int execId = FlowRunnerManager.this.executorLoader
+              .selectAndUpdateExecution(this.executorId);
+          if (execId != -1) {
+            FlowRunnerManager.logger.info("Submitting flow " + execId);
+            submitFlow(execId);
           }
-        } else {
-          FlowRunnerManager.this.preparingFlowCount.getAndDecrement();
+        } catch (final Exception e) {
+          FlowRunnerManager.logger.error("Failed to submit flow ", e);
         }
       }
     }

@@ -282,4 +282,6 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   int selectAndUpdateExecution(final int executorId) throws ExecutorManagerException;
+
+  void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
 }
