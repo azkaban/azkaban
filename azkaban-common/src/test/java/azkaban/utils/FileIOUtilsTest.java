@@ -135,11 +135,6 @@ public class FileIOUtilsTest {
   }
 
   @Test
-  public void testFileCount() {
-    assertThat(FileIOUtils.getFileCount(this.baseDir)).isEqualTo(5);
-  }
-
-  @Test
   public void testHardlinkCopy() throws IOException {
     final int hardLinkCount = FileIOUtils.createDeepHardlink(this.sourceDir, this.destDir);
     assertThat(areDirsEqual(this.sourceDir, this.destDir, true)).isTrue();

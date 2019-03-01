@@ -36,8 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -45,7 +47,7 @@ import org.apache.log4j.Logger;
  */
 public class FileIOUtils {
 
-  private final static Logger logger = Logger.getLogger(FileIOUtils.class);
+  private static final Logger log = LoggerFactory.getLogger(FileIOUtils.class);
 
   /**
    * Check if a directory is writable
@@ -72,17 +74,17 @@ public class FileIOUtils {
     return true;
   }
 
-  public static int getFileCount(final File file) {
-    final File[] files = file.listFiles();
-    int count = 0;
-    for (final File f : files) {
-      if (f.isDirectory()) {
-        count += getFileCount(f);
-      } else {
-        count++;
+  /**
+   * Delete a directory, log the error if deletion fails.
+   */
+  public static void deleteDirectorySilently(final File dir) {
+    if (dir != null) {
+      try {
+        FileUtils.deleteDirectory(dir);
+      } catch (final IOException e) {
+        log.error("error when deleting dir {}", dir, e);
       }
     }
-    return count;
   }
 
 
@@ -98,7 +100,7 @@ public class FileIOUtils {
         .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
     } catch (final IOException e) {
-      logger.error(String.format("Failed to write the number %s to the file %s", num, filePath), e);
+      log.error("Failed to write the number {} to the file {}", num, filePath, e);
       throw e;
     }
   }
