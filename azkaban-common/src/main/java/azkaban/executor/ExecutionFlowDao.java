@@ -280,6 +280,9 @@ public class ExecutionFlowDao {
     }
   }
 
+  /**
+   * set executor id to null for the execution id
+   */
   public void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException {
     final String UNSET_EXECUTOR = "UPDATE execution_flows SET executor_id = null where exec_id = ?";
 

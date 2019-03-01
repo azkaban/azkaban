@@ -333,14 +333,12 @@ public class FlowRunnerManager implements EventListener,
 
     final FlowRunner runner = createFlowRunner(execId);
 
-
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
     }
     submitFlowRunner(runner);
   }
-
 
   private boolean isAlreadyRunning(final int execId) throws ExecutorManagerException {
     if (this.runningFlows.containsKey(execId)) {
@@ -381,6 +379,8 @@ public class FlowRunnerManager implements EventListener,
       } finally {
         this.preparingFlowCount.decrementAndGet();
       }
+    } else {
+      this.executorLoader.unsetExecutorIdForExecution(execId);
     }
 
     // Setup flow runner
