@@ -281,6 +281,9 @@ public interface ExecutorLoader {
   int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
 
+  void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
+
   int selectAndUpdateExecution(final int executorId, boolean isActive)
       throws ExecutorManagerException;
+
 }

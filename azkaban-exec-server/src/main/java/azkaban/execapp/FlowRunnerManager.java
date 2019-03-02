@@ -58,6 +58,7 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,6 +73,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -119,6 +121,8 @@ public class FlowRunnerManager implements EventListener,
   // in the queue waiting to be executed or in executing state.
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
+  // keep track of the number of flow being setup({@link createFlowRunner()})
+  private final AtomicInteger preparingFlowCount = new AtomicInteger(0);
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
@@ -150,7 +154,7 @@ public class FlowRunnerManager implements EventListener,
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
-  private boolean active;
+  private volatile boolean active;
 
   @Inject
   public FlowRunnerManager(final Props props,
@@ -277,7 +281,7 @@ public class FlowRunnerManager implements EventListener,
   }
 
   public void setExecutorActive(final boolean isActive, final String host, final int port)
-      throws ExecutorManagerException {
+      throws ExecutorManagerException, InterruptedException {
     final Executor executor = this.executorLoader.fetchExecutor(host, port);
     Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
     if (executor.isActive() != isActive) {
@@ -288,6 +292,28 @@ public class FlowRunnerManager implements EventListener,
           "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
     this.active = isActive;
+    if (!this.active) {
+      // When deactivating this executor, this call will wait to return until every thread in {@link
+      // #createFlowRunner} has finished. When deploying new executor, old running executor will be
+      // deactivated before new one is activated and only one executor is allowed to
+      // delete/hard-linking project dirs to avoid race condition described in {@link
+      // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
+      // finishes guarantees the old executor won't access {@link FlowPreparer#setup} after
+      // deactivation.
+      waitUntilFlowPreparationFinish();
+    }
+  }
+
+  /**
+   * Wait until ongoing flow preparation work finishes.
+   */
+  private void waitUntilFlowPreparationFinish() throws InterruptedException {
+    final Duration SLEEP_INTERVAL = Duration.ofSeconds(5);
+    while (this.preparingFlowCount.intValue() != 0) {
+      logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
+          + "deactivation.");
+      Thread.sleep(SLEEP_INTERVAL.toMillis());
+    }
   }
 
   public long getLastFlowSubmittedTime() {
@@ -309,7 +335,9 @@ public class FlowRunnerManager implements EventListener,
     if (isAlreadyRunning(execId)) {
       return;
     }
+
     final FlowRunner runner = createFlowRunner(execId);
+
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -333,6 +361,15 @@ public class FlowRunnerManager implements EventListener,
     return false;
   }
 
+  /**
+   * return whether this execution has useExecutor defined. useExecutor is for running test
+   * executions on inactive executor.
+   */
+  private boolean isExecutorSpecified(final ExecutableFlow flow) {
+    return flow.getExecutionOptions().getFlowParameters()
+        .containsKey(ExecutionOptions.USE_EXECUTOR);
+  }
+
   private FlowRunner createFlowRunner(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow;
     flow = this.executorLoader.fetchExecutableFlow(execId);
@@ -341,6 +378,8 @@ public class FlowRunnerManager implements EventListener,
           + execId);
     }
 
+    // Sets up the project files and execution directory.
+    this.preparingFlowCount.incrementAndGet();
     // Record the time between submission, and when the flow preparation/execution starts.
     // Note that since submit time is recorded on the web server, while flow preparation is on
     // the executor, there could be some inaccuracies due to clock skew.
@@ -348,10 +387,18 @@ public class FlowRunnerManager implements EventListener,
         flow.getExecutableFlow().getSubmitTime());
 
     final Timer.Context flowPrepTimerContext = commonMetrics.getFlowSetupTimerContext();
+
     try {
-      // Sets up the project files and execution directory.
-      this.flowPreparer.setup(flow);
+      if (this.active || isExecutorSpecified(flow)) {
+        this.flowPreparer.setup(flow);
+      } else {
+        // Unset the executor.
+        this.executorLoader.unsetExecutorIdForExecution(execId);
+        throw new ExecutorManagerException("executor became inactive before setting up the "
+            + "flow " + execId);
+      }
     } finally {
+      this.preparingFlowCount.decrementAndGet();
       flowPrepTimerContext.stop();
     }
 

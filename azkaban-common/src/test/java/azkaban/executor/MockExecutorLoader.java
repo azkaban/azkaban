@@ -456,4 +456,8 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     return 1;
   }
+
+  @Override
+  public void unsetExecutorIdForExecution(final int executionId) {
+  }
 }

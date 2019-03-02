@@ -286,6 +286,23 @@ public class ExecutionFlowDao {
     }
   }
 
+  /**
+   * set executor id to null for the execution id
+   */
+  public void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException {
+    final String UNSET_EXECUTOR = "UPDATE execution_flows SET executor_id = null where exec_id = ?";
+
+    final SQLTransaction<Integer> unsetExecutor =
+        transOperator -> transOperator.update(UNSET_EXECUTOR, executionId);
+
+    try {
+      this.dbOperator.transaction(unsetExecutor);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error unsetting executor id for execution " + executionId,
+          e);
+    }
+  }
+
   public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ? where exec_id = ?";
