@@ -443,7 +443,7 @@ public class Utils {
       return 0L;
     }
 
-    long size = 0L;
+    final long size;
     if (strMemSize.endsWith("g") || strMemSize.endsWith("G")
         || strMemSize.endsWith("m") || strMemSize.endsWith("M")
         || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
@@ -453,7 +453,7 @@ public class Utils {
       size = Long.parseLong(strMemSize);
     }
 
-    long sizeInKb = 0L;
+    final long sizeInKb;
     if (strMemSize.endsWith("g") || strMemSize.endsWith("G")) {
       sizeInKb = size * 1024L * 1024L;
     } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {

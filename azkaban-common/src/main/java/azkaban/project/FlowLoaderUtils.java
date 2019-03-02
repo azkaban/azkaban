@@ -20,6 +20,7 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
 import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.validator.ValidationReport;
+import azkaban.utils.MemConfValue;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
@@ -253,28 +254,24 @@ public class FlowLoaderUtils {
       return;
     }
 
-    final String maxXms = props.getString(
-        Constants.JobProperties.JOB_MAX_XMS, Constants.JobProperties.MAX_XMS_DEFAULT);
-    final String maxXmx = props.getString(
-        Constants.JobProperties.JOB_MAX_XMX, Constants.JobProperties.MAX_XMX_DEFAULT);
-    final long sizeMaxXms = Utils.parseMemString(maxXms);
-    final long sizeMaxXmx = Utils.parseMemString(maxXmx);
+    final MemConfValue maxXms = MemConfValue.parseMaxXms(props);
+    final MemConfValue maxXmx = MemConfValue.parseMaxXmx(props);
 
     for (final String jobName : jobPropsMap.keySet()) {
       final Props jobProps = jobPropsMap.get(jobName);
       final String xms = jobProps.getString(XMS, null);
       if (xms != null && !PropsUtils.isVariableReplacementPattern(xms)
-          && Utils.parseMemString(xms) > sizeMaxXms) {
+          && Utils.parseMemString(xms) > maxXms.getSize()) {
         errors.add(String.format(
             "%s: Xms value has exceeded the allowed limit (max Xms = %s)",
-            jobName, maxXms));
+            jobName, maxXms.getString()));
       }
       final String xmx = jobProps.getString(XMX, null);
       if (xmx != null && !PropsUtils.isVariableReplacementPattern(xmx)
-          && Utils.parseMemString(xmx) > sizeMaxXmx) {
+          && Utils.parseMemString(xmx) > maxXmx.getSize()) {
         errors.add(String.format(
             "%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-            jobName, maxXmx));
+            jobName, maxXmx.getString()));
       }
 
       // job callback properties check

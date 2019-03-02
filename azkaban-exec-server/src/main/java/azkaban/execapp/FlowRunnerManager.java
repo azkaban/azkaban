@@ -36,6 +36,7 @@ import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.metric.MetricReportManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectWhitelist;
 import azkaban.project.ProjectWhitelist.WhitelistType;
@@ -52,6 +53,7 @@ import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
+import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
@@ -135,6 +137,7 @@ public class FlowRunnerManager implements EventListener,
   private final File executionDirectory;
   private final File projectDirectory;
   private final Object executionDirDeletionSync = new Object();
+  private final CommonMetrics commonMetrics;
 
   private final int numThreads;
   private final int numJobThreadPerFlow;
@@ -160,6 +163,7 @@ public class FlowRunnerManager implements EventListener,
       final StorageManager storageManager,
       final TriggerManager triggerManager,
       final AlerterHolder alerterHolder,
+      final CommonMetrics commonMetrics,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -187,6 +191,7 @@ public class FlowRunnerManager implements EventListener,
     this.projectLoader = projectLoader;
     this.triggerManager = triggerManager;
     this.alerterHolder = alerterHolder;
+    this.commonMetrics = commonMetrics;
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -375,6 +380,14 @@ public class FlowRunnerManager implements EventListener,
 
     // Sets up the project files and execution directory.
     this.preparingFlowCount.incrementAndGet();
+    // Record the time between submission, and when the flow preparation/execution starts.
+    // Note that since submit time is recorded on the web server, while flow preparation is on
+    // the executor, there could be some inaccuracies due to clock skew.
+    commonMetrics.addQueueWait(System.currentTimeMillis() -
+        flow.getExecutableFlow().getSubmitTime());
+
+    final Timer.Context flowPrepTimerContext = commonMetrics.getFlowSetupTimerContext();
+
     try {
       if (this.active || isExecutorSpecified(flow)) {
         this.flowPreparer.setup(flow);
@@ -386,6 +399,7 @@ public class FlowRunnerManager implements EventListener,
       }
     } finally {
       this.preparingFlowCount.decrementAndGet();
+      flowPrepTimerContext.stop();
     }
 
     // Setup flow runner
@@ -1014,17 +1028,19 @@ public class FlowRunnerManager implements EventListener,
             FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
         }
-      } else if (FlowRunnerManager.this.active) {
+      } else {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
           final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId);
+              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
           if (execId != -1) {
             FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
+            commonMetrics.markDispatchSuccess();
           }
         } catch (final Exception e) {
           FlowRunnerManager.logger.error("Failed to submit flow ", e);
+          commonMetrics.markDispatchFail();
         }
       }
     }
