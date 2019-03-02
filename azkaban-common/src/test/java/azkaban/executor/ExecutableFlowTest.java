@@ -26,6 +26,7 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -311,10 +312,10 @@ public class ExecutableFlowTest {
     options.setNotifyOnFirstFailure(true);
     options.setNotifyOnLastFailure(true);
     options.setSlaOptions(Arrays.asList(
-        new SlaOption(SlaType.FLOW_FINISH, "flowTest", null, "1130m", true, false, Arrays.asList
-            ("fe@company.com", "fi@company.com")),
-    new SlaOption(SlaType.JOB_SUCCEED, "flowTest", "fo", "130m", false, true, Arrays.asList
-        ("fe@company.com", "fi@company.com"))));
+        new SlaOption(SlaType.FLOW_FINISH, "flowTest", null, Duration.ofMinutes(1130), true,
+            false, Arrays.asList("fe@company.com", "fi@company.com")),
+    new SlaOption(SlaType.JOB_SUCCEED, "flowTest", "fo", Duration.ofMinutes(130), false, true,
+        Arrays.asList("fe@company.com", "fi@company.com"))));
 
     final HashMap<String, String> flowProps = new HashMap<>();
     flowProps.put("la", "fa");

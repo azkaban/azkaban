@@ -71,19 +71,15 @@ public class FlowUtils {
   public static void applyDisabledJobs(final List<DisabledJob> disabledJobs,
       final ExecutableFlowBase exflow) {
     for (final DisabledJob disabled : disabledJobs) {
-      if (disabled.isJob()) {
-        final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
-        if (node != null) {
-          node.setStatus(Status.DISABLED);
-        }
-      } else {
-        if (disabled.getName() == null) {
-          // not a valid embedded flow
-          return;
-        }
+      if (disabled.isEmbeddedFlow()) {
         final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
         if (node != null && node instanceof ExecutableFlowBase) {
           applyDisabledJobs(disabled.getChildren(), (ExecutableFlowBase) node);
+        }
+       } else { // job
+        final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
+        if (node != null) {
+          node.setStatus(Status.DISABLED);
         }
       }
     }

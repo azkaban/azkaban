@@ -22,7 +22,6 @@ import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
-import azkaban.sla.SlaOptionDeprecated;
 import azkaban.trigger.TriggerAction;
 import java.util.HashMap;
 import java.util.List;
@@ -67,8 +66,7 @@ public class SlaAlertAction implements TriggerAction {
     List<String> emails;
     // TODO edlu: is this being written? Handle both old and new formats, when written in new
     // format
-     final SlaOptionDeprecated slaOptionDeprecated = SlaOptionDeprecated.fromObject(jsonObj.get("slaOption"));
-    slaOption = new SlaOption(slaOptionDeprecated);
+     slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
     final int execId = Integer.valueOf((String) jsonObj.get("execId"));
 
     return new SlaAlertAction(actionId, slaOption, execId);

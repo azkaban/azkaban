@@ -24,7 +24,6 @@ import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.sla.SlaOption;
-import azkaban.sla.SlaOptionDeprecated;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class ExecuteFlowAction implements TriggerAction {
       ArrayList<SlaOption> slaOptions = new ArrayList<>();
       final List<Object> slaOptionsObj = (List<Object>) jsonObj.get("slaOptions");
       for (final Object slaObj : slaOptionsObj) {
-        slaOptions.add(new SlaOption(SlaOptionDeprecated.fromObject(slaObj)));
+        slaOptions.add(SlaOption.fromObject(slaObj));
       }
       executionOptions.setSlaOptions(slaOptions);
     }

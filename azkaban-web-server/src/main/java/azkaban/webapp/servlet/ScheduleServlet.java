@@ -37,6 +37,7 @@ import azkaban.user.UserManager;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -249,7 +250,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final boolean alert = emailAction.equals("true");
     final boolean kill = killAction.equals("true");
 
-    final ReadablePeriod dur;
+    final Duration dur;
     try {
       dur = parseDuration(duration);
     } catch (final Exception e) {
@@ -260,17 +261,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     if (alert || kill) {
       logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
           + rule + " Duration:" + duration + " alert:" + alert + " kill:" + kill);
-      return new SlaOption(type, flowName, id, Utils.createPeriodString(dur),
-          alert, kill, emails);
+      return new SlaOption(type, flowName, id, dur, alert, kill, emails);
     }
     return null;
 
     }
 
-  private ReadablePeriod parseDuration(final String duration) {
+  private Duration parseDuration(final String duration) {
     final int hour = Integer.parseInt(duration.split(":")[0]);
     final int min = Integer.parseInt(duration.split(":")[1]);
-    return Minutes.minutes(min + hour * 60).toPeriod();
+    return Duration.ofMinutes(min + hour * 60);
   }
 
   private void ajaxFetchSchedule(final HttpServletRequest req,

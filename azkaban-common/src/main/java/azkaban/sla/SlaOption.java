@@ -18,6 +18,9 @@ package azkaban.sla;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.sla.SlaType.ComponentType;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,16 +46,19 @@ public class SlaOption {
   public static final String WEB_ACTION_EMAIL = "EMAIL";
   public static final String WEB_ACTION_KILL = "KILL";
 
+  private static final char MINUTE_DURATION_UNIT = 'm';
+  private static final char INVALID_DURATION_UNIT = 'n';
+
   private static final DateTimeFormatter fmt = DateTimeFormat
       .forPattern("MM/dd, YYYY HH:mm");
 
   final private SlaType type;
   final private String flowName;
   final private String jobName;
-  final private String duration;
+  final private Duration duration;
   final private boolean alert;
   final private boolean kill;
-  final private List<String> emails;
+  final private ImmutableList<String> emails;
 
   /**
    * Constructor.
@@ -66,15 +72,18 @@ public class SlaOption {
    * @param emails list of emails to send an alert to, for the SLA.
    */
   public SlaOption(final SlaType type,
-      String flowName, String jobName, String duration, boolean alert, boolean kill,
+      String flowName, String jobName, Duration duration, boolean alert, boolean kill,
       List<String> emails) {
+    Preconditions.checkState(alert || kill, "Either alert or kill must be true for the SLA");
+    Preconditions.checkState(!alert || (emails != null && !emails.isEmpty()),
+        "email(s) must be specified for the alert");
     this.type = type;
-    this.flowName = flowName;
+    this.flowName = Preconditions.checkNotNull(flowName, "flowName is null");
     this.jobName = jobName;
-    this.duration = duration;
+    this.duration = Preconditions.checkNotNull(duration);
     this.alert = alert;
     this.kill = kill;
-    this.emails = emails;
+    this.emails = ImmutableList.copyOf(emails);
   }
 
   /**
@@ -101,7 +110,8 @@ public class SlaOption {
     }
     this.flowName = (String)slaOption.getInfo().get(SlaOptionDeprecated.INFO_FLOW_NAME);
     this.jobName = (String)slaOption.getInfo().get(SlaOptionDeprecated.INFO_JOB_NAME);
-    this.duration = (String)slaOption.getInfo().get(SlaOptionDeprecated.INFO_DURATION);
+    this.duration = parseDuration((String)slaOption.getInfo().get(SlaOptionDeprecated
+        .INFO_DURATION));
 
     boolean alert = false;
     boolean kill = false;
@@ -119,7 +129,27 @@ public class SlaOption {
     this.alert = alert;
     this.kill = kill;
 
-    this.emails = (List<String>)slaOption.getInfo().get(SlaOptionDeprecated.INFO_EMAIL_LIST);
+    this.emails = ImmutableList.copyOf((List<String>)slaOption.getInfo().get(SlaOptionDeprecated
+        .INFO_EMAIL_LIST));
+  }
+
+  private Duration parseDuration(final String durationStr) {
+    final char durationUnit = durationStr.charAt(durationStr.length() - 1);
+    if (durationStr.equals("null") || durationUnit == INVALID_DURATION_UNIT) {
+      return null;
+    }
+
+    if (durationUnit != MINUTE_DURATION_UNIT) {
+      throw new IllegalArgumentException("Invalid SLA duration unit '"
+          + durationUnit);
+    }
+    final int durationInt =
+        Integer.parseInt(durationStr.substring(0, durationStr.length() - 1));
+    return Duration.ofMinutes(durationInt);
+  }
+
+  private String durationToString(Duration duration) {
+    return Long.toString(duration.toMinutes()) + MINUTE_DURATION_UNIT;
   }
 
   public SlaType getType() {
@@ -130,7 +160,7 @@ public class SlaOption {
     return jobName;
   }
 
-  public String getDuration() {
+  public Duration getDuration() {
     return duration;
   }
 
@@ -178,22 +208,22 @@ public class SlaOption {
     String slaType;
     switch (this.type) {
       case FLOW_FINISH:
-            slaType = SlaOptionDeprecated.TYPE_FLOW_FINISH;
-            break;
+        slaType = SlaOptionDeprecated.TYPE_FLOW_FINISH;
+        break;
       case FLOW_SUCCEED:
-            slaType = SlaOptionDeprecated.TYPE_FLOW_SUCCEED;
-            break;
+        slaType = SlaOptionDeprecated.TYPE_FLOW_SUCCEED;
+        break;
       case JOB_FINISH:
-             slaType = SlaOptionDeprecated.TYPE_JOB_FINISH;
-            break;
-            case JOB_SUCCEED:
-            slaType = SlaOptionDeprecated.TYPE_JOB_SUCCEED;
-            break;
-          default:
-            throw new IllegalStateException("unsupported SLA type " + this.type.getName());
+        slaType = SlaOptionDeprecated.TYPE_JOB_FINISH;
+        break;
+      case JOB_SUCCEED:
+        slaType = SlaOptionDeprecated.TYPE_JOB_SUCCEED;
+        break;
+      default:
+        throw new IllegalStateException("unsupported SLA type " + this.type.getName());
     }
 
-    slaInfo.put(SlaOptionDeprecated.INFO_DURATION, this.duration);
+    slaInfo.put(SlaOptionDeprecated.INFO_DURATION, durationToString(this.duration));
     slaInfo.put(SlaOptionDeprecated.INFO_EMAIL_LIST, emails);
 
     SlaOptionDeprecated slaOption = new SlaOptionDeprecated(slaType, slaActions, slaInfo);
@@ -278,5 +308,48 @@ public class SlaOption {
   static public List<SlaOption> getFlowLevelSLAOptions(List<SlaOption> options) {
     return options.stream().filter(rule -> rule.type.getComponent() == SlaType.ComponentType.FLOW).collect
         (Collectors.toList());
+  }
+
+  /**
+   * Builder for {@link SlaOption}.
+   */
+  public static class SlaOptionBuilder {
+    final private SlaType type;
+    final private String flowName;
+    private String jobName = null;
+    final private Duration duration;
+    private boolean alert = false;
+    private boolean kill = false;
+    private ImmutableList<String> emails = null;
+
+    public SlaOptionBuilder(SlaType type, String flowName, Duration duration) {
+      this.type = type;
+      this.flowName = flowName;
+      this.duration = duration;
+    }
+
+    public SlaOptionBuilder setJobName(String jobName) {
+      this.jobName = jobName;
+      return this;
+    }
+
+    public SlaOptionBuilder setAlert(boolean alert) {
+      this.alert = alert;
+      return this;
+    }
+
+    public SlaOptionBuilder setKill(boolean kill) {
+      this.kill = kill;
+      return this;
+    }
+
+    public SlaOptionBuilder setEmails(List<String> emails) {
+      this.emails = ImmutableList.copyOf(emails);
+      return this;
+    }
+
+    public SlaOption createSlaOption() {
+      return new SlaOption(type, flowName, jobName, duration, alert, kill, emails);
+    }
   }
 }

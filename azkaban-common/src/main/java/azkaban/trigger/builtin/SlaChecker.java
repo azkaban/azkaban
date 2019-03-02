@@ -28,11 +28,11 @@ import azkaban.sla.SlaType;
 import azkaban.sla.SlaType.StatusType;
 import azkaban.trigger.ConditionChecker;
 import azkaban.utils.Utils;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
-import org.joda.time.ReadablePeriod;
 
 public class SlaChecker implements ConditionChecker {
 
@@ -74,13 +74,10 @@ public class SlaChecker implements ConditionChecker {
       return false;
     }
 
-    final ReadablePeriod duration = Utils.parsePeriodString(slaOption.getDuration());
     Status status;
     if (type.getComponent() == SlaType.ComponentType.FLOW) {
       if (this.checkTime < flow.getStartTime()) {
-        final DateTime startTime = new DateTime(flow.getStartTime());
-        final DateTime nextCheckTime = startTime.plus(duration);
-        this.checkTime = nextCheckTime.getMillis();
+        this.checkTime = flow.getStartTime() + slaOption.getDuration().toMillis();
       }
       status = flow.getStatus();
     } else { // JOB
@@ -89,9 +86,7 @@ public class SlaChecker implements ConditionChecker {
         return false;
       }
       if (this.checkTime < node.getStartTime()) {
-        final DateTime startTime = new DateTime(node.getStartTime());
-        final DateTime nextCheckTime = startTime.plus(duration);
-        this.checkTime = nextCheckTime.getMillis();
+        this.checkTime = node.getStartTime() + slaOption.getDuration().toMillis();
       }
       status = node.getStatus();
     }
@@ -118,13 +113,10 @@ public class SlaChecker implements ConditionChecker {
       return false;
     }
     Status status;
-    final ReadablePeriod duration = Utils.parsePeriodString(this.slaOption.getDuration());
 
     if (type.getComponent() == ComponentType.FLOW) {
       if (this.checkTime < flow.getStartTime()) {
-        final DateTime startTime = new DateTime(flow.getStartTime());
-        final DateTime nextCheckTime = startTime.plus(duration);
-        this.checkTime = nextCheckTime.getMillis();
+        this.checkTime = flow.getStartTime() + this.slaOption.getDuration().toMillis();
       }
       status = flow.getStatus();
     } else { // JOB
@@ -134,9 +126,7 @@ public class SlaChecker implements ConditionChecker {
         return false;
       }
       if (this.checkTime < node.getStartTime()) {
-        final DateTime startTime = new DateTime(node.getStartTime());
-        final DateTime nextCheckTime = startTime.plus(duration);
-        this.checkTime = nextCheckTime.getMillis();
+         this.checkTime = node.getStartTime() + slaOption.getDuration().toMillis();
       }
       status = node.getStatus();
     }

@@ -24,7 +24,7 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
-import azkaban.utils.Utils;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
-import org.joda.time.ReadablePeriod;
 
 
 @Singleton
@@ -95,8 +94,8 @@ public class TriggerManager {
 
       final List<TriggerAction> actions = createActions(slaOption, execId);
       final Trigger trigger = new Trigger(execId, triggerCond, expireCond, actions);
-      final ReadablePeriod duration = Utils.parsePeriodString(slaOption.getDuration());
-      final long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
+      final Duration duration = slaOption.getDuration();
+      final long durationInMillis = duration.toMillis();
 
       logger.info("Adding sla trigger " + slaOption.toString() + " to execution " + execId
           + ", scheduled to trigger in " + durationInMillis / 1000 + " seconds");

@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +32,7 @@ public class DisabledJob {
   static final private String SUBFLOW_CHILDREN_KEY = "children";
 
   final private String name; // name of the disabled job, or embedded flow
-  final private List<DisabledJob> children; // disabled sub-jobs for an embedded flow
+  final private ImmutableList<DisabledJob> children; // disabled sub-jobs for an embedded flow
 
   /**
    * Constructor.
@@ -40,8 +42,12 @@ public class DisabledJob {
    * a job.
    */
   public DisabledJob(String name, List<DisabledJob> children) {
-    this.name = name;
-    this.children = children;
+    this.name = Preconditions.checkNotNull(name, "name is null");
+    if (children == null) {
+      this.children = null;
+    } else {
+      this.children = ImmutableList.copyOf(children);
+    }
   }
 
 
@@ -62,9 +68,9 @@ public class DisabledJob {
     return this.children;
   }
 
-  /** @return True if this is a job, false if it is an embedded flow. */
-  public boolean isJob() {
-    return (this.children == null);
+  /** @return True if this is an embedded flow, false if it is a single job. */
+  public boolean isEmbeddedFlow() {
+    return (this.children != null);
   }
 
   /** @return The original Object/JSON format, for {@link azkaban.sla.SlaOptionDeprecated}. */
