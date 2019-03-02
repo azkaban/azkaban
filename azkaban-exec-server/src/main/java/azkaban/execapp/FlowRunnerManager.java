@@ -356,6 +356,10 @@ public class FlowRunnerManager implements EventListener,
     return false;
   }
 
+  /**
+   * return whether this execution has useExecutor defined. useExecutor is for running test
+   * executions on inactive executor.
+   */
   private boolean isExecutorSpecified(final ExecutableFlow flow) {
     return flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.USE_EXECUTOR);
