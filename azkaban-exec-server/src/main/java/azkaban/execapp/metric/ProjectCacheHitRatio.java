@@ -17,35 +17,43 @@
 package azkaban.execapp.metric;
 
 import com.codahale.metrics.RatioGauge;
-import com.codahale.metrics.SlidingTimeWindowReservoir;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import com.codahale.metrics.SlidingWindowReservoir;
 
 /**
- * Project cache hit ratio of last 30 mins.
+ * Project cache hit ratio of last 100 cache accesses.
  */
 public class ProjectCacheHitRatio extends RatioGauge {
 
-  private final SlidingTimeWindowReservoir hits;
-  private final SlidingTimeWindowReservoir calls;
-  private static final Duration WINDOW_DURATION = Duration.ofMinutes(30);
+  private final SlidingWindowReservoir hits;
+  private final SlidingWindowReservoir calls;
+  public static final int WINDOW_SIZE = 100;
 
   public ProjectCacheHitRatio() {
-    this.hits = new SlidingTimeWindowReservoir(WINDOW_DURATION.getSeconds(), TimeUnit.SECONDS);
-    this.calls = new SlidingTimeWindowReservoir(WINDOW_DURATION.getSeconds(), TimeUnit.SECONDS);
+    this.hits = new SlidingWindowReservoir(WINDOW_SIZE);
+    this.calls = new SlidingWindowReservoir(WINDOW_SIZE);
   }
 
-  public void markHit() {
+  public synchronized void markHit() {
     this.hits.update(1);
     this.calls.update(1);
   }
 
-  public void markMiss() {
+  public synchronized void markMiss() {
+    this.hits.update(0);
     this.calls.update(1);
   }
 
   @Override
-  public Ratio getRatio() {
-    return Ratio.of(this.hits.size(), this.calls.size());
+  public synchronized Ratio getRatio() {
+    long hitCount = 0;
+    for (final long num : this.hits.getSnapshot().getValues()) {
+      hitCount += num;
+    }
+
+    long callCount = 0;
+    for (final long num : this.calls.getSnapshot().getValues()) {
+      callCount += num;
+    }
+    return Ratio.of(hitCount, callCount);
   }
 }

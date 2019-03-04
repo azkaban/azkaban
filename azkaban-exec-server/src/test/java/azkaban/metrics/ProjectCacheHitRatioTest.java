@@ -40,7 +40,7 @@ public class ProjectCacheHitRatioTest {
   }
 
   @Test
-  public void testProjectCacheMetricsHit() throws InterruptedException {
+  public void testProjectCacheMetricsHit() {
     //given
     final ProjectCacheHitRatio hitRatio = new ProjectCacheHitRatio();
 
@@ -53,5 +53,28 @@ public class ProjectCacheHitRatioTest {
     hitRatio.markMiss();
     //then
     assertThat(hitRatio.getRatio().getValue()).isEqualTo(0.5);
+  }
+
+  @Test
+  public void testProjectCacheAccessWindowSize() {
+    //given
+    final ProjectCacheHitRatio hitRatio = new ProjectCacheHitRatio();
+
+    //when all hits
+    for (int i = 0; i < ProjectCacheHitRatio.WINDOW_SIZE; i++) {
+      hitRatio.markHit();
+    }
+    //then
+    assertThat(hitRatio.getRatio().getValue()).isEqualTo(1);
+
+    //when the 101th access is miss
+    hitRatio.markMiss();
+
+    //then
+    assertThat(hitRatio.getRatio().getValue()).isEqualTo(0.99);
+
+    //when the 102th access is miss
+    hitRatio.markMiss();
+    assertThat(hitRatio.getRatio().getValue()).isEqualTo(0.98);
   }
 }

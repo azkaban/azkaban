@@ -35,7 +35,7 @@ public class ExecMetrics {
     this.metricsManager = metricsManager;
     // setup project cache ratio metrics
     this.projectCacheHitRatio = new ProjectCacheHitRatio();
-    metricsManager.addGauge("EXEC-ProjectDirCacheHitRatioLast30Mins",
+    metricsManager.addGauge("EXEC-ProjectDirCacheHitRatio",
         this.projectCacheHitRatio::getRatio);
   }
 
