@@ -64,6 +64,7 @@ class FlowPreparer {
     Preconditions.checkNotNull(storageManager);
     Preconditions.checkNotNull(executionsDir);
     Preconditions.checkNotNull(projectsDir);
+    Preconditions.checkNotNull(projectCacheHitRatio);
 
     Preconditions.checkArgument(projectsDir.exists());
     Preconditions.checkArgument(executionsDir.exists());
