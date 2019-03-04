@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.metrics.MetricsManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -27,15 +28,19 @@ import javax.inject.Singleton;
 public class ExecMetrics {
 
   private final MetricsManager metricsManager;
+  private final ProjectCacheHitRatio projectCacheHitRatio;
 
   @Inject
   ExecMetrics(final MetricsManager metricsManager) {
     this.metricsManager = metricsManager;
-    setupStaticMetrics();
+    // setup project cache ratio metrics
+    this.projectCacheHitRatio = new ProjectCacheHitRatio();
+    metricsManager.addGauge("EXEC-ProjectDirCacheHitRatioLast30Mins",
+        this.projectCacheHitRatio::getRatio);
   }
 
-  public void setupStaticMetrics() {
-
+  ProjectCacheHitRatio getProjectCacheHitRatio() {
+    return this.projectCacheHitRatio;
   }
 
   public void addFlowRunnerManagerMetrics(final FlowRunnerManager flowRunnerManager) {
@@ -43,7 +48,5 @@ public class ExecMetrics {
         .addGauge("EXEC-NumRunningFlows", flowRunnerManager::getNumRunningFlows);
     this.metricsManager
         .addGauge("EXEC-NumQueuedFlows", flowRunnerManager::getNumQueuedFlows);
-    this.metricsManager
-        .addGauge("EXEC-ProjectDirCacheHitRatio", flowRunnerManager::getProjectDirCacheHitRatio);
   }
 }

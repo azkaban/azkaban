@@ -29,7 +29,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.execapp.FlowPreparer.ProjectCacheMetrics;
+import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
@@ -88,7 +88,8 @@ public class FlowPreparerTest {
     this.projectsDir = this.temporaryFolder.newFolder("projects");
 
     this.instance = spy(
-        new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir, null));
+        new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir, null,
+            new ProjectCacheHitRatio()));
     doNothing().when(this.instance).updateLastModifiedTime(any());
   }
 
@@ -185,34 +186,4 @@ public class FlowPreparerTest {
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }
 
-
-  @Test
-  public void testProjectsCacheMetricsZeroHit() {
-    //given
-    final ProjectCacheMetrics cacheMetrics = new ProjectCacheMetrics();
-
-    //when zero hit and zero miss then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
-
-    //when
-    cacheMetrics.incrementCacheMiss();
-    //then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
-  }
-
-  @Test
-  public void testProjectsCacheMetricsHit() {
-    //given
-    final ProjectCacheMetrics cacheMetrics = new ProjectCacheMetrics();
-
-    //when one hit
-    cacheMetrics.incrementCacheHit();
-    //then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(1);
-
-    //when one miss
-    cacheMetrics.incrementCacheMiss();
-    //then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0.5);
-  }
 }
