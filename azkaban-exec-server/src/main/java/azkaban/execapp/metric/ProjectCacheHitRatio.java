@@ -18,42 +18,36 @@ package azkaban.execapp.metric;
 
 import com.codahale.metrics.RatioGauge;
 import com.codahale.metrics.SlidingWindowReservoir;
+import java.util.Arrays;
 
 /**
  * Project cache hit ratio of last 100 cache accesses.
+ *
+ * <p>The advantage of sampling last 100 caches accesses over time-based sampling like last hour's
+ * cache accesses is the former is more deterministic. Suppose there's only few execution in last
+ * hour, then hit ratio might not be truly informative, which doesn't necessarily reflect
+ * performance of the cache.</p>
  */
 public class ProjectCacheHitRatio extends RatioGauge {
 
   private final SlidingWindowReservoir hits;
-  private final SlidingWindowReservoir calls;
   public static final int WINDOW_SIZE = 100;
 
   public ProjectCacheHitRatio() {
     this.hits = new SlidingWindowReservoir(WINDOW_SIZE);
-    this.calls = new SlidingWindowReservoir(WINDOW_SIZE);
   }
 
   public synchronized void markHit() {
     this.hits.update(1);
-    this.calls.update(1);
   }
 
   public synchronized void markMiss() {
     this.hits.update(0);
-    this.calls.update(1);
   }
 
   @Override
   public synchronized Ratio getRatio() {
-    long hitCount = 0;
-    for (final long num : this.hits.getSnapshot().getValues()) {
-      hitCount += num;
-    }
-
-    long callCount = 0;
-    for (final long num : this.calls.getSnapshot().getValues()) {
-      callCount += num;
-    }
-    return Ratio.of(hitCount, callCount);
+    final long hitCount = Arrays.stream(this.hits.getSnapshot().getValues()).sum();
+    return Ratio.of(hitCount, this.hits.getSnapshot().size());
   }
 }
