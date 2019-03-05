@@ -138,6 +138,7 @@ public class FlowRunnerManager implements EventListener,
   private final File projectDirectory;
   private final Object executionDirDeletionSync = new Object();
   private final CommonMetrics commonMetrics;
+  private final ExecMetrics execMetrics;
 
   private final int numThreads;
   private final int numJobThreadPerFlow;
@@ -164,6 +165,7 @@ public class FlowRunnerManager implements EventListener,
       final TriggerManager triggerManager,
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
+      final ExecMetrics execMetrics,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -192,6 +194,7 @@ public class FlowRunnerManager implements EventListener,
     this.triggerManager = triggerManager;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
+    this.execMetrics = execMetrics;
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -386,7 +389,7 @@ public class FlowRunnerManager implements EventListener,
     commonMetrics.addQueueWait(System.currentTimeMillis() -
         flow.getExecutableFlow().getSubmitTime());
 
-    final Timer.Context flowPrepTimerContext = commonMetrics.getFlowSetupTimerContext();
+    final Timer.Context flowPrepTimerContext = execMetrics.getFlowSetupTimerContext();
 
     try {
       if (this.active || isExecutorSpecified(flow)) {

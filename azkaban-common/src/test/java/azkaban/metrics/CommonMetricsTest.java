@@ -75,20 +75,4 @@ public class CommonMetricsTest {
     assertEquals(500, snapshot.getMin(), delta);
     assertEquals(1000, snapshot.getMax(), delta);
   }
-
-  @Test
-  public void testFlowSetupMetrics() throws InterruptedException {
-    assertEquals(0, this.testUtil.getTimerCount(CommonMetrics.FLOW_SETUP_TIMER_NAME));
-    Timer.Context context = this.metrics.getFlowSetupTimerContext();
-    try {
-      Thread.sleep(100);
-    }
-    finally {
-      context.stop();
-    }
-    assertEquals(1, this.testUtil.getTimerCount(CommonMetrics.FLOW_SETUP_TIMER_NAME));
-    Snapshot snapshot = this.testUtil.getTimerSnapshot(CommonMetrics.FLOW_SETUP_TIMER_NAME);
-    double val = snapshot.getMax();
-    assertTrue(snapshot.getMax() > 100);
-  }
 }
