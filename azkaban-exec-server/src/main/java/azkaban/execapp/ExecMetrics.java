@@ -28,8 +28,8 @@ import javax.inject.Singleton;
 public class ExecMetrics {
   public static final String NUM_RUNNING_FLOWS_NAME = "EXEC-NumRunningFlows";
   public static final String NUM_QUEUED_FLOWS_NAME = "EXEC-NumQueuedFlows";
-  public static final String PROJECT_DIR_CACHE_HIT_RATIO_NAME = "EXEC-flow-setup-timer";
-  public static final String FLOW_SETUP_TIMER_NAME = "EXEC-ProjectDirCacheHitRatio";
+  public static final String PROJECT_DIR_CACHE_HIT_RATIO_NAME = "EXEC-ProjectDirCacheHitRatio";
+  public static final String FLOW_SETUP_TIMER_NAME = "EXEC-flow-setup-timer";
 
   private final MetricsManager metricsManager;
   private Timer flowSetupTimer;
