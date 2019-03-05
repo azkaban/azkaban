@@ -46,7 +46,7 @@ public class ExecutionFlowDao {
     this.dbOperator = dbOperator;
   }
 
-  public synchronized void uploadExecutableFlow(final ExecutableFlow flow)
+  public void uploadExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
 
     final String useExecutorParam =

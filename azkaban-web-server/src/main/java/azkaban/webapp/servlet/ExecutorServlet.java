@@ -177,7 +177,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
       ret.put("project", projectName);
       if (ajaxName.equals("executeFlow")) {
-        ajaxAttemptExecuteFlow(req, resp, ret, session.getUser());
+        ajaxExecuteFlow(req, resp, ret, session.getUser());
       }
     }
     if (ret != null) {
@@ -943,30 +943,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.putAll(flowObj);
   }
 
-  private void ajaxAttemptExecuteFlow(final HttpServletRequest req,
-      final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
-      throws ServletException {
-    final String projectName = getParam(req, "project");
-    final String flowId = getParam(req, "flow");
-
-    final Project project =
-        getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
-    if (project == null) {
-      ret.put("error", "Project '" + projectName + "' doesn't exist.");
-      return;
-    }
-
-    ret.put("flow", flowId);
-    final Flow flow = project.getFlow(flowId);
-    if (flow == null) {
-      ret.put("error", "Flow '" + flowId + "' cannot be found in project "
-          + project);
-      return;
-    }
-
-    ajaxExecuteFlow(req, resp, ret, user);
-  }
-
   private void ajaxExecuteFlow(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
       throws ServletException {
@@ -983,8 +959,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("flow", flowId);
     final Flow flow = project.getFlow(flowId);
     if (flow == null) {
-      ret.put("error", "Flow '" + flowId + "' cannot be found in project "
-          + project);
+      ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
       return;
     }
 
