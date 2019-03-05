@@ -138,6 +138,7 @@ public class FlowRunnerManager implements EventListener,
   private final File projectDirectory;
   private final Object executionDirDeletionSync = new Object();
   private final CommonMetrics commonMetrics;
+  private final ExecMetrics execMetrics;
 
   private final int numThreads;
   private final int numJobThreadPerFlow;
@@ -164,6 +165,7 @@ public class FlowRunnerManager implements EventListener,
       final TriggerManager triggerManager,
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
+      final ExecMetrics execMetrics,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -192,6 +194,7 @@ public class FlowRunnerManager implements EventListener,
     this.triggerManager = triggerManager;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
+    this.execMetrics = execMetrics;
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -219,7 +222,9 @@ public class FlowRunnerManager implements EventListener,
 
     // Create a flow preparer
     this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, cleaner);
+        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
+
+    this.execMetrics.addFlowRunnerManagerMetrics(this);
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
@@ -230,10 +235,6 @@ public class FlowRunnerManager implements EventListener,
           (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, DEFAULT_POLLING_INTERVAL_MS));
       this.pollingService.start();
     }
-  }
-
-  public double getProjectDirCacheHitRatio() {
-    return this.flowPreparer.getProjectDirCacheHitRatio();
   }
 
   /**
@@ -383,10 +384,10 @@ public class FlowRunnerManager implements EventListener,
     // Record the time between submission, and when the flow preparation/execution starts.
     // Note that since submit time is recorded on the web server, while flow preparation is on
     // the executor, there could be some inaccuracies due to clock skew.
-    commonMetrics.addQueueWait(System.currentTimeMillis() -
+    this.commonMetrics.addQueueWait(System.currentTimeMillis() -
         flow.getExecutableFlow().getSubmitTime());
 
-    final Timer.Context flowPrepTimerContext = commonMetrics.getFlowSetupTimerContext();
+    final Timer.Context flowPrepTimerContext = this.commonMetrics.getFlowSetupTimerContext();
 
     try {
       if (this.active || isExecutorSpecified(flow)) {
@@ -1036,11 +1037,11 @@ public class FlowRunnerManager implements EventListener,
           if (execId != -1) {
             FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
-            commonMetrics.markDispatchSuccess();
+            FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
           }
         } catch (final Exception e) {
           FlowRunnerManager.logger.error("Failed to submit flow ", e);
-          commonMetrics.markDispatchFail();
+          FlowRunnerManager.this.commonMetrics.markDispatchFail();
         }
       }
     }

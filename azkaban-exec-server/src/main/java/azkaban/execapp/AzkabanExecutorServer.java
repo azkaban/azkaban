@@ -90,7 +90,6 @@ public class AzkabanExecutorServer {
 
   private static AzkabanExecutorServer app;
 
-  private final ExecMetrics execMetrics;
   private final ExecutorLoader executionLoader;
   private final FlowRunnerManager runnerManager;
   private final MetricsManager metricsManager;
@@ -106,15 +105,13 @@ public class AzkabanExecutorServer {
       final ExecutorLoader executionLoader,
       final FlowRunnerManager runnerManager,
       final MetricsManager metricsManager,
-      final ExecMetrics execMetrics,
       @Named(EXEC_JETTY_SERVER) final Server server,
-      @Named(EXEC_ROOT_CONTEXT) final Context root) throws Exception {
+      @Named(EXEC_ROOT_CONTEXT) final Context root) {
     this.props = props;
     this.executionLoader = executionLoader;
     this.runnerManager = runnerManager;
 
     this.metricsManager = metricsManager;
-    this.execMetrics = execMetrics;
     this.server = server;
     this.root = root;
   }
@@ -260,13 +257,11 @@ public class AzkabanExecutorServer {
     logger.info("Started Executor Server on " + getExecutorHostPort());
 
     if (this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false)) {
-      startExecMetrics();
+      startReportingExecMetrics();
     }
   }
 
-  private void startExecMetrics() throws Exception {
-    this.execMetrics.addFlowRunnerManagerMetrics(getFlowRunnerManager());
-
+  private void startReportingExecMetrics() {
     logger.info("starting reporting Executor Metrics");
     this.metricsManager.startReporting("AZ-EXEC", this.props);
   }
