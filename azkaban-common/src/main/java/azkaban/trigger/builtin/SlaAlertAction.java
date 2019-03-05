@@ -102,7 +102,7 @@ public class SlaAlertAction implements TriggerAction {
   @Override
   public void doAction() throws Exception {
     logger.info("Alerting on sla failure.");
-    if (slaOption.isAlert()) {
+    if (slaOption.hasAlert()) {
       final Alerter alerter = this.alerters.get(SlaOption.ALERT_TYPE_EMAIL);
       if (alerter != null) {
         try {

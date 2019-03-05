@@ -59,14 +59,14 @@ public class TriggerManager {
 
   private List<TriggerAction> createActions(final SlaOption sla, final int execId) {
     final List<TriggerAction> actions = new ArrayList<>();
-    if (sla.isAlert()) {
+    if (sla.hasAlert()) {
       TriggerAction action = new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId);
     }
 
-    if (sla.isAlert()) {
+    if (sla.hasAlert()) {
       actions.add(new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId));
     }
-    if(sla.isKill()) {
+    if(sla.hasKill()) {
       switch(sla.getType().getComponent()) {
         case FLOW:
          actions.add(new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId));

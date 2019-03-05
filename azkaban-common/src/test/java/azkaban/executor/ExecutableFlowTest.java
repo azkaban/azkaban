@@ -21,6 +21,7 @@ import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.sla.SlaOption.SlaOptionBuilder;
 import azkaban.sla.SlaType;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
@@ -190,8 +191,8 @@ public class ExecutableFlowTest {
       Assert.assertEquals(aElem.getFlowName(), bElem.getFlowName());
       Assert.assertEquals(aElem.getJobName(), bElem.getJobName());
       Assert.assertEquals(aElem.getDuration(), bElem.getDuration());
-      Assert.assertEquals(aElem.isAlert(), bElem.isAlert());
-      Assert.assertEquals(aElem.isKill(), bElem.isKill());
+      Assert.assertEquals(aElem.hasAlert(), bElem.hasAlert());
+      Assert.assertEquals(aElem.hasKill(), bElem.hasKill());
       Assert.assertEquals(aElem.getType(), bElem.getType());
       Assert.assertEquals(aElem.getEmails(), bElem.getEmails());
     }
@@ -311,11 +312,12 @@ public class ExecutableFlowTest {
     options.setPipelineExecutionId(3);
     options.setNotifyOnFirstFailure(true);
     options.setNotifyOnLastFailure(true);
-    options.setSlaOptions(Arrays.asList(
-        new SlaOption(SlaType.FLOW_FINISH, "flowTest", null, Duration.ofMinutes(1130), true,
-            false, Arrays.asList("fe@company.com", "fi@company.com")),
-    new SlaOption(SlaType.JOB_SUCCEED, "flowTest", "fo", Duration.ofMinutes(130), false, true,
-        Arrays.asList("fe@company.com", "fi@company.com"))));
+    options.setSlaOptions(Arrays.asList(new SlaOptionBuilder(SlaType.FLOW_FINISH, "flowTest",
+            Duration.ofMinutes(1130)).setAlert()
+            .setEmails(Arrays.asList("fe@company.com", "fi@company.com")).createSlaOption(),
+        new SlaOptionBuilder(SlaType.JOB_SUCCEED, "flowTest", Duration.ofMinutes(130))
+            .setJobName("fo").setKill()
+            .setEmails( Arrays.asList("fe@company.com", "fi@company.com")).createSlaOption()));
 
     final HashMap<String, String> flowProps = new HashMap<>();
     flowProps.put("la", "fa");

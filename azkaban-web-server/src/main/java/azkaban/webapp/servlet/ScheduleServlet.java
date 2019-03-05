@@ -28,7 +28,9 @@ import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
+import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
+import azkaban.sla.SlaOption.SlaOptionBuilder;
 import azkaban.sla.SlaType;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -41,6 +43,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletConfig;
@@ -247,8 +250,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         type = SlaType.JOB_FINISH;
       }
     }
-    final boolean alert = emailAction.equals("true");
-    final boolean kill = killAction.equals("true");
+    HashSet<SlaAction> actions = new HashSet<>();
+    if (emailAction.equals("true")) {
+      actions.add(SlaAction.ALERT);
+    }
+    if (killAction.equals("true")) {
+      actions.add(SlaAction.KILL);
+    }
 
     final Duration dur;
     try {
@@ -258,10 +266,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           "Unable to parse duration for a SLA that needs to take actions!", e);
     }
 
-    if (alert || kill) {
+    if (actions.size() > 0) {
       logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
-          + rule + " Duration:" + duration + " alert:" + alert + " kill:" + kill);
-      return new SlaOption(type, flowName, id, dur, alert, kill, emails);
+          + rule + " Duration:" + duration + " actions:" + actions);
+      return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
+          .setEmails(emails).createSlaOption();
     }
     return null;
 

@@ -20,11 +20,15 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.sla.SlaType.ComponentType;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -56,8 +60,7 @@ public class SlaOption {
   final private String flowName;
   final private String jobName;
   final private Duration duration;
-  final private boolean alert;
-  final private boolean kill;
+  final private Set<SlaAction> actions;
   final private ImmutableList<String> emails;
 
   /**
@@ -67,22 +70,18 @@ public class SlaOption {
    * @param flowName The name of the flow.
    * @param jobName The name of the job, if the SLA is for a job.
    * @param duration The duration (time to wait before the SLA would take effect).
-   * @param alert if the user should be alerted for the SLA.
-   * @param kill if the job or flow should be killed or canceled for the SLA.
-   * @param emails list of emails to send an alert to, for the SLA.
+   * @param actions actions to take for the SLA.
+    * @param emails list of emails to send an alert to, for the SLA.
    */
   public SlaOption(final SlaType type,
-      String flowName, String jobName, Duration duration, boolean alert, boolean kill,
+      String flowName, String jobName, Duration duration, Set<SlaAction> actions,
       List<String> emails) {
-    Preconditions.checkState(alert || kill, "Either alert or kill must be true for the SLA");
-    Preconditions.checkState(!alert || (emails != null && !emails.isEmpty()),
-        "email(s) must be specified for the alert");
+    Preconditions.checkState(actions.size() > 0, "An action must be specified for the SLA");
     this.type = type;
     this.flowName = Preconditions.checkNotNull(flowName, "flowName is null");
     this.jobName = jobName;
     this.duration = Preconditions.checkNotNull(duration);
-    this.alert = alert;
-    this.kill = kill;
+    this.actions = ImmutableSet.copyOf(actions);
     this.emails = ImmutableList.copyOf(emails);
   }
 
@@ -113,21 +112,19 @@ public class SlaOption {
     this.duration = parseDuration((String)slaOption.getInfo().get(SlaOptionDeprecated
         .INFO_DURATION));
 
-    boolean alert = false;
-    boolean kill = false;
+    Set<SlaAction> actions = new HashSet<>();
     for (String action: slaOption.getActions()) {
       switch (action) {
         case SlaOptionDeprecated.ACTION_ALERT:
-          alert = true;
+          actions.add(SlaAction.ALERT);
           break;
         case SlaOptionDeprecated.ACTION_CANCEL_FLOW:
         case SlaOptionDeprecated.ACTION_KILL_JOB:
-          kill = true;
+          actions.add(SlaAction.KILL);
           break;
       }
     }
-    this.alert = alert;
-    this.kill = kill;
+    this.actions = ImmutableSet.copyOf(actions);
 
     this.emails = ImmutableList.copyOf((List<String>)slaOption.getInfo().get(SlaOptionDeprecated
         .INFO_EMAIL_LIST));
@@ -164,12 +161,12 @@ public class SlaOption {
     return duration;
   }
 
-  public boolean isAlert() {
-    return alert;
+  public boolean hasAlert() {
+    return actions.contains(SlaAction.ALERT);
   }
 
-  public boolean isKill() {
-    return kill;
+  public boolean hasKill() {
+    return actions.contains(SlaAction.KILL);
   }
 
   public String getFlowName() {
@@ -190,11 +187,11 @@ public class SlaOption {
     final Map<String, Object> slaInfo = new HashMap<>();
 
     slaInfo.put(SlaOptionDeprecated.INFO_FLOW_NAME, this.flowName);
-    if (this.alert) {
+    if (hasAlert()) {
       slaActions.add(SlaOptionDeprecated.ACTION_ALERT);
       slaInfo.put(SlaOptionDeprecated.ALERT_TYPE, ALERT_TYPE_EMAIL);
     }
-    if (this.kill) {
+    if (hasKill()) {
       if (this.type.getComponent() == ComponentType.FLOW) {
         slaActions.add(SlaOptionDeprecated.ACTION_CANCEL_FLOW);
       } else { // JOB
@@ -254,10 +251,10 @@ public class SlaOption {
     slaObj.put(WEB_STATUS, this.type.getStatus().toString());
 
     final List<String> actionsObj = new ArrayList<>();
-    if (this.alert) {
+    if (hasAlert()) {
       actionsObj.add(WEB_ACTION_EMAIL);
     }
-    if (this.kill) {
+    if (hasKill()) {
       actionsObj.add(WEB_ACTION_KILL);
     }
     slaObj.put(WEB_ACTIONS, actionsObj);
@@ -318,14 +315,14 @@ public class SlaOption {
     final private String flowName;
     private String jobName = null;
     final private Duration duration;
-    private boolean alert = false;
-    private boolean kill = false;
+    private Set<SlaAction> actions;
     private ImmutableList<String> emails = null;
 
     public SlaOptionBuilder(SlaType type, String flowName, Duration duration) {
       this.type = type;
       this.flowName = flowName;
       this.duration = duration;
+      this.actions = new HashSet<>();
     }
 
     public SlaOptionBuilder setJobName(String jobName) {
@@ -333,13 +330,18 @@ public class SlaOption {
       return this;
     }
 
-    public SlaOptionBuilder setAlert(boolean alert) {
-      this.alert = alert;
+    public SlaOptionBuilder setAlert() {
+      actions.add(SlaAction.ALERT);
       return this;
     }
 
-    public SlaOptionBuilder setKill(boolean kill) {
-      this.kill = kill;
+    public SlaOptionBuilder setKill() {
+      actions.add(SlaAction.KILL);
+      return this;
+    }
+
+    public SlaOptionBuilder setActions(Set<SlaAction> actions) {
+      this.actions.addAll(actions);
       return this;
     }
 
@@ -349,7 +351,7 @@ public class SlaOption {
     }
 
     public SlaOption createSlaOption() {
-      return new SlaOption(type, flowName, jobName, duration, alert, kill, emails);
+      return new SlaOption(type, flowName, jobName, duration, actions, emails);
     }
   }
 }
