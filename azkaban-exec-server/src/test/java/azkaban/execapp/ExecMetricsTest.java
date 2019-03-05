@@ -45,7 +45,7 @@ public class ExecMetricsTest {
     assertEquals(0, this.testUtil.getTimerCount(ExecMetrics.FLOW_SETUP_TIMER_NAME));
     Timer.Context context = this.metrics.getFlowSetupTimerContext();
     try {
-      Thread.sleep(100);
+      Thread.sleep(10);
     }
     finally {
       context.stop();
@@ -53,7 +53,7 @@ public class ExecMetricsTest {
     assertEquals(1, this.testUtil.getTimerCount(ExecMetrics.FLOW_SETUP_TIMER_NAME));
     Snapshot snapshot = this.testUtil.getTimerSnapshot(ExecMetrics.FLOW_SETUP_TIMER_NAME);
     double val = snapshot.getMax();
-    assertTrue(snapshot.getMax() > 100);
+    assertTrue(snapshot.getMax() > 10);
   }
 
 }
