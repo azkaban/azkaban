@@ -36,6 +36,7 @@ import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.metric.MetricReportManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectWhitelist;
 import azkaban.project.ProjectWhitelist.WhitelistType;
@@ -52,10 +53,12 @@ import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
+import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,6 +73,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -117,6 +121,8 @@ public class FlowRunnerManager implements EventListener,
   // in the queue waiting to be executed or in executing state.
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
+  // keep track of the number of flow being setup({@link createFlowRunner()})
+  private final AtomicInteger preparingFlowCount = new AtomicInteger(0);
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
@@ -131,6 +137,8 @@ public class FlowRunnerManager implements EventListener,
   private final File executionDirectory;
   private final File projectDirectory;
   private final Object executionDirDeletionSync = new Object();
+  private final CommonMetrics commonMetrics;
+  private final ExecMetrics execMetrics;
 
   private final int numThreads;
   private final int numJobThreadPerFlow;
@@ -147,7 +155,7 @@ public class FlowRunnerManager implements EventListener,
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
-  private boolean active;
+  private volatile boolean active;
 
   @Inject
   public FlowRunnerManager(final Props props,
@@ -156,6 +164,8 @@ public class FlowRunnerManager implements EventListener,
       final StorageManager storageManager,
       final TriggerManager triggerManager,
       final AlerterHolder alerterHolder,
+      final CommonMetrics commonMetrics,
+      final ExecMetrics execMetrics,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -183,6 +193,8 @@ public class FlowRunnerManager implements EventListener,
     this.projectLoader = projectLoader;
     this.triggerManager = triggerManager;
     this.alerterHolder = alerterHolder;
+    this.commonMetrics = commonMetrics;
+    this.execMetrics = execMetrics;
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -201,14 +213,18 @@ public class FlowRunnerManager implements EventListener,
             getClass().getClassLoader());
 
     Long projectDirMaxSize = null;
+    ProjectCacheCleaner cleaner = null;
     try {
       projectDirMaxSize = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE_IN_MB);
+      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectDirMaxSize);
     } catch (final UndefinedPropertyException ex) {
     }
 
     // Create a flow preparer
     this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, projectDirMaxSize);
+        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
+
+    this.execMetrics.addFlowRunnerManagerMetrics(this);
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
@@ -219,10 +235,6 @@ public class FlowRunnerManager implements EventListener,
           (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, DEFAULT_POLLING_INTERVAL_MS));
       this.pollingService.start();
     }
-  }
-
-  public double getProjectDirCacheHitRatio() {
-    return this.flowPreparer.getProjectDirCacheHitRatio();
   }
 
   /**
@@ -270,7 +282,7 @@ public class FlowRunnerManager implements EventListener,
   }
 
   public void setExecutorActive(final boolean isActive, final String host, final int port)
-      throws ExecutorManagerException {
+      throws ExecutorManagerException, InterruptedException {
     final Executor executor = this.executorLoader.fetchExecutor(host, port);
     Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
     if (executor.isActive() != isActive) {
@@ -281,6 +293,28 @@ public class FlowRunnerManager implements EventListener,
           "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
     this.active = isActive;
+    if (!this.active) {
+      // When deactivating this executor, this call will wait to return until every thread in {@link
+      // #createFlowRunner} has finished. When deploying new executor, old running executor will be
+      // deactivated before new one is activated and only one executor is allowed to
+      // delete/hard-linking project dirs to avoid race condition described in {@link
+      // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
+      // finishes guarantees the old executor won't access {@link FlowPreparer#setup} after
+      // deactivation.
+      waitUntilFlowPreparationFinish();
+    }
+  }
+
+  /**
+   * Wait until ongoing flow preparation work finishes.
+   */
+  private void waitUntilFlowPreparationFinish() throws InterruptedException {
+    final Duration SLEEP_INTERVAL = Duration.ofSeconds(5);
+    while (this.preparingFlowCount.intValue() != 0) {
+      logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
+          + "deactivation.");
+      Thread.sleep(SLEEP_INTERVAL.toMillis());
+    }
   }
 
   public long getLastFlowSubmittedTime() {
@@ -302,7 +336,9 @@ public class FlowRunnerManager implements EventListener,
     if (isAlreadyRunning(execId)) {
       return;
     }
+
     final FlowRunner runner = createFlowRunner(execId);
+
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -326,6 +362,15 @@ public class FlowRunnerManager implements EventListener,
     return false;
   }
 
+  /**
+   * return whether this execution has useExecutor defined. useExecutor is for running test
+   * executions on inactive executor.
+   */
+  private boolean isExecutorSpecified(final ExecutableFlow flow) {
+    return flow.getExecutionOptions().getFlowParameters()
+        .containsKey(ExecutionOptions.USE_EXECUTOR);
+  }
+
   private FlowRunner createFlowRunner(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow;
     flow = this.executorLoader.fetchExecutableFlow(execId);
@@ -335,7 +380,28 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Sets up the project files and execution directory.
-    this.flowPreparer.setup(flow);
+    this.preparingFlowCount.incrementAndGet();
+    // Record the time between submission, and when the flow preparation/execution starts.
+    // Note that since submit time is recorded on the web server, while flow preparation is on
+    // the executor, there could be some inaccuracies due to clock skew.
+    this.commonMetrics.addQueueWait(System.currentTimeMillis() -
+        flow.getExecutableFlow().getSubmitTime());
+
+    final Timer.Context flowPrepTimerContext = this.commonMetrics.getFlowSetupTimerContext();
+
+    try {
+      if (this.active || isExecutorSpecified(flow)) {
+        this.flowPreparer.setup(flow);
+      } else {
+        // Unset the executor.
+        this.executorLoader.unsetExecutorIdForExecution(execId);
+        throw new ExecutorManagerException("executor became inactive before setting up the "
+            + "flow " + execId);
+      }
+    } finally {
+      this.preparingFlowCount.decrementAndGet();
+      flowPrepTimerContext.stop();
+    }
 
     // Setup flow runner
     FlowWatcher watcher = null;
@@ -961,20 +1027,22 @@ public class FlowRunnerManager implements EventListener,
                     AzkabanExecutorServer.getApp().getPort()), "The executor can not be null");
             this.executorId = executor.getId();
           } catch (final Exception e) {
-            logger.error("Failed to fetch executor ", e);
+            FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
         }
-      } else if (FlowRunnerManager.this.active) {
+      } else {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
           final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId);
+              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
           if (execId != -1) {
-            logger.info("Submitting flow " + execId);
+            FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
+            FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
           }
         } catch (final Exception e) {
-          logger.error("Failed to submit flow ", e);
+          FlowRunnerManager.logger.error("Failed to submit flow ", e);
+          FlowRunnerManager.this.commonMetrics.markDispatchFail();
         }
       }
     }

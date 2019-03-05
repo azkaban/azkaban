@@ -26,7 +26,24 @@ var handleJobMenuClick = function (action, el, pos) {
   else if (action == "openwindow") {
     window.open(requestURL);
   }
-}
+};
+
+var initPagination = function (elem, model) {
+  var totalPages = model.get("total");
+  if (!totalPages) {
+    return;
+  }
+
+  $(elem).twbsPagination({
+    totalPages: Math.ceil(totalPages / model.get("pageSize")),
+    startPage: model.get("page"),
+    initiateStartPageClick: false,
+    visiblePages: model.get("visiblePages"),
+    onPageClick: function (event, page) {
+      model.set({"page": page});
+    }
+  });
+};
 
 var flowTabView;
 azkaban.FlowTabView = Backbone.View.extend({
@@ -73,7 +90,7 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowtriggerView").hide();
     $("#executionsView").show();
     $('#summaryView').hide();
-    executionModel.trigger("change:view");
+    executionModel.trigger("initView");
   },
 
   handleFlowTriggerLinkClick: function () {
@@ -86,7 +103,7 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowtriggerView").show();
     $("#executionsView").hide();
     $('#summaryView').hide();
-    flowTriggerModel.trigger("change:view");
+    flowTriggerModel.trigger("initView");
   },
 
   handleSummaryLinkClick: function () {
@@ -104,31 +121,23 @@ azkaban.FlowTabView = Backbone.View.extend({
 
 var jobListView;
 var svgGraphView;
-var executionsView;
 
+var executionModel;
+azkaban.ExecutionModel = Backbone.Model.extend({});
+
+var executionsView;
 azkaban.ExecutionsView = Backbone.View.extend({
-  events: {
-    "click #pageSelection li": "handleChangePageSelection"
-  },
 
   initialize: function (settings) {
-    this.model.bind('change:view', this.handleChangeView, this);
+    // Interested on first tab activation only to load init data
+    this.model.once('initView', this.handleInitView, this);
     this.model.bind('render', this.render, this);
-    console.log("during initialization, pageSize: " + pageSize);
-    this.model.set({page: 1, pageSize: pageSize});
     this.model.bind('change:page', this.handlePageChange, this);
   },
 
-  render: function (evt) {
-    console.log("render");
+  render: function () {
     // Render page selections
-    var content = this.model.get("content");
-    if (content == "flow") {
-      var tbody = $("#execTableBody");
-    }
-    else {
-      var tbody = $("#triggerTableBody");
-    }
+    var tbody = $("#execTableBody");
     tbody.empty();
 
     var executions = this.model.get("executions");
@@ -137,16 +146,10 @@ azkaban.ExecutionsView = Backbone.View.extend({
 
       var tdId = document.createElement("td");
       var execA = document.createElement("a");
-      if (content == "flow") {
-        $(execA).attr("href", contextURL + "/executor?execid="
-            + executions[i].execId);
-        $(execA).text(executions[i].execId);
-      }
-      else {
-        $(execA).attr("href", contextURL + "/executor?triggerinstanceid="
-            + executions[i].instanceId);
-        $(execA).text(executions[i].instanceId);
-      }
+      $(execA).attr("href", this.model.get("executionUrl") + "?execid="
+          + executions[i].execId);
+      $(execA).text(executions[i].execId);
+
       tdId.appendChild(execA);
       row.appendChild(tdId);
 
@@ -186,12 +189,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
       var status = document.createElement("div");
       $(status).addClass("status");
       $(status).addClass(executions[i].status);
-      if (content == "flow") {
-        $(status).text(statusStringMap[executions[i].status]);
-      }
-      else {
-        $(status).text(executions[i].status);
-      }
+      $(status).text(statusStringMap[executions[i].status]);
       tdStatus.appendChild(status);
       row.appendChild(tdStatus);
 
@@ -200,139 +198,169 @@ azkaban.ExecutionsView = Backbone.View.extend({
 
       tbody.append(row);
     }
-
-    this.renderPagination(evt);
   },
 
-  renderPagination: function (evt) {
-    var total = this.model.get("total");
-    total = total ? total : 1;
-    var pageSize = this.model.get("pageSize");
-    var numPages = Math.ceil(total / pageSize);
-
-    this.model.set({"numPages": numPages});
-    var page = this.model.get("page");
-
-    //Start it off
-    $("#pageSelection .active").removeClass("active");
-
-    // Disable if less than 5
-    console.log("Num pages " + numPages)
-    var i = 1;
-    for (; i <= numPages && i <= 5; ++i) {
-      $("#page" + i).removeClass("disabled");
-    }
-    for (; i <= 5; ++i) {
-      $("#page" + i).addClass("disabled");
-    }
-
-    // Disable prev/next if necessary.
-    if (page > 1) {
-      $("#previous").removeClass("disabled");
-      $("#previous")[0].page = page - 1;
-      $("#previous a").attr("href", "#page" + (page - 1));
-    }
-    else {
-      $("#previous").addClass("disabled");
-    }
-
-    if (page < numPages) {
-      $("#next")[0].page = page + 1;
-      $("#next").removeClass("disabled");
-      $("#next a").attr("href", "#page" + (page + 1));
-    }
-    else {
-      $("#next")[0].page = page + 1;
-      $("#next").addClass("disabled");
-    }
-
-    // Selection is always in middle unless at barrier.
-    var startPage = 0;
-    var selectionPosition = 0;
-    if (page < 3) {
-      selectionPosition = page;
-      startPage = 1;
-    }
-    else if (page == numPages) {
-      selectionPosition = 5;
-      startPage = numPages - 4;
-    }
-    else if (page == numPages - 1) {
-      selectionPosition = 4;
-      startPage = numPages - 4;
-    }
-    else {
-      selectionPosition = 3;
-      startPage = page - 2;
-    }
-
-    $("#page" + selectionPosition).addClass("active");
-    $("#page" + selectionPosition)[0].page = page;
-    var selecta = $("#page" + selectionPosition + " a");
-    selecta.text(page);
-    selecta.attr("href", "#page" + page);
-
-    for (var j = 0; j < 5; ++j) {
-      var realPage = startPage + j;
-      var elementId = "#page" + (j + 1);
-
-      $(elementId)[0].page = realPage;
-      var a = $(elementId + " a");
-      a.text(realPage);
-      a.attr("href", "#page" + realPage);
-    }
-  },
-
-  handleChangePageSelection: function (evt) {
-    if ($(evt.currentTarget).hasClass("disabled")) {
-      return;
-    }
-    var page = evt.currentTarget.innerText;
-    this.model.set({"page": page});
-  },
-
-  handleChangeView: function (evt) {
-    if (this.init) {
-      return;
-    }
-    console.log("init");
-    this.handlePageChange(evt);
-    this.init = true;
-  },
-
-  handlePageChange: function (evt) {
-    var page = this.model.get("page") - 1;
-    var pageSize = this.model.get("pageSize");
-    console.log("pageSize = " + pageSize)
-    var content = this.model.get("content");
-    if (content == 'flow') {
-      requestURL = contextURL + "/manager";
-    }
-    else {
-      requestURL = contextURL + "/flowtriggerinstance";
-    }
-
+  handleInitView: function () {
     var model = this.model;
+    this.loadAndRenderData(function () {
+      initPagination('#executionsPagination', model);
+    });
+  },
+
+  handlePageChange: function () {
+    this.loadAndRenderData();
+  },
+
+  loadAndRenderData: function (onDataLoadedCb) {
+    var model = this.model;
+    var currentPage = model.get("page");
+    var pageSize = model.get("pageSize");
+    var requestURL = model.get("fetchFlowExecutionsUrl");
     var requestData = {
-      "project": projectName,
-      "flow": flowId,
-      "ajax": content == 'flow' ? "fetchFlowExecutions"
-          : "fetchTriggerInstances",
-      "start": page * pageSize,
+      "project": model.get("projectName"),
+      "flow": model.get("flowId"),
+      "ajax": "fetchFlowExecutions",
+      "start": (currentPage - 1) * pageSize,
       "length": pageSize
     };
 
-    var successHandler = function (data) {
+    $.get(requestURL, requestData)
+    .done(function (data) {
       model.set({
-        "content": content,
         "executions": data.executions,
         "total": data.total
       });
       model.trigger("render");
-    };
-    $.get(requestURL, requestData, successHandler, "json");
+      if (onDataLoadedCb) {
+        onDataLoadedCb();
+      }
+    })
+    .fail(function () {
+      // TODO
+    });
   }
 });
+
+var flowTriggerModel;
+azkaban.FlowTriggerModel = Backbone.Model.extend({});
+
+var flowTriggersView;
+azkaban.FlowTriggersView = Backbone.View.extend({
+
+  initialize: function (settings) {
+    // Interested on first tab activation only to load init data
+    this.model.once('initView', this.handleInitView, this);
+    this.model.bind('render', this.render, this);
+    this.model.bind('change:page', this.handlePageChange, this);
+  },
+
+  render: function () {
+    // Render page selections
+    var tbody = $("#flowtriggerTableBody");
+    tbody.empty();
+
+    var executions = this.model.get("executions");
+    for (var i = 0; i < executions.length; ++i) {
+      var row = document.createElement("tr");
+
+      var tdId = document.createElement("td");
+      var execA = document.createElement("a");
+      $(execA).attr("href", this.model.get("triggerInstanceUrl") +
+          "?triggerinstanceid=" + executions[i].instanceId);
+      $(execA).text(executions[i].instanceId);
+      tdId.appendChild(execA);
+      row.appendChild(tdId);
+
+      var tdUser = document.createElement("td");
+      $(tdUser).text(executions[i].submitUser);
+      row.appendChild(tdUser);
+
+      var startTime = "-";
+      if (executions[i].startTime != -1) {
+        var startDateTime = new Date(executions[i].startTime);
+        startTime = getDateFormat(startDateTime);
+      }
+
+      var tdStartTime = document.createElement("td");
+      $(tdStartTime).text(startTime);
+      row.appendChild(tdStartTime);
+
+      var endTime = "-";
+      var lastTime = executions[i].endTime;
+      if (executions[i].endTime != -1 && executions[i].endTime != 0) {
+        var endDateTime = new Date(executions[i].endTime);
+        endTime = getDateFormat(endDateTime);
+      }
+      else {
+        lastTime = (new Date()).getTime();
+      }
+
+      var tdEndTime = document.createElement("td");
+      $(tdEndTime).text(endTime);
+      row.appendChild(tdEndTime);
+
+      var tdElapsed = document.createElement("td");
+      $(tdElapsed).text(getDuration(executions[i].startTime, lastTime));
+      row.appendChild(tdElapsed);
+
+      var tdStatus = document.createElement("td");
+      var status = document.createElement("div");
+      $(status).addClass("status");
+      $(status).addClass(executions[i].status);
+      $(status).text(executions[i].status);
+      tdStatus.appendChild(status);
+      row.appendChild(tdStatus);
+
+      var tdAction = document.createElement("td");
+      row.appendChild(tdAction);
+
+      tbody.append(row);
+    }
+  },
+
+  handleInitView: function () {
+    var model = this.model;
+    this.loadAndRenderData(function () {
+      initPagination('#flowtriggerPagination', model);
+    });
+  },
+
+  handlePageChange: function () {
+    this.loadAndRenderData();
+  },
+
+  loadAndRenderData: function (onDataLoadedCb) {
+    var model = this.model;
+    var currentPage = model.get("page");
+    var pageSize = model.get("pageSize");
+    var requestURL = model.get("fetchTriggerInstancesUrl");
+    var requestData = {
+      "project": model.get("projectName"),
+      "flow": model.get("flowId"),
+      "ajax": "fetchTriggerInstances",
+      "start": (currentPage - 1) * pageSize,
+      "length": pageSize
+    };
+
+    $.get(requestURL, requestData)
+    .done(function (data) {
+      model.set({
+        "executions": data.executions,
+        "total": data.total
+      });
+      model.trigger("render");
+      if (onDataLoadedCb) {
+        onDataLoadedCb();
+      }
+    })
+    .fail(function () {
+      // TODO
+    });
+  }
+});
+
+var summaryModel;
+azkaban.SummaryModel = Backbone.Model.extend({});
 
 var summaryView;
 azkaban.SummaryView = Backbone.View.extend({
@@ -351,20 +379,19 @@ azkaban.SummaryView = Backbone.View.extend({
   },
 
   fetchDetails: function () {
-    var requestURL = contextURL + "/manager";
+    var model = this.model;
+    var requestURL = model.get("fetchFlowDetailsUrl");
     var requestData = {
       'ajax': 'fetchflowdetails',
-      'project': projectName,
-      'flow': flowId
+      'project': model.get("projectName"),
+      'flow': model.get("flowId")
     };
-
-    var model = this.model;
 
     var successHandler = function (data) {
       console.log(data);
       model.set({
-        'jobTypes': data.jobTypes,
-        'condition': data.condition
+        jobTypes: data.jobTypes,
+        condition: data.condition
       });
       model.trigger('render');
     };
@@ -372,13 +399,14 @@ azkaban.SummaryView = Backbone.View.extend({
   },
 
   fetchSchedule: function () {
-    var requestURL = contextURL + "/schedule"
+    var model = this.model;
+    var requestURL = model.get("fetchScheduleUrl");
     var requestData = {
       'ajax': 'fetchSchedule',
-      'projectId': projectId,
-      'flowId': flowId
+      'projectId': model.get("projectId"),
+      'flowId': model.get("flowId")
     };
-    var model = this.model;
+
     var view = this;
     var successHandler = function (data) {
       model.set({'schedule': data.schedule});
@@ -394,12 +422,13 @@ azkaban.SummaryView = Backbone.View.extend({
       return;
     }
 
-    var requestURL = contextURL + "/schedule"
+    var model = this.model;
+    var requestURL = model.get("slaInfoUrl");
     var requestData = {
       "scheduleId": schedule.scheduleId,
       "ajax": "slaInfo"
     };
-    var model = this.model;
+
     var successHandler = function (data) {
       if (data == null || data.settings == null || data.settings.length == 0) {
         return;
@@ -412,11 +441,12 @@ azkaban.SummaryView = Backbone.View.extend({
   },
 
   fetchLastRun: function () {
-    var requestURL = contextURL + "/manager";
+    var model = this.model;
+    var requestURL = model.get("fetchLastSuccessfulFlowExecutionUrl");
     var requestData = {
       'ajax': 'fetchLastSuccessfulFlowExecution',
-      'project': projectName,
-      'flow': flowId
+      'project': model.get("projectName"),
+      'flow': model.get("flowId")
     };
     var view = this;
     var successHandler = function (data) {
@@ -432,14 +462,14 @@ azkaban.SummaryView = Backbone.View.extend({
   },
 
   fetchFlowTrigger: function () {
-    var requestURL = contextURL + "/flowtrigger"
+    var model = this.model;
+    var requestURL = model.get("fetchTriggerUrl");
     var requestData = {
       'ajax': 'fetchTrigger',
-      'projectId': projectId,
-      'flowId': flowId
+      'projectId': model.get("projectId"),
+      'flowId': model.get("flowId")
     };
-    var model = this.model;
-    var view = this;
+
     var successHandler = function (data) {
       model.set({'flowtrigger': data.flowTrigger});
       model.trigger('render');
@@ -451,13 +481,14 @@ azkaban.SummaryView = Backbone.View.extend({
   },
 
   render: function (evt) {
+    var model = this.model;
     var data = {
-      projectName: projectName,
-      flowName: flowId,
-      jobTypes: this.model.get('jobTypes'),
-      condition: this.model.get('condition'),
-      schedule: this.model.get('schedule'),
-      flowtrigger: this.model.get('flowtrigger'),
+      projectName: model.get('projectName'),
+      flowName: model.get('flowId'),
+      jobTypes: model.get('jobTypes'),
+      condition: model.get('condition'),
+      schedule: model.get('schedule'),
+      flowtrigger: model.get('flowtrigger')
     };
     dust.render("flowsummary", data, function (err, out) {
       $('#summary-view-content').html(out);
@@ -467,40 +498,53 @@ azkaban.SummaryView = Backbone.View.extend({
 
 var graphModel;
 var mainSvgGraphView;
-
-var executionModel;
-azkaban.ExecutionModel = Backbone.Model.extend({});
-
-var flowTriggerModel;
-azkaban.FlowTriggerModel = Backbone.Model.extend({});
-
-var summaryModel;
-azkaban.SummaryModel = Backbone.Model.extend({});
-
 var flowStatsView;
 var flowStatsModel;
-
 var executionsTimeGraphView;
 var slaView;
 
-$(function () {
+var initFlowPage = function (settings) {
   var selected;
+
   // Execution model has to be created before the window switches the tabs.
-  executionModel = new azkaban.ExecutionModel();
-  executionModel.set("content", "flow");
+  executionModel = new azkaban.ExecutionModel({
+    page: 1,
+    pageSize: settings.pageSize,
+    visiblePages: 5,
+    projectName: settings.projectName,
+    flowId: settings.flowId,
+    executionUrl: settings.executionUrl,
+    fetchFlowExecutionsUrl: settings.fetchFlowExecutionsUrl
+  });
   executionsView = new azkaban.ExecutionsView({
     el: $('#executionsView'),
     model: executionModel
   });
 
-  flowTriggerModel = new azkaban.ExecutionModel();
-  flowTriggerModel.set("content", "trigger");
-  flowTriggerView = new azkaban.ExecutionsView({
+  flowTriggerModel = new azkaban.FlowTriggerModel({
+    page: 1,
+    pageSize: settings.pageSize,
+    visiblePages: 5,
+    projectName: settings.projectName,
+    flowId: settings.flowId,
+    triggerInstanceUrl: settings.triggerInstanceUrl,
+    fetchTriggerInstancesUrl: settings.fetchTriggerInstancesUrl
+  });
+  flowTriggersView = new azkaban.FlowTriggersView({
     el: $('#flowtriggerView'),
     model: flowTriggerModel
   });
 
-  summaryModel = new azkaban.SummaryModel();
+  summaryModel = new azkaban.SummaryModel({
+    projectId: settings.projectId,
+    projectName: settings.projectName,
+    flowId: settings.flowId,
+    fetchFlowDetailsUrl: settings.fetchFlowDetailsUrl,
+    fetchScheduleUrl: settings.fetchScheduleUrl,
+    slaInfoUrl: settings.slaInfoUrl,
+    fetchLastSuccessfulFlowExecutionUrl: settings.fetchLastSuccessfulFlowExecutionUrl,
+    fetchTriggerUrl: settings.fetchTriggerUrl
+  });
   summaryView = new azkaban.SummaryView({
     el: $('#summaryView'),
     model: summaryModel
@@ -542,24 +586,21 @@ $(function () {
 
   slaView = new azkaban.ChangeSlaView({el: $('#sla-options')});
 
-  var requestURL = contextURL + "/manager";
   // Set up the Flow options view. Create a new one every time :p
   $('#executebtn').click(function () {
-    var data = graphModel.get("data");
-    var nodes = data.nodes;
     var executingData = {
-      project: projectName,
+      project: settings.projectName,
       ajax: "executeFlow",
-      flow: flowId
+      flow: settings.flowId
     };
 
     flowExecuteDialogView.show(executingData);
   });
 
   var requestData = {
-    "project": projectName,
+    "project": settings.projectName,
     "ajax": "fetchflowgraph",
-    "flow": flowId
+    "flow": settings.flowId
   };
   var successHandler = function (data) {
     console.log("data fetched");
@@ -578,23 +619,11 @@ $(function () {
       if (hash == "#flowtriggers") {
         flowTabView.handleFlowTriggerLinkClick();
       }
-
       if (hash == "#graph") {
         // Redundant, but we may want to change the default.
         selected = "graph";
       }
-      else {
-        if ("#page" == hash.substring(0, "#page".length)) {
-          var page = hash.substring("#page".length, hash.length);
-          console.log("page " + page);
-          flowTabView.handleExecutionLinkClick();
-          executionModel.set({"page": parseInt(page)});
-        }
-        else {
-          selected = "graph";
-        }
-      }
     }
   };
-  $.get(requestURL, requestData, successHandler, "json");
-});
+  $.get(settings.fetchFlowGraphUrl, requestData, successHandler, "json");
+};

@@ -17,8 +17,11 @@
 package azkaban.metrics;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,10 +40,55 @@ public class CommonMetricsTest {
 
   @Test
   public void testOOMWaitingJobMetrics() {
-    final String metricName = "OOM-waiting-job-count";
+    final String metricName = CommonMetrics.OOM_WAITING_JOB_COUNT_NAME;
 
     assertEquals(0, this.testUtil.getGaugeValue(metricName));
     this.metrics.incrementOOMJobWaitCount();
     assertEquals(1, this.testUtil.getGaugeValue(metricName));
+  }
+
+  @Test
+  public void testSubmitMetrics() {
+    assertEquals(0, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME));
+    this.metrics.markSubmitFlowFail();
+    assertEquals(1, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME));
+
+    assertEquals(0, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME));
+    this.metrics.markSubmitFlowSkip();
+    assertEquals(1, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME));
+
+    assertEquals(0, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME));
+    this.metrics.markSubmitFlowSuccess();
+    assertEquals(1, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME));
+  }
+
+  @Test
+  public void testQueueWaitMetrics() {
+    final double delta = 0.001;
+
+    this.metrics.addQueueWait(500L);
+    this.metrics.addQueueWait(600L);
+    this.metrics.addQueueWait(1000L);
+    Snapshot snapshot = this.testUtil.getHistogramSnapshot(CommonMetrics.QUEUE_WAIT_HISTOGRAM_NAME);
+    assertEquals(600, snapshot.getMedian(), delta);
+    assertEquals(700, snapshot.getMean(), delta);
+    assertEquals(500, snapshot.getMin(), delta);
+    assertEquals(1000, snapshot.getMax(), delta);
+  }
+
+  @Test
+  public void testFlowSetupMetrics() throws InterruptedException {
+    assertEquals(0, this.testUtil.getTimerCount(CommonMetrics.FLOW_SETUP_TIMER_NAME));
+    Timer.Context context = this.metrics.getFlowSetupTimerContext();
+    try {
+      Thread.sleep(100);
+    }
+    finally {
+      context.stop();
+    }
+    assertEquals(1, this.testUtil.getTimerCount(CommonMetrics.FLOW_SETUP_TIMER_NAME));
+    Snapshot snapshot = this.testUtil.getTimerSnapshot(CommonMetrics.FLOW_SETUP_TIMER_NAME);
+    double val = snapshot.getMax();
+    assertTrue(snapshot.getMax() > 100);
   }
 }

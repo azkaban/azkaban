@@ -12,6 +12,7 @@ CREATE TABLE execution_flows (
   enc_type    TINYINT,
   flow_data   LONGBLOB,
   executor_id INT                   DEFAULT NULL,
+  use_executor INT                  DEFAULT NULL,
   PRIMARY KEY (exec_id)
 );
 

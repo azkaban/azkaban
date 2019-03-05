@@ -18,6 +18,7 @@ package azkaban.sla;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.sla.SlaType.ComponentType;
+import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -71,7 +72,7 @@ public class SlaOption {
    * @param jobName The name of the job, if the SLA is for a job.
    * @param duration The duration (time to wait before the SLA would take effect).
    * @param actions actions to take for the SLA.
-    * @param emails list of emails to send an alert to, for the SLA.
+   * @param emails list of emails to send an alert to, for the SLA.
    */
   public SlaOption(final SlaType type,
       String flowName, String jobName, Duration duration, Set<SlaAction> actions,
@@ -80,7 +81,7 @@ public class SlaOption {
     this.type = type;
     this.flowName = Preconditions.checkNotNull(flowName, "flowName is null");
     this.jobName = jobName;
-    this.duration = Preconditions.checkNotNull(duration);
+    this.duration = Preconditions.checkNotNull(duration, "duration is null");
     this.actions = ImmutableSet.copyOf(actions);
     this.emails = ImmutableList.copyOf(emails);
   }
@@ -247,7 +248,7 @@ public class SlaOption {
     } else {
       slaObj.put(WEB_ID, this.jobName);
     }
-    slaObj.put(WEB_DURATION, this.duration);
+    slaObj.put(WEB_DURATION, durationToString(this.duration));
     slaObj.put(WEB_STATUS, this.type.getStatus().toString());
 
     final List<String> actionsObj = new ArrayList<>();
@@ -270,20 +271,21 @@ public class SlaOption {
    */
   public String createSlaMessage(final ExecutableFlow flow) {
     final int execId = flow.getExecutionId();
+    final String durationStr = durationToString(this.duration);
     switch (this.type.getComponent()) {
       case FLOW:
         final String basicinfo =
             "SLA Alert: Your flow " + this.flowName + " failed to " + this.type.getStatus()
-                + " within " + this.duration + "<br/>";
+                + " within " + durationStr + "<br/>";
         final String expected =
             "Here are details : <br/>" + "Flow " + this.flowName + " in execution "
-                + execId + " is expected to FINISH within " + this.duration + " from "
+                + execId + " is expected to FINISH within " + durationStr + " from "
                 + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
         final String actual = "Actual flow status is " + flow.getStatus();
         return basicinfo + expected + actual;
        case JOB:
          return "SLA Alert: Your job " + this.jobName + " failed to " + this.type.getStatus()
-             + " within " + this.duration + " in execution " + execId;
+             + " within " + durationStr + " in execution " + execId;
       default:
         return "Unrecognized SLA component type " + this.type.getComponent();
     }

@@ -29,6 +29,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.time.Duration;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -444,7 +447,7 @@ public class Utils {
       return 0L;
     }
 
-    long size = 0L;
+    final long size;
     if (strMemSize.endsWith("g") || strMemSize.endsWith("G")
         || strMemSize.endsWith("m") || strMemSize.endsWith("M")
         || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
@@ -454,7 +457,7 @@ public class Utils {
       size = Long.parseLong(strMemSize);
     }
 
-    long sizeInKb = 0L;
+    final long sizeInKb;
     if (strMemSize.endsWith("g") || strMemSize.endsWith("G")) {
       sizeInKb = size * 1024L * 1024L;
     } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
