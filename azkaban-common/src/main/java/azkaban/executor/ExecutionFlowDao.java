@@ -53,9 +53,14 @@ public class ExecutionFlowDao {
         flow.getExecutionOptions().getFlowParameters().get(ExecutionOptions.USE_EXECUTOR);
     final String executorId = StringUtils.isNotEmpty(useExecutorParam) ? useExecutorParam : null;
 
+    final String flowPriorityParam =
+        flow.getExecutionOptions().getFlowParameters().get(ExecutionOptions.FLOW_PRIORITY);
+    final int flowPriority = StringUtils.isNotEmpty(flowPriorityParam) ?
+        Integer.parseInt(flowPriorityParam) : ExecutionOptions.DEFAULT_FLOW_PRIORITY;
+
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
-        + "use_executor) values (?,?,?,?,?,?,?,?)";
+        + "use_executor, flow_priority) values (?,?,?,?,?,?,?,?,?)";
     final long submitTime = System.currentTimeMillis();
     flow.setStatus(Status.PREPARING);
     flow.setSubmitTime(submitTime);
@@ -69,7 +74,7 @@ public class ExecutionFlowDao {
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime, executorId);
+          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority);
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -337,7 +342,7 @@ public class ExecutionFlowDao {
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE status = " + Status.PREPARING.getNumVal()
             + " and executor_id is NULL and flow_data is NOT NULL and %s"
-            + " ORDER BY submit_time ASC LIMIT 1 FOR UPDATE";
+            + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC LIMIT 1 FOR UPDATE";
 
     public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
         String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
