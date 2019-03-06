@@ -16,8 +16,7 @@
 
 package azkaban.execapp;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.*;
 
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsTestUtility;
@@ -42,7 +41,7 @@ public class ExecMetricsTest {
 
   @Test
   public void testFlowSetupMetrics() throws InterruptedException {
-    assertEquals(0, this.testUtil.getTimerCount(ExecMetrics.FLOW_SETUP_TIMER_NAME));
+    assertThat(this.testUtil.getTimerCount(ExecMetrics.FLOW_SETUP_TIMER_NAME)).isEqualTo(0);
     Timer.Context context = this.metrics.getFlowSetupTimerContext();
     try {
       Thread.sleep(10);
@@ -50,10 +49,10 @@ public class ExecMetricsTest {
     finally {
       context.stop();
     }
-    assertEquals(1, this.testUtil.getTimerCount(ExecMetrics.FLOW_SETUP_TIMER_NAME));
+    assertThat(this.testUtil.getTimerCount(ExecMetrics.FLOW_SETUP_TIMER_NAME)).isEqualTo(1);
     Snapshot snapshot = this.testUtil.getTimerSnapshot(ExecMetrics.FLOW_SETUP_TIMER_NAME);
     double val = snapshot.getMax();
-    assertTrue(snapshot.getMax() > 10);
+    assertThat(snapshot.getMax()).isGreaterThanOrEqualTo(10);
   }
 
 }

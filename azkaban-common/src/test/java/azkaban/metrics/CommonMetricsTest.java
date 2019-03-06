@@ -16,12 +16,10 @@
 
 package azkaban.metrics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.*;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,24 +40,24 @@ public class CommonMetricsTest {
   public void testOOMWaitingJobMetrics() {
     final String metricName = CommonMetrics.OOM_WAITING_JOB_COUNT_NAME;
 
-    assertEquals(0, this.testUtil.getGaugeValue(metricName));
+    assertThat(this.testUtil.getGaugeValue(metricName)).isEqualTo(0);
     this.metrics.incrementOOMJobWaitCount();
-    assertEquals(1, this.testUtil.getGaugeValue(metricName));
+    assertThat(this.testUtil.getGaugeValue(metricName)).isEqualTo(1);
   }
 
   @Test
   public void testSubmitMetrics() {
-    assertEquals(0, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME));
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME)).isEqualTo(0);
     this.metrics.markSubmitFlowFail();
-    assertEquals(1, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME));
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME)).isEqualTo(1);
 
-    assertEquals(0, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME));
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME)).isEqualTo(0);
     this.metrics.markSubmitFlowSkip();
-    assertEquals(1, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME));
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME)).isEqualTo(1);
 
-    assertEquals(0, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME));
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME)).isEqualTo(0);
     this.metrics.markSubmitFlowSuccess();
-    assertEquals(1, this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME));
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME)).isEqualTo(1);
   }
 
   @Test
@@ -70,9 +68,9 @@ public class CommonMetricsTest {
     this.metrics.addQueueWait(600L);
     this.metrics.addQueueWait(1000L);
     Snapshot snapshot = this.testUtil.getHistogramSnapshot(CommonMetrics.QUEUE_WAIT_HISTOGRAM_NAME);
-    assertEquals(600, snapshot.getMedian(), delta);
-    assertEquals(700, snapshot.getMean(), delta);
-    assertEquals(500, snapshot.getMin(), delta);
-    assertEquals(1000, snapshot.getMax(), delta);
+    assertThat(snapshot.getMedian()).isCloseTo(600.0, within(delta));
+    assertThat(snapshot.getMean()).isCloseTo(700.0, within(delta));
+    assertThat(snapshot.getMin()).isEqualTo(500);
+    assertThat( snapshot.getMax()).isEqualTo(1000);
   }
 }
