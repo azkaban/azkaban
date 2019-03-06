@@ -18,7 +18,6 @@ package azkaban.metrics;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,8 +39,6 @@ public class CommonMetrics {
   public static final String SUBMIT_FLOW_SKIP_METER_NAME = "submit-flow-skip-meter";
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
   public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
-  public static final String FLOW_SETUP_TIMER_NAME = "flow-setup-timer";
-
 
   private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
   private final MetricsManager metricsManager;
@@ -54,7 +51,6 @@ public class CommonMetrics {
   private Meter submitFlowFailMeter;
   private Meter submitFlowSkipMeter;
   private Histogram queueWaitMeter;
-  private Timer flowSetupTimer;
 
   @Inject
   public CommonMetrics(final MetricsManager metricsManager) {
@@ -73,7 +69,6 @@ public class CommonMetrics {
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
     this.metricsManager.addGauge(OOM_WAITING_JOB_COUNT_NAME, this.OOMWaitingJobCount::get);
     this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
-    this.flowSetupTimer = this.metricsManager.addTimer(FLOW_SETUP_TIMER_NAME);
   }
 
   /**
@@ -153,9 +148,4 @@ public class CommonMetrics {
    * @param time queue wait time for a flow.
    */
   public void addQueueWait(long time) { this.queueWaitMeter.update(time); }
-
-  /**
-   * @return the {@link Timer.Context} for the timer.
-   */
-  public Timer.Context getFlowSetupTimerContext() { return this.flowSetupTimer.time(); }
 }
