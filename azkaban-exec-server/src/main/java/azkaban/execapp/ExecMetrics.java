@@ -43,10 +43,9 @@ public class ExecMetrics {
     this.projectCacheHitRatio = new ProjectCacheHitRatio();
     metricsManager.addGauge("EXEC-ProjectDirCacheHitRatio",
         this.projectCacheHitRatio::getRatio);
+    this.flowSetupTimer = this.metricsManager.addTimer(FLOW_SETUP_TIMER_NAME);
   }
 
-  public void setupStaticMetrics() {
-    this.flowSetupTimer = this.metricsManager.addTimer(FLOW_SETUP_TIMER_NAME);
   ProjectCacheHitRatio getProjectCacheHitRatio() {
     return this.projectCacheHitRatio;
   }
