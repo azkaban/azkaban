@@ -20,6 +20,7 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
+import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
@@ -55,35 +56,15 @@ class FlowPreparer {
   private final StorageManager storageManager;
   // Null if cache clean-up is disabled
   private final Optional<ProjectCacheCleaner> projectCacheCleaner;
-  private final ProjectCacheMetrics cacheMetrics;
-
-  @VisibleForTesting
-  static class ProjectCacheMetrics {
-    private long cacheHit;
-    private long cacheMiss;
-
-    /**
-     * @return hit ratio of project dirs cache
-     */
-    synchronized double getHitRatio() {
-      final long total = this.cacheHit + this.cacheMiss;
-      return total == 0 ? 0 : this.cacheHit * 1.0 / total;
-    }
-
-    synchronized void incrementCacheHit() {
-      this.cacheHit++;
-    }
-
-    synchronized void incrementCacheMiss() {
-      this.cacheMiss++;
-    }
-  }
+  private final ProjectCacheHitRatio projectCacheHitRatio;
 
   FlowPreparer(final StorageManager storageManager, final File executionsDir,
-      final File projectsDir, final ProjectCacheCleaner cleaner) {
+      final File projectsDir, final ProjectCacheCleaner cleaner,
+      final ProjectCacheHitRatio projectCacheHitRatio) {
     Preconditions.checkNotNull(storageManager);
     Preconditions.checkNotNull(executionsDir);
     Preconditions.checkNotNull(projectsDir);
+    Preconditions.checkNotNull(projectCacheHitRatio);
 
     Preconditions.checkArgument(projectsDir.exists());
     Preconditions.checkArgument(executionsDir.exists());
@@ -92,11 +73,7 @@ class FlowPreparer {
     this.executionsDir = executionsDir;
     this.projectCacheDir = projectsDir;
     this.projectCacheCleaner = Optional.ofNullable(cleaner);
-    this.cacheMetrics = new ProjectCacheMetrics();
-  }
-
-  double getProjectDirCacheHitRatio() {
-    return this.cacheMetrics.getHitRatio();
+    this.projectCacheHitRatio = projectCacheHitRatio;
   }
 
   /**
@@ -247,7 +224,7 @@ class FlowPreparer {
    * @throws IOException if downloading or unzipping fails.
    */
   @VisibleForTesting
-  File downloadProjectIfNotExists(final ProjectDirectoryMetadata proj, int execId)
+  File downloadProjectIfNotExists(final ProjectDirectoryMetadata proj, final int execId)
       throws IOException {
     final String projectDir = generateProjectDirName(proj);
     if (proj.getInstalledDir() == null) {
@@ -256,9 +233,9 @@ class FlowPreparer {
 
     // If directory exists, assume it's prepared and skip.
     if (proj.getInstalledDir().exists()) {
-	log.info("Project {} already cached. Skipping download. ExecId: {}", proj, execId);
+      log.info("Project {} already cached. Skipping download. ExecId: {}", proj, execId);
       // Hit the local cache.
-      this.cacheMetrics.incrementCacheHit();
+      this.projectCacheHitRatio.markHit();
       // Update last modified time of the file keeping project dir size when the project is
       // accessed. This last modified time will be used to determined least recently used
       // projects when performing project directory clean-up.
@@ -267,7 +244,7 @@ class FlowPreparer {
       return null;
     }
 
-    this.cacheMetrics.incrementCacheMiss();
+    this.projectCacheHitRatio.markMiss();
     final File tempDir = createTempDir(proj);
     downloadAndUnzipProject(proj, tempDir);
     return tempDir;

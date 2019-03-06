@@ -222,7 +222,9 @@ public class FlowRunnerManager implements EventListener,
 
     // Create a flow preparer
     this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, cleaner);
+        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
+
+    this.execMetrics.addFlowRunnerManagerMetrics(this);
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
@@ -233,10 +235,6 @@ public class FlowRunnerManager implements EventListener,
           (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, DEFAULT_POLLING_INTERVAL_MS));
       this.pollingService.start();
     }
-  }
-
-  public double getProjectDirCacheHitRatio() {
-    return this.flowPreparer.getProjectDirCacheHitRatio();
   }
 
   /**
@@ -386,7 +384,7 @@ public class FlowRunnerManager implements EventListener,
     // Record the time between submission, and when the flow preparation/execution starts.
     // Note that since submit time is recorded on the web server, while flow preparation is on
     // the executor, there could be some inaccuracies due to clock skew.
-    commonMetrics.addQueueWait(System.currentTimeMillis() -
+    this.commonMetrics.addQueueWait(System.currentTimeMillis() -
         flow.getExecutableFlow().getSubmitTime());
 
     final Timer.Context flowPrepTimerContext = execMetrics.getFlowSetupTimerContext();
@@ -1039,11 +1037,11 @@ public class FlowRunnerManager implements EventListener,
           if (execId != -1) {
             FlowRunnerManager.logger.info("Submitting flow " + execId);
             submitFlow(execId);
-            commonMetrics.markDispatchSuccess();
+            FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
           }
         } catch (final Exception e) {
           FlowRunnerManager.logger.error("Failed to submit flow ", e);
-          commonMetrics.markDispatchFail();
+          FlowRunnerManager.this.commonMetrics.markDispatchFail();
         }
       }
     }

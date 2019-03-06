@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.metrics.MetricsManager;
 import com.codahale.metrics.Timer;
 import javax.inject.Inject;
@@ -33,15 +34,21 @@ public class ExecMetrics {
 
   private final MetricsManager metricsManager;
   private Timer flowSetupTimer;
+  private final ProjectCacheHitRatio projectCacheHitRatio;
 
   @Inject
   ExecMetrics(final MetricsManager metricsManager) {
     this.metricsManager = metricsManager;
-    setupStaticMetrics();
+    // setup project cache ratio metrics
+    this.projectCacheHitRatio = new ProjectCacheHitRatio();
+    metricsManager.addGauge("EXEC-ProjectDirCacheHitRatio",
+        this.projectCacheHitRatio::getRatio);
   }
 
   public void setupStaticMetrics() {
     this.flowSetupTimer = this.metricsManager.addTimer(FLOW_SETUP_TIMER_NAME);
+  ProjectCacheHitRatio getProjectCacheHitRatio() {
+    return this.projectCacheHitRatio;
   }
 
   public void addFlowRunnerManagerMetrics(final FlowRunnerManager flowRunnerManager) {
@@ -49,8 +56,6 @@ public class ExecMetrics {
         .addGauge(NUM_RUNNING_FLOWS_NAME, flowRunnerManager::getNumRunningFlows);
     this.metricsManager
         .addGauge(NUM_QUEUED_FLOWS_NAME, flowRunnerManager::getNumQueuedFlows);
-    this.metricsManager
-        .addGauge(PROJECT_DIR_CACHE_HIT_RATIO_NAME, flowRunnerManager::getProjectDirCacheHitRatio);
   }
 
   /**
