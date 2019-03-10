@@ -13,7 +13,7 @@ CREATE TABLE execution_flows (
   flow_data   LONGBLOB,
   executor_id INT                   DEFAULT NULL,
   use_executor INT                  DEFAULT NULL,
-  flow_priority INT                 DEFAULT 5,
+  flow_priority INT        NOT NULL DEFAULT 5,
   PRIMARY KEY (exec_id)
 );
 
