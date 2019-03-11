@@ -16,6 +16,7 @@
 
 package azkaban.metrics;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -36,6 +37,13 @@ public class MetricsTestUtility {
   public long getGaugeValue(final String name) {
     // Assume that the gauge value can be converted to type long.
     return (long) this.registry.getGauges().get(name).getValue();
+  }
+
+  /**
+   * @return the value for the specified {@link Counter}
+   */
+  public long getCounterValue(final String name) {
+    return this.registry.getCounters().get(name).getCount();
   }
 
   /** @return the value for the specified {@link Meter} */
