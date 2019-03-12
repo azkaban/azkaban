@@ -103,8 +103,8 @@
                   <a href="${context}/manager?project=${sched.projectName}">${sched.projectName}</a>
                 </td>
                 <td>${sched.submitUser}</td>
-                <td>$utils.formatDateTime(${sched.firstSchedTime})</td>
-                <td>$utils.formatDateTime(${sched.nextExecTime})</td>
+                <td>$TimeUtils.formatDateTime(${sched.firstSchedTime})</td>
+                <td>$TimeUtils.formatDateTime(${sched.nextExecTime})</td>
                 #if (${sched.period})
                   <td> $utils.formatPeriod(${sched.period})</td>
                 #else
@@ -127,22 +127,24 @@
                 <div class="modal fade" id="executionOptions-${velocityCount}" tabindex="-1"
                      role="dialog"
                      aria-labelledby="executionOptionsLabel">
-                      <div class="modal-dialog" role="document">
-                          <div class="modal-content">
-                              <div class="modal-header">
-                                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                  <h4 class="modal-title" id="executionOptionsLabel">Execution Options</h4>
-                              </div>
-                              <div class="modal-body">
-                              ## Used <pre> to display text with code format
-                                <pre>${sched.executionOptions.toJSON()}</pre>
-                              </div>
-                              <div class="modal-footer">
-                                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                              </div>
-                          </div>
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="executionOptionsLabel">Execution Options</h4>
                       </div>
+                      <div class="modal-body">
+                      ## Used <pre> to display text with code format
+                        <pre>${sched.executionOptions.toJSON()}</pre>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                </div>
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
                 <td>
                   <button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger"

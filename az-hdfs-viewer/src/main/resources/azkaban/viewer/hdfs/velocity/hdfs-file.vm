@@ -104,7 +104,7 @@
                   <td class="property-key">Reps</td>
                   <td class="property-value-half">${status.getReplication()}</td>
                   <td class="property-key">Modified Date</td>
-                  <td class="property-value-half">$utils.formatDateTime(${status.modificationTime})</td>
+                  <td class="property-value-half">$TimeUtils.formatDateTime(${status.modificationTime})</td>
                 </tr>
               </tbody>
             </table>

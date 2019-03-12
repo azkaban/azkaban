@@ -19,7 +19,6 @@ package azkaban.utils;
 import azkaban.executor.Status;
 import java.text.NumberFormat;
 import java.util.Map;
-import org.joda.time.DateTime;
 import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
@@ -39,10 +38,6 @@ public class WebUtils {
     }
 
     return DateTimeFormat.forPattern(DATE_TIME_STRING).print(timeMS);
-  }
-
-  public long currentTimestamp() {
-    return System.currentTimeMillis();
   }
 
   public String formatDuration(final long startTime, final long endTime) {
@@ -108,13 +103,6 @@ public class WebUtils {
     return "Unknown";
   }
 
-  public String formatDateTime(final DateTime dt) {
-    return DateTimeFormat.forPattern(DATE_TIME_STRING).print(dt);
-  }
-
-  public String formatDateTime(final long timestamp) {
-    return formatDateTime(new DateTime(timestamp));
-  }
 
   public String formatPeriod(final ReadablePeriod period) {
     String periodStr = "null";

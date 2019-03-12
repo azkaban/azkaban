@@ -33,6 +33,7 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -285,10 +286,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
         jsonObj.put("submitUser", schedule.getSubmitUser());
         jsonObj.put("firstSchedTime",
-            utils.formatDateTime(schedule.getFirstSchedTime()));
+            TimeUtils.formatDateTime(schedule.getFirstSchedTime()));
         jsonObj.put("nextExecTime",
-            utils.formatDateTime(schedule.getNextExecTime()));
-        jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+            TimeUtils.formatDateTime(schedule.getNextExecTime()));
+        jsonObj.put("period", AbstractAzkabanServlet.utils.formatPeriod(schedule.getPeriod()));
         jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);

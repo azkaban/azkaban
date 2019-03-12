@@ -24,11 +24,9 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.utils.EmailMessage;
+import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -36,8 +34,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 public class DefaultMailCreator implements MailCreator {
 
   public static final String DEFAULT_MAIL_CREATOR = "default";
-  private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
-      "yyyy/MM/dd HH:mm:ss z");
   private static final HashMap<String, MailCreator> registeredCreators = new HashMap<>();
   private static final MailCreator defaultCreator;
 
@@ -56,14 +52,6 @@ public class DefaultMailCreator implements MailCreator {
       creator = defaultCreator;
     }
     return creator;
-  }
-
-  private static String convertMSToString(final long timeInMS) {
-    if (timeInMS < 0) {
-      return "N/A";
-    } else {
-      return DATE_FORMATTER.format(new Date(timeInMS));
-    }
   }
 
   private static List<String> findFailedJobs(final ExecutableFlow flow) {
@@ -108,9 +96,9 @@ public class DefaultMailCreator implements MailCreator {
 
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>"
-          + convertMSToString(flow.getStartTime()) + "</td></tr>");
+          + TimeUtils.formatDateTimeZone(flow.getStartTime()) + "</td></tr>");
       message.println("<tr><td>End Time</td><td>"
-          + convertMSToString(flow.getEndTime()) + "</td></tr>");
+          + TimeUtils.formatDateTimeZone(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
@@ -160,9 +148,9 @@ public class DefaultMailCreator implements MailCreator {
           + flow.getProjectName() + "' has failed on " + azkabanName + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>"
-          + convertMSToString(flow.getStartTime()) + "</td></tr>");
+          + TimeUtils.formatDateTimeZone(flow.getStartTime()) + "</td></tr>");
       message.println("<tr><td>End Time</td><td>"
-          + convertMSToString(flow.getEndTime()) + "</td></tr>");
+          + TimeUtils.formatDateTimeZone(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
@@ -205,9 +193,9 @@ public class DefaultMailCreator implements MailCreator {
         message.println(
             "<tr><td>Execution Id</td><td>" + (executableFlow.getExecutionId()) + "</td></tr>");
         message.println("<tr><td>Start Time</td><td>"
-            + convertMSToString(executableFlow.getStartTime()) + "</td></tr>");
+            + TimeUtils.formatDateTimeZone(executableFlow.getStartTime()) + "</td></tr>");
         message.println("<tr><td>End Time</td><td>"
-            + convertMSToString(executableFlow.getEndTime()) + "</td></tr>");
+            + TimeUtils.formatDateTimeZone(executableFlow.getEndTime()) + "</td></tr>");
         message.println("<tr><td>Status</td><td>" + executableFlow.getStatus() + "</td></tr>");
         message.println("</table>");
       }
@@ -238,9 +226,9 @@ public class DefaultMailCreator implements MailCreator {
           + flow.getProjectName() + "' has succeeded on " + azkabanName + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>"
-          + convertMSToString(flow.getStartTime()) + "</td></tr>");
+          + TimeUtils.formatDateTimeZone(flow.getStartTime()) + "</td></tr>");
       message.println("<tr><td>End Time</td><td>"
-          + convertMSToString(flow.getEndTime()) + "</td></tr>");
+          + TimeUtils.formatDateTimeZone(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");

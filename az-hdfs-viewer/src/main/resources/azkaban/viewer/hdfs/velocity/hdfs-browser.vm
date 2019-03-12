@@ -126,7 +126,7 @@
                     ${status.getReplication()}
         #end
                   </td>
-                  <td>$utils.formatDateTime(${status.modificationTime})</td>
+                  <td>$TimeUtils.formatDateTime(${status.modificationTime})</td>
                 </tr>
       #end
     #else

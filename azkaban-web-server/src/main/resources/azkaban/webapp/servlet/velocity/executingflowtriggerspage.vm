@@ -162,7 +162,7 @@
                 <td>$utils.formatDuration(${trigger.getStartTime()}, ${trigger.getEndTime()})
                 </td>
               #else
-                <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
+                <td>$utils.formatDuration(${trigger.getStartTime()}, ${System.currentTimeMillis()})
                 </td>
               #end
 
@@ -216,7 +216,7 @@
                   <td>$utils.formatDuration(${dep.getStartTime()}, ${dep.getEndTime()})
                   </td>
                 #else
-                  <td>$utils.formatDuration(${dep.getStartTime()}, ${utils.currentTimestamp()})
+                  <td>$utils.formatDuration(${dep.getStartTime()}, ${System.currentTimeMillis()})
                   </td>
                 #end
               </tr>
@@ -311,7 +311,7 @@
                 <td>$utils.formatDuration(${trigger.getStartTime()}, ${trigger.getEndTime()})
                 </td>
               #else
-                <td>$utils.formatDuration(${trigger.getStartTime()}, ${utils.currentTimestamp()})
+                <td>$utils.formatDuration(${trigger.getStartTime()}, ${System.currentTimeMillis()})
                 </td>
               #end
               #if (${trigger.getFlowExecId()} == "-1")
@@ -361,7 +361,7 @@
                   <td>$utils.formatDuration(${dep.getStartTime()}, ${dep.getEndTime()})
                   </td>
                 #else
-                  <td>$utils.formatDuration(${dep.getStartTime()}, ${utils.currentTimestamp()})
+                  <td>$utils.formatDuration(${dep.getStartTime()}, ${System.currentTimeMillis()})
                   </td>
                 #end
               </tr>
