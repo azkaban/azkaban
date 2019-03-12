@@ -5,4 +5,4 @@
 -- "flowPriority" is an execution option an Azkaban admin can specify when launching a new execution.
 -- It will allow a flow to be dispatched or polled first.
 --
-ALTER TABLE execution_flows ADD COLUMN flow_priority INT NOT NULL DEFAULT 5;
+ALTER TABLE execution_flows ADD COLUMN flow_priority TINYINT NOT NULL DEFAULT 5;
