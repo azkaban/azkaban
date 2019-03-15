@@ -40,16 +40,18 @@ import org.slf4j.LoggerFactory;
 class ProjectCacheCleaner {
 
   private final File projectCacheDir;
-  private final long projectCacheMaxSizeInMB;
+
+  // cache size in percentage of disk partition where {@link projectCacheDir} belongs to
+  private final double percentageOfDisk;
+
   private static final Logger log = LoggerFactory.getLogger(ProjectCacheCleaner.class);
 
-  ProjectCacheCleaner(final File projectCacheDir, final long projectCacheMaxSizeInMB) {
+  ProjectCacheCleaner(final File projectCacheDir, final double percentageOfDisk) {
     Preconditions.checkNotNull(projectCacheDir);
     Preconditions.checkArgument(projectCacheDir.exists());
-    Preconditions.checkArgument(projectCacheMaxSizeInMB > 0);
-
+    Preconditions.checkArgument(percentageOfDisk > 0 && percentageOfDisk <= 1);
     this.projectCacheDir = projectCacheDir;
-    this.projectCacheMaxSizeInMB = projectCacheMaxSizeInMB;
+    this.percentageOfDisk = percentageOfDisk;
   }
 
   /**
@@ -168,21 +170,22 @@ class ProjectCacheCleaner {
    * Deleting least recently accessed project dirs when there's no room to accommodate new project
    */
   void deleteProjectDirsIfNecessary(final long newProjectSizeInBytes) {
+    final long projectCacheMaxSizeInByte =
+        (long) (this.projectCacheDir.getTotalSpace() * this.percentageOfDisk);
+
     final long start = System.currentTimeMillis();
     final List<ProjectDirectoryMetadata> allProjects = loadAllProjects();
-    log.debug("loading all project dirs metadata completed in {} sec(s)",
-        Duration.ofSeconds(System.currentTimeMillis() - start).getSeconds());
+    log.info("loading {} project dirs metadata completed in {} sec(s)",
+        allProjects.size(), Duration.ofSeconds(System.currentTimeMillis() - start).getSeconds());
 
     final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
-    if (currentSpaceInBytes + newProjectSizeInBytes
-        >= this.projectCacheMaxSizeInMB * 1024 * 1024) {
+    if (currentSpaceInBytes + newProjectSizeInBytes >= projectCacheMaxSizeInByte) {
       log.info(
           "project cache usage[{} MB] exceeds the limit[{} MB], start cleaning up project dirs",
           (currentSpaceInBytes + newProjectSizeInBytes) / (1024 * 1024),
-          this.projectCacheMaxSizeInMB);
+          projectCacheMaxSizeInByte / (1024 * 1024));
 
-      final long freeCacheSpaceInBytes =
-          this.projectCacheMaxSizeInMB * 1024 * 1024 - currentSpaceInBytes;
+      final long freeCacheSpaceInBytes = projectCacheMaxSizeInByte - currentSpaceInBytes;
 
       deleteLeastRecentlyUsedProjects(newProjectSizeInBytes - freeCacheSpaceInBytes, allProjects);
     }
