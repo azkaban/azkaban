@@ -19,6 +19,7 @@ package azkaban.execapp;
 import azkaban.utils.ExecutorServiceUtils;
 import azkaban.utils.FileIOUtils;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
@@ -27,7 +28,9 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -117,16 +120,19 @@ class ProjectCacheCleaner {
   /**
    * Delete all the files in parallel
    *
-   * @param filesToDelete a list of files to delete
+   * @param projectDirsToDelete a set of project dirs to delete
    */
   @SuppressWarnings("FutureReturnValueIgnored")
-  private void deleteFilesInParallel(final List<File> filesToDelete) {
+  private void deleteProjectDirsInParallel(final ImmutableSet<File> projectDirsToDelete) {
     final int CLEANING_SERVICE_THREAD_NUM = 8;
     final ExecutorService deletionService = Executors
         .newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM);
 
-    for (final File toDelete : filesToDelete) {
-      deletionService.submit(() -> FileIOUtils.deleteDirectorySilently(toDelete));
+    for (final File toDelete : projectDirsToDelete) {
+      deletionService.submit(() -> {
+        log.info("deleting project dir {} from project cache to free up space", toDelete);
+        FileIOUtils.deleteDirectorySilently(toDelete);
+      });
     }
 
     try {
@@ -146,7 +152,7 @@ class ProjectCacheCleaner {
       final List<ProjectDirectoryMetadata> projectDirMetadataList) {
     // Sort projects by last reference time in ascending order
     projectDirMetadataList.sort(Comparator.comparing(ProjectDirectoryMetadata::getLastAccessTime));
-    final List<File> filesToDelete = new ArrayList<>();
+    final Set<File> projectDirsToDelete = new HashSet<>();
 
     for (final ProjectDirectoryMetadata proj : projectDirMetadataList) {
       if (sizeToFreeInBytes > 0) {
@@ -154,16 +160,20 @@ class ProjectCacheCleaner {
         // delete the directory since execution dir is HARD linked to project dir. Note that even
         // if project is deleted, disk space will be freed up only when all associated execution
         // dirs are deleted.
-        log.debug("deleting project {}", proj);
         if (proj.getInstalledDir() != null) {
-          filesToDelete.add(proj.getInstalledDir());
+          projectDirsToDelete.add(proj.getInstalledDir());
           sizeToFreeInBytes -= proj.getDirSizeInByte();
         }
       } else {
         break;
       }
     }
-    deleteFilesInParallel(filesToDelete);
+
+    final long start = System.currentTimeMillis();
+    deleteProjectDirsInParallel(ImmutableSet.copyOf(projectDirsToDelete));
+    final long end = System.currentTimeMillis();
+    log.info("deleting {} project dir(s) took {} sec(s)", projectDirsToDelete.size(),
+        (end - start) / 1000);
   }
 
   /**
@@ -176,12 +186,12 @@ class ProjectCacheCleaner {
     final long start = System.currentTimeMillis();
     final List<ProjectDirectoryMetadata> allProjects = loadAllProjects();
     log.info("loading {} project dirs metadata completed in {} sec(s)",
-        allProjects.size(), Duration.ofSeconds(System.currentTimeMillis() - start).getSeconds());
+        allProjects.size(), (System.currentTimeMillis() - start) / 1000);
 
     final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
     if (currentSpaceInBytes + newProjectSizeInBytes >= projectCacheMaxSizeInByte) {
       log.info(
-          "project cache usage[{} MB] exceeds the limit[{} MB], start cleaning up project dirs",
+          "project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
           (currentSpaceInBytes + newProjectSizeInBytes) / (1024 * 1024),
           projectCacheMaxSizeInByte / (1024 * 1024));
 

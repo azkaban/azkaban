@@ -133,7 +133,11 @@ class FlowPreparer {
           // Rename temp dir to a proper project directory name.
           Files.move(tempDir.toPath(), project.getInstalledDir().toPath());
         }
+
+        final long start = System.currentTimeMillis();
         execDir = setupExecutionDir(project.getInstalledDir(), flow);
+        final long end = System.currentTimeMillis();
+        log.info("Setting up execution dir {} took {} sec(s)", execDir, (end - start) / 1000);
       }
 
       final long flowPrepCompletionTime = System.currentTimeMillis();
