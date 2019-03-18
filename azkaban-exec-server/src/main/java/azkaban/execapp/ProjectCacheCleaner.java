@@ -74,7 +74,7 @@ class ProjectCacheCleaner {
       if (project.exists() && project.isDirectory()) {
         projects.add(project.toPath());
       } else {
-        log.debug("project {} doesn't exist or is non-dir.", project.getName());
+        log.debug("Project {} doesn't exist or is non-dir.", project.getName());
       }
     }
     return projects;
@@ -101,7 +101,7 @@ class ProjectCacheCleaner {
                 FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
         allProjects.add(projectDirMetadata);
       } catch (final Exception e) {
-        log.warn("error while loading project dir metadata for project {}",
+        log.warn("Error while loading project dir metadata for project {}",
             project.getFileName(), e);
       }
     }
@@ -130,7 +130,7 @@ class ProjectCacheCleaner {
 
     for (final File toDelete : projectDirsToDelete) {
       deletionService.submit(() -> {
-        log.info("deleting project dir {} from project cache to free up space", toDelete);
+        log.info("Deleting project dir {} from project cache to free up space", toDelete);
         FileIOUtils.deleteDirectorySilently(toDelete);
       });
     }
@@ -138,7 +138,7 @@ class ProjectCacheCleaner {
     try {
       new ExecutorServiceUtils().gracefulShutdown(deletionService, Duration.ofDays(1));
     } catch (final InterruptedException e) {
-      log.warn("error when deleting files", e);
+      log.warn("Error when deleting files", e);
     }
   }
 
@@ -172,7 +172,7 @@ class ProjectCacheCleaner {
     final long start = System.currentTimeMillis();
     deleteProjectDirsInParallel(ImmutableSet.copyOf(projectDirsToDelete));
     final long end = System.currentTimeMillis();
-    log.info("deleting {} project dir(s) took {} sec(s)", projectDirsToDelete.size(),
+    log.info("Deleting {} project dir(s) took {} sec(s)", projectDirsToDelete.size(),
         (end - start) / 1000);
   }
 
@@ -185,13 +185,13 @@ class ProjectCacheCleaner {
 
     final long start = System.currentTimeMillis();
     final List<ProjectDirectoryMetadata> allProjects = loadAllProjects();
-    log.info("loading {} project dirs metadata completed in {} sec(s)",
+    log.info("Loading {} project dirs metadata completed in {} sec(s)",
         allProjects.size(), (System.currentTimeMillis() - start) / 1000);
 
     final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
     if (currentSpaceInBytes + newProjectSizeInBytes >= projectCacheMaxSizeInByte) {
       log.info(
-          "project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
+          "Project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
           (currentSpaceInBytes + newProjectSizeInBytes) / (1024 * 1024),
           projectCacheMaxSizeInByte / (1024 * 1024));
 
