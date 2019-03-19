@@ -48,6 +48,8 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String INVALID_CONDITION_YAML_DIR = "invalidconditionalflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
+  private static final String BASIC_FLOW_3 = "basic_flow3";
+  private static final String BASIC_FLOW_4 = "basic_flow4";
   private static final String EMBEDDED_FLOW = "embedded_flow";
   private static final String EMBEDDED_FLOW_1 = "embedded_flow" + Constants.PATH_DELIMITER +
       "embedded_flow1";
@@ -88,6 +90,19 @@ public class DirectoryYamlFlowLoaderTest {
     checkFlowLoaderProperties(loader, 0, 2, 2);
     checkFlowProperties(loader, BASIC_FLOW_1, 0, 4, 1, 3, null);
     checkFlowProperties(loader, BASIC_FLOW_2, 0, 3, 1, 2, null);
+  }
+
+
+  @Test
+  public void testLoadFlowYmlToFlowYmlDependency() {
+    final DirectoryYamlFlowLoader loader = new DirectoryYamlFlowLoader(new Props());
+    loader.loadProjectFlow(this.project,
+        ExecutionsTestUtil.getFlowDir("multipleflow_yamlflow_to_yamlflow_dependencyltest"));
+    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_1)).isTrue();
+    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_2)).isTrue();
+    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_3)).isTrue();
+    assertThat(loader.getFlowMap().containsKey(BASIC_FLOW_4)).isTrue();
+    assertThat(loader.getFlowMap().get(BASIC_FLOW_1).getNodeMap().keySet().contains(BASIC_FLOW_2)).isTrue();
   }
 
   @Test

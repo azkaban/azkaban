@@ -1,0 +1,31 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobA
+    type: command
+    config:
+      command: echo "This is an echoed text."
+
+  - name: embedded_flow1
+    type: flow
+    nodes:
+      - name: jobB
+        type: command
+        config:
+          command: echo "This is an echoed textjobB."
+      - name: jobC
+        type: noop
+        config:
+          seconds: 0
+          fail: false
+        dependsOn:
+          - jobB
+
+  - name: jobD
+    type: command
+    config:
+      command: echo "This is an echoed textjobD."
+    dependsOn:
+      - embedded_flow1

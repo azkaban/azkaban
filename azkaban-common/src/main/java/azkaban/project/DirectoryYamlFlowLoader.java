@@ -1,18 +1,18 @@
 /*
-* Copyright 2017 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 
 package azkaban.project;
 
@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -115,34 +116,59 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     return FlowLoaderUtils.generateFlowLoaderReport(this.errors);
   }
 
-  private void convertYamlFiles(final File projectDir) {
-    // Todo jamiesjc: convert project yaml file.
 
-    for (final File file : projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX))) {
+  private Map<String, NodeBean> getNodeBeans(final File projectDir) {
+
+    Map<String, NodeBean> nodeBeanList = new HashMap<>();
+    for (final File file : Objects.requireNonNull(projectDir.listFiles(new DirFilter()))) {
+      nodeBeanList.putAll(this.getNodeBeans(file));
+    }
+
+    for (final File file : Objects
+        .requireNonNull(projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX)))) {
       final NodeBeanLoader loader = new NodeBeanLoader();
       try {
         final NodeBean nodeBean = loader.load(file);
-        if (!loader.validate(nodeBean)) {
-          this.errors.add("Failed to validate nodeBean for " + file.getName()
-              + ". Duplicate nodes found or dependency undefined.");
+        nodeBean.setFlowFile(file);
+        // check duplicate flows
+        if (nodeBeanList.containsKey(nodeBean.getName())) {
+          this.errors.add("Duplicate flows found in the project with name " + nodeBean.getName());
         } else {
-          final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
-          if (this.flowMap.containsKey(azkabanFlow.getName())) {
-            this.errors.add("Duplicate flows found in the project with name " + azkabanFlow
-                .getName());
-          } else {
-            final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(), file);
-            this.flowMap.put(flow.getId(), flow);
-          }
+          nodeBeanList.put(nodeBean.getName(), nodeBean);
         }
       } catch (final Exception e) {
         this.errors.add("Error loading flow yaml file " + file.getName() + ":"
             + e.getMessage());
       }
     }
-    for (final File file : projectDir.listFiles(new DirFilter())) {
-      convertYamlFiles(file);
+
+    return nodeBeanList;
+  }
+
+  private void convertYamlFiles(final File projectDir) {
+    // Todo jamiesjc: convert project yaml file.
+
+    Map<String, NodeBean> ymlFlowList = this.getNodeBeans(projectDir);
+
+    final NodeBeanLoader loader = new NodeBeanLoader();
+
+    // find dependency between separate yml files and merge the flows.
+    for (final NodeBean ymlFlow : ymlFlowList.values()) {
+      loader.addExternalFlowDependencies(ymlFlow, ymlFlowList);
     }
+
+    for (final NodeBean nodeBean : ymlFlowList.values()) {
+      if (!loader.validate(nodeBean)) {
+        this.errors.add("Failed to validate nodeBean for " + nodeBean.getFlowFile().getName()
+            + ". Duplicate nodes found or dependency undefined.");
+      } else {
+        final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
+        final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(),
+            nodeBean.getFlowFile());
+        this.flowMap.put(flow.getId(), flow);
+      }
+    }
+
   }
 
   private Flow convertAzkabanFlowToFlow(final AzkabanFlow azkabanFlow, final String flowName,

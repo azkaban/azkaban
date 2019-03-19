@@ -53,6 +53,40 @@ public class NodeBeanLoader {
     return nodeBean;
   }
 
+
+  public void addExternalFlowDependencies(NodeBean ymlFlow,
+      Map<String, NodeBean> ymlFlowList) {
+
+    // add root yml flow to yml flow dependencies
+    if (ymlFlow.getDependsOn() != null) {
+      for (final String dependsOn : ymlFlow.getDependsOn()) {
+        if (!ymlFlowList.containsKey(dependsOn) && !ymlFlow.getName().equals(dependsOn)) {
+          // nodeBeanSubNode is not containing dependency! and we found dependency as separate
+          // yml flow! create dependency between this two flows
+          System.out.println(" extdep->"+ymlFlowList.get(dependsOn).getName());
+          ymlFlow.addNode(ymlFlowList.get(dependsOn));
+        }
+      }
+    }
+
+    this.addExternalFlowDependenciesToNode(ymlFlow, ymlFlowList);
+  }
+
+  private void addExternalFlowDependenciesToNode(NodeBean nodeBeanFlow,
+      Map<String, NodeBean> ymlFlowList) {
+
+    List<NodeBean> externalDepends;
+    for (NodeBean nodeBeanSubNode : nodeBeanFlow.getNodes()) {
+      // if node is a flow iterate
+      if (nodeBeanSubNode.getType().equals(Constants.FLOW_NODE_TYPE)
+          && nodeBeanSubNode.getNodes() != null) {
+        this.addExternalFlowDependenciesToNode(nodeBeanSubNode, ymlFlowList);
+      }
+    }
+    externalDepends = nodeBeanFlow.getExternalDependencies(ymlFlowList);
+    nodeBeanFlow.addNodes(externalDepends);
+  }
+
   public boolean validate(final NodeBean nodeBean) {
     final Set<String> nodeNames = new HashSet<>();
     for (final NodeBean n : nodeBean.getNodes()) {

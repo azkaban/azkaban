@@ -1,0 +1,45 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobA
+    type: noop
+    config:
+      seconds: 0
+      fail: false
+
+  - name: embedded_flow12
+    type: flow
+    nodes:
+      - name: jobB
+        type: noop
+        config:
+          seconds: 0
+          fail: false
+      - name: jobB2
+        type: noop
+        config:
+          seconds: 0
+          fail: false
+      - name: jobC
+        type: noop
+        config:
+          seconds: 0
+          fail: false
+        # TEST
+        # subflow depening on external flow. which has dependency to another external flow
+        # multiple external flow dependency
+        dependsOn:
+          - jobB
+          - jobB2
+          - basic_flow
+          - basic_flow4
+
+  - name: jobD
+    type: noop
+    config:
+      seconds: 0
+      fail: false
+    dependsOn:
+      - embedded_flow12

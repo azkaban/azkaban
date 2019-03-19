@@ -19,7 +19,9 @@ package azkaban.project;
 
 import azkaban.Constants;
 import azkaban.utils.Props;
+import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +37,7 @@ public class NodeBean implements Serializable {
   private String condition;
   private List<NodeBean> nodes;
   private FlowTriggerBean trigger;
+  private File flowFile;
 
   public String getName() {
     return this.name;
@@ -68,6 +71,14 @@ public class NodeBean implements Serializable {
     this.type = type;
   }
 
+  public File getFlowFile() {
+    return this.flowFile;
+  }
+
+  public void setFlowFile(final File flowFile) {
+    this.flowFile = flowFile;
+  }
+
   public String getCondition() {
     return this.condition;
   }
@@ -82,6 +93,46 @@ public class NodeBean implements Serializable {
 
   public void setNodes(final List<NodeBean> nodes) {
     this.nodes = nodes;
+  }
+
+  private boolean containsNode(String nodeName) {
+    for (NodeBean node : this.nodes) {
+      if (node.getName().equals(nodeName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public boolean addNode(NodeBean newNode) {
+    return this.nodes.add(newNode);
+  }
+
+  public boolean addNodes(List<NodeBean> newNodes) {
+    return this.nodes.addAll(newNodes);
+  }
+
+  public List<NodeBean> getExternalDependencies(Map<String, NodeBean> ymlFlowList) {
+
+    List<NodeBean> externalDependencies = new ArrayList<>();
+    if (this.getNodes() == null) {
+      return externalDependencies;
+    }
+    for (NodeBean nodeBeanSubNode : this.getNodes()) {
+      // continue if there is no dependency
+      if (nodeBeanSubNode.getDependsOn() == null) {
+        continue;
+      }
+      for (final String dependsOn : nodeBeanSubNode.getDependsOn()) {
+        if (!this.containsNode(dependsOn) && ymlFlowList.containsKey(dependsOn)
+            && !this.getName().equals(dependsOn)) {
+          // ymlFlowList is not containing dependency! and we found dependency as separate
+          // yml flow! create dependency between this two flows
+          externalDependencies.add(ymlFlowList.get(dependsOn));
+        }
+      }
+    }
+    return externalDependencies;
   }
 
   public Props getProps() {
