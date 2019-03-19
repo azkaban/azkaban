@@ -16,9 +16,9 @@
 
 package azkaban.metrics;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,7 +40,7 @@ public class CommonMetrics {
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
   public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
 
-  private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
+  private Counter OOMWaitingJobCount;
   private final MetricsManager metricsManager;
   private Meter flowFailMeter;
   private Meter dispatchFailMeter;
@@ -67,7 +67,7 @@ public class CommonMetrics {
     this.submitFlowSuccessMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SUCCESS_METER_NAME);
     this.submitFlowFailMeter = this.metricsManager.addMeter(SUBMIT_FLOW_FAIL_METER_NAME);
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
-    this.metricsManager.addGauge(OOM_WAITING_JOB_COUNT_NAME, this.OOMWaitingJobCount::get);
+    this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
     this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
   }
 
@@ -132,14 +132,14 @@ public class CommonMetrics {
    * Mark the occurrence of an job waiting event due to OOM
    */
   public void incrementOOMJobWaitCount() {
-    this.OOMWaitingJobCount.incrementAndGet();
+    this.OOMWaitingJobCount.inc();
   }
 
   /**
    * Unmark the occurrence of an job waiting event due to OOM
    */
   public void decrementOOMJobWaitCount() {
-    this.OOMWaitingJobCount.decrementAndGet();
+    this.OOMWaitingJobCount.dec();
   }
 
   /**
@@ -147,5 +147,7 @@ public class CommonMetrics {
    *
    * @param time queue wait time for a flow.
    */
-  public void addQueueWait(long time) { this.queueWaitMeter.update(time); }
+  public void addQueueWait(final long time) {
+    this.queueWaitMeter.update(time);
+  }
 }
