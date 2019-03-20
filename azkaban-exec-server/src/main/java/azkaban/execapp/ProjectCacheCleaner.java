@@ -155,7 +155,7 @@ class ProjectCacheCleaner {
     final Set<File> projectDirsToDelete = new HashSet<>();
 
     for (final ProjectDirectoryMetadata proj : projectDirMetadataList) {
-      if (sizeToFreeInBytes > 0) {
+      if (sizeToFreeInBytes > 0 || projectDirsToDelete.size() < 5) {
         // Delete the project directory even if flow within is running. It's OK to
         // delete the directory since execution dir is HARD linked to project dir. Note that even
         // if project is deleted, disk space will be freed up only when all associated execution
