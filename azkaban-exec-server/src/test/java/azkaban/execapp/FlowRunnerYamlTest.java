@@ -17,14 +17,22 @@ package azkaban.execapp;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.utils.Props;
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -34,12 +42,15 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
   private static final String BASIC_FLOW_YAML_DIR = "basicflowwithoutendnode";
   private static final String FAIL_BASIC_FLOW_YAML_DIR = "failbasicflowwithoutendnode";
   private static final String EMBEDDED_FLOW_YAML_DIR = "embeddedflowwithoutendnode";
+  private static final String ALERT_FLOW_YAML_DIR = "alertflow";
   private static final String BASIC_FLOW_NAME = "basic_flow";
   private static final String BASIC_FLOW_YAML_FILE = BASIC_FLOW_NAME + ".flow";
   private static final String FAIL_BASIC_FLOW_NAME = "fail_basic_flow";
   private static final String FAIL_BASIC_FLOW_YAML_FILE = FAIL_BASIC_FLOW_NAME + ".flow";
   private static final String EMBEDDED_FLOW_NAME = "embedded_flow";
   private static final String EMBEDDED_FLOW_YAML_FILE = EMBEDDED_FLOW_NAME + ".flow";
+  private static final String ALERT_FLOW_NAME = "alert_flow";
+  private static final String ALERT_FLOW_YAML_FILE = ALERT_FLOW_NAME + ".flow";
   private FlowRunnerTestUtil testUtil;
 
   @Test
@@ -78,6 +89,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     assertFlowStatus(flow, Status.KILLED);
   }
 
+  @Ignore
   @Test
   public void testFailBasicFlowWithoutEndNode() throws Exception {
     setUp(FAIL_BASIC_FLOW_YAML_DIR, FAIL_BASIC_FLOW_YAML_FILE);
@@ -108,6 +120,48 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     assertStatus("embedded_flow1", Status.SUCCEEDED);
     assertStatus("jobD", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
+  @Test
+  public void testAlertOnFlowFinished() throws Exception {
+    setUp(ALERT_FLOW_YAML_DIR, ALERT_FLOW_YAML_FILE);
+    final Alerter mailAlerter = mock(Alerter.class);
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setFailureEmails(Arrays.asList("test@example.com"));
+    final Props azkabanProps = new Props();
+    azkabanProps.put(ConfigurationKeys.AZKABAN_POLL_MODEL, "true");
+    this.runner = this.testUtil
+        .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    when(this.runner.getAlerterHolder().get("email")).thenReturn(mailAlerter);
+    FlowRunnerTestUtil.startThread(this.runner);
+    InteractiveTestJob.getTestJob("jobA").failJob();
+    InteractiveTestJob.getTestJob("jobB").failJob();
+    InteractiveTestJob.getTestJob("jobC").succeedJob();
+    assertFlowStatus(flow, Status.FAILED);
+    verify(mailAlerter).alertOnError(flow, "Flow finished");
+  }
+
+  @Test
+  public void testAlertOnFirstError() throws Exception {
+    setUp(ALERT_FLOW_YAML_DIR, ALERT_FLOW_YAML_FILE);
+    final Alerter mailAlerter = mock(Alerter.class);
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setNotifyOnFirstFailure(true);
+    final Props azkabanProps = new Props();
+    azkabanProps.put(ConfigurationKeys.AZKABAN_POLL_MODEL, "true");
+    this.runner = this.testUtil
+        .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    when(this.runner.getAlerterHolder().get("email")).thenReturn(mailAlerter);
+    FlowRunnerTestUtil.startThread(this.runner);
+    InteractiveTestJob.getTestJob("jobA").failJob();
+    assertFlowStatus(flow, Status.FAILED_FINISHING);
+    InteractiveTestJob.getTestJob("jobB").failJob();
+    assertFlowStatus(flow, Status.FAILED_FINISHING);
+    InteractiveTestJob.getTestJob("jobC").succeedJob();
+    assertFlowStatus(flow, Status.FAILED);
+    verify(mailAlerter, times(1)).alertOnFirstError(flow);
   }
 
   private void setUp(final String projectDir, final String flowYamlFile) throws Exception {

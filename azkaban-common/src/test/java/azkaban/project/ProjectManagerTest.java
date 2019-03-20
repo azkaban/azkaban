@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.executor.ExecutorLoader;
 import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
@@ -35,14 +36,16 @@ public class ProjectManagerTest {
   private ProjectLoader projectLoader;
   private StorageManager storageManager;
   private Props props;
+  private ExecutorLoader executorLoader;
 
   @Before
   public void setUp() throws Exception {
     this.props = new Props();
     this.storageManager = mock(StorageManager.class);
     this.projectLoader = mock(ProjectLoader.class);
+    this.executorLoader = mock(ExecutorLoader.class);
     this.azkabanProjectLoader = new AzkabanProjectLoader(this.props, this.projectLoader,
-        this.storageManager, mock(FlowLoaderFactory.class));
+        this.storageManager, mock(FlowLoaderFactory.class), executorLoader);
     this.manager = new ProjectManager(this.azkabanProjectLoader, this.projectLoader,
         this.storageManager, this.props);
   }

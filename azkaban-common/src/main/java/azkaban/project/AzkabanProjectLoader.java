@@ -21,6 +21,10 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionReference;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
@@ -32,13 +36,16 @@ import azkaban.project.validator.ValidatorManager;
 import azkaban.project.validator.XmlValidatorManager;
 import azkaban.storage.StorageManager;
 import azkaban.user.User;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -59,29 +66,32 @@ class AzkabanProjectLoader {
   private final FlowLoaderFactory flowLoaderFactory;
   private final File tempDir;
   private final int projectVersionRetention;
+  private final ExecutorLoader executorLoader;
 
   @Inject
   AzkabanProjectLoader(final Props props, final ProjectLoader projectLoader,
-      final StorageManager storageManager, final FlowLoaderFactory flowLoaderFactory) {
+      final StorageManager storageManager, final FlowLoaderFactory flowLoaderFactory,
+      final ExecutorLoader executorLoader) {
     this.props = requireNonNull(props, "Props is null");
     this.projectLoader = requireNonNull(projectLoader, "project Loader is null");
     this.storageManager = requireNonNull(storageManager, "Storage Manager is null");
     this.flowLoaderFactory = requireNonNull(flowLoaderFactory, "Flow Loader Factory is null");
 
     this.tempDir = new File(props.getString(ConfigurationKeys.PROJECT_TEMP_DIR, "temp"));
+    this.executorLoader = executorLoader;
     if (!this.tempDir.exists()) {
       log.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
       this.tempDir.mkdirs();
     } else {
       log.info("Using temp dir: " + this.tempDir.getAbsolutePath());
     }
-    this.projectVersionRetention = props.getInt("project.version.retention", 3);
+    this.projectVersionRetention = props.getInt(ConfigurationKeys.PROJECT_VERSION_RETENTION, 3);
     log.info("Project version retention is set to " + this.projectVersionRetention);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
       final File archive, final String fileType, final User uploader, final Props additionalProps)
-      throws ProjectManagerException {
+      throws ProjectManagerException, ExecutorManagerException {
     log.info("Uploading files to " + project.getName());
     final Map<String, ValidationReport> reports;
 
@@ -236,11 +246,18 @@ class AzkabanProjectLoader {
   }
 
   private void cleanUpProjectOldInstallations(final Project project)
-      throws ProjectManagerException{
+      throws ProjectManagerException, ExecutorManagerException {
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+        .fetchUnfinishedFlowsMetadata();
+    final List<Integer> versionsWithUnfinishedExecutions = unfinishedFlows.values()
+        .stream().map(pair -> pair.getSecond())
+        .filter(exflow -> exflow.getProjectId() == project.getId())
+        .map(exflow -> exflow.getVersion())
+        .collect(Collectors.toList());
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() - this.projectVersionRetention);
+        project.getVersion() - this.projectVersionRetention, versionsWithUnfinishedExecutions);
 
     // Clean up storage
     this.storageManager.cleanupProjectArtifacts(project.getId());

@@ -36,8 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -45,7 +47,7 @@ import org.apache.log4j.Logger;
  */
 public class FileIOUtils {
 
-  private final static Logger logger = Logger.getLogger(FileIOUtils.class);
+  private static final Logger log = LoggerFactory.getLogger(FileIOUtils.class);
 
   /**
    * Check if a directory is writable
@@ -72,6 +74,19 @@ public class FileIOUtils {
     return true;
   }
 
+  /**
+   * Delete a directory, log the error if deletion fails.
+   */
+  public static void deleteDirectorySilently(final File dir) {
+    if (dir != null) {
+      try {
+        FileUtils.deleteDirectory(dir);
+      } catch (final IOException e) {
+        log.error("error when deleting dir {}", dir, e);
+      }
+    }
+  }
+
 
   /**
    * Dumps a number into a new file.
@@ -81,11 +96,11 @@ public class FileIOUtils {
    * @throws IOException if file already exists
    */
   public static void dumpNumberToFile(final Path filePath, final long num) throws IOException {
-    try (BufferedWriter writer = Files
+    try (final BufferedWriter writer = Files
         .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
     } catch (final IOException e) {
-      logger.error(String.format("Failed to write the number %s to the file %s", num, filePath), e);
+      log.error("Failed to write the number {} to the file {}", num, filePath, e);
       throw e;
     }
   }
@@ -128,7 +143,7 @@ public class FileIOUtils {
   /**
    * Hard link files and recurse into directories.
    */
-  public static void createDeepHardlink(final File sourceDir, final File destDir)
+  public static int createDeepHardlink(final File sourceDir, final File destDir)
       throws IOException {
     if (!sourceDir.exists()) {
       throw new IOException("Source directory " + sourceDir.getPath()
@@ -143,6 +158,7 @@ public class FileIOUtils {
     final Set<String> paths = new HashSet<>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
+    int linkCount = 0;
     for (String path : paths) {
       final File sourceLink = new File(sourceDir, path);
       path = destDir + path;
@@ -154,9 +170,11 @@ public class FileIOUtils {
           // NOTE!! If modifying this, you must run this ignored test manually to validate:
           // FileIOUtilsTest#testHardlinkCopyOfBigDir
           Files.createLink(linkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
+          linkCount++;
         }
       }
     }
+    return linkCount;
   }
 
   private static void createDirsFindFiles(final File baseDir, final File sourceDir,

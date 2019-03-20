@@ -66,68 +66,68 @@ General Properties
 Multiple Executor Mode Parameters
 ########
 
-+-----------------------+-----------------------+-----------------------+
-| Parameter             | Description           | Default               |
-+=======================+=======================+=======================+
-| azkaban.use.multiple. | Should azkaban run in | false                 |
-| executors             | multi-executor mode.  |                       |
-|                       | Required for multiple |                       |
-|                       | executor mode.        |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.executorselec | A common separated    |                       |
-| tor.filters           | list of hard filters  |                       |
-|                       | to be used while      |                       |
-|                       | dispatching. To be    |                       |
-|                       | choosen from          |                       |
-|                       | StaticRemaining,      |                       |
-|                       | FlowSize,             |                       |
-|                       | MinimumFreeMemory and |                       |
-|                       | CpuStatus. Order of   |                       |
-|                       | filter do not matter. |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.executorselec | Integer weight to be  |                       |
-| tor.comparator.{Compa | used to rank          |                       |
-| ratorName}            | available executors   |                       |
-|                       | for a given flow.     |                       |
-|                       | Currently,            |                       |
-|                       | {ComparatorName} can  |                       |
-|                       | be                    |                       |
-|                       | NumberOfAssignedFlowC |                       |
-|                       | omparator,            |                       |
-|                       | Memory,               |                       |
-|                       | LastDispatched and    |                       |
-|                       | CpuUsage as           |                       |
-|                       | ComparatorName. For   |                       |
-|                       | example:-             |                       |
-|                       | azkaban.executorselec |                       |
-|                       | tor.comparator.Memory |                       |
-|                       | =2                    |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.queueprocessi | Hhould queue          | true                  |
-| ng.enabled            | processor be enabled  |                       |
-|                       | from webserver        |                       |
-|                       | initialization        |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.webserver.que | Maximum flows that    | 100000                |
-| ue.size               | can be queued at      |                       |
-|                       | webserver             |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.activeexecuto | Maximum time in       | 50000                 |
-| r.refresh.milisecinte | milliseconds that can |                       |
-| rval                  | be processed without  |                       |
-|                       | executor statistics   |                       |
-|                       | refresh               |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.activeexecuto | Maximum number of     | 5                     |
-| r.refresh.flowinterva | queued flows that can |                       |
-| l                     | be processed without  |                       |
-|                       | executor statistics   |                       |
-|                       | refresh               |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.executorinfo. | Maximum number of     | 5                     |
-| refresh.maxThreads    | threads to refresh    |                       |
-|                       | executor statistics   |                       |
-+-----------------------+-----------------------+-----------------------+
++------------------------------------------------------+-----------------------+-----------------------+
+| Parameter                                            | Description           | Default               |
++======================================================+=======================+=======================+
+| azkaban.use.multiple.executors                       | Should azkaban run in | false                 |
+|                                                      | multi-executor mode.  |                       |
+|                                                      | Required for multiple |                       |
+|                                                      | executor mode.        |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.executorselector.filters                     | A common separated    |                       |
+|                                                      | list of hard filters  |                       |
+|                                                      | to be used while      |                       |
+|                                                      | dispatching. To be    |                       |
+|                                                      | choosen from          |                       |
+|                                                      | StaticRemaining,      |                       |
+|                                                      | FlowSize,             |                       |
+|                                                      | MinimumFreeMemory and |                       |
+|                                                      | CpuStatus. Order of   |                       |
+|                                                      | filter do not matter. |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.executorselector.comparator.{ComparatorName} | Integer weight to be  |                       |
+|                                                      | used to rank          |                       |
+|                                                      | available executors   |                       |
+|                                                      | for a given flow.     |                       |
+|                                                      | Currently,            |                       |
+|                                                      | {ComparatorName} can  |                       |
+|                                                      | be                    |                       |
+|                                                      | NumberOfAssignedFlowC |                       |
+|                                                      | omparator,            |                       |
+|                                                      | Memory,               |                       |
+|                                                      | LastDispatched and    |                       |
+|                                                      | CpuUsage as           |                       |
+|                                                      | ComparatorName. For   |                       |
+|                                                      | example:-             |                       |
+|                                                      | azkaban.executorselec |                       |
+|                                                      | tor.comparator.Memory |                       |
+|                                                      | =2                    |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.queueprocessing.enabled                      | Hhould queue          | true                  |
+|                                                      | processor be enabled  |                       |
+|                                                      | from webserver        |                       |
+|                                                      | initialization        |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.webserver.queue.size                         | Maximum flows that    | 100000                |
+|                                                      | can be queued at      |                       |
+|                                                      | webserver             |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.activeexecutor.refresh.milisecinterval       | Maximum time in       | 50000                 |
+|                                                      | milliseconds that can |                       |
+|                                                      | be processed without  |                       |
+|                                                      | executor statistics   |                       |
+|                                                      | refresh               |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.activeexecutor.refresh.flowinterval          | Maximum number of     | 5                     |
+|                                                      | queued flows that can |                       |
+|                                                      | be processed without  |                       |
+|                                                      | executor statistics   |                       |
+|                                                      | refresh               |                       |
++------------------------------------------------------+-----------------------+-----------------------+
+| azkaban.executorinfo.refresh.maxThreads              | Maximum number of     | 5                     |
+|                                                      | threads to refresh    |                       |
+|                                                      | executor statistics   |                       |
++------------------------------------------------------+-----------------------+-----------------------+
 
 Jetty Parameters
 ########
@@ -153,33 +153,33 @@ Jetty Parameters
 Project Manager Settings
 ########
 
-+-----------------------+-----------------------+-----------------------+
-| Parameter             | Description           | Default               |
-+=======================+=======================+=======================+
-| project.temp.dir      | The temporary         | temp                  |
-|                       | directory used when   |                       |
-|                       | uploading projects    |                       |
-+-----------------------+-----------------------+-----------------------+
-| project.version.reten | The number of unused  | 3                     |
-| tion                  | project versions      |                       |
-|                       | retained before       |                       |
-|                       | cleaning              |                       |
-+-----------------------+-----------------------+-----------------------+
-| creator.default.proxy | Auto add the creator  | true                  |
-|                       | of the projects as a  |                       |
-|                       | proxy user to the     |                       |
-|                       | project.              |                       |
-+-----------------------+-----------------------+-----------------------+
-| lockdown.create.proje | Prevents anyone       | false                 |
-| cts                   | except those with     |                       |
-|                       | Admin roles to create |                       |
-|                       | new projects.         |                       |
-+-----------------------+-----------------------+-----------------------+
-| lockdown.upload.proje | Prevents anyone but   | false                 |
-| cts                   | admin users and users |                       |
-|                       | with permissions to   |                       |
-|                       | upload projects.      |                       |
-+-----------------------+-----------------------+-----------------------+
++---------------------------+-----------------------+-----------------------+
+| Parameter                 | Description           | Default               |
++===========================+=======================+=======================+
+| project.temp.dir          | The temporary         | temp                  |
+|                           | directory used when   |                       |
+|                           | uploading projects    |                       |
++---------------------------+-----------------------+-----------------------+
+| project.version.retention | The number of unused  | 3                     |
+|                           | project versions      |                       |
+|                           | retained before       |                       |
+|                           | cleaning              |                       |
++---------------------------+-----------------------+-----------------------+
+| creator.default.proxy     | Auto add the creator  | true                  |
+|                           | of the projects as a  |                       |
+|                           | proxy user to the     |                       |
+|                           | project.              |                       |
++---------------------------+-----------------------+-----------------------+
+| lockdown.create.projects  | Prevents anyone       | false                 |
+|                           | except those with     |                       |
+|                           | Admin roles to create |                       |
+|                           | new projects.         |                       |
++---------------------------+-----------------------+-----------------------+
+| lockdown.upload.projects  | Prevents anyone but   | false                 |
+|                           | admin users and users |                       |
+|                           | with permissions to   |                       |
+|                           | upload projects.      |                       |
++---------------------------+-----------------------+-----------------------+
 
 MySQL Connection Parameter
 ########
@@ -213,20 +213,13 @@ MySQL Connection Parameter
 Executor Manager Properties
 ########
 
-+-----------------------+-----------------------+-----------------------+
-| Parameter             | Description           | Default               |
-+=======================+=======================+=======================+
-| executor.port         | The port for the      | 12321                 |
-|                       | azkaban executor      |                       |
-|                       | server                |                       |
-+-----------------------+-----------------------+-----------------------+
-| executor.host         | The host for azkaban  | localhost             |
-|                       | executor server       |                       |
-+-----------------------+-----------------------+-----------------------+
-| execution.logs.retent | Time in milliseconds  | 7257600000L (12       |
-| ion.ms                | that execution logs   | weeks)                |
-|                       | are retained          |                       |
-+-----------------------+-----------------------+-----------------------+
++-----------------------------+-----------------------+-----------------------+
+| Parameter                   | Description           | Default               |
++=============================+=======================+=======================+
+| execution.logs.retention.ms | Time in milliseconds  | 7257600000L (12       |
+|                             | that execution logs   | weeks)                |
+|                             | are retained          |                       |
++-----------------------------+-----------------------+-----------------------+
 
 Notification Email Properties
 ########
@@ -285,77 +278,77 @@ Azkaban Executor Server Configuration
 Executor Server Properties
 ########
 
++-------------------------------------------+-----------------------+-----------------------+
+| Parameter                                 | Description           | Default               |
++===========================================+=======================+=======================+
+| executor.port                             | The port for azkaban  | 0 (any free port)     |
+|                                           | executor server       |                       |
++-------------------------------------------+-----------------------+-----------------------+
+| executor.global.properties                | A path to the         |   none                |
+|                                           | properties that will  |                       |
+|                                           | be the parent for all |                       |
+|                                           | jobs.                 |                       |
++-------------------------------------------+-----------------------+-----------------------+
+| azkaban.execution.dir                     | The folder for        | executions            |
+|                                           | executing working     |                       |
+|                                           | directories           |                       |
++-------------------------------------------+-----------------------+-----------------------+
+| azkaban.project.dir                       | The folder for        | projects              |
+|                                           | storing temporary     |                       |
+|                                           | copies of project     |                       |
+|                                           | files used for        |                       |
+|                                           | executions            |                       |
++-------------------------------------------+-----------------------+-----------------------+
+| executor.flow.threads                     | The number of         | 30                    |
+|                                           | simulateous flows     |                       |
+|                                           | that can be run.      |                       |
+|                                           | These threads are     |                       |
+|                                           | mostly idle.          |                       |
 +-----------------------+-----------------------+-----------------------+
-| Parameter             | Description           | Default               |
-+=======================+=======================+=======================+
-|   executor.port       | The port for azkaban  | 12321                 |
-|                       | executor server       |                       |
-+-----------------------+-----------------------+-----------------------+
-|   executor.global.pro | A path to the         |   none                |
-|perties                | properties that will  |                       |
-|                       | be the parent for all |                       |
-|                       | jobs.                 |                       |
-+-----------------------+-----------------------+-----------------------+
-|   azkaban.execution.d | The folder for        | executions            |
-|ir                     | executing working     |                       |
-|                       | directories           |                       |
-+-----------------------+-----------------------+-----------------------+
-| azkaban.project.dir   | The folder for        | projects              |
-|                       | storing temporary     |                       |
-|                       | copies of project     |                       |
-|                       | files used for        |                       |
-|                       | executions            |                       |
-+-----------------------+-----------------------+-----------------------+
-| executor.flow.threa   | The number of         | 30                    |
-|ds                     | simulateous flows     |                       |
-|                       | that can be run.      |                       |
-|                       | These threads are     |                       |
-|                       | mostly idle.          |                       |
-+-----------------------+-----------------------+-----------------------+
-| job.log.chunk.size    | For rolling job logs. | 5MB                   |
-|                       | The chuck size for    |                       |
-|                       | each roll over        |                       |
-+-----------------------+-----------------------+-----------------------+
-| job.log.backup.index  | The number of log     | 4                     |
-|                       | chunks. The max size  |                       |
-|                       | of each logs is then  |                       |
-|                       | the index \*          |                       |
-|                       | chunksize             |                       |
-+-----------------------+-----------------------+-----------------------+
-| flow.num.job.threads  | The number of         | 10                    |
-|                       | concurrent running    |                       |
-|                       | jobs in each flow.    |                       |
-|                       | These threads are     |                       |
-|                       | mostly idle.          |                       |
-+-----------------------+-----------------------+-----------------------+
-|   job.max.Xms         | The maximum initial   | 1GB                   |
-|                       | amount of memory each |                       |
-|                       | job can request. If a |                       |
-|                       | job requests more     |                       |
-|                       | than this, then       |                       |
-|                       | Azkaban server will   |                       |
-|                       | not launch this job   |                       |
-+-----------------------+-----------------------+-----------------------+
-|   job.max.Xmx         | The maximum amount of | 2GB                   |
-|                       | memory each job can   |                       |
-|                       | request. If a job     |                       |
-|                       | requests more than    |                       |
-|                       | this, then Azkaban    |                       |
-|                       | server will not       |                       |
-|                       | launch this job       |                       |
-+-----------------------+-----------------------+-----------------------+
-|   azkaban.server.flow | The maximum time in   | -1                    |
-|.max.running.minutes   | minutes a flow will   |                       |
-|                       | be living inside      |                       |
-|                       | azkaban after being   |                       |
-|                       | executed. If a flow   |                       |
-|                       | runs longer than      |                       |
-|                       | this, it will be      |                       |
-|                       | killed. If smaller or |                       |
-|                       | equal to 0, there's   |                       |
-|                       | no restriction on     |                       |
-|                       | running time.         |                       |
-+-----------------------+-----------------------+-----------------------+
+| job.log.chunk.size                        | For rolling job logs. | 5MB                   |
+|                                           | The chuck size for    |                       |
+|                                           | each roll over        |                       |
++-------------------------------------------+-----------------------+-----------------------+
+| job.log.backup.index                      | The number of log     | 4                     |
+|                                           | chunks. The max size  |                       |
+|                                           | of each logs is then  |                       |
+|                                           | the index \*          |                       |
+|                                           | chunksize             |                       |
++-------------------------------------------+-----------------------+-----------------------+
+| flow.num.job.threads                      | The number of         | 10                    |
+|                                           | concurrent running    |                       |
+|                                           | jobs in each flow.    |                       |
+|                                           | These threads are     |                       |
+|                                           | mostly idle.          |                       |
++-------------------------------------------+-----------------------+-----------------------+
+|   job.max.Xms                             | The maximum initial   | 1GB                   |
+|                                           | amount of memory each |                       |
+|                                           | job can request. If a |                       |
+|                                           | job requests more     |                       |
+|                                           | than this, then       |                       |
+|                                           | Azkaban server will   |                       |
+|                                           | not launch this job   |                       |
++-------------------------------------------+-----------------------+-----------------------+
+|   job.max.Xmx                             | The maximum amount of | 2GB                   |
+|                                           | memory each job can   |                       |
+|                                           | request. If a job     |                       |
+|                                           | requests more than    |                       |
+|                                           | this, then Azkaban    |                       |
+|                                           | server will not       |                       |
+|                                           | launch this job       |                       |
++-------------------------------------------+-----------------------+-----------------------+
+|   azkaban.server.flow.max.running.minutes | The maximum time in   | -1                    |
+|                                           | minutes a flow will   |                       |
+|                                           | be living inside      |                       |
+|                                           | azkaban after being   |                       |
+|                                           | executed. If a flow   |                       |
+|                                           | runs longer than      |                       |
+|                                           | this, it will be      |                       |
+|                                           | killed. If smaller or |                       |
+|                                           | equal to 0, there's   |                       |
+|                                           | no restriction on     |                       |
+|                                           | running time.         |                       |
++-------------------------------------------+-----------------------+-----------------------+
 
 
 MySQL Connection Parameter
@@ -364,24 +357,24 @@ MySQL Connection Parameter
 +-----------------------+-----------------------+-----------------------+
 | Parameter             | Description           | Default               |
 +=======================+=======================+=======================+
-|   database.type       | The database type.    | mysql                 |
+|  database.type        | The database type.    | mysql                 |
 |                       | Currently, the only   |                       |
 |                       | database supported is |                       |
 |                       | mysql.                |                       |
 +-----------------------+-----------------------+-----------------------+
-|   mysql.port          | The port to the mysql | 3306                  |
+|  mysql.port           | The port to the mysql | 3306                  |
 |                       | db                    |                       |
 +-----------------------+-----------------------+-----------------------+
-|   mysql.host          | The mysql host        | localhost             |
+|  mysql.host           | The mysql host        | localhost             |
 +-----------------------+-----------------------+-----------------------+
-|   mysql.database      | The mysql database    |                       |
+|  mysql.database       | The mysql database    |                       |
 +-----------------------+-----------------------+-----------------------+
-|   mysql.user          | The mysql user        |                       |
+|  mysql.user           | The mysql user        |                       |
 +-----------------------+-----------------------+-----------------------+
-|   mysql.password      | The mysql password    |                       |
+|  mysql.password       | The mysql password    |                       |
 +-----------------------+-----------------------+-----------------------+
-|   mysql.numconnection | The number of         | 100                   |
-|s                      | connections that      |                       |
+|  mysql.numconnections | The number of         | 100                   |
+|                       | connections that      |                       |
 |                       | Azkaban web client    |                       |
 |                       | can open to the       |                       |
 |                       | database              |                       |

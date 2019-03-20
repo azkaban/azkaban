@@ -17,6 +17,7 @@ package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.flow.Flow;
@@ -353,7 +354,7 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void cleanOlderProjectVersion() throws Exception {
+  public void cleanOlderProjectVersion() {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
@@ -362,12 +363,44 @@ public class JdbcProjectImplTest {
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
+    assertNumChunks(project, newVersion, 1);
 
-    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1, Collections.emptyList());
 
-    final ProjectFileHandler fileHandler2 = this.loader
-        .fetchProjectMetaData(project.getId(), newVersion);
-    Assert.assertEquals(fileHandler2.getNumChunks(), 0);
+    assertNumChunks(project, newVersion, 0);
+    assertGetUploadedFileOfCleanedVersion(project.getId(), newVersion);
+  }
+
+  @Test
+  public void cleanOlderProjectVersionExcludedVersion() {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    final int newVersion2 = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion2, testFile, "uploadUser1");
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
+        Arrays.asList(newVersion, newVersion2));
+    assertNumChunks(project, newVersion, 1);
+    assertNumChunks(project, newVersion2, 1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
+        Arrays.asList(newVersion));
+    assertNumChunks(project, newVersion, 1);
+    assertNumChunks(project, newVersion2, 0);
+  }
+
+  private void assertNumChunks(final Project project, final int version, final int expectedChunks) {
+    final ProjectFileHandler fileHandler = this.loader
+        .fetchProjectMetaData(project.getId(), version);
+    Assert.assertEquals(expectedChunks, fileHandler.getNumChunks());
+  }
+
+  private void assertGetUploadedFileOfCleanedVersion(final int project, final int version) {
+    final Throwable thrown = catchThrowable(() -> this.loader.getUploadedFile(project, version));
+    assertThat(thrown).isInstanceOf(ProjectManagerException.class);
+    assertThat(thrown).hasMessageStartingWith(String.format("Got numChunks=0 for version %s of "
+        + "project %s - seems like this version has been cleaned up", version, project));
   }
 
   @Test

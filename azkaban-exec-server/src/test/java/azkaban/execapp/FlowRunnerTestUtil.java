@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -252,7 +253,7 @@ public class FlowRunnerTestUtil {
     this.executorLoader.uploadExecutableFlow(exFlow);
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null);
+            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class));
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }

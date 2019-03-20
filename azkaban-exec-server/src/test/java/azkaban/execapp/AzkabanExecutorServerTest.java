@@ -75,7 +75,7 @@ public class AzkabanExecutorServerTest {
   public static void tearDown() throws Exception {
     deleteQuietly(new File("h2.mv.db"));
     deleteQuietly(new File("h2.trace.db"));
-    deleteQuietly(new File("executor.port"));
+    deleteQuietly(new File(Constants.DEFAULT_EXECUTOR_PORT_FILE));
     deleteQuietly(new File("executions"));
     deleteQuietly(new File("projects"));
   }

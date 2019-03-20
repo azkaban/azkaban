@@ -81,18 +81,32 @@ var nodeClickCallback = function (event, model, node) {
     var flowRequestURL = contextURL + "/manager?project=" + projectName
         + "&flow=" + node.flowId;
     if (node.expanded) {
-      menu = [{
-        title: "Collapse Flow...", callback: function () {
-          model.trigger("collapseFlow", node);
+      menu = [
+        {
+          title: "Collapse Flow...", callback: function () {
+            model.trigger("collapseFlow", node);
+          }
+        },
+        {
+          title: "Collapse All Flows...", callback: function () {
+            model.trigger("collapseAllFlows", node);
+          }
         }
-      }];
+      ];
     }
     else {
-      menu = [{
-        title: "Expand Flow...", callback: function () {
-          model.trigger("expandFlow", node);
+      menu = [
+        {
+          title: "Expand Flow...", callback: function () {
+            model.trigger("expandFlow", node);
+          }
+        },
+        {
+          title: "Expand All Flows...", callback: function () {
+            model.trigger("expandAllFlows", node);
+          }
         }
-      }];
+      ];
     }
 
     $.merge(menu, [
@@ -100,30 +114,30 @@ var nodeClickCallback = function (event, model, node) {
       {break: 1},
       {
         title: "Open Flow...", callback: function () {
-        window.location.href = flowRequestURL;
-      }
+          window.location.href = flowRequestURL;
+        }
       },
       {
         title: "Open Flow in New Window...", callback: function () {
-        window.open(flowRequestURL);
-      }
+          window.open(flowRequestURL);
+        }
       },
       {break: 1},
       {
         title: "Open Properties...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Properties in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Flow", callback: function () {
-        model.trigger("centerNode", node);
-      }
+          model.trigger("centerNode", node);
+        }
       }
     ]);
   }
@@ -133,19 +147,19 @@ var nodeClickCallback = function (event, model, node) {
       //  {break: 1},
       {
         title: "Open Job...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Job in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Job", callback: function () {
-        model.trigger("centerNode", node)
-      }
+          model.trigger("centerNode", node)
+        }
       }
     ];
   }
@@ -171,30 +185,30 @@ var jobClickCallback = function (event, model, node) {
       //  {break: 1},
       {
         title: "Open Flow...", callback: function () {
-        window.location.href = flowRequestURL;
-      }
+          window.location.href = flowRequestURL;
+        }
       },
       {
         title: "Open Flow in New Window...", callback: function () {
-        window.open(flowRequestURL);
-      }
+          window.open(flowRequestURL);
+        }
       },
       {break: 1},
       {
         title: "Open Properties...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Properties in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Flow", callback: function () {
-        model.trigger("centerNode", node)
-      }
+          model.trigger("centerNode", node)
+        }
       }
     ];
   }
@@ -204,19 +218,19 @@ var jobClickCallback = function (event, model, node) {
       //  {break: 1},
       {
         title: "Open Job...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Job in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Job", callback: function () {
-        graphModel.trigger("centerNode", node)
-      }
+          graphModel.trigger("centerNode", node)
+        }
       }
     ];
   }
@@ -236,20 +250,33 @@ var graphClickCallback = function (event, model) {
 
   var menu = [
     {
+      title: "Expand All Flows...", callback: function () {
+        model.trigger("expandAllFlows");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Collapse All Flows...", callback: function () {
+        model.trigger("collapseAllFlows");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {break: 1},
+    {
       title: "Open Flow...", callback: function () {
-      window.location.href = requestURL;
-    }
+        window.location.href = requestURL;
+      }
     },
     {
       title: "Open Flow in New Window...", callback: function () {
-      window.open(requestURL);
-    }
+        window.open(requestURL);
+      }
     },
     {break: 1},
     {
       title: "Center Graph", callback: function () {
-      model.trigger("resetPanZoom");
-    }
+        model.trigger("resetPanZoom");
+      }
     }
   ];
 

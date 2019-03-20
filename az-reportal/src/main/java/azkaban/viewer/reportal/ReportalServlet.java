@@ -288,9 +288,9 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       final int offset = getIntParam(req, "offset");
       final int length = getIntParam(req, "length");
       final ExecutableFlow exec;
-      final ExecutorManagerAdapter executorManager = this.server.getExecutorManager();
+      final ExecutorManagerAdapter executorManagerAdapter = this.server.getExecutorManager();
       try {
-        exec = executorManager.getExecutableFlow(execId);
+        exec = executorManagerAdapter.getExecutableFlow(execId);
       } catch (final Exception e) {
         ret.put("error", "Log does not exist or isn't created yet.");
         return;
@@ -299,7 +299,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       final LogData data;
       try {
         data =
-            executorManager.getExecutionJobLog(exec, jobId, offset, length,
+            executorManagerAdapter.getExecutionJobLog(exec, jobId, offset, length,
                 exec.getExecutableNode(jobId).getAttempt());
       } catch (final Exception e) {
         e.printStackTrace();
@@ -364,7 +364,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     preparePage(page, session);
 
     final ProjectManager projectManager = this.server.getProjectManager();
-    final ExecutorManagerAdapter executorManager = this.server.getExecutorManager();
+    final ExecutorManagerAdapter executorManagerAdapter = this.server.getExecutorManager();
 
     final Project project = projectManager.getProject(id);
     final Reportal reportal = Reportal.loadFromProject(project);
@@ -392,7 +392,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       if (hasParam(req, "logs")) {
         final ExecutableFlow exec;
         try {
-          exec = executorManager.getExecutableFlow(execId);
+          exec = executorManagerAdapter.getExecutableFlow(execId);
         } catch (final ExecutorManagerException e) {
           e.printStackTrace();
           page.add("errorMsg", "ExecutableFlow not found. " + e.getMessage());
@@ -501,10 +501,10 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
       }
       try {
         final Flow flow = project.getFlows().get(0);
-        executorManager.getExecutableFlows(project.getId(), flow.getId(),
+        executorManagerAdapter.getExecutableFlows(project.getId(), flow.getId(),
             pageNumber * this.itemsPerPage, this.itemsPerPage, exFlows);
         final ArrayList<ExecutableFlow> tmp = new ArrayList<>();
-        executorManager.getExecutableFlows(project.getId(), flow.getId(),
+        executorManagerAdapter.getExecutableFlows(project.getId(), flow.getId(),
             (pageNumber + 1) * this.itemsPerPage, 1, tmp);
         if (!tmp.isEmpty()) {
           hasNextPage = true;

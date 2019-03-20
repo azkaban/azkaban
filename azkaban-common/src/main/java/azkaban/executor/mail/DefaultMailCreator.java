@@ -79,7 +79,7 @@ public class DefaultMailCreator implements MailCreator {
   @Override
   public boolean createFirstErrorMessage(final ExecutableFlow flow,
       final EmailMessage message, final String azkabanName, final String scheme,
-      final String clientHostname, final String clientPortNumber, final String... vars) {
+      final String clientHostname, final String clientPortNumber) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
     final List<String> emailList = option.getFailureEmails();
@@ -142,7 +142,7 @@ public class DefaultMailCreator implements MailCreator {
   @Override
   public boolean createErrorEmail(final ExecutableFlow flow, final List<ExecutableFlow>
       pastExecutions, final EmailMessage message, final String azkabanName, final String scheme,
-      final String clientHostname, final String clientPortNumber, final String... vars) {
+      final String clientHostname, final String clientPortNumber, final String... reasons) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
 
@@ -183,8 +183,8 @@ public class DefaultMailCreator implements MailCreator {
         message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
             + "\">Failed job '" + jobId + "' Link</a></li>");
       }
-      for (final String reasons : vars) {
-        message.println("<li>" + reasons + "</li>");
+      for (final String reason : reasons) {
+        message.println("<li>" + reason + "</li>");
       }
 
       message.println("</ul>");
@@ -220,7 +220,7 @@ public class DefaultMailCreator implements MailCreator {
   @Override
   public boolean createSuccessEmail(final ExecutableFlow flow, final EmailMessage message,
       final String azkabanName, final String scheme, final String clientHostname,
-      final String clientPortNumber, final String... vars) {
+      final String clientPortNumber) {
 
     final ExecutionOptions option = flow.getExecutionOptions();
     final List<String> emailList = option.getSuccessEmails();

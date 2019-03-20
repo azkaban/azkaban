@@ -20,277 +20,249 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
+import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectManagerException;
 import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.Pair;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public class FlowPreparer {
+class FlowPreparer {
 
   // Name of the file which keeps project directory size
   static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
-  private static final Logger log = Logger.getLogger(FlowPreparer.class);
+
+  private static final Logger log = LoggerFactory.getLogger(FlowPreparer.class);
+
   // TODO spyne: move to config class
   private final File executionsDir;
   // TODO spyne: move to config class
-  private final File projectsDir;
-  private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
+  private final File projectCacheDir;
   private final StorageManager storageManager;
-  private final ProjectCacheDirCleaner projectDirCleaner;
+  // Null if cache clean-up is disabled
+  private final Optional<ProjectCacheCleaner> projectCacheCleaner;
+  private final ProjectCacheHitRatio projectCacheHitRatio;
 
-  public FlowPreparer(final StorageManager storageManager, final File executionsDir,
-      final File projectsDir,
-      final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects,
-      final Long projectDirMaxSizeInMb) {
+  FlowPreparer(final StorageManager storageManager, final File executionsDir,
+      final File projectsDir, final ProjectCacheCleaner cleaner,
+      final ProjectCacheHitRatio projectCacheHitRatio) {
+    Preconditions.checkNotNull(storageManager);
+    Preconditions.checkNotNull(executionsDir);
+    Preconditions.checkNotNull(projectsDir);
+    Preconditions.checkNotNull(projectCacheHitRatio);
+
+    Preconditions.checkArgument(projectsDir.exists());
+    Preconditions.checkArgument(executionsDir.exists());
+
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
-    this.projectsDir = projectsDir;
-    this.installedProjects = installedProjects;
-    this.projectDirCleaner = new ProjectCacheDirCleaner(projectDirMaxSizeInMb);
-
+    this.projectCacheDir = projectsDir;
+    this.projectCacheCleaner = Optional.ofNullable(cleaner);
+    this.projectCacheHitRatio = projectCacheHitRatio;
   }
 
   /**
-   * Creates a file which keeps the size of {@param dir} in bytes inside the {@param dir} and sets
-   * the dirSize for {@param pv}.
+   * Calculate the directory size and save it to a file.
    *
-   * @param dir the directory whose size needs to be kept in the file to be created.
-   * @param pv the projectVersion whose size needs to updated.
+   * @param dir the directory whose size needs to be saved.
+   * @return the size of the dir.
    */
-  static void updateDirSize(final File dir, final ProjectVersion pv) {
-    final long sizeInByte = FileUtils.sizeOfDirectory(dir);
-    pv.setDirSizeInBytes(sizeInByte);
-    try {
-      FileIOUtils.dumpNumberToFile(Paths.get(dir.getPath(), PROJECT_DIR_SIZE_FILE_NAME),
-          sizeInByte);
-    } catch (final IOException e) {
-      log.error("error when dumping dir size to file", e);
+  static long calculateDirSizeAndSave(final File dir) throws IOException {
+    final Path path = Paths.get(dir.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+    if (!Files.exists(path)) {
+      final long sizeInByte = FileUtils.sizeOfDirectory(dir);
+      FileIOUtils.dumpNumberToFile(path, sizeInByte);
+      return sizeInByte;
+    } else {
+      return FileIOUtils.readNumberFromFile(path);
     }
   }
+
 
   /**
    * Prepare the flow directory for execution.
    *
    * @param flow Executable Flow instance.
    */
-  void setup(final ExecutableFlow flow) {
-    File execDir = null;
+  void setup(final ExecutableFlow flow) throws ExecutorManagerException {
+    final ProjectFileHandler projectFileHandler = null;
+    File tempDir = null;
     try {
-      // First get the ProjectVersion
-      final ProjectVersion projectVersion = getProjectVersion(flow);
+      final ProjectDirectoryMetadata project = new ProjectDirectoryMetadata(
+          flow.getProjectId(),
+          flow.getVersion());
 
-      // Setup the project
-      setupProject(projectVersion);
+      final long flowPrepStartTime = System.currentTimeMillis();
 
-      // Create the execution directory
-      execDir = createExecDir(flow);
 
-      // Synchronized on {@code projectVersion} to prevent one thread deleting a project dir
-      // in {@link FlowPreparer#setup} while another is creating hardlink from the same project dir
-      synchronized (projectVersion) {
-        // Create the symlinks from the project
-        copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
-        log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
-            flow.getExecutionId(), execDir.getPath()));
+      tempDir = downloadProjectIfNotExists(project, flow.getExecutionId());
+
+
+      // With synchronization, only one thread is allowed to proceed to avoid complicated race
+      // conditions which could arise when multiple threads are downloading/deleting/hard-linking
+      // the same project. But it doesn't prevent multiple executor processes interfering with each
+      // other triggering race conditions. So it's important to operationally make sure that only
+      // one executor process is setting up flow execution against the shared project directory.
+      long criticalSectionStartTime = -1;
+      File execDir = null;
+
+      synchronized (this) {
+        criticalSectionStartTime = System.currentTimeMillis();
+        if (!project.getInstalledDir().exists() && tempDir != null) {
+          // If new project is downloaded and project dir cache clean-up feature is enabled, then
+          // perform clean-up if size of all project dirs exceeds the cache size.
+          if (this.projectCacheCleaner.isPresent()) {
+            this.projectCacheCleaner.get()
+                .deleteProjectDirsIfNecessary(project.getDirSizeInByte());
+          }
+          // Rename temp dir to a proper project directory name.
+          Files.move(tempDir.toPath(), project.getInstalledDir().toPath());
+        }
+
+        final long start = System.currentTimeMillis();
+        execDir = setupExecutionDir(project.getInstalledDir(), flow);
+        final long end = System.currentTimeMillis();
+        log.info("Setting up execution dir {} took {} sec(s)", execDir, (end - start) / 1000);
       }
-    } catch (final Exception e) {
-      log.error("Error in setting up project directory: " + this.projectsDir + ", Exception: " + e);
-      cleanup(execDir);
-      throw new RuntimeException(e);
-    }
-  }
 
-  private void cleanup(final File execDir) {
-    if (execDir != null) {
-      try {
-        FileUtils.deleteDirectory(execDir);
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  /**
-   * Touch the file if it exists.
-   *
-   * @param path path to the target file
-   */
-  @VisibleForTesting
-  void touchIfExists(final Path path) {
-    try {
-      Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
-    } catch (final IOException ex) {
-      log.error(ex);
-    }
-  }
-
-  /**
-   * Prepare the project directory.
-   *
-   * @param pv ProjectVersion object
-   */
-  @VisibleForTesting
-  void setupProject(final ProjectVersion pv)
-      throws ProjectManagerException, IOException {
-    final int projectId = pv.getProjectId();
-    final int version = pv.getVersion();
-
-    final String projectDir = String.valueOf(projectId) + "." + String.valueOf(version);
-    if (pv.getInstalledDir() == null) {
-      pv.setInstalledDir(new File(this.projectsDir, projectDir));
-    }
-
-    // If directory exists. Assume its prepared and skip.
-    if (pv.getInstalledDir().exists()) {
-      log.info("Project already cached. Skipping download. " + pv);
-      touchIfExists(
-          Paths.get(pv.getInstalledDir().getPath(), PROJECT_DIR_SIZE_FILE_NAME));
-      return;
-    }
-
-    log.info("Preparing Project: " + pv);
-
-    final File tempDir = new File(this.projectsDir,
-        "_temp." + projectDir + "." + System.currentTimeMillis());
-
-    // TODO spyne: Why mkdirs? This path should be already set up.
-    tempDir.mkdirs();
-
-    ProjectFileHandler projectFileHandler = null;
-    try {
-      projectFileHandler = requireNonNull(this.storageManager.getProjectFile(projectId, version));
-      checkState("zip".equals(projectFileHandler.getFileType()));
-
-      log.info("Downloading zip file.");
-      final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
-      final ZipFile zip = new ZipFile(zipFile);
-      Utils.unzip(zip, tempDir);
-      updateDirSize(tempDir, pv);
-      this.projectDirCleaner.deleteProjectDirsIfNecessary(pv.getDirSizeInBytes());
-      Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
-      this.installedProjects.put(new Pair<>(pv.getProjectId(), pv.getVersion()), pv);
-      log.warn(String.format("Project preparation completes. [%s]", pv));
+      final long flowPrepCompletionTime = System.currentTimeMillis();
+      log.info("Flow preparation completed in {} sec(s), out ot which {} sec(s) was spent inside "
+              + "critical section. [execid: {}, path: {}]",
+          (flowPrepCompletionTime - flowPrepStartTime) / 1000,
+          (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
+          flow.getExecutionId(), execDir.getPath());
+    } catch (final Exception ex) {
+      FileIOUtils.deleteDirectorySilently(tempDir);
+      log.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
+      throw new ExecutorManagerException(ex);
     } finally {
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
       }
-      // Clean up: Remove tempDir if exists
-      FileUtils.deleteDirectory(tempDir);
     }
   }
 
-  private void copyCreateHardlinkDirectory(final File projectDir, final File execDir)
+  private File setupExecutionDir(final File installedDir, final ExecutableFlow flow)
       throws IOException {
-    FileIOUtils.createDeepHardlink(projectDir, execDir);
+    File execDir = null;
+    try {
+      execDir = createExecDir(flow);
+      // Create hardlinks from the project
+      FileIOUtils.createDeepHardlink(installedDir, execDir);
+      return execDir;
+    } catch (final Exception ex) {
+      FileIOUtils.deleteDirectorySilently(execDir);
+      throw ex;
+    }
+  }
+
+  /**
+   * Update last modified time of the file if it exists.
+   *
+   * @param path path to the target file
+   */
+  @VisibleForTesting
+  void updateLastModifiedTime(final Path path) {
+    try {
+      Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
+    } catch (final IOException ex) {
+      log.warn("Error when updating last modified time for {}", path, ex);
+    }
+  }
+
+  /**
+   * @return the project directory name of a project
+   */
+  private String generateProjectDirName(final ProjectDirectoryMetadata proj) {
+    return String.valueOf(proj.getProjectId()) + "." + String.valueOf(proj.getVersion());
+  }
+
+  private File createTempDir(final ProjectDirectoryMetadata proj) {
+    final String projectDir = generateProjectDirName(proj);
+    final File tempDir = new File(this.projectCacheDir,
+        "_temp." + projectDir + "." + System.currentTimeMillis());
+    tempDir.mkdirs();
+    return tempDir;
+  }
+
+  private void downloadAndUnzipProject(final ProjectDirectoryMetadata proj, final File dest)
+      throws IOException {
+    final ProjectFileHandler projectFileHandler = requireNonNull(this.storageManager
+        .getProjectFile(proj.getProjectId(), proj.getVersion()));
+    try {
+      checkState("zip".equals(projectFileHandler.getFileType()));
+      final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
+      final ZipFile zip = new ZipFile(zipFile);
+      Utils.unzip(zip, dest);
+      proj.setDirSizeInByte(calculateDirSizeAndSave(dest));
+    } finally {
+      projectFileHandler.deleteLocalFile();
+    }
+  }
+
+  /**
+   * Download project zip and unzip it if not exists locally.
+   *
+   * @param proj project to download
+   * @return the temp dir where the new project is downloaded to, null if no project is downloaded.
+   * @throws IOException if downloading or unzipping fails.
+   */
+  @VisibleForTesting
+  File downloadProjectIfNotExists(final ProjectDirectoryMetadata proj, final int execId)
+      throws IOException {
+    final String projectDir = generateProjectDirName(proj);
+    if (proj.getInstalledDir() == null) {
+      proj.setInstalledDir(new File(this.projectCacheDir, projectDir));
+    }
+
+    // If directory exists, assume it's prepared and skip.
+    if (proj.getInstalledDir().exists()) {
+      log.info("Project {} already cached. Skipping download. ExecId: {}", proj, execId);
+      // Hit the local cache.
+      this.projectCacheHitRatio.markHit();
+      // Update last modified time of the file keeping project dir size when the project is
+      // accessed. This last modified time will be used to determined least recently used
+      // projects when performing project directory clean-up.
+      updateLastModifiedTime(
+          Paths.get(proj.getInstalledDir().getPath(), PROJECT_DIR_SIZE_FILE_NAME));
+      return null;
+    }
+
+    this.projectCacheHitRatio.markMiss();
+
+    final long start = System.currentTimeMillis();
+
+    // Download project to a temp dir if not exists in local cache.
+    final File tempDir = createTempDir(proj);
+    downloadAndUnzipProject(proj, tempDir);
+
+    log.info("Downloading zip file for project {} when preparing execution [execid {}] "
+            + "completed in {} second(s)", proj, execId,
+        (System.currentTimeMillis() - start) / 1000);
+
+    return tempDir;
   }
 
   private File createExecDir(final ExecutableFlow flow) {
     final int execId = flow.getExecutionId();
     final File execDir = new File(this.executionsDir, String.valueOf(execId));
     flow.setExecutionPath(execDir.getPath());
-
-    // TODO spyne: Why mkdirs? This path should be already set up.
     execDir.mkdirs();
     return execDir;
-  }
-
-  private ProjectVersion getProjectVersion(final ExecutableFlow flow) {
-    // We're setting up the installed projects. First time, it may take a while
-    // to set up.
-    final ProjectVersion projectVersion;
-    synchronized (this.installedProjects) {
-      final Pair<Integer, Integer> pair = new Pair<>(flow.getProjectId(), flow.getVersion());
-      projectVersion = this.installedProjects.getOrDefault(pair, new ProjectVersion(flow
-          .getProjectId(), flow.getVersion()));
-    }
-    return projectVersion;
-  }
-
-  private class ProjectCacheDirCleaner {
-
-    private final Long projectDirMaxSizeInMb;
-
-    ProjectCacheDirCleaner(final Long projectDirMaxSizeInMb) {
-      this.projectDirMaxSizeInMb = projectDirMaxSizeInMb;
-    }
-
-    /**
-     * @return sum of the size of all project dirs
-     */
-    private long getProjectDirsTotalSizeInBytes() throws IOException {
-      long totalSizeInBytes = 0;
-      for (final ProjectVersion version : FlowPreparer.this.installedProjects.values()) {
-        totalSizeInBytes += version.getDirSizeInBytes();
-      }
-      return totalSizeInBytes;
-    }
-
-    private FileTime getLastReferenceTime(final ProjectVersion pv) throws IOException {
-      final Path dirSizeFile = Paths
-          .get(pv.getInstalledDir().toPath().toString(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
-      return Files.getLastModifiedTime(dirSizeFile);
-    }
-
-    private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes,
-        final List<ProjectVersion>
-            projectVersions) throws IOException {
-      // sort project version by last reference time in ascending order
-      try {
-        projectVersions.sort((o1, o2) -> {
-          try {
-            final FileTime lastReferenceTime1 = getLastReferenceTime(o1);
-            final FileTime lastReferenceTime2 = getLastReferenceTime(o2);
-            return lastReferenceTime1.compareTo(lastReferenceTime2);
-          } catch (final IOException ex) {
-            throw new RuntimeException(ex);
-          }
-        });
-      } catch (final RuntimeException ex) {
-        throw new IOException(ex);
-      }
-
-      for (final ProjectVersion version : projectVersions) {
-        if (sizeToFreeInBytes > 0) {
-          try {
-            // delete the project directory even if flow within is running. It's ok to
-            // delete the directory since execution dir is HARD linked to project dir.
-            FlowRunnerManager.deleteDirectory(version);
-            FlowPreparer.this.installedProjects.remove(new Pair<>(version.getProjectId(), version
-                .getVersion()));
-            sizeToFreeInBytes -= version.getDirSizeInBytes();
-          } catch (final IOException ex) {
-            log.error(ex);
-          }
-        }
-      }
-    }
-
-    void deleteProjectDirsIfNecessary(final long spaceToDeleteInBytes) throws IOException {
-      final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes();
-      if (this.projectDirMaxSizeInMb != null
-          && (currentSpaceInBytes + spaceToDeleteInBytes) >= this
-          .projectDirMaxSizeInMb * 1024 * 1024) {
-        deleteLeastRecentlyUsedProjects(spaceToDeleteInBytes,
-            new ArrayList<>(FlowPreparer.this.installedProjects.values()));
-      }
-    }
   }
 }

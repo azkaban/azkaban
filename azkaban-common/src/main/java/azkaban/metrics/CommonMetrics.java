@@ -16,8 +16,9 @@
 
 package azkaban.metrics;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -28,14 +29,28 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CommonMetrics {
+  public static final String FLOW_FAIL_METER_NAME = "flow-fail-meter";
+  public static final String DISPATCH_FAIL_METER_NAME = "dispatch-fail-meter";
+  public static final String DISPATCH_SUCCESS_METER_NAME = "dispatch-success-meter";
+  public static final String SEND_EMAIL_FAIL_METER_NAME = "send-email-fail-meter";
+  public static final String SEND_EMAIL_SUCCESS_METER_NAME = "send-email-success-meter";
+  public static final String SUBMIT_FLOW_SUCCESS_METER_NAME = "submit-flow-success-meter";
+  public static final String SUBMIT_FLOW_FAIL_METER_NAME = "submit-flow-fail-meter";
+  public static final String SUBMIT_FLOW_SKIP_METER_NAME = "submit-flow-skip-meter";
+  public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
+  public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
 
-  private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
+  private Counter OOMWaitingJobCount;
   private final MetricsManager metricsManager;
   private Meter flowFailMeter;
   private Meter dispatchFailMeter;
   private Meter dispatchSuccessMeter;
   private Meter sendEmailFailMeter;
   private Meter sendEmailSuccessMeter;
+  private Meter submitFlowSuccessMeter;
+  private Meter submitFlowFailMeter;
+  private Meter submitFlowSkipMeter;
+  private Histogram queueWaitMeter;
 
   @Inject
   public CommonMetrics(final MetricsManager metricsManager) {
@@ -44,14 +59,17 @@ public class CommonMetrics {
   }
 
   private void setupAllMetrics() {
-    this.flowFailMeter = this.metricsManager.addMeter("flow-fail-meter");
-    this.dispatchFailMeter = this.metricsManager.addMeter("dispatch-fail-meter");
-    this.dispatchSuccessMeter = this.metricsManager.addMeter("dispatch-success-meter");
-    this.sendEmailFailMeter = this.metricsManager.addMeter("send-email-fail-meter");
-    this.sendEmailSuccessMeter = this.metricsManager.addMeter("send-email-success-meter");
-    this.metricsManager.addGauge("OOM-waiting-job-count", this.OOMWaitingJobCount::get);
+    this.flowFailMeter = this.metricsManager.addMeter(FLOW_FAIL_METER_NAME);
+    this.dispatchFailMeter = this.metricsManager.addMeter(DISPATCH_FAIL_METER_NAME);
+    this.dispatchSuccessMeter = this.metricsManager.addMeter(DISPATCH_SUCCESS_METER_NAME);
+    this.sendEmailFailMeter = this.metricsManager.addMeter(SEND_EMAIL_FAIL_METER_NAME);
+    this.sendEmailSuccessMeter = this.metricsManager.addMeter(SEND_EMAIL_SUCCESS_METER_NAME);
+    this.submitFlowSuccessMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SUCCESS_METER_NAME);
+    this.submitFlowFailMeter = this.metricsManager.addMeter(SUBMIT_FLOW_FAIL_METER_NAME);
+    this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
+    this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
+    this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
   }
-
 
   /**
    * Mark flowFailMeter when a flow is considered as FAILED. This method could be called by Web
@@ -90,17 +108,46 @@ public class CommonMetrics {
   }
 
   /**
+   * Mark submitFlowSuccessMeter when a flow is submitted for execution successfully.
+   */
+  public void markSubmitFlowSuccess() {
+    this.submitFlowSuccessMeter.mark();
+  }
+
+  /**
+   * Mark submitFlowFailMeter when a flow submitted for execution is skipped.
+   */
+  public void markSubmitFlowSkip() {
+    this.submitFlowSkipMeter.mark();
+  }
+
+  /**
+   * Mark submitFlowFailMeter when a flow fails to be submitted for execution.
+   */
+  public void markSubmitFlowFail() {
+    this.submitFlowFailMeter.mark();
+  }
+
+  /**
    * Mark the occurrence of an job waiting event due to OOM
    */
   public void incrementOOMJobWaitCount() {
-    this.OOMWaitingJobCount.incrementAndGet();
+    this.OOMWaitingJobCount.inc();
   }
 
   /**
    * Unmark the occurrence of an job waiting event due to OOM
    */
   public void decrementOOMJobWaitCount() {
-    this.OOMWaitingJobCount.decrementAndGet();
+    this.OOMWaitingJobCount.dec();
   }
 
+  /**
+   * Add the queue wait time for a flow to the metrics.
+   *
+   * @param time queue wait time for a flow.
+   */
+  public void addQueueWait(final long time) {
+    this.queueWaitMeter.update(time);
+  }
 }

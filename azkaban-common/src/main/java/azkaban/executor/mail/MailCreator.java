@@ -24,19 +24,19 @@ import java.util.List;
 
 public interface MailCreator {
 
-  public boolean createFirstErrorMessage(ExecutableFlow flow,
+  boolean createFirstErrorMessage(ExecutableFlow flow,
       EmailMessage message, String azkabanName, String scheme,
-      String clientHostname, String clientPortNumber, String... vars);
+      String clientHostname, String clientPortNumber);
 
-  public boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow> pastExecutions,
+  boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow> pastExecutions,
       EmailMessage message, String azkabanName, String scheme, String clientHostname,
-      String clientPortNumber, String... vars);
+      String clientPortNumber, String... reasons);
 
-  public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
+  boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
-      String clientPortNumber, String... vars);
+      String clientPortNumber);
 
-  public boolean createFailedUpdateMessage(List<ExecutableFlow> flows, Executor executor,
+  boolean createFailedUpdateMessage(List<ExecutableFlow> flows, Executor executor,
       ExecutorManagerException updateException, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
       String clientPortNumber);

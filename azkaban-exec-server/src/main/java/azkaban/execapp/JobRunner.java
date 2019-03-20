@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+
 import org.apache.kafka.log4jappender.KafkaLog4jAppender;
 import org.apache.log4j.Appender;
 import org.apache.log4j.EnhancedPatternLayout;
@@ -321,6 +322,7 @@ public class JobRunner extends EventHandler implements Runnable {
     final String logName = createLogFileName(this.node);
     this.logFile = new File(this.workingDir, logName);
     final String absolutePath = this.logFile.getAbsolutePath();
+    this.flowLogger.info("Log file path for job: " + this.jobId + " is: " + absolutePath);
 
     // Attempt to create FileAppender
     final RollingFileAppender fileAppender =
@@ -671,6 +673,7 @@ public class JobRunner extends EventHandler implements Runnable {
       this.props.put(CommonJobProperties.JOB_METADATA_FILE,
           createMetaDataFileName(this.node));
       this.props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, this.attachmentFileName);
+      this.props.put(CommonJobProperties.JOB_LOG_FILE, this.logFile.getAbsolutePath());
       finalStatus = changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
@@ -838,8 +841,10 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public void killBySLA() {
-    kill();
-    this.getNode().setKilledBySLA(true);
+    synchronized (this.syncObject) {
+      kill();
+      this.getNode().setKilledBySLA(true);
+    }
   }
 
   public void kill() {

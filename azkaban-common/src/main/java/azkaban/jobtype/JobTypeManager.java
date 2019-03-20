@@ -191,6 +191,10 @@ public class JobTypeManager {
 
       pluginLoadProps = new Props(commonPluginLoadProps, pluginLoadPropsFile);
       pluginLoadProps.put("plugin.dir", pluginDir.getAbsolutePath());
+
+      // Adding "plugin.dir" to allow plugin.properties file could read this property. Also, user
+      // code could leverage this property as well.
+      pluginJobProps.put("plugin.dir", pluginDir.getAbsolutePath());
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
     } catch (final Exception e) {
       logger.error("pluginLoadProps to help with debugging: " + pluginLoadProps);

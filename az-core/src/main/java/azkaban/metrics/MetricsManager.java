@@ -20,9 +20,12 @@ import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CLASS_
 import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
 
 import azkaban.utils.Props;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
@@ -77,6 +80,26 @@ public class MetricsManager {
   public <T> void addGauge(final String name, final Supplier<T> gaugeFunc) {
     this.registry.register(name, (Gauge<T>) gaugeFunc::get);
   }
+
+  /**
+   * A {@link Counter} is just a gauge for an AtomicLong instance.
+   */
+  public Counter addCounter(final String name) {
+    return this.registry.counter(name);
+  }
+
+  /**
+   * A {@link Histogram} measures the statistical distribution of values in a stream of data. In
+   * addition to minimum, maximum, mean, etc., it also measures median, 75th,
+   * 90th, 95th, 98th, 99th, and 99.9th percentiles.
+   */
+  public Histogram addHistogram(final String name) { return this.registry.histogram(name); }
+
+  /**
+   * A {@link Timer} measures both the rate that a particular piece of code is called and the
+   * distribution of its duration.
+   */
+  public Timer addTimer(final String name) { return this.registry.timer(name); }
 
   /**
    * reporting metrics to remote metrics collector. Note: this method must be synchronized, since

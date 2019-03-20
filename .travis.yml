@@ -3,7 +3,7 @@ languages: java
 jdk:
   - oraclejdk8
 sudo: false
-script: ./gradlew clean build coveralls --scan --no-daemon --info
+script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
 before_cache:
@@ -14,10 +14,18 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
 
+notifications:
+  email:
+    recipients:
+      - azkaban-dev@linkedin.com
+    on_success: never
+    on_failure: always
+
 env:
   global:
     # Reduce the memory pressure on Travis CI to reduce build failures.
     - GRADLE_OPTS="-Xms128m"
 
 after_success:
+  - ./gradlew coveralls --no-daemon
   - bash <(curl -s https://codecov.io/bash)

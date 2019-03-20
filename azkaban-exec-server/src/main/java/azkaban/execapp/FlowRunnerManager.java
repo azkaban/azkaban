@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.Event;
@@ -24,14 +26,17 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
+import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.metric.MetricReportManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectWhitelist;
 import azkaban.project.ProjectWhitelist.WhitelistType;
@@ -48,26 +53,27 @@ import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
+import com.codahale.metrics.Timer;
+import com.google.common.base.Preconditions;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -77,8 +83,8 @@ import org.apache.log4j.Logger;
 /**
  * Execution manager for the server side execution.
  *
- * When a flow is submitted to FlowRunnerManager, it is the {@link Status.PREPARING} status. When a
- * flow is about to be executed by FlowRunner, its status is updated to {@link Status.RUNNING}
+ * When a flow is submitted to FlowRunnerManager, it is the {@link Status#PREPARING} status. When a
+ * flow is about to be executed by FlowRunner, its status is updated to {@link Status#RUNNING}
  *
  * Two main data structures are used in this class to maintain flows.
  *
@@ -108,12 +114,15 @@ public class FlowRunnerManager implements EventListener,
 
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
   private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
+  private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
 
   // this map is used to store the flows that have been submitted to
   // the executor service. Once a flow has been submitted, it is either
   // in the queue waiting to be executed or in executing state.
   private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
   private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
+  // keep track of the number of flow being setup({@link createFlowRunner()})
+  private final AtomicInteger preparingFlowCount = new AtomicInteger(0);
   private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
@@ -122,28 +131,31 @@ public class FlowRunnerManager implements EventListener,
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
   private final TriggerManager triggerManager;
+  private final AlerterHolder alerterHolder;
   private final AzkabanEventReporter azkabanEventReporter;
   private final Props azkabanProps;
   private final File executionDirectory;
   private final File projectDirectory;
   private final Object executionDirDeletionSync = new Object();
+  private final CommonMetrics commonMetrics;
+  private final ExecMetrics execMetrics;
 
-  private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
-  private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
+  private final int numThreads;
+  private final int numJobThreadPerFlow;
+  // We want to limit the log sizes to about 20 megs
+  private final String jobLogChunkSize;
+  private final int jobLogNumFiles;
+  // If true, jobs will validate proxy user against a list of valid proxy users.
+  private final boolean validateProxyUser;
+  private PollingService pollingService;
   private int threadPoolQueueSize = -1;
-  private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
   private Props globalProps;
   private long lastCleanerThreadCheckTime = -1;
   private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
-  // We want to limit the log sizes to about 20 megs
-  private String jobLogChunkSize = "5MB";
-  private int jobLogNumFiles = 4;
-  // If true, jobs will validate proxy user against a list of valid proxy users.
-  private boolean validateProxyUser = false;
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
-  // whether the current executor is active
-  private volatile boolean isExecutorActive = false;
+  // Indicate if the executor is set to active.
+  private volatile boolean active;
 
   @Inject
   public FlowRunnerManager(final Props props,
@@ -151,6 +163,9 @@ public class FlowRunnerManager implements EventListener,
       final ProjectLoader projectLoader,
       final StorageManager storageManager,
       final TriggerManager triggerManager,
+      final AlerterHolder alerterHolder,
+      final CommonMetrics commonMetrics,
+      final ExecMetrics execMetrics,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -169,8 +184,6 @@ public class FlowRunnerManager implements EventListener,
       this.projectDirectory.mkdirs();
     }
 
-    this.installedProjects = new ConcurrentHashMap<>();
-
     // azkaban.temp.dir
     this.numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     this.numJobThreadPerFlow = props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
@@ -179,6 +192,9 @@ public class FlowRunnerManager implements EventListener,
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
     this.triggerManager = triggerManager;
+    this.alerterHolder = alerterHolder;
+    this.commonMetrics = commonMetrics;
+    this.execMetrics = execMetrics;
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -196,34 +212,28 @@ public class FlowRunnerManager implements EventListener,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), this.globalProps,
             getClass().getClassLoader());
 
-    Long projectDirMaxSize = null;
+    ProjectCacheCleaner cleaner = null;
     try {
-      projectDirMaxSize = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE_IN_MB);
+      final double projectCacheSizePercentage =
+          props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
+      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
     } catch (final UndefinedPropertyException ex) {
     }
 
     // Create a flow preparer
     this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, this.installedProjects, projectDirMaxSize);
+        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
+
+    this.execMetrics.addFlowRunnerManagerMetrics(this);
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
-  }
 
-  /*
-   * Delete the project dir associated with {@code version}.
-   * It first acquires object lock of {@code version} waiting for other threads creating
-   * execution dir to finish to avoid race condition. An example of race condition scenario:
-   * delete the dir of a project while an execution of a flow in the same project is being setup
-   * and the flow's execution dir is being created({@link FlowPreparer#setup}).
-   */
-  static void deleteDirectory(final ProjectVersion pv) throws IOException {
-    synchronized (pv) {
-      logger.warn("Deleting project: " + pv);
-      final File installedDir = pv.getInstalledDir();
-      if (installedDir != null && installedDir.exists()) {
-        FileUtils.deleteDirectory(installedDir);
-      }
+    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.logger.info("Starting polling service.");
+      this.pollingService = new PollingService(this.azkabanProps.getLong
+          (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, DEFAULT_POLLING_INTERVAL_MS));
+      this.pollingService.start();
     }
   }
 
@@ -271,62 +281,39 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
-  private List<Path> loadExistingProjects() {
-    final List<Path> projects = new ArrayList<>();
-    for (final File project : this.projectDirectory.listFiles(new FilenameFilter() {
-
-      String pattern = "[0-9]+\\.[0-9]+";
-
-      @Override
-      public boolean accept(final File dir, final String name) {
-        return name.matches(this.pattern);
-      }
-    })) {
-      if (project.isDirectory()) {
-        projects.add(project.toPath());
-      }
+  public void setExecutorActive(final boolean isActive, final String host, final int port)
+      throws ExecutorManagerException, InterruptedException {
+    final Executor executor = this.executorLoader.fetchExecutor(host, port);
+    Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
+    if (executor.isActive() != isActive) {
+      executor.setActive(isActive);
+      this.executorLoader.updateExecutor(executor);
+    } else {
+      logger.info(
+          "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
-    return projects;
+    this.active = isActive;
+    if (!this.active) {
+      // When deactivating this executor, this call will wait to return until every thread in {@link
+      // #createFlowRunner} has finished. When deploying new executor, old running executor will be
+      // deactivated before new one is activated and only one executor is allowed to
+      // delete/hard-linking project dirs to avoid race condition described in {@link
+      // FlowPreparer#setup}. So to make deactivation process block until flow preparation work
+      // finishes guarantees the old executor won't access {@link FlowPreparer#setup} after
+      // deactivation.
+      waitUntilFlowPreparationFinish();
+    }
   }
 
-  private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjectsAsCache() {
-    final Map<Pair<Integer, Integer>, ProjectVersion> allProjects =
-        new ConcurrentHashMap<>();
-    logger.info("loading project dir metadata into memory");
-    for (final Path project : this.loadExistingProjects()) {
-      if (Files.isDirectory(project)) {
-        try {
-          final String fileName = project.getFileName().toString();
-          final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
-          final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
-          final ProjectVersion projVersion =
-              new ProjectVersion(projectId, versionNum, project.toFile());
-          final Path projectDirSizeFile = Paths
-              .get(projVersion.getInstalledDir().toString(),
-                  FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
-          if (!Files.exists(projectDirSizeFile)) {
-            FlowPreparer.updateDirSize(projVersion.getInstalledDir(), projVersion);
-          }
-
-          projVersion.setDirSizeInBytes(FileIOUtils.readNumberFromFile(projectDirSizeFile));
-          allProjects.put(new Pair<>(projectId, versionNum), projVersion);
-        } catch (final Exception e) {
-          logger.error("error while loading project dir metadata", e);
-        }
-      }
-      logger.info("finish loading project dir metadata into memory");
-    }
-
-    return allProjects;
-  }
-
-  // todo chengren311: this method will be invoked by executor activate API, but in SOLO mode
-  // the API is not called. So we should either have everything run in "multi-executor" mode
-  // or make SOLO server mode call the API.
-  public void setExecutorActive(final boolean isActive) {
-    this.isExecutorActive = isActive;
-    if (this.isExecutorActive) {
-      this.installedProjects = this.loadExistingProjectsAsCache();
+  /**
+   * Wait until ongoing flow preparation work finishes.
+   */
+  private void waitUntilFlowPreparationFinish() throws InterruptedException {
+    final Duration SLEEP_INTERVAL = Duration.ofSeconds(5);
+    while (this.preparingFlowCount.intValue() != 0) {
+      logger.info(this.preparingFlowCount + " flow(s) is/are still being setup before complete "
+          + "deactivation.");
+      Thread.sleep(SLEEP_INTERVAL.toMillis());
     }
   }
 
@@ -346,13 +333,46 @@ public class FlowRunnerManager implements EventListener,
   }
 
   public void submitFlow(final int execId) throws ExecutorManagerException {
-    // Load file and submit
-    if (this.runningFlows.containsKey(execId)) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is already running.");
+    if (isAlreadyRunning(execId)) {
+      return;
     }
 
-    ExecutableFlow flow = null;
+    final FlowRunner runner = createFlowRunner(execId);
+
+    // Check again.
+    if (isAlreadyRunning(execId)) {
+      return;
+    }
+    submitFlowRunner(runner);
+  }
+
+  private boolean isAlreadyRunning(final int execId) throws ExecutorManagerException {
+    if (this.runningFlows.containsKey(execId)) {
+      logger.info("Execution " + execId + " is already in running.");
+      if (!this.submittedFlows.containsValue(execId)) {
+        // Execution had been added to running flows but not submitted - something's wrong.
+        // Return a response with error: this is a cue for the dispatcher to retry or finalize the
+        // execution as failed.
+        throw new ExecutorManagerException("Execution " + execId +
+            " is in runningFlows but not in submittedFlows. Most likely submission had failed.");
+      }
+      // Already running, everything seems fine. Report as a successful submission.
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * return whether this execution has useExecutor defined. useExecutor is for running test
+   * executions on inactive executor.
+   */
+  private boolean isExecutorSpecified(final ExecutableFlow flow) {
+    return flow.getExecutionOptions().getFlowParameters()
+        .containsKey(ExecutionOptions.USE_EXECUTOR);
+  }
+
+  private FlowRunner createFlowRunner(final int execId) throws ExecutorManagerException {
+    final ExecutableFlow flow;
     flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
       throw new ExecutorManagerException("Error loading flow with exec "
@@ -360,7 +380,28 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Sets up the project files and execution directory.
-    this.flowPreparer.setup(flow);
+    this.preparingFlowCount.incrementAndGet();
+    // Record the time between submission, and when the flow preparation/execution starts.
+    // Note that since submit time is recorded on the web server, while flow preparation is on
+    // the executor, there could be some inaccuracies due to clock skew.
+    this.commonMetrics.addQueueWait(System.currentTimeMillis() -
+        flow.getExecutableFlow().getSubmitTime());
+
+    final Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
+
+    try {
+      if (this.active || isExecutorSpecified(flow)) {
+        this.flowPreparer.setup(flow);
+      } else {
+        // Unset the executor.
+        this.executorLoader.unsetExecutorIdForExecution(execId);
+        throw new ExecutorManagerException("executor became inactive before setting up the "
+            + "flow " + execId);
+      }
+    } finally {
+      this.preparingFlowCount.decrementAndGet();
+      flowPrepTimerContext.stop();
+    }
 
     // Setup flow runner
     FlowWatcher watcher = null;
@@ -399,23 +440,18 @@ public class FlowRunnerManager implements EventListener,
 
     final FlowRunner runner =
         new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
-            this.azkabanProps, this.azkabanEventReporter);
+            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
         .setNumJobThreads(numJobThreads).addListener(this);
 
     configureFlowLevelMetrics(runner);
+    return runner;
+  }
 
-    // Check again.
-    if (this.runningFlows.containsKey(execId)) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is already running.");
-    }
-
-    // Finally, queue the sucker.
-    this.runningFlows.put(execId, runner);
-
+  private void submitFlowRunner(final FlowRunner runner) throws ExecutorManagerException {
+    this.runningFlows.put(runner.getExecutionId(), runner);
     try {
       // The executorService already has a queue.
       // The submit method below actually returns an instance of FutureTask,
@@ -427,6 +463,7 @@ public class FlowRunnerManager implements EventListener,
       // update the last submitted time.
       this.lastFlowSubmittedDate = System.currentTimeMillis();
     } catch (final RejectedExecutionException re) {
+      this.runningFlows.remove(runner.getExecutionId());
       final StringBuffer errorMsg = new StringBuffer(
           "Azkaban executor can't execute any more flows. ");
       if (this.executorService.isShutdown()) {
@@ -450,7 +487,6 @@ public class FlowRunnerManager implements EventListener,
     }
 
   }
-
 
   public void cancelJobBySLA(final int execId, final String jobId)
       throws ExecutorManagerException {
@@ -772,6 +808,9 @@ public class FlowRunnerManager implements EventListener,
    */
   public void shutdown() {
     logger.warn("Shutting down FlowRunnerManager...");
+    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.pollingService.shutdown();
+    }
     this.executorService.shutdown();
     boolean result = false;
     while (!result) {
@@ -791,6 +830,9 @@ public class FlowRunnerManager implements EventListener,
    */
   public void shutdownNow() {
     logger.warn("Shutting down FlowRunnerManager now...");
+    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.pollingService.shutdown();
+    }
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
   }
@@ -817,22 +859,11 @@ public class FlowRunnerManager implements EventListener,
     return activeProjectVersions;
   }
 
-  /**
-   * Checks if the project version contains any running flow
-   */
-  private boolean isActiveProject(final ProjectVersion version) {
-    final Pair<Integer, Integer> versionKey = new Pair<>(version.getProjectId(),
-        version.getVersion());
-    return getActiveProjectVersions().contains(versionKey);
-  }
-
 
   private class CleanerThread extends Thread {
 
     // Every hour, clean execution dir.
     private static final long EXECUTION_DIR_CLEAN_INTERVAL_MS = 60 * 60 * 1000;
-    // Every 5 mins clean the old project dir
-    private static final long OLD_PROJECT_DIR_INTERVAL_MS = 5 * 60 * 1000;
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
     // Every 5 mins kill flows running longer than allowed max running time
@@ -841,7 +872,6 @@ public class FlowRunnerManager implements EventListener,
         Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, -1);
     private boolean shutdown = false;
     private long lastExecutionDirCleanTime = -1;
-    private long lastOldProjectCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;
 
@@ -870,25 +900,18 @@ public class FlowRunnerManager implements EventListener,
         synchronized (this) {
           try {
             FlowRunnerManager.this.lastCleanerThreadCheckTime = System.currentTimeMillis();
-            logger.info("# of executing flows: " + getNumRunningFlows());
+            FlowRunnerManager.logger.info("# of executing flows: " + getNumRunningFlows());
 
             // Cleanup old stuff.
             final long currentTime = System.currentTimeMillis();
             if (currentTime - RECENTLY_FINISHED_INTERVAL_MS > this.lastRecentlyFinishedCleanTime) {
-              logger.info("Cleaning recently finished");
+              FlowRunnerManager.logger.info("Cleaning recently finished");
               cleanRecentlyFinished();
               this.lastRecentlyFinishedCleanTime = currentTime;
             }
 
-            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > this.lastOldProjectCleanTime
-                && FlowRunnerManager.this.isExecutorActive) {
-              logger.info("Cleaning old projects");
-              cleanProjectsOfOldVersion();
-              this.lastOldProjectCleanTime = currentTime;
-            }
-
             if (currentTime - EXECUTION_DIR_CLEAN_INTERVAL_MS > this.lastExecutionDirCleanTime) {
-              logger.info("Cleaning old execution dirs");
+              FlowRunnerManager.logger.info("Cleaning old execution dirs");
               cleanOlderExecutionDirs();
               this.lastExecutionDirCleanTime = currentTime;
             }
@@ -896,12 +919,13 @@ public class FlowRunnerManager implements EventListener,
             if (this.flowMaxRunningTimeInMins > 0
                 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS
                 > this.lastLongRunningFlowCleanTime) {
-              logger.info(String.format("Killing long jobs running longer than %s mins",
-                  this.flowMaxRunningTimeInMins));
+              FlowRunnerManager.logger
+                  .info(String.format("Killing long jobs running longer than %s mins",
+                      this.flowMaxRunningTimeInMins));
               for (final FlowRunner flowRunner : FlowRunnerManager.this.runningFlows.values()) {
                 if (isFlowRunningLongerThan(flowRunner.getExecutableFlow(),
                     this.flowMaxRunningTimeInMins)) {
-                  logger.info(String
+                  FlowRunnerManager.logger.info(String
                       .format("Killing job [id: %s, status: %s]. It has been running for %s mins",
                           flowRunner.getExecutableFlow().getId(),
                           flowRunner.getExecutableFlow().getStatus(), TimeUnit.MILLISECONDS
@@ -913,11 +937,11 @@ public class FlowRunnerManager implements EventListener,
               this.lastLongRunningFlowCleanTime = currentTime;
             }
 
-            wait(RECENTLY_FINISHED_TIME_TO_LIVE);
+            wait(FlowRunnerManager.RECENTLY_FINISHED_TIME_TO_LIVE);
           } catch (final InterruptedException e) {
-            logger.info("Interrupted. Probably to shut down.");
+            FlowRunnerManager.logger.info("Interrupted. Probably to shut down.");
           } catch (final Throwable t) {
-            logger.warn(
+            FlowRunnerManager.logger.warn(
                 "Uncaught throwable, please look into why it is not caught", t);
           }
         }
@@ -940,7 +964,7 @@ public class FlowRunnerManager implements EventListener,
             continue;
           }
         } catch (final NumberFormatException e) {
-          logger.error("Can't delete exec dir " + exDir.getName()
+          FlowRunnerManager.logger.error("Can't delete exec dir " + exDir.getName()
               + " it is not a number");
           continue;
         }
@@ -949,7 +973,7 @@ public class FlowRunnerManager implements EventListener,
           try {
             FileUtils.deleteDirectory(exDir);
           } catch (final IOException e) {
-            logger.error("Error cleaning execution dir " + exDir.getPath(), e);
+            FlowRunnerManager.logger.error("Error cleaning execution dir " + exDir.getPath(), e);
           }
         }
       }
@@ -957,7 +981,7 @@ public class FlowRunnerManager implements EventListener,
 
     private void cleanRecentlyFinished() {
       final long cleanupThreshold =
-          System.currentTimeMillis() - RECENTLY_FINISHED_TIME_TO_LIVE;
+          System.currentTimeMillis() - FlowRunnerManager.RECENTLY_FINISHED_TIME_TO_LIVE;
       final ArrayList<Integer> executionToKill = new ArrayList<>();
       for (final ExecutableFlow flow : FlowRunnerManager.this.recentlyFinishedFlows.values()) {
         if (flow.getEndTime() < cleanupThreshold) {
@@ -966,54 +990,65 @@ public class FlowRunnerManager implements EventListener,
       }
 
       for (final Integer id : executionToKill) {
-        logger.info("Cleaning execution " + id
+        FlowRunnerManager.logger.info("Cleaning execution " + id
             + " from recently finished flows list.");
         FlowRunnerManager.this.recentlyFinishedFlows.remove(id);
       }
     }
+  }
 
-    private void cleanProjectsOfOldVersion() {
-      final Map<Integer, ArrayList<ProjectVersion>> projectVersions =
-          new HashMap<>();
-      for (final ProjectVersion version : FlowRunnerManager.this.installedProjects.values()) {
-        ArrayList<ProjectVersion> versionList =
-            projectVersions.get(version.getProjectId());
-        if (versionList == null) {
-          versionList = new ArrayList<>();
-          projectVersions.put(version.getProjectId(), versionList);
-        }
-        versionList.add(version);
-      }
+  /**
+   * Polls new executions from DB periodically and submits the executions to run on the executor.
+   */
+  @SuppressWarnings("FutureReturnValueIgnored")
+  private class PollingService {
 
-      for (final Map.Entry<Integer, ArrayList<ProjectVersion>> entry : projectVersions
-          .entrySet()) {
-        // Integer projectId = entry.getKey();
-        final ArrayList<ProjectVersion> installedVersions = entry.getValue();
+    private final long pollingIntervalMs;
+    private final ScheduledExecutorService scheduler;
+    private int executorId = -1;
 
-        // Keep one version of the project around.
-        if (installedVersions.size() == 1) {
-          continue;
-        }
+    public PollingService(final long pollingIntervalMs) {
+      this.pollingIntervalMs = pollingIntervalMs;
+      this.scheduler = Executors.newSingleThreadScheduledExecutor();
+    }
 
-        Collections.sort(installedVersions);
-        for (int i = 0; i < installedVersions.size() - 1; ++i) {
-          final ProjectVersion version = installedVersions.get(i);
-          if (!isActiveProject(version)) {
-            try {
-              logger.info("Removing old unused installed project "
-                  + version.getProjectId() + ":" + version.getVersion());
-              deleteDirectory(version);
-              FlowRunnerManager.this.installedProjects.remove(new Pair<>(version
-                  .getProjectId(), version.getVersion()));
-            } catch (final IOException e) {
-              logger.error(e);
-            }
+    public void start() {
+      this.scheduler.scheduleAtFixedRate(() -> pollExecution(), 0L, this.pollingIntervalMs,
+          TimeUnit.MILLISECONDS);
+    }
+
+    private void pollExecution() {
+      if (this.executorId == -1) {
+        if (AzkabanExecutorServer.getApp() != null) {
+          try {
+            final Executor executor = requireNonNull(FlowRunnerManager.this.executorLoader
+                .fetchExecutor(AzkabanExecutorServer.getApp().getHost(),
+                    AzkabanExecutorServer.getApp().getPort()), "The executor can not be null");
+            this.executorId = executor.getId();
+          } catch (final Exception e) {
+            FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
+        }
+      } else {
+        try {
+          // Todo jamiesjc: check executor capacity before polling from DB
+          final int execId = FlowRunnerManager.this.executorLoader
+              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
+          if (execId != -1) {
+            FlowRunnerManager.logger.info("Submitting flow " + execId);
+            submitFlow(execId);
+            FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
+          }
+        } catch (final Exception e) {
+          FlowRunnerManager.logger.error("Failed to submit flow ", e);
+          FlowRunnerManager.this.commonMetrics.markDispatchFail();
         }
       }
     }
 
+    public void shutdown() {
+      this.scheduler.shutdown();
+      this.scheduler.shutdownNow();
+    }
   }
-
-
 }

@@ -53,7 +53,16 @@ public class AzkabanSingleServer {
     this.executor = executor;
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(final String[] args) {
+    try {
+      start(args);
+    } catch (final Exception e) {
+      log.error("Failed to start single server. Shutting down.", e);
+      System.exit(1);
+    }
+  }
+
+  public static void start(String[] args) throws Exception {
     log.info("Starting Azkaban Server");
 
     if (System.getSecurityManager() == null) {
@@ -87,7 +96,7 @@ public class AzkabanSingleServer {
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(),
+        new AzkabanWebServerModule(props),
         new AzkabanExecServerModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
@@ -114,6 +123,10 @@ public class AzkabanSingleServer {
     // exec server first so that it's ready to accept calls by web server when web initializes
     AzkabanExecutorServer.launch(this.executor);
     log.info("Azkaban Exec Server started...");
+
+    this.executor.getFlowRunnerManager()
+        .setExecutorActive(true, this.executor.getHost(), this.executor.getPort());
+    log.info("Azkaban Exec Server activated...");
 
     AzkabanWebServer.launch(this.webServer);
     log.info("Azkaban Web Server started...");

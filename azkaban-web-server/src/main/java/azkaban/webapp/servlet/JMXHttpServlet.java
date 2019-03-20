@@ -51,7 +51,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
   private UserManager userManager;
   private AzkabanWebServer server;
-  private ExecutorManagerAdapter executorManager;
+  private ExecutorManagerAdapter executorManagerAdapter;
   private TriggerManager triggerManager;
 
   @Override
@@ -60,7 +60,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
     this.server = (AzkabanWebServer) getApplication();
     this.userManager = this.server.getUserManager();
-    this.executorManager = this.server.getExecutorManager();
+    this.executorManagerAdapter = this.server.getExecutorManager();
 
     this.triggerManager = this.server.getTriggerManager();
   }
@@ -83,7 +83,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         final String hostPort = getParam(req, JMX_HOSTPORT);
         final String mbean = getParam(req, JMX_MBEAN);
         final Map<String, Object> result =
-            this.executorManager.callExecutorJMX(hostPort,
+            this.executorManagerAdapter.callExecutorJMX(hostPort,
                 JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
         // order the attribute by name
         for (final Map.Entry<String, Object> entry : result.entrySet()) {
@@ -171,10 +171,10 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     page.add("mbeans", this.server.getMbeanNames());
 
     final Map<String, Object> executorMBeans = new HashMap<>();
-    for (final String hostPort : this.executorManager.getAllActiveExecutorServerHosts()) {
+    for (final String hostPort : this.executorManagerAdapter.getAllActiveExecutorServerHosts()) {
       try {
         final Map<String, Object> mbeans =
-            this.executorManager.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
+            this.executorManagerAdapter.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
 
         executorMBeans.put(hostPort, mbeans.get("mbeans"));
       } catch (final IOException e) {

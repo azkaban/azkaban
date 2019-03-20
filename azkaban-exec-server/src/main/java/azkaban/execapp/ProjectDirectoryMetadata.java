@@ -19,17 +19,17 @@ package azkaban.execapp;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.File;
+import java.nio.file.attribute.FileTime;
 
 
-public class ProjectVersion implements Comparable<ProjectVersion> {
-
+class ProjectDirectoryMetadata {
   private final int projectId;
   private final int version;
-
   private File installedDir;
-  private Long dirSize;
+  private Long dirSizeInByte;
+  private FileTime lastAccessTime;
 
-  public ProjectVersion(final int projectId, final int version) {
+  ProjectDirectoryMetadata(final int projectId, final int version) {
     checkArgument(projectId > 0);
     checkArgument(version > 0);
 
@@ -37,49 +37,51 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
     this.version = version;
   }
 
-  public ProjectVersion(final int projectId, final int version, final File installedDir) {
+  ProjectDirectoryMetadata(final int projectId, final int version, final File installedDir) {
     this(projectId, version);
     this.installedDir = installedDir;
   }
 
-  public Long getDirSizeInBytes() {
-    return this.dirSize;
+  Long getDirSizeInByte() {
+    return this.dirSizeInByte;
   }
 
-  public void setDirSizeInBytes(final Long dirSize) {
-    this.dirSize = dirSize;
+  void setDirSizeInByte(final Long dirSize) {
+    this.dirSizeInByte = dirSize;
   }
 
-  public int getProjectId() {
+  int getProjectId() {
     return this.projectId;
   }
 
-  public int getVersion() {
+  int getVersion() {
     return this.version;
   }
 
-  public File getInstalledDir() {
+  File getInstalledDir() {
     return this.installedDir;
   }
 
-  public void setInstalledDir(final File installedDir) {
+  void setInstalledDir(final File installedDir) {
     this.installedDir = installedDir;
   }
 
   @Override
-  public int compareTo(final ProjectVersion o) {
-    if (this.projectId == o.projectId) {
-      return this.version - o.version;
-    }
-
-    return this.projectId - o.projectId;
+  public String toString() {
+    return "ProjectVersion{" +
+        "projectId=" + this.projectId +
+        ", version=" + this.version +
+        ", installedDir=" + this.installedDir +
+        ", dirSizeInByte=" + this.dirSizeInByte +
+        ", lastAccessTime=" + this.lastAccessTime +
+        '}';
   }
 
-  @Override
-  public String toString() {
-    return "ProjectVersion{" + "projectId=" + this.projectId + ", version=" + this.version
-        + ", installedDir="
-        + this.installedDir
-        + '}';
+  FileTime getLastAccessTime() {
+    return this.lastAccessTime;
+  }
+
+  void setLastAccessTime(final FileTime lastAccessTime) {
+    this.lastAccessTime = lastAccessTime;
   }
 }

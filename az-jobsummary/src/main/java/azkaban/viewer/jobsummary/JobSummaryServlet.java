@@ -54,7 +54,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   private final String viewerName;
   private final String viewerPath;
 
-  private ExecutorManagerAdapter executorManager;
+  private ExecutorManagerAdapter executorManagerAdapter;
   private ProjectManager projectManager;
 
   private String outputDir;
@@ -87,7 +87,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.executorManager = server.getExecutorManager();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
   }
 
@@ -112,7 +112,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
     ExecutableFlow flow = null;
     ExecutableNode node = null;
     try {
-      flow = this.executorManager.getExecutableFlow(execId);
+      flow = this.executorManagerAdapter.getExecutableFlow(execId);
       if (flow == null) {
         page.add("errorMsg", "Error loading executing flow " + execId
             + ": not found.");

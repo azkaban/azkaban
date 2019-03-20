@@ -17,6 +17,8 @@
 package azkaban.executor;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -27,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -73,6 +77,43 @@ public class MockExecutorLoader implements ExecutorLoader {
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
     return this.activeFlows;
+  }
+
+  @Override
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
+      throws ExecutorManagerException {
+    return this.activeFlows;
+  }
+
+  @Override
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
+      throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, e -> {
+          final ExecutableFlow metadata = getExecutableFlowMetadata(e.getValue().getSecond());
+          return new Pair<>(e.getValue().getFirst(), metadata);
+        }));
+  }
+
+  private ExecutableFlow getExecutableFlowMetadata(
+      final ExecutableFlow fullExFlow) {
+    final Flow flow = new Flow(fullExFlow.getId());
+    final Project project = new Project(fullExFlow.getProjectId(), null);
+    project.setVersion(fullExFlow.getVersion());
+    flow.setVersion(fullExFlow.getVersion());
+    final ExecutableFlow metadata = new ExecutableFlow(project, flow);
+    metadata.setExecutionId(fullExFlow.getExecutionId());
+    metadata.setStatus(fullExFlow.getStatus());
+    metadata.setSubmitTime(fullExFlow.getSubmitTime());
+    metadata.setStartTime(fullExFlow.getStartTime());
+    metadata.setEndTime(fullExFlow.getEndTime());
+    metadata.setSubmitUser(fullExFlow.getSubmitUser());
+    return metadata;
+  }
+
+  @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId) {
+    return new Pair<>(null, null);
   }
 
   @Override
@@ -408,5 +449,15 @@ public class MockExecutorLoader implements ExecutorLoader {
   public List<ExecutableFlow> fetchRecentlyFinishedFlows(final Duration maxAge)
       throws ExecutorManagerException {
     return new ArrayList<>();
+  }
+
+  @Override
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+      throws ExecutorManagerException {
+    return 1;
+  }
+
+  @Override
+  public void unsetExecutorIdForExecution(final int executionId) {
   }
 }
