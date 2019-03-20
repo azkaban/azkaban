@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -23,6 +24,10 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.spi.EventType;
+import azkaban.utils.Props;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -244,6 +249,25 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertAttempts("job-retry-fail", 2);
 
     waitForAndAssertFlowStatus(Status.FAILED);
+  }
+
+  @Test
+  public void addMetadataFromProperties() throws Exception {
+    Map<String, String> metadataMap = new HashMap<>();
+    Props inputProps = new Props();
+    inputProps.put(Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE, "my.prop1,my.prop2");
+    inputProps.put("my.prop1", "value1");
+    inputProps.put("my.prop2", "value2");
+
+    FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
+        Logger.getLogger(FlowRunnerTest.class));
+
+    Assert.assertTrue("Metadata not propagated correctly.", metadataMap.size() == 2);
+    Assert.assertEquals("Metadata not propagated correctly.", "value1", metadataMap.get("my.prop1"));
+    Assert.assertEquals("Metadata not propagated correctly.", "value2", metadataMap.get("my.prop2"));
+
+    FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
+        Logger.getLogger(FlowRunnerTest.class));
   }
 
   private void assertAttempts(final String name, final int attempt) {
