@@ -953,6 +953,7 @@ public class ExecutorManager extends EventHandler implements
       } else {
         final int projectId = exflow.getProjectId();
         exflow.setSubmitUser(userId);
+        exflow.setStatus(Status.PREPARING);
         exflow.setSubmitTime(System.currentTimeMillis());
 
         // Get collection of running flows given a project and a specific flow name
