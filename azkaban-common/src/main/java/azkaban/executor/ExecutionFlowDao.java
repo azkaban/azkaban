@@ -61,9 +61,7 @@ public class ExecutionFlowDao {
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
         + "use_executor, flow_priority) values (?,?,?,?,?,?,?,?,?)";
-    final long submitTime = System.currentTimeMillis();
-    flow.setStatus(Status.PREPARING);
-    flow.setSubmitTime(submitTime);
+    final long submitTime = flow.getSubmitTime();
 
     /**
      * Why we need a transaction to get last insert ID?
@@ -73,7 +71,7 @@ public class ExecutionFlowDao {
      */
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
-          flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
+          flow.getFlowId(), flow.getVersion(), flow.getStatus().getNumVal(),
           submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority);
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
