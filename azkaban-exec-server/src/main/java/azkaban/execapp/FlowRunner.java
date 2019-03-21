@@ -1373,7 +1373,21 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
 
       // Propagate flow properties to Event Reporter
-      propagateMetadataFromProps(metaData, flow.getInputProps(), "flow", flow.getId(), logger);
+      if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
+        // In Flow 2.0, flow has designated properties (defined at its own level in Yaml)
+        propagateMetadataFromProps(metaData, flow.getInputProps(), "flow", flow.getId(), logger);
+      } else {
+        // In Flow 1.0, flow properties are combination of shared properties in individual files (order not defined,
+        // .. because it's loaded by fs list order and put in a HashMap).
+        Props combinedProps = null;
+        for (Props sharedProp : flowRunner.sharedProps.values()) {
+          combinedProps = new Props(combinedProps, sharedProp);
+        }
+        // In Flow 1.0, flow's inputProps contains overrides, so apply that as override to combined shared props
+        combinedProps = new Props(combinedProps, flow.getInputProps());
+
+        propagateMetadataFromProps(metaData, combinedProps, "flow", flow.getId(), logger);
+      }
 
       return metaData;
     }
@@ -1482,6 +1496,12 @@ public class FlowRunner extends EventHandler implements Runnable {
    */
   public static void propagateMetadataFromProps(Map<String, String> metaData, Props inputProps, String nodeType,
       String nodeName, Logger logger) {
+
+    // Backward compatibility: Unless user specifies, this will be absent from flows and jobs
+    // .. if so, do a no-op like before
+    if (!inputProps.containsKey(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE)) {
+      return;
+    }
 
     if (null == metaData || null == inputProps || null == logger ||
         Strings.isNullOrEmpty(nodeType) || Strings.isNullOrEmpty(nodeName)) {

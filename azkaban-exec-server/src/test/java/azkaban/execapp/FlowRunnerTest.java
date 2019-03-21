@@ -259,15 +259,20 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     inputProps.put("my.prop1", "value1");
     inputProps.put("my.prop2", "value2");
 
+    // Test happy path
     FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
 
-    Assert.assertTrue("Metadata not propagated correctly.", metadataMap.size() == 2);
+    Assert.assertEquals("Metadata not propagated correctly.", metadataMap.size(), 2);
     Assert.assertEquals("Metadata not propagated correctly.", "value1", metadataMap.get("my.prop1"));
     Assert.assertEquals("Metadata not propagated correctly.", "value2", metadataMap.get("my.prop2"));
 
-    FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
+    // Test backward compatibility: pass no value for AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE and expect
+    // .. nothing
+    metadataMap = new HashMap<>();
+    FlowRunner.propagateMetadataFromProps(metadataMap, new Props(), "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
+    Assert.assertEquals("Metadata propagation backward compatibility has issues.", metadataMap.size(), 0);
   }
 
   private void assertAttempts(final String name, final int attempt) {
