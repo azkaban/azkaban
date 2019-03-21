@@ -1494,7 +1494,8 @@ public class FlowRunner extends EventHandler implements Runnable {
    * @param nodeName Flow or job name.
    * @param logger Logger from invoking class for log sanity.
    */
-  public static void propagateMetadataFromProps(Map<String, String> metaData, Props inputProps, String nodeType,
+  @VisibleForTesting
+  static void propagateMetadataFromProps(Map<String, String> metaData, Props inputProps, String nodeType,
       String nodeName, Logger logger) {
 
     // Backward compatibility: Unless user specifies, this will be absent from flows and jobs

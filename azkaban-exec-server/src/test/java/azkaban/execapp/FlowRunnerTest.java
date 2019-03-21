@@ -273,6 +273,15 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     FlowRunner.propagateMetadataFromProps(metadataMap, new Props(), "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
     Assert.assertEquals("Metadata propagation backward compatibility has issues.", metadataMap.size(), 0);
+
+    // Test negative path
+    try {
+      FlowRunner.propagateMetadataFromProps(null, inputProps, "flow", "dummyFlow",
+          Logger.getLogger(FlowRunnerTest.class));
+      Assert.fail("Metadata propagation did not fail with bad data.");
+    } catch (Exception e) {
+      // Ignore exception, since its expected.
+    }
   }
 
   private void assertAttempts(final String name, final int attempt) {
