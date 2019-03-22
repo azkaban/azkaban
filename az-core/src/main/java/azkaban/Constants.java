@@ -184,6 +184,8 @@ public class Constants {
     public static final String AZKABAN_EVENT_REPORTING_CLASS_PARAM =
         "azkaban.event.reporting.class";
     public static final String AZKABAN_EVENT_REPORTING_ENABLED = "azkaban.event.reporting.enabled";
+    // Comma separated list of properties to propagate from flow to Event reporter metadata
+    public static final String AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE = "azkaban.event.reporting.propagateProperties";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_BROKERS =
         "azkaban.event.reporting.kafka.brokers";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_TOPIC =
