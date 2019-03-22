@@ -1379,10 +1379,12 @@ public class FlowRunner extends EventHandler implements Runnable {
       } else {
         // In Flow 1.0, flow properties are combination of shared properties in individual files (order not defined,
         // .. because it's loaded by fs list order and put in a HashMap).
-        Props combinedProps = null;
+        Props combinedProps = new Props();
         for (Props sharedProp : flowRunner.sharedProps.values()) {
-          combinedProps = new Props(combinedProps, sharedProp);
+          // sharedProp.getFlattened() gets its parent's props too, so we don't have to recurse
+          combinedProps.putAll(sharedProp.getFlattened());
         }
+
         // In Flow 1.0, flow's inputProps contains overrides, so apply that as override to combined shared props
         combinedProps = new Props(combinedProps, flow.getInputProps());
 
@@ -1513,7 +1515,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (Strings.isNullOrEmpty(propsToPropagate)) {
       // Nothing to propagate
       logger.info(String.format("No properties to propagate to metadata for %s: %s", nodeType, nodeName));
-
       return;
     } else {
       logger.info(String.format("Propagating: %s to metadata for %s: %s", propsToPropagate, nodeType, nodeName));
