@@ -75,15 +75,16 @@ public class NodeBeanLoader {
   private void addExternalFlowDependenciesToNode(NodeBean nodeBeanFlow,
       Map<String, NodeBean> ymlFlowList) {
 
-    List<NodeBean> externalDepends;
-    for (NodeBean nodeBeanSubNode : nodeBeanFlow.getNodes()) {
-      // if node is a flow iterate
-      if (nodeBeanSubNode.getType().equals(Constants.FLOW_NODE_TYPE)
-          && nodeBeanSubNode.getNodes() != null) {
-        this.addExternalFlowDependenciesToNode(nodeBeanSubNode, ymlFlowList);
+    if (nodeBeanFlow.getNodes() != null){
+      for (NodeBean nodeBeanSubNode : nodeBeanFlow.getNodes()) {
+        // if node is a flow iterate
+        if (nodeBeanSubNode.getType().equals(Constants.FLOW_NODE_TYPE)
+            && nodeBeanSubNode.getNodes() != null) {
+          this.addExternalFlowDependenciesToNode(nodeBeanSubNode, ymlFlowList);
+        }
       }
     }
-    externalDepends = nodeBeanFlow.getExternalDependencies(ymlFlowList);
+    List<NodeBean> externalDepends = nodeBeanFlow.getExternalDependencies(ymlFlowList);
     nodeBeanFlow.addNodes(externalDepends);
   }
 

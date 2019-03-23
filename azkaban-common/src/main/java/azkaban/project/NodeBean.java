@@ -35,7 +35,7 @@ public class NodeBean implements Serializable {
   private List<String> dependsOn;
   private String type;
   private String condition;
-  private List<NodeBean> nodes;
+  private List<NodeBean> nodes = new ArrayList<>();
   private FlowTriggerBean trigger;
   private File flowFile;
 
