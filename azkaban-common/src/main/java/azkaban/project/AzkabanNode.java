@@ -32,6 +32,7 @@ public abstract class AzkabanNode {
   protected final Props props;
   protected final String condition;
   protected final List<String> dependsOn;
+  protected boolean isExternalNode = false;
 
   public AzkabanNode(final String name, final String type, final Props props, final String
       condition, final List<String>
@@ -45,6 +46,10 @@ public abstract class AzkabanNode {
 
   public String getName() {
     return this.name;
+  }
+
+  public boolean getIsExternalNode() {
+    return this.isExternalNode;
   }
 
   public String getType() {

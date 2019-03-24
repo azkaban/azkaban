@@ -21,6 +21,7 @@ import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,13 +37,16 @@ public class AzkabanFlow extends AzkabanNode {
 
   private final Map<String, AzkabanNode> nodes;
   private final FlowTrigger flowTrigger;
+  private final File flowFile;
 
   private AzkabanFlow(final String name, final Props props, final String condition,
       final Map<String, AzkabanNode> nodes, final List<String> dependsOn,
-      final FlowTrigger flowTrigger) {
+      final FlowTrigger flowTrigger, File flowFile, boolean isExternalNode) {
     super(name, Constants.FLOW_NODE_TYPE, props, condition, dependsOn);
+    this.isExternalNode = isExternalNode;
     this.nodes = nodes;
     this.flowTrigger = flowTrigger;
+    this.flowFile = flowFile;
   }
 
   public Map<String, AzkabanNode> getNodes() {
@@ -57,6 +61,10 @@ public class AzkabanFlow extends AzkabanNode {
     return this.flowTrigger;
   }
 
+  public File getFlowFile() {
+    return this.flowFile;
+  }
+
   public static class AzkabanFlowBuilder {
 
     private String name;
@@ -65,6 +73,8 @@ public class AzkabanFlow extends AzkabanNode {
     private List<String> dependsOn;
     private Map<String, AzkabanNode> nodes;
     private FlowTrigger flowTrigger;
+    private File flowFile;
+    private boolean isExternalNode = false;
 
     public AzkabanFlowBuilder name(final String name) {
       this.name = name;
@@ -102,9 +112,19 @@ public class AzkabanFlow extends AzkabanNode {
       return this;
     }
 
+    public AzkabanFlowBuilder flowFile(final File flowFile) {
+      this.flowFile = flowFile;
+      return this;
+    }
+
+    public AzkabanFlowBuilder isExternalNode(final boolean isExternalNode) {
+      this.isExternalNode = isExternalNode;
+      return this;
+    }
+
     public AzkabanFlow build() {
       return new AzkabanFlow(this.name, this.props, this.condition, this.nodes, this.dependsOn, this
-          .flowTrigger);
+          .flowTrigger, this.flowFile, this.isExternalNode);
     }
   }
 }

@@ -296,7 +296,16 @@ public class FlowRunner extends EventHandler implements Runnable {
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
-      final Props flowProps = loadPropsFromYamlFile(this.flow.getId());
+      // find flowProps source
+      final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
+      // There should be exact one source (file name) for each flow file.
+      if (flowPropsList.isEmpty() || flowPropsList.get(0) == null) {
+        throw new ProjectManagerException(
+            "Failed to get flow file source. Flow props is empty for " + this.flow.getId());
+      }
+      final String source = flowPropsList.get(0).getSource();
+
+      final Props flowProps = loadPropsFromYamlFile(this.flow.getId(),source);
       if (flowProps != null) {
         flowProps.setParent(commonFlowProps);
         commonFlowProps = flowProps;
@@ -802,7 +811,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
       final String jobPath =
           node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
-      props = loadPropsFromYamlFile(jobPath);
+      props = loadPropsFromYamlFile(jobPath,node.getPropsSource());
       if (props == null) {
         this.logger.info("Job props loaded from yaml file is empty for job " + node.getId());
         return props;
@@ -847,12 +856,15 @@ public class FlowRunner extends EventHandler implements Runnable {
     return props;
   }
 
-  private Props loadPropsFromYamlFile(final String path) {
+  private Props loadPropsFromYamlFile(String path, String flowFileName) {
     File tempDir = null;
     Props props = null;
     try {
+      // for embedded external flows
+      String[] bits = path.split(Constants.PATH_DELIMITER+Constants.PATH_DELIMITER);
+      path = bits[bits.length-1];
       tempDir = Files.createTempDir();
-      props = FlowLoaderUtils.getPropsFromYamlFile(path, getFlowFile(tempDir));
+      props = FlowLoaderUtils.getPropsFromYamlFile(path, getFlowFile(tempDir, flowFileName));
     } catch (final Exception e) {
       this.logger.error("Failed to get props from flow file. " + e);
     } finally {
@@ -868,18 +880,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     return props;
   }
 
-  private File getFlowFile(final File tempDir) throws Exception {
-    final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
-    // There should be exact one source (file name) for each flow file.
-    if (flowPropsList.isEmpty() || flowPropsList.get(0) == null) {
-      throw new ProjectManagerException(
-          "Failed to get flow file source. Flow props is empty for " + this.flow.getId());
-    }
-    final String source = flowPropsList.get(0).getSource();
+  private File getFlowFile(final File tempDir, String flowFileName) throws Exception {
     final int flowVersion = this.projectLoader
-        .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
+        .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), flowFileName);
     final File flowFile = this.projectLoader
-        .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), source,
+        .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), flowFileName,
             flowVersion, tempDir);
 
     return flowFile;

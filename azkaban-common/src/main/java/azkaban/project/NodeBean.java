@@ -38,6 +38,7 @@ public class NodeBean implements Serializable {
   private List<NodeBean> nodes = new ArrayList<>();
   private FlowTriggerBean trigger;
   private File flowFile;
+  private boolean isExternalNode = false;
 
   public String getName() {
     return this.name;
@@ -71,11 +72,11 @@ public class NodeBean implements Serializable {
     this.type = type;
   }
 
-  public File getFlowFile() {
+  protected File getFlowFile() {
     return this.flowFile;
   }
 
-  public void setFlowFile(final File flowFile) {
+  protected void setFlowFile(final File flowFile) {
     this.flowFile = flowFile;
   }
 
@@ -104,12 +105,17 @@ public class NodeBean implements Serializable {
     return false;
   }
 
-  public boolean addNode(NodeBean newNode) {
+  protected boolean addExternalNode(NodeBean newNode) {
+    newNode.setIsExternalFlow(true);
     return this.nodes.add(newNode);
   }
 
-  public boolean addNodes(List<NodeBean> newNodes) {
-    return this.nodes.addAll(newNodes);
+  protected void setIsExternalFlow(Boolean isExternalNode) {
+    this.isExternalNode = isExternalNode;
+  }
+
+  protected boolean getIsExternalFlow() {
+    return this.isExternalNode;
   }
 
   public List<NodeBean> getExternalDependencies(Map<String, NodeBean> ymlFlowList) {

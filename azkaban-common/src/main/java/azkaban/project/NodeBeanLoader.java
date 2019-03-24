@@ -50,21 +50,22 @@ public class NodeBeanLoader {
     }
     nodeBean.setName(getFlowName(flowFile));
     nodeBean.setType(Constants.FLOW_NODE_TYPE);
+    nodeBean.setFlowFile(flowFile);
+    // set flowFile for all subFlows
+    this.setFlowFile(nodeBean,flowFile);
     return nodeBean;
   }
 
-
+  // add root yml flow to yml flow dependencies
   public void addExternalFlowDependencies(NodeBean ymlFlow,
       Map<String, NodeBean> ymlFlowList) {
 
-    // add root yml flow to yml flow dependencies
     if (ymlFlow.getDependsOn() != null) {
       for (final String dependsOn : ymlFlow.getDependsOn()) {
         if (!ymlFlowList.containsKey(dependsOn) && !ymlFlow.getName().equals(dependsOn)) {
           // nodeBeanSubNode is not containing dependency! and we found dependency as separate
           // yml flow! create dependency between this two flows
-          System.out.println(" extdep->"+ymlFlowList.get(dependsOn).getName());
-          ymlFlow.addNode(ymlFlowList.get(dependsOn));
+          ymlFlow.addExternalNode(ymlFlowList.get(dependsOn));
         }
       }
     }
@@ -85,7 +86,18 @@ public class NodeBeanLoader {
       }
     }
     List<NodeBean> externalDepends = nodeBeanFlow.getExternalDependencies(ymlFlowList);
-    nodeBeanFlow.addNodes(externalDepends);
+    externalDepends.forEach(item->nodeBeanFlow.addExternalNode(item));
+
+  }
+  // check all flows and set their flowFile if its not set! ex: subflows
+  private void setFlowFile(NodeBean nodeBeanFlow,File flowFile) {
+    if (nodeBeanFlow.getFlowFile() ==null){
+      nodeBeanFlow.setFlowFile(flowFile);
+    }
+    for (NodeBean subflow : nodeBeanFlow.getNodes())
+      if (subflow.getType().equals(Constants.FLOW_NODE_TYPE)){
+        this.setFlowFile(subflow,flowFile);
+      }
   }
 
   public boolean validate(final NodeBean nodeBean) {
@@ -116,6 +128,8 @@ public class NodeBeanLoader {
           .dependsOn(nodeBean.getDependsOn())
           .nodes(nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
           .flowTrigger(toFlowTrigger(nodeBean.getTrigger()))
+          .flowFile(nodeBean.getFlowFile())
+          .isExternalNode(nodeBean.getIsExternalFlow())
           .build();
     } else {
       return new AzkabanJob.AzkabanJobBuilder()

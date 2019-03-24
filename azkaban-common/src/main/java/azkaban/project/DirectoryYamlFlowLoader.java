@@ -119,6 +119,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
 
   private Map<String, NodeBean> getNodeBeans(final File projectDir) {
 
+    // recoursively load flows from subdirectory to root projectDir
     Map<String, NodeBean> nodeBeanList = new HashMap<>();
     for (final File file : Objects.requireNonNull(projectDir.listFiles(new DirFilter()))) {
       nodeBeanList.putAll(this.getNodeBeans(file));
@@ -129,7 +130,6 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
       final NodeBeanLoader loader = new NodeBeanLoader();
       try {
         final NodeBean nodeBean = loader.load(file);
-        nodeBean.setFlowFile(file);
         // check duplicate flows
         if (nodeBeanList.containsKey(nodeBean.getName())) {
           this.errors.add("Duplicate flows found in the project with name " + nodeBean.getName());
@@ -163,27 +163,25 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
             + ". Duplicate nodes found or dependency undefined.");
       } else {
         final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
-        final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName(),
-            nodeBean.getFlowFile());
+        final Flow flow = convertAzkabanFlowToFlow(azkabanFlow, azkabanFlow.getName());
         this.flowMap.put(flow.getId(), flow);
       }
     }
 
   }
 
-  private Flow convertAzkabanFlowToFlow(final AzkabanFlow azkabanFlow, final String flowName,
-      final File flowFile) {
+  private Flow convertAzkabanFlowToFlow(final AzkabanFlow azkabanFlow, final String flowName) {
     final Flow flow = new Flow(flowName);
     flow.setAzkabanFlowVersion(Constants.AZKABAN_FLOW_VERSION_2_0);
     final Props props = azkabanFlow.getProps();
     FlowLoaderUtils.addEmailPropsToFlow(flow, props);
-    props.setSource(flowFile.getName());
+    props.setSource(azkabanFlow.getFlowFile().getName());
 
     flow.addAllFlowProperties(ImmutableList.of(new FlowProps(props)));
 
     // Convert azkabanNodes to nodes inside the flow.
     azkabanFlow.getNodes().values().stream()
-        .map(n -> convertAzkabanNodeToNode(n, flowName, flowFile, azkabanFlow))
+        .map(n -> convertAzkabanNodeToNode(n, flowName, azkabanFlow))
         .forEach(n -> flow.addNode(n));
 
     // Add edges for the flow.
@@ -200,26 +198,32 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   }
 
   private Node convertAzkabanNodeToNode(final AzkabanNode azkabanNode, final String flowName,
-      final File flowFile, final AzkabanFlow azkabanFlow) {
+      final AzkabanFlow azkabanFlow) {
     final Node node = new Node(azkabanNode.getName());
     node.setType(azkabanNode.getType());
     validateCondition(node, azkabanNode, azkabanFlow);
     node.setCondition(azkabanNode.getCondition());
-    node.setPropsSource(flowFile.getName());
-    node.setJobSource(flowFile.getName());
+    node.setPropsSource(azkabanFlow.getFlowFile().getName());
+    node.setJobSource(azkabanFlow.getFlowFile().getName());
 
+    String embeddedFlowId = flowName + Constants.PATH_DELIMITER + node.getId();
     if (azkabanNode.getType().equals(Constants.FLOW_NODE_TYPE)) {
-      final String embeddedFlowId = flowName + Constants.PATH_DELIMITER + node.getId();
-      node.setEmbeddedFlowId(embeddedFlowId);
-      final Flow flowNode = convertAzkabanFlowToFlow((AzkabanFlow) azkabanNode, embeddedFlowId,
-          flowFile);
+      AzkabanFlow azkabanFlowNode = (AzkabanFlow) azkabanNode;
+      if (azkabanNode.getIsExternalNode() == true) {
+        embeddedFlowId = flowName + Constants.PATH_DELIMITER + Constants.PATH_DELIMITER + node.getId();
+        node.setPropsSource(azkabanFlowNode.getFlowFile().getName());
+        node.setJobSource(azkabanFlowNode.getFlowFile().getName());
+      }
+
+      final Flow flowNode = convertAzkabanFlowToFlow(azkabanFlowNode, embeddedFlowId);
       flowNode.setEmbeddedFlow(true);
       flowNode.setCondition(node.getCondition());
       this.flowMap.put(flowNode.getId(), flowNode);
     }
+    node.setEmbeddedFlowId(embeddedFlowId);
 
     this.jobPropsMap
-        .put(flowName + Constants.PATH_DELIMITER + node.getId(), azkabanNode.getProps());
+        .put(embeddedFlowId, azkabanNode.getProps());
     return node;
   }
 
