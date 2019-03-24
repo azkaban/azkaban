@@ -198,7 +198,7 @@ public class ProcessJob extends AbstractProcessJob {
     try {
       commands = getCommandList();
     } catch (final Exception e) {
-      handleError("Job set up failed " + e.getCause(), e);
+      handleError("Job set up failed: " + e.getMessage(), e);
     }
 
     final long startMs = System.currentTimeMillis();
@@ -386,8 +386,8 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * Changes permissions on file/directory so that the file/directory is owned by the user and
-   * the group remains the azkaban service account name.
+   * Changes permissions on file/directory so that the file/directory is owned by the user and the
+   * group remains the azkaban service account name.
    *
    * Leverages execute-as-user with "root" as the user to run the command.
    *
