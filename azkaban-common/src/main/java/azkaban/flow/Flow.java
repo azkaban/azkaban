@@ -17,6 +17,7 @@
 package azkaban.flow;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutorTags;
 import azkaban.executor.mail.DefaultMailCreator;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +44,7 @@ public class Flow {
   private List<String> failureEmail = new ArrayList<>();
   private List<String> successEmail = new ArrayList<>();
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+  private ExecutorTags requiredExecutorTags = ExecutorTags.empty();
   private ArrayList<String> errors;
   private int version = -1;
   private Map<String, Object> metadata = new HashMap<>();
@@ -232,6 +234,14 @@ public class Flow {
 
   public void addFailureEmails(final Collection<String> emails) {
     this.failureEmail.addAll(emails);
+  }
+
+  public ExecutorTags getRequiredExecutorTags() {
+    return this.requiredExecutorTags;
+  }
+
+  public void setRequiredExecutorTags(final ExecutorTags tags) {
+    this.requiredExecutorTags = tags;
   }
 
   public int getNumLevels() {

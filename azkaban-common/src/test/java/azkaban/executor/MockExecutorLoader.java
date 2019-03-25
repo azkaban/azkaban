@@ -353,7 +353,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor addExecutor(final String host, final int port)
+  public Executor addExecutor(final String host, final int port, final ExecutorTags tags)
       throws ExecutorManagerException {
     Executor executor = null;
     if (fetchExecutor(host, port) == null) {

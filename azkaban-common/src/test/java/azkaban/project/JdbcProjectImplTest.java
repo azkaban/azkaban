@@ -454,11 +454,13 @@ public class JdbcProjectImplTest {
   @After
   public void clearDB() {
     try {
+      dbOperator.update("TRUNCATE TABLE project_flow_required_tags");
       dbOperator.update("TRUNCATE TABLE projects");
       dbOperator.update("TRUNCATE TABLE project_versions");
       dbOperator.update("TRUNCATE TABLE project_properties");
       dbOperator.update("TRUNCATE TABLE project_permissions");
-      dbOperator.update("TRUNCATE TABLE project_flows");
+      // can't use TRUNCATE due to foreign key constraints
+      dbOperator.update("DELETE FROM project_flows");
       dbOperator.update("TRUNCATE TABLE project_files");
       dbOperator.update("TRUNCATE TABLE project_events");
       dbOperator.update("TRUNCATE TABLE project_flow_files");

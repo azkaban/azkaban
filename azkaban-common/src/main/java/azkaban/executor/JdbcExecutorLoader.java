@@ -300,9 +300,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor addExecutor(final String host, final int port)
+  public Executor addExecutor(final String host, final int port, final ExecutorTags tags)
       throws ExecutorManagerException {
-    return this.executorDao.addExecutor(host, port);
+    return this.executorDao.addExecutor(host, port, tags);
   }
 
   @Override

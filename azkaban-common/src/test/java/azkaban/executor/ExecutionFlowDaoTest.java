@@ -89,6 +89,7 @@ public class ExecutionFlowDaoTest {
   public void clearDB() {
     try {
       dbOperator.update("DELETE FROM execution_flows");
+      dbOperator.update("DELETE FROM executor_tags");
       dbOperator.update("DELETE FROM executors");
       dbOperator.update("DELETE FROM projects");
     } catch (final SQLException e) {
@@ -274,7 +275,7 @@ public class ExecutionFlowDaoTest {
   public void testAssignAndUnassignExecutor() throws Exception {
     final String host = "localhost";
     final int port = 12345;
-    final Executor executor = this.executorDao.addExecutor(host, port);
+    final Executor executor = this.executorDao.addExecutor(host, port, ExecutorTags.empty());
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow);
     this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
@@ -305,7 +306,7 @@ public class ExecutionFlowDaoTest {
   public void testAssignExecutorInvalidExecution() throws Exception {
     final String host = "localhost";
     final int port = 12345;
-    final Executor executor = this.executorDao.addExecutor(host, port);
+    final Executor executor = this.executorDao.addExecutor(host, port, ExecutorTags.empty());
 
     // Make 99 a random non-existent execution id.
     assertThatThrownBy(
@@ -377,7 +378,7 @@ public class ExecutionFlowDaoTest {
   }
 
   private List<ExecutableFlow> createExecutions() throws Exception {
-    final Executor executor = this.executorDao.addExecutor("test", 1);
+    final Executor executor = this.executorDao.addExecutor("test", 1, ExecutorTags.empty());
 
     final ExecutableFlow flow1 = createExecutionAndAssign(Status.PREPARING, executor);
 
@@ -393,7 +394,7 @@ public class ExecutionFlowDaoTest {
     flow4.setEndTime(System.currentTimeMillis() - 1);
     this.executionFlowDao.updateExecutableFlow(flow4);
 
-    final Executor executor2 = this.executorDao.addExecutor("test2", 2);
+    final Executor executor2 = this.executorDao.addExecutor("test2", 2, ExecutorTags.empty());
     // flow5 is assigned to an executor that is then removed
     final ExecutableFlow flow5 = createExecutionAndAssign(Status.RUNNING, executor2);
     flow5.setStartTime(System.currentTimeMillis() + 1);
@@ -438,7 +439,7 @@ public class ExecutionFlowDaoTest {
   public void testFetchActiveFlowsStatusChanged() throws Exception {
     final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.executionFlowDao.uploadExecutableFlow(flow1);
-    final Executor executor = this.executorDao.addExecutor("test", 1);
+    final Executor executor = this.executorDao.addExecutor("test", 1, ExecutorTags.empty());
     this.assignExecutor.assignExecutor(executor.getId(), flow1.getExecutionId());
 
     Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
@@ -509,7 +510,8 @@ public class ExecutionFlowDaoTest {
     flow.setStatus(Status.PREPARING);
     flow.setSubmitTime(System.currentTimeMillis());
     this.executionFlowDao.uploadExecutableFlow(flow);
-    final Executor executor = this.executorDao.addExecutor("localhost", 12345);
+    final Executor executor = this.executorDao
+        .addExecutor("localhost", 12345, ExecutorTags.empty());
     assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true))
         .isEqualTo(flow.getExecutionId());
     assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo

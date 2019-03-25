@@ -107,7 +107,7 @@ public class ExecutorDao {
     }
   }
 
-  Executor addExecutor(final String host, final int port)
+  Executor addExecutor(final String host, final int port, final ExecutorTags tags)
       throws ExecutorManagerException {
     // verify, if executor already exists
     if (fetchExecutor(host, port) != null) {
@@ -115,17 +115,25 @@ public class ExecutorDao {
           "Executor %s:%d already exist", host, port));
     }
     // add new executor
-    addExecutorHelper(host, port);
+    addExecutorHelper(host, port, tags);
 
     // fetch newly added executor
     return fetchExecutor(host, port);
   }
 
-  private void addExecutorHelper(final String host, final int port)
+  private void addExecutorHelper(final String host, final int port, final ExecutorTags tags)
       throws ExecutorManagerException {
     final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
+    final String INSERT_TAG = "INSERT INTO executor_tags (executor_id, tag) VALUES (?,?)";
     try {
-      this.dbOperator.update(INSERT, host, port);
+      this.dbOperator.transaction(transOperator -> {
+        transOperator.update(INSERT, host, port);
+        final long executorId = transOperator.getLastInsertId();
+        for (final String tag : tags) {
+          transOperator.update(INSERT_TAG, executorId, tag);
+        }
+        return executorId;
+      });
     } catch (final SQLException e) {
       throw new ExecutorManagerException(String.format("Error adding %s:%d ",
           host, port), e);
@@ -150,8 +158,13 @@ public class ExecutorDao {
 
   void removeExecutor(final String host, final int port) throws ExecutorManagerException {
     final String DELETE = "DELETE FROM executors WHERE host=? AND port=?";
+    final String DELETE_TAGS = "DELETE FROM executor_tags"
+        + " WHERE executor_id = (SELECT id FROM executors WHERE host=? AND port=?)";
     try {
-      final int rows = this.dbOperator.update(DELETE, host, port);
+      final int rows = this.dbOperator.transaction(transOperator -> {
+        transOperator.update(DELETE_TAGS, host, port);
+        return transOperator.update(DELETE, host, port);
+      });
       if (rows == 0) {
         throw new ExecutorManagerException("No executor with host, port :"
             + "(" + host + "," + port + ")");

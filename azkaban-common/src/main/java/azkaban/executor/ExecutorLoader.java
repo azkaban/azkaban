@@ -125,7 +125,7 @@ public interface ExecutorLoader {
    *
    * @return Executor
    */
-  Executor addExecutor(String host, int port)
+  Executor addExecutor(String host, int port, ExecutorTags tags)
       throws ExecutorManagerException;
 
   /**

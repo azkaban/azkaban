@@ -1,21 +1,22 @@
 /*
-* Copyright 2017 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.project;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutorTags;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
 import azkaban.jobcallback.JobCallbackValidator;
@@ -51,6 +52,7 @@ public class FlowLoaderUtils {
   private static final Logger logger = LoggerFactory.getLogger(FlowLoaderUtils.class);
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
+
   /**
    * Sets props in flow yaml file.
    *
@@ -223,6 +225,18 @@ public class FlowLoaderUtils {
 
     flow.addFailureEmails(failureEmail);
     flow.addSuccessEmails(successEmail);
+  }
+
+  /**
+   * Adds required executor tags properties to a flow.
+   *
+   * @param flow the flow
+   * @param props the props
+   */
+  public static void addRequiredExecutorTagsToFlow(final Flow flow, final Props props) {
+    final ExecutorTags tags = ExecutorTags
+        .getTagsFromProps(props, CommonJobProperties.REQUIRED_EXECUTOR_TAGS);
+    flow.setRequiredExecutorTags(tags);
   }
 
   /**

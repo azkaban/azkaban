@@ -315,7 +315,7 @@ public class ExecutionFlowDao {
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), executorId);
+          new SelectFromExecutionFlows(), executorId, executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
@@ -339,7 +339,14 @@ public class ExecutionFlowDao {
 
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE status = " + Status.PREPARING.getNumVal()
-            + " and executor_id is NULL and flow_data is NOT NULL and %s"
+            + " and executor_id is NULL and flow_data is NOT NULL"
+            + " and NOT EXISTS (SELECT tag FROM project_flow_required_tags"
+            + "                  WHERE project_id = execution_flows.project_id"
+            + "                    AND version = execution_flows.version"
+            + "                    AND flow_id = execution_flows.flow_id"
+            + "                    AND tag NOT IN (SELECT tag FROM executor_tags"
+            + "                                     WHERE executor_id = ?))"
+            + " and %s"
             + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC LIMIT 1 FOR UPDATE";
 
     public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =

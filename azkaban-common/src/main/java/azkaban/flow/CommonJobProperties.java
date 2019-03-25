@@ -61,6 +61,11 @@ public class CommonJobProperties {
    */
   public static final String FAILURE_EMAILS = "failure.emails";
 
+  /**
+   * Comma delimited list of executor tags that are required by this flow
+   */
+  public static final String REQUIRED_EXECUTOR_TAGS = "required.executor.tags";
+
   /*
    * The following are the common props that will be added to the job by azkaban
    */

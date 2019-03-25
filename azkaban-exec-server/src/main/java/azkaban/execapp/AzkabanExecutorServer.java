@@ -37,6 +37,7 @@ import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorTags;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.metric.IMetricEmitter;
 import azkaban.metric.MetricException;
@@ -274,7 +275,9 @@ public class AzkabanExecutorServer {
       final Executor executor = this.executionLoader.fetchExecutor(host, port);
       if (executor == null) {
         logger.info("This executor wasn't found in the DB. Adding self.");
-        this.executionLoader.addExecutor(host, port);
+        final ExecutorTags tags = ExecutorTags
+            .getTagsFromProps(this.props, ConfigurationKeys.AZKABAN_EXECUTOR_TAGS);
+        this.executionLoader.addExecutor(host, port, tags);
       } else {
         logger.info("This executor is already in the DB. Found: " + executor);
       }
