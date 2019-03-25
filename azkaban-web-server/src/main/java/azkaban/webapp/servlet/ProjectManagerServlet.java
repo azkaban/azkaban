@@ -379,6 +379,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (flow.getCondition() != null) {
         ret.put("condition", flow.getCondition());
       }
+      ret.put("requiredExecutorTags", flow.getRequiredExecutorTags());
     } catch (final AccessControlException e) {
       ret.put("error", e.getMessage());
     }

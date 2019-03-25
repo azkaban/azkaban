@@ -118,6 +118,10 @@ public class Flow {
     if (flowObject.containsKey("mailCreator")) {
       flow.mailCreator = flowObject.get("mailCreator").toString();
     }
+
+    final List<String> requiredExecutorTags = (List<String>) flowObject.get("requiredExecutorTags");
+    flow.requiredExecutorTags = new ExecutorTags(requiredExecutorTags);
+
     return flow;
   }
 
@@ -357,6 +361,7 @@ public class Flow {
     flowObj.put("embeddedFlow", this.isEmbeddedFlow);
     flowObj.put("azkabanFlowVersion", this.azkabanFlowVersion);
     flowObj.put("condition", this.condition);
+    flowObj.put("requiredExecutorTags", this.requiredExecutorTags);
 
     if (this.errors != null) {
       flowObj.put("errors", this.errors);
