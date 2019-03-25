@@ -719,8 +719,8 @@ this API by disabling all other jobs in the same flow.
 | (Optional)                        | with specified value.             |
 |                                   |                                   |
 |                                   | **Example Values :**              |
-|                                   | flowOverride[failure.email]=test@ |
-|                                   | gmail.com                         |
+|                                   | flowOverride[name]=value          |
+|                                   |                                   |
 +-----------------------------------+-----------------------------------+
 
 .. _response-object-6:
@@ -1690,8 +1690,8 @@ Given a project name, this API call fetches all logs of a project.
 |                                   | **Example values:** [             |
 |                                   | [ "test_user",                    |
 |                                   |   1540885820913,                  |
-|                                   |   "PROPERTY_OVERRIDE",            | 
-|                                   |   "some description" ],           | 
+|                                   |   "PROPERTY_OVERRIDE",            |
+|                                   |   "some description" ],           |
 |                                   | [ ... ], [ ... ],  ]              |
 +-----------------------------------+-----------------------------------+
 
@@ -1707,11 +1707,11 @@ A response sample:
 
 {
   "columns" : [ "user", "time", "type", "message" ],
-  "logData" : [ 
+  "logData" : [
     [ "test_user1", 1543615522936, "PROPERTY_OVERRIDE", "Modified Properties: .... " ],
     [ "test_user2", 1542346639933, "UPLOADED", "Uploaded project files zip " ],
     [ "test_user3", 1519908889338, "CREATED", null ],
-    ... 
+    ...
   ],
   "project" : "azkaban-test-project",
   "projectId" : 1
