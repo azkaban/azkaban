@@ -35,6 +35,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,12 +50,12 @@ public class AzkabanSingleServerTest {
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
   private static final Props props = new Props();
 
-  private static String getConfPath() {
+  private static URI getConfPath() throws URISyntaxException {
     final URL resource = AzkabanSingleServerTest.class.getClassLoader().getResource("conf");
-    return requireNonNull(resource).getPath();
+    return requireNonNull(resource).toURI();
   }
 
-  private static String getSqlScriptsDir() throws IOException {
+  private static String getSqlScriptsDir() throws IOException, URISyntaxException {
     // Dummy because any resource file works.
     final Path resources = Paths.get(getConfPath()).getParent();
     final Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
@@ -75,7 +77,7 @@ public class AzkabanSingleServerTest {
   public void setUp() throws Exception {
     tearDown();
 
-    final String confPath = getConfPath();
+    final URI confPath = getConfPath();
 
     props.put("database.type", "h2");
     props.put("h2.path", "./h2");
@@ -85,7 +87,7 @@ public class AzkabanSingleServerTest {
     props.put("jetty.port", "0");
     props.put("server.useSSL", "true");
     props.put("jetty.use.ssl", "false");
-    props.put("user.manager.xml.file", new File(confPath, "azkaban-users.xml").getPath());
+    props.put("user.manager.xml.file", new File(confPath.getPath(), "azkaban-users.xml").getPath());
     props.put("user.manager.class", "azkaban.user.XmlUserManager");
     props.put(ConfigurationKeys.EXECUTOR_PORT, "12321");
 

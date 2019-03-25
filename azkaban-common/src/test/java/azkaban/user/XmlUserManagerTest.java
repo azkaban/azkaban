@@ -109,7 +109,7 @@ public class XmlUserManagerTest {
   public void testAutoReload() throws Exception {
     final Props props = new Props(this.baseProps);
     final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String origpath = configURL.getPath();
+    final String origpath = Paths.get(configURL.toURI()).toString();
     // Copy the file to keep original file unmodified
     final String path = origpath.replace("test1", "test1_auto_reload");
     final Path filePath = Paths.get(path);
@@ -173,7 +173,7 @@ public class XmlUserManagerTest {
   public void testAutoReloadFail() throws Exception {
     final Props props = new Props(this.baseProps);
     final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String origpath = configURL.getPath();
+    final String origpath = Paths.get(configURL.toURI()).toString();
     // Copy the file to keep original file unmodified
     final String path = origpath.replace("test1", "test1_auto_reload_fail");
     final Path filePath = Paths.get(path);

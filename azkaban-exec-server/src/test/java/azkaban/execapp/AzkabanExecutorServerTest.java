@@ -33,13 +33,14 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 
 public class AzkabanExecutorServerTest {
 
@@ -48,10 +49,10 @@ public class AzkabanExecutorServerTest {
 
   private static final Props props = new Props();
 
-  private static String getSqlScriptsDir() throws IOException {
+  private static String getSqlScriptsDir() throws IOException, URISyntaxException {
     // Dummy because any resource file works.
     final URL resource = AzkabanExecutorServerTest.class.getClassLoader().getResource("test.file");
-    final String dummyResourcePath = requireNonNull(resource).getPath();
+    final URI dummyResourcePath = requireNonNull(resource).toURI();
     final Path resources = Paths.get(dummyResourcePath).getParent();
     final Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
 

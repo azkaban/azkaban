@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.io.Resources;
 import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +42,12 @@ public class FileWatcherTest {
 
   private Path setPath() {
     final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String origpath = configURL.getPath();
+    String origpath;
+    try {
+      origpath = Paths.get(configURL.toURI()).toString();
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
     // Generate a path for test file.
     final String path = origpath.replace("test1", "file_watcher");
     return Paths.get(path);
