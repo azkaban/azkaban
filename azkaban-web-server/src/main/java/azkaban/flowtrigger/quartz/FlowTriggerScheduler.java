@@ -65,7 +65,7 @@ public class FlowTriggerScheduler {
    * Schedule flows containing flow triggers
    */
   public void scheduleAll(final Project project, final String submitUser)
-      throws SchedulerException, ProjectManagerException {
+      throws ProjectManagerException {
 
     for (final Flow flow : project.getFlows()) {
       //todo chengren311: we should validate embedded flow shouldn't have flow trigger defined.
@@ -96,7 +96,7 @@ public class FlowTriggerScheduler {
                     FlowTriggerQuartzJob.PROJECT_ID, project.getId());
             logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
             this.scheduler
-                .registerJob(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
+                .schedule(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
                     (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
                         generateGroupName(flow), contextMap));
           }
@@ -113,14 +113,16 @@ public class FlowTriggerScheduler {
   public void pauseFlowTrigger(final int projectId, final String flowId) throws SchedulerException {
     logger.info(String.format("pausing flow trigger for [projectId:%s, flowId:%s]", projectId,
         flowId));
-    this.scheduler.pauseJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
+    this.scheduler
+        .pauseJobIfPresent(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
   public void resumeFlowTrigger(final int projectId, final String flowId) throws
       SchedulerException {
     logger.info(
         String.format("resuming flow trigger for [projectId:%s, flowId:%s]", projectId, flowId));
-    this.scheduler.resumeJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
+    this.scheduler
+        .resumeJobIfPresent(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
   /**
@@ -174,7 +176,7 @@ public class FlowTriggerScheduler {
           + " schedule");
       if (!flow.isEmbeddedFlow()) {
         try {
-          this.scheduler.unregisterJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
+          this.scheduler.unschedule(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
         } catch (final Exception ex) {
           logger.info("error when unregistering job", ex);
         }
@@ -190,11 +192,11 @@ public class FlowTriggerScheduler {
     return String.valueOf(projectId) + "." + flowId;
   }
 
-  public void start() {
+  public void start() throws SchedulerException {
     this.scheduler.start();
   }
 
-  public void shutdown() {
+  public void shutdown() throws SchedulerException {
     this.scheduler.shutdown();
   }
 
