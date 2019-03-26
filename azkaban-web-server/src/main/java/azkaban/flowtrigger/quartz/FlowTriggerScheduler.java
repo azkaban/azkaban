@@ -96,7 +96,8 @@ public class FlowTriggerScheduler {
                     FlowTriggerQuartzJob.PROJECT_ID, project.getId());
             logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
             this.scheduler
-                .schedule(flowTrigger.getSchedule().getCronExpression(), new QuartzJobDescription
+                .scheduleIfAbsent(flowTrigger.getSchedule().getCronExpression(),
+                    new QuartzJobDescription
                     (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
                         generateGroupName(flow), contextMap));
           }

@@ -169,7 +169,7 @@ public class QuartzScheduler {
    *
    * @return true if job has been scheduled, false if the same job exists already.
    */
-  public synchronized boolean schedule(final String cronExpression, final QuartzJobDescription
+  public synchronized boolean scheduleIfAbsent(final String cronExpression, final QuartzJobDescription
       jobDescription) throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
