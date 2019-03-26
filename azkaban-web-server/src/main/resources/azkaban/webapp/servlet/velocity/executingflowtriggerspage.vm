@@ -151,9 +151,9 @@
 
               <td>${trigger.getSubmitUser()}</td>
             #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
-              <td>$utils.formatDate(${trigger.getStartTime()})</td>
+              <td>$TimeUtils.formatDateTime(${trigger.getStartTime()})</td>
               #if (${trigger.getEndTime()} != "0")
-                <td>$utils.formatDate(${trigger.getEndTime()})</td>
+                <td>$TimeUtils.formatDateTime(${trigger.getEndTime()})</td>
               #else
                 <td>-</td>
               #end
@@ -205,9 +205,9 @@
               <tr class="child-${trigger.getId()}">
                 <td>&nbsp;</td>
                 <td>${dep.getDepName()}</td>
-                <td>$utils.formatDate(${dep.getStartTime()})</td>
+                <td>$TimeUtils.formatDateTime(${dep.getStartTime()})</td>
                 #if (${dep.getEndTime()} != "0")
-                  <td>$utils.formatDate(${dep.getEndTime()})</td>
+                  <td>$TimeUtils.formatDateTime(${dep.getEndTime()})</td>
                 #else
                   <td>-</td>
                 #end
@@ -229,8 +229,8 @@
             </td>
             <td>${flow.getFirst().submitUser}</td>
             <td>${flow.getFirst().proxyUsers}</td>
-            <td>$utils.formatDate(${flow.getFirst().startTime})</td>
-            <td>$utils.formatDate(${flow.getFirst().endTime})</td>
+            <td>$TimeUtils.formatDateTime(${flow.getFirst().startTime})</td>
+            <td>$TimeUtils.formatDateTime(${flow.getFirst().endTime})</td>
             <td>$utils.formatDuration(${flow.getFirst().startTime}, ${flow.getFirst().endTime})</td>
             <td>
               <div
@@ -300,9 +300,9 @@
 
               <td>${trigger.getSubmitUser()}</td>
             #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
-              <td>$utils.formatDate(${trigger.getStartTime()})</td>
+              <td>$TimeUtils.formatDateTime(${trigger.getStartTime()})</td>
               #if (${trigger.getEndTime()} != "0")
-                <td>$utils.formatDate(${trigger.getEndTime()})</td>
+                <td>$TimeUtils.formatDateTime(${trigger.getEndTime()})</td>
               #else
                 <td>-</td>
               #end
@@ -349,9 +349,9 @@
               <tr class="child-${trigger.getId()}">
                 <td>&nbsp;</td>
                 <td>${dep.getDepName()}</td>
-                <td>$utils.formatDate(${dep.getStartTime()})</td>
+                <td>$TimeUtils.formatDateTime(${dep.getStartTime()})</td>
                 #if (${dep.getEndTime()} != "0")
-                  <td>$utils.formatDate(${dep.getEndTime()})</td>
+                  <td>$TimeUtils.formatDateTime(${dep.getEndTime()})</td>
                 #else
                   <td>-</td>
                 #end

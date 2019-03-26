@@ -21,24 +21,14 @@ import java.text.NumberFormat;
 import java.util.Map;
 import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
-import org.joda.time.format.DateTimeFormat;
 
 public class WebUtils {
 
-  public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
   public static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
   private static final long ONE_KB = 1024;
   private static final long ONE_MB = 1024 * ONE_KB;
   private static final long ONE_GB = 1024 * ONE_MB;
   private static final long ONE_TB = 1024 * ONE_GB;
-
-  public String formatDate(final long timeMS) {
-    if (timeMS == -1) {
-      return "-";
-    }
-
-    return DateTimeFormat.forPattern(DATE_TIME_STRING).print(timeMS);
-  }
 
   public String formatDuration(final long startTime, final long endTime) {
     if (startTime == -1) {

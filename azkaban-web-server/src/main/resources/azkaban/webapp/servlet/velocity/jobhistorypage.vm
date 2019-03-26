@@ -129,8 +129,8 @@
                 <td>
                   <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}">${job.immediateFlowId}</a>
                 </td>
-                <td>$utils.formatDate(${job.startTime})</td>
-                <td>$utils.formatDate(${job.endTime})</td>
+                <td>$TimeUtils.formatDateTime(${job.startTime})</td>
+                <td>$TimeUtils.formatDateTime(${job.endTime})</td>
                 <td>$utils.formatDuration(${job.startTime}, ${job.endTime})</td>
                 <td>
                   <div class="status ${job.status}">
