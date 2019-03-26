@@ -16,11 +16,8 @@
 
 package azkaban.utils;
 
-import azkaban.executor.Status;
 import java.text.NumberFormat;
 import java.util.Map;
-import org.joda.time.DurationFieldType;
-import org.joda.time.ReadablePeriod;
 
 public class WebUtils {
 
@@ -29,110 +26,6 @@ public class WebUtils {
   private static final long ONE_MB = 1024 * ONE_KB;
   private static final long ONE_GB = 1024 * ONE_MB;
   private static final long ONE_TB = 1024 * ONE_GB;
-
-  public String formatDuration(final long startTime, final long endTime) {
-    if (startTime == -1) {
-      return "-";
-    }
-
-    final long durationMS;
-    if (endTime == -1) {
-      durationMS = System.currentTimeMillis() - startTime;
-    } else {
-      durationMS = endTime - startTime;
-    }
-
-    long seconds = durationMS / 1000;
-    if (seconds < 60) {
-      return seconds + " sec";
-    }
-
-    long minutes = seconds / 60;
-    seconds %= 60;
-    if (minutes < 60) {
-      return minutes + "m " + seconds + "s";
-    }
-
-    long hours = minutes / 60;
-    minutes %= 60;
-    if (hours < 24) {
-      return hours + "h " + minutes + "m " + seconds + "s";
-    }
-
-    final long days = hours / 24;
-    hours %= 24;
-    return days + "d " + hours + "h " + minutes + "m";
-  }
-
-  public String formatStatus(final Status status) {
-    switch (status) {
-      case SUCCEEDED:
-        return "Success";
-      case FAILED:
-        return "Failed";
-      case RUNNING:
-        return "Running";
-      case DISABLED:
-        return "Disabled";
-      case KILLED:
-        return "Killed";
-      case FAILED_FINISHING:
-        return "Running w/Failure";
-      case PREPARING:
-        return "Preparing";
-      case READY:
-        return "Ready";
-      case PAUSED:
-        return "Paused";
-      case SKIPPED:
-        return "Skipped";
-      case KILLING:
-        return "Killing";
-      default:
-    }
-    return "Unknown";
-  }
-
-
-  public String formatPeriod(final ReadablePeriod period) {
-    String periodStr = "null";
-
-    if (period == null) {
-      return periodStr;
-    }
-
-    if (period.get(DurationFieldType.years()) > 0) {
-      final int years = period.get(DurationFieldType.years());
-      periodStr = years + " year(s)";
-    } else if (period.get(DurationFieldType.months()) > 0) {
-      final int months = period.get(DurationFieldType.months());
-      periodStr = months + " month(s)";
-    } else if (period.get(DurationFieldType.weeks()) > 0) {
-      final int weeks = period.get(DurationFieldType.weeks());
-      periodStr = weeks + " week(s)";
-    } else if (period.get(DurationFieldType.days()) > 0) {
-      final int days = period.get(DurationFieldType.days());
-      periodStr = days + " day(s)";
-    } else if (period.get(DurationFieldType.hours()) > 0) {
-      final int hours = period.get(DurationFieldType.hours());
-      periodStr = hours + " hour(s)";
-    } else if (period.get(DurationFieldType.minutes()) > 0) {
-      final int minutes = period.get(DurationFieldType.minutes());
-      periodStr = minutes + " minute(s)";
-    } else if (period.get(DurationFieldType.seconds()) > 0) {
-      final int seconds = period.get(DurationFieldType.seconds());
-      periodStr = seconds + " second(s)";
-    }
-
-    return periodStr;
-  }
-
-  public String extractNumericalId(final String execId) {
-    final int index = execId.indexOf('.');
-    final int index2 = execId.indexOf('.', index + 1);
-
-    return execId.substring(0, index2);
-  }
 
   public String displayBytes(final long sizeBytes) {
     final NumberFormat nf = NumberFormat.getInstance();

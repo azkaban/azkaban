@@ -299,6 +299,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
     page.add("System", System.class);
     page.add("TimeUtils", TimeUtils.class);
+    page.add("WebUtils", azkaban.webapp.servlet.WebUtils.class);
 
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());

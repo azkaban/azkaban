@@ -25,7 +25,6 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.TimeUtils;
-import azkaban.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -100,7 +99,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<tr><td>End Time</td><td>"
           + TimeUtils.formatDateTimeZone(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
-          + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
+          + TimeUtils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
       message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
       message.println("</table>");
@@ -152,7 +151,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<tr><td>End Time</td><td>"
           + TimeUtils.formatDateTimeZone(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
-          + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
+          + TimeUtils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
       message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
       message.println("</table>");
@@ -230,7 +229,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<tr><td>End Time</td><td>"
           + TimeUtils.formatDateTimeZone(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
-          + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
+          + TimeUtils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
       message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
       message.println("</table>");

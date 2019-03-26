@@ -25,7 +25,7 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import com.google.common.base.Preconditions;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -104,7 +104,7 @@ public class TriggerInstanceProcessor {
     message.println("<tr><td>End Time</td><td>");
     message.println("<tr><td>" + sdf.format(new Date(triggerInst.getEndTime())) + "</td><td>");
     message.println("<tr><td>Duration</td><td>"
-        + Utils.formatDuration(triggerInst.getStartTime(), triggerInst.getEndTime())
+        + TimeUtils.formatDuration(triggerInst.getStartTime(), triggerInst.getEndTime())
         + "</td></tr>");
     message.println("<tr><td>Status</td><td>" + triggerInst.getStatus() + "</td></tr>");
     message.println("</table>");

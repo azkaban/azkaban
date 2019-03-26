@@ -289,7 +289,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             TimeUtils.formatDateTime(schedule.getFirstSchedTime()));
         jsonObj.put("nextExecTime",
             TimeUtils.formatDateTime(schedule.getNextExecTime()));
-        jsonObj.put("period", AbstractAzkabanServlet.utils.formatPeriod(schedule.getPeriod()));
+        jsonObj.put("period", TimeUtils.formatPeriod(schedule.getPeriod()));
         jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);

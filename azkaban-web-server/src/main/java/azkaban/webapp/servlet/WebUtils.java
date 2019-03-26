@@ -16,7 +16,37 @@
 
 package azkaban.webapp.servlet;
 
-public class VelocityUtils {
+import azkaban.executor.Status;
 
+public class WebUtils {
+
+  public static String formatStatus(final Status status) {
+    switch (status) {
+      case SUCCEEDED:
+        return "Success";
+      case FAILED:
+        return "Failed";
+      case RUNNING:
+        return "Running";
+      case DISABLED:
+        return "Disabled";
+      case KILLED:
+        return "Killed";
+      case FAILED_FINISHING:
+        return "Running w/Failure";
+      case PREPARING:
+        return "Preparing";
+      case READY:
+        return "Ready";
+      case PAUSED:
+        return "Paused";
+      case SKIPPED:
+        return "Skipped";
+      case KILLING:
+        return "Killing";
+      default:
+    }
+    return "Unknown";
+  }
 
 }

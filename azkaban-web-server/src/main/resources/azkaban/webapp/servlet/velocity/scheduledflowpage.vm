@@ -106,7 +106,7 @@
                 <td>$TimeUtils.formatDateTime(${sched.firstSchedTime})</td>
                 <td>$TimeUtils.formatDateTime(${sched.nextExecTime})</td>
                 #if (${sched.period})
-                  <td> $utils.formatPeriod(${sched.period})</td>
+                  <td> $TimeUtils.formatPeriod(${sched.period})</td>
                 #else
                   <td>Not Applicable</td>
                 #end
