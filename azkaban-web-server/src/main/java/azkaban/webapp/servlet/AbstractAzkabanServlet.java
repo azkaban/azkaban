@@ -25,7 +25,6 @@ import azkaban.server.session.Session;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
-import azkaban.utils.WebUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
@@ -52,7 +51,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   public static final String JSON_MIME_TYPE = "application/json";
   public static final String jarVersion = AbstractAzkabanServlet.class.getPackage()
       .getImplementationVersion();
-  protected static final WebUtils utils = new WebUtils();
   private static final String AZKABAN_SUCCESS_MESSAGE =
       "azkaban.success.message";
   private static final String AZKABAN_WARN_MESSAGE =
@@ -292,14 +290,13 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("note_type", NoteServlet.type);
     page.add("note_message", NoteServlet.message);
     page.add("note_url", NoteServlet.url);
-    page.add("utils", utils);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("size", getDisplayExecutionPageSize());
 
     page.add("System", System.class);
     page.add("TimeUtils", TimeUtils.class);
-    page.add("WebUtils", azkaban.webapp.servlet.WebUtils.class);
+    page.add("WebUtils", WebUtils.class);
 
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());

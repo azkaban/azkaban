@@ -20,8 +20,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
+import org.joda.time.Hours;
+import org.joda.time.Minutes;
+import org.joda.time.Months;
 import org.joda.time.ReadablePeriod;
+import org.joda.time.Seconds;
+import org.joda.time.Weeks;
+import org.joda.time.Years;
 
 public class TimeUtils {
 
@@ -114,6 +121,78 @@ public class TimeUtils {
     } else if (period.get(DurationFieldType.seconds()) > 0) {
       final int seconds = period.get(DurationFieldType.seconds());
       periodStr = seconds + " second(s)";
+    }
+
+    return periodStr;
+  }
+
+  public static ReadablePeriod parsePeriodString(final String periodStr) {
+    final ReadablePeriod period;
+    final char periodUnit = periodStr.charAt(periodStr.length() - 1);
+    if (periodStr.equals("null") || periodUnit == 'n') {
+      return null;
+    }
+
+    final int periodInt =
+        Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
+    switch (periodUnit) {
+      case 'y':
+        period = Years.years(periodInt);
+        break;
+      case 'M':
+        period = Months.months(periodInt);
+        break;
+      case 'w':
+        period = Weeks.weeks(periodInt);
+        break;
+      case 'd':
+        period = Days.days(periodInt);
+        break;
+      case 'h':
+        period = Hours.hours(periodInt);
+        break;
+      case 'm':
+        period = Minutes.minutes(periodInt);
+        break;
+      case 's':
+        period = Seconds.seconds(periodInt);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid schedule period unit '"
+            + periodUnit);
+    }
+
+    return period;
+  }
+
+  public static String createPeriodString(final ReadablePeriod period) {
+    String periodStr = "null";
+
+    if (period == null) {
+      return "null";
+    }
+
+    if (period.get(DurationFieldType.years()) > 0) {
+      final int years = period.get(DurationFieldType.years());
+      periodStr = years + "y";
+    } else if (period.get(DurationFieldType.months()) > 0) {
+      final int months = period.get(DurationFieldType.months());
+      periodStr = months + "M";
+    } else if (period.get(DurationFieldType.weeks()) > 0) {
+      final int weeks = period.get(DurationFieldType.weeks());
+      periodStr = weeks + "w";
+    } else if (period.get(DurationFieldType.days()) > 0) {
+      final int days = period.get(DurationFieldType.days());
+      periodStr = days + "d";
+    } else if (period.get(DurationFieldType.hours()) > 0) {
+      final int hours = period.get(DurationFieldType.hours());
+      periodStr = hours + "h";
+    } else if (period.get(DurationFieldType.minutes()) > 0) {
+      final int minutes = period.get(DurationFieldType.minutes());
+      periodStr = minutes + "m";
+    } else if (period.get(DurationFieldType.seconds()) > 0) {
+      final int seconds = period.get(DurationFieldType.seconds());
+      periodStr = seconds + "s";
     }
 
     return periodStr;

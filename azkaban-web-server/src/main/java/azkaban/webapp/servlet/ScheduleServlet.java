@@ -34,7 +34,6 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.TimeUtils;
-import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -258,7 +257,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             "Unable to parse duration for a SLA that needs to take actions!", e);
       }
 
-      slaInfo.put(SlaOption.INFO_DURATION, Utils.createPeriodString(dur));
+      slaInfo.put(SlaOption.INFO_DURATION, TimeUtils.createPeriodString(dur));
       final SlaOption r = new SlaOption(slaType, slaActions, slaInfo);
       logger.info("Parsing sla as id:" + id + " type:" + slaType + " rule:"
           + rule + " Duration:" + duration + " actions:" + slaActions);
@@ -530,7 +529,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       if (hasParam(req, "is_recurring")
           && getParam(req, "is_recurring").equals("on")) {
-        thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
+        thePeriod = TimeUtils.parsePeriodString(getParam(req, "period"));
       }
     } catch (final Exception e) {
       ret.put("error", e.getMessage());

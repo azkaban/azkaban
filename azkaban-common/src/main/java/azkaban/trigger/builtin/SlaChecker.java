@@ -24,7 +24,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.ConditionChecker;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.log4j.Logger;
@@ -75,7 +75,7 @@ public class SlaChecker implements ConditionChecker {
     if (type.equals(SlaOption.TYPE_FLOW_FINISH)) {
       if (this.checkTime < flow.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(flow.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -88,7 +88,7 @@ public class SlaChecker implements ConditionChecker {
     } else if (type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
       if (this.checkTime < flow.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(flow.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -109,7 +109,7 @@ public class SlaChecker implements ConditionChecker {
       }
       if (this.checkTime < node.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(node.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -128,7 +128,7 @@ public class SlaChecker implements ConditionChecker {
       }
       if (this.checkTime < node.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(node.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -153,7 +153,7 @@ public class SlaChecker implements ConditionChecker {
     if (type.equals(SlaOption.TYPE_FLOW_FINISH)) {
       if (this.checkTime < flow.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(flow.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -164,7 +164,7 @@ public class SlaChecker implements ConditionChecker {
     } else if (type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
       if (this.checkTime < flow.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(flow.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -181,7 +181,7 @@ public class SlaChecker implements ConditionChecker {
       }
       if (this.checkTime < node.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(node.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
@@ -198,7 +198,7 @@ public class SlaChecker implements ConditionChecker {
       }
       if (this.checkTime < node.getStartTime()) {
         final ReadablePeriod duration =
-            Utils.parsePeriodString((String) this.slaOption.getInfo().get(
+            TimeUtils.parsePeriodString((String) this.slaOption.getInfo().get(
                 SlaOption.INFO_DURATION));
         final DateTime startTime = new DateTime(node.getStartTime());
         final DateTime nextCheckTime = startTime.plus(duration);
