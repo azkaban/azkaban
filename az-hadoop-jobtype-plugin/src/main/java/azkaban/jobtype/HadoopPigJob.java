@@ -34,6 +34,7 @@ import org.apache.pig.PigRunner;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.jobtype.pig.PigCommonConstants;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
@@ -59,6 +60,12 @@ public class HadoopPigJob extends JavaProcessJob {
   public static final String HADOOP_UGI = "hadoop.job.ugi";
   public static final String DEBUG = "debug";
 
+  //Global tuning enabled for Pig, this flag will decide whether azkaban supports tuning for pig or not
+  public static final String PIG_ENABLE_TUNING = "pig.enable.tuning";
+
+  //Job level tuning enabled. Should be set at job level
+  public static final String JOB_ENABLE_TUNING = "job.enable.tuning";
+
   public static String HADOOP_SECURE_PIG_WRAPPER =
       "azkaban.jobtype.HadoopSecurePigWrapper";
 
@@ -68,17 +75,25 @@ public class HadoopPigJob extends JavaProcessJob {
   File tokenFile = null;
 
   private final boolean userPigJar;
-
+  private final boolean enableTuning;
   private HadoopSecurityManager hadoopSecurityManager;
-
+  private final String securePigWrapper;
   private File pigLogFile = null;
 
   public HadoopPigJob(String jobid, Props sysProps, Props jobProps, Logger log)
       throws IOException {
     super(jobid, sysProps, jobProps, log);
 
-    HADOOP_SECURE_PIG_WRAPPER = HadoopSecurePigWrapper.class.getName();
-
+    if (jobProps.containsKey(JOB_ENABLE_TUNING) && jobProps.containsKey(PIG_ENABLE_TUNING)) {
+      enableTuning = jobProps.getBoolean(JOB_ENABLE_TUNING) && jobProps.getBoolean(PIG_ENABLE_TUNING);
+    } else {
+      enableTuning = false;
+    }
+    if (enableTuning) {
+      securePigWrapper = HadoopTuningSecurePigWrapper.class.getName();
+    } else {
+      securePigWrapper = HadoopSecurePigWrapper.class.getName();
+    }
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
     shouldProxy =
         getSysProps().getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
@@ -143,7 +158,7 @@ public class HadoopPigJob extends JavaProcessJob {
 
   @Override
   protected String getJavaClass() {
-    return HADOOP_SECURE_PIG_WRAPPER;
+    return securePigWrapper;
   }
 
   @Override
@@ -223,7 +238,7 @@ public class HadoopPigJob extends JavaProcessJob {
       pigLogFile =
           File.createTempFile("piglogfile", ".log", new File(
               getWorkingDirectory()));
-      jobProps.put("env." + "PIG_LOG_FILE", pigLogFile.getAbsolutePath());
+      jobProps.put("env." + PigCommonConstants.PIG_LOG_FILE, pigLogFile.getAbsolutePath());
     } catch (IOException e) {
       e.printStackTrace();
     }
