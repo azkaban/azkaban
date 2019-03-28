@@ -91,7 +91,7 @@ public class QuartzSchedulerTest {
 
   @Test
   public void testCreateScheduleAndRun() throws Exception {
-    scheduler.scheduleIfAbsent("* * * * * ?", createJobDescription());
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
     assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
     TestUtils.await().untilAsserted(() -> assertThat(SampleQuartzJob.COUNT_EXECUTION)
         .isNotNull().isGreaterThan(1));
@@ -99,31 +99,31 @@ public class QuartzSchedulerTest {
 
   @Test
   public void testSchedulingDuplicateJob() throws Exception {
-    scheduler.scheduleIfAbsent("* * * * * ?", createJobDescription());
-    assertThat(scheduler.scheduleIfAbsent("0 5 * * * ?", createJobDescription())).isFalse();
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    assertThat(scheduler.scheduleJobIfAbsent("0 5 * * * ?", createJobDescription())).isFalse();
   }
 
   @Test
   public void testInvalidCron() {
     assertThatThrownBy(
-        () -> scheduler.scheduleIfAbsent("0 5 * * * *", createJobDescription()))
+        () -> scheduler.scheduleJobIfAbsent("0 5 * * * *", createJobDescription()))
         .isInstanceOf(SchedulerException.class)
         .hasMessageContaining("The cron expression string");
   }
 
   @Test
   public void testUnschedule() throws Exception {
-    scheduler.scheduleIfAbsent("* * * * * ?", createJobDescription());
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
     assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
-    assertThat(scheduler.unschedule("SampleJob", "SampleService")).isTrue();
+    assertThat(scheduler.unscheduleJob("SampleJob", "SampleService")).isTrue();
     assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(false);
-    assertThat(scheduler.unschedule("SampleJob", "SampleService")).isFalse();
+    assertThat(scheduler.unscheduleJob("SampleJob", "SampleService")).isFalse();
   }
 
   @Test
   public void testPauseSchedule() throws Exception {
     assertThat(scheduler.pauseJobIfPresent("SampleJob", "SampleService")).isFalse();
-    scheduler.scheduleIfAbsent("* * * * * ?", createJobDescription());
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
     assertThat(scheduler.pauseJobIfPresent("SampleJob", "SampleService")).isTrue();
     assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(true);
     assertThat(scheduler.resumeJobIfPresent("SampleJob", "SampleService")).isTrue();

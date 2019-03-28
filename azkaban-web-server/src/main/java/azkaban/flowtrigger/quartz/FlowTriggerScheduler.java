@@ -96,7 +96,7 @@ public class FlowTriggerScheduler {
                     FlowTriggerQuartzJob.PROJECT_ID, project.getId());
             logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
             this.scheduler
-                .scheduleIfAbsent(flowTrigger.getSchedule().getCronExpression(),
+                .scheduleJobIfAbsent(flowTrigger.getSchedule().getCronExpression(),
                     new QuartzJobDescription
                     (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
                         generateGroupName(flow), contextMap));
@@ -177,7 +177,7 @@ public class FlowTriggerScheduler {
           + " schedule");
       if (!flow.isEmbeddedFlow()) {
         try {
-          this.scheduler.unschedule(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
+          this.scheduler.unscheduleJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
         } catch (final Exception ex) {
           logger.info("error when unregistering job", ex);
         }

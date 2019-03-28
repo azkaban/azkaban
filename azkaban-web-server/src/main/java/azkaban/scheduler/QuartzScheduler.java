@@ -149,7 +149,7 @@ public class QuartzScheduler {
    * @return true if job is found and unscheduled.
    * @throws SchedulerException
    */
-  public synchronized boolean unschedule(final String jobName, final String groupName) throws
+  public synchronized boolean unscheduleJob(final String jobName, final String groupName) throws
       SchedulerException {
     return this.scheduler.deleteJob(new JobKey(jobName, groupName));
   }
@@ -169,7 +169,7 @@ public class QuartzScheduler {
    *
    * @return true if job has been scheduled, false if the same job exists already.
    */
-  public synchronized boolean scheduleIfAbsent(final String cronExpression, final QuartzJobDescription
+  public synchronized boolean scheduleJobIfAbsent(final String cronExpression, final QuartzJobDescription
       jobDescription) throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
