@@ -20,8 +20,8 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 
 /**
  * Cache for web session.
@@ -51,7 +51,7 @@ public class SessionCache {
         DEFAULT_SESSION_TIME_TO_LIVE);
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))
-        .expireAfterAccess(effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
+        .expireAfterAccess(this.effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -63,8 +63,12 @@ public class SessionCache {
     return elem;
   }
 
-  public long getEffectiveSessionTimeToLive() {
-    return effectiveSessionTimeToLive;
+
+  /**
+   * Returns the approximate number of sessions currently be kept.
+   */
+  public long getSessionCount() {
+    return this.cache.size();
   }
 
   /**

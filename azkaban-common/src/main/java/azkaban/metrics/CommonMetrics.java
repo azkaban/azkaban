@@ -16,6 +16,7 @@
 
 package azkaban.metrics;
 
+import azkaban.server.session.SessionCache;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
@@ -39,6 +40,7 @@ public class CommonMetrics {
   public static final String SUBMIT_FLOW_SKIP_METER_NAME = "submit-flow-skip-meter";
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
   public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
+  public static final String SESSION_COUNT = "session-count";
 
   private Counter OOMWaitingJobCount;
   private final MetricsManager metricsManager;
@@ -53,12 +55,12 @@ public class CommonMetrics {
   private Histogram queueWaitMeter;
 
   @Inject
-  public CommonMetrics(final MetricsManager metricsManager) {
+  public CommonMetrics(final MetricsManager metricsManager, final SessionCache sessionCache) {
     this.metricsManager = metricsManager;
-    setupAllMetrics();
+    setupAllMetrics(sessionCache);
   }
 
-  private void setupAllMetrics() {
+  private void setupAllMetrics(final SessionCache sessionCache) {
     this.flowFailMeter = this.metricsManager.addMeter(FLOW_FAIL_METER_NAME);
     this.dispatchFailMeter = this.metricsManager.addMeter(DISPATCH_FAIL_METER_NAME);
     this.dispatchSuccessMeter = this.metricsManager.addMeter(DISPATCH_SUCCESS_METER_NAME);
@@ -69,6 +71,7 @@ public class CommonMetrics {
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
     this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
     this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
+    this.metricsManager.addGauge(SESSION_COUNT, sessionCache::getSessionCount);
   }
 
   /**
@@ -150,4 +153,5 @@ public class CommonMetrics {
   public void addQueueWait(final long time) {
     this.queueWaitMeter.update(time);
   }
+
 }

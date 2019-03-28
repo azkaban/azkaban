@@ -28,7 +28,7 @@ public final class SessionCacheTest {
   final String propsString = "{ \"session.time.to.live\": \"100\" }";
 
   SessionCache freshSessionCache() throws Exception {
-    final Props props = PropsUtils.fromJSONString(propsString);
+    final Props props = PropsUtils.fromJSONString(this.propsString);
     return new SessionCache(props);
   }
 
@@ -39,6 +39,18 @@ public final class SessionCacheTest {
         "123.12.12.123");
     sessionCache.addSession(session);
     assertThat(sessionCache.getSession("TEST_SESSION_ID")).isEqualTo(session);
+  }
+
+  @Test
+  public void SessionCacheCount() throws Exception {
+    final SessionCache sessionCache = freshSessionCache();
+    final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
+        "123.12.12.123");
+    assertThat(sessionCache.getSessionCount()).isEqualTo(0);
+    sessionCache.addSession(session);
+    assertThat(sessionCache.getSessionCount()).isEqualTo(1);
+    sessionCache.removeSession(session.getSessionId());
+    assertThat(sessionCache.getSessionCount()).isEqualTo(0);
   }
 
   @Test
