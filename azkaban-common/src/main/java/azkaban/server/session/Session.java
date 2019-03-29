@@ -26,7 +26,6 @@ public class Session {
 
   private final User user;
   private final String sessionId;
-  @Deprecated
   private final String ip;
   private final Map<String, Object> sessionData = new HashMap<>();
 
@@ -53,7 +52,6 @@ public class Session {
     return this.sessionId;
   }
 
-  @Deprecated
   public String getIp() {
     return this.ip;
   }

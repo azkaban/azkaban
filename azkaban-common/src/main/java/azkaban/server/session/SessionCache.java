@@ -21,6 +21,10 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -88,5 +92,22 @@ public class SessionCache {
    */
   public void removeSession(final String id) {
     this.cache.invalidate(id);
+  }
+
+
+  /**
+   * Returns sessions whose IP equals to the given IP.
+   */
+  public Set<Session> findSessionsByIP(final String ip) {
+    final Set<Session> ret = new HashSet<>();
+
+    final Map<String, Session> cacheSnapshot = this.cache.asMap();
+    for (final Entry<String, Session> entry : cacheSnapshot.entrySet()) {
+      if (entry.getValue().getIp().equals(ip)) {
+        ret.add(entry.getValue());
+      }
+    }
+
+    return ret;
   }
 }
