@@ -29,7 +29,7 @@ public final class SessionCacheTest {
 
   SessionCache freshSessionCache() throws Exception {
     final Props props = PropsUtils.fromJSONString(this.propsString);
-    return new SessionCache(props);
+    return new SessionCache(props, null);
   }
 
   @Test

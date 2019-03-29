@@ -17,10 +17,12 @@
 package azkaban.server.session;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -46,13 +48,16 @@ public class SessionCache {
    * Constructor taking global props.
    */
   @Inject
-  public SessionCache(final Props props) {
+  public SessionCache(final Props props, @Nullable final CommonMetrics metrics) {
     this.effectiveSessionTimeToLive = props.getLong(ConfigurationKeys.SESSION_TIME_TO_LIVE,
         DEFAULT_SESSION_TIME_TO_LIVE);
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))
         .expireAfterAccess(this.effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
         .build();
+    if (metrics != null) {
+      metrics.addSessionCount(this::getSessionCount);
+    }
   }
 
   /**

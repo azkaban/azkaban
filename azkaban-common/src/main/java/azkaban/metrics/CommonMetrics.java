@@ -16,10 +16,10 @@
 
 package azkaban.metrics;
 
-import azkaban.server.session.SessionCache;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -55,12 +55,12 @@ public class CommonMetrics {
   private Histogram queueWaitMeter;
 
   @Inject
-  public CommonMetrics(final MetricsManager metricsManager, final SessionCache sessionCache) {
+  public CommonMetrics(final MetricsManager metricsManager) {
     this.metricsManager = metricsManager;
-    setupAllMetrics(sessionCache);
+    setupAllMetrics();
   }
 
-  private void setupAllMetrics(final SessionCache sessionCache) {
+  private void setupAllMetrics() {
     this.flowFailMeter = this.metricsManager.addMeter(FLOW_FAIL_METER_NAME);
     this.dispatchFailMeter = this.metricsManager.addMeter(DISPATCH_FAIL_METER_NAME);
     this.dispatchSuccessMeter = this.metricsManager.addMeter(DISPATCH_SUCCESS_METER_NAME);
@@ -71,7 +71,10 @@ public class CommonMetrics {
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
     this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
     this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
-    this.metricsManager.addGauge(SESSION_COUNT, sessionCache::getSessionCount);
+  }
+
+  public <T> void addSessionCount(final Supplier<T> getSessionCount) {
+    this.metricsManager.addGauge(SESSION_COUNT, getSessionCount);
   }
 
   /**

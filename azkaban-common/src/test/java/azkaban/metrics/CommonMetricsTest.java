@@ -19,6 +19,10 @@ package azkaban.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import azkaban.server.session.Session;
+import azkaban.server.session.SessionCache;
+import azkaban.user.User;
+import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import org.junit.Before;
@@ -29,12 +33,19 @@ public class CommonMetricsTest {
 
   private MetricsTestUtility testUtil;
   private CommonMetrics metrics;
+  private SessionCache sessionCache;
+
+  private SessionCache newSessionCache(final CommonMetrics metrics) {
+    final Props props = new Props();
+    return new SessionCache(props, metrics);
+  }
 
   @Before
   public void setUp() {
     final MetricRegistry metricRegistry = new MetricRegistry();
     this.testUtil = new MetricsTestUtility(metricRegistry);
     this.metrics = new CommonMetrics(new MetricsManager(metricRegistry));
+    this.sessionCache = newSessionCache(this.metrics);
   }
 
   @Test
@@ -47,6 +58,16 @@ public class CommonMetricsTest {
 
     this.metrics.decrementOOMJobWaitCount();
     assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(0);
+  }
+
+  @Test
+  public void testSessionCountMetrics() {
+    final String metricName = CommonMetrics.SESSION_COUNT;
+    assertThat(this.testUtil.getGaugeValue(metricName)).isEqualTo(0);
+    final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
+        "123.12.12.123");
+    this.sessionCache.addSession(session);
+    assertThat(this.testUtil.getGaugeValue(metricName)).isEqualTo(1);
   }
 
   @Test
