@@ -30,8 +30,8 @@ public class EmailMessageCreator {
   private final String mailUser;
   private final String mailPassword;
   private final String mailSender;
-  private final String tls;
   private final boolean usesAuth;
+  private final String security;
 
   @Inject
   public EmailMessageCreator(final Props props) {
@@ -40,16 +40,16 @@ public class EmailMessageCreator {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
-    this.tls = props.getString("mail.tls", "false");
     this.usesAuth = props.getBoolean("mail.useAuth", true);
+    this.security = props.getString("mail.security", "");
   }
 
   public EmailMessage createMessage() {
     final EmailMessage message = new EmailMessage(
         this.mailHost, this.mailPort, this.mailUser, this.mailPassword, this);
     message.setFromAddress(this.mailSender);
-    message.setTLS(this.tls);
     message.setAuth(this.usesAuth);
+    message.setSecurity(this.security);
     return message;
   }
 
