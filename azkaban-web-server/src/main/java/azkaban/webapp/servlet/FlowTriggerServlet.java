@@ -22,6 +22,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
+import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
@@ -70,9 +71,9 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
       jsonObj.put("cronExpression", res.getFlowTrigger().getSchedule().getCronExpression());
       jsonObj.put("submitUser", res.getSubmitUser());
       jsonObj.put("firstSchedTime",
-          utils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
+          TimeUtils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
       jsonObj.put("nextExecTime",
-          utils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
+          TimeUtils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
 
       Long maxWaitMin = null;
       if (res.getFlowTrigger().getMaxWaitDuration().isPresent()) {

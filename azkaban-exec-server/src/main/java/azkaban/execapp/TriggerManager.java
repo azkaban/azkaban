@@ -24,7 +24,7 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,7 +95,7 @@ public class TriggerManager {
 
       final List<TriggerAction> actions = createActions(sla, execId);
       final Trigger trigger = new Trigger(execId, triggerCond, expireCond, actions);
-      final ReadablePeriod duration = Utils
+      final ReadablePeriod duration = TimeUtils
           .parsePeriodString((String) sla.getInfo().get(SlaOption.INFO_DURATION));
       final long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
 
