@@ -36,6 +36,7 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -329,7 +330,8 @@ public abstract class LoginAbstractAzkabanServlet extends
         // back a message or redirect.
         if (isAjaxCall(req)) {
           final String response =
-              createJsonResponse("error", "Invalid Session. Need to re-login",
+              AbstractAzkabanServlet
+                  .createJsonResponse("error", "Invalid Session. Need to re-login",
                   "login", null);
           writeResponse(resp, response);
         } else {
@@ -413,6 +415,10 @@ public abstract class LoginAbstractAzkabanServlet extends
       cookie.setPath("/");
       resp.addCookie(cookie);
       getApplication().getSessionCache().addSession(session);
+      final Set<Session> sessionsOfSameIP =
+          getApplication().getSessionCache().findSessionsByIP(session.getIp());
+      // Check potential DDoS attack by bad hosts.
+      logger.info(sessionsOfSameIP.size() + " session(s) found from this IP " + session.getIp());
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
     } else {
