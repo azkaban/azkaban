@@ -37,6 +37,7 @@ import org.mortbay.jetty.Server;
 public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
+  private static final long serialVersionUID = 5872898140052356540L;
 
   public static HttpServletRequest getRequestWithNoUpstream(final String clientIp,
       final String sessionId,
@@ -107,7 +108,7 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
     // Create a concrete SessionCache so a session will get persisted
     // and can get looked up
-    final SessionCache cache = new SessionCache(props);
+    final SessionCache cache = new SessionCache(props, null);
     when(app.getSessionCache()).thenReturn(cache);
 
     // Need a valid object here when processing a request
