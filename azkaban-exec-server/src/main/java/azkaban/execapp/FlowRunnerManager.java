@@ -387,7 +387,7 @@ public class FlowRunnerManager implements EventListener,
     this.commonMetrics.addQueueWait(System.currentTimeMillis() -
         flow.getExecutableFlow().getSubmitTime());
 
-    final Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
+    final Timer.Context flowPrepTimerContext = this.commonMetrics.getFlowSetupTimerContext();
 
     try {
       if (this.active || isExecutorSpecified(flow)) {

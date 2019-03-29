@@ -18,7 +18,6 @@ package azkaban.execapp;
 
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.metrics.MetricsManager;
-import com.codahale.metrics.Timer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -27,13 +26,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ExecMetrics {
-  public static final String NUM_RUNNING_FLOWS_NAME = "EXEC-NumRunningFlows";
-  public static final String NUM_QUEUED_FLOWS_NAME = "EXEC-NumQueuedFlows";
-  public static final String PROJECT_DIR_CACHE_HIT_RATIO_NAME = "EXEC-ProjectDirCacheHitRatio";
-  public static final String FLOW_SETUP_TIMER_NAME = "EXEC-flow-setup-timer";
 
   private final MetricsManager metricsManager;
-  private Timer flowSetupTimer;
   private final ProjectCacheHitRatio projectCacheHitRatio;
 
   @Inject
@@ -43,7 +37,6 @@ public class ExecMetrics {
     this.projectCacheHitRatio = new ProjectCacheHitRatio();
     metricsManager.addGauge("EXEC-ProjectDirCacheHitRatio",
         this.projectCacheHitRatio::getRatio);
-    this.flowSetupTimer = this.metricsManager.addTimer(FLOW_SETUP_TIMER_NAME);
   }
 
   ProjectCacheHitRatio getProjectCacheHitRatio() {
@@ -52,13 +45,8 @@ public class ExecMetrics {
 
   public void addFlowRunnerManagerMetrics(final FlowRunnerManager flowRunnerManager) {
     this.metricsManager
-        .addGauge(NUM_RUNNING_FLOWS_NAME, flowRunnerManager::getNumRunningFlows);
+        .addGauge("EXEC-NumRunningFlows", flowRunnerManager::getNumRunningFlows);
     this.metricsManager
-        .addGauge(NUM_QUEUED_FLOWS_NAME, flowRunnerManager::getNumQueuedFlows);
+        .addGauge("EXEC-NumQueuedFlows", flowRunnerManager::getNumQueuedFlows);
   }
-
-  /**
-   * @return the {@link Timer.Context} for the timer.
-   */
-  public Timer.Context getFlowSetupTimerContext() { return this.flowSetupTimer.time(); }
 }
