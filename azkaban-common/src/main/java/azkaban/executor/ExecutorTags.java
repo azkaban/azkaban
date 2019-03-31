@@ -16,7 +16,8 @@ public class ExecutorTags implements Iterable<String> {
   private final Set<String> tags;
 
   public ExecutorTags(final Collection<? extends String> tags) {
-    this.tags = Collections.unmodifiableSet(new TreeSet<>(tags));
+    this.tags = Collections.unmodifiableSet(tags == null ? Collections.emptySet() :
+        new TreeSet<>(tags));
   }
 
   public static ExecutorTags getTagsFromProps(final Props props, final String key) {
