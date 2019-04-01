@@ -20,7 +20,13 @@ import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
+import com.google.common.io.Resources;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -58,7 +64,6 @@ public class XmlUserManagerTest {
   /**
    * Testing for when the xml path doesn't exist.
    */
-  @Ignore
   @Test
   public void testDoNotExist() throws Exception {
     final Props props = new Props(this.baseProps);
@@ -71,6 +76,59 @@ public class XmlUserManagerTest {
     }
 
     fail("XmlUserManager should throw an exception when the file doesn't exist");
+  }
+
+  /**
+   * Test auto reload of user XML
+   */
+  @Test
+  public void testAutoReload() throws Exception {
+    final Props props = new Props(this.baseProps);
+    final URL configURL = Resources.getResource("test-conf/azkaban-user-mod-test.xml");
+    final String path = configURL.getPath();
+    props.put(XmlUserManager.XML_FILE_PARAM, path);
+
+    UserManager manager;
+    try {
+      manager = new XmlUserManager(props);
+    } catch (final RuntimeException e) {
+      fail("Should have found the xml file");
+      return;
+    }
+
+    // Get the user8 from existing XML with password == password8
+    User user8 = manager.getUser("user8", "password8");
+
+    // Modify the password for user8
+    // TODO : djaiswal : Find a better way to modify XML
+    List<String> lines = new ArrayList<>();
+    List<String> origLines = new ArrayList<>();
+    for (String line : Files.readAllLines(Paths.get(path))) {
+      origLines.add(line);
+      if (line.contains("password8")) {
+        lines.add(line.replace("password8", "passwordModified"));
+      } else {
+        lines.add(line);
+      }
+    }
+    // Update the file
+    Files.write(Paths.get(path), lines);
+
+    // This should reload the XML file. Check for user8 again
+    try {
+      user8 = manager.getUser("user8", "password8");
+    } catch (final UserManagerException e) {
+      System.out.println("USer8 has updated password" + e.getMessage());
+    }
+
+    try {
+      user8 = manager.getUser("user8", "passwordModified");
+    } catch (final UserManagerException e) {
+      System.out.println("Test failed " + e.getMessage());
+    } finally {
+      // Revert the file back
+      Files.write(Paths.get(path), origLines);
+    }
   }
 
   @Ignore

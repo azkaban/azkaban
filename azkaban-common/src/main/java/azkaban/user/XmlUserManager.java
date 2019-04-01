@@ -20,6 +20,13 @@ import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -73,6 +80,54 @@ public class XmlUserManager implements UserManager {
     this.xmlPath = props.getString(XML_FILE_PARAM);
 
     parseXMLFile();
+
+    // Create a thread which listens to any change in user config file and
+    // reloads it.
+    Runnable runnable = () -> {
+      WatchService watchService;
+      Path path;
+      try {
+        watchService = FileSystems.getDefault().newWatchService();
+        final File file = new File(this.xmlPath);
+        final String dirPath = file.getParent();
+        path = Paths.get(dirPath);
+        path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY,
+            StandardWatchEventKinds.ENTRY_CREATE);
+      } catch (IOException e) {
+        // Ignore the IOException
+        logger.warn("IOException while setting up watch on conf"
+            + e.getMessage());
+        return;
+      }
+      for (;;) {
+        // Watch for modifications
+        WatchKey watchKey;
+        try {
+          watchKey = watchService.take();
+        } catch (InterruptedException ie) {
+          logger.warn(ie.getMessage());
+          return;
+        }
+
+        for (WatchEvent<?> event : watchKey.pollEvents()) {
+          // Make sure the modification happened to user xml
+          @SuppressWarnings("unchecked")
+          final Path name = ((WatchEvent<Path>)event).context();
+          final Path child = path.resolve(name);
+          if (!child.toString().equals(this.xmlPath)) {
+            continue; // not user xml
+          }
+          // reparse the XML
+          logger.info("Modification detected, reloading user config");
+          parseXMLFile();
+        }
+        watchKey.reset();
+      }
+    };
+
+    final Thread thread = new Thread(runnable);
+    System.out.println("Starting thread");
+    thread.start();
   }
 
   private void parseXMLFile() {
