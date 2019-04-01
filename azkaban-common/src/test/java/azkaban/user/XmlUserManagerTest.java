@@ -84,7 +84,7 @@ public class XmlUserManagerTest {
   @Test
   public void testAutoReload() throws Exception {
     final Props props = new Props(this.baseProps);
-    final URL configURL = Resources.getResource("test-conf/azkaban-user-mod-test.xml");
+    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
     final String path = configURL.getPath();
     props.put(XmlUserManager.XML_FILE_PARAM, path);
 
