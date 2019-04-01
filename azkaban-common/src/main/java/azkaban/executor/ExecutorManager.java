@@ -70,6 +70,7 @@ import org.joda.time.DateTime;
  * Executor manager used to manage the client side job.
  */
 @Singleton
+@Deprecated
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
