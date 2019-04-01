@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.MockExecutorLoader;
@@ -108,7 +107,7 @@ public class TriggerInstanceProcessorTest {
     this.message = EmailerTest.mockEmailMessage();
     this.messageCreator = EmailerTest.mockMessageCreator(this.message);
     this.triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
-    this.executorManager = mock(ExecutionController.class);
+    this.executorManager = mock(ExecutorManagerAdapter.class);
     this.executorLoader = new MockExecutorLoader();
     when(this.executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
