@@ -820,54 +820,60 @@ This API call schedules a period-based flow.
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
 
-+-----------------------------------+-----------------------------------+
-| Parameter                         | Description                       |
-+===================================+===================================+
-| session.id                        | The user session id.              |
-+-----------------------------------+-----------------------------------+
-| ajax=scheduleFlow                 | The fixed parameter indicating    |
-|                                   | the action is to schedule a flow. |
-+-----------------------------------+-----------------------------------+
-| projectName                       | The name of the project.          |
-+-----------------------------------+-----------------------------------+
-| projectId                         | The id of the project. You can    |
-|                                   | find this with `Fetch Flows of a  |
-|                                   | Project <#api-fetch-flows-of-a-pr |
-|                                   | oject>`__.                        |
-+-----------------------------------+-----------------------------------+
-| flowName                          | The name of the flow.             |
-+-----------------------------------+-----------------------------------+
-| scheduleTime(with timezone)       | The time to schedule the flow.    |
-|                                   | Example: 12,00,pm,PDT (Unless UTC |
-|                                   | is specified, Azkaban will take   |
-|                                   | current server's default timezone |
-|                                   | instead)                          |
-+-----------------------------------+-----------------------------------+
-| scheduleDate                      | The date to schedule the flow.    |
-|                                   | Example: 07/22/2014               |
-+-----------------------------------+-----------------------------------+
-| is_recurring=on (optional)        | Flags the schedule as a recurring |
-|                                   | schedule.                         |
-+-----------------------------------+-----------------------------------+
-| period (optional)                 | Specifies the recursion period.   |
-|                                   | Depends on the "is_recurring"     |
-|                                   | flag being set. Example: 5w       |
-|                                   | **Possible Values:**              |
-|                                   |                                   |
-|                                   | +---+---------+                   |
-|                                   | | M | Months  |                   |
-|                                   | +---+---------+                   |
-|                                   | | w | Weeks   |                   |
-|                                   | +---+---------+                   |
-|                                   | | d | Days    |                   |
-|                                   | +---+---------+                   |
-|                                   | | h | Hours   |                   |
-|                                   | +---+---------+                   |
-|                                   | | m | Minutes |                   |
-|                                   | +---+---------+                   |
-|                                   | | s | Seconds |                   |
-|                                   | +---+---------+                   |
-+-----------------------------------+-----------------------------------+
++------------------------------------+------------------------------------+
+| Parameter                          | Description                        |
++====================================+====================================+
+| session.id                         | The user session id.               |
++------------------------------------+------------------------------------+
+| ajax=scheduleFlow                  | The fixed parameter indicating     |
+|                                    | the action is to schedule a flow.  |
++------------------------------------+------------------------------------+
+| projectName                        | The name of the project.           |
++------------------------------------+------------------------------------+
+| projectId                          | The id of the project. You can     |
+|                                    | find this with `Fetch Flows of a   |
+|                                    | Project <#api-fetch-flows-of-a-pr  |
+|                                    | oject>`__.                         |
++------------------------------------+------------------------------------+
+| flowName                           | The name of the flow.              |
++------------------------------------+------------------------------------+
+| scheduleTime(with timezone)        | The time to schedule the flow.     |
+|                                    | Example: 12,00,pm,PDT (Unless UTC  |
+|                                    | is specified, Azkaban will take    |
+|                                    | current server's default timezone  |
+|                                    | instead)                           |
++------------------------------------+------------------------------------+
+| scheduleDate                       | The date to schedule the flow.     |
+|                                    | Example: 07/22/2014                |
++------------------------------------+------------------------------------+
+| is_recurring=on (optional)         | Flags the schedule as a recurring  |
+|                                    | schedule.                          |
++------------------------------------+------------------------------------+
+| period (optional)                  | Specifies the recursion period.    |
+|                                    | Depends on the "is_recurring"      |
+|                                    | flag being set. Example: 5w        |
+|                                    | **Possible Values:**               |
+|                                    |                                    |
+|                                    | +---+---------+                    |
+|                                    | | M | Months  |                    |
+|                                    | +---+---------+                    |
+|                                    | | w | Weeks   |                    |
+|                                    | +---+---------+                    |
+|                                    | | d | Days    |                    |
+|                                    | +---+---------+                    |
+|                                    | | h | Hours   |                    |
+|                                    | +---+---------+                    |
+|                                    | | m | Minutes |                    |
+|                                    | +---+---------+                    |
+|                                    | | s | Seconds |                    |
+|                                    | +---+---------+                    |
++------------------------------------+------------------------------------+
+| skipIfPreviousExecutionFailed=true | Flags the schedule as requiring    |
+| (optional)                         | that the previous execution of the |
+|                                    | flow was successful. This prevents |
+|                                    | a flow from being repeatedly       |
+|                                    | re-executed if it starts failing.  |
++------------------------------------+------------------------------------+
 
 Here's a curl command sample:
 
@@ -929,28 +935,34 @@ All cron schedules follow the timezone defined in azkaban web server
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
 
-+-----------------------------------+-----------------------------------+
-| Parameter                         | Description                       |
-+===================================+===================================+
-| session.id                        | The user session id.              |
-+-----------------------------------+-----------------------------------+
-| ajax=scheduleCronFlow             | The fixed parameter indicating    |
-|                                   | the action is to use cron to      |
-|                                   | schedule a flow.                  |
-+-----------------------------------+-----------------------------------+
-| projectName                       | The name of the project.          |
-+-----------------------------------+-----------------------------------+
-| flow                              | The name of the flow.             |
-+-----------------------------------+-----------------------------------+
-| cronExpression                    | A CRON expression is a string     |
-|                                   | comprising 6 or 7 fields          |
-|                                   | separated by white space that     |
-|                                   | represents a set of times. In     |
-|                                   | azkaban, we use `Quartz Cron      |
-|                                   | Format <http://www.quartz-schedul |
-|                                   | er.org/documentation/quartz-2.x/t |
-|                                   | utorials/crontrigger.html>`__.    |
-+-----------------------------------+-----------------------------------+
++------------------------------------+------------------------------------+
+| Parameter                          | Description                        |
++====================================+====================================+
+| session.id                         | The user session id.               |
++------------------------------------+------------------------------------+
+| ajax=scheduleCronFlow              | The fixed parameter indicating     |
+|                                    | the action is to use cron to       |
+|                                    | schedule a flow.                   |
++------------------------------------+------------------------------------+
+| projectName                        | The name of the project.           |
++------------------------------------+------------------------------------+
+| flow                               | The name of the flow.              |
++------------------------------------+------------------------------------+
+| cronExpression                     | A CRON expression is a string      |
+|                                    | comprising 6 or 7 fields           |
+|                                    | separated by white space that      |
+|                                    | represents a set of times. In      |
+|                                    | azkaban, we use `Quartz Cron       |
+|                                    | Format <http://www.quartz-schedul  |
+|                                    | er.org/documentation/quartz-2.x/t  |
+|                                    | utorials/crontrigger.html>`__.     |
++------------------------------------+------------------------------------+
+| skipIfPreviousExecutionFailed=true | Flags the schedule as requiring    |
+| (optional)                         | that the previous execution of the |
+|                                    | flow was successful. This prevents |
+|                                    | a flow from being repeatedly       |
+|                                    | re-executed if it starts failing.  |
++------------------------------------+------------------------------------+
 
 Here's a curl command sample:
 

@@ -19,6 +19,8 @@ package azkaban.trigger.builtin;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
@@ -164,6 +166,13 @@ public class ExecuteFlowAction implements TriggerAction {
     this.slaOptions = slaOptions;
   }
 
+  private ExecutableFlow getPreviousExecution(final int projectId, final String flowId)
+      throws ExecutorManagerException {
+    final List<ExecutableFlow> executableFlows = new ArrayList<>();
+    executorManagerAdapter.getExecutableFlows(projectId, flowId, 0, 1, executableFlows);
+    return executableFlows.size() == 0 ? null : executableFlows.get(0);
+  }
+
   @Override
   public String getType() {
     return type;
@@ -222,6 +231,17 @@ public class ExecuteFlowAction implements TriggerAction {
 
     if (this.slaOptions != null && this.slaOptions.size() > 0) {
       exflow.setSlaOptions(this.slaOptions);
+    }
+
+    if (this.executionOptions.getSkipIfPreviousExecutionFailed()) {
+      final ExecutableFlow previous = getPreviousExecution(this.projectId, flow.getId());
+
+      if (previous != null && previous.getStatus() != Status.SUCCEEDED) {
+        logger.info("Skipping flow " + project.getName() + "." + this.flowName + " as its "
+            + "most recent execution (" + previous.getExecutionId()
+            + ") has a non-successful status (" + previous.getStatus() + ")");
+        return;
+      }
     }
 
     logger.info("Invoking flow " + project.getName() + "." + this.flowName);

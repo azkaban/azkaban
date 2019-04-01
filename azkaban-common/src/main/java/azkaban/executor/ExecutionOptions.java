@@ -54,6 +54,7 @@ public class ExecutionOptions {
   private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
+  private static final String SKIP_IF_PREVIOUS_EXECUTION_FAILED = "skipIfPreviousExecutionFailed";
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -68,6 +69,7 @@ public class ExecutionOptions {
   private String concurrentOption = CONCURRENT_OPTION_IGNORE;
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private boolean memoryCheck = true;
+  private boolean skipIfPreviousExecutionFailed = false;
   private Map<String, String> flowParameters = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
   private List<Object> initiallyDisabledJobs = new ArrayList<>();
@@ -125,6 +127,9 @@ public class ExecutionOptions {
         false));
 
     options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
+
+    options.setSkipIfPreviousExecutionFailed(wrapper.getBool(SKIP_IF_PREVIOUS_EXECUTION_FAILED,
+        false));
 
     return options;
   }
@@ -245,6 +250,14 @@ public class ExecutionOptions {
     this.memoryCheck = memoryCheck;
   }
 
+  public boolean getSkipIfPreviousExecutionFailed() {
+    return this.skipIfPreviousExecutionFailed;
+  }
+
+  public void setSkipIfPreviousExecutionFailed(final boolean skipIfPreviousExecutionFailed) {
+    this.skipIfPreviousExecutionFailed = skipIfPreviousExecutionFailed;
+  }
+
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -263,6 +276,7 @@ public class ExecutionOptions {
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, this.successEmailsOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
+    flowOptionObj.put(SKIP_IF_PREVIOUS_EXECUTION_FAILED, this.skipIfPreviousExecutionFailed);
     return flowOptionObj;
   }
 

@@ -50,6 +50,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
+    scheduleData.skipIfPreviousExecutionFailed = $('#skip-if-previous-execution-failed').val();
 
     // Currently, All cron expression will be based on server timezone.
     // Later we might implement a feature support cron under various timezones, depending on the future use cases.
@@ -57,6 +58,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 
     console.log("current Time = " + scheduleDate + "  " + scheduleTime);
     console.log("cronExpression = " + scheduleData.cronExpression);
+    console.log("skipIfPreviousExecutionFailed = " + scheduleData.skipIfPreviousExecutionFailed);
     var retSignal = validateQuartzStr(scheduleData.cronExpression);
 
     if (retSignal == "NUM_FIELDS_ERROR") {

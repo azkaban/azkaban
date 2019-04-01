@@ -84,7 +84,7 @@ public class HttpRequestUtils {
           "notifyFailureLast")));
     }
 
-    String concurrentOption = getParam(req, "concurrentOption", "skip");
+    final String concurrentOption = getParam(req, "concurrentOption", "skip");
     execOptions.setConcurrentOption(concurrentOption);
     if (concurrentOption.equals("pipeline")) {
       final int pipelineLevel = getIntParam(req, "pipelineLevel");
@@ -99,6 +99,11 @@ public class HttpRequestUtils {
     if (hasParam(req, "mailCreator")) {
       mailCreator = getParam(req, "mailCreator");
       execOptions.setMailCreator(mailCreator);
+    }
+
+    if (hasParam(req, "skipIfPreviousExecutionFailed")) {
+      execOptions.setSkipIfPreviousExecutionFailed(
+          Boolean.parseBoolean(getParam(req, "skipIfPreviousExecutionFailed")));
     }
 
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
