@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.gson.GsonBuilder;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,10 +63,10 @@ public class FlowTriggerScheduler {
   }
 
   /**
-   * Schedule flows containing flow triggers
+   * Schedule flows containing flow triggers for this project.
    */
-  public void scheduleAll(final Project project, final String submitUser)
-      throws ProjectManagerException {
+  public void schedule(final Project project, final String submitUser)
+      throws ProjectManagerException, IOException, SchedulerException {
 
     for (final Flow flow : project.getFlows()) {
       //todo chengren311: we should validate embedded flow shouldn't have flow trigger defined.
@@ -94,16 +95,22 @@ public class FlowTriggerScheduler {
                     FlowTriggerQuartzJob.FLOW_ID, flow.getId(),
                     FlowTriggerQuartzJob.FLOW_VERSION, latestFlowVersion,
                     FlowTriggerQuartzJob.PROJECT_ID, project.getId());
-            logger.info("scheduling flow " + flow.getProjectId() + "." + flow.getId());
-            this.scheduler
+            final boolean scheduleSuccess = this.scheduler
                 .scheduleJobIfAbsent(flowTrigger.getSchedule().getCronExpression(),
                     new QuartzJobDescription
                     (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
                         generateGroupName(flow), contextMap));
+            if (scheduleSuccess) {
+              logger.info("Successfully registered flow {}.{} to scheduler", project.getName(),
+                  flow.getId());
+            } else {
+              logger.info("Fail to register a duplicate flow {}.{} to scheduler", project.getName(),
+                  flow.getId());
+            }
           }
-        } catch (final Exception ex) {
-          logger.error(String.format("error in registering flow [project: %s, flow: %s]", project
-              .getName(), flow.getId()), ex);
+        } catch (final SchedulerException | IOException ex) {
+          logger.error("Error in registering flow {}.{}", project.getName(), flow.getId(), ex);
+          throw ex;
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
         }
@@ -112,16 +119,12 @@ public class FlowTriggerScheduler {
   }
 
   public void pauseFlowTrigger(final int projectId, final String flowId) throws SchedulerException {
-    logger.info(String.format("pausing flow trigger for [projectId:%s, flowId:%s]", projectId,
-        flowId));
     this.scheduler
         .pauseJobIfPresent(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
   public void resumeFlowTrigger(final int projectId, final String flowId) throws
       SchedulerException {
-    logger.info(
-        String.format("resuming flow trigger for [projectId:%s, flowId:%s]", projectId, flowId));
     this.scheduler
         .resumeJobIfPresent(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
@@ -155,7 +158,7 @@ public class FlowTriggerScheduler {
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0), isPaused);
         } catch (final Exception ex) {
-          logger.error(String.format("unable to get flow trigger by job key %s", jobKey), ex);
+          logger.error("Unable to get flow trigger by job key {}", jobKey, ex);
           scheduledFlowTrigger = null;
         }
 
@@ -163,7 +166,7 @@ public class FlowTriggerScheduler {
       }
       return flowTriggerJobDetails;
     } catch (final Exception ex) {
-      logger.error("unable to get scheduled flow triggers", ex);
+      logger.error("Unable to get scheduled flow triggers", ex);
       return new ArrayList<>();
     }
   }
@@ -171,15 +174,18 @@ public class FlowTriggerScheduler {
   /**
    * Unschedule all possible flows in a project
    */
-  public void unscheduleAll(final Project project) throws SchedulerException {
+  public void unschedule(final Project project) throws SchedulerException {
     for (final Flow flow : project.getFlows()) {
-      logger.info("unscheduling flow" + flow.getProjectId() + "." + flow.getId() + " if it has "
-          + " schedule");
       if (!flow.isEmbeddedFlow()) {
         try {
-          this.scheduler.unscheduleJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow));
-        } catch (final Exception ex) {
-          logger.info("error when unregistering job", ex);
+          if (this.scheduler
+              .unscheduleJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow))) {
+            logger.info("Flow {}.{} unregistered from scheduler", project.getName(), flow.getId());
+          }
+        } catch (final SchedulerException e) {
+          logger.error("Fail to unregister flow from scheduler {}.{}", project.getName(),
+              flow.getId(), e);
+          throw e;
         }
       }
     }
