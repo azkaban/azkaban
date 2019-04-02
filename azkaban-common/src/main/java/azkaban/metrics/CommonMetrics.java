@@ -150,5 +150,4 @@ public class CommonMetrics {
   public void addQueueWait(final long time) {
     this.queueWaitMeter.update(time);
   }
-
 }
