@@ -83,7 +83,7 @@ public class XmlUserManager implements UserManager {
 
     // Create a thread which listens to any change in user config file and
     // reloads it.
-    UserUtils.setupWatch(this.xmlPath, logger, this::parseXMLFile);
+    UserUtils.setupWatch(this.xmlPath, this::parseXMLFile);
   }
 
   private void parseXMLFile() {

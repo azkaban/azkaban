@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 
 public final class UserUtils {
 
+  private static final Logger log = Logger.getLogger(UserUtils.class);
   private UserUtils() {
 
   }
@@ -38,15 +39,22 @@ public final class UserUtils {
    * Creates a watch thread which listens to specified files' modification and reloads
    * configurations
    */
-  public static void setupWatch(final String fileName, Logger log, ParseConfigFile parser) {
+  static void setupWatch(final String fileName, ParseConfigFile parser) {
+    if (fileName == null || parser == null) {
+      throw new IllegalArgumentException("filename or parser is NULL.");
+    }
+
+    final File file = new File(fileName);
+    if (!file.exists()) {
+      throw new IllegalArgumentException("User provided file " + fileName + " does not exist.");
+    }
+
     Runnable runnable = () -> {
       WatchService watchService;
       Path path;
       try {
         watchService = FileSystems.getDefault().newWatchService();
-        final File file = new File(fileName);
-        final String dirPath = file.getParent();
-        path = Paths.get(dirPath);
+        path = Paths.get(fileName).getParent();
         path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY,
             StandardWatchEventKinds.ENTRY_CREATE);
       } catch (IOException e) {
@@ -66,14 +74,14 @@ public final class UserUtils {
         }
 
         for (WatchEvent<?> event : watchKey.pollEvents()) {
-          // Make sure the modification happened to user xml
+          // Make sure the modification happened to user config file
           @SuppressWarnings("unchecked")
           final Path name = ((WatchEvent<Path>)event).context();
           final Path child = path.resolve(name);
           if (!child.toString().equals(fileName)) {
             continue; // not user xml
           }
-          // reparse the XML
+          // reparse the config file
           log.info("Modification detected, reloading user config");
           parser.parseConfigFile();
         }
@@ -82,7 +90,7 @@ public final class UserUtils {
     };
 
     final Thread thread = new Thread(runnable);
-    System.out.println("Starting thread");
+    log.info("Starting configuration watching thread on config file " + fileName);
     thread.start();
   }
 }

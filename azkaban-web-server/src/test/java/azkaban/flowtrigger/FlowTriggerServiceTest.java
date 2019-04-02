@@ -25,7 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
@@ -56,7 +56,7 @@ public class FlowTriggerServiceTest {
       MockFlowTriggerInstanceLoader();
   private static TestDependencyCheck testDepCheck;
   private static FlowTriggerService flowTriggerService;
-  private static ExecutorManager executorManager;
+  private static ExecutorManagerAdapter executorManager;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -66,7 +66,7 @@ public class FlowTriggerServiceTest {
     when(pluginManager.getDependencyCheck(ArgumentMatchers.eq("TestDependencyCheck")))
         .thenReturn(testDepCheck);
 
-    executorManager = mock(ExecutorManager.class);
+    executorManager = mock(ExecutorManagerAdapter.class);
     when(executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
 
     final Emailer emailer = mock(Emailer.class);
