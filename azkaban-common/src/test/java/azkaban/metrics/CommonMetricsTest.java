@@ -19,7 +19,6 @@ package azkaban.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import azkaban.server.session.SessionCache;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import org.junit.Before;
@@ -30,7 +29,6 @@ public class CommonMetricsTest {
 
   private MetricsTestUtility testUtil;
   private CommonMetrics metrics;
-  private SessionCache sessionCache;
 
   @Before
   public void setUp() {
