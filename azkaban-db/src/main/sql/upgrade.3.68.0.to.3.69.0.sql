@@ -3,4 +3,4 @@
 -- use_executor column contains the id of the executor that should handle the execution.
 -- This id is a parameter an Azkaban admin can specify when launching a new execution.
 --
-ALTER TABLE execution_flows ADD COLUMN use_executor INT;
+ALTER TABLE execution_flows ADD COLUMN use_executor INT DEFAULT NULL;

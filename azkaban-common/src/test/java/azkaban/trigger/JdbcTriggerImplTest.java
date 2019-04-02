@@ -22,7 +22,7 @@ import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -131,7 +131,7 @@ public class JdbcTriggerImplTest {
     final DateTime now = DateTime.now();
     final ConditionChecker checker1 =
         new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(),
-            true, true, Utils.parsePeriodString("1h"), null);
+            true, true, TimeUtils.parsePeriodString("1h"), null);
     final Map<String, ConditionChecker> checkers1 =
         new HashMap<>();
     checkers1.put(checker1.getId(), checker1);

@@ -184,6 +184,8 @@ public class Constants {
     public static final String AZKABAN_EVENT_REPORTING_CLASS_PARAM =
         "azkaban.event.reporting.class";
     public static final String AZKABAN_EVENT_REPORTING_ENABLED = "azkaban.event.reporting.enabled";
+    // Comma separated list of properties to propagate from flow to Event reporter metadata
+    public static final String AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE = "azkaban.event.reporting.propagateProperties";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_BROKERS =
         "azkaban.event.reporting.kafka.brokers";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_TOPIC =
@@ -233,8 +235,9 @@ public class Constants {
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
 
-    // allowed max size of shared project dir in MB
-    public static final String PROJECT_DIR_MAX_SIZE_IN_MB = "azkaban.project_cache_max_size_in_mb";
+    // allowed max size of shared project dir (percentage of partition size), e.g 0.8
+    public static final String PROJECT_CACHE_SIZE_PERCENTAGE = "azkaban"
+        + ".project_cache_size_percentage_of_disk";
 
     // how many older versions of project files are kept in DB before deleting them
     public static final String PROJECT_VERSION_RETENTION = "project.version.retention";

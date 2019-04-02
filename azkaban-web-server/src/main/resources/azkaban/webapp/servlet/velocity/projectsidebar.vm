@@ -27,8 +27,10 @@
     </div>
   </div>
   <hr>
-  <p><strong>Created on</strong> $utils.formatDate($project.createTimestamp)</p>
-  <p><strong>Last modified by</strong> $utils.formatDate($project.lastModifiedTimestamp)</p>
+  <p><strong>Created on</strong> $TimeUtils.formatDateTime($project.createTimestamp)</p>
+  <p>
+    <strong>Last modified on</strong> $TimeUtils.formatDateTime($project.lastModifiedTimestamp)
+  </p>
   <p><strong>Modified by</strong> $project.lastModifiedUser</p>
 
   <hr>

@@ -27,7 +27,6 @@ import azkaban.sla.SlaType.ComponentType;
 import azkaban.sla.SlaType;
 import azkaban.sla.SlaType.StatusType;
 import azkaban.trigger.ConditionChecker;
-import azkaban.utils.Utils;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;

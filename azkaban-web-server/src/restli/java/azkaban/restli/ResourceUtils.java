@@ -22,8 +22,8 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
-import azkaban.utils.WebUtils;
 import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.servlet.WebUtils;
 import com.linkedin.restli.server.ResourceContext;
 import java.util.Map;
 
@@ -67,9 +67,7 @@ public class ResourceUtils {
     // the session
     final Map<String, String> headers = context.getRequestHeaders();
 
-    final WebUtils utils = new WebUtils();
-
-    return utils.getRealClientIpAddr(headers,
+    return WebUtils.getRealClientIpAddr(headers,
         (String) context.getRawRequestContext().getLocalAttr("REMOTE_ADDR"));
   }
 }

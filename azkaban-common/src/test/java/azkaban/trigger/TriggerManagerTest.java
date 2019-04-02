@@ -30,7 +30,7 @@ import azkaban.project.ProjectManager;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -183,7 +183,7 @@ public class TriggerManagerTest {
     // In future, we should use some smaller alternative.
     final ConditionChecker triggerChecker = new BasicTimeChecker("BasicTimeChecker_1",
         currMillis, DateTimeZone.UTC, true, true,
-        Utils.parsePeriodString("1s"), null);
+        TimeUtils.parsePeriodString("1s"), null);
 
     // End time is 3 seconds past now.
     final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,

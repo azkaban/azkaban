@@ -102,7 +102,7 @@
   #if($executions)
     #foreach($execution in $executions)
               <tr>
-                <td>$utils.formatDateTime($execution.startTime)</td>
+                <td>$TimeUtils.formatDateTime($execution.startTime)</td>
                 <td>${execution.status}</td>
                 <td><a href="${context}/reportal?view&amp;id=${project.id}&amp;execid=${execution.execId}">Data</a></td>
                 <td><a href="${context}/reportal?view&amp;logs&amp;id=${project.id}&amp;execid=${execution.execId}">Logs</a></td>
