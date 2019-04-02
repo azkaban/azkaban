@@ -17,15 +17,10 @@
 package azkaban.scheduler;
 
 import azkaban.executor.ExecutionOptions;
-import azkaban.sla.SlaOption;
 import azkaban.utils.Pair;
 import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
@@ -49,7 +44,6 @@ public class Schedule {
   private int scheduleId;
   private long nextExecTime;
   private ExecutionOptions executionOptions;
-  private List<SlaOption> slaOptions;
 
   public Schedule(final int scheduleId,
       final int projectId,
@@ -65,7 +59,6 @@ public class Schedule {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions executionOptions,
-      final List<SlaOption> slaOptions,
       final String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
@@ -81,20 +74,11 @@ public class Schedule {
     this.status = status;
     this.submitTime = submitTime;
     this.executionOptions = executionOptions;
-    this.slaOptions = slaOptions;
     this.cronExpression = cronExpression;
   }
 
   public ExecutionOptions getExecutionOptions() {
     return this.executionOptions;
-  }
-
-  public List<SlaOption> getSlaOptions() {
-    return this.slaOptions;
-  }
-
-  public void setSlaOptions(final List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
   }
 
   public void setFlowOptions(final ExecutionOptions executionOptions) {
@@ -245,55 +229,6 @@ public class Schedule {
       date = ce.getNextValidTimeAfter(date);
     }
     return new DateTime(date);
-  }
-
-  public Map<String, Object> optionsToObject() {
-    if (this.executionOptions != null) {
-      final HashMap<String, Object> schedObj = new HashMap<>();
-
-      if (this.executionOptions != null) {
-        schedObj.put("executionOptions", this.executionOptions.toObject());
-      }
-
-      if (this.slaOptions != null) {
-        final List<Object> slaOptionsObject = new ArrayList<>();
-        for (final SlaOption sla : this.slaOptions) {
-          slaOptionsObject.add(sla.toObject());
-        }
-        schedObj.put("slaOptions", slaOptionsObject);
-      }
-
-      return schedObj;
-    }
-    return null;
-  }
-
-  public void createAndSetScheduleOptions(final Object obj) {
-    final HashMap<String, Object> schedObj = (HashMap<String, Object>) obj;
-    if (schedObj.containsKey("executionOptions")) {
-      final ExecutionOptions execOptions =
-          ExecutionOptions.createFromObject(schedObj.get("executionOptions"));
-      this.executionOptions = execOptions;
-    } else if (schedObj.containsKey("flowOptions")) {
-      final ExecutionOptions execOptions =
-          ExecutionOptions.createFromObject(schedObj.get("flowOptions"));
-      this.executionOptions = execOptions;
-      execOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
-    } else {
-      this.executionOptions = new ExecutionOptions();
-      this.executionOptions
-          .setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
-    }
-
-    if (schedObj.containsKey("slaOptions")) {
-      final List<Object> slaOptionsObject = (List<Object>) schedObj.get("slaOptions");
-      final List<SlaOption> slaOptions = new ArrayList<>();
-      for (final Object slaObj : slaOptionsObject) {
-        slaOptions.add(SlaOption.fromObject(slaObj));
-      }
-      this.slaOptions = slaOptions;
-    }
-
   }
 
   public boolean isRecurring() {

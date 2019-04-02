@@ -1481,8 +1481,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
             .getInstance(TriggerManager.class);
         triggerManager
-            .addTrigger(FlowRunner.this.flow.getExecutionId(), SlaOption.getJobLevelSLAOptions(
-                FlowRunner.this.flow));
+            .addTrigger(FlowRunner.this.flow.getExecutionId(),
+                SlaOption.getJobLevelSLAOptions(flow.getExecutionOptions().getSlaOptions()));
       }
     }
   }
