@@ -37,7 +37,7 @@ public class CommonMetricsTest {
 
   private SessionCache newSessionCache(final CommonMetrics metrics) {
     final Props props = new Props();
-    return new SessionCache(props, metrics);
+    return new SessionCache(props);
   }
 
   @Before
