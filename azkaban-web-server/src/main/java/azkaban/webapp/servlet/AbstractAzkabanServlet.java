@@ -18,14 +18,13 @@ package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
-import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-import azkaban.utils.WebUtils;
+import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
@@ -52,7 +51,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   public static final String JSON_MIME_TYPE = "application/json";
   public static final String jarVersion = AbstractAzkabanServlet.class.getPackage()
       .getImplementationVersion();
-  protected static final WebUtils utils = new WebUtils();
   private static final String AZKABAN_SUCCESS_MESSAGE =
       "azkaban.success.message";
   private static final String AZKABAN_WARN_MESSAGE =
@@ -292,15 +290,17 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("note_type", NoteServlet.type);
     page.add("note_message", NoteServlet.message);
     page.add("note_url", NoteServlet.url);
-    page.add("utils", utils);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("size", getDisplayExecutionPageSize());
-    
+
+    page.add("System", System.class);
+    page.add("TimeUtils", TimeUtils.class);
+    page.add("WebUtils", WebUtils.class);
+
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());
     }
-    page.add("context", req.getContextPath());
 
     final String errorMsg = getErrorMessageFromCookie(req);
     page.add("error_message", errorMsg == null || errorMsg.isEmpty() ? "null"
@@ -345,7 +345,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("note_url", NoteServlet.url);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
-    page.add("context", req.getContextPath());
     page.add("size", getDisplayExecutionPageSize());
 
     // @TODO, allow more than one type of viewer. For time sake, I only install
@@ -379,6 +378,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   protected int getDisplayExecutionPageSize() {
-    return displayExecutionPageSize;
+    return this.displayExecutionPageSize;
   }
 }

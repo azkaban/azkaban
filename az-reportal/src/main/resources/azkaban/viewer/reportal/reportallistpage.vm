@@ -38,7 +38,7 @@
             "id" : "${project.id}",
             "title" : "$title",
             "time" : $project.createTimestamp,
-            "timeText" : "$utils.formatDateTime($project.createTimestamp)",
+            "timeText" : "$TimeUtils.formatDateTime($project.createTimestamp)",
             "user" : "$project.getMetadata().get("accessOwner")",
             "scheduled" : $ReportalHelper.isScheduledProject($project),
             "scheduledRepeating" : $ReportalHelper.isScheduledRepeatingProject($project),

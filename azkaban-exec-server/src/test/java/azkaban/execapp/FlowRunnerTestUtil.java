@@ -150,8 +150,10 @@ public class FlowRunnerTestUtil {
     return execFlow;
   }
 
-  public static void startThread(final FlowRunner runner) {
-    new Thread(runner).start();
+  public static Thread startThread(final FlowRunner runner) {
+    final Thread thread = new Thread(runner);
+    thread.start();
+    return thread;
   }
 
   public FlowRunner createFromFlowFile(final String flowName) throws Exception {

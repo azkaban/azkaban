@@ -96,15 +96,16 @@
                 </tr>
                 <tr>
                   <td class="property-key">Size</td>
-                  <td class="property-value-half">$utils.displayBytes(${status.len})</td>
+                  <td class="property-value-half">$WebUtils.displayBytes(${status.len})</td>
                   <td class="property-key">Block Size</td>
-                  <td class="property-value-half">$utils.displayBytes(${status.getBlockSize()})</td>
+                  <td class="property-value-half">$WebUtils.displayBytes(${status.getBlockSize()})
+                  </td>
                 </tr>
                 <tr>
                   <td class="property-key">Reps</td>
                   <td class="property-value-half">${status.getReplication()}</td>
                   <td class="property-key">Modified Date</td>
-                  <td class="property-value-half">$utils.formatDateTime(${status.modificationTime})</td>
+                  <td class="property-value-half">$TimeUtils.formatDateTime(${status.modificationTime})</td>
                 </tr>
               </tbody>
             </table>
