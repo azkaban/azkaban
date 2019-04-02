@@ -68,6 +68,7 @@ import org.joda.time.DateTime;
 
 /**
  * Executor manager used to manage the client side job.
+ * @deprecated replaced by {@link ExecutionController}
  */
 @Singleton
 @Deprecated
