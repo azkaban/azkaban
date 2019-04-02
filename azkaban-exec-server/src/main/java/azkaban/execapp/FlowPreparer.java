@@ -109,14 +109,9 @@ class FlowPreparer {
 
       final long flowPrepStartTime = System.currentTimeMillis();
 
-      // Download project to a temp dir if not exists in local cache.
-      final long start = System.currentTimeMillis();
 
       tempDir = downloadProjectIfNotExists(project, flow.getExecutionId());
 
-      log.info("Downloading zip file for project {} when preparing execution [execid {}] "
-              + "completed in {} second(s)", project, flow.getExecutionId(),
-          (System.currentTimeMillis() - start) / 1000);
 
       // With synchronization, only one thread is allowed to proceed to avoid complicated race
       // conditions which could arise when multiple threads are downloading/deleting/hard-linking
@@ -138,7 +133,11 @@ class FlowPreparer {
           // Rename temp dir to a proper project directory name.
           Files.move(tempDir.toPath(), project.getInstalledDir().toPath());
         }
+
+        final long start = System.currentTimeMillis();
         execDir = setupExecutionDir(project.getInstalledDir(), flow);
+        final long end = System.currentTimeMillis();
+        log.info("Setting up execution dir {} took {} sec(s)", execDir, (end - start) / 1000);
       }
 
       final long flowPrepCompletionTime = System.currentTimeMillis();
@@ -245,8 +244,17 @@ class FlowPreparer {
     }
 
     this.projectCacheHitRatio.markMiss();
+
+    final long start = System.currentTimeMillis();
+
+    // Download project to a temp dir if not exists in local cache.
     final File tempDir = createTempDir(proj);
     downloadAndUnzipProject(proj, tempDir);
+
+    log.info("Downloading zip file for project {} when preparing execution [execid {}] "
+            + "completed in {} second(s)", proj, execId,
+        (System.currentTimeMillis() - start) / 1000);
+
     return tempDir;
   }
 

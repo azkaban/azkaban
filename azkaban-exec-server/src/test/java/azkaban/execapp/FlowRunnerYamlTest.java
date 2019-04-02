@@ -1,18 +1,18 @@
 /*
-* Copyright 2018 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.execapp;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -59,13 +59,14 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     final HashMap<String, String> flowProps = new HashMap<>();
     this.runner = this.testUtil.createFromFlowMap(BASIC_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    FlowRunnerTestUtil.startThread(this.runner);
+    final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobB", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.RUNNING);
     InteractiveTestJob.getTestJob("jobC").succeedJob();
     assertStatus("jobC", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.SUCCEEDED);
+    thread.join();
   }
 
   /**
@@ -81,12 +82,13 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     final HashMap<String, String> flowProps = new HashMap<>();
     this.runner = this.testUtil.createFromFlowMap(BASIC_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    FlowRunnerTestUtil.startThread(this.runner);
+    final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobB", Status.SUCCEEDED);
     this.runner.kill();
     assertStatus("jobC", Status.KILLED);
     assertFlowStatus(flow, Status.KILLED);
+    thread.join();
   }
 
   @Ignore
@@ -96,7 +98,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     final HashMap<String, String> flowProps = new HashMap<>();
     this.runner = this.testUtil.createFromFlowMap(FAIL_BASIC_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    FlowRunnerTestUtil.startThread(this.runner);
+    final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     InteractiveTestJob.getTestJob("jobC").failJob();
     assertStatus("jobC", Status.FAILED);
     InteractiveTestJob.getTestJob("jobB").succeedJob();
@@ -105,6 +107,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("jobD", Status.CANCELLED);
     assertFlowStatus(flow, Status.FAILED);
+    thread.join();
   }
 
   @Test
@@ -113,13 +116,14 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     final HashMap<String, String> flowProps = new HashMap<>();
     this.runner = this.testUtil.createFromFlowMap(EMBEDDED_FLOW_NAME, flowProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    FlowRunnerTestUtil.startThread(this.runner);
+    final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     assertStatus("jobA", Status.SUCCEEDED);
     assertStatus("embedded_flow1:jobB", Status.SUCCEEDED);
     assertStatus("embedded_flow1:jobC", Status.SUCCEEDED);
     assertStatus("embedded_flow1", Status.SUCCEEDED);
     assertStatus("jobD", Status.SUCCEEDED);
     assertFlowStatus(flow, Status.SUCCEEDED);
+    thread.join();
   }
 
   @Test
@@ -134,11 +138,14 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
         .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     when(this.runner.getAlerterHolder().get("email")).thenReturn(mailAlerter);
-    FlowRunnerTestUtil.startThread(this.runner);
+    final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     InteractiveTestJob.getTestJob("jobA").failJob();
+    assertFlowStatus(flow, Status.FAILED_FINISHING);
     InteractiveTestJob.getTestJob("jobB").failJob();
+    assertFlowStatus(flow, Status.FAILED_FINISHING);
     InteractiveTestJob.getTestJob("jobC").succeedJob();
     assertFlowStatus(flow, Status.FAILED);
+    thread.join();
     verify(mailAlerter).alertOnError(flow, "Flow finished");
   }
 
@@ -154,13 +161,14 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
         .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
     when(this.runner.getAlerterHolder().get("email")).thenReturn(mailAlerter);
-    FlowRunnerTestUtil.startThread(this.runner);
+    final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     InteractiveTestJob.getTestJob("jobA").failJob();
     assertFlowStatus(flow, Status.FAILED_FINISHING);
     InteractiveTestJob.getTestJob("jobB").failJob();
     assertFlowStatus(flow, Status.FAILED_FINISHING);
     InteractiveTestJob.getTestJob("jobC").succeedJob();
     assertFlowStatus(flow, Status.FAILED);
+    thread.join();
     verify(mailAlerter, times(1)).alertOnFirstError(flow);
   }
 

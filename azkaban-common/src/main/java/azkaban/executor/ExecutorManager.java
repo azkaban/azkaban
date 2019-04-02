@@ -68,8 +68,10 @@ import org.joda.time.DateTime;
 
 /**
  * Executor manager used to manage the client side job.
+ * @deprecated replaced by {@link ExecutionController}
  */
 @Singleton
+@Deprecated
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
@@ -953,6 +955,7 @@ public class ExecutorManager extends EventHandler implements
       } else {
         final int projectId = exflow.getProjectId();
         exflow.setSubmitUser(userId);
+        exflow.setStatus(Status.PREPARING);
         exflow.setSubmitTime(System.currentTimeMillis());
 
         // Get collection of running flows given a project and a specific flow name

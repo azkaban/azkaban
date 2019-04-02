@@ -18,7 +18,6 @@ package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectImpl;
@@ -112,7 +111,12 @@ public class ExecutionFlowDaoTest {
   public void testUploadAndFetchExecutionFlows() throws Exception {
 
     final ExecutableFlow flow = createTestFlow();
+    flow.setSubmitUser("testUser1");
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitTime(System.currentTimeMillis());
+    flow.setExecutionId(0);
     this.executionFlowDao.uploadExecutableFlow(flow);
+    assertThat(flow.getExecutionId()).isNotEqualTo(0);
 
     final ExecutableFlow fetchFlow =
         this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
@@ -423,8 +427,8 @@ public class ExecutionFlowDaoTest {
   private ExecutableFlow createExecution(final Status status)
       throws IOException, ExecutorManagerException {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    flow.setSubmitTime(System.currentTimeMillis());
     this.executionFlowDao.uploadExecutableFlow(flow);
-    assertEquals(Status.PREPARING, flow.getStatus());
     flow.setStatus(status);
     this.executionFlowDao.updateExecutableFlow(flow);
     return flow;
@@ -502,13 +506,95 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testSelectAndUpdateExecution() throws Exception {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
-    flow.setExecutionId(1);
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitTime(System.currentTimeMillis());
     this.executionFlowDao.uploadExecutableFlow(flow);
     final Executor executor = this.executorDao.addExecutor("localhost", 12345);
     assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true))
         .isEqualTo(flow.getExecutionId());
     assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo
         (executor);
+  }
+
+  @Test
+  public void testSelectAndUpdateExecutionWithPriority() throws Exception {
+    // Selecting executions when DB is empty
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected no execution selected")
+        .isEqualTo(-1);
+
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow lowPriorityFlow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+
+    final ExecutableFlow highPriorityFlow = submitNewFlow("exectest1", "exec1", currentTime + 5,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 5);
+
+    final ExecutableFlow lowPriorityFlow2 = submitNewFlow("exectest1", "exec1", currentTime + 10,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected flow with highest priority")
+        .isEqualTo(highPriorityFlow.getExecutionId());
+
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected second flow with highest priority")
+        .isEqualTo(lowPriorityFlow2.getExecutionId());
+
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected flow with lowest priority")
+        .isEqualTo(lowPriorityFlow1.getExecutionId());
+
+    // Selecting executions when there are no more submitted flows left
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected no execution selected")
+        .isEqualTo(-1);
+  }
+
+  @Test
+  public void testSelectAndUpdateExecutionWithSamePriority() throws Exception {
+    // Selecting executions when DB is empty
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected no execution selected")
+        .isEqualTo(-1);
+
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow submittedFlow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+
+    final ExecutableFlow submittedFlow2 = submitNewFlow("exectest1", "exec1", currentTime + 5,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+
+    final ExecutableFlow submittedFlow3 = submitNewFlow("exectest1", "exec1", currentTime + 10,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected first flow submitted")
+        .isEqualTo(submittedFlow1.getExecutionId());
+
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected second flow submitted")
+        .isEqualTo(submittedFlow2.getExecutionId());
+
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected last flow submitted")
+        .isEqualTo(submittedFlow3.getExecutionId());
+
+    // Selecting executions when there are no more submitted flows left
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+        .as("Expected no execution selected")
+        .isEqualTo(-1);
+  }
+
+  private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
+      final long submitTime, final int flowPriority) throws IOException, ExecutorManagerException {
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow(projectName, flowName);
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitTime(submitTime);
+    flow.getExecutionOptions().getFlowParameters().put(ExecutionOptions.FLOW_PRIORITY,
+        String.valueOf(flowPriority));
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    return flow;
   }
 
   private void assertTwoFlowSame(final ExecutableFlow flow1, final ExecutableFlow flow2) {

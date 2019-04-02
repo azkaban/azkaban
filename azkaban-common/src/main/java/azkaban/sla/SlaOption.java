@@ -77,13 +77,19 @@ public class SlaOption {
   public SlaOption(final SlaType type,
       String flowName, String jobName, Duration duration, Set<SlaAction> actions,
       List<String> emails) {
+    Preconditions.checkNotNull(type, "type is null");
+    Preconditions.checkNotNull(actions, "actions is null");
     Preconditions.checkState(actions.size() > 0, "An action must be specified for the SLA");
     this.type = type;
     this.flowName = Preconditions.checkNotNull(flowName, "flowName is null");
     this.jobName = jobName;
     this.duration = Preconditions.checkNotNull(duration, "duration is null");
     this.actions = ImmutableSet.copyOf(actions);
-    this.emails = ImmutableList.copyOf(emails);
+    if (emails == null) {
+      this.emails = ImmutableList.of();
+    } else {
+      this.emails = ImmutableList.copyOf(emails);
+    }
   }
 
   /**

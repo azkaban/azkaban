@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -61,6 +62,8 @@ import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -98,6 +101,8 @@ import org.apache.log4j.PatternLayout;
  * Class that handles the running of a ExecutableFlow DAG
  */
 public class FlowRunner extends EventHandler implements Runnable {
+
+  private static Splitter SPLIT_ON_COMMA = Splitter.on(",").omitEmptyStrings().trimResults();
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
@@ -1366,6 +1371,26 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("executionId", String.valueOf(flow.getExecutionId()));
       metaData.put("startTime", String.valueOf(flow.getStartTime()));
       metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
+
+      // Propagate flow properties to Event Reporter
+      if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
+        // In Flow 2.0, flow has designated properties (defined at its own level in Yaml)
+        propagateMetadataFromProps(metaData, flow.getInputProps(), "flow", flow.getId(), logger);
+      } else {
+        // In Flow 1.0, flow properties are combination of shared properties in individual files (order not defined,
+        // .. because it's loaded by fs list order and put in a HashMap).
+        Props combinedProps = new Props();
+        for (Props sharedProp : flowRunner.sharedProps.values()) {
+          // sharedProp.getFlattened() gets its parent's props too, so we don't have to recurse
+          combinedProps.putAll(sharedProp.getFlattened());
+        }
+
+        // In Flow 1.0, flow's inputProps contains overrides, so apply that as override to combined shared props
+        combinedProps = new Props(combinedProps, flow.getInputProps());
+
+        propagateMetadataFromProps(metaData, combinedProps, "flow", flow.getId(), logger);
+      }
+
       return metaData;
     }
 
@@ -1405,6 +1430,10 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
       metaData.put("jobProxyUser",
           jobRunner.getProps().getString(JobProperties.USER_TO_PROXY, null));
+
+      // Propagate job properties to Event Reporter
+      propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(), logger);
+
       return metaData;
     }
 
@@ -1455,6 +1484,50 @@ public class FlowRunner extends EventHandler implements Runnable {
             .addTrigger(FlowRunner.this.flow.getExecutionId(),
                 SlaOption.getJobLevelSLAOptions(flow.getExecutionOptions().getSlaOptions()));
       }
+    }
+  }
+
+  /***
+   * Propagate properties (specified in {@code AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE})
+   * to metadata for event reporting.
+   * @param metaData Metadata map to update with properties.
+   * @param inputProps Input properties for flow or job.
+   * @param nodeType Flow or job.
+   * @param nodeName Flow or job name.
+   * @param logger Logger from invoking class for log sanity.
+   */
+  @VisibleForTesting
+  static void propagateMetadataFromProps(Map<String, String> metaData, Props inputProps, String nodeType,
+      String nodeName, Logger logger) {
+
+    // Backward compatibility: Unless user specifies, this will be absent from flows and jobs
+    // .. if so, do a no-op like before
+    if (!inputProps.containsKey(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE)) {
+      return;
+    }
+
+    if (null == metaData || null == inputProps || null == logger ||
+        Strings.isNullOrEmpty(nodeType) || Strings.isNullOrEmpty(nodeName)) {
+      throw new IllegalArgumentException("Input params should not be null or empty.");
+    }
+
+    final String propsToPropagate = inputProps.getString(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE);
+    if (Strings.isNullOrEmpty(propsToPropagate)) {
+      // Nothing to propagate
+      logger.info(String.format("No properties to propagate to metadata for %s: %s", nodeType, nodeName));
+      return;
+    } else {
+      logger.info(String.format("Propagating: %s to metadata for %s: %s", propsToPropagate, nodeType, nodeName));
+    }
+
+    final List<String> propsToPropagateList = SPLIT_ON_COMMA.splitToList(propsToPropagate);
+    for (String propKey : propsToPropagateList) {
+      if (!inputProps.containsKey(propKey)) {
+        logger.warn(String.format("%s does not contains: %s property; "
+            + "skipping propagation to metadata", nodeName, propKey));
+        continue;
+      }
+      metaData.put(propKey, inputProps.getString(propKey));
     }
   }
 }

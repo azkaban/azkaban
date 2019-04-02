@@ -126,8 +126,12 @@
 
               <td>${trigger.getSubmitUser()}</td>
 
-              <td>$utils.formatDate(${trigger.getQuartzTrigger().getStartTime().getTime()})</td>
-              <td>$utils.formatDate(${trigger.getQuartzTrigger().getNextFireTime().getTime()})</td>
+              <td>
+                $TimeUtils.formatDateTime(${trigger.getQuartzTrigger().getStartTime().getTime()})
+              </td>
+              <td>
+                $TimeUtils.formatDateTime(${trigger.getQuartzTrigger().getNextFireTime().getTime()})
+              </td>
 
               <td>${trigger.getFlowTrigger().getSchedule().getCronExpression()}</td>
 

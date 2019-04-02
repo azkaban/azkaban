@@ -18,6 +18,8 @@
 package azkaban.execapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import azkaban.utils.Utils;
 import java.io.File;
@@ -46,7 +48,11 @@ public class ProjectCacheCleanerTest {
 
   @Before
   public void setUp() throws Exception {
-    this.cacheDir = this.temporaryFolder.newFolder("projects");
+    this.cacheDir = spy(this.temporaryFolder.newFolder("projects"));
+
+    final long TEN_MB_IN_BYTE = 10 * 1024 * 1024;
+    when(this.cacheDir.getTotalSpace()).thenReturn(TEN_MB_IN_BYTE);
+
     final ClassLoader classLoader = getClass().getClassLoader();
 
     final long current = System.currentTimeMillis();
@@ -71,9 +77,8 @@ public class ProjectCacheCleanerTest {
    * There's still space in the cache, no deletion.
    */
   public void testNotDeleting() {
-    final Long projectDirMaxSizeInMB = 7L;
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir,
-        projectDirMaxSizeInMB);
+        0.7);
     cleaner.deleteProjectDirsIfNecessary(1);
 
     assertThat(this.cacheDir.list()).hasSize(3);
@@ -84,8 +89,7 @@ public class ProjectCacheCleanerTest {
    * Deleting everything in the cache to accommodate new item.
    */
   public void testDeletingAll() {
-    final Long projectDirMaxSize = 3L;
-    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.3);
     cleaner.deleteProjectDirsIfNecessary(7000000);
 
     assertThat(this.cacheDir.list()).hasSize(0);
@@ -96,8 +100,7 @@ public class ProjectCacheCleanerTest {
    * Deleting two least recently used items in the cache to accommodate new item.
    */
   public void testDeletingTwoLRUItems() {
-    final Long projectDirMaxSize = 7L;
-    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.7);
     cleaner.deleteProjectDirsIfNecessary(3000000);
     assertThat(this.cacheDir.list()).hasSize(1);
     assertThat(this.cacheDir.list()).contains("3.1");
@@ -108,8 +111,7 @@ public class ProjectCacheCleanerTest {
    * Deleting the least recently used item in the cache to accommodate new item.
    */
   public void testDeletingOneLRUItem() {
-    final Long projectDirMaxSize = 7L;
-    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, projectDirMaxSize);
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.7);
     cleaner.deleteProjectDirsIfNecessary(2000000);
     assertThat(this.cacheDir.list()).hasSize(2);
     assertThat(this.cacheDir.list()).contains("3.1");

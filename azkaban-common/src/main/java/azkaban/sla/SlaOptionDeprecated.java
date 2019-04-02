@@ -73,55 +73,6 @@ public class SlaOptionDeprecated {
     return new SlaOptionDeprecated(type, actions, info);
   }
 
-  public static String createSlaMessage(final SlaOptionDeprecated SlaOptionDeprecated, final ExecutableFlow flow) {
-    final String type = SlaOptionDeprecated.getType();
-    final int execId = flow.getExecutionId();
-    if (type.equals(SlaOptionDeprecated.TYPE_FLOW_FINISH)) {
-      final String flowName =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_FLOW_NAME);
-      final String duration =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_DURATION);
-      final String basicinfo =
-          "SLA Alert: Your flow " + flowName + " failed to FINISH within "
-              + duration + "<br/>";
-      final String expected =
-          "Here is details : <br/>" + "Flow " + flowName + " in execution "
-              + execId + " is expected to FINISH within " + duration + " from "
-              + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
-      final String actual = "Actual flow status is " + flow.getStatus();
-      return basicinfo + expected + actual;
-    } else if (type.equals(SlaOptionDeprecated.TYPE_FLOW_SUCCEED)) {
-      final String flowName =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_FLOW_NAME);
-      final String duration =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_DURATION);
-      final String basicinfo =
-          "SLA Alert: Your flow " + flowName + " failed to SUCCEED within "
-              + duration + "<br/>";
-      final String expected =
-          "Here is details : <br/>" + "Flow " + flowName + " in execution "
-              + execId + " expected to FINISH within " + duration + " from "
-              + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
-      final String actual = "Actual flow status is " + flow.getStatus();
-      return basicinfo + expected + actual;
-    } else if (type.equals(SlaOptionDeprecated.TYPE_JOB_FINISH)) {
-      final String jobName =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_JOB_NAME);
-      final String duration =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_DURATION);
-      return "SLA Alert: Your job " + jobName + " failed to FINISH within "
-          + duration + " in execution " + execId;
-    } else if (type.equals(SlaOptionDeprecated.TYPE_JOB_SUCCEED)) {
-      final String jobName =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_JOB_NAME);
-      final String duration =
-          (String) SlaOptionDeprecated.getInfo().get(SlaOptionDeprecated.INFO_DURATION);
-      return "SLA Alert: Your job " + jobName + " failed to SUCCEED within "
-          + duration + " in execution " + execId;
-    } else {
-      return "Unrecognized SLA type " + type;
-    }
-  }
 
   public String getType() {
     return this.type;
@@ -153,33 +104,6 @@ public class SlaOptionDeprecated {
     slaObj.put("type", this.type);
     slaObj.put("info", this.info);
     slaObj.put("actions", this.actions);
-
-    return slaObj;
-  }
-
-  public Object toWebObject() {
-    final HashMap<String, Object> slaObj = new HashMap<>();
-
-    if (this.type.equals(TYPE_FLOW_FINISH) || this.type.equals(TYPE_FLOW_SUCCEED)) {
-      slaObj.put("id", "");
-    } else {
-      slaObj.put("id", this.info.get(INFO_JOB_NAME));
-    }
-    slaObj.put("duration", this.info.get(INFO_DURATION));
-    if (this.type.equals(TYPE_FLOW_FINISH) || this.type.equals(TYPE_JOB_FINISH)) {
-      slaObj.put("rule", "FINISH");
-    } else {
-      slaObj.put("rule", "SUCCESS");
-    }
-    final List<String> actionsObj = new ArrayList<>();
-    for (final String act : this.actions) {
-      if (act.equals(ACTION_ALERT)) {
-        actionsObj.add("EMAIL");
-      } else {
-        actionsObj.add("KILL");
-      }
-    }
-    slaObj.put("actions", actionsObj);
 
     return slaObj;
   }

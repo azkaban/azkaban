@@ -20,7 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import azkaban.trigger.builtin.BasicTimeChecker;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import java.util.HashMap;
 import java.util.Map;
 import org.joda.time.DateTime;
@@ -52,7 +52,7 @@ public class BasicTimeCheckerTest {
     // get a new timechecker, start from now, repeat every minute. should
     // evaluate to false now, and true a minute later.
     final long baseTimeInMilliSeconds = 1000;
-    final ReadablePeriod period = Utils.parsePeriodString("10s");
+    final ReadablePeriod period = TimeUtils.parsePeriodString("10s");
 
     DateTimeUtils.setCurrentMillisFixed(baseTimeInMilliSeconds);
     final BasicTimeChecker timeChecker =

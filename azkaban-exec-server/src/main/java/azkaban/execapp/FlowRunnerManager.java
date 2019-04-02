@@ -212,11 +212,11 @@ public class FlowRunnerManager implements EventListener,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), this.globalProps,
             getClass().getClassLoader());
 
-    Long projectDirMaxSize = null;
     ProjectCacheCleaner cleaner = null;
     try {
-      projectDirMaxSize = props.getLong(ConfigurationKeys.PROJECT_DIR_MAX_SIZE_IN_MB);
-      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectDirMaxSize);
+      final double projectCacheSizePercentage =
+          props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
+      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
     } catch (final UndefinedPropertyException ex) {
     }
 
@@ -387,7 +387,7 @@ public class FlowRunnerManager implements EventListener,
     this.commonMetrics.addQueueWait(System.currentTimeMillis() -
         flow.getExecutableFlow().getSubmitTime());
 
-    final Timer.Context flowPrepTimerContext = this.commonMetrics.getFlowSetupTimerContext();
+    final Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
 
     try {
       if (this.active || isExecutorSpecified(flow)) {

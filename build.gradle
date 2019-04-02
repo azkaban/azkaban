@@ -179,9 +179,7 @@ subprojects {
         test {
             // Set maxParallelForks to a large number and let gradle to force it to a the
             // max-workers number when needed.
-            // NOTE! For some reason anything more than 1 doesn't work well for azkaban build:
-            // any maxParallelForks > 1 seems to make `./gradlew cleanTest test` ~4 times slower
-            maxParallelForks = 1
+            maxParallelForks = 12
         }
     }
 
