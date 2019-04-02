@@ -254,8 +254,9 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     Assert.assertEquals(project.isActive(), true);
     this.loader.removeProject(project, "testUser1");
-    final Project removedProject = this.loader.fetchProjectByName("mytestProject");
-    Assert.assertEquals(removedProject.isActive(), false);
+    assertThatThrownBy(() -> this.loader.fetchProjectByName("mytestProject"))
+        .isInstanceOf(ProjectManagerException.class)
+        .hasMessageContaining("No active project with name mytestProject exists in db.");
   }
 
   @Test

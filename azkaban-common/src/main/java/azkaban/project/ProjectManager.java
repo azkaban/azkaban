@@ -227,7 +227,7 @@ public class ProjectManager {
   }
 
   /**
-   * fetch active project from cache and inactive projects from db by project_name
+   * fetch active project by project name. Queries the cache first then db if not found
    */
   public Project getProject(final String name) {
     Project fetchedProject = this.projectsByName.get(name);
