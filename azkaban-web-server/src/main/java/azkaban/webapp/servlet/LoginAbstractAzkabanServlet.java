@@ -417,8 +417,12 @@ public abstract class LoginAbstractAzkabanServlet extends
       getApplication().getSessionCache().addSession(session);
       final Set<Session> sessionsOfSameIP =
           getApplication().getSessionCache().findSessionsByIP(session.getIp());
+
       // Check potential DDoS attack by bad hosts.
-      logger.info(sessionsOfSameIP.size() + " session(s) found from this IP " + session.getIp());
+      logger.info(
+          "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
+              .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP "
+              + session.getIp());
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
     } else {

@@ -50,13 +50,15 @@ public class UserManagerResource extends ResourceContextHolder {
 
     final Session session = createSession(username, password, ip);
 
-    logger.info("Session id created for user '" + username + "' and ip " + ip);
 
     final Set<Session> sessionsOfSameIP = getAzkaban().getSessionCache()
         .findSessionsByIP(session.getIp());
 
     // Check potential DDoS attack by bad hosts.
-    logger.info(sessionsOfSameIP.size() + " session(s) found from this IP " + session.getIp());
+    logger.info(
+        "Session id created for user '" + username + "' and ip " + ip + ", " + sessionsOfSameIP
+            .size() + " session(s) found from this IP " + session.getIp());
+
     return session.getSessionId();
   }
 
