@@ -116,6 +116,8 @@ public class XmlUserManagerTest {
     try {
       // Update the file
       Files.write(Paths.get(path), lines);
+
+      // Try for a minute polling every 2 seconds if the config reloaded
       try {
         for (int i = 0; i < 30; i++) {
           user8 = null;
@@ -127,20 +129,19 @@ public class XmlUserManagerTest {
         System.out.println("user8 has updated password. " + e.getMessage());
       }
 
+      // If config reloaded, above exception would hit resulting in user8 being null
       if (user8 != null) {
-        System.out.println("The config did not reload in 20 seconds");
-        fail("The config did not reload in 20 seconds");
+        fail("The config did not reload in 60 seconds");
         return;
       }
 
+      // Fetch the updated user8 info
       try {
         user8 = manager.getUser("user8", "passwordModified");
         if (!user8.getUserId().equals("user8")) {
-          System.out.println("Failed to get correct user. Expected user8, got " + user8.getUserId());
           fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
         }
       } catch (final UserManagerException e) {
-        System.out.println("Test failed " + e.getMessage());
         fail("Test failed " + e.getMessage());
       }
     } finally {
