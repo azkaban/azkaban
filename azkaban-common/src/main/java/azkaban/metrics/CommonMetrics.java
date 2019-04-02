@@ -19,7 +19,6 @@ package azkaban.metrics;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,7 +39,6 @@ public class CommonMetrics {
   public static final String SUBMIT_FLOW_SKIP_METER_NAME = "submit-flow-skip-meter";
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
   public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
-  public static final String SESSION_COUNT = "session-count";
 
   private Counter OOMWaitingJobCount;
   private final MetricsManager metricsManager;
@@ -71,10 +69,6 @@ public class CommonMetrics {
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
     this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
     this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
-  }
-
-  public <T> void addSessionCount(final Supplier<T> getSessionCount) {
-    this.metricsManager.addGauge(SESSION_COUNT, getSessionCount);
   }
 
   /**
