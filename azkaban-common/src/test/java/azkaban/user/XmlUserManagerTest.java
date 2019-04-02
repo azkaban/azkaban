@@ -111,20 +111,38 @@ public class XmlUserManagerTest {
         lines.add(line);
       }
     }
-    // Update the file
-    Files.write(Paths.get(path), lines);
 
-    // This should reload the XML file. Check for user8 again
+    // Make sure the file gets reverted back.
     try {
-      user8 = manager.getUser("user8", "password8");
-    } catch (final UserManagerException e) {
-      System.out.println("USer8 has updated password" + e.getMessage());
-    }
+      // Update the file
+      Files.write(Paths.get(path), lines);
+      try {
+        for (int i = 0; i < 30; i++) {
+          user8 = null;
+          user8 = manager.getUser("user8", "password8");
+          System.out.println("Config did not reload, sleep for 2 second, current time = " + (new java.util.Date()).toString());
+          Thread.sleep(2000);
+        }
+      } catch (final UserManagerException e) {
+        System.out.println("user8 has updated password. " + e.getMessage());
+      }
 
-    try {
-      user8 = manager.getUser("user8", "passwordModified");
-    } catch (final UserManagerException e) {
-      System.out.println("Test failed " + e.getMessage());
+      if (user8 != null) {
+        System.out.println("The config did not reload in 20 seconds");
+        fail("The config did not reload in 20 seconds");
+        return;
+      }
+
+      try {
+        user8 = manager.getUser("user8", "passwordModified");
+        if (!user8.getUserId().equals("user8")) {
+          System.out.println("Failed to get correct user. Expected user8, got " + user8.getUserId());
+          fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
+        }
+      } catch (final UserManagerException e) {
+        System.out.println("Test failed " + e.getMessage());
+        fail("Test failed " + e.getMessage());
+      }
     } finally {
       // Revert the file back
       Files.write(Paths.get(path), origLines);
