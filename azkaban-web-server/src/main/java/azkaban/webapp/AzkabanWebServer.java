@@ -181,8 +181,6 @@ public class AzkabanWebServer extends AzkabanServer {
     this.scheduler = requireNonNull(scheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
 
-    this.metricsManager.addGauge("session-count", this.sessionCache::getSessionCount);
-
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -608,6 +606,8 @@ public class AzkabanWebServer extends AzkabanServer {
      */
     this.metricsManager.addGauge("WEB-NumRunningFlows",
         () -> (this.executorManagerAdapter.getRunningFlows().size()));
+
+    this.metricsManager.addGauge("session-count", this.sessionCache::getSessionCount);
 
     logger.info("starting reporting Web Server Metrics");
     this.metricsManager.startReporting("AZ-WEB", this.props);
