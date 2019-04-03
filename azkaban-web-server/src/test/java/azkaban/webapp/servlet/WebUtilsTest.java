@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.utils;
+package azkaban.webapp.servlet;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,7 +23,7 @@ import java.util.Map;
 import org.junit.Test;
 
 /**
- * Test class for azkaban.utils.WebUtils
+ * Test class for azkaban.webapp.servlet.WebUtils
  */
 public class WebUtilsTest {
 
@@ -32,10 +32,7 @@ public class WebUtilsTest {
 
     final String clientIp = "127.0.0.1:10000";
     final Map<String, String> headers = new HashMap<>();
-
-    final WebUtils utils = new WebUtils();
-
-    final String ip = utils.getRealClientIpAddr(headers, clientIp);
+    final String ip = WebUtils.getRealClientIpAddr(headers, clientIp);
 
     assertEquals(ip, "127.0.0.1");
   }
@@ -45,10 +42,7 @@ public class WebUtilsTest {
 
     final String clientIp = "192.168.1.1";
     final Map<String, String> headers = new HashMap<>();
-
-    final WebUtils utils = new WebUtils();
-
-    final String ip = utils.getRealClientIpAddr(headers, clientIp);
+    final String ip = WebUtils.getRealClientIpAddr(headers, clientIp);
 
     assertEquals(ip, "192.168.1.1");
   }
@@ -62,9 +56,7 @@ public class WebUtilsTest {
 
     headers.put("X-Forwarded-For", upstreamIp);
 
-    final WebUtils utils = new WebUtils();
-
-    final String ip = utils.getRealClientIpAddr(headers, clientIp);
+    final String ip = WebUtils.getRealClientIpAddr(headers, clientIp);
 
     assertEquals(ip, "192.168.1.1");
   }
@@ -78,9 +70,7 @@ public class WebUtilsTest {
 
     headers.put("X-Forwarded-For", upstreamIp + ",127.0.0.1,55.55.55.55");
 
-    final WebUtils utils = new WebUtils();
-
-    final String ip = utils.getRealClientIpAddr(headers, clientIp);
+    final String ip = WebUtils.getRealClientIpAddr(headers, clientIp);
 
     assertEquals(ip, "192.168.1.1");
   }

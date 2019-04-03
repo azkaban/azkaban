@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-import azkaban.utils.Utils;
+import azkaban.utils.TimeUtils;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,7 +83,7 @@ public class ConditionTest {
     // period);
     final ConditionChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
-            now.getZone(), true, true, Utils.parsePeriodString(period), null);
+            now.getZone(), true, true, TimeUtils.parsePeriodString(period), null);
     System.out.println("checker id is " + timeChecker.getId());
 
     checkers.put(timeChecker.getId(), timeChecker);

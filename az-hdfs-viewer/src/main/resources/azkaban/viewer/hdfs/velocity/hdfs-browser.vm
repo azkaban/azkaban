@@ -74,7 +74,8 @@
     #set ($size = $paths.size() - 1)
               <a class="firstCrumb" href="${context}/hdfs/"> / </a>#if($size >= 0)#foreach($i in [0 ..$size])<a href="$context/hdfs${paths.get($i)}">${segments.get($i)}</a><span> / </span>#end #end
               <div class="pull-right">
-                <strong>$subdirs.size()</strong> items <strong>$utils.displayBytes($dirsize)</strong> total
+                <strong>$subdirs.size()</strong> items <strong>$WebUtils.displayBytes($dirsize)
+              </strong> total
               </div>
             </div>
             <table id="hdfs-dir" class="table table-condensed table-striped table-hover table-bordered">
@@ -109,14 +110,14 @@
         #if ($status.isDir())
                     &ndash;
         #else
-                    $utils.displayBytes(${status.len})
+                    $WebUtils.displayBytes(${status.len})
         #end
                   </td>
                   <td>
         #if ($status.isDir())
                     &ndash;
         #else
-                    $utils.displayBytes(${status.getBlockSize()})
+                    $WebUtils.displayBytes(${status.getBlockSize()})
         #end
                   </td>
                   <td>
@@ -126,7 +127,7 @@
                     ${status.getReplication()}
         #end
                   </td>
-                  <td>$utils.formatDateTime(${status.modificationTime})</td>
+                  <td>$TimeUtils.formatDateTime(${status.modificationTime})</td>
                 </tr>
       #end
     #else
