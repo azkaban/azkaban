@@ -284,6 +284,23 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     }
   }
 
+  @Test
+  public void flowEventMetadata() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+
+    FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
+    Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
+
+    Assert.assertEquals("Event metadata not created as expected.", "localhost", flowMetadata.get("azkabanWebserver"));
+    Assert.assertEquals("Event metadata not created as expected.", "unknown", flowMetadata.get("azkabanHost"));
+    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get("submitUser"));
+    Assert.assertEquals("Event metadata not created as expected.", "test", flowMetadata.get("projectName"));
+    Assert.assertEquals("Event metadata not created as expected.", "derived-member-data", flowMetadata.get("flowName"));
+  }
+
   private void assertAttempts(final String name, final int attempt) {
     final ExecutableNode node = this.runner.getExecutableFlow().getExecutableNode(name);
     if (node.getAttempt() != attempt) {
