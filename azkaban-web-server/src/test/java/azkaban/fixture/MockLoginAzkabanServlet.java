@@ -108,7 +108,7 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
     // Create a concrete SessionCache so a session will get persisted
     // and can get looked up
-    final SessionCache cache = new SessionCache(props, null);
+    final SessionCache cache = new SessionCache(props);
     when(app.getSessionCache()).thenReturn(cache);
 
     // Need a valid object here when processing a request
