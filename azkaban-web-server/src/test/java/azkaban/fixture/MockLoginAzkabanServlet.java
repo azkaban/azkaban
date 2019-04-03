@@ -37,6 +37,7 @@ import org.mortbay.jetty.Server;
 public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
+  private static final long serialVersionUID = 5872898140052356540L;
 
   public static HttpServletRequest getRequestWithNoUpstream(final String clientIp,
       final String sessionId,
