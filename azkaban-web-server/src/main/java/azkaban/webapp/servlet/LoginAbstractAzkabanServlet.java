@@ -421,8 +421,7 @@ public abstract class LoginAbstractAzkabanServlet extends
       // Check potential DDoS attack by bad hosts.
       logger.info(
           "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
-              .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP "
-              + session.getIp());
+              .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
     } else {

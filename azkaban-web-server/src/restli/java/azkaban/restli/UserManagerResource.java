@@ -56,8 +56,8 @@ public class UserManagerResource extends ResourceContextHolder {
 
     // Check potential DDoS attack by bad hosts.
     logger.info(
-        "Session id created for user '" + username + "' and ip " + ip + ", " + sessionsOfSameIP
-            .size() + " session(s) found from this IP " + session.getIp());
+        "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
+            .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
 
     return session.getSessionId();
   }
