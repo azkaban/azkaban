@@ -29,6 +29,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -83,7 +84,9 @@ public class XmlUserManager implements UserManager {
 
     // Create a thread which listens to any change in user config file and
     // reloads it.
-    UserUtils.setupWatch(this.xmlPath, this::parseXMLFile);
+    Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
+    parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
+    UserUtils.setupWatch(parseConfigFileMap);
   }
 
   private void parseXMLFile() {

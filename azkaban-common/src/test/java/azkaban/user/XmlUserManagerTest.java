@@ -123,7 +123,7 @@ public class XmlUserManagerTest {
 
       // Try for a minute polling every 2 seconds if the config reloaded
       try {
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 10; i++) {
           user8 = null;
           user8 = manager.getUser("user8", "password8");
           System.out.println("Config did not reload, sleep for 2 second, current time = " + (new java.util.Date()).toString());
@@ -153,6 +153,7 @@ public class XmlUserManagerTest {
       }
     } finally {
       // Revert the file back
+      System.out.println("Config reloaded successfully.");
       Files.write(Paths.get(path), origLines);
     }
   }
