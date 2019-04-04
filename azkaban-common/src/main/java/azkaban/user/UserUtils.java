@@ -1,5 +1,6 @@
 package azkaban.user;
 
+import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -55,8 +56,8 @@ public final class UserUtils {
       try {
         watchService = FileSystems.getDefault().newWatchService();
         path = Paths.get(fileName).getParent();
-        path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY,
-            StandardWatchEventKinds.ENTRY_CREATE);
+        path.register(watchService, new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
+            SensitivityWatchEventModifier.HIGH);
       } catch (IOException e) {
         // Ignore the IOException
         log.warn("IOException while setting up watch on conf"

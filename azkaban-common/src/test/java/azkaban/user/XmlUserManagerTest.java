@@ -23,6 +23,7 @@ import azkaban.utils.UndefinedPropertyException;
 import com.google.common.io.Resources;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -103,7 +104,9 @@ public class XmlUserManagerTest {
     // TODO : djaiswal : Find a better way to modify XML
     List<String> lines = new ArrayList<>();
     List<String> origLines = new ArrayList<>();
-    for (String line : Files.readAllLines(Paths.get(path))) {
+    Path filePath = Paths.get(path);
+    System.out.println("File modification time = " + Files.getLastModifiedTime(filePath).toString());
+    for (String line : Files.readAllLines(filePath)) {
       origLines.add(line);
       if (line.contains("password8")) {
         lines.add(line.replace("password8", "passwordModified"));
@@ -115,7 +118,8 @@ public class XmlUserManagerTest {
     // Make sure the file gets reverted back.
     try {
       // Update the file
-      Files.write(Paths.get(path), lines);
+      Files.write(filePath, lines);
+      System.out.println("File modification time after write = " + Files.getLastModifiedTime(filePath).toString());
 
       // Try for a minute polling every 2 seconds if the config reloaded
       try {
@@ -131,6 +135,7 @@ public class XmlUserManagerTest {
 
       // If config reloaded, above exception would hit resulting in user8 being null
       if (user8 != null) {
+        System.out.println("The config did not reload in 60 seconds");
         fail("The config did not reload in 60 seconds");
         return;
       }
@@ -139,9 +144,11 @@ public class XmlUserManagerTest {
       try {
         user8 = manager.getUser("user8", "passwordModified");
         if (!user8.getUserId().equals("user8")) {
+          System.out.println("Failed to get correct user. Expected user8, got " + user8.getUserId());
           fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
         }
       } catch (final UserManagerException e) {
+        System.out.println("Test failed " + e.getMessage());
         fail("Test failed " + e.getMessage());
       }
     } finally {
