@@ -221,16 +221,17 @@ public class LockingCacheTest {
     final CyclicBarrier barrier = new CyclicBarrier(5);
     for (int i = 0; i < 5; i++) {
       executor.execute(() -> {
-        for (int key = 10; key < 15; key++)
-        try (LockingCacheEntry<String> entry = cache.get(key)) {
-          assertThat(entry.getValue().length()).isEqualTo(key);
-          barrier.await();
-        } catch (InterruptedException e) {
-          executor.shutdownNow();
-          // Preserve interrupt status
-          Thread.currentThread().interrupt();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+        for (int key = 10; key < 15; key++) {
+          try (LockingCacheEntry<String> entry = cache.get(key)) {
+            assertThat(entry.getValue().length()).isEqualTo(key);
+            barrier.await();
+          } catch (InterruptedException e) {
+            executor.shutdownNow();
+            // Preserve interrupt status
+            Thread.currentThread().interrupt();
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
         }
       });
     }
