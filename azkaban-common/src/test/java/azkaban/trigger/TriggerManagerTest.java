@@ -211,8 +211,10 @@ public class TriggerManagerTest {
 
   private List<TriggerAction> getTriggerActions() {
     final List<TriggerAction> actions = new ArrayList<>();
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setSlaOptions(Collections.emptyList());
     final TriggerAction act = new ExecuteFlowAction("fuu", 1, "test-project", "test-flow",
-        "test-user", new ExecutionOptions(), Collections.emptyList());
+        "test-user", executionOptions);
     actions.add(act);
     return actions;
   }

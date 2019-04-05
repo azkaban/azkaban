@@ -50,18 +50,15 @@ public class ExecuteFlowAction implements TriggerAction {
   private String flowName;
   private String submitUser;
   private ExecutionOptions executionOptions = new ExecutionOptions();
-  private List<SlaOption> slaOptions;
 
   public ExecuteFlowAction(final String actionId, final int projectId, final String projectName,
-      final String flowName, final String submitUser, final ExecutionOptions executionOptions,
-      final List<SlaOption> slaOptions) {
+      final String flowName, final String submitUser, final ExecutionOptions executionOptions) {
     this.actionId = actionId;
     this.projectId = projectId;
     this.projectName = projectName;
     this.flowName = flowName;
     this.submitUser = submitUser;
     this.executionOptions = executionOptions;
-    this.slaOptions = slaOptions;
   }
 
   public static void setLogger(final Logger logger) {
@@ -110,16 +107,16 @@ public class ExecuteFlowAction implements TriggerAction {
       executionOptions =
           ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
     }
-    List<SlaOption> slaOptions = null;
     if (jsonObj.containsKey("slaOptions")) {
-      slaOptions = new ArrayList<>();
+      ArrayList<SlaOption> slaOptions = new ArrayList<>();
       final List<Object> slaOptionsObj = (List<Object>) jsonObj.get("slaOptions");
       for (final Object slaObj : slaOptionsObj) {
         slaOptions.add(SlaOption.fromObject(slaObj));
       }
+      executionOptions.setSlaOptions(slaOptions);
     }
     return new ExecuteFlowAction(actionId, projectId, projectName, flowName,
-        submitUser, executionOptions, slaOptions);
+        submitUser, executionOptions);
   }
 
   public String getProjectName() {
@@ -158,14 +155,6 @@ public class ExecuteFlowAction implements TriggerAction {
     this.executionOptions = executionOptions;
   }
 
-  public List<SlaOption> getSlaOptions() {
-    return this.slaOptions;
-  }
-
-  protected void setSlaOptions(final List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
-  }
-
   private ExecutableFlow getPreviousExecution(final int projectId, final String flowId)
       throws ExecutorManagerException {
     final List<ExecutableFlow> executableFlows = new ArrayList<>();
@@ -195,9 +184,9 @@ public class ExecuteFlowAction implements TriggerAction {
     if (this.executionOptions != null) {
       jsonObj.put("executionOptions", this.executionOptions.toObject());
     }
-    if (this.slaOptions != null) {
+    if (this.executionOptions.getSlaOptions() != null) {
       final List<Object> slaOptionsObj = new ArrayList<>();
-      for (final SlaOption sla : this.slaOptions) {
+      for (final SlaOption sla : this.executionOptions.getSlaOptions()) {
         slaOptionsObj.add(sla.toObject());
       }
       jsonObj.put("slaOptions", slaOptionsObj);
@@ -227,11 +216,8 @@ public class ExecuteFlowAction implements TriggerAction {
     if (!this.executionOptions.isSuccessEmailsOverridden()) {
       this.executionOptions.setSuccessEmails(flow.getSuccessEmails());
     }
-    exflow.setExecutionOptions(this.executionOptions);
 
-    if (this.slaOptions != null && this.slaOptions.size() > 0) {
-      exflow.setSlaOptions(this.slaOptions);
-    }
+    exflow.setExecutionOptions(this.executionOptions);
 
     if (this.executionOptions.getSkipIfPreviousExecutionFailed()) {
       final ExecutableFlow previous = getPreviousExecution(this.projectId, flow.getId());

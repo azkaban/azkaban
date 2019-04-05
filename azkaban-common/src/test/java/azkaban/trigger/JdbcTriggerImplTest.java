@@ -141,7 +141,7 @@ public class JdbcTriggerImplTest {
     final List<TriggerAction> actions = new ArrayList<>();
     final TriggerAction action =
         new ExecuteFlowAction("executeAction", 1, projName, flowName,
-            "azkaban", new ExecutionOptions(), null);
+            "azkaban", new ExecutionOptions());
     actions.add(action);
 
     return new Trigger.TriggerBuilder("azkaban",

@@ -290,7 +290,7 @@ public class Reportal {
           flow.getId(), "ready", firstSchedTime.getMillis(), endScheduleTime,
           firstSchedTime.getZone(), period, DateTime.now().getMillis(),
           firstSchedTime.getMillis(), firstSchedTime.getMillis(),
-          user.getUserId(), options, null);
+          user.getUserId(), options);
     }
   }
 

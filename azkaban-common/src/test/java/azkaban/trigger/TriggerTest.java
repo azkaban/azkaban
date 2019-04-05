@@ -65,7 +65,7 @@ public class TriggerTest {
     final List<TriggerAction> actions = new ArrayList<>();
     final TriggerAction action =
         new ExecuteFlowAction("executeAction", 1, "testProj", "testFlow",
-            "azkaban", new ExecutionOptions(), null);
+            "azkaban", new ExecutionOptions());
     actions.add(action);
 
     final Trigger t = new Trigger.TriggerBuilder("azkaban",

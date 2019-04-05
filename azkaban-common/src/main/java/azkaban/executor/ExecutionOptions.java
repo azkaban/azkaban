@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
@@ -72,7 +73,9 @@ public class ExecutionOptions {
   private boolean skipIfPreviousExecutionFailed = false;
   private Map<String, String> flowParameters = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
-  private List<Object> initiallyDisabledJobs = new ArrayList<>();
+  private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
+  private List<SlaOption> slaOptions = new ArrayList<>();
+
 
   public static ExecutionOptions createFromObject(final Object obj) {
     if (obj == null || !(obj instanceof Map)) {
@@ -98,7 +101,8 @@ public class ExecutionOptions {
         wrapper.getString(CONCURRENT_OPTION, options.concurrentOption);
 
     if (wrapper.containsKey(DISABLE)) {
-      options.initiallyDisabledJobs = wrapper.<Object>getList(DISABLE);
+      options.initiallyDisabledJobs = DisabledJob.fromDeprecatedObjectList(wrapper
+          .<Object>getList(DISABLE));
     }
 
     if (optionsMap.containsKey(MAIL_CREATOR)) {
@@ -130,6 +134,10 @@ public class ExecutionOptions {
 
     options.setSkipIfPreviousExecutionFailed(wrapper.getBool(SKIP_IF_PREVIOUS_EXECUTION_FAILED,
         false));
+
+    // Note: slaOptions was originally outside of execution options, so it parsed and set
+    // separately for the original JSON format. New formats should include slaOptions as
+    // part of execution options.
 
     return options;
   }
@@ -234,11 +242,11 @@ public class ExecutionOptions {
     return this.queueLevel;
   }
 
-  public List<Object> getDisabledJobs() {
+  public List<DisabledJob> getDisabledJobs() {
     return new ArrayList<>(this.initiallyDisabledJobs);
   }
 
-  public void setDisabledJobs(final List<Object> disabledJobs) {
+  public void setDisabledJobs(final List<DisabledJob> disabledJobs) {
     this.initiallyDisabledJobs = disabledJobs;
   }
 
@@ -258,6 +266,10 @@ public class ExecutionOptions {
     this.skipIfPreviousExecutionFailed = skipIfPreviousExecutionFailed;
   }
 
+  public List<SlaOption> getSlaOptions() { return slaOptions; }
+
+  public void setSlaOptions(final List<SlaOption> slaOptions) { this.slaOptions = slaOptions; }
+
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -271,7 +283,7 @@ public class ExecutionOptions {
     flowOptionObj.put(PIPELINE_EXECID, this.pipelineExecId);
     flowOptionObj.put(QUEUE_LEVEL, this.queueLevel);
     flowOptionObj.put(CONCURRENT_OPTION, this.concurrentOption);
-    flowOptionObj.put(DISABLE, this.initiallyDisabledJobs);
+    flowOptionObj.put(DISABLE, DisabledJob.toDeprecatedObjectList(this.initiallyDisabledJobs));
     flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, this.failureEmailsOverride);
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, this.successEmailsOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
