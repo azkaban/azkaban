@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.Test;
 
+/** Test the {@link LockingCache} */
 public class LockingCacheTest {
   private static final int TIMEOUT_SECONDS = 4;
 

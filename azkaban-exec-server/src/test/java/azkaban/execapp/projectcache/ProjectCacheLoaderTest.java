@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutorManagerException;
@@ -19,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+/** Test the {@link ProjectCacheLoader} */
 public class ProjectCacheLoaderTest {
   public static final String SAMPLE_FLOW_01 = "sample_flow_01";
 
@@ -89,84 +89,4 @@ public class ProjectCacheLoaderTest {
     assertThat(project.getDirectory().exists()).isFalse();
 
   }
-/*
-  @Test
-  public void testSetupFlowByMultipleThreads() {
-    final int threadNum = 4;
-
-    final ExecutableFlow[] executableFlows = new ExecutableFlow[]{
-        mockExecutableFlow(1, 12, 34),
-        mockExecutableFlow(2, 12, 34),
-        mockExecutableFlow(3, 12, 34),
-        mockExecutableFlow(4, 12, 34)
-    };
-
-    final ExecutorService service = Executors.newFixedThreadPool(threadNum);
-
-    final List<Future> futures = new ArrayList<>();
-    for (int i = 0; i < threadNum; i++) {
-      final int finalI = i;
-      futures.add(service.submit(() -> {
-        assertThatCode(() -> this.instance.setup(executableFlows[finalI])
-        ).doesNotThrowAnyException();
-      }));
-    }
-
-    for (final Future future : futures) {
-      assertThatCode(() -> future.get()).doesNotThrowAnyException();
-    }
-
-    service.shutdownNow();
-    for (final ExecutableFlow flow : executableFlows) {
-      final File execDir = new File(this.executionsDir, String.valueOf(flow.getExecutionId()));
-      assertTrue(execDir.exists());
-      assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
-    }
-  }
-
-  @Test
-  public void testSetupFlow() throws ExecutorManagerException {
-    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
-    when(executableFlow.getExecutionId()).thenReturn(12345);
-    when(executableFlow.getProjectId()).thenReturn(12);
-    when(executableFlow.getVersion()).thenReturn(34);
-
-    this.instance.setup(executableFlow);
-    final File execDir = new File(this.executionsDir, "12345");
-    assertTrue(execDir.exists());
-    assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
-  }
-
-
-  @Test
-  public void testProjectsCacheMetricsZeroHit() {
-    //given
-    final ProjectCacheMetrics cacheMetrics = new ProjectCacheMetrics();
-
-    //when zero hit and zero miss then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
-
-    //when
-    cacheMetrics.incrementCacheMiss();
-    //then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0);
-  }
-
-  @Test
-  public void testProjectsCacheMetricsHit() {
-    //given
-    final ProjectCacheMetrics cacheMetrics = new ProjectCacheMetrics();
-
-    //when one hit
-    cacheMetrics.incrementCacheHit();
-    //then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(1);
-
-    //when one miss
-    cacheMetrics.incrementCacheMiss();
-    //then
-    assertThat(cacheMetrics.getHitRatio()).isEqualTo(0.5);
-  }
-*/
-
 }

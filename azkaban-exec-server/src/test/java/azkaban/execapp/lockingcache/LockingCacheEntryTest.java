@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.Test;
 
+/** Test the {@link LockingCacheEntry} */
 public class LockingCacheEntryTest {
 
   @Test
