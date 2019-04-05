@@ -49,7 +49,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
 import org.apache.kafka.log4jappender.KafkaLog4jAppender;
 import org.apache.log4j.Appender;
 import org.apache.log4j.EnhancedPatternLayout;
@@ -109,7 +108,7 @@ public class JobRunner extends EventHandler implements Runnable {
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
-    final String jobLogLayout = props.getString(
+    final String jobLogLayout = this.props.getString(
         JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
@@ -734,7 +733,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
     String jobJVMArgs =
         String.format(
-            "-Dazkaban.flowid=%s -Dazkaban.execid=%s -Dazkaban.jobid=%s",
+            "'-Dazkaban.flowid=%s' '-Dazkaban.execid=%s' '-Dazkaban.jobid=%s'",
             flowName, this.executionId, jobId);
 
     final String previousJVMArgs = this.props.get(JavaProcessJob.JVM_PARAMS);

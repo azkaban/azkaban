@@ -59,7 +59,7 @@ public class JavaProcessJob extends ProcessJob {
     command += getJVMArguments() + " ";
     command += "-Xms" + getInitialMemorySize() + " ";
     command += "-Xmx" + getMaxMemorySize() + " ";
-    command += "-cp " + createArguments(getClassPaths(), ":") + " ";
+    command += getClassPathParam();
     command += getJavaClass() + " ";
     command += getMainArguments();
 
@@ -73,7 +73,8 @@ public class JavaProcessJob extends ProcessJob {
   protected String getClassPathParam() {
     final List<String> classPath = getClassPaths();
     if (classPath == null || classPath.size() == 0) {
-      return "";
+      throw new IllegalArgumentException(
+          "No classpath defined and no .jar files found in job directory. Can't run java command.");
     }
 
     return "-cp " + createArguments(classPath, ":") + " ";
@@ -94,16 +95,14 @@ public class JavaProcessJob extends ProcessJob {
       }
     }
 
-    if (classPaths == null) {
+    if (classPaths == null || classPaths.isEmpty()) {
       final File path = new File(getPath());
-      // File parent = path.getParentFile();
       getLog().info(
           "No classpath specified. Trying to load classes from " + path);
 
       if (path != null) {
         for (final File file : path.listFiles()) {
           if (file.getName().endsWith(".jar")) {
-            // log.info("Adding to classpath:" + file.getName());
             classpathList.add(file.getName());
           }
         }

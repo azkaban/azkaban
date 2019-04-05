@@ -57,7 +57,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String submitUser;
   private String executionPath;
   private ExecutionOptions executionOptions;
-  private List<SlaOption> slaOptions = new ArrayList<>();
   private double azkabanFlowVersion;
 
   public ExecutableFlow(final Project project, final Flow flow) {
@@ -106,14 +105,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setExecutionOptions(final ExecutionOptions options) {
     this.executionOptions = options;
-  }
-
-  public List<SlaOption> getSlaOptions() {
-    return this.slaOptions;
-  }
-
-  public void setSlaOptions(final List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
   }
 
   @Override
@@ -248,7 +239,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SUBMITTIME_PARAM, this.submitTime);
 
     final List<Map<String, Object>> slaOptions = new ArrayList<>();
-    this.getSlaOptions().stream().forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
+    this.executionOptions.getSlaOptions().stream()
+        .forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
@@ -291,7 +283,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
       final List<SlaOption> slaOptions =
           flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
               .collect(Collectors.toList());
-      this.setSlaOptions(slaOptions);
+      this.executionOptions.setSlaOptions(slaOptions);
     }
   }
 

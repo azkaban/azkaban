@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -23,6 +24,10 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.spi.EventType;
+import azkaban.utils.Props;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -244,6 +249,56 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertAttempts("job-retry-fail", 2);
 
     waitForAndAssertFlowStatus(Status.FAILED);
+  }
+
+  @Test
+  public void addMetadataFromProperties() throws Exception {
+    Map<String, String> metadataMap = new HashMap<>();
+    Props inputProps = new Props();
+    inputProps.put(Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE, "my.prop1,my.prop2");
+    inputProps.put("my.prop1", "value1");
+    inputProps.put("my.prop2", "value2");
+
+    // Test happy path
+    FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
+        Logger.getLogger(FlowRunnerTest.class));
+
+    Assert.assertEquals("Metadata not propagated correctly.", metadataMap.size(), 2);
+    Assert.assertEquals("Metadata not propagated correctly.", "value1", metadataMap.get("my.prop1"));
+    Assert.assertEquals("Metadata not propagated correctly.", "value2", metadataMap.get("my.prop2"));
+
+    // Test backward compatibility: pass no value for AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE and expect
+    // .. nothing
+    metadataMap = new HashMap<>();
+    FlowRunner.propagateMetadataFromProps(metadataMap, new Props(), "flow", "dummyFlow",
+        Logger.getLogger(FlowRunnerTest.class));
+    Assert.assertEquals("Metadata propagation backward compatibility has issues.", metadataMap.size(), 0);
+
+    // Test negative path
+    try {
+      FlowRunner.propagateMetadataFromProps(null, inputProps, "flow", "dummyFlow",
+          Logger.getLogger(FlowRunnerTest.class));
+      Assert.fail("Metadata propagation did not fail with bad data.");
+    } catch (Exception e) {
+      // Ignore exception, since its expected.
+    }
+  }
+
+  @Test
+  public void flowEventMetadata() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+
+    FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
+    Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
+
+    Assert.assertEquals("Event metadata not created as expected.", "localhost", flowMetadata.get("azkabanWebserver"));
+    Assert.assertEquals("Event metadata not created as expected.", "unknown", flowMetadata.get("azkabanHost"));
+    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get("submitUser"));
+    Assert.assertEquals("Event metadata not created as expected.", "test", flowMetadata.get("projectName"));
+    Assert.assertEquals("Event metadata not created as expected.", "derived-member-data", flowMetadata.get("flowName"));
   }
 
   private void assertAttempts(final String name, final int attempt) {

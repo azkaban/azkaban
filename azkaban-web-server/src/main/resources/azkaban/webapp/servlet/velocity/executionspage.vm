@@ -107,12 +107,15 @@
               </td>
               <td>${flow.getFirst().submitUser}</td>
               <td>${flow.getFirst().proxyUsers}</td>
-              <td>$utils.formatDate(${flow.getFirst().startTime})</td>
-              <td>$utils.formatDate(${flow.getFirst().endTime})</td>
-              <td>$utils.formatDuration(${flow.getFirst().startTime}, ${flow.getFirst().endTime})</td>
+              <td>$TimeUtils.formatDateTime(${flow.getFirst().startTime})</td>
+              <td>$TimeUtils.formatDateTime(${flow.getFirst().endTime})</td>
               <td>
-                <div
-                    class="status ${flow.getFirst().status}">$utils.formatStatus(${flow.getFirst().status})</div>
+                $TimeUtils.formatDuration(${flow.getFirst().startTime}, ${flow.getFirst().endTime})
+              </td>
+              <td>
+                <div class="status ${flow.getFirst().status}">
+                  $WebUtils.formatStatus(${flow.getFirst().status})
+                </div>
               </td>
               <td>
                 <button type="button" id="cancelbtn" class="btn btn-danger btn-sm"
@@ -169,11 +172,11 @@
               </td>
               <td>${flow.submitUser}</td>
               <td>${flow.proxyUsers}</td>
-              <td>$utils.formatDate(${flow.startTime})</td>
-              <td>$utils.formatDate(${flow.endTime})</td>
-              <td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+              <td>$TimeUtils.formatDateTime(${flow.startTime})</td>
+              <td>$TimeUtils.formatDateTime(${flow.endTime})</td>
+              <td>$TimeUtils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
               <td>
-                <div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div>
+                <div class="status ${flow.status}">$WebUtils.formatStatus(${flow.status})</div>
               </td>
               <td></td>
             </tr>

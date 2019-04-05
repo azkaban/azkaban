@@ -549,20 +549,19 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
       // check if we get the correct FS, and most importantly, the conf
       logger.info("Getting DFS token from " + fs.getUri());
-      final Token<?> fsToken =
-          fs.getDelegationToken(getMRTokenRenewerInternal(new JobConf())
-              .toString());
-      if (fsToken == null) {
+      Token<?>[] fsTokens =
+          fs.addDelegationTokens(getMRTokenRenewerInternal(new JobConf()).toString(), cred);
+      if (fsTokens.length == 0) {
         logger.error("Failed to fetch DFS token for ");
         throw new HadoopSecurityManagerException(
             "Failed to fetch DFS token for " + userToProxy);
       }
 
-      logger.info(String
-          .format("DFS token from namenode pre-fetched, token kind: %s, token service: %s",
-              fsToken.getKind(), fsToken.getService()));
-
-      cred.addToken(fsToken.getService(), fsToken);
+      for (Token<?> fsToken : fsTokens) {
+        logger.info(String.format(
+            "DFS token from namenode pre-fetched, token kind: %s, token service: %s",
+            fsToken.getKind(), fsToken.getService()));
+      }
 
       // getting additional name nodes tokens
       final String otherNamenodes = props.get(

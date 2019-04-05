@@ -108,7 +108,7 @@
                 </h4>
                 <p class="project-description">$esc.html($project.description)</p>
                 <p class="project-last-modified">Last modified on
-                  <strong>$utils.formatDate($project.lastModifiedTimestamp)</strong> by
+                  <strong>$TimeUtils.formatDateTime($project.lastModifiedTimestamp)</strong> by
                   <strong>$project.lastModifiedUser</strong>.</p>
               </div>
               <div class="project-expander" id="${project.name}">

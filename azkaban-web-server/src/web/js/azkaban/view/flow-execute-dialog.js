@@ -116,8 +116,8 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var pipelineExecutionId = this.model.get("pipelineExecution");
     var queueLevel = this.model.get("queueLevel");
     var nodeStatus = this.model.get("nodeStatus");
-    var overrideSuccessEmails = this.model.get("failureEmailsOverride");
-    var overrideFailureEmails = this.model.get("successEmailsOverride");
+    var overrideSuccessEmails = this.model.get("successEmailsOverride");
+    var overrideFailureEmails = this.model.get("failureEmailsOverride");
 
     if (overrideSuccessEmails) {
       $('#override-success-emails').attr('checked', true);

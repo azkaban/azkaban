@@ -18,9 +18,9 @@ package azkaban.webapp;
 
 import azkaban.metrics.MetricsManager;
 import com.codahale.metrics.Meter;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -62,4 +62,5 @@ public class WebMetrics {
   public void setFetchLogLatency(final long milliseconds) {
     this.logFetchLatency.set(milliseconds);
   }
+
 }

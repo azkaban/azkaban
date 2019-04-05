@@ -115,11 +115,11 @@
                   <a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
                 </td>
                 <td>${flow.submitUser}</td>
-                <td>$utils.formatDate(${flow.startTime})</td>
-                <td>$utils.formatDate(${flow.endTime})</td>
-                <td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+                <td>$TimeUtils.formatDateTime(${flow.startTime})</td>
+                <td>$TimeUtils.formatDateTime(${flow.endTime})</td>
+                <td>$TimeUtils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
                 <td>
-                  <div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div>
+                  <div class="status ${flow.status}">$WebUtils.formatStatus(${flow.status})</div>
                 </td>
                 <td></td>
               </tr>

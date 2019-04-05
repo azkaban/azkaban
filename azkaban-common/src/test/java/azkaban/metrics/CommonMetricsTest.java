@@ -16,7 +16,8 @@
 
 package azkaban.metrics;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
@@ -40,9 +41,12 @@ public class CommonMetricsTest {
   public void testOOMWaitingJobMetrics() {
     final String metricName = CommonMetrics.OOM_WAITING_JOB_COUNT_NAME;
 
-    assertThat(this.testUtil.getGaugeValue(metricName)).isEqualTo(0);
+    assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(0);
     this.metrics.incrementOOMJobWaitCount();
-    assertThat(this.testUtil.getGaugeValue(metricName)).isEqualTo(1);
+    assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(1);
+
+    this.metrics.decrementOOMJobWaitCount();
+    assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(0);
   }
 
   @Test
@@ -67,7 +71,8 @@ public class CommonMetricsTest {
     this.metrics.addQueueWait(500L);
     this.metrics.addQueueWait(600L);
     this.metrics.addQueueWait(1000L);
-    Snapshot snapshot = this.testUtil.getHistogramSnapshot(CommonMetrics.QUEUE_WAIT_HISTOGRAM_NAME);
+    final Snapshot snapshot = this.testUtil
+        .getHistogramSnapshot(CommonMetrics.QUEUE_WAIT_HISTOGRAM_NAME);
     assertThat(snapshot.getMedian()).isCloseTo(600.0, within(delta));
     assertThat(snapshot.getMean()).isCloseTo(700.0, within(delta));
     assertThat(snapshot.getMin()).isEqualTo(500);

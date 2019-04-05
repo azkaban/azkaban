@@ -17,24 +17,13 @@
 package azkaban.scheduler;
 
 import azkaban.executor.ExecutionOptions;
-import azkaban.sla.SlaOption;
 import azkaban.utils.Pair;
+import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
-import org.joda.time.DurationFieldType;
-import org.joda.time.Hours;
-import org.joda.time.Minutes;
-import org.joda.time.Months;
 import org.joda.time.ReadablePeriod;
-import org.joda.time.Seconds;
-import org.joda.time.Weeks;
 import org.quartz.CronExpression;
 
 public class Schedule {
@@ -55,7 +44,6 @@ public class Schedule {
   private int scheduleId;
   private long nextExecTime;
   private ExecutionOptions executionOptions;
-  private List<SlaOption> slaOptions;
 
   public Schedule(final int scheduleId,
       final int projectId,
@@ -71,7 +59,6 @@ public class Schedule {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions executionOptions,
-      final List<SlaOption> slaOptions,
       final String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
@@ -87,86 +74,11 @@ public class Schedule {
     this.status = status;
     this.submitTime = submitTime;
     this.executionOptions = executionOptions;
-    this.slaOptions = slaOptions;
     this.cronExpression = cronExpression;
-  }
-
-  public static ReadablePeriod parsePeriodString(final String periodStr) {
-    final ReadablePeriod period;
-    final char periodUnit = periodStr.charAt(periodStr.length() - 1);
-    if (periodUnit == 'n') {
-      return null;
-    }
-
-    final int periodInt =
-        Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
-    switch (periodUnit) {
-      case 'M':
-        period = Months.months(periodInt);
-        break;
-      case 'w':
-        period = Weeks.weeks(periodInt);
-        break;
-      case 'd':
-        period = Days.days(periodInt);
-        break;
-      case 'h':
-        period = Hours.hours(periodInt);
-        break;
-      case 'm':
-        period = Minutes.minutes(periodInt);
-        break;
-      case 's':
-        period = Seconds.seconds(periodInt);
-        break;
-      default:
-        throw new IllegalArgumentException("Invalid schedule period unit '"
-            + periodUnit);
-    }
-
-    return period;
-  }
-
-  public static String createPeriodString(final ReadablePeriod period) {
-    String periodStr = "n";
-
-    if (period == null) {
-      return "n";
-    }
-
-    if (period.get(DurationFieldType.months()) > 0) {
-      final int months = period.get(DurationFieldType.months());
-      periodStr = months + "M";
-    } else if (period.get(DurationFieldType.weeks()) > 0) {
-      final int weeks = period.get(DurationFieldType.weeks());
-      periodStr = weeks + "w";
-    } else if (period.get(DurationFieldType.days()) > 0) {
-      final int days = period.get(DurationFieldType.days());
-      periodStr = days + "d";
-    } else if (period.get(DurationFieldType.hours()) > 0) {
-      final int hours = period.get(DurationFieldType.hours());
-      periodStr = hours + "h";
-    } else if (period.get(DurationFieldType.minutes()) > 0) {
-      final int minutes = period.get(DurationFieldType.minutes());
-      periodStr = minutes + "m";
-    } else if (period.get(DurationFieldType.seconds()) > 0) {
-      final int seconds = period.get(DurationFieldType.seconds());
-      periodStr = seconds + "s";
-    }
-
-    return periodStr;
   }
 
   public ExecutionOptions getExecutionOptions() {
     return this.executionOptions;
-  }
-
-  public List<SlaOption> getSlaOptions() {
-    return this.slaOptions;
-  }
-
-  public void setSlaOptions(final List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
   }
 
   public void setFlowOptions(final ExecutionOptions executionOptions) {
@@ -189,7 +101,7 @@ public class Schedule {
     } else if (this.cronExpression != null) {
       return underlying + " with CronExpression {" + this.cronExpression + "}";
     } else {
-      return underlying + " with precurring period of " + createPeriodString(this.period);
+      return underlying + " with precurring period of " + TimeUtils.createPeriodString(this.period);
     }
   }
 
@@ -317,55 +229,6 @@ public class Schedule {
       date = ce.getNextValidTimeAfter(date);
     }
     return new DateTime(date);
-  }
-
-  public Map<String, Object> optionsToObject() {
-    if (this.executionOptions != null) {
-      final HashMap<String, Object> schedObj = new HashMap<>();
-
-      if (this.executionOptions != null) {
-        schedObj.put("executionOptions", this.executionOptions.toObject());
-      }
-
-      if (this.slaOptions != null) {
-        final List<Object> slaOptionsObject = new ArrayList<>();
-        for (final SlaOption sla : this.slaOptions) {
-          slaOptionsObject.add(sla.toObject());
-        }
-        schedObj.put("slaOptions", slaOptionsObject);
-      }
-
-      return schedObj;
-    }
-    return null;
-  }
-
-  public void createAndSetScheduleOptions(final Object obj) {
-    final HashMap<String, Object> schedObj = (HashMap<String, Object>) obj;
-    if (schedObj.containsKey("executionOptions")) {
-      final ExecutionOptions execOptions =
-          ExecutionOptions.createFromObject(schedObj.get("executionOptions"));
-      this.executionOptions = execOptions;
-    } else if (schedObj.containsKey("flowOptions")) {
-      final ExecutionOptions execOptions =
-          ExecutionOptions.createFromObject(schedObj.get("flowOptions"));
-      this.executionOptions = execOptions;
-      execOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
-    } else {
-      this.executionOptions = new ExecutionOptions();
-      this.executionOptions
-          .setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
-    }
-
-    if (schedObj.containsKey("slaOptions")) {
-      final List<Object> slaOptionsObject = (List<Object>) schedObj.get("slaOptions");
-      final List<SlaOption> slaOptions = new ArrayList<>();
-      for (final Object slaObj : slaOptionsObject) {
-        slaOptions.add(SlaOption.fromObject(slaObj));
-      }
-      this.slaOptions = slaOptions;
-    }
-
   }
 
   public boolean isRecurring() {

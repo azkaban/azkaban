@@ -78,7 +78,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     final ExecuteFlowAction executeAct =
         new ExecuteFlowAction("executeFlowAction", s.getProjectId(),
             s.getProjectName(), s.getFlowName(), s.getSubmitUser(),
-            s.getExecutionOptions(), s.getSlaOptions());
+            s.getExecutionOptions());
     actions.add(executeAct);
 
     return actions;
@@ -158,7 +158,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           t.getSubmitTime(),
           t.getSubmitUser(),
           act.getExecutionOptions(),
-          act.getSlaOptions(),
           triggerTimeChecker.getCronExpression());
     } else {
       logger.error("Failed to parse schedule from trigger!");
