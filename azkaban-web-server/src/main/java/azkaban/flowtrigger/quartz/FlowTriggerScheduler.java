@@ -118,14 +118,15 @@ public class FlowTriggerScheduler {
     }
   }
 
-  public void pauseFlowTrigger(final int projectId, final String flowId) throws SchedulerException {
-    this.scheduler
+  public boolean pauseFlowTrigger(final int projectId, final String flowId)
+      throws SchedulerException {
+    return this.scheduler
         .pauseJobIfPresent(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
-  public void resumeFlowTrigger(final int projectId, final String flowId) throws
+  public boolean resumeFlowTrigger(final int projectId, final String flowId) throws
       SchedulerException {
-    this.scheduler
+    return this.scheduler
         .resumeJobIfPresent(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(projectId, flowId));
   }
 
