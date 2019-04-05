@@ -36,11 +36,6 @@ public interface LockingCacheLoader<K, V> {
   public V load(K key) throws Exception;
 
   /**
-   * @return a map of initial key/values and their sizes.
-   */
-  public Map<K, V> loadAll();
-
-  /**
    * Called when a key/value is removed from the cache. This should do any additional cleanup
    * needed when an entry is removed from the cache.
    *

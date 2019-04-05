@@ -28,11 +28,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.Test;
 
 public class LockingCacheTest {
+  private static final int TIMEOUT_SECONDS = 4;
 
   private static class TestLoader implements LockingCacheLoader<Integer, String> {
     protected final ConcurrentHashMap<Integer, AtomicInteger> loadCountMap = new
@@ -55,15 +55,6 @@ public class LockingCacheTest {
     public String load(Integer key) throws Exception {
       updateCountAndSleep(key, loadCountMap, loadInterval);
       return getValue(key);
-    }
-
-    @Override
-    public Map<Integer, String> loadAll() {
-      Map<Integer, String> map = Stream.of(new Object[][] {
-          { 7, "bbbbbbb" },
-          { 5, "ccccc" },
-      }).collect(Collectors.toMap(data -> (Integer) data[0], data -> (String) data[1]));
-      return map;
     }
 
     @Override public void remove(Integer key, String value) throws Exception {
@@ -108,7 +99,7 @@ public class LockingCacheTest {
   @Test
   public void testUnlock() throws Exception {
     final TestLoader loader = new TestLoader();
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
         new TestSizer());
 
     LockingCacheEntry<String> entry = cache.get(20);
@@ -144,7 +135,7 @@ public class LockingCacheTest {
   @Test
   public void testTryWithResources() throws Exception {
     final TestLoader loader = new TestLoader();
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
         new TestSizer());
 
     try (LockingCacheEntry<String> entry = cache.get(20)) {
@@ -167,7 +158,7 @@ public class LockingCacheTest {
   @Test
   public void testCacheCleanup() throws Exception{
     final TestLoader loader = new TestLoader();
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
         new TestSizer());
 
     // cache should start empty
@@ -200,9 +191,9 @@ public class LockingCacheTest {
     assertThat(cache.getCacheSize()).isEqualTo(46);
     entry19b.close();
 
-    // cleanup
+    // cleanup entries for 11 and 13 (3 is locked and 19 was last accessed)
     cache.cleanup(30);
-    assertThat(cache.getCacheSize()).isEqualTo(27);
+    assertThat(cache.getCacheSize()).isEqualTo(22);
 
     // cleanup all, except locked entries (3)
     cache.cleanup(0);
@@ -215,32 +206,6 @@ public class LockingCacheTest {
     assertThat(cache.getCacheSize()).isEqualTo(0);
   }
 
-  @Test
-  public void testInitialize() throws Exception {
-    final TestLoader loader = new TestLoader();
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
-        new TestSizer());
-
-    cache.initialize();
-    assertThat(cache.getCacheSize()).isEqualTo(12);
-
-    // get a value in the cache
-    try(LockingCacheEntry<String> entry5 = cache.get(5)) {
-      assertThat(entry5.getValue().length()).isEqualTo(5);
-    }
-    assertThat(cache.getCacheSize()).isEqualTo(12);
-
-    // get a value not already in the cache
-    try(LockingCacheEntry<String> entry11 = cache.get(11)) {
-      assertThat(entry11.getValue().length()).isEqualTo(11);
-    }
-    assertThat(cache.getCacheSize()).isEqualTo(23);
-
-    assertThat(loader.getLoadCount(5)).isEqualTo(0);
-    assertThat(loader.getLoadCount(7)).isEqualTo(0);
-    assertThat(loader.getLoadCount(11)).isEqualTo(1);
-  }
-
   /**
    * Test only one thread is loading at a time. Create 5 threads that try to get the same value,
    * with a sleep in the load so that they will need to wait for each other. Load should only be
@@ -249,7 +214,7 @@ public class LockingCacheTest {
   @Test
   public void testConcurrentLoad() throws Exception {
     final TestLoader loader = new TestLoader(10, 0);
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
         new TestSizer());
     final ExecutorService executor= Executors.newFixedThreadPool(5);
     final CyclicBarrier barrier = new CyclicBarrier(5);
@@ -259,8 +224,12 @@ public class LockingCacheTest {
         try (LockingCacheEntry<String> entry = cache.get(key)) {
           assertThat(entry.getValue().length()).isEqualTo(key);
           barrier.await();
+        } catch (InterruptedException e) {
+          executor.shutdownNow();
+          // Preserve interrupt status
+          Thread.currentThread().interrupt();
         } catch (Exception e) {
-          assertThat(e).doesNotThrowAnyException();
+          throw new RuntimeException(e);
         }
       });
     }
@@ -268,7 +237,9 @@ public class LockingCacheTest {
     try {
       executor.awaitTermination(1, TimeUnit.MINUTES);
     } catch (InterruptedException e) {
-      assertThat(e).doesNotThrowAnyException();
+      executor.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
     }
     assertThat(cache.getCacheSize()).isEqualTo(60);
     for (int i = 10; i < 15; i++) {
@@ -334,7 +305,7 @@ public class LockingCacheTest {
   public void testConcurrentGetRemove() throws Exception {
     final CyclicBarrier barrier = new CyclicBarrier(2);
     final BlockingLoader loader = new BlockingLoader(barrier);
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
         new TestSizer());
     final ExecutorService executor= Executors.newFixedThreadPool(2);
     final int key = 10;
@@ -360,8 +331,12 @@ public class LockingCacheTest {
           }
           assertThat(cache.getCacheSize()).isEqualTo(key);
           barrier.await(); //barrier 8, done
-         } catch (Exception e) {
-          assertThat(e).doesNotThrowAnyException();
+         } catch (InterruptedException e) {
+          executor.shutdownNow();
+          // Preserve interrupt status
+          Thread.currentThread().interrupt();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       });
 
@@ -382,8 +357,12 @@ public class LockingCacheTest {
         assertThat(cache.getCacheSize()).isEqualTo(0);
         barrier.await(); // barrier 7, other thread is loading
         barrier.await(); // barrier 8, done
+      } catch (InterruptedException e) {
+        executor.shutdownNow();
+        // Preserve interrupt status
+        Thread.currentThread().interrupt();
       } catch (Exception e) {
-        assertThat(e).doesNotThrowAnyException();
+        throw new RuntimeException(e);
       }
     });
 
@@ -391,13 +370,15 @@ public class LockingCacheTest {
     try {
       executor.awaitTermination(1, TimeUnit.MINUTES);
     } catch (InterruptedException e) {
-      assertThat(e).doesNotThrowAnyException();
+      executor.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
     }
     assertThat(cache.getCacheSize()).isEqualTo(key);
     assertThat(loader.getLoadCount(key)).isEqualTo(2);
   }
 
-  /** Used by testConcurrentGetRemove */
+  /** Used by testCleanupThread */
   private static class CleanupLoader extends TestLoader {
     static final String VALUE = "aaaaa";
 
@@ -415,15 +396,15 @@ public class LockingCacheTest {
    *  start until the max size is reached.
    */
   @Test
-  public void testCleanupThread() throws Exception {
+  public void testCleanupThread() {
     final int numThreads = 4;
     final CyclicBarrier barrier = new CyclicBarrier(numThreads);
     final CleanupLoader loader = new CleanupLoader();
     final int minSize = 50;
     final int maxSize = 100;
-    final LockingCache<Integer, String, TestLoader, TestSizer> cache = new LockingCache(loader,
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
         new TestSizer(), minSize, maxSize, 1);
-    final ExecutorService executor= Executors.newFixedThreadPool(numThreads);
+    final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
     for (int i = 0; i < numThreads; i ++) {
       final int threadId = i;
@@ -439,9 +420,12 @@ public class LockingCacheTest {
             }
           }
           barrier.await();
-          Thread.sleep(2000);
+          Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS).until(() -> cache
+              .getCacheSize() == 80);
           // since we are staying under the max threshold, no entries should be removed
           assertThat(cache.getCacheSize()).isEqualTo(80);
+
+          barrier.await();
           // insert some more values to go over the max, and keep the lock on these
           for (int j = 8; j < 15; j++) {
             int key = 2 * j + mod;
@@ -450,13 +434,18 @@ public class LockingCacheTest {
             assertThat(entry.getValue()).isEqualTo(CleanupLoader.VALUE);
           }
           barrier.await();
-          Thread.sleep(2000);
+          Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+              .until(() -> cache
+                  .getCacheSize() <=
+                  maxSize);
+
           // the cleanup thread should remove all unlocked entries, but will still be above the
           // min threshold. Size can vary depending on when the cleanup thread kicks in, but should
           // be greater than or equal to the size of locked entries, and less than the max.
           assertThat(cache.getCacheSize()).isGreaterThanOrEqualTo(70);
           assertThat(cache.getCacheSize()).isLessThan(maxSize);
 
+          barrier.await();
           // now go over the max threshold with locked entries
           for (int j = 15; j < 20; j++) {
             int key = 2 * j + mod;
@@ -465,14 +454,18 @@ public class LockingCacheTest {
             assertThat(entry.getValue()).isEqualTo(CleanupLoader.VALUE);
           }
           barrier.await();
-          Thread.sleep(2000);
+          Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS).until(()
+              -> cache
+              .getCacheSize() == 120);
+
           // only the locked entries should be left
           assertThat(cache.getCacheSize()).isEqualTo(120);
 
           // now unlock entries
           entryMap.values().forEach(e -> e.close());
           barrier.await();
-          Thread.sleep(2000);
+          Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS).until(() -> cache
+              .getCacheSize() < maxSize);
           // cache size should be below the threshold
           assertThat(cache.getCacheSize()).isLessThanOrEqualTo(maxSize);
 
@@ -480,19 +473,110 @@ public class LockingCacheTest {
           barrier.await();
           cache.cleanup(20);
           barrier.await();
-          assertThat(cache.getCacheSize()).isLessThan(20);
+          assertThat(cache.getCacheSize()).isLessThanOrEqualTo(20);
+        } catch (InterruptedException e) {
+          executor.shutdownNow();
+          Thread.currentThread().interrupt();
         } catch (Exception e) {
-          assertThat(e).doesNotThrowAnyException();
+          throw new RuntimeException(e);
         }
       });
     }
 
     executor.shutdown();
     try {
+      executor.awaitTermination(2, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      executor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
+    assertThat(cache.getCacheSize()).isLessThanOrEqualTo(20);
+  }
+
+  /** Test changing min and max values for the cleanup thread.
+   */
+  @Test
+  public void testCleanupMinMax() throws Exception {
+    final int numThreads = 4;
+    final CyclicBarrier barrier = new CyclicBarrier(numThreads + 1);
+    final CleanupLoader loader = new CleanupLoader();
+    final int minSize = 50;
+    final int maxSize = 100;
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
+        new TestSizer(), minSize, maxSize, 1);
+    final ExecutorService executor= Executors.newFixedThreadPool(numThreads);
+
+    for (int i = 0; i < numThreads; i ++) {
+      final int threadId = i;
+     executor.execute(() -> {
+        try {
+          final int mod = threadId % 2;
+          Map<Integer, LockingCacheEntry> entryMap = new HashMap<>();
+
+          for (int j = 0; j < 15; j++) {
+            int key = 2 * j + mod;
+            try (LockingCacheEntry<String> entry = cache.get(key)) {
+              assertThat(entry.getValue()).isEqualTo(CleanupLoader.VALUE);
+            }
+          }
+          barrier.await(); // done with the first round of inserts
+          barrier.await();  // wait to be notified to start start the 2nd round of inserts
+          // insert some more values to go over the max, and keep the lock on these
+          for (int j = 15; j < 25; j++) {
+            int key = 2 * j + mod;
+            try (LockingCacheEntry<String> entry = cache.get(key)) {
+              assertThat(entry.getValue()).isEqualTo(CleanupLoader.VALUE);
+            }
+          }
+          barrier.await(); //done with 2nd round of inserts
+        } catch (InterruptedException e) {
+          executor.shutdownNow();
+          Thread.currentThread().interrupt();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
+
+    // in the main thread, check the cache sizes
+    barrier.await();  // wait for first round of inserts to complete
+
+    Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS).until(() -> cache.getCacheSize() <=
+    maxSize);
+    // check that cleanup has removed entries for the current max, min
+    assertThat(cache.getCacheSize()).isLessThanOrEqualTo(maxSize);
+    assertThat(cache.getCacheSize()).isGreaterThanOrEqualTo(minSize);
+
+    // reset max and min to lower values
+    cache.setMinSizeBytes(20);
+    cache.setMaxSizeBytes(40);
+    assertThat(cache.getMinSizeBytes()).isEqualTo(20);
+    assertThat(cache.getMaxSizeBytes()).isEqualTo(40);
+    Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS).until(() -> cache.getCacheSize() <=
+        40);
+    // check that cleanup has removed entries for the current max, min
+    assertThat(cache.getCacheSize()).isLessThanOrEqualTo(40);
+    assertThat(cache.getCacheSize()).isGreaterThanOrEqualTo(20);
+
+    // reset max and min to higher values
+    cache.setMaxSizeBytes(80);
+    cache.setMinSizeBytes(60);
+
+    barrier.await();  // notify getter threads to start the 2nd round of inserts
+
+    barrier.await(); // wait for 2nd round of inserts to complete
+    Awaitility.await().atMost(TIMEOUT_SECONDS, TimeUnit.SECONDS).until(() -> cache.getCacheSize() >=
+        60 && cache.getCacheSize() < 80);
+
+    assertThat(cache.getCacheSize()).isGreaterThanOrEqualTo(60);
+    assertThat(cache.getCacheSize()).isLessThanOrEqualTo(80);
+
+    executor.shutdown();
+    try {
       executor.awaitTermination(1, TimeUnit.MINUTES);
     } catch (InterruptedException e) {
-      assertThat(e).doesNotThrowAnyException();
+      executor.shutdownNow();
+      Thread.currentThread().interrupt();
     }
-    assertThat(cache.getCacheSize()).isLessThan(20);
   }
- }
+}

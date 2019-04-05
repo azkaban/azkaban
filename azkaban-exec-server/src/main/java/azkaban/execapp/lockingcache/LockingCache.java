@@ -16,6 +16,7 @@
 
 package azkaban.execapp.lockingcache;
 
+import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,15 +44,15 @@ import org.slf4j.LoggerFactory;
  *
  * @param <K> the class type for the key
  * @param <V> the class type for the value
- * @param <L> the class type for the {@link LockingCacheLoader}
- * @param <S> the class type for the {@link LockingCacheSizer}
  */
-public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends LockingCacheSizer<V>> {
+public class LockingCache<K, V> {
   private final ConcurrentHashMap<K, LockingCacheEntry<V>> cacheMap;
   private final AtomicLong cacheSize;
-  private final L cacheLoader;
-  private final S sizer;
+  private final LockingCacheLoader<K, V> cacheLoader;
+  private final LockingCacheSizer<V> sizer;
   private final ScheduledExecutorService cleanupPool;
+  private volatile long minSizeBytes;
+  private volatile long maxSizeBytes;
   private static final Logger log = LoggerFactory.getLogger(LockingCache.class);
 
   /**
@@ -60,7 +61,7 @@ public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends Loc
    * @param cacheLoader the {@link LockingCacheLoader} for loading values by key
    * @param sizer the {@link LockingCacheSizer} for getting the size of a value
    */
-  public LockingCache(L cacheLoader, S sizer) {
+  public LockingCache(LockingCacheLoader<K, V> cacheLoader, LockingCacheSizer<V> sizer) {
     this(cacheLoader, sizer, 0, 0, 0);
    }
 
@@ -68,20 +69,32 @@ public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends Loc
     * Constructor, with separate auto cleaning thread.
     * @param cacheLoader the {@link LockingCacheLoader} for loading values by key
     * @param sizer the {@link LockingCacheSizer} for getting the size of a value
-    * @param minSize the threshold for stopping cleanup
-    * @param maxSize the threshold for starting cleanup
+    * @param minSizeBytes the threshold for stopping cleanup
+    * @param maxSizeBytes the threshold for starting cleanup
     * @param intervalSec the interval in seconds for running cleanup
     */
-  public LockingCache(L cacheLoader, S sizer, long minSize, long maxSize, long intervalSec) {
+   @SuppressWarnings("FutureReturnValueIgnored")
+  public LockingCache(LockingCacheLoader<K, V> cacheLoader, LockingCacheSizer<V> sizer,
+      long minSizeBytes, long maxSizeBytes, long intervalSec) {
+     Preconditions.checkArgument(minSizeBytes >= 0, "minSizeBytes cannot be negative");
+     Preconditions.checkArgument(maxSizeBytes >= 0, "maxSizeBytes cannot be negative");
+     Preconditions.checkArgument(minSizeBytes <= maxSizeBytes, "minSizeBytes must be less than or"
+         + " equal to maxSizeBytes");
+     Preconditions.checkArgument(intervalSec >= 0, "intervalSec cannot be negative");
+     this.cacheLoader = Preconditions.checkNotNull(cacheLoader);
+     this.sizer = Preconditions.checkNotNull(sizer);
     this.cacheMap = new ConcurrentHashMap<>();
     this.cacheSize = new AtomicLong(0);
-    this.cacheLoader = cacheLoader;
-    this.sizer = sizer;
+    this.minSizeBytes = minSizeBytes;
+    this.maxSizeBytes = maxSizeBytes;
     if (intervalSec > 0) {
       // create the cleanup thread
       this.cleanupPool = Executors.newScheduledThreadPool(1);
-      cleanupPool.scheduleAtFixedRate(new Cleaner(minSize, maxSize), intervalSec, intervalSec,
-          TimeUnit.SECONDS);
+      cleanupPool.scheduleAtFixedRate(() -> {
+            if (cacheSize.get() > this.maxSizeBytes) {
+              cleanup(this.minSizeBytes);
+            }
+          }, intervalSec, intervalSec, TimeUnit.SECONDS);
     }
     else {
       this.cleanupPool = null;
@@ -91,21 +104,30 @@ public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends Loc
   /** @return the current size of the cache */
   public long getCacheSize() { return cacheSize.get(); }
 
-  /**
-   * Load any initial entries. This assumes that no entries are in the cache already, and
-   * that no entries are added during initialization. If concurrent access is needed during
-   * initialization, then further work is needed for this method.
-   */
-  public void initialize() {
-    final Map<K, V> initialEntries = cacheLoader.loadAll();
-    initialEntries.forEach((key, entry) ->
-    {
-      long size = sizer.getSize(entry);
-      cacheMap.putIfAbsent(key, new LockingCacheEntry(entry, size));
+  /** @return the theshold for stopping cache cleanup */
+  public long getMinSizeBytes() {
+    return minSizeBytes;
+  }
 
-      // note that adding the size would be inaccurate if the entry already exists in the cache
-      cacheSize.addAndGet(size);
-    });
+  /** set the threshold for stopping cache cleanup */
+  public void setMinSizeBytes(long minSizeBytes) {
+    Preconditions.checkArgument(minSizeBytes >= 0, "minSizeBytes cannot be negative");
+    Preconditions.checkArgument(minSizeBytes <= maxSizeBytes, "minSizeBytes must be less than or"
+        + " equal to maxSizeBytes");
+    this.minSizeBytes = minSizeBytes;
+  }
+
+  /** @return the threshold for starting cache cleanup */
+  public long getMaxSizeBytes() {
+    return maxSizeBytes;
+  }
+
+  /** set the threshold for starting cache cleanup */
+  public void setMaxSizeBytes(long maxSizeBytes) {
+    Preconditions.checkArgument(maxSizeBytes >= 0, "maxSizeBytes cannot be negative");
+    Preconditions.checkArgument(minSizeBytes <= maxSizeBytes, "minSizeBytes must be less than or"
+        + " equal to maxSizeBytes");
+    this.maxSizeBytes = maxSizeBytes;
   }
 
   /** stop cleanup */
@@ -178,7 +200,7 @@ public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends Loc
               // another thread has already loaded the entry, so downgrade to a read lock
               lock.readLock().lock();
             } else {
-              // need to initialize/download the project
+              // need to initialize/download the value
               V value = cacheLoader.load(key);
               entry.set(value, sizer.getSize(value));
               lock.readLock().lock();
@@ -204,10 +226,10 @@ public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends Loc
    * @param targetSize the size of the cache for stopping cleanup
    */
   public void cleanup(long targetSize) {
-    if (cacheSize.get() < targetSize) {
+    if (cacheSize.get() <= targetSize) {
       return;
     }
-    // get the list of projects, sorted by last access time ascending.
+     // get the list of projects, sorted by last access time ascending.
     List<Entry<K,LockingCacheEntry<V>>> entries = new ArrayList(cacheMap.entrySet());
     Collections.sort(entries, (x, y) -> {
       if (x.getValue().getLastAccessTime() < y.getValue().getLastAccessTime()) {
@@ -220,46 +242,21 @@ public class LockingCache<K, V, L extends LockingCacheLoader<K,V>, S extends Loc
     });
 
     for(Entry<K,LockingCacheEntry<V>> entry : entries) {
-      if (cacheSize.get() < targetSize) {
+      if (cacheSize.get() <= targetSize) {
         // cache is below the min threshold, so stop
         break;
       }
       try {
-        tryRemove(entry.getKey());
+        if (tryRemove(entry.getKey())) {
+          log.info("removed from cache: " + entry.getKey());
+        }
+      } catch(InterruptedException e) {
+        log.error("cleanup interrupted");
+        Thread.currentThread().interrupt();
+        break;
       } catch (Exception e) {
-        // don't want to stop the cleanup thread, so just log any exceptions.
+        // don't want to stop cleanup, so just log any exceptions.
         log.error("error encountered during cleanup for " + entry.getKey(), e);
-      }
-    }
-  }
-
-  /**
-   * Cleaner for the project cache. Cleanup is initiated if the cache size exceeds
-   * maxSizeBytes, and continues until the cache size is below minSizeBytes. Locked
-   * entries that are currently in use will not be removed. Cache cleanup may
-   * stop before the cache size is below minSizeBytes if the total size of locked
-   * entries is greater.
-   */
-  private class Cleaner implements Runnable {
-    private final long minSizeBytes;
-    private final long maxSizeBytes;
-
-    /**
-     * Constructor.
-     *
-     * @param minSizeBytes the threshold for stopping cleanup
-     * @param maxSizeBytes the threshold for starting cleanup
-     */
-    Cleaner(long minSizeBytes, long maxSizeBytes) {
-      this.minSizeBytes = minSizeBytes;
-      this.maxSizeBytes = maxSizeBytes;
-     }
-
-    @Override
-    public void run()
-    {
-      if (cacheSize.get() > maxSizeBytes) {
-        cleanup(minSizeBytes);
       }
     }
   }
