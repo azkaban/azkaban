@@ -83,7 +83,7 @@ public class ExecuteFlowActionTest {
 
     final ExecutionOptions executionOptions = new ExecutionOptions();
     final ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("action", 1, "project",
-        "flow", "user", executionOptions, null);
+        "flow", "user", executionOptions);
     executeFlowAction.doAction();
 
     //noinspection unchecked
@@ -108,7 +108,7 @@ public class ExecuteFlowActionTest {
 
     final ExecutionOptions executionOptions = new ExecutionOptions();
     final ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("action", 1, "project",
-        "flow", "user", executionOptions, null);
+        "flow", "user", executionOptions);
     executeFlowAction.doAction();
 
     //noinspection unchecked
@@ -133,7 +133,7 @@ public class ExecuteFlowActionTest {
 
     final ExecutionOptions executionOptions = new ExecutionOptions();
     final ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("action", 1, "project",
-        "flow", "user", executionOptions, null);
+        "flow", "user", executionOptions);
     executeFlowAction.doAction();
 
     //noinspection unchecked
@@ -155,7 +155,7 @@ public class ExecuteFlowActionTest {
     final ExecutionOptions executionOptions = new ExecutionOptions();
     executionOptions.setSkipIfPreviousExecutionFailed(true);
     final ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("action", 1, "project",
-        "flow", "user", executionOptions, null);
+        "flow", "user", executionOptions);
     executeFlowAction.doAction();
 
     //noinspection unchecked
@@ -181,7 +181,7 @@ public class ExecuteFlowActionTest {
     final ExecutionOptions executionOptions = new ExecutionOptions();
     executionOptions.setSkipIfPreviousExecutionFailed(true);
     final ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("action", 1, "project",
-        "flow", "user", executionOptions, null);
+        "flow", "user", executionOptions);
     executeFlowAction.doAction();
 
     verify(executorManager, times(0)).submitExecutableFlow(any(), any());
@@ -204,7 +204,7 @@ public class ExecuteFlowActionTest {
     final ExecutionOptions executionOptions = new ExecutionOptions();
     executionOptions.setSkipIfPreviousExecutionFailed(true);
     final ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("action", 1, "project",
-        "flow", "user", executionOptions, null);
+        "flow", "user", executionOptions);
     executeFlowAction.doAction();
 
     verify(executorManager).submitExecutableFlow(notNull(), eq("user"));
