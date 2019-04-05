@@ -7,8 +7,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
+import azkaban.spi.StorageException;
 import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import java.io.File;
@@ -28,6 +28,7 @@ public class ProjectCacheLoaderTest {
   private ProjectCacheKey projectKey = new ProjectCacheKey(12, 34);
   private final long actualDirSize = 1048835;
 
+  /** Create a {@link azkaban.storage.StorageManager */
   private StorageManager createMockStorageManager() {
     final ClassLoader classLoader = getClass().getClassLoader();
     final File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
@@ -40,6 +41,22 @@ public class ProjectCacheLoaderTest {
     when(storageManager.getProjectFile(anyInt(), anyInt())).thenReturn(projectFileHandler);
     return storageManager;
   }
+
+  /** Create a {@link azkaban.storage.StorageManager} that throws an exception. */
+  private StorageManager createBadMockStorageManager() {
+    final ClassLoader classLoader = getClass().getClassLoader();
+    final File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
+
+    final ProjectFileHandler projectFileHandler = mock(ProjectFileHandler.class);
+    when(projectFileHandler.getFileType()).thenReturn("zip");
+    when(projectFileHandler.getLocalFile()).thenReturn(file);
+
+    final StorageManager storageManager = mock(StorageManager.class);
+    when(storageManager.getProjectFile(anyInt(), anyInt())).thenThrow(new
+        StorageException("non existent project"));
+    return storageManager;
+  }
+
 
   @Before
   public void setUp() throws Exception {
@@ -65,11 +82,11 @@ public class ProjectCacheLoaderTest {
 
   @Test
   public void testDownloadNonExistentProjectFile() {
-    ProjectCacheLoader loader = new ProjectCacheLoader(createMockStorageManager(), this
+    ProjectCacheLoader loader = new ProjectCacheLoader(createBadMockStorageManager(), this
         .projectsDir);
     File tmpDir = new File(projectsDir, "testDownloadProjectFile");
     assertThatThrownBy(() -> loader.downloadProject(new ProjectCacheKey(35, 43), tmpDir))
-        .hasCauseInstanceOf(ExecutorManagerException.class);
+        .hasCauseInstanceOf(StorageException.class);
   }
 
   @Test
