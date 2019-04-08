@@ -15,11 +15,12 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class UserUtils {
 
-  private static final Logger log = Logger.getLogger(UserUtils.class);
+  private static final Logger log = LoggerFactory.getLogger(UserUtils.class);
   private UserUtils() {
 
   }

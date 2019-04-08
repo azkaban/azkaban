@@ -20,13 +20,6 @@ import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,7 +27,8 @@ import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -64,8 +58,7 @@ public class XmlUserManager implements UserManager {
   public static final String PROXY_ATTR = "proxy";
   public static final String GROUPS_ATTR = "groups";
   public static final String GROUPNAME_ATTR = "name";
-  private static final Logger logger = Logger.getLogger(XmlUserManager.class
-      .getName());
+  private static final Logger logger = LoggerFactory.getLogger(XmlUserManager.class);
   private final String xmlPath;
 
   private HashMap<String, User> users;
