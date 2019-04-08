@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -46,11 +45,11 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+
 /**
  * Abstract Servlet that handles auto login when the session hasn't been verified.
  */
-public abstract class LoginAbstractAzkabanServlet extends
-    AbstractAzkabanServlet {
+public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
 
@@ -394,6 +393,30 @@ public abstract class LoginAbstractAzkabanServlet extends
     }
 
     return false;
+  }
+
+  protected Project filterProjectByPermission(final Project project, final User user,
+      final Permission.Type type) {
+    return filterProjectByPermission(project, user, type, null);
+  }
+
+  protected Project filterProjectByPermission(final Project project, final User user,
+      final Permission.Type type, final Map<String, Object> ret) {
+    if (project == null) {
+      if (ret != null) {
+        ret.put("error", "Project 'null' not found.");
+      }
+    } else if (!hasPermission(project, user, type)) {
+      if (ret != null) {
+        ret.put("error",
+            "User '" + user.getUserId() + "' doesn't have " + type.name()
+                + " permissions on " + project.getName());
+      }
+    } else {
+      return project;
+    }
+
+    return null;
   }
 
   protected void handleAjaxLoginAction(final HttpServletRequest req,

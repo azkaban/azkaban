@@ -13,12 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
+import azkaban.utils.FileIOUtils;
 import java.io.File;
 import java.util.List;
-import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 
@@ -68,18 +67,18 @@ public class JavaJob extends JavaProcessJob {
   protected List<String> getClassPaths() {
     List<String> classPath = super.getClassPaths();
 
-    classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(JavaJobRunnerMain.class));
     // To add az-core jar classpath
-    classPath.add(getSourcePathFromClass(Props.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
 
     // To add az-common jar classpath
-    classPath.add(getSourcePathFromClass(JavaProcessJob.class));
-    classPath.add(getSourcePathFromClass(SecurityUtils.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(JavaProcessJob.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(SecurityUtils.class));
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
 
-    String loggerPath = getSourcePathFromClass(Logger.class);
+    String loggerPath = FileIOUtils.getSourcePathFromClass(Logger.class);
     if (!classPath.contains(loggerPath)) {
       classPath.add(loggerPath);
     }
@@ -121,25 +120,6 @@ public class JavaJob extends JavaProcessJob {
     }
 
     return classPath;
-  }
-
-  private static String getSourcePathFromClass(Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      String name = containedClass.getName();
-      StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
   }
 
   @Override

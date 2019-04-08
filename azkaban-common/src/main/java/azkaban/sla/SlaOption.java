@@ -13,18 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.sla;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.sla.SlaType.ComponentType;
-import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,6 +132,17 @@ public class SlaOption {
 
     this.emails = ImmutableList.copyOf((List<String>)slaOption.getInfo().get(SlaOptionDeprecated
         .INFO_EMAIL_LIST));
+  }
+
+  public static List<Object> convertToObjects(List<SlaOption> slaOptions) {
+    if (slaOptions != null) {
+      final List<Object> slaOptionsObject = new ArrayList<>();
+      for (final SlaOption sla : slaOptions) {
+        slaOptionsObject.add(sla.toObject());
+      }
+      return slaOptionsObject;
+    }
+    return null;
   }
 
   private Duration parseDuration(final String durationStr) {

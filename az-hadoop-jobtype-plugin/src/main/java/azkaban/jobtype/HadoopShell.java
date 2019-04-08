@@ -13,23 +13,21 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.File;
+import azkaban.jobExecutor.ProcessJob;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
 import azkaban.flow.CommonJobProperties;
-import azkaban.jobExecutor.ProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.Props;
+
 
 /**
  * HadoopShell is a Hadoop security enabled "command" jobtype. This jobtype
@@ -39,107 +37,112 @@ import azkaban.utils.Props;
  *
  */
 public class HadoopShell extends ProcessJob {
-	private String userToProxy = null;
-	private boolean shouldProxy = false;
-	private boolean obtainTokens = false;
-	private File tokenFile = null;
-	public static final String HADOOP_OPTS = ENV_PREFIX + "HADOOP_OPTS";
-	public static final String HADOOP_GLOBAL_OPTS = "hadoop.global.opts";
-	public static final String WHITELIST_REGEX = "command.whitelist.regex";
-	public static final String BLACKLIST_REGEX = "command.blacklist.regex";
+  public static final String HADOOP_OPTS = ENV_PREFIX + "HADOOP_OPTS";
+  public static final String HADOOP_GLOBAL_OPTS = "hadoop.global.opts";
+  public static final String WHITELIST_REGEX = "command.whitelist.regex";
+  public static final String BLACKLIST_REGEX = "command.blacklist.regex";
 
-	private HadoopSecurityManager hadoopSecurityManager;
+  private String userToProxy = null;
+  private boolean shouldProxy = false;
+  private boolean obtainTokens = false;
+  private File tokenFile = null;
+  private HadoopSecurityManager hadoopSecurityManager;
 
-	public HadoopShell(String jobid, Props sysProps, Props jobProps, Logger log) throws RuntimeException {
-		super(jobid, sysProps, jobProps, log);
+  public HadoopShell(String jobid, Props sysProps, Props jobProps, Logger log) throws RuntimeException {
+    super(jobid, sysProps, jobProps, log);
 
-		shouldProxy = getSysProps().getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
-		getJobProps().put(HadoopSecurityManager.ENABLE_PROXYING, Boolean.toString(shouldProxy));
-		obtainTokens = getSysProps().getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN, false);
+    shouldProxy = getSysProps().getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
+    getJobProps().put(HadoopSecurityManager.ENABLE_PROXYING, Boolean.toString(shouldProxy));
+    obtainTokens = getSysProps().getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN, false);
 
-		if (shouldProxy) {
-			getLog().info("Initiating hadoop security manager.");
-			try {
-				hadoopSecurityManager = HadoopJobUtils.loadHadoopSecurityManager(getSysProps(), log);
-			} catch (RuntimeException e) {
-				e.printStackTrace();
-				throw new RuntimeException("Failed to get hadoop security manager!" + e.getCause());
-			}
-		}
-	}
+    if (shouldProxy) {
+      getLog().info("Initiating hadoop security manager.");
+      try {
+        hadoopSecurityManager = HadoopJobUtils.loadHadoopSecurityManager(getSysProps(), log);
+      } catch (RuntimeException e) {
+        e.printStackTrace();
+        throw new RuntimeException("Failed to get hadoop security manager!" + e.getCause());
+      }
+    }
+  }
 
-	@Override
-	public void run() throws Exception {
-		setupHadoopOpts(getJobProps());
-		HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
-		if (shouldProxy && obtainTokens) {
-			userToProxy = getJobProps().getString("user.to.proxy");
-			getLog().info("Need to proxy. Getting tokens.");
-			Props props = new Props();
-			props.putAll(getJobProps());
-			props.putAll(getSysProps());
 
-			tokenFile = HadoopJobUtils.getHadoopTokens(hadoopSecurityManager, props, getLog());
-			getJobProps().put("env." + HADOOP_TOKEN_FILE_LOCATION, tokenFile.getAbsolutePath());
-		}
-		try {
-			super.run();
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new Exception(e);
-		} finally {
-			if (tokenFile != null) {
-				try {
-					HadoopJobUtils.cancelHadoopTokens(hadoopSecurityManager, userToProxy, tokenFile, getLog());
-				} catch (Throwable t) {
-					t.printStackTrace();
-					getLog().error("Failed to cancel tokens.");
-				}
-				if (tokenFile.exists()) {
-					tokenFile.delete();
-				}
-			}
-		}
-	}
+  //  @Override
+  protected void setupPropsForProxy() throws Exception {
+    if (shouldProxy && obtainTokens) {
+      userToProxy = getJobProps().getString(HadoopSecurityManager.USER_TO_PROXY);
+      getLog().info("Need to proxy. Getting tokens.");
+      // get tokens in to a file, and put the location in props
+      Props props = new Props();
+      props.putAll(getJobProps());
+      props.putAll(getSysProps());
 
-	/**
-	 * Append HADOOP_GLOBAL_OPTS with HADOOP_OPTS in the given props
-	 *
-	 * @param props
-	 */
-	private void setupHadoopOpts(Props props) {
-		if (props.containsKey(HADOOP_GLOBAL_OPTS)) {
-			String hadoopGlobalOps = props.getString(HADOOP_GLOBAL_OPTS);
-			if (props.containsKey(HADOOP_OPTS)) {
-				String hadoopOps = props.getString(HADOOP_OPTS);
-				props.put(HADOOP_OPTS, String.format("%s %s", hadoopOps, hadoopGlobalOps));
-			} else {
-				props.put(HADOOP_OPTS, hadoopGlobalOps);
-			}
-		}
-	}
+      tokenFile = HadoopJobUtils.getHadoopTokens(hadoopSecurityManager, props, getLog());
+      getJobProps().put("env." + HADOOP_TOKEN_FILE_LOCATION, tokenFile.getAbsolutePath());
+    }
+  }
 
-	@Override
-	protected List<String> getCommandList() {
-		// Use the same parsing login as in default "command job";
-		List<String> commands = super.getCommandList();
-		return HadoopJobUtils.filterCommands(commands, getSysProps().getString(WHITELIST_REGEX, HadoopJobUtils.MATCH_ALL_REGEX), // ".*" will match everything
-				getSysProps().getString(BLACKLIST_REGEX, HadoopJobUtils.MATCH_NONE_REGEX), getLog()); // ".^" will match nothing
-	}
+  @Override
+  public void run() throws Exception {
+    setupHadoopOpts(getJobProps());
+    HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
 
-	/**
-	 * This cancel method, in addition to the default canceling behavior, also
-	 * kills the MR jobs launched by this job on Hadoop
-	 */
-	@Override
-	public void cancel() throws InterruptedException {
-		super.cancel();
+    setupPropsForProxy();
 
-		info("Cancel called.  Killing the launched Hadoop jobs on the cluster");
+    try {
+      super.run();
+    } catch (Throwable e) {
+      e.printStackTrace();
+      getLog().error("caught error running the job");
+      throw new Exception(e);
+    } finally {
+      HadoopJobUtils.cancelHadoopTokens(hadoopSecurityManager, userToProxy, tokenFile, getLog());
+    }
+  }
 
-		final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
-		info("Log file path is: " + logFilePath);
+  /**
+   * Append HADOOP_GLOBAL_OPTS with HADOOP_OPTS in the given props
+   *
+   * @param props
+   **/
+  private void setupHadoopOpts(Props props) {
+    if (props.containsKey(HADOOP_GLOBAL_OPTS)) {
+      String hadoopGlobalOps = props.getString(HADOOP_GLOBAL_OPTS);
+      if (props.containsKey(HADOOP_OPTS)) {
+        String hadoopOps = props.getString(HADOOP_OPTS);
+        props.put(HADOOP_OPTS, String.format("%s %s", hadoopOps, hadoopGlobalOps));
+      } else {
+        props.put(HADOOP_OPTS, hadoopGlobalOps);
+      }
+    }
+  }
 
-		HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, jobProps, tokenFile, getLog());
-	}
+  @Override
+  protected List<String> getCommandList() {
+    // Use the same parsing login as in default "command job";
+    List<String> commands = super.getCommandList();
+
+    return HadoopJobUtils.filterCommands(
+        commands,
+        getSysProps().getString(WHITELIST_REGEX, HadoopJobUtils.MATCH_ALL_REGEX), // ".*" will match everything
+        getSysProps().getString(BLACKLIST_REGEX, HadoopJobUtils.MATCH_NONE_REGEX),
+        getLog()
+    ); // ".^" will match nothing
+  }
+
+  /**
+   * This cancel method, in addition to the default canceling behavior, also
+   * kills the MR jobs launched by this job on Hadoop
+   */
+  @Override
+  public void cancel() throws InterruptedException {
+    super.cancel();
+
+    info("Cancel called.  Killing the launched Hadoop jobs on the cluster");
+
+    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+    info("Log file path is: " + logFilePath);
+
+    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, jobProps, tokenFile, getLog());
+  }
 }

@@ -743,21 +743,41 @@ public class Props {
   }
 
   /**
-   * Get a map of all properties by string prefix
+   * Get a flattened map of all properties by given prefix
    *
-   * @param prefix The string prefix
+   * @param prefix the prefix string
+   * @param ignoreCase if allows case sensitive checking for the given prefix string
+   * @return a flattened map with all properties with the given prefix
    */
-  public Map<String, String> getMapByPrefix(final String prefix) {
-    final Map<String, String> values = this._parent == null ? new HashMap<>() :
-        this._parent.getMapByPrefix(prefix);
+  public Map<String, String> getMapByPrefix(final String prefix, boolean ignoreCase) {
+    final Map<String, String> values = (this._parent == null)
+        ? new HashMap<>()
+        : this._parent.getMapByPrefix(prefix, ignoreCase);
 
     // when there is a conflict, value from the child takes the priority.
+    if (prefix == null) { // when prefix is null, return an empty map
+      return values;
+    }
+
     for (final String key : this.localKeySet()) {
-      if (key.startsWith(prefix)) {
-        values.put(key.substring(prefix.length()), get(key));
+      if (key != null && key.length() >= prefix.length()) {
+        final String keyPrefix = key.substring(0, prefix.length());
+        if ((ignoreCase ? keyPrefix.equalsIgnoreCase(prefix) : keyPrefix.equals(prefix))) {
+          values.put(key.substring(prefix.length()), get(key));
+        }
       }
     }
     return values;
+  }
+
+  /**
+   * Get a flattened map of all properties by given prefix
+   *
+   * @param prefix the prefix string
+   * @return a flattened map with all properties with the given prefix
+   */
+  public Map<String, String> getMapByPrefix(final String prefix) {
+    return getMapByPrefix(prefix, false);
   }
 
   /**

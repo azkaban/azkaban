@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import azkaban.Constants;
@@ -23,16 +22,13 @@ import azkaban.utils.JSONUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
-import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanInfo;
-import javax.management.ObjectName;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
+
 
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
 
@@ -72,29 +68,12 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
     final Map<String, Object> ret = new HashMap<>();
 
     if (hasParam(req, JMX_GET_MBEANS)) {
-      ret.put("mbeans", this.server.getMbeanNames());
+      ret.put("mbeans", this.server.getMBeanNames());
     } else if (hasParam(req, JMX_GET_ALL_MBEAN_ATTRIBUTES)) {
       if (!hasParam(req, JMX_MBEAN)) {
         ret.put("error", "Parameters 'mbean' must be set");
       } else {
-        final String mbeanName = getParam(req, JMX_MBEAN);
-        try {
-          final ObjectName name = new ObjectName(mbeanName);
-          final MBeanInfo info = this.server.getMBeanInfo(name);
-
-          final MBeanAttributeInfo[] mbeanAttrs = info.getAttributes();
-          final Map<String, Object> attributes = new TreeMap<>();
-
-          for (final MBeanAttributeInfo attrInfo : mbeanAttrs) {
-            final Object obj = this.server.getMBeanAttribute(name, attrInfo.getName());
-            attributes.put(attrInfo.getName(), obj);
-          }
-
-          ret.put("attributes", attributes);
-        } catch (final Exception e) {
-          logger.error(e);
-          ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
-        }
+        ret.putAll(this.server.getMBeanResult(getParam(req, JMX_MBEAN)));
       }
     }
 

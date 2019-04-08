@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import com.google.common.collect.MapDifference;
@@ -36,10 +35,16 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 public class PropsUtils {
-
   private static final Logger logger = Logger.getLogger(PropsUtils.class);
   private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+
+  /**
+   * Private constructor.
+   */
+  private PropsUtils() {
+  }
+
 
   /**
    * Load job schedules from the given directories
@@ -90,6 +95,45 @@ public class PropsUtils {
       return props;
     } catch (final IOException e) {
       throw new RuntimeException("Error loading properties.", e);
+    }
+  }
+
+  /**
+   * Load plugin properties
+   * @param pluginDir  plugin's Base Directory
+   * @param pluginType plugin type (viewer, trigger, alter)
+   * @return The properties
+   */
+  public static Props loadPluginProps(final File pluginDir, String pluginType) {
+    if (!pluginDir.exists()) {
+      logger.error("Error! " + pluginType + " plugin path " + pluginDir.getPath() + " doesn't exist.");
+      return null;
+    }
+
+    if (!pluginDir.isDirectory()) {
+      logger.error("The plugin path " + pluginDir + " is not a directory.");
+      return null;
+    }
+
+    final File propertiesDir = new File(pluginDir, "conf");
+    if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+      final File propertiesFile = new File(propertiesDir, "plugin.properties");
+      final File propertiesOverrideFile =
+          new File(propertiesDir, "override.properties");
+
+      if (propertiesFile.exists()) {
+        if (propertiesOverrideFile.exists()) {
+          return loadProps(null, propertiesFile, propertiesOverrideFile);
+        } else {
+          return loadProps(null, propertiesFile);
+        }
+      } else {
+        logger.error("Plugin conf file " + propertiesFile + " not found.");
+        return null;
+      }
+    } else {
+      logger.error("Plugin conf path " + propertiesDir + " not found.");
+      return null;
     }
   }
 

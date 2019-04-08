@@ -79,7 +79,7 @@ public class HadoopJobUtils {
 
   // the regex to look for while looking for application id's in the hadoop log
   public static final Pattern APPLICATION_ID_PATTERN = Pattern
-          .compile("^(application_\\d+_\\d+).*");
+      .compile("^(application_\\d+_\\d+).*");
 
   // Azkaban built in property name
   public static final String JOBTYPE_GLOBAL_JVM_ARGS = "jobtype.global.jvm.args";
@@ -108,13 +108,17 @@ public class HadoopJobUtils {
    * @param log
    */
   public static void cancelHadoopTokens(HadoopSecurityManager hadoopSecurityManager,
-          String userToProxy, File tokenFile, Logger log) {
+      String userToProxy, File tokenFile, Logger log) {
+    if (tokenFile == null) return;
     try {
       hadoopSecurityManager.cancelTokens(tokenFile, userToProxy, log);
     } catch (HadoopSecurityManagerException e) {
       log.error(e.getCause() + e.getMessage());
     } catch (Exception e) {
       log.error(e.getCause() + e.getMessage());
+    }
+    if (tokenFile.exists()) {
+      tokenFile.delete();
     }
   }
 
@@ -130,20 +134,20 @@ public class HadoopJobUtils {
    *           : If any errors happen along the way.
    */
   public static HadoopSecurityManager loadHadoopSecurityManager(Props props, Logger log)
-          throws RuntimeException {
+      throws RuntimeException {
 
     Class<?> hadoopSecurityManagerClass = props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
-            HadoopJobUtils.class.getClassLoader());
+        HadoopJobUtils.class.getClassLoader());
     log.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
     HadoopSecurityManager hadoopSecurityManager = null;
 
     try {
       Method getInstanceMethod = hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
       hadoopSecurityManager = (HadoopSecurityManager) getInstanceMethod.invoke(
-              hadoopSecurityManagerClass, props);
+          hadoopSecurityManagerClass, props);
     } catch (InvocationTargetException e) {
       String errMsg = "Could not instantiate Hadoop Security Manager "
-              + hadoopSecurityManagerClass.getName() + e.getCause();
+          + hadoopSecurityManagerClass.getName() + e.getCause();
       log.error(errMsg);
       throw new RuntimeException(errMsg, e);
     } catch (Exception e) {
@@ -200,7 +204,7 @@ public class HadoopJobUtils {
    * @throws HadoopSecurityManagerException
    */
   public static File getHadoopTokens(HadoopSecurityManager hadoopSecurityManager, Props props,
-          Logger log) throws HadoopSecurityManagerException {
+      Logger log) throws HadoopSecurityManagerException {
 
     File tokenFile = null;
     try {
@@ -227,7 +231,7 @@ public class HadoopJobUtils {
    *
    */
   public static String resolveWildCardForJarSpec(String workingDirectory, String unresolvedJarSpec,
-          Logger log) {
+      Logger log) {
 
     log.debug("resolveWildCardForJarSpec: unresolved jar specification: " + unresolvedJarSpec);
     log.debug("working directory: " + workingDirectory);
@@ -291,12 +295,12 @@ public class HadoopJobUtils {
    * @return the resolved actual jar/py file name to execute
    */
   public static String resolveExecutionJarName(String workingDirectory,
-          String userSpecifiedJarName, Logger log) {
+      String userSpecifiedJarName, Logger log) {
 
     if (log.isDebugEnabled()) {
       String debugMsg = String.format(
-              "Resolving execution jar name: working directory: %s,  user specified name: %s",
-              workingDirectory, userSpecifiedJarName);
+          "Resolving execution jar name: working directory: %s,  user specified name: %s",
+          workingDirectory, userSpecifiedJarName);
       log.debug(debugMsg);
     }
 
@@ -315,7 +319,7 @@ public class HadoopJobUtils {
 
     if (log.isDebugEnabled()) {
       String debugMsg = String.format("Resolving execution jar name: dirname: %s, jar name: %s",
-              dirName, jarPrefix);
+          dirName, jarPrefix);
       log.debug(debugMsg);
     }
 
@@ -324,17 +328,17 @@ public class HadoopJobUtils {
       potentialExecutionJarList = getFilesInFolderByRegex(new File(dirName), jarPrefix + ".*(jar|py)");
     } catch (FileNotFoundException e) {
       throw new IllegalStateException(
-              "execution jar is suppose to be in this folder, but the folder doesn't exist: "
-                      + dirName);
+          "execution jar is suppose to be in this folder, but the folder doesn't exist: "
+              + dirName);
     }
 
     if (potentialExecutionJarList.length == 0) {
       throw new IllegalStateException("unable to find execution jar for Spark at path: "
-              + userSpecifiedJarPath + "*.(jar|py)");
+          + userSpecifiedJarPath + "*.(jar|py)");
     } else if (potentialExecutionJarList.length > 1) {
       throw new IllegalStateException(
-              "I find more than one matching instance of the execution jar at the path, don't know which one to use: "
-                      + userSpecifiedJarPath + "*.(jar|py)");
+          "I find more than one matching instance of the execution jar at the path, don't know which one to use: "
+              + userSpecifiedJarPath + "*.(jar|py)");
     }
 
     String resolvedJarName = potentialExecutionJarList[0].toString();
@@ -349,7 +353,7 @@ public class HadoopJobUtils {
    * @throws FileNotFoundException
    */
   private static File[] getFilesInFolderByRegex(File folder, final String regex)
-          throws FileNotFoundException {
+      throws FileNotFoundException {
     // sanity check
 
     if (!folder.exists()) {
@@ -358,8 +362,8 @@ public class HadoopJobUtils {
     }
     if (!folder.isDirectory()) {
       throw new IllegalStateException(
-              "execution jar is suppose to be in this folder, but the object present is not a directory: "
-                      + folder);
+          "execution jar is suppose to be in this folder, but the object present is not a directory: "
+              + folder);
     }
 
     File[] matchingFiles = folder.listFiles(new FilenameFilter() {
@@ -374,22 +378,22 @@ public class HadoopJobUtils {
 
     if (matchingFiles == null) {
       throw new IllegalStateException(
-              "the File[] matchingFiles variable is null.  This means an IOException occured while doing listFiles.  Please check disk availability and retry again");
+          "the File[] matchingFiles variable is null.  This means an IOException occured while doing listFiles.  Please check disk availability and retry again");
     }
 
     return matchingFiles;
   }
 
-/**
- * This method is a decorator around the KillAllSpawnedHadoopJobs method.
- * This method takes additional parameters to determine whether KillAllSpawnedHadoopJobs needs to be executed
- * using doAs as a different user
- *
- * @param logFilePath Azkaban log file path
- * @param jobProps Azkaban job props
- * @param tokenFile Pass in the tokenFile if value is known.  It is ok to skip if the token file is in the environmental variable
- * @param log a usable logger
- */
+  /**
+   * This method is a decorator around the KillAllSpawnedHadoopJobs method.
+   * This method takes additional parameters to determine whether KillAllSpawnedHadoopJobs needs to be executed
+   * using doAs as a different user
+   *
+   * @param logFilePath Azkaban log file path
+   * @param jobProps Azkaban job props
+   * @param tokenFile Pass in the tokenFile if value is known.  It is ok to skip if the token file is in the environmental variable
+   * @param log a usable logger
+   */
   public static void proxyUserKillAllSpawnedHadoopJobs(final String logFilePath, Props jobProps, File tokenFile, final Logger log) {
     Properties properties = new Properties();
     properties.putAll(jobProps.getFlattened());
@@ -458,7 +462,7 @@ public class HadoopJobUtils {
     }
     if (!logFile.isFile()) {
       throw new IllegalArgumentException("the logFilePath specified  is not a valid file: "
-              + logFilePath);
+          + logFilePath);
     }
     if (!logFile.canRead()) {
       throw new IllegalArgumentException("unable to read the logFilePath specified: " + logFilePath);
@@ -513,7 +517,7 @@ public class HadoopJobUtils {
    * @throws YarnException
    */
   public static void killJobOnCluster(String applicationId, Logger log) throws YarnException,
-          IOException {
+      IOException {
 
     YarnConfiguration yarnConf = new YarnConfiguration();
     YarnClient yarnClient = YarnClient.createYarnClient();
@@ -522,7 +526,7 @@ public class HadoopJobUtils {
 
     String[] split = applicationId.split("_");
     ApplicationId aid = ApplicationId.newInstance(Long.parseLong(split[1]),
-            Integer.parseInt(split[2]));
+        Integer.parseInt(split[2]));
 
     log.info("start klling application: " + aid);
     yarnClient.killApplication(aid);
@@ -544,7 +548,7 @@ public class HadoopJobUtils {
     String value = props.get(key);
     if (value == null) {
       throw new RuntimeException(String.format("Cannot find property [%s], in azkaban props: [%s]",
-              key, value));
+          key, value));
     }
     return String.format("-D%s=%s", key, value);
   }
@@ -564,13 +568,13 @@ public class HadoopJobUtils {
    * @return filtered list of matching. Empty list if no command match all the criteria.
    */
   public static List<String> filterCommands(Collection<String> commands, String whitelistRegex,
-          String blacklistRegex, Logger log) {
+      String blacklistRegex, Logger log) {
     List<String> filteredCommands = new LinkedList<String>();
     Pattern whitelistPattern = Pattern.compile(whitelistRegex);
     Pattern blacklistPattern = Pattern.compile(blacklistRegex);
     for (String command : commands) {
       if (whitelistPattern.matcher(command).matches()
-              && !blacklistPattern.matcher(command).matches()) {
+          && !blacklistPattern.matcher(command).matches()) {
         filteredCommands.add(command);
       } else {
         log.warn(String.format("Removing restricted command: %s", command));
@@ -594,15 +598,15 @@ public class HadoopJobUtils {
     String value = conf.get(key);
     if (value == null) {
       throw new RuntimeException(String.format("Cannot find property [%s], in Hadoop configuration: [%s]",
-              key, value));
+          key, value));
     }
     return String.format("-D%s=%s", key, value);
   }
 
   /**
    * Construct a CSV of tags for the Hadoop application.
-   *
-   * @param List of keys to construct tags from.
+   * @param props job properties
+   * @param keys list of keys to construct tags from.
    * @return a CSV of tags
    */
   public static String constructHadoopTags(Props props, String[] keys) {

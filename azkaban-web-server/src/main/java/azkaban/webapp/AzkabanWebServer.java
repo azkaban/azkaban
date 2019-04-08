@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -48,6 +47,7 @@ import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils;
+import azkaban.utils.PluginUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.StdOutErrRedirect;
@@ -76,10 +76,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -89,8 +86,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -146,11 +141,9 @@ public class AzkabanWebServer extends AzkabanServer {
   private final MetricsManager metricsManager;
   private final Props props;
   private final SessionCache sessionCache;
-  private final List<ObjectName> registeredMBeans = new ArrayList<>();
   private final FlowTriggerScheduler scheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
-  private MBeanServer mbeanServer;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -307,40 +300,11 @@ public class AzkabanWebServer extends AzkabanServer {
     final ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
     final File[] pluginDirs = viewerPluginPath.listFiles();
     final ArrayList<String> jarPaths = new ArrayList<>();
+
     for (final File pluginDir : pluginDirs) {
-      if (!pluginDir.exists()) {
-        logger.error("Error viewer plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
-        continue;
-      }
-
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      final File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        final File propertiesFile = new File(propertiesDir, "plugin.properties");
-        final File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
+      // load plugin properties
+      final Props pluginProps = PropsUtils.loadPluginProps(pluginDir, "Viewer");
+      if (pluginProps == null) {
         continue;
       }
 
@@ -356,71 +320,18 @@ public class AzkabanWebServer extends AzkabanServer {
       final String pluginClass = pluginProps.getString("viewer.servlet.class");
       if (pluginClass == null) {
         logger.error("Viewer class is not set.");
+        continue;
       } else {
         logger.info("Plugin class " + pluginClass);
       }
 
-      URLClassLoader urlClassLoader = null;
-      final File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        final File[] files = libDir.listFiles();
-
-        final ArrayList<URL> urls = new ArrayList<>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            final URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (final MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-
-        // Load any external libraries.
-        if (extLibClasspath != null) {
-          for (final String extLib : extLibClasspath) {
-            final File extLibFile = new File(pluginDir, extLib);
-            if (extLibFile.exists()) {
-              if (extLibFile.isDirectory()) {
-                // extLibFile is a directory; load all the files in the
-                // directory.
-                final File[] extLibFiles = extLibFile.listFiles();
-                for (int i = 0; i < extLibFiles.length; ++i) {
-                  try {
-                    final URL url = extLibFiles[i].toURI().toURL();
-                    urls.add(url);
-                  } catch (final MalformedURLException e) {
-                    logger.error(e);
-                  }
-                }
-              } else { // extLibFile is a file
-                try {
-                  final URL url = extLibFile.toURI().toURL();
-                  urls.add(url);
-                } catch (final MalformedURLException e) {
-                  logger.error(e);
-                }
-              }
-            } else {
-              logger.error("External library path "
-                  + extLibFile.getAbsolutePath() + " not found.");
-              continue;
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger
-            .error("Library path " + libDir.getAbsolutePath() + " not found.");
+      URLClassLoader urlClassLoader = PluginUtils.getURLClassLoader(pluginDir, extLibClasspath, parentLoader);
+      if (urlClassLoader == null) {
         continue;
       }
 
-      Class<?> viewerClass = null;
-      try {
-        viewerClass = urlClassLoader.loadClass(pluginClass);
-      } catch (final ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
+      Class<?> viewerClass = PluginUtils.getPluginClass(urlClassLoader, pluginClass);
+      if (viewerClass == null) {
         continue;
       }
 
@@ -684,25 +595,24 @@ public class AzkabanWebServer extends AzkabanServer {
     this.triggerPlugins = triggerPlugins;
   }
 
-  private void configureMBeanServer() {
+  @Override
+  protected void configureMBeanServer() {
     logger.info("Registering MBeans...");
-    this.mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-    registerMbean("jetty", new JmxJettyServer(this.server));
-    registerMbean("triggerManager", new JmxTriggerManager(this.triggerManager));
+    registerMBean("jetty", new JmxJettyServer(this.server));
+    registerMBean("triggerManager", new JmxTriggerManager(this.triggerManager));
 
     if (this.executorManagerAdapter instanceof ExecutorManager) {
-      registerMbean("executorManager",
-          new JmxExecutorManager((ExecutorManager) this.executorManagerAdapter));
+      registerMBean("executorManager", new JmxExecutorManager((ExecutorManager) this.executorManagerAdapter));
     } else if (this.executorManagerAdapter instanceof ExecutionController) {
-      registerMbean("executionController", new JmxExecutionController((ExecutionController) this
-          .executorManagerAdapter));
+      registerMBean("executionController", new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
     // updated via JConsole or Java VisualVM
     final HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
-    registerMbean("log4jmxbean", log4jMBean);
+    registerMBean("log4jmxbean", log4jMBean);
+
     final ObjectName accessLogLoggerObjName =
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
@@ -717,14 +627,7 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   public void close() {
-    try {
-      for (final ObjectName name : this.registeredMBeans) {
-        this.mbeanServer.unregisterMBean(name);
-        logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
-      }
-    } catch (final Exception e) {
-      logger.error("Failed to cleanup MBeanServer", e);
-    }
+    closeMBeans();
     this.scheduleManager.shutdown();
     this.executorManagerAdapter.shutdown();
     try {
@@ -734,41 +637,5 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error(e);
     }
     this.server.destroy();
-  }
-
-  private void registerMbean(final String name, final Object mbean) {
-    final Class<?> mbeanClass = mbean.getClass();
-    final ObjectName mbeanName;
-    try {
-      mbeanName = new ObjectName(mbeanClass.getName() + ":name=" + name);
-      this.mbeanServer.registerMBean(mbean, mbeanName);
-      logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
-      this.registeredMBeans.add(mbeanName);
-    } catch (final Exception e) {
-      logger.error("Error registering mbean " + mbeanClass.getCanonicalName(),
-          e);
-    }
-  }
-
-  public List<ObjectName> getMbeanNames() {
-    return this.registeredMBeans;
-  }
-
-  public MBeanInfo getMBeanInfo(final ObjectName name) {
-    try {
-      return this.mbeanServer.getMBeanInfo(name);
-    } catch (final Exception e) {
-      logger.error(e);
-      return null;
-    }
-  }
-
-  public Object getMBeanAttribute(final ObjectName name, final String attribute) {
-    try {
-      return this.mbeanServer.getAttribute(name, attribute);
-    } catch (final Exception e) {
-      logger.error(e);
-      return null;
-    }
   }
 }

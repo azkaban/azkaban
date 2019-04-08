@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.executor.ConnectorParams;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 import javax.servlet.ServletConfig;
@@ -35,17 +33,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
+
 /**
  * Limited set of jmx calls for when you cannot attach to the jvm
  */
 public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     ConnectorParams {
 
-  /**
-   *
-   */
   private static final long serialVersionUID = 1L;
-
   private static final Logger logger = Logger.getLogger(JMXHttpServlet.class
       .getName());
 
@@ -94,7 +89,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         }
         ret = result;
       } else if (JMX_GET_MBEANS.equals(ajax)) {
-        ret.put("mbeans", this.server.getMbeanNames());
+        ret.put("mbeans", this.server.getMBeanNames());
       } else if (JMX_GET_MBEAN_INFO.equals(ajax)) {
         if (hasParam(req, JMX_MBEAN)) {
           final String mbeanName = getParam(req, JMX_MBEAN);
@@ -130,24 +125,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         if (!hasParam(req, JMX_MBEAN)) {
           ret.put("error", "Parameters 'mbean' must be set");
         } else {
-          final String mbeanName = getParam(req, JMX_MBEAN);
-          try {
-            final ObjectName name = new ObjectName(mbeanName);
-            final MBeanInfo info = this.server.getMBeanInfo(name);
-
-            final MBeanAttributeInfo[] mbeanAttrs = info.getAttributes();
-            final Map<String, Object> attributes = new TreeMap<>();
-
-            for (final MBeanAttributeInfo attrInfo : mbeanAttrs) {
-              final Object obj = this.server.getMBeanAttribute(name, attrInfo.getName());
-              attributes.put(attrInfo.getName(), obj);
-            }
-
-            ret.put("attributes", attributes);
-          } catch (final Exception e) {
-            logger.error(e);
-            ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
-          }
+          ret.putAll(this.server.getMBeanResult(getParam(req, JMX_MBEAN)));
         }
       } else {
         ret.put("commands", new String[]{
@@ -168,7 +146,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/jmxpage.vm");
 
-    page.add("mbeans", this.server.getMbeanNames());
+    page.add("mbeans", this.server.getMBeanNames());
 
     final Map<String, Object> executorMBeans = new HashMap<>();
     for (final String hostPort : this.executorManagerAdapter.getAllActiveExecutorServerHosts()) {

@@ -13,12 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.SecurityUtils;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import java.io.File;
@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.StringTokenizer;
 import org.apache.log4j.Logger;
 
 public class PigProcessJob extends JavaProcessJob {
@@ -47,26 +46,6 @@ public class PigProcessJob extends JavaProcessJob {
   public PigProcessJob(final String jobid, final Props sysProps, final Props jobProps,
       final Logger log) {
     super(jobid, sysProps, new Props(sysProps, jobProps), log);
-  }
-
-  private static String getSourcePathFromClass(final Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      final String name = containedClass.getName();
-      final StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
   }
 
   @Override
@@ -138,7 +117,7 @@ public class PigProcessJob extends JavaProcessJob {
       for (final Map.Entry<String, String> entry : map.entrySet()) {
         list.add("-param "
             + StringUtils.shellQuote(entry.getKey() + "=" + entry.getValue(),
-                StringUtils.SINGLE_QUOTE));
+            StringUtils.SINGLE_QUOTE));
       }
     }
 
@@ -172,9 +151,9 @@ public class PigProcessJob extends JavaProcessJob {
       classPath.add(new File(hadoopHome, "conf").getPath());
     }
 
-    classPath.add(getSourcePathFromClass(Props.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
     if (SecurityUtils.shouldProxy(getSysProps().toProperties())) {
-      classPath.add(getSourcePathFromClass(SecurePigWrapper.class));
+      classPath.add(FileIOUtils.getSourcePathFromClass(SecurePigWrapper.class));
     }
 
     final List<String> typeClassPath =

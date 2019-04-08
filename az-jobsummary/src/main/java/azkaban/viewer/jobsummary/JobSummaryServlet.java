@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.jobsummary;
 
 import azkaban.executor.ExecutableFlow;
@@ -23,7 +22,6 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
-import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
@@ -40,6 +38,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
+
 
 public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   private static final String PROXY_USER_SESSION_KEY =
@@ -69,18 +68,6 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
             "web");
     this.webResourcesPath.mkdirs();
     setResourceDirectory(this.webResourcesPath);
-  }
-
-  private Project getProjectByPermission(final int projectId, final User user,
-      final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectId);
-    if (project == null) {
-      return null;
-    }
-    if (!hasPermission(project, user, type)) {
-      return null;
-    }
-    return project;
   }
 
   @Override
@@ -138,7 +125,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
     }
 
     final int projectId = flow.getProjectId();
-    final Project project = getProjectByPermission(projectId, user, Type.READ);
+    final Project project = filterProjectByPermission(this.projectManager.getProject(projectId), user, Type.READ);
     if (project == null) {
       page.render();
       return;

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.server;
 
 import static azkaban.Constants.DEFAULT_PORT_NUMBER;
@@ -34,7 +33,7 @@ import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 
 
-public abstract class AzkabanServer {
+public abstract class AzkabanServer extends AbstractMBeanRegistrableServer {
 
   private static final Logger logger = Logger.getLogger(AzkabanServer.class);
   private static Props azkabanProperties = null;
@@ -152,5 +151,4 @@ public abstract class AzkabanServer {
   public abstract VelocityEngine getVelocityEngine();
 
   public abstract UserManager getUserManager();
-
 }
