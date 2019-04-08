@@ -25,6 +25,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -105,7 +106,8 @@ public class XmlUserManagerTest {
     List<String> lines = new ArrayList<>();
     List<String> origLines = new ArrayList<>();
     Path filePath = Paths.get(path);
-    System.out.println("File modification time = " + Files.getLastModifiedTime(filePath).toString());
+    FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
+    System.out.println("File modification time = " + origModifiedTime.toString());
     for (String line : Files.readAllLines(filePath)) {
       origLines.add(line);
       if (line.contains("password8")) {
@@ -119,8 +121,12 @@ public class XmlUserManagerTest {
     try {
       // Update the file
       Files.write(filePath, lines);
-      System.out.println("File modification time after write = " + Files.getLastModifiedTime(filePath).toString());
-
+      FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
+      System.out.println("File modification time after write = " + lastModifiedTime.toString());
+      if (origModifiedTime.equals(lastModifiedTime)) {
+        // File did not update
+        fail("File did not update.");
+      }
       // Try for a minute polling every 2 seconds if the config reloaded
       try {
         for (int i = 0; i < 30; i++) {

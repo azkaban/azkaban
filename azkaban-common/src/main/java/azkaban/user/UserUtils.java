@@ -85,7 +85,6 @@ public final class UserUtils {
           // Ignore the IOException
           log.warn("IOException while setting up watch on conf " + fileName + ". "
               + e.getMessage());
-          Thread.currentThread().interrupt();
           return;
         }
       }
@@ -93,7 +92,6 @@ public final class UserUtils {
       // Return if WatchService is not initialized
       if (watchService == null) {
         log.warn("Watchservice not setup for any config file(s).");
-        Thread.currentThread().interrupt();
         return;
       }
 
@@ -114,17 +112,13 @@ public final class UserUtils {
           // Make sure the modification happened to user config file
           @SuppressWarnings("unchecked")
           final Path name = ((WatchEvent<Path>) event).context();
-          final String child = dir.resolve(name).toString();
+          final String filename = dir.resolve(name).toString();
           // Lookup the file in dirToFilesMap
-          for (String fileName : dirToFilesMap.get(dir)) {
-            if (!child.equals(fileName)) {
-              continue;
-            }
-
+          if (dirToFilesMap.containsEntry(dir, filename)) {
             // Match!
             // reparse the config file
-            log.info("Modification detected, reloading user config");
-            configFileMap.get(fileName).parseConfigFile();
+            log.info("Modification detected, reloading config file " + filename);
+            configFileMap.get(filename).parseConfigFile();
             break;
           }
         }
