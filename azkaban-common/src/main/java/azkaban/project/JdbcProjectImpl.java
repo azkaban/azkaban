@@ -160,7 +160,7 @@ public class JdbcProjectImpl implements ProjectLoader {
       final List<Project> projects = this.dbOperator
           .query(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
       if (projects.isEmpty()) {
-        throw new ProjectManagerException("No active project with name " + name + " exists in db.");
+        return null;
       }
       project = projects.get(0);
       for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
