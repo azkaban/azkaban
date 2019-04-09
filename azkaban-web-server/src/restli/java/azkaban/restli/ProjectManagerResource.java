@@ -129,7 +129,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       if (enableQuartz) {
         //todo chengren311: should maintain atomicity,
         // e.g, if uploadProject fails, associated schedule shouldn't be added.
-        scheduler.unscheduleAll(project);
+        scheduler.unschedule(project);
       }
       // Check if project upload runs into any errors, such as the file
       // having blacklisted jars
@@ -138,14 +138,14 @@ public class ProjectManagerResource extends ResourceContextHolder {
           .uploadProject(project, archiveFile, "zip", user, props);
 
       if (enableQuartz) {
-        scheduler.scheduleAll(project, user.getUserId());
+        scheduler.schedule(project, user.getUserId());
       }
 
       checkReports(reports);
       logger.info("Deploy: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       return Integer.toString(project.getVersion());
-    } catch (final ProjectManagerException | SchedulerException | ExecutorManagerException e) {
+    } catch (final ProjectManagerException | ExecutorManagerException e) {
       final String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
       logger.error(errorMsg, e);
       throw e;

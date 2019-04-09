@@ -621,7 +621,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     // remove flow trigger schedules
     try {
       if (this.enableQuartz) {
-        this.scheduler.unscheduleAll(project);
+        this.scheduler.unschedule(project);
       }
     } catch (final SchedulerException e) {
       throw new ServletException(e);
@@ -1715,21 +1715,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         IOUtils.copy(item.getInputStream(), out);
         out.close();
 
-        //unscheduleall/scheduleall should only work with flow which has defined flow trigger
-        //unschedule all flows within the old project
         if (this.enableQuartz) {
           //todo chengren311: should maintain atomicity,
           // e.g, if uploadProject fails, associated schedule shouldn't be added.
-          this.scheduler.unscheduleAll(project);
+          this.scheduler.unschedule(project);
         }
         final Map<String, ValidationReport> reports =
             this.projectManager.uploadProject(project, archiveFile, type, user,
                 props);
 
         if (this.enableQuartz) {
-          //schedule the new project
-          this.scheduler.scheduleAll(project, user.getUserId());
+          this.scheduler.schedule(project, user.getUserId());
         }
+
         final StringBuffer errorMsgs = new StringBuffer();
         final StringBuffer warnMsgs = new StringBuffer();
         for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
