@@ -40,7 +40,7 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private FlowTriggerScheduler scheduler;
   private ProjectManager projectManager;
-  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerScheduler.class);
+  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerServlet.class);
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -119,13 +119,13 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
         } else {
           try {
             if (ajaxName.equals("pauseTrigger")) {
-              if (this.scheduler.pauseFlowTrigger(projectId, flowId)) {
+              if (this.scheduler.pauseFlowTriggerIfPresent(projectId, flowId)) {
                 logger.info("Flow trigger for flow {}.{} is paused", project.getName(), flowId);
               } else {
                 logger.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
               }
             } else {
-              if (this.scheduler.resumeFlowTrigger(projectId, flowId)) {
+              if (this.scheduler.resumeFlowTriggerIfPresent(projectId, flowId)) {
                 logger.info("Flow trigger for flow {}.{} is resumed", project.getName(), flowId);
               } else {
                 logger.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
