@@ -40,9 +40,6 @@ class JdbcProjectHandlerSet {
 
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 
-    public static String SELECT_PROJECT_BY_NAME =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=?";
-
     public static String SELECT_PROJECT_BY_ID =
         "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE id=?";
 

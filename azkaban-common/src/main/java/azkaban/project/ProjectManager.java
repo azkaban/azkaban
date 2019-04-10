@@ -227,14 +227,18 @@ public class ProjectManager {
   }
 
   /**
-   * fetch active project from cache and inactive projects from db by project_name
+   * fetch active project by project name. Queries the cache first then db if not found
    */
   public Project getProject(final String name) {
     Project fetchedProject = this.projectsByName.get(name);
     if (fetchedProject == null) {
       try {
-        logger.info("Project " + name + " doesn't exist in cache, fetching from DB now.");
         fetchedProject = this.projectLoader.fetchProjectByName(name);
+        if (fetchedProject != null) {
+          logger.info("Project " + name + " not found in cache, fetched from DB.");
+        } else {
+          logger.info("No active project with name " + name + " exists in cache or DB.");
+        }
       } catch (final ProjectManagerException e) {
         logger.error("Could not load project from store.", e);
       }
