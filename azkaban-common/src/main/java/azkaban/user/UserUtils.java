@@ -46,56 +46,67 @@ public final class UserUtils {
    * Creates a watch thread which listens to specified files' modification and reloads
    * configurations
    */
-  static void setupWatch(final Map<String, ParseConfigFile> configFileMap) {
+  static void setupWatch(final Map<String, ParseConfigFile> configFileMap) throws IOException {
     Preconditions.checkNotNull(configFileMap);
     Preconditions.checkArgument(configFileMap.size() > 0);
 
+    final WatchService watchService;
+    try {
+      watchService = FileSystems.getDefault().newWatchService();
+    } catch (IOException e) {
+      log.warn(" Failed to create WatchService " + e.getMessage());
+      throw e;
+    }
+
+    // Map to store WatchKey to Dir mapping
+    final Map<WatchKey, Path> keys = new HashMap<>();
+    // A directory to config files multimap
+    final Multimap<Path, String> dirToFilesMap = HashMultimap.create();
+
+    // Iterate over each file.
+    for (Map.Entry<String, ParseConfigFile> entry : configFileMap.entrySet()) {
+      String fileName = entry.getKey();
+      ParseConfigFile parser = entry.getValue();
+      Preconditions.checkNotNull(fileName);
+      Preconditions.checkNotNull(parser);
+
+      final File file = new File(fileName);
+      if (!file.exists()) {
+        log.warn("Failed to setup watch service, user provided file " + fileName + " does not "
+            + "exist.");
+        continue;
+      }
+
+      try {
+        Path dir = Paths.get(fileName).getParent();
+        if (!dirToFilesMap.containsKey(dir)) {
+          // There is not entry for this directory, create a watchkey
+          WatchKey watchKey = dir.register(watchService,
+              new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
+              SensitivityWatchEventModifier.HIGH);
+          keys.put(watchKey, dir);
+        }
+        // Add the config file to dir map
+        dirToFilesMap.put(dir, fileName);
+      } catch (IOException e) {
+        // Ignore the IOException
+        log.warn("IOException while setting up watch on conf " + fileName + ". "
+            + e.getMessage());
+      }
+    }
+
+    // Return if WatchService is not initialized
+    if (keys.size() == 0) {
+      log.warn("Watchservice was not setup for any config file(s).");
+      try {
+        watchService.close();
+      } catch (IOException e) {
+        log.warn("IOException while closing watchService. " + e.getMessage());
+      }
+      return;
+    }
+
     Runnable runnable = () -> {
-      WatchService watchService  = null;
-      // Map to store WatchKey to Dir mapping
-      final Map<WatchKey, Path> keys = new HashMap<>();
-      // A directory to config files multimap
-      final Multimap<Path, String> dirToFilesMap = HashMultimap.create();
-
-      // Iterate over each file.
-      for (Map.Entry<String, ParseConfigFile> entry : configFileMap.entrySet()) {
-        String fileName = entry.getKey();
-        ParseConfigFile parser = entry.getValue();
-        Preconditions.checkNotNull(fileName);
-        Preconditions.checkNotNull(parser);
-
-        final File file = new File(fileName);
-        if (!file.exists()) {
-          log.warn("Failed to reload config, user provided file " + fileName + " does not exist.");
-          continue;
-        }
-
-        try {
-          watchService = FileSystems.getDefault().newWatchService();
-          Path dir = Paths.get(fileName).getParent();
-          if (!dirToFilesMap.containsKey(dir)) {
-            // There is not entry for this directory, create a watchkey
-            WatchKey watchKey = dir.register(watchService,
-                new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
-                SensitivityWatchEventModifier.HIGH);
-            keys.put(watchKey, dir);
-          }
-          // Add the config file to dir map
-          dirToFilesMap.put(dir, fileName);
-        } catch (IOException e) {
-          // Ignore the IOException
-          log.warn("IOException while setting up watch on conf " + fileName + ". "
-              + e.getMessage());
-          return;
-        }
-      }
-
-      // Return if WatchService is not initialized
-      if (watchService == null) {
-        log.warn("Watchservice not setup for any config file(s).");
-        return;
-      }
-
       // Watchservice is established, now listen for the events till eternity!
       for (;; ) {
         WatchKey watchKey;

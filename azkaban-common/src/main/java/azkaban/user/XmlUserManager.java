@@ -79,7 +79,11 @@ public class XmlUserManager implements UserManager {
     // reloads it.
     Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
     parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
-    UserUtils.setupWatch(parseConfigFileMap);
+    try {
+      UserUtils.setupWatch(parseConfigFileMap);
+    } catch (IOException e) {
+      logger.warn(" Failed to create WatchService " + e.getMessage());
+    }
   }
 
   private void parseXMLFile() {
