@@ -46,7 +46,7 @@ public final class UserUtils {
    * Creates a watch thread which listens to specified files' modification and reloads
    * configurations
    */
-  static void setupWatch(final Map<String, ParseConfigFile> configFileMap) {
+  static void setupWatch(final Map<String, ParseConfigFile> configFileMap) throws IOException {
     Preconditions.checkNotNull(configFileMap);
     Preconditions.checkArgument(configFileMap.size() > 0);
 
@@ -55,7 +55,7 @@ public final class UserUtils {
       watchService = FileSystems.getDefault().newWatchService();
     } catch (IOException e) {
       log.warn(" Failed to create WatchService " + e.getMessage());
-      return;
+      throw e;
     }
 
     // Map to store WatchKey to Dir mapping
@@ -97,7 +97,7 @@ public final class UserUtils {
 
     // Return if WatchService is not initialized
     if (keys.size() == 0) {
-      log.warn("Watchservice wad not setup for any config file(s).");
+      log.warn("Watchservice was not setup for any config file(s).");
       try {
         watchService.close();
       } catch (IOException e) {
