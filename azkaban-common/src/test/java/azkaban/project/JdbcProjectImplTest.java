@@ -254,8 +254,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     Assert.assertEquals(project.isActive(), true);
     this.loader.removeProject(project, "testUser1");
-    final Project removedProject = this.loader.fetchProjectByName("mytestProject");
-    Assert.assertEquals(removedProject.isActive(), false);
+    Assert.assertNull(this.loader.fetchProjectByName("mytestProject"));
   }
 
   @Test

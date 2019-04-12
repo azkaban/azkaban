@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -69,72 +70,49 @@ public class QuartzScheduler {
     this.scheduler.setJobFactory(SERVICE_PROVIDER.getInstance(SchedulerJobFactory.class));
   }
 
-  public void start() {
-    try {
-      this.scheduler.start();
-    } catch (final SchedulerException e) {
-      logger.error("Error starting Quartz scheduler: ", e);
-    }
+  public void start() throws SchedulerException {
+    this.scheduler.start();
     logger.info("Quartz Scheduler started.");
   }
 
-  public void cleanup() {
-    logger.info("Cleaning up schedules in scheduler");
-    try {
-      this.scheduler.clear();
-    } catch (final SchedulerException e) {
-      logger.error("Exception clearing scheduler: ", e);
-    }
+  @VisibleForTesting
+  void cleanup() throws SchedulerException {
+    this.scheduler.clear();
   }
 
-  public void pause() {
-    logger.info("pausing all schedules in Quartz");
-    try {
-      this.scheduler.pauseAll();
-    } catch (final SchedulerException e) {
-      logger.error("Exception pausing scheduler: ", e);
-    }
+  public void shutdown() throws SchedulerException {
+    this.scheduler.shutdown();
+    logger.info("Quartz Scheduler shut down.");
   }
-
-  public void resume() {
-    logger.info("resuming all schedules in Quartz");
-    try {
-      this.scheduler.resumeAll();
-    } catch (final SchedulerException e) {
-      logger.error("Exception resuming scheduler: ", e);
-    }
-  }
-
-  public void shutdown() {
-    logger.info("Shutting down scheduler");
-    try {
-      this.scheduler.shutdown();
-    } catch (final SchedulerException e) {
-      logger.error("Exception shutting down scheduler: ", e);
-    }
-  }
-
-  private void checkJobExistence(final String jobName, final String groupName)
-      throws SchedulerException {
-    if (!ifJobExist(jobName, groupName)) {
-      throw new SchedulerException(String.format("can not find job with job name: %s and group "
-          + "name %s: in quartz.", jobName, groupName));
-    }
-  }
-
 
   /**
-   * pause a job given the groupname. since pausing request might be issued concurrently,
-   * so synchronized is added to ensure thread safety.
+   * Pause a job if it's present.
+   * @param jobName
+   * @param groupName
+   * @return true if job has been paused, no if job doesn't exist.
+   * @throws SchedulerException
    */
-  public synchronized void pauseJob(final String jobName, final String groupName)
+  public synchronized boolean pauseJobIfPresent(final String jobName, final String groupName)
       throws SchedulerException {
-    checkJobExistence(jobName, groupName);
-    this.scheduler.pauseJob(new JobKey(jobName, groupName));
+    if (ifJobExist(jobName, groupName)) {
+      this.scheduler.pauseJob(new JobKey(jobName, groupName));
+      return true;
+    } else {
+      return false;
+    }
   }
 
+  /**
+   * Check if job is paused.
+   *
+   * @return true if job is paused, false otherwise.
+   */
   public synchronized boolean isJobPaused(final String jobName, final String groupName)
       throws SchedulerException {
+    if (!ifJobExist(jobName, groupName)) {
+      throw new SchedulerException(String.format("Job (job name %s, group name %s) doesn't "
+          + "exist'", jobName, groupName));
+    }
     final JobKey jobKey = new JobKey(jobName, groupName);
     final JobDetail jobDetail = this.scheduler.getJobDetail(jobKey);
     final List<? extends Trigger> triggers = this.scheduler.getTriggersOfJob(jobDetail.getKey());
@@ -148,23 +126,32 @@ public class QuartzScheduler {
   }
 
   /**
-   * resume a paused job given the groupname. since resuming request might be issued concurrently,
-   * so synchronized is added to ensure thread safety.
+   * Resume a job.
+   * @param jobName
+   * @param groupName
+   * @return true the job has been resumed, no if the job doesn't exist.
+   * @throws SchedulerException
    */
-  public synchronized void resumeJob(final String jobName, final String groupName)
+  public synchronized boolean resumeJobIfPresent(final String jobName, final String groupName)
       throws SchedulerException {
-    checkJobExistence(jobName, groupName);
-    this.scheduler.resumeJob(new JobKey(jobName, groupName));
+    if (ifJobExist(jobName, groupName)) {
+      this.scheduler.resumeJob(new JobKey(jobName, groupName));
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
-   * Unregister a job given the groupname. Since unregister might be called when
-   * concurrently removing projects, so synchronized is added to ensure thread safety.
+   * Unschedule a job.
+   * @param jobName
+   * @param groupName
+   * @return true if job is found and unscheduled.
+   * @throws SchedulerException
    */
-  public synchronized void unregisterJob(final String jobName, final String groupName) throws
+  public synchronized boolean unscheduleJob(final String jobName, final String groupName) throws
       SchedulerException {
-    checkJobExistence(jobName, groupName);
-    this.scheduler.deleteJob(new JobKey(jobName, groupName));
+    return this.scheduler.deleteJob(new JobKey(jobName, groupName));
   }
 
   /**
@@ -179,16 +166,18 @@ public class QuartzScheduler {
    * <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather
    * than
    * number, which is the first case.</ul>
+   *
+   * @return true if job has been scheduled, false if the same job exists already.
    */
-  public synchronized void registerJob(final String cronExpression, final QuartzJobDescription
-      jobDescription)
-      throws SchedulerException {
+  public synchronized boolean scheduleJobIfAbsent(final String cronExpression, final QuartzJobDescription
+      jobDescription) throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
 
     if (ifJobExist(jobDescription.getJobName(), jobDescription.getGroupName())) {
-      throw new SchedulerException(String.format("can not register existing job with job name: "
+      logger.warn(String.format("can not register existing job with job name: "
           + "%s and group name: %s", jobDescription.getJobName(), jobDescription.getGroupName()));
+      return false;
     }
 
     if (!CronExpression.isValidExpression(cronExpression)) {
@@ -216,10 +205,12 @@ public class QuartzScheduler {
 
     this.scheduler.scheduleJob(job, trigger);
     logger.info("Quartz Schedule with jobDetail " + job.getDescription() + " is registered.");
+    return true;
   }
 
 
-  public boolean ifJobExist(final String jobName, final String groupName)
+  @VisibleForTesting
+  boolean ifJobExist(final String jobName, final String groupName)
       throws SchedulerException {
     return this.scheduler.getJobDetail(new JobKey(jobName, groupName)) != null;
   }

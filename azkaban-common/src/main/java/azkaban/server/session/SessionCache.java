@@ -20,8 +20,12 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import javax.inject.Inject;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 
 /**
  * Cache for web session.
@@ -51,7 +55,7 @@ public class SessionCache {
         DEFAULT_SESSION_TIME_TO_LIVE);
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))
-        .expireAfterAccess(effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
+        .expireAfterAccess(this.effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -63,8 +67,12 @@ public class SessionCache {
     return elem;
   }
 
-  public long getEffectiveSessionTimeToLive() {
-    return effectiveSessionTimeToLive;
+
+  /**
+   * Returns the approximate number of sessions currently be kept.
+   */
+  public long getSessionCount() {
+    return this.cache.size();
   }
 
   /**
@@ -79,5 +87,22 @@ public class SessionCache {
    */
   public void removeSession(final String id) {
     this.cache.invalidate(id);
+  }
+
+
+  /**
+   * Returns sessions whose IP equals to the given IP.
+   */
+  public Set<Session> findSessionsByIP(final String ip) {
+    final Set<Session> ret = new HashSet<>();
+
+    final Map<String, Session> cacheSnapshot = this.cache.asMap();
+    for (final Entry<String, Session> entry : cacheSnapshot.entrySet()) {
+      if (entry.getValue().getIp().equals(ip)) {
+        ret.add(entry.getValue());
+      }
+    }
+
+    return ret;
   }
 }

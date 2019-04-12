@@ -243,40 +243,40 @@ public class AzkabanWebServer extends AzkabanServer {
       public void run() {
         try {
           if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-            logger.info("Shutting down flow trigger scheduler...");
+            AzkabanWebServer.logger.info("Shutting down flow trigger scheduler...");
             webServer.scheduler.shutdown();
           }
         } catch (final Exception e) {
-          logger.error("Exception while shutting down flow trigger service.", e);
+          AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
           if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-            logger.info("Shutting down flow trigger service...");
+            AzkabanWebServer.logger.info("Shutting down flow trigger service...");
             webServer.flowTriggerService.shutdown();
           }
         } catch (final Exception e) {
-          logger.error("Exception while shutting down flow trigger service.", e);
+          AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
-          logger.info("Logging top memory consumers...");
+          AzkabanWebServer.logger.info("Logging top memory consumers...");
           logTopMemoryConsumers();
 
-          logger.info("Shutting down http server...");
+          AzkabanWebServer.logger.info("Shutting down http server...");
           webServer.close();
 
         } catch (final Exception e) {
-          logger.error("Exception while shutting down web server.", e);
+          AzkabanWebServer.logger.error("Exception while shutting down web server.", e);
         }
 
-        logger.info("kk thx bye.");
+        AzkabanWebServer.logger.info("kk thx bye.");
       }
 
       public void logTopMemoryConsumers() throws Exception {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          logger.info("logging top memory consumer");
+          AzkabanWebServer.logger.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
@@ -289,7 +289,7 @@ public class AzkabanWebServer extends AzkabanServer {
               new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
-            logger.info(line);
+            AzkabanWebServer.logger.info(line);
           }
           is.close();
         }
@@ -606,6 +606,8 @@ public class AzkabanWebServer extends AzkabanServer {
      */
     this.metricsManager.addGauge("WEB-NumRunningFlows",
         () -> (this.executorManagerAdapter.getRunningFlows().size()));
+
+    this.metricsManager.addGauge("session-count", this.sessionCache::getSessionCount);
 
     logger.info("starting reporting Web Server Metrics");
     this.metricsManager.startReporting("AZ-WEB", this.props);

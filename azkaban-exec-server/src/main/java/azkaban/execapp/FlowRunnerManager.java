@@ -151,7 +151,7 @@ public class FlowRunnerManager implements EventListener,
   private int threadPoolQueueSize = -1;
   private Props globalProps;
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
+  private long executionDirRetention = 60 * 1000; // 1 min
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
@@ -576,7 +576,8 @@ public class FlowRunnerManager implements EventListener,
       } else if (event.getType() == EventType.FLOW_STARTED) {
         // add flow level SLA checker
         this.triggerManager
-            .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow));
+            .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
+                .getExecutionOptions().getSlaOptions()));
       }
     }
   }
@@ -862,8 +863,8 @@ public class FlowRunnerManager implements EventListener,
 
   private class CleanerThread extends Thread {
 
-    // Every hour, clean execution dir.
-    private static final long EXECUTION_DIR_CLEAN_INTERVAL_MS = 60 * 60 * 1000;
+    // Every 5 mins, clean execution dir.
+    private static final long EXECUTION_DIR_CLEAN_INTERVAL_MS = 5 * 60 * 1000;
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
     // Every 5 mins kill flows running longer than allowed max running time
@@ -948,6 +949,7 @@ public class FlowRunnerManager implements EventListener,
       }
     }
 
+    //todo burgerkingeater: cleaning execution dir should be done when flow finishes.
     private void cleanOlderExecutionDirs() {
       final File dir = FlowRunnerManager.this.executionDirectory;
 

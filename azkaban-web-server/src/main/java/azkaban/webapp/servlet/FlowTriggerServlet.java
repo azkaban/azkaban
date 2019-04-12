@@ -22,6 +22,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
+import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,12 +32,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
   private FlowTriggerScheduler scheduler;
   private ProjectManager projectManager;
+  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerServlet.class);
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -70,9 +74,9 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
       jsonObj.put("cronExpression", res.getFlowTrigger().getSchedule().getCronExpression());
       jsonObj.put("submitUser", res.getSubmitUser());
       jsonObj.put("firstSchedTime",
-          utils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
+          TimeUtils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
       jsonObj.put("nextExecTime",
-          utils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
+          TimeUtils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
 
       Long maxWaitMin = null;
       if (res.getFlowTrigger().getMaxWaitDuration().isPresent()) {
@@ -115,9 +119,17 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
         } else {
           try {
             if (ajaxName.equals("pauseTrigger")) {
-              this.scheduler.pauseFlowTrigger(projectId, flowId);
+              if (this.scheduler.pauseFlowTriggerIfPresent(projectId, flowId)) {
+                logger.info("Flow trigger for flow {}.{} is paused", project.getName(), flowId);
+              } else {
+                logger.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
+              }
             } else {
-              this.scheduler.resumeFlowTrigger(projectId, flowId);
+              if (this.scheduler.resumeFlowTriggerIfPresent(projectId, flowId)) {
+                logger.info("Flow trigger for flow {}.{} is resumed", project.getName(), flowId);
+              } else {
+                logger.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
+              }
             }
             ret.put("status", "success");
           } catch (final SchedulerException ex) {

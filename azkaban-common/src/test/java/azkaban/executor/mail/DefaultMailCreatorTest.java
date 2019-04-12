@@ -64,7 +64,6 @@ public class DefaultMailCreatorTest {
     assertNotNull(this.defaultTz);
     // EEST
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/Helsinki"));
-    DateTimeUtils.setCurrentMillisFixed(FIXED_CURRENT_TIME_MILLIS);
 
     this.mailCreator = new DefaultMailCreator();
 
@@ -136,6 +135,8 @@ public class DefaultMailCreatorTest {
   @Test
   public void createFirstErrorMessage() throws Exception {
     setJobStatus(Status.FAILED);
+    // TODO ypadron: implement ability to mock current time in java.time api and remove setEndTime()
+    this.executableFlow.setEndTime(END_TIME_MILLIS);
     this.executableFlow.setStatus(Status.FAILED_FINISHING);
     assertTrue(this.mailCreator.createFirstErrorMessage(
         this.executableFlow, this.message, this.azkabanName, this.scheme, this.clientHostname,

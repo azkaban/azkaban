@@ -97,14 +97,12 @@ public class JavaProcessJob extends ProcessJob {
 
     if (classPaths == null || classPaths.isEmpty()) {
       final File path = new File(getPath());
-      // File parent = path.getParentFile();
       getLog().info(
           "No classpath specified. Trying to load classes from " + path);
 
       if (path != null) {
         for (final File file : path.listFiles()) {
           if (file.getName().endsWith(".jar")) {
-            // log.info("Adding to classpath:" + file.getName());
             classpathList.add(file.getName());
           }
         }

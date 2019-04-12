@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
@@ -1354,18 +1355,33 @@ public class FlowRunner extends EventHandler implements Runnable {
     return ImmutableSet.copyOf(this.activeJobRunners);
   }
 
+  public FlowRunnerEventListener getFlowRunnerEventListener() {
+    return flowListener;
+  }
+
+  public JobRunnerEventListener getJobRunnerEventListener() {
+    return listener;
+  }
+
   // Class helps report the flow start and stop events.
-  private class FlowRunnerEventListener implements EventListener {
+  @VisibleForTesting
+  class FlowRunnerEventListener implements EventListener {
 
     public FlowRunnerEventListener() {
     }
 
-    private synchronized Map<String, String> getFlowMetadata(final FlowRunner flowRunner) {
+    @VisibleForTesting
+    synchronized Map<String, String> getFlowMetadata(final FlowRunner flowRunner) {
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
       metaData.put("flowName", flow.getId());
+      // Azkaban executor hostname
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
+      // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
+      // or else use jetty.hostname
+      metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+          props.getString("jetty.hostname", "localhost")));
       metaData.put("projectName", flow.getProjectName());
       metaData.put("submitUser", flow.getSubmitUser());
       metaData.put("executionId", String.valueOf(flow.getExecutionId()));
@@ -1413,12 +1429,14 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
   }
 
-  private class JobRunnerEventListener implements EventListener {
+  @VisibleForTesting
+  class JobRunnerEventListener implements EventListener {
 
     public JobRunnerEventListener() {
     }
 
-    private synchronized Map<String, String> getJobMetadata(final JobRunner jobRunner) {
+    @VisibleForTesting
+    synchronized Map<String, String> getJobMetadata(final JobRunner jobRunner) {
       final ExecutableNode node = jobRunner.getNode();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
@@ -1427,7 +1445,12 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("flowName", node.getExecutableFlow().getId());
       metaData.put("startTime", String.valueOf(node.getStartTime()));
       metaData.put("jobType", String.valueOf(node.getType()));
+      // Azkaban executor hostname
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
+      // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
+      // or else use jetty.hostname
+      metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+          props.getString("jetty.hostname", "localhost")));
       metaData.put("jobProxyUser",
           jobRunner.getProps().getString(JobProperties.USER_TO_PROXY, null));
 
@@ -1481,8 +1504,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
             .getInstance(TriggerManager.class);
         triggerManager
-            .addTrigger(FlowRunner.this.flow.getExecutionId(), SlaOption.getJobLevelSLAOptions(
-                FlowRunner.this.flow));
+            .addTrigger(FlowRunner.this.flow.getExecutionId(),
+                SlaOption.getJobLevelSLAOptions(flow.getExecutionOptions().getSlaOptions()));
       }
     }
   }

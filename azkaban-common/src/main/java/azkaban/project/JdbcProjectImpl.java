@@ -106,8 +106,8 @@ public class JdbcProjectImpl implements ProjectLoader {
         }
       });
     } catch (final SQLException ex) {
-      logger.error(ProjectResultHandler.SELECT_PROJECT_BY_ID + " failed.", ex);
-      throw new ProjectManagerException("Error retrieving all projects", ex);
+      logger.error(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS + " failed.", ex);
+      throw new ProjectManagerException("Error retrieving all active projects", ex);
     }
     return projects;
   }
@@ -155,17 +155,12 @@ public class JdbcProjectImpl implements ProjectLoader {
     Project project = null;
     final ProjectResultHandler handler = new ProjectResultHandler();
 
-    // select active project from db first, if not exist, select inactive one.
     // At most one active project with the same name exists in db.
     try {
-      List<Project> projects = this.dbOperator
+      final List<Project> projects = this.dbOperator
           .query(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
       if (projects.isEmpty()) {
-        projects = this.dbOperator
-            .query(ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
-        if (projects.isEmpty()) {
-          throw new ProjectManagerException("No project with name " + name + " exists in db.");
-        }
+        return null;
       }
       project = projects.get(0);
       for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {

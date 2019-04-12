@@ -26,7 +26,6 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.utils.StringUtils;
-import azkaban.utils.WebUtils;
 import azkaban.webapp.WebMetrics;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -36,6 +35,7 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -220,9 +220,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     headers.put(WebUtils.X_FORWARDED_FOR_HEADER,
         req.getHeader(WebUtils.X_FORWARDED_FOR_HEADER.toLowerCase()));
 
-    final WebUtils utils = new WebUtils();
-
-    return utils.getRealClientIpAddr(headers, req.getRemoteAddr());
+    return WebUtils.getRealClientIpAddr(headers, req.getRemoteAddr());
   }
 
   private Session getSessionFromRequest(final HttpServletRequest req)
@@ -329,7 +327,8 @@ public abstract class LoginAbstractAzkabanServlet extends
         // back a message or redirect.
         if (isAjaxCall(req)) {
           final String response =
-              createJsonResponse("error", "Invalid Session. Need to re-login",
+              AbstractAzkabanServlet
+                  .createJsonResponse("error", "Invalid Session. Need to re-login",
                   "login", null);
           writeResponse(resp, response);
         } else {
@@ -351,9 +350,9 @@ public abstract class LoginAbstractAzkabanServlet extends
    * distinction between the illegal request above and the following valid request: curl -X POST -d
    * "action=login&username=azkaban&password=azkaban" http://localhost:8081/
    *
-   * "password=" is searched for because it leverages the query syntax to determine that the user is
-   * passing the password as a parameter name. There is no other ajax call that has a parameter that
-   * includes the string "password" at the end which could throw false positives.
+   * "password=" is searched for because it leverages the query syntax to determine that the user
+   * is passing the password as a parameter name. There is no other ajax call that has a parameter
+   * that includes the string "password" at the end which could throw false positives.
    */
   private boolean isIllegalPostRequest(final HttpServletRequest req) {
     return (req.getQueryString() != null && req.getQueryString().contains("password="));
@@ -413,6 +412,13 @@ public abstract class LoginAbstractAzkabanServlet extends
       cookie.setPath("/");
       resp.addCookie(cookie);
       getApplication().getSessionCache().addSession(session);
+      final Set<Session> sessionsOfSameIP =
+          getApplication().getSessionCache().findSessionsByIP(session.getIp());
+
+      // Check potential DDoS attack by bad hosts.
+      logger.info(
+          "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
+              .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
     } else {
