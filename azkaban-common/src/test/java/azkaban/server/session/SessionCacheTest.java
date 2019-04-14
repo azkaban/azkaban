@@ -25,7 +25,7 @@ import org.junit.Test;
 
 public final class SessionCacheTest {
 
-  final String propsString = "{ \"session.time.to.live\": \"100\" }";
+  final String propsString = "{ \"session.time.to.live\": \"2000\" }";
 
   SessionCache freshSessionCache() throws Exception {
     final Props props = PropsUtils.fromJSONString(this.propsString);
@@ -76,7 +76,7 @@ public final class SessionCacheTest {
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
         "123.12.12.123");
     sessionCache.addSession(session);
-    Thread.sleep(200L);
+    Thread.sleep(2001L);
     assertThat(sessionCache.getSession("TEST_SESSION_ID")).isNull();
   }
 
