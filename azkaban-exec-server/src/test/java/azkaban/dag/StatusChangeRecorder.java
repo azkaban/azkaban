@@ -19,9 +19,10 @@ package azkaban.dag;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import azkaban.utils.Pair;
+
 import java.util.ArrayList;
 import java.util.List;
-import javafx.util.Pair;
 
 /**
  * Records the sequence of nodes and dag status change.
