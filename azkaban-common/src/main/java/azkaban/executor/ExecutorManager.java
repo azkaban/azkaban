@@ -800,7 +800,7 @@ public class ExecutorManager extends EventHandler implements
     try {
       while (!finished) {
         final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
-        if (data != null) {
+        if (data != null && data.getLength() != 0) {
           applicationId = findApplicationIdFromLog(data.getData());
           if (applicationId != null) {
             return applicationId;
