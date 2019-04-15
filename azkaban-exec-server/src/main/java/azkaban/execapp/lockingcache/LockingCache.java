@@ -130,7 +130,23 @@ public class LockingCache<K, V> {
     this.maxSizeBytes = maxSizeBytes;
   }
 
-  /** stop cleanup */
+  /**
+   * Load any initial entries. This assumes that no entries are in the cache already, and
+   * that no entries are added during initialization. If concurrent access is needed during
+   * initialization, then further work is needed for this method.
+   */
+  public void initialize() throws Exception {
+    final Map<K, V> initialEntries = cacheLoader.loadAll();
+    initialEntries.forEach((key, entry) ->
+    {
+      long size = sizer.getSize(entry);
+      cacheMap.putIfAbsent(key, new LockingCacheEntry(entry, size));
+      // note that adding the size would be inaccurate if the entry already exists in the cache
+      cacheSize.addAndGet(size);
+    });
+  }
+
+    /** stop cleanup */
   public void shutdownCleanup() {
     if (cleanupPool != null) {
       cleanupPool.shutdown();

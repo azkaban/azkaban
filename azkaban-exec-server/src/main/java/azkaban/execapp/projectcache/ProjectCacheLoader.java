@@ -27,10 +27,16 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -55,9 +61,52 @@ public class ProjectCacheLoader implements LockingCacheLoader<ProjectCacheKey,
   public ProjectDirectoryInfo load(ProjectCacheKey key) throws Exception {
     final String projectDir = generateProjectDirName(key);
     File installedDir = new File(projectCacheDir, projectDir);
+    if (installedDir.exists()) {
+      if (installedDir.isDirectory()) {
+        log.warn("{} aleady exists.", installedDir.getAbsolutePath());
+        long size = calculateDirSizeAndSave(installedDir);
+        return new ProjectDirectoryInfo(key, installedDir, size);
+      }
+      else {
+        log.error("{} is not a valid project directory", installedDir.getAbsolutePath());
+        throw new ExecutorManagerException("invalid project directory for " + key);
+      }
+    }
     long size = downloadProject(key, installedDir);
 
     return new ProjectDirectoryInfo(key, installedDir, size);
+  }
+
+  @Override
+  public Map<ProjectCacheKey, ProjectDirectoryInfo> loadAll() throws ExecutorManagerException {
+    final Map<ProjectCacheKey, ProjectDirectoryInfo> projects = new HashMap<>();
+    final String projectDirPattern = "[0-9]+\\.[0-9]+";
+    final File files[] = this.projectCacheDir.listFiles(
+        (dir, name) -> (name != null) && name.matches(projectDirPattern));
+
+    for (final File project : files) {
+      if (project.exists() && project.isDirectory()) {
+        try {
+          String fileName = project.getName();
+          final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
+          final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+          final ProjectCacheKey key = new ProjectCacheKey(projectId, versionNum);
+          final long size = calculateDirSizeAndSave(project);
+          final ProjectDirectoryInfo projectDirInfo =
+              new ProjectDirectoryInfo(key, project, size);
+          projects.put(key, projectDirInfo);
+        } catch (final Exception e) {
+          log.error("error while loading project dir metadata for project {}",
+              project.getName(), e);
+          throw new ExecutorManagerException("Error loading existing project from " +
+              project.getName() );
+        }
+      } else {
+        log.error("project {} is not a proper project directory or has been removed.", project
+            .getName());
+      }
+    }
+    return projects;
   }
 
   @Override
@@ -73,10 +122,11 @@ public class ProjectCacheLoader implements LockingCacheLoader<ProjectCacheKey,
     return String.valueOf(key.getProjectId()) + "." + String.valueOf(key.getVersion());
   }
 
+  /** create a temporary directory for the project */
   private File createTempDir(final ProjectCacheKey key) {
     final String projectDir = generateProjectDirName(key);
     final File tempDir = new File(this.projectCacheDir,
-        "_temp." + projectDir + "." + System.currentTimeMillis());
+        "_temp." + projectDir + "." + UUID.randomUUID());
     tempDir.mkdirs();
     return tempDir;
   }

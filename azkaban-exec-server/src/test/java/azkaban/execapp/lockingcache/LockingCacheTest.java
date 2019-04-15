@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.Test;
 
@@ -56,6 +58,14 @@ public class LockingCacheTest {
     public String load(Integer key) throws Exception {
       updateCountAndSleep(key, loadCountMap, loadInterval);
       return getValue(key);
+    }
+    @Override
+    public Map<Integer, String> loadAll() {
+      Map<Integer, String> map = Stream.of(new Object[][] {
+          { 7, "bbbbbbb" },
+          { 5, "ccccc" },
+      }).collect(Collectors.toMap(data -> (Integer) data[0], data -> (String) data[1]));
+      return map;
     }
 
     @Override public void remove(Integer key, String value) throws Exception {
@@ -154,6 +164,32 @@ public class LockingCacheTest {
     assertThat(cache.getCacheSize()).isEqualTo(0);
     assertThat(loader.getLoadCount(20)).isEqualTo(1);
     assertThat(loader.getRemovalCount(20)).isEqualTo(1);
+  }
+
+  @Test
+  public void testInitialize() throws Exception {
+    final TestLoader loader = new TestLoader();
+    final LockingCache<Integer, String> cache = new LockingCache(loader,
+        new TestSizer());
+
+    cache.initialize();
+    assertThat(cache.getCacheSize()).isEqualTo(12);
+
+    // get a value in the cache
+    try(LockingCacheEntry<String> entry5 = cache.get(5)) {
+      assertThat(entry5.getValue().length()).isEqualTo(5);
+    }
+    assertThat(cache.getCacheSize()).isEqualTo(12);
+
+    // get a value not already in the cache
+    try(LockingCacheEntry<String> entry11 = cache.get(11)) {
+      assertThat(entry11.getValue().length()).isEqualTo(11);
+    }
+    assertThat(cache.getCacheSize()).isEqualTo(23);
+
+    assertThat(loader.getLoadCount(5)).isEqualTo(0);
+    assertThat(loader.getLoadCount(7)).isEqualTo(0);
+    assertThat(loader.getLoadCount(11)).isEqualTo(1);
   }
 
   @Test

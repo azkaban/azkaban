@@ -387,6 +387,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
       // Set the executor to inactive. Will receive no new flows.
       setActiveInternal(false);
+      this.flowRunnerManager.disableCacheCleanup();
       this.application.shutdown();
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {

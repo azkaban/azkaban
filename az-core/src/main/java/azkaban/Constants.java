@@ -239,13 +239,9 @@ public class Constants {
     public static final String PROJECT_CACHE_SIZE_PERCENTAGE = "azkaban"
         + ".project_cache_size_percentage_of_disk";
 
-    // allowed max size of shared project dir in MB. This is the threshold when cache cleanup
-    // will kick in
-    public static final String PROJECT_DIR_MAX_SIZE_IN_MB = "azkaban.project_cache_max_size_in_mb";
-
-    // allowed min size of shared project dir in MB. Cleanup will try to reduce the size of the
-    // cache to this value.
-    public static final String PROJECT_DIR_MIN_SIZE_IN_MB = "azkaban.project_cache_min_size_in_mb";
+    // allowed max size of shared project dir (percentage of partition size), e.g 0.8
+    public static final String PROJECT_CACHE_MIN_SIZE_PERCENTAGE = "azkaban"
+        + ".project_cache_min_size_percentage_of_disk";
 
     // the cache cleanup thread will check to see if there is work to be done at the specified
     // interval.

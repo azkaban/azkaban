@@ -25,7 +25,11 @@ import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
+import azkaban.execapp.lockingcache.LockingCache;
 import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.execapp.projectcache.ProjectCacheKey;
+import azkaban.execapp.projectcache.ProjectCacheLoader;
+import azkaban.execapp.projectcache.ProjectDirectoryInfo;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
@@ -58,6 +62,9 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,6 +122,9 @@ public class FlowRunnerManager implements EventListener,
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
   private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
   private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
+  private static final double DEFAULT_PROJECT_CACHE_SIZE_MAX_PERCENTAGE = 75.0;
+  private static final double DEFAULT_PROJECT_CACHE_SIZE_MIN_PERCENTAGE = 50.0;
+  private static final int DEFAULT_PROJECT_CACHE_CLEANUP_INTERVAL_SEC = 300;
 
   // this map is used to store the flows that have been submitted to
   // the executor service. Once a flow has been submitted, it is either
@@ -129,7 +139,7 @@ public class FlowRunnerManager implements EventListener,
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
-  private final FlowPreparer flowPreparer;
+ // private final FlowPreparer flowPreparer;
   private final TriggerManager triggerManager;
   private final AlerterHolder alerterHolder;
   private final AzkabanEventReporter azkabanEventReporter;
@@ -149,13 +159,20 @@ public class FlowRunnerManager implements EventListener,
   private final boolean validateProxyUser;
   private PollingService pollingService;
   private int threadPoolQueueSize = -1;
-  private Props globalProps;
   private long lastCleanerThreadCheckTime = -1;
+  private Props globalProps;
   private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
   private volatile boolean active;
+
+  // project cache
+  private final LockingCache<ProjectCacheKey, ProjectDirectoryInfo> projectCache;
+  private final ProjectCacheLoader projectCacheLoader;
+  private final long minProjectCacheSize;
+  private final long maxProjectCacheSize;
+  private final int cacheCleanerInterval;
 
   @Inject
   public FlowRunnerManager(final Props props,
@@ -166,7 +183,7 @@ public class FlowRunnerManager implements EventListener,
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
       final ExecMetrics execMetrics,
-      @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
+      @Nullable final AzkabanEventReporter azkabanEventReporter) throws Exception {
     this.azkabanProps = props;
 
     this.executionDirRetention = props.getLong("execution.dir.retention",
@@ -212,29 +229,36 @@ public class FlowRunnerManager implements EventListener,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), this.globalProps,
             getClass().getClassLoader());
 
-    ProjectCacheCleaner cleaner = null;
-    try {
-      final double projectCacheSizePercentage =
-          props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
-      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
-    } catch (final UndefinedPropertyException ex) {
-    }
-
-    // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
-
-    this.execMetrics.addFlowRunnerManagerMetrics(this);
+    this.projectCacheLoader = new ProjectCacheLoader(storageManager, projectDirectory);
+    final double projectCacheSizeMaxPercentage = props.getDouble(ConfigurationKeys
+            .PROJECT_CACHE_SIZE_PERCENTAGE, DEFAULT_PROJECT_CACHE_SIZE_MAX_PERCENTAGE);
+    this.maxProjectCacheSize = calculateProjectDirThreshold(this
+        .projectDirectory, projectCacheSizeMaxPercentage);
+    final double projectCacheSizeMinPercentage = props.getDouble(ConfigurationKeys
+        .PROJECT_CACHE_SIZE_PERCENTAGE, DEFAULT_PROJECT_CACHE_SIZE_MIN_PERCENTAGE);
+    this.minProjectCacheSize = calculateProjectDirThreshold(this
+        .projectDirectory, projectCacheSizeMinPercentage);
+    this.cacheCleanerInterval = props.getInt(ConfigurationKeys
+            .PROJECT_DIR_CACHE_CLEANUP_INTERVAL_SEC,
+        DEFAULT_PROJECT_CACHE_CLEANUP_INTERVAL_SEC);
+    this.projectCache = new LockingCache<>(projectCacheLoader, x -> x.getSizeInBytes(),
+        minProjectCacheSize, maxProjectCacheSize, cacheCleanerInterval);
+    projectCache.initialize();
 
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
 
+    this.execMetrics.addFlowRunnerManagerMetrics(this);
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
       this.logger.info("Starting polling service.");
       this.pollingService = new PollingService(this.azkabanProps.getLong
           (ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, DEFAULT_POLLING_INTERVAL_MS));
       this.pollingService.start();
     }
+  }
+
+  private long calculateProjectDirThreshold(File projectCacheDir, double percentage) {
+    return (long) (projectCacheDir.getTotalSpace() * percentage);
   }
 
   /**
@@ -387,22 +411,6 @@ public class FlowRunnerManager implements EventListener,
     this.commonMetrics.addQueueWait(System.currentTimeMillis() -
         flow.getExecutableFlow().getSubmitTime());
 
-    final Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
-
-    try {
-      if (this.active || isExecutorSpecified(flow)) {
-        this.flowPreparer.setup(flow);
-      } else {
-        // Unset the executor.
-        this.executorLoader.unsetExecutorIdForExecution(execId);
-        throw new ExecutorManagerException("executor became inactive before setting up the "
-            + "flow " + execId);
-      }
-    } finally {
-      this.preparingFlowCount.decrementAndGet();
-      flowPrepTimerContext.stop();
-    }
-
     // Setup flow runner
     FlowWatcher watcher = null;
     final ExecutionOptions options = flow.getExecutionOptions();
@@ -440,7 +448,8 @@ public class FlowRunnerManager implements EventListener,
 
     final FlowRunner runner =
         new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
-            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder);
+            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder, this.projectCache,
+            this.executionDirectory, this.execMetrics);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
@@ -836,6 +845,14 @@ public class FlowRunnerManager implements EventListener,
     }
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
+    projectCache.shutdownCleanup();
+  }
+
+  /** Disable project cache cleanup by this executor. */
+  public void disableCacheCleanup() {
+    projectCache.setMaxSizeBytes(Long.MAX_VALUE);
+    projectCache.setMinSizeBytes(Long.MAX_VALUE);
+    projectCache.shutdownCleanup();
   }
 
   /**
@@ -900,7 +917,6 @@ public class FlowRunnerManager implements EventListener,
       while (!this.shutdown) {
         synchronized (this) {
           try {
-            FlowRunnerManager.this.lastCleanerThreadCheckTime = System.currentTimeMillis();
             FlowRunnerManager.logger.info("# of executing flows: " + getNumRunningFlows());
 
             // Cleanup old stuff.
@@ -1052,4 +1068,5 @@ public class FlowRunnerManager implements EventListener,
       this.scheduler.shutdownNow();
     }
   }
+
 }
