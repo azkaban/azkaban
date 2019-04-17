@@ -25,11 +25,15 @@ import org.junit.Test;
 
 public final class SessionCacheTest {
 
-  final String propsString = "{ \"session.time.to.live\": \"2000\" }";
+  final String propsString = "{ \"session.time.to.live\": \"100\" }";
 
   SessionCache freshSessionCache() throws Exception {
     final Props props = PropsUtils.fromJSONString(this.propsString);
     return new SessionCache(props);
+  }
+
+  SessionCache makeSessionCacheWithLongTime() throws Exception {
+    return new SessionCache(new Props());
   }
 
   @Test
@@ -55,7 +59,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheFindByIP() throws Exception {
-    final SessionCache sessionCache = freshSessionCache();
+    final SessionCache sessionCache = makeSessionCacheWithLongTime();
     final String ip = "123.12.12.123";
     final String id1 = "TEST_ID1";
     final String id2 = "TEST_ID2";
@@ -76,8 +80,17 @@ public final class SessionCacheTest {
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
         "123.12.12.123");
     sessionCache.addSession(session);
-    Thread.sleep(2001L);
+    Thread.sleep(200L);
     assertThat(sessionCache.getSession("TEST_SESSION_ID")).isNull();
   }
 
+  @Test
+  public void SessionCacheNoExpired() throws Exception {
+    final SessionCache sessionCache = makeSessionCacheWithLongTime();
+    final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
+            "123.12.12.123");
+    sessionCache.addSession(session);
+    Thread.sleep(200L);
+    assertThat(sessionCache.getSession("TEST_SESSION_ID")).isEqualTo(session);
+  }
 }
