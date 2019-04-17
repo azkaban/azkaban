@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import azkaban.jobExecutor.ProcessJob;
@@ -44,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
+
 public class JavaJobRunnerMain {
 
   public static final String JOB_CLASS = "job.class";
@@ -57,9 +57,9 @@ public class JavaJobRunnerMain {
 
   public static final String CANCEL_METHOD_PARAM = "method.cancel";
   public static final String RUN_METHOD_PARAM = "method.run";
-  public static final String[] PROPS_CLASSES = new String[] {
-    "azkaban.utils.Props",
-    "azkaban.common.utils.Props"
+  public static final String[] PROPS_CLASSES = new String[]{
+      "azkaban.utils.Props",
+      "azkaban.common.utils.Props"
   };
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout("%p %m\n");
@@ -139,16 +139,16 @@ public class JavaJobRunnerMain {
       try {
         final Method generatedPropertiesMethod =
             _javaObject.getClass().getMethod(GET_GENERATED_PROPERTIES_METHOD,
-                new Class<?>[] {});
+                new Class<?>[]{});
         Object outputGendProps =
-            generatedPropertiesMethod.invoke(_javaObject, new Object[] {});
+            generatedPropertiesMethod.invoke(_javaObject, new Object[]{});
         if (outputGendProps != null) {
           final Method toPropertiesMethod =
               outputGendProps.getClass().getMethod("toProperties",
-                  new Class<?>[] {});
+                  new Class<?>[]{});
           Properties properties =
               (Properties) toPropertiesMethod.invoke(outputGendProps,
-                  new Object[] {});
+                  new Object[]{});
 
           Props outputProps = new Props(null, properties);
           outputGeneratedProperties(outputProps);
@@ -190,7 +190,7 @@ public class JavaJobRunnerMain {
   private void runMethod(Object obj, String runMethod)
       throws IllegalAccessException, InvocationTargetException,
       NoSuchMethodException {
-    obj.getClass().getMethod(runMethod, new Class<?>[] {}).invoke(obj);
+    obj.getClass().getMethod(runMethod, new Class<?>[]{}).invoke(obj);
   }
 
   @SuppressWarnings("DefaultCharset")
@@ -311,7 +311,7 @@ public class JavaJobRunnerMain {
       Constructor<?> propsCon =
           getConstructor(propsClass, propsClass, Properties[].class);
       Object props =
-          propsCon.newInstance(null, new Properties[] { properties });
+          propsCon.newInstance(null, new Properties[]{properties});
 
       Constructor<?> con =
           getConstructor(runningClass, String.class, propsClass);

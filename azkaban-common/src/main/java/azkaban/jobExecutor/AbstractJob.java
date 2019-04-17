@@ -13,12 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobExecutor;
 
 import azkaban.utils.Props;
 import org.apache.log4j.Logger;
 
+
+/**
+ * Base Job
+ */
 public abstract class AbstractJob implements Job {
 
   public static final String JOB_TYPE = "type";
@@ -56,6 +59,19 @@ public abstract class AbstractJob implements Job {
     throw new RuntimeException("Job " + this._id + " does not support cancellation!");
   }
 
+  @Override
+  public Props getJobGeneratedProperties() {
+    return new Props();
+  }
+
+  @Override
+  public abstract void run() throws Exception;
+
+  @Override
+  public boolean isCanceled() {
+    return false;
+  }
+
   public Logger getLog() {
     return this._log;
   }
@@ -91,18 +107,4 @@ public abstract class AbstractJob implements Job {
   public void error(final String message, final Throwable t) {
     this._log.error(message, t);
   }
-
-  @Override
-  public Props getJobGeneratedProperties() {
-    return new Props();
-  }
-
-  @Override
-  public abstract void run() throws Exception;
-
-  @Override
-  public boolean isCanceled() {
-    return false;
-  }
-
 }

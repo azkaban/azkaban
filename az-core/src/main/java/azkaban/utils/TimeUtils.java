@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.time.Instant;
@@ -169,7 +168,7 @@ public class TimeUtils {
     String periodStr = "null";
 
     if (period == null) {
-      return "null";
+      return periodStr;
     }
 
     if (period.get(DurationFieldType.years()) > 0) {

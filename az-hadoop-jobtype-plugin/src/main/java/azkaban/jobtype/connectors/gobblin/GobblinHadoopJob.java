@@ -50,7 +50,7 @@ public class GobblinHadoopJob extends HadoopJavaJob {
     super(jobid, sysProps, jobProps, log);
     initializePresets();
 
-    jobProps.put(HadoopJavaJob.JOB_CLASS, "gobblin.azkaban.AzkabanJobLauncher");
+    jobProps.put("job.class", "gobblin.azkaban.AzkabanJobLauncher");
     jobProps.put("job.name", jobProps.get(CommonJobProperties.JOB_ID));
     jobProps.put("launcher.type", "MAPREDUCE"); //Azkaban only supports MR mode
     jobProps.put("fs.uri", sysProps.get("fs.uri")); //Azkaban should only support HDFS

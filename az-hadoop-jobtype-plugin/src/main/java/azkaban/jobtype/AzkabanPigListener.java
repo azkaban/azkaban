@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import java.io.IOException;
@@ -49,6 +48,7 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 public class AzkabanPigListener implements PigProgressNotificationListener {
+
   private static Logger logger = Logger.getLogger(AzkabanPigListener.class);
   private String statsFile;
 

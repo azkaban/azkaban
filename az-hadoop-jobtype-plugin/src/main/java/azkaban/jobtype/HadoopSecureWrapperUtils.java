@@ -13,10 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
-
-import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,6 +30,7 @@ import org.apache.log4j.Logger;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
 
+
 /**
  * <pre>
  * There are many common methods that's required by the HadoopSecure*Wrapper.java's. They are all consolidated
@@ -48,20 +46,19 @@ public class HadoopSecureWrapperUtils {
   /**
    * Perform all the magic required to get the proxyUser in a securitized grid
    *
-   * @param userToProxy
    * @return a UserGroupInformation object for the specified userToProxy, which will also contain
-   *         the logged in user's tokens
-   * @throws IOException
+   * the logged in user's tokens
    */
-  private static UserGroupInformation createSecurityEnabledProxyUser(String userToProxy, String filelocation, Logger log
-          ) throws IOException {
+  private static UserGroupInformation createSecurityEnabledProxyUser(String userToProxy,
+      String filelocation, Logger log
+  ) throws IOException {
 
     if (!new File(filelocation).exists()) {
       throw new RuntimeException("hadoop token file doesn't exist.");
     }
 
     log.info("Found token file.  Setting " + HadoopSecurityManager.MAPREDUCE_JOB_CREDENTIALS_BINARY
-            + " to " + filelocation);
+        + " to " + filelocation);
     System.setProperty(HadoopSecurityManager.MAPREDUCE_JOB_CREDENTIALS_BINARY, filelocation);
 
     UserGroupInformation loginUser = null;
@@ -82,13 +79,11 @@ public class HadoopSecureWrapperUtils {
    * Sets up the UserGroupInformation proxyUser object so that calling code can do doAs returns null
    * if the jobProps does not call for a proxyUser
    *
-   * @param jobPropsIn
-   * @param tokenFile
-   *          pass tokenFile if known. Pass null if the tokenFile is in the environmental variable
-   *          already.
-   * @param log
+   * @param jobProps job properties
+   * @param tokenFile pass tokenFile if known. Pass null if the tokenFile is in the environmental
+   * variable already.
    * @return returns null if no need to run as proxyUser, otherwise returns valid proxyUser that can
-   *         doAs
+   * doAs
    */
   public static UserGroupInformation setupProxyUser(Properties jobProps,
       String tokenFile, Logger log) {
@@ -125,15 +120,13 @@ public class HadoopSecureWrapperUtils {
     return proxyUser;
   }
 
-   /**
+  /**
    * Loading the properties file, which is a combination of the jobProps file and sysProps file
    *
    * @return a Property file, which is the combination of the jobProps file and sysProps file
-   * @throws IOException
-   * @throws FileNotFoundException
    */
 
-   @SuppressWarnings("DefaultCharset")
+  @SuppressWarnings("DefaultCharset")
   public static Properties loadAzkabanProps() throws IOException, FileNotFoundException {
     String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
     Properties props = new Properties();
@@ -145,7 +138,6 @@ public class HadoopSecureWrapperUtils {
    * Looks for particular properties inside the Properties object passed in, and determines whether
    * proxying should happen or not
    *
-   * @param props
    * @return a boolean value of whether the job should proxy or not
    */
   public static boolean shouldProxy(Properties props) {

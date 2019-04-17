@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobExecutor;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
@@ -62,10 +61,10 @@ public class ProcessJob extends AbstractProcessJob {
   private static final String CREATE_FILE = "touch";
   private static final int SUCCESSFUL_EXECUTION = 0;
   private static final String TEMP_FILE_NAME = "user_can_write";
+
   private final CommonMetrics commonMetrics;
   private volatile AzkabanProcess process;
   private volatile boolean killed = false;
-
   // For testing only. True if the job process exits successfully.
   private volatile boolean success;
 

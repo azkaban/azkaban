@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import java.io.FileNotFoundException;
@@ -38,12 +37,13 @@ import org.apache.hadoop.mapred.RunningJob;
 import org.apache.log4j.Logger;
 import org.apache.pig.impl.util.ObjectSerializer;
 
+
 public class StatsUtils {
 
   private static Logger logger = Logger.getLogger(StatsUtils.class);
 
   private static final Set<String> JOB_CONF_KEYS = new HashSet<String>(
-      Arrays.asList(new String[] {
+      Arrays.asList(new String[]{
           "mapred.job.map.memory.mb",
           "mapred.job.reduce.memory.mb",
           "mapred.child.java.opts",

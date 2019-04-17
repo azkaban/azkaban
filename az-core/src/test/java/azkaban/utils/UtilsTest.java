@@ -20,9 +20,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -56,5 +59,12 @@ public class UtilsTest {
         zipFile.delete();
       }
     }
+  }
+
+  @Test
+  public void testRunProcess() throws IOException, InterruptedException {
+    ArrayList<String> result =
+        Utils.runProcess("/bin/bash", "-c", "ls");
+    Assert.assertNotEquals(result.size(), 0);
   }
 }

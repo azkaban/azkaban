@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 public interface ConnectorParams {
@@ -106,6 +105,4 @@ public interface ConnectorParams {
   public static final String STATS_MAP_REPORTINGINTERVAL = "interval";
   public static final String STATS_MAP_CLEANINGINTERVAL = "interval";
   public static final String STATS_MAP_EMITTERNUMINSTANCES = "numInstances";
-
-
 }

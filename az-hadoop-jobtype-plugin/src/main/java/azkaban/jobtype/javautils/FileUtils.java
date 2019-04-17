@@ -14,14 +14,12 @@ import org.apache.log4j.Logger;
 
 
 public class FileUtils {
+
   private static Logger logger = Logger.getLogger(FileUtils.class);
 
   /**
    * Delete file or directory.
    * (Apache FileUtils.deleteDirectory has a bug and is not working.)
-   *
-   * @param file
-   * @throws IOException
    */
   public static void deleteFileOrDirectory(File file) throws IOException {
     if (!file.isDirectory()) {
@@ -70,10 +68,11 @@ public class FileUtils {
         continue;
       }
 
-      FileFilter fileFilter = new AndFileFilter(new WildcardFileFilter(f.getName()), FileFileFilter.FILE);
+      FileFilter fileFilter = new AndFileFilter(new WildcardFileFilter(f.getName()),
+          FileFileFilter.FILE);
       File parent = f.getParentFile() == null ? f : f.getParentFile();
       File[] filteredFiles = parent.listFiles(fileFilter);
-      if(filteredFiles == null) {
+      if (filteredFiles == null) {
         continue;
       }
 

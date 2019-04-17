@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import azkaban.utils.Props;
@@ -42,6 +41,7 @@ import static azkaban.flow.CommonJobProperties.EXECUTION_LINK;
 import static azkaban.flow.CommonJobProperties.JOB_LINK;
 import static azkaban.flow.CommonJobProperties.WORKFLOW_LINK;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
+
 
 /**
  * <pre>
@@ -81,9 +81,6 @@ public class HadoopSecureSparkWrapper {
   /**
    * Entry point: a Java wrapper to the spark-submit command
    * Args is built in HadoopSparkJob.
-   *
-   * @param args
-   * @throws Exception
    */
   public static void main(final String[] args) throws Exception {
 
@@ -108,8 +105,6 @@ public class HadoopSecureSparkWrapper {
 
   /**
    * Actually adjusts cmd args based on execution environment and calls the spark-submit command
-   *
-   * @param args
    */
   private static void runSpark(String[] args) {
 
@@ -157,16 +152,17 @@ public class HadoopSecureSparkWrapper {
     // So if user gives --conf spark.driver.extraJavaOptions=XX, we append the value in --driver-java-options
     for (int i = 0; i < argArray.length; i++) {
       if (argArray[i].equals(SparkJobArg.SPARK_CONF_PREFIX.sparkParamName)
-        && argArray[i+1].startsWith(SPARK_CONF_EXTRA_DRIVER_OPTIONS)) {
-        driverJavaOptions.append(" ").append(argArray[++i].substring(SPARK_CONF_EXTRA_DRIVER_OPTIONS.length() + 1));
+          && argArray[i + 1].startsWith(SPARK_CONF_EXTRA_DRIVER_OPTIONS)) {
+        driverJavaOptions.append(" ")
+            .append(argArray[++i].substring(SPARK_CONF_EXTRA_DRIVER_OPTIONS.length() + 1));
       }
     }
 
     // Append addtional driver java opts about azkaban context
-    String[] requiredJavaOpts = { WORKFLOW_LINK, JOB_LINK, EXECUTION_LINK, ATTEMPT_LINK };
+    String[] requiredJavaOpts = {WORKFLOW_LINK, JOB_LINK, EXECUTION_LINK, ATTEMPT_LINK};
     for (int i = 0; i < requiredJavaOpts.length; i++) {
-        driverJavaOptions.append(" ").append(HadoopJobUtils.javaOptStringFromHadoopConfiguration(conf,
-                  requiredJavaOpts[i]));
+      driverJavaOptions.append(" ").append(HadoopJobUtils.javaOptStringFromHadoopConfiguration(conf,
+          requiredJavaOpts[i]));
     }
     // Update driver java opts
     argArray[1] = driverJavaOptions.toString();
@@ -179,7 +175,8 @@ public class HadoopSecureSparkWrapper {
     // feature for Spark. This config inside Spark jobtype is to enforce dynamic allocation feature is used for all
     // Spark applications submitted via Azkaban Spark job type.
     String dynamicAllocProp = System.getenv(HadoopSparkJob.SPARK_DYNAMIC_RES_ENV_VAR);
-    boolean dynamicAllocEnabled = dynamicAllocProp != null && dynamicAllocProp.equals(Boolean.TRUE.toString());
+    boolean dynamicAllocEnabled =
+        dynamicAllocProp != null && dynamicAllocProp.equals(Boolean.TRUE.toString());
     if (dynamicAllocEnabled) {
       for (int i = 0; i < argArray.length; i++) {
         if (argArray[i] == null) {
@@ -190,12 +187,15 @@ public class HadoopSecureSparkWrapper {
         // by setting some conf params to false, we need to ignore these settings to enforce the application
         // uses dynamic allocation for spark
         if (argArray[i].equals(SparkJobArg.SPARK_CONF_PREFIX.sparkParamName) // --conf
-            && (argArray[i + 1].startsWith(SPARK_CONF_SHUFFLE_SERVICE_ENABLED) // spark.shuffle.service.enabled
-            || argArray[i + 1].startsWith(SPARK_CONF_DYNAMIC_ALLOC_ENABLED)) // spark.dynamicAllocation.enabled
-            ) {
+            && (argArray[i + 1].startsWith(SPARK_CONF_SHUFFLE_SERVICE_ENABLED)
+            // spark.shuffle.service.enabled
+            || argArray[i + 1]
+            .startsWith(SPARK_CONF_DYNAMIC_ALLOC_ENABLED)) // spark.dynamicAllocation.enabled
+        ) {
 
           logger.info(
-              "Azbakan enforces dynamic resource allocation. Ignore user param: " + argArray[i] + " " + argArray[i
+              "Azbakan enforces dynamic resource allocation. Ignore user param: " + argArray[i]
+                  + " " + argArray[i
                   + 1]);
           argArray[i] = null;
           argArray[++i] = null;
@@ -209,14 +209,16 @@ public class HadoopSecureSparkWrapper {
 
   /**
    * This method is used to enforce queue for Spark application. Rules are explained below.
-   * a) If dynamic resource allocation is enabled for selected spark version and application requires large container
-   *    then schedule it into default queue by a default conf(spark.yarn.queue) in spark-defaults.conf.
-   * b) If dynamic resource allocation is enabled for selected spark version and application requires small container
-   *    then schedule it into Org specific queue.
-   * c) If dynamic resource allocation is disabled for selected spark version then schedule application into default
-   *    queue by a default conf(spark.yarn.queue) in spark-defaults.conf.
-   * @param argArray
-   * @return
+   * a) If dynamic resource allocation is enabled for selected spark version and application
+   * requires large container
+   * then schedule it into default queue by a default conf(spark.yarn.queue) in
+   * spark-defaults.conf.
+   * b) If dynamic resource allocation is enabled for selected spark version and application
+   * requires small container
+   * then schedule it into Org specific queue.
+   * c) If dynamic resource allocation is disabled for selected spark version then schedule
+   * application into default
+   * queue by a default conf(spark.yarn.queue) in spark-defaults.conf.
    */
   protected static String[] handleQueueEnforcement(String[] argArray) {
     SparkConf sparkConf = getSparkProperties();
@@ -228,8 +230,9 @@ public class HadoopSecureSparkWrapper {
       if (isLargeContainerRequired(argArray, conf, sparkConf)) {
         // Case A
         requiredSparkDefaultQueue = true;
-        logger.info("Spark application requires Large containers. Scheduling this application into default queue by a "
-            + "default conf(spark.yarn.queue) in spark-defaults.conf.");
+        logger.info(
+            "Spark application requires Large containers. Scheduling this application into default queue by a "
+                + "default conf(spark.yarn.queue) in spark-defaults.conf.");
       } else {
         // Case B
         logger.info(
@@ -244,13 +247,15 @@ public class HadoopSecureSparkWrapper {
       }
     } else {
       // Case C
-      logger.info("Spark version, selected for this application, doesn't support dynamic allocation. Scheduling this "
-          + "application into default queue by a default conf(spark.yarn.queue) in spark-defaults.conf.");
+      logger.info(
+          "Spark version, selected for this application, doesn't support dynamic allocation. Scheduling this "
+              + "application into default queue by a default conf(spark.yarn.queue) in spark-defaults.conf.");
       requiredSparkDefaultQueue = true;
     }
 
     if (queueParameterIndex != -1 && requiredSparkDefaultQueue) {
-      logger.info("Azbakan enforces spark.yarn.queue queue. Ignore user param: " + argArray[queueParameterIndex] + " "
+      logger.info("Azbakan enforces spark.yarn.queue queue. Ignore user param: "
+          + argArray[queueParameterIndex] + " "
           + argArray[queueParameterIndex + 1]);
       argArray[queueParameterIndex] = null;
       argArray[queueParameterIndex + 1] = null;
@@ -261,15 +266,15 @@ public class HadoopSecureSparkWrapper {
   /**
    * This method is used to check whether large container is required for application or not.
    * To decide that, it is using parameters like
-   * User Job parameters/default value for : spark.executor.cores, spark.executor.memory, spark.yarn.executor.memoryOverhead
+   * User Job parameters/default value for : spark.executor.cores, spark.executor.memory,
+   * spark.yarn.executor.memoryOverhead
    * Jobtype Plugin parameters: spark.min.mem.vore.ratio, spark.min.memory-gb.size
-   * If rounded memory / spark.executor.cores >= spark.min.mem.vore.ratio or rounded memory >= spark.min.memory-gb.size
+   * If rounded memory / spark.executor.cores >= spark.min.mem.vore.ratio or rounded memory >=
+   * spark.min.memory-gb.size
    * then large container is required to schedule this application.
-   * @param conf
-   * @param sparkConf
-   * @return
    */
-  private static boolean isLargeContainerRequired(String[] argArray, Configuration conf, SparkConf sparkConf) {
+  private static boolean isLargeContainerRequired(String[] argArray, Configuration conf,
+      SparkConf sparkConf) {
     Map<String, String> executorParameters = getUserSpecifiedExecutorParameters(argArray);
     String executorVcore = executorParameters.get(SPARK_EXECUTOR_CORES);
     String executorMem = executorParameters.get(SPARK_EXECUTOR_MEMORY);
@@ -286,11 +291,14 @@ public class HadoopSecureSparkWrapper {
 
     double roundedMemoryGbSize = getRoundedMemoryGb(executorMem, executorMemOverhead, conf);
 
-    double minRatio = Double.parseDouble(System.getenv(HadoopSparkJob.SPARK_MIN_MEM_VCORE_RATIO_ENV_VAR));
-    double minMemSize = Double.parseDouble(System.getenv(HadoopSparkJob.SPARK_MIN_MEM_SIZE_ENV_VAR));
+    double minRatio = Double
+        .parseDouble(System.getenv(HadoopSparkJob.SPARK_MIN_MEM_VCORE_RATIO_ENV_VAR));
+    double minMemSize = Double
+        .parseDouble(System.getenv(HadoopSparkJob.SPARK_MIN_MEM_SIZE_ENV_VAR));
 
     logger.info(
-        "RoundedMemoryGbSize: " + roundedMemoryGbSize + ", ExecutorVcore: " + executorVcore + ", MinRatio: " + minRatio
+        "RoundedMemoryGbSize: " + roundedMemoryGbSize + ", ExecutorVcore: " + executorVcore
+            + ", MinRatio: " + minRatio
             + ", MinMemSize: " + minMemSize);
     return roundedMemoryGbSize / (double) Integer.parseInt(executorVcore) >= minRatio
         || roundedMemoryGbSize >= minMemSize;
@@ -305,9 +313,11 @@ public class HadoopSecureSparkWrapper {
     Configuration conf = new Configuration();
     boolean nodeLabelingYarn = conf.getBoolean(YARN_CONF_NODE_LABELING_ENABLED, false);
     String nodeLabelingProp = System.getenv(HadoopSparkJob.SPARK_NODE_LABELING_ENV_VAR);
-    boolean nodeLabelingPolicy = nodeLabelingProp != null && nodeLabelingProp.equals(Boolean.TRUE.toString());
+    boolean nodeLabelingPolicy =
+        nodeLabelingProp != null && nodeLabelingProp.equals(Boolean.TRUE.toString());
     String autoNodeLabelProp = System.getenv(HadoopSparkJob.SPARK_AUTO_NODE_LABELING_ENV_VAR);
-    boolean autoNodeLabeling = autoNodeLabelProp != null && autoNodeLabelProp.equals(Boolean.TRUE.toString());
+    boolean autoNodeLabeling =
+        autoNodeLabelProp != null && autoNodeLabelProp.equals(Boolean.TRUE.toString());
     String desiredNodeLabel = System.getenv(HadoopSparkJob.SPARK_DESIRED_NODE_LABEL_ENV_VAR);
 
     SparkConf sparkConf = getSparkProperties();
@@ -330,12 +340,12 @@ public class HadoopSecureSparkWrapper {
   }
 
   /**
-   * This method is used to ignore user specified node label Parameter. When auto node labeling is enabled,
+   * This method is used to ignore user specified node label Parameter. When auto node labeling is
+   * enabled,
    * job type should ignore user supplied node label expression for Spark executors.
-   * @param argArray
-   * @param autoNodeLabeling
    */
-  private static void ignoreUserSpecifiedNodeLabelParameter(String[] argArray, boolean autoNodeLabeling) {
+  private static void ignoreUserSpecifiedNodeLabelParameter(String[] argArray,
+      boolean autoNodeLabeling) {
     for (int i = 0; i < argArray.length; i++) {
       if (argArray[i] == null) {
         continue;
@@ -346,7 +356,8 @@ public class HadoopSecureSparkWrapper {
         if (argArray[i].equals(SparkJobArg.SPARK_CONF_PREFIX.sparkParamName) && argArray[i + 1]
             .startsWith(SPARK_EXECUTOR_NODE_LABEL_EXP)) {
           logger.info(
-              "Azbakan auto-sets node label expression. Ignore user param: " + argArray[i] + " " + argArray[i + 1]);
+              "Azbakan auto-sets node label expression. Ignore user param: " + argArray[i] + " "
+                  + argArray[i + 1]);
           argArray[i] = null;
           argArray[++i] = null;
           continue;
@@ -356,10 +367,9 @@ public class HadoopSecureSparkWrapper {
   }
 
   /**
-   * This method is used to get User specified executor parameters. It is capturing executor-memory, executor-cores and
+   * This method is used to get User specified executor parameters. It is capturing executor-memory,
+   * executor-cores and
    * spark.yarn.executor.memoryOverhead.
-   * @param argArray
-   * @return
    */
   private static Map<String, String> getUserSpecifiedExecutorParameters(String[] argArray) {
     Map<String, String> executorParameters = Maps.newHashMap();
@@ -375,7 +385,8 @@ public class HadoopSecureSparkWrapper {
       }
       if (argArray[i].equals(SparkJobArg.SPARK_CONF_PREFIX.sparkParamName) && argArray[i + 1]
           .startsWith(SPARK_EXECUTOR_MEMORY_OVERHEAD)) {
-        executorParameters.put(SPARK_EXECUTOR_MEMORY_OVERHEAD, argArray[i + 1].split("=")[1].trim());
+        executorParameters
+            .put(SPARK_EXECUTOR_MEMORY_OVERHEAD, argArray[i + 1].split("=")[1].trim());
       }
     }
     return executorParameters;
@@ -383,8 +394,6 @@ public class HadoopSecureSparkWrapper {
 
   /**
    * This method is used to retrieve index of queue parameter passed by User.
-   * @param argArray
-   * @return
    */
   private static int getUserSpecifiedQueueParameterIndex(String[] argArray) {
     int queueParameterIndex = -1;
@@ -395,7 +404,8 @@ public class HadoopSecureSparkWrapper {
       // Fetch index of queue parameter passed by User.
       // (--queue test or --conf spark.yarn.queue=test)
       if ((argArray[i].equals(SparkJobArg.SPARK_CONF_PREFIX.sparkParamName) && argArray[i + 1]
-          .startsWith(SPARK_CONF_QUEUE)) || (argArray[i].equals(SparkJobArg.QUEUE.sparkParamName))) {
+          .startsWith(SPARK_CONF_QUEUE)) || (argArray[i]
+          .equals(SparkJobArg.QUEUE.sparkParamName))) {
         queueParameterIndex = i++;
         break;
       }
@@ -404,8 +414,8 @@ public class HadoopSecureSparkWrapper {
   }
 
   /**
-   * This method is used to get Spark properties which will fetch properties from spark-defaults.conf file.
-   * @return
+   * This method is used to get Spark properties which will fetch properties from
+   * spark-defaults.conf file.
    */
   private static SparkConf getSparkProperties() {
     String sparkPropertyFile = HadoopSecureSparkWrapper.class.getClassLoader()
@@ -424,6 +434,7 @@ public class HadoopSecureSparkWrapper {
    * 3) Use the logic inside YARN to round up the container size according to defined min
    * allocation for memory size.
    * 4) Return the memory GB size.
+   *
    * @param mem requested executor memory size, of the format 2G or 1024M
    * @param memOverhead user defined memory overhead
    * @param config Hadoop Configuration object

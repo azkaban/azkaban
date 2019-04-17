@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.BufferedInputStream;
@@ -23,18 +22,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.time.Duration;
-import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.zip.ZipEntry;
@@ -45,14 +44,14 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.quartz.CronExpression;
 
+
 /**
  * A util helper class full of static methods that are commonly used.
  */
 public class Utils {
 
-  public static final Random RANDOM = new Random();
-  private static final Logger logger = Logger
-      .getLogger(Utils.class);
+  private static final Random RANDOM = new Random();
+  private static final Logger logger = Logger.getLogger(Utils.class);
 
   /**
    * Private constructor.
@@ -97,6 +96,18 @@ public class Utils {
       }
     }
     return null;
+  }
+
+  /**
+   * Return the value itself if it is non-null, otherwise return the default value
+   *
+   * @param value  The object
+   * @param defaultValue default value if object == null
+   * @param <T> The type of the object
+   * @return The object itself or default value when it is null
+   */
+  public static <T> T ifNull(final T value, final T defaultValue) {
+    return (value == null) ? defaultValue : value;
   }
 
   /**
@@ -237,7 +248,6 @@ public class Utils {
     if (obj instanceof String) {
       return Double.parseDouble((String) obj);
     }
-
     return (Double) obj;
   }
 
@@ -257,12 +267,23 @@ public class Utils {
   }
 
   /**
+   * Construct a class object with the given arguments
+   *
+   * @param cls  The class
+   * @param args The arguments
+   * @return Constructed Object
+   */
+  public static Object callConstructor(final Class<?> cls, final Object... args) {
+    return callConstructor(cls, getTypes(args), args);
+  }
+
+  /**
    * Get the Class of all the objects
    *
    * @param args The objects to get the Classes from
    * @return The classes as an array
    */
-  public static Class<?>[] getTypes(final Object... args) {
+  private static Class<?>[] getTypes(final Object... args) {
     final Class<?>[] argTypes = new Class<?>[args.length];
     for (int i = 0; i < argTypes.length; i++) {
       argTypes[i] = args[i].getClass();
@@ -270,29 +291,21 @@ public class Utils {
     return argTypes;
   }
 
-  public static Object callConstructor(final Class<?> c, final Object... args) {
-    return callConstructor(c, getTypes(args), args);
-  }
-
   /**
    * Call the class constructor with the given arguments
    *
-   * @param c The class
+   * @param cls The class
    * @param args The arguments
    * @return The constructed object
    */
-  public static Object callConstructor(final Class<?> c, final Class<?>[] argTypes,
+  private static Object callConstructor(final Class<?> cls, final Class<?>[] argTypes,
       final Object[] args) {
     try {
-      final Constructor<?> cons = c.getConstructor(argTypes);
+      final Constructor<?> cons = cls.getConstructor(argTypes);
       return cons.newInstance(args);
     } catch (final InvocationTargetException e) {
       throw getCause(e);
-    } catch (final IllegalAccessException e) {
-      throw new IllegalStateException(e);
-    } catch (final NoSuchMethodException e) {
-      throw new IllegalStateException(e);
-    } catch (final InstantiationException e) {
+    } catch (final IllegalAccessException | NoSuchMethodException | InstantiationException e) {
       throw new IllegalStateException(e);
     }
   }
@@ -395,10 +408,71 @@ public class Utils {
      * e.g. <0 0 3 ? * * 22> OR <0 0 3 ? * 8>. Under these cases, the below code is able to tell.
      */
     final CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
-    if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
-      return false;
-    }
-    return true;
+    return (!(cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null));
   }
 
+  /**
+   * Run a sequence of commands
+   *
+   * @param commands sequence of commands
+   * @return list of output result
+   */
+  public static ArrayList<String> runProcess(String... commands)
+      throws InterruptedException, IOException {
+    final java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder(commands);
+    final ArrayList<String> output = new ArrayList<>();
+    final Process process = processBuilder.start();
+    process.waitFor();
+    final InputStream inputStream = process.getInputStream();
+    try {
+      final java.io.BufferedReader reader = new java.io.BufferedReader(
+          new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+      String line;
+      while ((line = reader.readLine()) != null) {
+        output.add(line);
+      }
+    } finally {
+      inputStream.close();
+    }
+    return output;
+  }
+
+  /**
+   * Merge the absolute paths of source paths into the list of destination paths
+   * @param destinationPaths the path list which the source paths will be merged into
+   * @param sourcePaths source paths
+   * @param rootPath defined root path for source paths when they are not absolute path
+   */
+  public static void mergeTypeClassPaths(
+      List<String> destinationPaths, final List<String> sourcePaths, final String rootPath) {
+    if (sourcePaths != null) {
+      for (String jar : sourcePaths) {
+        File file = new File(jar);
+        if (!file.isAbsolute()) {
+          file = new File(rootPath + File.separatorChar + jar);
+        }
+
+        String path = file.getAbsolutePath();
+        if (!destinationPaths.contains(path)) {
+          destinationPaths.add(path);
+        }
+      }
+    }
+  }
+
+  /**
+   * Merge elements in Source List into the Destination List
+   * @param destinationList the list which the source elements will be merged into
+   * @param sourceList source List
+   */
+  public static void mergeStringList(
+      final List<String> destinationList, final List<String> sourceList) {
+    if (sourceList != null) {
+      for (String item : sourceList) {
+        if (!destinationList.contains(item)) {
+          destinationList.add(item);
+        }
+      }
+    }
+  }
 }

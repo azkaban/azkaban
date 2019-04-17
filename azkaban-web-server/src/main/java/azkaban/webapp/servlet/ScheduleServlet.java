@@ -58,6 +58,7 @@ import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
+
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
@@ -381,19 +382,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
       final int projectId, final User user, final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectId);
-
-    if (project == null) {
-      ret.put(PARAM_ERROR, "Project '" + project + "' not found.");
-    } else if (!hasPermission(project, user, type)) {
-      ret.put(STATUS_ERROR,
-          "User '" + user.getUserId() + "' doesn't have " + type.name()
-              + " permissions on " + project.getName());
-    } else {
-      return project;
-    }
-
-    return null;
+    return filterProjectByPermission(this.projectManager.getProject(projectId), user, type, ret);
   }
 
   private void handleGetAllSchedules(final HttpServletRequest req,

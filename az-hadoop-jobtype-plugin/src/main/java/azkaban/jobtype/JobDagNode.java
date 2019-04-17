@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import java.util.ArrayList;
@@ -23,6 +22,7 @@ import java.util.Map;
 import java.util.Properties;
 
 public class JobDagNode {
+
   protected String name;
 
   protected List<String> parents = new ArrayList<String>();

@@ -43,6 +43,7 @@ import org.apache.log4j.Logger;
 import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
 import azkaban.utils.Props;
 
+
 public class HadoopSecureHiveWrapper {
 
   private static final String DOUBLE_QUOTE_STRING = Character
@@ -108,7 +109,7 @@ public class HadoopSecureHiveWrapper {
 
     OptionsProcessor op = new OptionsProcessor();
 
-    if (!op.process_stage1(new String[] {})) {
+    if (!op.process_stage1(new String[]{})) {
       throw new IllegalArgumentException("Can't process empty args?!?");
     }
 
@@ -174,8 +175,9 @@ public class HadoopSecureHiveWrapper {
    * Also, surround the files with uri niceities.
    */
   static String expandHiveAuxJarsPath(String original) throws IOException {
-    if (original == null || original.contains(".jar"))
+    if (original == null || original.contains(".jar")) {
       return original;
+    }
 
     File[] files = new File(original).listFiles();
 
@@ -193,8 +195,9 @@ public class HadoopSecureHiveWrapper {
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < files.length; i++) {
       sb.append("file:///").append(files[i].getCanonicalPath());
-      if (i != files.length - 1)
+      if (i != files.length - 1) {
         sb.append(",");
+      }
     }
 
     return sb.toString();
@@ -205,9 +208,6 @@ public class HadoopSecureHiveWrapper {
    * HiveConf
    *
    * An example: -hiveconf 'zipcode=10', -hiveconf hive.root.logger=INFO,console
-   *
-   * @param hiveConf
-   * @param args
    */
   private static void populateHiveConf(HiveConf hiveConf, String[] args) {
 
@@ -261,7 +261,6 @@ public class HadoopSecureHiveWrapper {
   /**
    * Strip single quote or double quote at either end of the string
    *
-   * @param input
    * @return string with w/o leading or trailing single or double quote
    */
   private static String stripSingleDoubleQuote(String input) {

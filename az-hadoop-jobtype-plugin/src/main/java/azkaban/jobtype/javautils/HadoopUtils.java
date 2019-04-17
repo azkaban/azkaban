@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.javautils;
 
 import java.io.ByteArrayOutputStream;
@@ -33,6 +32,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.utils.Props;
 
+
 public class HadoopUtils {
 
   private static final Logger logger = Logger.getLogger(HadoopUtils.class);
@@ -50,7 +50,7 @@ public class HadoopUtils {
   public static String findContainingJar(String fileName, ClassLoader loader) {
     try {
       for (Enumeration<?> itr = loader.getResources(fileName); itr
-          .hasMoreElements();) {
+          .hasMoreElements(); ) {
         URL url = (URL) itr.nextElement();
         logger.info("findContainingJar finds url:" + url);
         if ("jar".equals(url.getProtocol())) {
@@ -125,8 +125,9 @@ public class HadoopUtils {
 
     // create directory if it does not exist.
     Path parent = path.getParent();
-    if (!fs.exists(parent))
+    if (!fs.exists(parent)) {
       fs.mkdirs(parent);
+    }
 
     // write out properties
     OutputStream output = fs.create(path);
