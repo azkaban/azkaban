@@ -179,7 +179,9 @@ public abstract class AbstractProcessJob extends AbstractJob {
             (Map<String, Object>) JSONUtils.parseJSONFromString(content);
 
         for (final Map.Entry<String, Object> entry : propMap.entrySet()) {
-          outputProps.put(entry.getKey(), entry.getValue().toString());
+          Object val = entry.getValue();
+          String strVal = val instanceof String ? (String) val : JSONUtils.toJSON(val);
+          outputProps.put(entry.getKey(), strVal);
         }
       }
       return outputProps;
