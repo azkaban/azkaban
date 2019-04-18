@@ -57,6 +57,7 @@ public class Constants {
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
+  public static final String AZKABAN_LOCAL_PROPOERTIES_FILE = "azkaban.local.properties";
   public static final String DEFAULT_CONF_PATH = "conf";
   public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 

@@ -97,6 +97,7 @@ public abstract class AzkabanServer {
   public static Props loadAzkabanConfigurationFromDirectory(final File dir) {
     final File azkabanPrivatePropsFile = new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
     final File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
+    final File azkabanLocalPropsFile = new File(dir, Constants.AZKABAN_LOCAL_PROPOERTIES_FILE);
 
     Props props = null;
     try {
@@ -110,6 +111,13 @@ public abstract class AzkabanServer {
         logger.info("Loading azkaban properties file");
         props = new Props(props, azkabanPropsFile);
       }
+
+      // This is also optional
+      if (azkabanLocalPropsFile.exists() && azkabanLocalPropsFile.isFile()) {
+        logger.info("Loading azkaban local properties file");
+        props = new Props(props, azkabanLocalPropsFile);
+      }
+
     } catch (final FileNotFoundException e) {
       logger.error("File not found. Could not load azkaban config file", e);
     } catch (final IOException e) {
