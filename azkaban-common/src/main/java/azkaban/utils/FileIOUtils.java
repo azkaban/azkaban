@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.BufferedInputStream;
@@ -26,10 +25,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -121,9 +124,9 @@ public class FileIOUtils {
   }
 
   public static String getSourcePathFromClass(final Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
+    final String containedClassPath = containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
+
+    File file = new File(containedClassPath);
 
     if (!file.isDirectory() && file.getName().endsWith(".class")) {
       final String name = containedClass.getName();
@@ -134,8 +137,7 @@ public class FileIOUtils {
       }
       return file.getPath();
     } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
+      return containedClassPath;
     }
   }
 
