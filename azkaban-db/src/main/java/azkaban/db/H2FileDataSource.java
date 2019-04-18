@@ -43,4 +43,14 @@ public class H2FileDataSource extends AzkabanDataSource {
   public boolean allowsOnDuplicateKey() {
     return false;
   }
+
+  @Override
+  public boolean allowsOnConflict() {
+    return false;
+  }
+
+  @Override
+  public String getLastInsertIdQuery() {
+    return "SELECT LAST_INSERT_ID();";
+  }
 }
