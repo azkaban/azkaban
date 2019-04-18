@@ -22,4 +22,8 @@ public abstract class AzkabanDataSource extends BasicDataSource {
   public abstract String getDBType();
 
   public abstract boolean allowsOnDuplicateKey();
+
+  public abstract boolean allowsOnConflict();
+
+  public abstract String getLastInsertIdQuery();
 }
