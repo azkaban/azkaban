@@ -121,6 +121,7 @@ ext.deps = [
     pig                  : 'org.apache.pig:pig:' + versions.pig,
     parquetAvro          : 'com.twitter:parquet-avro:1.6.0',
     parquetBundle        : 'com.twitter:parquet-hadoop-bundle:1.3.2',
+    postgresqlConnector : 'org.postgresql:postgresql:42.2.5',
     powermock            : 'org.powermock:powermock-api-mockito2:2.0.2',
     powermockmodulejunit4: 'org.powermock:powermock-module-junit4:2.0.2',
     quartz               : 'org.quartz-scheduler:quartz:2.2.1',
