@@ -111,7 +111,8 @@ class JdbcProjectHandlerSet {
       ResultSetHandler<List<Triple<String, Boolean, Permission>>> {
 
     public static String SELECT_PROJECT_PERMISSION =
-        "SELECT project_id, modified_time, name, permissions, isGroup FROM project_permissions WHERE project_id=?";
+        "SELECT project_id, modified_time, name, permissions, isGroup FROM project_permissions "
+            + "WHERE project_id = CAST (? AS CHAR)";
 
     @Override
     public List<Triple<String, Boolean, Permission>> handle(final ResultSet rs)
