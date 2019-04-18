@@ -42,19 +42,40 @@ dependencies {
 }
 
 /**
+ * A filter that can be used while copying SQL files to convert some data types and syntax that 
+ * are different between MySQL and PostgreSQL.
+ */
+def mysqlToPostgresqlFilter = {
+    it.replaceAll(/(?i)\bTINYINT\b/, 'SMALLINT')
+        .replaceAll(/(?i)\bBIGINT\(\d+\)/, 'BIGINT')
+        .replaceAll(/(?i)\bSMALLINT\(\d+\)/, 'SMALLINT')
+        .replaceAll(/(?i)\b(LONG)?BLOB\b/, 'BYTEA')
+        .replaceAll(/(?i)\bBINARY\(\d+\)/, 'BYTEA')
+        .replaceAll(/(?i)\bDATETIME\b/, 'TIMESTAMP')
+        .replaceAll(/(?i)\bAUTO_INCREMENT\b/, 'GENERATED ALWAYS AS IDENTITY')
+}
+
+/**
  * concat task
  * Concatenate all the sql queries / files (except upgrade.*.sql) and collect it into a single
  * SQL file.
  */
 task concat() {
     doLast {
-        ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
+        ext.destFile = 'build/sql/create-all-mysql-' + version + '.sql';
         ant.concat(destfile: destFile, fixlastline: 'yes') {
             logger.info('Concating create scripts to ' + destFile)
             fileset(dir: 'src/main/sql') {
                 exclude(name: 'database.properties')
                 exclude(name: 'upgrade.*.sql')
             }
+        }
+        copy {
+            from(destFile) {
+                rename 'mysql', 'postgresql'
+                filter mysqlToPostgresqlFilter
+            }
+            into 'build/sql'
         }
     }
 }
@@ -67,6 +88,10 @@ distributions {
     main {
         contents {
             from('src/main/sql')
+            from('src/main/sql') {
+                rename '\\.sql$', '.postgresql.sql'
+                filter mysqlToPostgresqlFilter
+            }
             from("$buildDir/sql")
         }
     }
