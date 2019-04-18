@@ -70,7 +70,8 @@ public class FetchActiveFlowDao {
     return null;
   }
 
-  private static Pair<ExecutionReference, ExecutableFlow> getPairWithExecutorInfo(final ResultSet rs,
+  private static Pair<ExecutionReference, ExecutableFlow> getPairWithExecutorInfo(
+      final ResultSet rs,
       final ExecutableFlow exFlow) throws SQLException {
     final int executorId = rs.getInt("executorId");
     final String host = rs.getString("host");
@@ -213,7 +214,8 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow = FetchActiveFlowDao
+            .getExecutableFlowHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
@@ -229,7 +231,7 @@ public class FetchActiveFlowDao {
 
     // Select flows that are not in finished status
     private static final String FETCH_UNFINISHED_FLOWS_METADATA =
-        "SELECT ex.exec_id exec_id, ex.project_id project_id, ex.version version, "
+        "SELECT ex.exec_id exec_id, ex.project_id project_id, ex.version \"version\", "
             + "ex.flow_id flow_id, et.host host, et.port port, ex.executor_id executorId, "
             + "ex.status status, ex.submit_time submit_time, ex.start_time start_time, "
             + "ex.end_time end_time, ex.submit_user submit_user, et.active executorStatus"
@@ -251,7 +253,8 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowMetadataHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow = FetchActiveFlowDao
+            .getExecutableFlowMetadataHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
@@ -288,7 +291,7 @@ public class FetchActiveFlowDao {
       if (!rs.next()) {
         return null;
       }
-      return getExecutableFlowHelper(rs);
+      return FetchActiveFlowDao.getExecutableFlowHelper(rs);
     }
   }
 
