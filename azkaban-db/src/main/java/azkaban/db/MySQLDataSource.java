@@ -49,6 +49,7 @@ public class MySQLDataSource extends AzkabanDataSource {
     addConnectionProperty("useUnicode", "yes");
     addConnectionProperty("characterEncoding", "UTF-8");
     setDriverClassName("com.mysql.cj.jdbc.Driver");
+    addConnectionProperty("sessionVariables", "sql_mode=ANSI");
     setUsername(user);
     setPassword(password);
     setUrl(url);
@@ -56,6 +57,7 @@ public class MySQLDataSource extends AzkabanDataSource {
     setValidationQuery("/* ping */ select 1");
     setTestOnBorrow(true);
   }
+
   /**
    * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
    * We don't make the call synchronized in order to guarantee normal cases performance.
@@ -100,9 +102,9 @@ public class MySQLDataSource extends AzkabanDataSource {
         try {
           invalidateConnection(connection);
         } catch (final Exception e) {
-          logger.error( "can not invalidate connection.", e);
+          logger.error("can not invalidate connection.", e);
         }
-        logger.error( "Failed to find write-enabled DB connection. Wait 15 seconds and retry."
+        logger.error("Failed to find write-enabled DB connection. Wait 15 seconds and retry."
             + " No.Attempt = " + retryAttempt, ex);
         /**
          * When database is completed down, DB connection fails to be fetched immediately. So we need
