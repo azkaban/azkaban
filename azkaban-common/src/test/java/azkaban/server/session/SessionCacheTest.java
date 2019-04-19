@@ -21,11 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.user.User;
 import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
 
 public final class SessionCacheTest {
 
