@@ -934,6 +934,13 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
       throws ExecutorManagerException {
+    if (exflow.isLocked()) {
+      // Skip execution for locked flows.
+      final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
+          exflow.getProjectName());
+      logger.info(message);
+      return message;
+    }
 
     final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
     // using project and flow name to prevent race condition when same flow is submitted by API and schedule at the same time

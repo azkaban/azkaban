@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableJobInfo;
@@ -83,7 +84,9 @@ import org.apache.log4j.Logger;
 import org.quartz.SchedulerException;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
-
+  static final String FLOW_IS_LOCKED_PARAM = "isLocked";
+  static final String FLOW_ID_PARAM = "flowId";
+  static final String FLOW_NAME_PARAM = "flowName";
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
   private static final Logger logger = Logger
@@ -207,7 +210,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
-    if (hasParam(req, "action")) {
+    if (hasParam(req, "ajax")) {
+      handleAJAXAction(req, resp, session);
+    } else if (hasParam(req, "action")) {
       final String action = getParam(req, "action");
       if (action.equals("create")) {
         handleCreate(req, resp, session);
@@ -306,6 +311,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       } else if (ajaxName.equals("checkForWritePermission")) {
         ajaxCheckForWritePermission(project, user, ret);
+      } else if (ajaxName.equals("setFlowLock")) {
+        if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+          ajaxSetFlowLock(project, ret, req);
+        }
+      } else if (ajaxName.equals("isFlowLocked")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxIsFlowLocked(project, ret, req);
+        }
       } else {
         ret.put("error", "Cannot execute command " + ajaxName);
       }
@@ -435,7 +448,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     for (final ExecutableFlow flow : exFlows) {
       final HashMap<String, Object> flowInfo = new HashMap<>();
       flowInfo.put("execId", flow.getExecutionId());
-      flowInfo.put("flowId", flow.getFlowId());
+      flowInfo.put(FLOW_ID_PARAM, flow.getFlowId());
       flowInfo.put("projectId", flow.getProjectId());
       flowInfo.put("status", flow.getStatus().toString());
       flowInfo.put("submitTime", flow.getSubmitTime());
@@ -774,7 +787,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     for (final Flow flow : project.getFlows()) {
       if (!flow.isEmbeddedFlow()) {
         final HashMap<String, Object> flowObj = new HashMap<>();
-        flowObj.put("flowId", flow.getId());
+        flowObj.put(FLOW_ID_PARAM, flow.getId());
         flowList.add(flowObj);
       }
     }
@@ -808,7 +821,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         nodeObj.put("condition", node.getCondition());
       }
       if (node.getEmbeddedFlowId() != null) {
-        nodeObj.put("flowId", node.getEmbeddedFlowId());
+        nodeObj.put(FLOW_ID_PARAM, node.getEmbeddedFlowId());
         fillFlowInfo(project, node.getEmbeddedFlowId(), nodeObj);
       }
 
@@ -912,8 +925,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       nodeList.add(nodeObj);
     }
 
-    ret.put("flowId", flowId);
+    ret.put(FLOW_ID_PARAM, flowId);
     ret.put("nodes", nodeList);
+    ret.put(FLOW_IS_LOCKED_PARAM, flow.isLocked());
   }
 
   private void ajaxAddProxyUser(final Project project, final HashMap<String, Object> ret,
@@ -1097,6 +1111,86 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> ret) {
     ret.put("hasWritePermission", hasPermission(project, user, Type.WRITE));
   }
+
+  /**
+   * Set if a flow is locked.
+   *
+   * @param project the project for the flow.
+   * @param ret the return value.
+   * @param req the http request.
+   * @throws ServletException
+   */
+  private void ajaxSetFlowLock(final Project project,
+      final HashMap<String, Object> ret, final HttpServletRequest req)
+      throws ServletException {
+    final String flowName = getParam(req, FLOW_NAME_PARAM);
+    final Flow flow = project.getFlow(flowName);
+    if (flow == null) {
+      ret.put("error",
+          "Flow " + flowName + " not found in project " + project.getName());
+      return;
+    }
+
+    boolean isLocked = Boolean.parseBoolean(getParam(req, FLOW_IS_LOCKED_PARAM));
+
+    // if there is a change in the locked value, then check to see if the project has a flow trigger
+    // that needs to be paused/resumed.
+    if (isLocked != flow.isLocked()) {
+      try {
+        if (projectManager.hasFlowTrigger(project, flow)) {
+          if (isLocked) {
+            if (this.scheduler.pauseFlowTriggerIfPresent(project.getId(), flow.getId())) {
+              logger.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+                      " is paused");
+            } else {
+              logger.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+              " doesn't exist");
+            }
+          } else {
+            if (this.scheduler.resumeFlowTriggerIfPresent(project.getId(), flow.getId())) {
+              logger.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+                  " is resumed");
+            } else {
+              logger.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+                  " doesn't exist");
+            }
+          }
+        }
+      } catch (Exception e) {
+        ret.put("error", e);
+      }
+    }
+
+    flow.setLocked(isLocked);
+    ret.put(FLOW_IS_LOCKED_PARAM, flow.isLocked());
+    ret.put(FLOW_ID_PARAM, flow.getId());
+    this.projectManager.updateFlow(project, flow);
+  }
+
+  /**
+   * Returns true if the flow is locked, false if it is unlocked.
+   *
+   * @param project the project containing the flow.
+   * @param ret the return value.
+   * @param req the http request.
+   * @throws ServletException
+   */
+  private void ajaxIsFlowLocked(final Project project,
+      final HashMap<String, Object> ret, final HttpServletRequest req)
+      throws ServletException {
+    final String flowName = getParam(req, FLOW_NAME_PARAM);
+
+    final Flow flow = project.getFlow(flowName);
+    if (flow == null) {
+      ret.put("error",
+          "Flow " + flowName + " not found in project " + project.getName());
+      return;
+    }
+
+    ret.put(FLOW_ID_PARAM, flow.getId());
+    ret.put(FLOW_IS_LOCKED_PARAM, flow.isLocked());
+  }
+
 
   private void handleProjectLogsPage(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
@@ -1316,7 +1410,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      page.add("flowid", flow.getId());
+      page.add(FLOW_ID_PARAM, flow.getId());
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
@@ -1427,7 +1521,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      page.add("flowid", flow.getId());
+      page.add(FLOW_ID_PARAM, flow.getId());
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
@@ -1520,7 +1614,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
       } else {
-        page.add("flowid", flow.getId());
+        page.add(FLOW_ID_PARAM, flow.getId());
+        page.add("isLocked", flow.isLocked());
+        if (flow.isLocked()) {
+          final Props props = this.projectManager.getProps();
+          final String lockedFlowMsg = String.format(props.getString(ConfigurationKeys
+                  .AZKABAN_LOCKED_FLOW_ERROR_MESSAGE, Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE),
+              flow.getId(), projectName);
+          page.add("error_message", lockedFlowMsg);
+        }
       }
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());
@@ -1720,6 +1822,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           // e.g, if uploadProject fails, associated schedule shouldn't be added.
           this.scheduler.unschedule(project);
         }
+
+        // get the locked flows for the project, so that they can be locked again after upload
+        List<String> lockedFlows = getLockedFlows(project);
+
         final Map<String, ValidationReport> reports =
             this.projectManager.uploadProject(project, archiveFile, type, user,
                 props);
@@ -1727,6 +1833,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (this.enableQuartz) {
           this.scheduler.schedule(project, user.getUserId());
         }
+
+        // reset locks for flows as needed
+        lockFlowsForProject(project, lockedFlows);
 
         final StringBuffer errorMsgs = new StringBuffer();
         final StringBuffer warnMsgs = new StringBuffer();
@@ -1796,6 +1905,28 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       logger.info("Upload: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       ret.put("version", String.valueOf(project.getVersion()));
+    }
+  }
+
+  /** @return the list of locked flows for the specified project. */
+  private List<String> getLockedFlows(Project project) {
+    List<Flow> flows = project.getFlows();
+    return flows.stream().filter(flow -> flow.isLocked()).map(flow -> flow.getId())
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Lock the specified flows for the project.
+   *
+   * @param project the project
+   * @param lockedFlows list of flow IDs of flows to lock
+   */
+  private void lockFlowsForProject(Project project, List<String> lockedFlows) {
+    for (String flowId: lockedFlows) {
+      Flow flow = project.getFlow(flowId);
+      if (flow != null) {
+        flow.setLocked(true);
+      }
     }
   }
 

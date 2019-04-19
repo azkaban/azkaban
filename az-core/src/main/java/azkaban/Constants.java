@@ -88,6 +88,11 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
+  // Default locked flow error message
+  public static final String DEFAULT_LOCKED_FLOW_ERROR_MESSAGE =
+      "Flow %s in project %s is locked. This is either a repeatedly failing flow, or an ineffcient"
+          + " flow. Please refer to the Dr. Elephant report for this flow for more information.";
+
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
@@ -244,6 +249,10 @@ public class Constants {
 
     // number of rows to be displayed on the executions page.
     public static final String DISPLAY_EXECUTION_PAGE_SIZE = "azkaban.display.execution_page_size";
+
+    // locked flow error message. Parameters passed in are the flow name and project name.
+    public static final String AZKABAN_LOCKED_FLOW_ERROR_MESSAGE =
+        "azkaban.locked.flow.error.message";
   }
 
   public static class FlowProperties {

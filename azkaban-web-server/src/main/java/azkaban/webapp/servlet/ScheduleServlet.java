@@ -599,6 +599,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    if (flow.isLocked()) {
+      ret.put(PARAM_STATUS, STATUS_ERROR);
+      ret.put(PARAM_MESSAGE, "Flow " + flowName + " in project " + projectName + " is locked.");
+      return;
+    }
+
     final boolean hasFlowTrigger;
     try {
       hasFlowTrigger = this.projectManager.hasFlowTrigger(project, flow);

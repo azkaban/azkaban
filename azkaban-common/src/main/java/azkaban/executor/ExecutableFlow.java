@@ -58,6 +58,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
+  private boolean isLocked;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -67,6 +68,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.lastModifiedTimestamp = project.getLastModifiedTimestamp();
     this.lastModifiedUser = project.getLastModifiedUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
+    setLocked(flow.isLocked());
     this.setFlow(project, flow);
   }
 
@@ -210,6 +212,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public void setAzkabanFlowVersion(final double azkabanFlowVersion) {
     this.azkabanFlowVersion = azkabanFlowVersion;
   }
+
+  public boolean isLocked() { return isLocked; }
+
+  public void setLocked(boolean locked) { isLocked = locked; }
 
   @Override
   public Map<String, Object> toObject() {

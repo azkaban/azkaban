@@ -212,6 +212,19 @@ public class ExecutionControllerTest {
         this.user.getUserId());
   }
 
+  @Test
+  public void testSetFlowLock() throws Exception {
+    // trying to execute a locked flow should raise an error
+    this.flow1.setLocked(true);
+    String msg = this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
+    assertThat(msg).isEqualTo("Flow derived-member-data for project flow is locked.");
+
+    // should succeed after unlocking the flow
+    this.flow1.setLocked(false);
+    this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
+      verify(this.loader).uploadExecutableFlow(this.flow1);
+  }
+
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
       Exception {
     when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);

@@ -24,7 +24,7 @@
   <script type="text/javascript" src="${context}/js/moment.min.js"></script>
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project.js?v=<timestamp>"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
@@ -72,7 +72,10 @@
                 <div class="panel-heading flow-expander" id="${flow.id}">
                   #if (${exec})
                     <div class="pull-right">
-                      <button type="button" class="btn btn-xs btn-success execute-flow"
+                      #set($isDisabled = "#if(${flow.isLocked()})disabled#end")
+                      <button type="button"
+                              title=""
+                              class="btn btn-xs btn-success execute-flow ${isDisabled}"
                               flowId="${flow.id}">Execute Flow
                       </button>
                       <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions"

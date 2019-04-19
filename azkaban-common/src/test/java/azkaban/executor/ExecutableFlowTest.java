@@ -266,6 +266,12 @@ public class ExecutableFlowTest {
     Assert.assertEquals("innerFlow", jobdFlow.getFlowId());
     Assert.assertEquals("jobd", jobdFlow.getId());
     Assert.assertEquals(4, jobdFlow.getExecutableNodes().size());
+
+    Assert.assertEquals(false, exFlow.isLocked());
+    exFlow.setLocked(true);
+    Assert.assertEquals(true, exFlow.isLocked());
+    exFlow.setLocked(false);
+    Assert.assertEquals(false, exFlow.isLocked());
   }
 
   @Test
@@ -296,6 +302,7 @@ public class ExecutableFlowTest {
     exFlow.resetForRetry();
     exFlow.resetForRetry();
     exFlow.setDelayedExecution(1000);
+    exFlow.setLocked(true);
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setConcurrentOption("blah");

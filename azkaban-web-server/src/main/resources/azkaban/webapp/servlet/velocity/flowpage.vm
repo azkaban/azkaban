@@ -85,6 +85,7 @@
     #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
   #else
 
+
   ## Page header.
 
   <div class="az-page-header page-header-bare">
@@ -97,7 +98,8 @@
         </div>
         <div class="header-control">
           <div class="pull-right header-form">
-            <button type="button" class="btn btn-sm btn-success" id="executebtn">
+            #set($isDisabled = "#if(${isLocked})disabled#end")
+            <button type="button" class="btn btn-sm btn-success ${isDisabled}" id="executebtn">
               Schedule / Execute Flow
             </button>
           </div>
