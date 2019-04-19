@@ -18,27 +18,29 @@ package azkaban.server.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public final class SessionCacheTest {
 
-  final String propsString = "{ \"session.time.to.live\": \"100\" }";
+  final long shortTTL = 100L;
+  final long longTTL = 10 * 10 * 100L;
 
-  SessionCache freshSessionCache() throws Exception {
-    final Props props = PropsUtils.fromJSONString(this.propsString);
+  SessionCache createSessionCacheWithTTL(long ttl) throws Exception {
+    Props props = new Props();
+    props.put(ConfigurationKeys.SESSION_TIME_TO_LIVE, ttl);
     return new SessionCache(props);
-  }
-
-  SessionCache makeSessionCacheWithLongTime() throws Exception {
-    return new SessionCache(new Props());
   }
 
   @Test
   public void SessionCacheHit() throws Exception {
-    final SessionCache sessionCache = freshSessionCache();
+    final SessionCache sessionCache = createSessionCacheWithTTL(shortTTL);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
         "123.12.12.123");
     sessionCache.addSession(session);
@@ -47,7 +49,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheCount() throws Exception {
-    final SessionCache sessionCache = freshSessionCache();
+    final SessionCache sessionCache = createSessionCacheWithTTL(shortTTL);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
         "123.12.12.123");
     assertThat(sessionCache.getSessionCount()).isEqualTo(0);
@@ -59,7 +61,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheFindByIP() throws Exception {
-    final SessionCache sessionCache = makeSessionCacheWithLongTime();
+    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
     final String ip = "123.12.12.123";
     final String id1 = "TEST_ID1";
     final String id2 = "TEST_ID2";
@@ -76,7 +78,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheMiss() throws Exception {
-    final SessionCache sessionCache = freshSessionCache();
+    final SessionCache sessionCache = createSessionCacheWithTTL(shortTTL);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
         "123.12.12.123");
     sessionCache.addSession(session);
@@ -86,7 +88,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheNoExpired() throws Exception {
-    final SessionCache sessionCache = makeSessionCacheWithLongTime();
+    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
             "123.12.12.123");
     sessionCache.addSession(session);
