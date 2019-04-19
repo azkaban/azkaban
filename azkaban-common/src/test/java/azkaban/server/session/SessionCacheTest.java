@@ -23,7 +23,6 @@ import azkaban.user.User;
 import azkaban.utils.Props;
 import org.junit.Test;
 
-
 public final class SessionCacheTest {
 
   final long shortTTL = 100L;
@@ -37,7 +36,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheHit() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(shortTTL);
+    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
         "123.12.12.123");
     sessionCache.addSession(session);
@@ -46,7 +45,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheCount() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(shortTTL);
+    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
         "123.12.12.123");
     assertThat(sessionCache.getSessionCount()).isEqualTo(0);
