@@ -85,7 +85,6 @@ public class ExecutorManager extends EventHandler implements
       .compile("Failed to read the application");
   private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
       .compile("Invalid Application ID");
-  private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
@@ -99,6 +98,7 @@ public class ExecutorManager extends EventHandler implements
   private final RunningExecutionsUpdaterThread updaterThread;
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
+  private final Map<Pair<String,String>, Integer> maxConcurrentRunsPerFlowMap;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
   private final ActiveExecutors activeExecutors;
@@ -131,16 +131,10 @@ public class ExecutorManager extends EventHandler implements
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
     this.updaterThread = updaterThread;
-    this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
+    this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
+    this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
     this.cleanerThread = createCleanerThread();
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
-  }
-
-  private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
-    // The default threshold is set to 30 for now, in case some users are affected. We may
-    // decrease this number in future, to better prevent DDos attacks.
-    return azkProps.getInt(ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
-        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
   }
 
   private CleanerThread createCleanerThread() {
@@ -971,10 +965,12 @@ public class ExecutorManager extends EventHandler implements
         }
 
         if (!running.isEmpty()) {
-          if (running.size() > this.maxConcurrentRunsOneFlow) {
+          int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
+              exflow.getProjectName(), flowId, maxConcurrentRunsOneFlow, maxConcurrentRunsPerFlowMap);
+          if (running.size() > maxConcurrentRuns) {
             this.commonMetrics.markSubmitFlowSkip();
             throw new ExecutorManagerException("Flow " + flowId
-                + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
+                + " has more than " + maxConcurrentRuns + " concurrent runs. Skipping",
                 ExecutorManagerException.Reason.SkippedExecution);
           } else if (options.getConcurrentOption().equals(
               ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {

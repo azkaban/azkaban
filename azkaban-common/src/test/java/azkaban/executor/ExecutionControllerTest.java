@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
@@ -171,12 +172,25 @@ public class ExecutionControllerTest {
 
   @Test
   public void testSubmitFlowsExceedingMaxConcurrentRuns() throws Exception {
+    this.props.put(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST, "exectest1,"
+        + "exec2,3");
     submitFlow(this.flow2, this.ref2);
     submitFlow(this.flow3, this.ref3);
     assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
         ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
         .flow4.getId() + " has more than 1 concurrent runs. Skipping");
   }
+
+  @Test
+  public void testSubmitFlowsConcurrentWhitelist() throws Exception {
+    this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
+    submitFlow(this.flow2, this.ref2);
+    submitFlow(this.flow3, this.ref3);
+    assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
+        ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
+        .flow4.getId() + " has more than 1 concurrent runs. Skipping");
+  }
+
 
   @Test
   public void testSubmitFlowsWithSkipOption() throws Exception {

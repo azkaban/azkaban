@@ -88,6 +88,9 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
+  // Default maximum number of concurrent runs for a single flow
+  public static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
+
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
@@ -220,6 +223,10 @@ public class Constants {
 
     public static final String USE_MULTIPLE_EXECUTORS = "azkaban.use.multiple.executors";
     public static final String MAX_CONCURRENT_RUNS_ONEFLOW = "azkaban.max.concurrent.runs.oneflow";
+
+    public static final String CONCURRENT_RUNS_ONEFLOW_WHITELIST =
+        "azkaban.concurrent.runs.oneflow.whitelist";
+
     public static final String WEBSERVER_QUEUE_SIZE = "azkaban.webserver.queue.size";
     public static final String ACTIVE_EXECUTOR_REFRESH_IN_MS =
         "azkaban.activeexecutor.refresh.milisecinterval";
