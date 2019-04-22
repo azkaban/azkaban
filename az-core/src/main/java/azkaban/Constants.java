@@ -224,6 +224,8 @@ public class Constants {
     public static final String USE_MULTIPLE_EXECUTORS = "azkaban.use.multiple.executors";
     public static final String MAX_CONCURRENT_RUNS_ONEFLOW = "azkaban.max.concurrent.runs.oneflow";
 
+    // list of whitelisted flows, with specific max number of concurrent runs. Format:
+    // <project 1>,<flow 1>,<number>;<project 2>,<flow 2>,<number>
     public static final String CONCURRENT_RUNS_ONEFLOW_WHITELIST =
         "azkaban.concurrent.runs.oneflow.whitelist";
 

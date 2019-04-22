@@ -68,6 +68,5 @@ public class ExecutorUtilsTest {
     // return default value if there are no if the whitelisted flow map is empty
     assertThat(ExecutorUtils.getMaxConcurrentRunsForFlow("project1", "flow1",
         defaultMaxConcurrent, Collections.EMPTY_MAP)).isEqualTo(10);
-
   }
 }
