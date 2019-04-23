@@ -26,10 +26,14 @@ public class ExecutorUtils {
   public static Map<Pair<String, String>, Integer> getMaxConcurentRunsPerFlowMap(
       final Props azkProps) {
     Map<Pair<String, String>, Integer> map = new HashMap<>();
-    String perFlowSettings =azkProps.get(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST);
+    String perFlowSettings = azkProps.get(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST);
     if (perFlowSettings != null) {
+      // settings for flows are delimited by semicolon, so split on semicolon to to get the list
+      // of flows with custom max concurrent runs
       String[] flowSettings = perFlowSettings.split(";");
       for (String flowSetting: flowSettings) {
+        // fields for a flow are delimited by comma, so split on comma to get the list of fields:
+        // project name, flow name, and max number of concurrent runs.
         String[] setting = flowSetting.split(",");
         Preconditions.checkState(setting.length == 3,
             "setting value must be specified as <project name>,<flow name>,<max concurrent runs>");
