@@ -78,12 +78,12 @@ public final class UserUtils {
       }
 
       try {
-        Path dir = Paths.get(fileName).getParent();
+        final Path dir = Paths.get(fileName).getParent();
         if (!dirToFilesMap.containsKey(dir)) {
-          // There is not entry for this directory, create a watchkey
+          // There is no entry for this directory, create a watchkey
           WatchKey watchKey = dir.register(watchService,
               new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
-              SensitivityWatchEventModifier.HIGH);
+              SensitivityWatchEventModifier.LOW);
           keys.put(watchKey, dir);
         }
         // Add the config file to dir map
@@ -108,7 +108,7 @@ public final class UserUtils {
 
     Runnable runnable = () -> {
       // Watchservice is established, now listen for the events till eternity!
-      for (;; ) {
+      for (;;) {
         WatchKey watchKey;
         try {
           watchKey = watchService.take();
@@ -131,7 +131,6 @@ public final class UserUtils {
             // reparse the config file
             log.info("Modification detected, reloading config file " + filename);
             configFileMap.get(filename).parseConfigFile();
-            break;
           }
         }
         watchKey.reset();
