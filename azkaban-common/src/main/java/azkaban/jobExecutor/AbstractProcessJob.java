@@ -205,7 +205,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
       tempFile = File.createTempFile(getId() + "_props_", "_tmp", directory);
       this.jobProps.storeFlattened(tempFile);
     } catch (final IOException e) {
-      throw new RuntimeException("Failed to create temp property file ", e);
+      throw new RuntimeException("Failed to create temp property file in " + directory, e);
     }
 
     return tempFile;
