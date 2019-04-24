@@ -47,6 +47,7 @@ public final class UserUtils {
   /**
    * Creates a watch thread which listens to specified files' modification and reloads
    * configurations
+   * @param configFileMap : Map of file name with fully qualified path and its corresponding parser.
    */
   static void setupWatch(final Map<String, ParseConfigFile> configFileMap) throws IOException {
     Preconditions.checkNotNull(configFileMap);
