@@ -7,12 +7,14 @@ import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -62,6 +64,8 @@ public final class UserUtils {
     final Map<WatchKey, Path> keys = new HashMap<>();
     // A directory to config files multimap
     final Multimap<Path, String> dirToFilesMap = HashMultimap.create();
+    // Map to store modified time for a file
+    final Map<String, FileTime> fileTimeMap = new HashMap<>();
 
     // Iterate over each file.
     for (Map.Entry<String, ParseConfigFile> entry : configFileMap.entrySet()) {
@@ -78,7 +82,8 @@ public final class UserUtils {
       }
 
       try {
-        final Path dir = Paths.get(fileName).getParent();
+        final Path filePath = Paths.get(fileName);
+        final Path dir = filePath.getParent();
         if (!dirToFilesMap.containsKey(dir)) {
           // There is no entry for this directory, create a watchkey
           WatchKey watchKey = dir.register(watchService,
@@ -88,6 +93,7 @@ public final class UserUtils {
         }
         // Add the config file to dir map
         dirToFilesMap.put(dir, fileName);
+        fileTimeMap.put(fileName, Files.getLastModifiedTime(filePath));
       } catch (IOException e) {
         // Ignore the IOException
         log.warn("IOException while setting up watch on conf " + fileName + ". "
@@ -128,6 +134,19 @@ public final class UserUtils {
           // Lookup the file in dirToFilesMap
           if (dirToFilesMap.containsEntry(dir, filename)) {
             // Match!
+            // Verify if the file has been modified
+            FileTime modifiedTime;
+            try {
+              modifiedTime = Files.getLastModifiedTime(Paths.get(filename));
+            } catch (IOException e) {
+              log.warn("IOException while fetching the last modified time of file " + filename);
+              // skip this one
+              continue;
+            }
+            if (modifiedTime.equals(fileTimeMap.get(filename))) {
+              continue; // last modified time is same, skip
+            }
+            fileTimeMap.put(filename, modifiedTime);
             // reparse the config file
             log.info("Modification detected, reloading config file " + filename);
             configFileMap.get(filename).parseConfigFile();
