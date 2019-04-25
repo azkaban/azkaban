@@ -16,7 +16,6 @@
 
 package azkaban.user;
 
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -95,7 +93,7 @@ public class XmlUserManagerTest {
     final String path = configURL.getPath();
     props.put(XmlUserManager.XML_FILE_PARAM, path);
 
-    UserManager manager;
+    final UserManager manager;
     try {
       manager = new XmlUserManager(props);
     } catch (final RuntimeException e) {
@@ -108,12 +106,12 @@ public class XmlUserManagerTest {
 
     // Modify the password for user8
     // TODO : djaiswal : Find a better way to modify XML
-    List<String> lines = new ArrayList<>();
-    List<String> origLines = new ArrayList<>();
-    Path filePath = Paths.get(path);
-    FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
+    final List<String> lines = new ArrayList<>();
+    final List<String> origLines = new ArrayList<>();
+    final Path filePath = Paths.get(path);
+    final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
     System.out.println("File modification time = " + origModifiedTime.toString());
-    for (String line : Files.readAllLines(filePath)) {
+    for (final String line : Files.readAllLines(filePath)) {
       origLines.add(line);
       if (line.contains("password8")) {
         lines.add(line.replace("password8", "passwordModified"));
@@ -126,7 +124,7 @@ public class XmlUserManagerTest {
     try {
       // Update the file
       Files.write(filePath, lines);
-      FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
+      final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
       System.out.println("File modification time after write = " + lastModifiedTime.toString());
       if (origModifiedTime.equals(lastModifiedTime)) {
         // File did not update
@@ -139,7 +137,7 @@ public class XmlUserManagerTest {
             User user;
             try {
               user = manager.getUser("user8", "password8");
-            } catch (UserManagerException e) {
+            } catch (final UserManagerException e) {
               System.out.println("user8 has updated password. " + e.getMessage());
               user = null;
             }
@@ -159,7 +157,7 @@ public class XmlUserManagerTest {
         System.out.println("Test failed " + e.getMessage());
         fail("Test failed " + e.getMessage());
       }
-    } catch (ConditionTimeoutException te) {
+    } catch (final ConditionTimeoutException te) {
       System.out.println("The config did not reload in 60 seconds");
       fail("The config did not reload in 60 seconds");
     } finally {
