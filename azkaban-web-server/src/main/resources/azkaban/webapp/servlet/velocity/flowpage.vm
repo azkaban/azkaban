@@ -85,7 +85,6 @@
     #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
   #else
 
-
   ## Page header.
 
   <div class="az-page-header page-header-bare">
