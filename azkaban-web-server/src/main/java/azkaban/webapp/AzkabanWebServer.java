@@ -548,9 +548,7 @@ public class AzkabanWebServer extends AzkabanServer {
     createThreadPool();
     configureRoutes();
 
-    // Todo jamiesjc: enable web metrics for azkaban poll model later
-    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)
-        && !this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       startWebMetrics();
     }
 
