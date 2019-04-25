@@ -16,26 +16,26 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
-
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
+
 /**
- * Whitelist util. It uses file (new line separated) to construct whitelist and validates if id is whitelisted.
- * Main use case is to control users onboarding on connector job types via their "user.to.proxy" value.
+ * Whitelist util. It uses file (new line separated) to construct whitelist and validates if id is
+ * whitelisted.
+ * Main use case is to control users onboarding on connector job types via their "user.to.proxy"
+ * value.
  */
 public class Whitelist {
-  public static final String WHITE_LIST_FILE_PATH_KEY = "whitelist.file.path";
 
+  public static final String WHITE_LIST_FILE_PATH_KEY = "whitelist.file.path";
   private static final String PROXY_USER_KEY = "user.to.proxy";
   private static Logger logger = Logger.getLogger(Whitelist.class);
 
@@ -43,14 +43,10 @@ public class Whitelist {
 
   /**
    * Creates whitelist instance.
-   *
-   * @param whitelistFilePath
-   * @param fs
-   * @param pollingPeriodSec
    */
   public Whitelist(String whitelistFilePath, FileSystem fs) {
     this.whitelistSet = retrieveWhitelist(fs, new Path(whitelistFilePath));
-    if(logger.isDebugEnabled()) {
+    if (logger.isDebugEnabled()) {
       logger.debug("Whitelist: " + whitelistSet);
     }
   }
@@ -61,7 +57,7 @@ public class Whitelist {
 
   /**
    * Checks if id is in whitelist.
-   * @param id
+   *
    * @throws UnsupportedOperationException if id is not whitelisted
    */
   public void validateWhitelisted(String id) {
@@ -72,34 +68,40 @@ public class Whitelist {
   }
 
   /**
-   * Use proxy user or submit user(if proxy user does not exist) from property and check if it is whitelisted.
-   * @param props
-   * @return
+   * Use proxy user or submit user(if proxy user does not exist) from property and check if it is
+   * whitelisted.
    */
   public void validateWhitelisted(Props props) {
     String id = null;
     if (props.containsKey(PROXY_USER_KEY)) {
       id = props.get(PROXY_USER_KEY);
-      Preconditions.checkArgument(!StringUtils.isEmpty(id), PROXY_USER_KEY + " is required.");
+      Preconditions.checkArgument(
+          !StringUtils.isEmpty(id), PROXY_USER_KEY + " is required.");
     } else if (props.containsKey(CommonJobProperties.SUBMIT_USER)) {
       id = props.get(CommonJobProperties.SUBMIT_USER);
-      Preconditions.checkArgument(!StringUtils.isEmpty(id), CommonJobProperties.SUBMIT_USER + " is required.");
+      Preconditions.checkArgument(!StringUtils.isEmpty(id),
+          CommonJobProperties.SUBMIT_USER + " is required.");
     } else {
-      throw new IllegalArgumentException("Property neither has " + PROXY_USER_KEY + " nor " + CommonJobProperties.SUBMIT_USER);
+      throw new IllegalArgumentException(
+          "Property neither has " + PROXY_USER_KEY + " nor " + CommonJobProperties.SUBMIT_USER);
     }
     validateWhitelisted(id);
   }
 
   /**
-   * Updates whitelist if there's any change. If it needs to update whitelist, it enforces writelock to make sure
+   * Updates whitelist if there's any change. If it needs to update whitelist, it enforces writelock
+   * to make sure
    * there's an exclusive access on shared variables.
-   *
    */
   @VisibleForTesting
   Set<String> retrieveWhitelist(FileSystem fs, Path path) {
     try {
-      Preconditions.checkArgument(fs.exists(path), "File does not exist at " + path);
-      Preconditions.checkArgument(fs.isFile(path), "Whitelist path is not a file. " + path);
+      Preconditions.checkArgument(
+          fs.exists(path), "File does not exist at " + path
+      );
+      Preconditions.checkArgument(
+          fs.isFile(path), "Whitelist path is not a file. " + path
+      );
 
       Set<String> result = Sets.newHashSet();
       try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(path),

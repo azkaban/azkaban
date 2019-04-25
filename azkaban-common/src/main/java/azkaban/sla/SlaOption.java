@@ -13,18 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.sla;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.sla.SlaType.ComponentType;
-import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +36,7 @@ import org.joda.time.format.DateTimeFormatter;
  * SLA option, which can be associated with a flow or job.
  */
 public class SlaOption {
+
   public static final String ALERT_TYPE_EMAIL = "email";
   public static final String ACTION_CANCEL_FLOW = "SlaCancelFlow";
   public static final String ACTION_ALERT = "SlaAlert";
@@ -114,13 +112,13 @@ public class SlaOption {
       default:
         throw new IllegalArgumentException("Unrecognized type " + type);
     }
-    this.flowName = (String)slaOption.getInfo().get(SlaOptionDeprecated.INFO_FLOW_NAME);
-    this.jobName = (String)slaOption.getInfo().get(SlaOptionDeprecated.INFO_JOB_NAME);
-    this.duration = parseDuration((String)slaOption.getInfo().get(SlaOptionDeprecated
+    this.flowName = (String) slaOption.getInfo().get(SlaOptionDeprecated.INFO_FLOW_NAME);
+    this.jobName = (String) slaOption.getInfo().get(SlaOptionDeprecated.INFO_JOB_NAME);
+    this.duration = parseDuration((String) slaOption.getInfo().get(SlaOptionDeprecated
         .INFO_DURATION));
 
     Set<SlaAction> actions = new HashSet<>();
-    for (String action: slaOption.getActions()) {
+    for (String action : slaOption.getActions()) {
       switch (action) {
         case SlaOptionDeprecated.ACTION_ALERT:
           actions.add(SlaAction.ALERT);
@@ -133,8 +131,20 @@ public class SlaOption {
     }
     this.actions = ImmutableSet.copyOf(actions);
 
-    this.emails = ImmutableList.copyOf((List<String>)slaOption.getInfo().get(SlaOptionDeprecated
-        .INFO_EMAIL_LIST));
+    this.emails = ImmutableList.copyOf(
+        (List<String>) slaOption.getInfo().get(SlaOptionDeprecated.INFO_EMAIL_LIST)
+    );
+  }
+
+  public static List<Object> convertToObjects(List<SlaOption> slaOptions) {
+    if (slaOptions != null) {
+      final List<Object> slaOptionsObject = new ArrayList<>();
+      for (final SlaOption sla : slaOptions) {
+        slaOptionsObject.add(sla.toObject());
+      }
+      return slaOptionsObject;
+    }
+    return null;
   }
 
   private Duration parseDuration(final String durationStr) {
@@ -182,6 +192,16 @@ public class SlaOption {
 
   public List<String> getEmails() {
     return emails;
+  }
+
+  /**
+   * Check the SlaType's ComponentType of this SlaOption's
+   *
+   * @param componentType component Type
+   * @return true/false
+   */
+  public boolean isComponentType (SlaType.ComponentType componentType) {
+    return this.type.getComponent() == componentType;
   }
 
   /**
@@ -241,11 +261,13 @@ public class SlaOption {
    * @param json the original JSON format for {@link SlaOptionDeprecated}.
    * @return the SLA option.
    */
-  static public SlaOption fromObject(Object json) {
+  public static SlaOption fromObject(Object json) {
     return new SlaOption(SlaOptionDeprecated.fromObject(json));
   }
 
-  /** @return the web object representation for the SLA option. */
+  /**
+   * @return the web object representation for the SLA option.
+   */
   public Object toWebObject() {
     final HashMap<String, Object> slaObj = new HashMap<>();
 
@@ -289,9 +311,9 @@ public class SlaOption {
                 + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
         final String actual = "Actual flow status is " + flow.getStatus();
         return basicinfo + expected + actual;
-       case JOB:
-         return "SLA Alert: Your job " + this.jobName + " failed to " + this.type.getStatus()
-             + " within " + durationStr + " in execution " + execId;
+      case JOB:
+        return "SLA Alert: Your job " + this.jobName + " failed to " + this.type.getStatus()
+            + " within " + durationStr + " in execution " + execId;
       default:
         return "Unrecognized SLA component type " + this.type.getComponent();
     }
@@ -301,24 +323,30 @@ public class SlaOption {
    * @param options a list of SLA options.
    * @return the job level SLA options.
    */
-  static public List<SlaOption> getJobLevelSLAOptions(List<SlaOption> options) {
-    return options.stream().filter(rule -> rule.type.getComponent() == SlaType.ComponentType.JOB).collect
-        (Collectors.toList());
+  public static List<SlaOption> getJobLevelSLAOptions(List<SlaOption> options) {
+    return filterSLAOptionsByComponentType(options, ComponentType.JOB);
   }
 
   /**
    * @param options a list of SLA options.
    * @return the flow level SLA options.
    */
-  static public List<SlaOption> getFlowLevelSLAOptions(List<SlaOption> options) {
-    return options.stream().filter(rule -> rule.type.getComponent() == SlaType.ComponentType.FLOW).collect
-        (Collectors.toList());
+  public static List<SlaOption> getFlowLevelSLAOptions(List<SlaOption> options) {
+    return filterSLAOptionsByComponentType(options, ComponentType.FLOW);
+  }
+
+  private static List<SlaOption> filterSLAOptionsByComponentType(
+      List<SlaOption> options, ComponentType componentType) {
+    return options.stream()
+        .filter(option -> option.isComponentType(componentType))
+        .collect(Collectors.toList());
   }
 
   /**
    * Builder for {@link SlaOption}.
    */
   public static class SlaOptionBuilder {
+
     final private SlaType type;
     final private String flowName;
     private String jobName = null;

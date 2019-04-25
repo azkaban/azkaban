@@ -14,20 +14,19 @@
  * the License.
  *
  */
-
 package azkaban.webapp;
 
 import azkaban.utils.FileIOUtils;
+import azkaban.utils.PluginUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
+
 
 public class PluginCheckerAndActionsLoader {
 
@@ -44,92 +43,35 @@ public class PluginCheckerAndActionsLoader {
     final ClassLoader parentLoader = getClass().getClassLoader();
     final File[] pluginDirs = triggerPluginPath.listFiles();
     final ArrayList<String> jarPaths = new ArrayList<>();
+
     for (final File pluginDir : pluginDirs) {
-      if (!pluginDir.exists()) {
-        log.error("Error! Trigger plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
+      // load plugin properties
+      final Props pluginProps = PropsUtils.loadPluginProps(pluginDir);
+      if (pluginProps == null) {
         continue;
       }
 
-      if (!pluginDir.isDirectory()) {
-        log.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      final File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        final File propertiesFile = new File(propertiesDir, "plugin.properties");
-        final File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          log.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        log.error("Plugin conf path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      final List<String> extLibClasspath =
+      final List<String> extLibClassPaths =
           pluginProps.getStringList("trigger.external.classpaths",
               (List<String>) null);
 
       final String pluginClass = pluginProps.getString("trigger.class");
       if (pluginClass == null) {
         log.error("Trigger class is not set.");
+        continue;
       } else {
-        log.error("Plugin class " + pluginClass);
+        log.info("Plugin class " + pluginClass);
       }
 
-      URLClassLoader urlClassLoader = null;
-      final File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        final File[] files = libDir.listFiles();
-
-        final ArrayList<URL> urls = new ArrayList<>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            final URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (final MalformedURLException e) {
-            log.error(e);
-          }
-        }
-        if (extLibClasspath != null) {
-          for (final String extLib : extLibClasspath) {
-            try {
-              final File file = new File(pluginDir, extLib);
-              final URL url = file.toURI().toURL();
-              urls.add(url);
-            } catch (final MalformedURLException e) {
-              log.error(e);
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        log.error("Library path " + propertiesDir + " not found.");
+      URLClassLoader urlClassLoader = PluginUtils
+          .getURLClassLoader(pluginDir, extLibClassPaths, parentLoader);
+      if (urlClassLoader == null) {
         continue;
       }
 
-      Class<?> triggerClass = null;
-      try {
-        triggerClass = urlClassLoader.loadClass(pluginClass);
-      } catch (final ClassNotFoundException e) {
-        log.error("Class " + pluginClass + " not found.");
+      Class<?> triggerClass =
+          PluginUtils.getPluginClass(pluginClass, urlClassLoader);
+      if (triggerClass == null) {
         continue;
       }
 
@@ -152,8 +94,6 @@ public class PluginCheckerAndActionsLoader {
         log.error("Unable to initiate action types for " + pluginClass);
         continue;
       }
-
     }
   }
-
 }
