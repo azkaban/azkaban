@@ -123,7 +123,7 @@ public class XmlUserManager implements UserManager {
       try {
         List<String> lines = Files.readAllLines(Paths.get(this.xmlPath));
         for (String line : lines) {
-          logger.info("Deepak : " + line);
+          logger.info("XML File : " + line);
         }
       } catch (IOException ioe) {
         logger.warn("IO Exception while reading config file " + this.xmlPath + ". " + ioe.getMessage());
