@@ -89,7 +89,7 @@ public final class UserUtils {
           // There is no entry for this directory, create a watchkey
           WatchKey watchKey = dir.register(watchService,
               new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
-              SensitivityWatchEventModifier.LOW);
+              SensitivityWatchEventModifier.MEDIUM);
           keys.put(watchKey, dir);
         }
         // Add the config file to dir map
@@ -119,6 +119,9 @@ public final class UserUtils {
         WatchKey watchKey;
         try {
           watchKey = watchService.take();
+          // Wait for a second to ensure there is only one event for a modification.
+          // WatchService otherwise creates two events 1 for content and 1 for modification time.
+          Thread.sleep(1000L);
         } catch (InterruptedException ie) {
           log.warn(ie.getMessage());
           Thread.currentThread().interrupt();
