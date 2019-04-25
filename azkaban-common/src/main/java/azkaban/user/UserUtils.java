@@ -149,7 +149,8 @@ public final class UserUtils {
             }
             fileTimeMap.put(filename, modifiedTime);
             // reparse the config file
-            log.info("Modification detected, reloading config file " + filename);
+            log.info("Modification detected, reloading config file " + filename + ". The "
+                + "modification time is " + modifiedTime);
             configFileMap.get(filename).parseConfigFile();
           }
         }
