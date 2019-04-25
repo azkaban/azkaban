@@ -20,8 +20,11 @@ import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
@@ -116,6 +119,12 @@ public class XmlUserManager implements UserManager {
     try {
       doc = builder.parse(file);
     } catch (final SAXException e) {
+      // Dump out config file contents
+      try {
+        List<String> lines = Files.readAllLines(Paths.get(this.xmlPath));
+      } catch (IOException ioe) {
+        logger.warn("IO Exception while reading config file " + this.xmlPath + ". " + ioe.getMessage());
+      }
       throw new IllegalArgumentException("Exception while parsing " + this.xmlPath
           + ". Invalid XML.", e);
     } catch (final IOException e) {
