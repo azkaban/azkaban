@@ -136,7 +136,7 @@ Add your user name to TODO items.
   private static final Logger logger = LoggerFactory.getLogger($CLASS_NAME$.class);
   ` 
 
-- Add or update the copyright notice for most files.
+- Add or update the copyright notice for most files. The year should be the year in which the file was originally created.
 
 - When ignoring a test, provide reasons for ignoring the test.
 
