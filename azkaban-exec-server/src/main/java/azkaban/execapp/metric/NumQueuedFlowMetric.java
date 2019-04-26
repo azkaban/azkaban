@@ -40,7 +40,7 @@ public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
       final MetricReportManager manager,
       final long interval) throws MetricException {
     super(NUM_QUEUED_FLOW_METRIC_NAME, NUM_QUEUED_FLOW_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumQueuedFlowMetric");
+    LOG.debug("Instantiated NumQueuedFlowMetric");
     this.flowManager = flowRunnerManager;
   }
 

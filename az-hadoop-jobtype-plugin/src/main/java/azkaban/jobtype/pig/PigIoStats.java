@@ -13,16 +13,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.pig;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.pig.tools.pigstats.InputStats;
 import org.apache.pig.tools.pigstats.OutputStats;
 
+
 public class PigIoStats {
+
   private long bytes;
   private long records;
   private String location;

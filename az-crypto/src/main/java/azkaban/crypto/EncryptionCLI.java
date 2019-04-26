@@ -19,6 +19,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+
 /**
  * Command line interface for user to encrypt plain text with passphrase.
  */

@@ -13,18 +13,19 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import javax.inject.Inject;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Updates running executions periodically.
  */
 public class RunningExecutionsUpdaterThread extends Thread {
 
-  private static final Logger logger = Logger.getLogger(RunningExecutionsUpdaterThread.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RunningExecutionsUpdaterThread.class);
 
   volatile int waitTimeIdleMs = 2000;
   volatile int waitTimeMs = 500;
@@ -57,7 +58,7 @@ public class RunningExecutionsUpdaterThread extends Thread {
         // being started.
         waitForNewExecutions();
       } catch (final Exception e) {
-        logger.error("Unexpected exception in updating executions", e);
+        LOG.error("Unexpected exception in updating executions", e);
       }
     }
   }
@@ -82,5 +83,4 @@ public class RunningExecutionsUpdaterThread extends Thread {
   public long getLastThreadCheckTime() {
     return this.lastThreadCheckTime;
   }
-
 }

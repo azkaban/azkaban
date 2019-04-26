@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ExecutorHealthChecker {
 
-  private static final Logger logger = LoggerFactory.getLogger(ExecutorHealthChecker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorHealthChecker.class);
   // Max number of executor failures before sending out alert emails.
   private static final int DEFAULT_EXECUTOR_MAX_FAILURE_COUNT = 6;
   // Web server checks executor health every 5 min by default.
@@ -70,7 +70,7 @@ public class ExecutorHealthChecker {
   }
 
   public void start() {
-    logger.info("Starting executor health checker.");
+    LOG.info("Starting executor health checker.");
     this.scheduler.scheduleAtFixedRate(() -> checkExecutorHealth(), 0L, this.healthCheckIntervalMin,
         TimeUnit.MINUTES);
   }
@@ -98,7 +98,7 @@ public class ExecutorHealthChecker {
       if (!executorOption.isPresent()) {
         final String finalizeReason = "Executor id of this execution doesn't exist.";
         for (final ExecutableFlow flow : entry.getValue()) {
-          logger.warn(
+          LOG.warn(
               String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
           ExecutionControllerUtils
               .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
@@ -148,7 +148,7 @@ public class ExecutorHealthChecker {
         flows.add(runningFlow.getSecond());
       }
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get flow to executor map");
+      LOG.error("Failed to get flow to executor map");
     }
     return exFlowMap;
   }
@@ -164,14 +164,14 @@ public class ExecutorHealthChecker {
   private void handleExecutorNotAliveCase(
       final Entry<Optional<Executor>, List<ExecutableFlow>> entry, final Executor executor,
       final ExecutorManagerException e) {
-    logger.error("Failed to get update from executor " + executor.getId(), e);
+    LOG.error("Failed to get update from executor " + executor.getId(), e);
     this.executorFailureCount.put(executor.getId(), this.executorFailureCount.getOrDefault
         (executor.getId(), 0) + 1);
     if (this.executorFailureCount.get(executor.getId()) % this.executorMaxFailureCount == 0
         && !this.alertEmails.isEmpty()) {
       entry.getValue().stream().forEach(flow -> flow
           .getExecutionOptions().setFailureEmails(this.alertEmails));
-      logger.info(String.format("Executor failure count is %d. Sending alert emails to %s.",
+      LOG.info(String.format("Executor failure count is %d. Sending alert emails to %s.",
           this.executorFailureCount.get(executor.getId()), this.alertEmails));
       this.alerterHolder.get("email").alertOnFailedUpdate(executor, entry.getValue(), e);
     }

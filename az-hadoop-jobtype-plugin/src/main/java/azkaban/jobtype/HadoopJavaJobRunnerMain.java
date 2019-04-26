@@ -18,6 +18,10 @@ package azkaban.jobtype;
 import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
+import azkaban.jobExecutor.ProcessJob;
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,10 +47,6 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-import azkaban.jobExecutor.ProcessJob;
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 
 
 public class HadoopJavaJobRunnerMain {

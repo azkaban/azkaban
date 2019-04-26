@@ -35,7 +35,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
   public NumFailedJobMetric(final MetricReportManager manager, final long interval)
       throws MetricException {
     super(NUM_FAILED_JOB_METRIC_NAME, NUM_FAILED_JOB_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumFailedJobMetric");
+    LOG.debug("Instantiated NumFailedJobMetric");
   }
 
   /**

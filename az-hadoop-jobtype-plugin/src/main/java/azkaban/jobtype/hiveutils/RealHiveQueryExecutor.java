@@ -13,9 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
 
+import java.io.InputStream;
+import java.io.PrintStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.cli.CliDriver;
 import org.apache.hadoop.hive.cli.CliSessionState;
@@ -23,17 +24,16 @@ import org.apache.hadoop.hive.cli.OptionsProcessor;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.shims.ShimLoader;
-import org.apache.log4j.Logger;
-
-import java.io.InputStream;
-import java.io.PrintStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVEAUXJARS;
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.METASTORECONNECTURLKEY;
 
+
 class RealHiveQueryExecutor implements HiveQueryExecutor {
-  private final static Logger LOG = Logger
-      .getLogger("com.linkedin.hive.HiveQueryExecutor");
+
+  private final static Logger LOG = LoggerFactory.getLogger("com.linkedin.hive.HiveQueryExecutor");
   private final CliDriver cli;
   private final CliSessionState ss;
 
@@ -57,7 +57,7 @@ class RealHiveQueryExecutor implements HiveQueryExecutor {
 
     OptionsProcessor op = new OptionsProcessor();
 
-    if (!op.process_stage1(new String[] {})) {
+    if (!op.process_stage1(new String[]{})) {
       throw new IllegalArgumentException("Can't process empty args?!?");
     }
 

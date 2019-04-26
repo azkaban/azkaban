@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
 import azkaban.security.commons.HadoopSecurityManager;
@@ -47,7 +46,9 @@ import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Our forked version of hadoop sequence file.
@@ -56,8 +57,7 @@ import org.apache.log4j.Logger;
  */
 @SuppressWarnings("deprecation")
 public class AzkabanSequenceFileReader {
-  private final static Logger LOG = Logger
-      .getLogger(HadoopSecurityManager.class);
+  private final static Logger LOG = LoggerFactory.getLogger(AzkabanSequenceFileReader.class);
   private static final byte BLOCK_COMPRESS_VERSION = (byte) 4;
   private static final byte CUSTOM_COMPRESS_VERSION = (byte) 5;
   private static final byte VERSION_WITH_METADATA = (byte) 6;

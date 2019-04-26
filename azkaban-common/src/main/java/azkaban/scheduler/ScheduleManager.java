@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.scheduler;
 
 import azkaban.executor.ExecutionOptions;
@@ -26,11 +25,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * The ScheduleManager stores and executes the schedule. It uses a single thread instead and waits
@@ -42,7 +43,7 @@ import org.joda.time.format.DateTimeFormatter;
 public class ScheduleManager implements TriggerAgent {
 
   public static final String SIMPLE_TIME_TRIGGER = "SimpleTimeTrigger";
-  private static final Logger logger = Logger.getLogger(ScheduleManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ScheduleManager.class);
   private final DateTimeFormatter _dateFormat = DateTimeFormat
       .forPattern("MM-dd-yyyy HH:mm:ss:SSS");
   private final ScheduleLoader loader;
@@ -138,7 +139,7 @@ public class ScheduleManager implements TriggerAgent {
     try {
       this.loader.removeSchedule(sched);
     } catch (final ScheduleManagerException e) {
-      logger.error(e);
+      LOG.error("Remove Schedule Failure", e);
     }
   }
 
@@ -159,8 +160,7 @@ public class ScheduleManager implements TriggerAgent {
     final Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
         firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
         submitTime, submitUser, execOptions, null);
-    logger
-        .info("Scheduling flow '" + sched.getScheduleName() + "' for "
+    LOG.info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null
             ? "(non-recurring)"
             : period));
@@ -187,8 +187,7 @@ public class ScheduleManager implements TriggerAgent {
         new Schedule(scheduleId, projectId, projectName, flowName, status,
             firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
             submitTime, submitUser, execOptions, cronExpression);
-    logger
-        .info("Scheduling flow '" + sched.getScheduleName() + "' for "
+    LOG.info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);
 
     insertSchedule(sched);
@@ -219,11 +218,10 @@ public class ScheduleManager implements TriggerAgent {
           internalSchedule(s);
         }
       } catch (final ScheduleManagerException e) {
-        logger.error(e);
+        LOG.error("Insert Schedule Failure", e);
       }
     } else {
-      logger
-          .error("The provided schedule is non-recurring and the scheduled time already passed. "
+      LOG.error("The provided schedule is non-recurring and the scheduled time already passed. "
               + s.getScheduleName());
     }
   }

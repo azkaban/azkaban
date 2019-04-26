@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.executor.ConnectorParams;
@@ -22,7 +21,6 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.server.session.Session;
 import azkaban.user.User;
-import azkaban.user.UserManager;
 import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -36,24 +34,24 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * User facing servlet for Azkaban default metric display
  */
 public class StatsServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(StatsServlet.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StatsServlet.class);
 
   private static final long serialVersionUID = 1L;
-  private UserManager userManager;
   private ExecutorManagerAdapter execManagerAdapter;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.userManager = server.getUserManager();
     this.execManagerAdapter = server.getExecutorManager();
   }
 
@@ -118,7 +116,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         ret.put("metricList", result.get("data"));
       }
     } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       ret.put("error", "Failed to fetch metric names for executor : "
           + executorId);
     }
@@ -130,8 +128,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
    * @param actionName Name of the action
    */
   private void handleChangeConfigurationRequest(final int executorId, final String actionName,
-      final HttpServletRequest req, final HashMap<String, Object> ret)
-      throws ServletException, IOException {
+      final HttpServletRequest req, final HashMap<String, Object> ret) throws IOException {
     try {
       final Map<String, Object> result =
           this.execManagerAdapter
@@ -144,7 +141,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
             result.get(ConnectorParams.STATUS_PARAM));
       }
     } catch (final ExecutorManagerException ex) {
-      logger.error(ex.getMessage(), ex);
+      LOG.error(ex.getMessage(), ex);
       ret.put("error", "Failed to change config change");
     }
   }
@@ -153,8 +150,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
    * Get metric snapshots for a metric and date specification
    */
   private void handleGetMetricHistory(final int executorId, final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws IOException,
-      ServletException {
+      final HashMap<String, Object> ret, final User user) throws IOException {
     try {
       final Map<String, Object> result =
           this.execManagerAdapter.callExecutorStats(executorId,
@@ -166,7 +162,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         ret.put("data", result.get("data"));
       }
     } catch (final ExecutorManagerException ex) {
-      logger.error(ex.getMessage(), ex);
+      LOG.error(ex.getMessage(), ex);
       ret.put("error", "Failed to fetch metric history");
     }
   }
@@ -176,8 +172,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
    *
    */
   private void handleStatePageLoad(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session)
-      throws ServletException {
+      final Session session) {
     final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/statsPage.vm");
 
     try {
@@ -199,7 +194,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         page.add("metricList", result.get("data"));
       }
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       page.add("errorMsg", "Failed to get a response from Azkaban exec server");
     }
 
@@ -208,9 +203,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
 
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session)
-      throws ServletException,
-      IOException {
+      final Session session) {
   }
 
   /**

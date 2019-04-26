@@ -13,17 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.database;
 
 import azkaban.utils.Props;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class DataSourceUtils {
 
-  private static final Logger logger = Logger.getLogger(DataSourceUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DataSourceUtils.class);
 
   /**
    * Hidden datasource
@@ -52,7 +53,7 @@ public class DataSourceUtils {
     } else if (databaseType.equals("h2")) {
       final String path = props.getString("h2.path");
       final Path h2DbPath = Paths.get(path).toAbsolutePath();
-      logger.info("h2 DB path: " + h2DbPath);
+      LOG.info("h2 DB path: " + h2DbPath);
       dataSource = getH2DataSource(h2DbPath);
     }
 

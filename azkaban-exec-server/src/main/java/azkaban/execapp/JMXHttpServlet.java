@@ -27,17 +27,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 
 
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
 
   private static final long serialVersionUID = -3085603824826446270L;
-  private static final Logger logger = Logger.getLogger(JMXHttpServlet.class);
   private AzkabanExecutorServer server;
 
   @Override
-  public void init(final ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) {
     this.server =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
             Constants.AZKABAN_SERVLET_CONTEXT_KEY);

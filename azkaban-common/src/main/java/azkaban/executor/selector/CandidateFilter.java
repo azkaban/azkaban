@@ -13,13 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -29,7 +29,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class CandidateFilter<T, V> {
 
-  protected static Logger logger = Logger.getLogger(CandidateFilter.class);
+  protected static Logger LOG = LoggerFactory.getLogger(CandidateFilter.class);
 
   // internal repository of the registered filters .
   private final Map<String, FactorFilter<T, V>> factorFilterList =
@@ -45,7 +45,7 @@ public abstract class CandidateFilter<T, V> {
   /**
    * function to register a factorFilter to the internal Map for future reference.
    *
-   * @param factorfilter : the Filter object to be registered.
+   * @param filter : the Filter object to be registered.
    */
   protected void registerFactorFilter(final FactorFilter<T, V> filter) {
     if (null == filter) {
@@ -55,7 +55,7 @@ public abstract class CandidateFilter<T, V> {
 
     // add or replace the filter.
     this.factorFilterList.put(filter.getFactorName(), filter);
-    logger.debug(String.format("Factor filter added for '%s'.",
+    LOG.debug(String.format("Factor filter added for '%s'.",
         filter.getFactorName()));
   }
 
@@ -70,7 +70,7 @@ public abstract class CandidateFilter<T, V> {
    * filtered.
    */
   public boolean filterTarget(final T filteringTarget, final V referencingObject) {
-    logger.debug(String.format("start filtering '%s' with factor filter for '%s'",
+    LOG.debug(String.format("start filtering '%s' with factor filter for '%s'",
         filteringTarget == null ? "(null)" : filteringTarget.toString(),
         this.getName()));
 
@@ -78,13 +78,13 @@ public abstract class CandidateFilter<T, V> {
     boolean result = true;
     for (final FactorFilter<T, V> filter : filterList) {
       result &= filter.filterTarget(filteringTarget, referencingObject);
-      logger.debug(String.format("[Factor: %s] filter result : %s ",
+      LOG.debug(String.format("[Factor: %s] filter result : %s ",
           filter.getFactorName(), result));
       if (!result) {
         break;
       }
     }
-    logger.debug(String.format("Final filtering result : %s ", result));
+    LOG.debug(String.format("Final filtering result : %s ", result));
     return result;
   }
 }

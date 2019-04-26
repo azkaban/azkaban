@@ -32,12 +32,12 @@ import org.slf4j.LoggerFactory;
 
 public class ExecutableFlowBase extends ExecutableNode {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutableFlowBase.class);
   public static final String FLOW_ID_PARAM = "flowId";
   public static final String NODES_PARAM = "nodes";
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
   public static final String INHERITED_PARAM = "inherited";
-  private static final Logger logger = LoggerFactory.getLogger(ExecutableFlowBase.class);
 
   private final HashMap<String, ExecutableNode> executableNodes =
       new HashMap<>();
@@ -137,7 +137,7 @@ public class ExecutableFlowBase extends ExecutableNode {
       final ExecutableNode targetNode = this.executableNodes.get(edge.getTargetId());
 
       if (sourceNode == null) {
-        logger.info("Source node " + edge.getSourceId() + " doesn't exist");
+        LOG.info("Source node " + edge.getSourceId() + " doesn't exist");
       }
       sourceNode.addOutNode(edge.getTargetId());
       targetNode.addInNode(edge.getSourceId());

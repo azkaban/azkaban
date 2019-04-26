@@ -13,12 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.utils.Pair;
 import java.util.Comparator;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Comparator implicitly used in priority queue for QueuedExecutions.
@@ -26,8 +27,7 @@ import org.apache.log4j.Logger;
 public final class ExecutableFlowPriorityComparator implements
     Comparator<Pair<ExecutionReference, ExecutableFlow>> {
 
-  private static final Logger logger = Logger
-      .getLogger(ExecutableFlowPriorityComparator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutableFlowPriorityComparator.class);
 
   /**
    * <pre>
@@ -86,7 +86,7 @@ public final class ExecutableFlowPriorityComparator implements
                 ExecutionOptions.FLOW_PRIORITY));
       } catch (final NumberFormatException ex) {
         priority = ExecutionOptions.DEFAULT_FLOW_PRIORITY;
-        logger.error(
+        LOG.error(
             "Failed to parse flow priority for exec_id = "
                 + exflow.getExecutionId(), ex);
       }

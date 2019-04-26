@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ExecutionControllerUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(
+  private static final Logger LOG = LoggerFactory.getLogger(
       ExecutionControllerUtils.class);
   private static final String SPARK_JOB_TYPE = "spark";
   private static final String APPLICATION_ID = "${application.id}";
@@ -92,7 +92,7 @@ public class ExecutionControllerUtils {
     } catch (final ExecutorManagerException e) {
       // If failed due to azkaban internal error, do not alert user.
       alertUser = false;
-      logger.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
+      LOG.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
     }
 
     if (alertUser) {
@@ -116,7 +116,7 @@ public class ExecutionControllerUtils {
         try {
           mailAlerter.alertOnError(flow, extraReasons);
         } catch (final Exception e) {
-          logger.error("Failed to alert on error for execution " + flow.getExecutionId(), e);
+          LOG.error("Failed to alert on error for execution " + flow.getExecutionId(), e);
         }
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
@@ -126,11 +126,11 @@ public class ExecutionControllerUtils {
           try {
             alerter.alertOnError(flow, extraReasons);
           } catch (final Exception e) {
-            logger.error("Failed to alert on error by " + alertType + " for execution " + flow
+            LOG.error("Failed to alert on error by " + alertType + " for execution " + flow
                 .getExecutionId(), e);
           }
         } else {
-          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+          LOG.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
         }
       }
     } else {
@@ -138,7 +138,7 @@ public class ExecutionControllerUtils {
         try {
           mailAlerter.alertOnSuccess(flow);
         } catch (final Exception e) {
-          logger.error("Failed to alert on success for execution " + flow.getExecutionId(), e);
+          LOG.error("Failed to alert on success for execution " + flow.getExecutionId(), e);
         }
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
@@ -148,11 +148,11 @@ public class ExecutionControllerUtils {
           try {
             alerter.alertOnSuccess(flow);
           } catch (final Exception e) {
-            logger.error("Failed to alert on success by " + alertType + " for execution " + flow
+            LOG.error("Failed to alert on success by " + alertType + " for execution " + flow
                 .getExecutionId(), e);
           }
         } else {
-          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+          LOG.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
         }
       }
     }
@@ -168,12 +168,12 @@ public class ExecutionControllerUtils {
       final AlerterHolder alerterHolder) {
     final ExecutionOptions options = flow.getExecutionOptions();
     if (options.getNotifyOnFirstFailure()) {
-      logger.info("Alert on first error of execution " + flow.getExecutionId());
+      LOG.info("Alert on first error of execution " + flow.getExecutionId());
       final Alerter mailAlerter = alerterHolder.get("email");
       try {
         mailAlerter.alertOnFirstError(flow);
       } catch (final Exception e) {
-        logger.error("Failed to send first error email." + e.getMessage(), e);
+        LOG.error("Failed to send first error email." + e.getMessage(), e);
       }
 
       if (options.getFlowParameters().containsKey("alert.type")) {
@@ -183,10 +183,10 @@ public class ExecutionControllerUtils {
           try {
             alerter.alertOnFirstError(flow);
           } catch (final Exception e) {
-            logger.error("Failed to alert by " + alertType, e);
+            LOG.error("Failed to alert by " + alertType, e);
           }
         } else {
-          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+          LOG.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
         }
       }
     }
@@ -302,7 +302,7 @@ public class ExecutionControllerUtils {
         while ((inputLine = in.readLine()) != null) {
           if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()
               || INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
-            logger.info(
+            LOG.info(
                 "RM job link is invalid or has expired for application_" + applicationId);
             isRMJobLinkValid = false;
             break;
@@ -310,7 +310,7 @@ public class ExecutionControllerUtils {
         }
       }
     } catch (final Exception e) {
-      logger.error("Failed to get job link for application_" + applicationId, e);
+      LOG.error("Failed to get job link for application_" + applicationId, e);
       return null;
     }
 
@@ -329,7 +329,7 @@ public class ExecutionControllerUtils {
       }
     }
 
-    logger.info(
+    LOG.info(
         "Job link url is " + jobLinkUrl + " for execution " + exFlow.getExecutionId() + ", job "
             + jobId);
     return jobLinkUrl;
@@ -347,7 +347,7 @@ public class ExecutionControllerUtils {
     if (matcher.find()) {
       appId = matcher.group().substring(12);
     }
-    logger.info("Application ID is " + appId);
+    LOG.info("Application ID is " + appId);
     return appId;
   }
 }

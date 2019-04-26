@@ -46,8 +46,8 @@ public class JavaJob extends JavaProcessJob {
 
   private Object _javaObject = null;
 
-  public JavaJob(String jobid, Props sysProps, Props jobProps, Logger log) {
-    super(jobid, sysProps, new Props(sysProps, jobProps), log);
+  public JavaJob(String jobid, Props sysProps, Props jobProps, Logger logger) {
+    super(jobid, sysProps, new Props(sysProps, jobProps), logger);
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
   }
 

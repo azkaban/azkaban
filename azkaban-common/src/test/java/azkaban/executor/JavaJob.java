@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.jobExecutor.JavaProcessJob;
@@ -21,8 +20,8 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.List;
-import java.util.StringTokenizer;
 import org.apache.log4j.Logger;
+
 
 public class JavaJob extends JavaProcessJob {
 

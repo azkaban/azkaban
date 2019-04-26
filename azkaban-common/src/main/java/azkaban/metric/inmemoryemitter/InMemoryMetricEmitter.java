@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.metric.inmemoryemitter;
 
 import azkaban.metric.IMetric;
@@ -29,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -38,7 +38,7 @@ import org.apache.log4j.Logger;
  */
 public class InMemoryMetricEmitter implements IMetricEmitter {
 
-  protected static final Logger logger = Logger.getLogger(InMemoryMetricEmitter.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(InMemoryMetricEmitter.class);
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
   private static final String INMEMORY_METRIC_STANDARDDEVIATION_FACTOR =
@@ -92,11 +92,11 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   public void reportMetric(final IMetric<?> metric) throws MetricException {
     final String metricName = metric.getName();
     if (!this.historyListMapping.containsKey(metricName)) {
-      logger.info("First time capturing metric: " + metricName);
+      LOG.info("First time capturing metric: " + metricName);
       this.historyListMapping.put(metricName, new LinkedBlockingDeque<>());
     }
     synchronized (this.historyListMapping.get(metricName)) {
-      logger.debug("Ingesting metric: " + metricName);
+      LOG.debug("Ingesting metric: " + metricName);
       this.historyListMapping.get(metricName).add(new InMemoryHistoryNode(metric.getValue()));
       cleanUsingTime(metricName, this.historyListMapping.get(metricName).peekLast().getTimestamp());
     }
@@ -117,7 +117,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
     final LinkedList<InMemoryHistoryNode> selectedLists = new LinkedList<>();
     if (this.historyListMapping.containsKey(metricName)) {
 
-      logger.debug("selecting snapshots within time frame");
+      LOG.debug("selecting snapshots within time frame");
       synchronized (this.historyListMapping.get(metricName)) {
         for (final InMemoryHistoryNode node : this.historyListMapping.get(metricName)) {
           if (node.getTimestamp().after(from) && node.getTimestamp().before(to)) {
@@ -147,7 +147,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    */
   private void statBasedSelectMetricHistory(final LinkedList<InMemoryHistoryNode> selectedLists)
       throws ClassCastException {
-    logger.debug("selecting snapshots which are far away from mean value");
+    LOG.debug("selecting snapshots which are far away from mean value");
     final DescriptiveStatistics descStats = getDescriptiveStatistics(selectedLists);
     final Double mean = descStats.getMean();
     final Double std = descStats.getStandardDeviation();
@@ -180,7 +180,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * @param selectedLists list of snapshots
    */
   private void generalSelectMetricHistory(final LinkedList<InMemoryHistoryNode> selectedLists) {
-    logger.debug("selecting snapshots evenly from across the time interval");
+    LOG.debug("selecting snapshots evenly from across the time interval");
     if (selectedLists.size() > this.numInstances) {
       final double step = (double) selectedLists.size() / this.numInstances;
       long nextIndex = 0, currentIndex = 0, numSelectedInstances = 1;

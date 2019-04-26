@@ -13,20 +13,21 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger;
 
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class CheckerTypeLoader {
 
   public static final String DEFAULT_CONDITION_CHECKER_PLUGIN_DIR =
       "plugins/conditioncheckers";
-  private static final Logger logger = Logger.getLogger(CheckerTypeLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CheckerTypeLoader.class);
   protected static Map<String, Class<? extends ConditionChecker>> checkerToClass =
       new HashMap<>();
 
@@ -34,7 +35,7 @@ public class CheckerTypeLoader {
       final Map<String, Class<? extends ConditionChecker>> builtinCheckers) {
     checkerToClass.putAll(checkerToClass);
     for (final String type : builtinCheckers.keySet()) {
-      logger.info("Loaded " + type + " checker.");
+      LOG.info("Loaded " + type + " checker.");
     }
   }
 
@@ -43,7 +44,7 @@ public class CheckerTypeLoader {
 
   public synchronized void registerCheckerType(final String type,
       final Class<? extends ConditionChecker> checkerClass) {
-    logger.info("Registering checker " + type);
+    LOG.info("Registering checker " + type);
     if (!checkerToClass.containsKey(type)) {
       checkerToClass.put(type, checkerClass);
     }

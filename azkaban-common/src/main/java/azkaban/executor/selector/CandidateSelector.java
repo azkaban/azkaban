@@ -13,13 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Implementation of the CandidateSelector.
@@ -29,7 +30,7 @@ import org.apache.log4j.Logger;
  */
 public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K, V> {
 
-  private static final Logger logger = Logger.getLogger(CandidateComparator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CandidateComparator.class);
 
   private final CandidateFilter<K, V> filter;
   private final CandidateComparator<K> comparator;
@@ -52,12 +53,12 @@ public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K
 
     // shortcut if the candidateList is empty.
     if (null == candidateList || candidateList.size() == 0) {
-      logger.error("failed to getNext candidate as the passed candidateList is null or empty.");
+      LOG.error("failed to getNext candidate as the passed candidateList is null or empty.");
       return null;
     }
 
-    logger.debug("start candidate selection logic.");
-    logger.debug(String.format("candidate count before filtering: %s", candidateList.size()));
+    LOG.debug("start candidate selection logic.");
+    LOG.debug(String.format("candidate count before filtering: %s", candidateList.size()));
 
     // to keep the input untouched, we will form up a new list based off the filtering result.
     Collection<K> filteredList = new ArrayList<>();
@@ -70,23 +71,23 @@ public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K
       }
     } else {
       filteredList = candidateList;
-      logger.debug("skipping the candidate filtering as the filter object is not specifed.");
+      LOG.debug("skipping the candidate filtering as the filter object is not specifed.");
     }
 
-    logger.debug(String.format("candidate count after filtering: %s", filteredList.size()));
+    LOG.debug(String.format("candidate count after filtering: %s", filteredList.size()));
     if (filteredList.size() == 0) {
-      logger.debug("failed to select candidate as the filtered candidate list is empty.");
+      LOG.debug("failed to select candidate as the filtered candidate list is empty.");
       return null;
     }
 
     if (null == this.comparator) {
-      logger.debug(
+      LOG.debug(
           "candidate comparator is not specified, default hash code comparator class will be used.");
     }
 
     // final work - find the best candidate from the filtered list.
     final K executor = Collections.max(filteredList, this.comparator);
-    logger.debug(String.format("candidate selected %s",
+    LOG.debug(String.format("candidate selected %s",
         null == executor ? "(null)" : executor.toString()));
     return executor;
   }

@@ -28,6 +28,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicHeader;
 import org.apache.log4j.Logger;
 
+
 /**
  * Responsible processing job callback properties on job status change events.
  *
@@ -43,8 +44,7 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackManager implements EventListener {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackManager.class);
+  private static final Logger LOG = Logger.getLogger(JobCallbackManager.class);
   private static final JobCallbackStatusEnum[] ON_COMPLETION_JOB_CALLBACK_STATUS =
       {SUCCESS, FAILURE, COMPLETED};
   private static boolean isInitialized = false;
@@ -69,17 +69,17 @@ public class JobCallbackManager implements EventListener {
     this.gmtDateFormatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
     this.gmtDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-    logger.info("Initialization completed " + getClass().getName());
-    logger.info("azkabanHostName " + this.azkabanHostName);
+    LOG.info("Initialization completed " + getClass().getName());
+    LOG.info("azkabanHostName " + this.azkabanHostName);
   }
 
   public static void initialize(final Props props) {
     if (isInitialized) {
-      logger.info("Already initialized");
+      LOG.info("Already initialized");
       return;
     }
 
-    logger.info("Initializing");
+    LOG.info("Initializing");
     instance = new JobCallbackManager(props);
 
     isInitialized = true;
@@ -121,7 +121,7 @@ public class JobCallbackManager implements EventListener {
             "Encountered error while hanlding job callback event", e);
       }
     } else {
-      logger.warn("((( Got an unsupported runner: "
+      LOG.warn("((( Got an unsupported runner: "
           + event.getRunner().getClass().getName() + " )))");
     }
 
@@ -144,7 +144,7 @@ public class JobCallbackManager implements EventListener {
         JobCallbackUtil.buildJobContextInfoMap(event, this.azkabanHostName);
 
     JobCallbackStatusEnum jobCallBackStatusEnum = null;
-    final Logger jobLogger = jobRunner.getLogger();
+    final org.apache.log4j.Logger jobLogger = jobRunner.getLogger();
 
     final Status jobStatus = eventData.getStatus();
 

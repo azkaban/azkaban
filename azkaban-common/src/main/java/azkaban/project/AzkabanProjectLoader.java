@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  */
 class AzkabanProjectLoader {
 
-  private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanProjectLoader.class);
   private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
   private final Props props;
@@ -80,19 +80,19 @@ class AzkabanProjectLoader {
     this.tempDir = new File(props.getString(ConfigurationKeys.PROJECT_TEMP_DIR, "temp"));
     this.executorLoader = executorLoader;
     if (!this.tempDir.exists()) {
-      log.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
+      LOG.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
       this.tempDir.mkdirs();
     } else {
-      log.info("Using temp dir: " + this.tempDir.getAbsolutePath());
+      LOG.info("Using temp dir: " + this.tempDir.getAbsolutePath());
     }
     this.projectVersionRetention = props.getInt(ConfigurationKeys.PROJECT_VERSION_RETENTION, 3);
-    log.info("Project version retention is set to " + this.projectVersionRetention);
+    LOG.info("Project version retention is set to " + this.projectVersionRetention);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
       final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException, ExecutorManagerException {
-    log.info("Uploading files to " + project.getName());
+    LOG.info("Uploading files to " + project.getName());
     final Map<String, ValidationReport> reports;
 
     // Since props is an instance variable of ProjectManager, and each
@@ -173,7 +173,7 @@ class AzkabanProjectLoader {
     // config file and creating validator objects for each upload, this does
     // not add too much additional overhead.
     final ValidatorManager validatorManager = new XmlValidatorManager(prop);
-    log.info("Validating project " + archive.getName()
+    LOG.info("Validating project " + archive.getName()
         + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
     return validatorManager.validate(project, file);
@@ -188,7 +188,7 @@ class AzkabanProjectLoader {
       }
     }
     if (status == ValidationStatus.ERROR) {
-      log.error("Error found in uploading to " + project.getName());
+      LOG.error("Error found in uploading to " + project.getName());
       return false;
     }
     return true;
@@ -206,19 +206,19 @@ class AzkabanProjectLoader {
 
       this.storageManager.uploadProject(project, newProjectVersion, archive, uploader);
 
-      log.info("Uploading flow to db for project " + archive.getName());
+      LOG.info("Uploading flow to db for project " + archive.getName());
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
-      log.info("Changing project versions for project " + archive.getName());
+      LOG.info("Changing project versions for project " + archive.getName());
       this.projectLoader.changeProjectVersion(project, newProjectVersion,
           uploader.getUserId());
       project.setFlows(flows);
 
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
-        log.info("Uploading Job properties");
+        LOG.info("Uploading Job properties");
         this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
             directoryFlowLoader.getJobPropsMap().values()));
-        log.info("Uploading Props properties");
+        LOG.info("Uploading Props properties");
         this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
 
       } else if (loader instanceof DirectoryYamlFlowLoader) {
@@ -247,7 +247,7 @@ class AzkabanProjectLoader {
 
   private void cleanUpProjectOldInstallations(final Project project)
       throws ProjectManagerException, ExecutorManagerException {
-    log.info("Cleaning up old install files older than "
+    LOG.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
         .fetchUnfinishedFlowsMetadata();

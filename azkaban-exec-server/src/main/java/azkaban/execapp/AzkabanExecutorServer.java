@@ -68,11 +68,12 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
@@ -81,7 +82,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
-  private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanExecutorServer.class);
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
 
   private static AzkabanExecutorServer app;
@@ -124,7 +125,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
 
-    logger.info("Starting Jetty Azkaban Executor...");
+    LOG.info("Starting Jetty Azkaban Executor...");
 
     if (System.getSecurityManager() == null) {
       Policy.setPolicy(new Policy() {
@@ -139,8 +140,8 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     final Props props = AzkabanServer.loadProps(args);
 
     if (props == null) {
-      logger.error("Azkaban Properties not loaded.");
-      logger.error("Exiting Azkaban Executor Server...");
+      LOG.error("Azkaban Properties not loaded.");
+      LOG.error("Exiting Azkaban Executor Server...");
       return;
     }
 
@@ -166,34 +167,34 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
         try {
           logTopMemoryConsumers();
         } catch (final Exception e) {
-          AzkabanExecutorServer.logger.info(("Exception when logging top memory consumers"), e);
+          AzkabanExecutorServer.LOG.info(("Exception when logging top memory consumers"), e);
         }
 
         final String host = AzkabanExecutorServer.app.getHost();
         final int port = AzkabanExecutorServer.app.getPort();
         try {
-          AzkabanExecutorServer.logger.info(String
+          AzkabanExecutorServer.LOG.info(String
               .format("Removing executor(host: %s, port: %s) entry from database...", host, port));
           AzkabanExecutorServer.app.getExecutorLoader().removeExecutor(host, port);
         } catch (final ExecutorManagerException ex) {
-          AzkabanExecutorServer.logger.error(
+          AzkabanExecutorServer.LOG.error(
               String.format("Exception when removing executor(host: %s, port: %s)", host, port),
               ex);
         }
 
-        AzkabanExecutorServer.logger.warn("Shutting down executor...");
+        AzkabanExecutorServer.LOG.warn("Shutting down executor...");
         try {
           AzkabanExecutorServer.app.shutdownNow();
           AzkabanExecutorServer.app.getFlowRunnerManager().deleteExecutionDirectory();
         } catch (final Exception e) {
-          AzkabanExecutorServer.logger.error("Error while shutting down http server.", e);
+          AzkabanExecutorServer.LOG.error("Error while shutting down http server.", e);
         }
       }
 
       public void logTopMemoryConsumers() throws Exception, IOException {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          AzkabanExecutorServer.logger.info("logging top memory consumer");
+          AzkabanExecutorServer.LOG.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
@@ -206,7 +207,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
               new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
-            AzkabanExecutorServer.logger.info(line);
+            AzkabanExecutorServer.LOG.info(line);
           }
           is.close();
         }
@@ -221,7 +222,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       TimeZone.setDefault(TimeZone.getTimeZone(timezone));
       DateTimeZone.setDefault(DateTimeZone.forID(timezone));
 
-      logger.info("Setting timezone to " + timezone);
+      LOG.info("Setting timezone to " + timezone);
     }
   }
 
@@ -241,14 +242,14 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     try {
       this.server.start();
     } catch (final Exception e) {
-      logger.error(e);
+      LOG.error("Executor Server Start Failure", e);
       Utils.croak(e.getMessage(), 1);
     }
 
     insertExecutorEntryIntoDB();
     dumpPortToFile();
 
-    logger.info("Started Executor Server on " + getExecutorHostPort());
+    LOG.info("Started Executor Server on " + getExecutorHostPort());
 
     if (this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       startReportingExecMetrics();
@@ -256,7 +257,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   }
 
   private void startReportingExecMetrics() {
-    logger.info("starting reporting Executor Metrics");
+    LOG.info("starting reporting Executor Metrics");
     this.metricsManager.startReporting("AZ-EXEC", this.props);
   }
 
@@ -267,14 +268,14 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       checkState(port != -1);
       final Executor executor = this.executionLoader.fetchExecutor(host, port);
       if (executor == null) {
-        logger.info("This executor wasn't found in the DB. Adding self.");
+        LOG.info("This executor wasn't found in the DB. Adding self.");
         this.executionLoader.addExecutor(host, port);
       } else {
-        logger.info("This executor is already in the DB. Found: " + executor);
+        LOG.info("This executor is already in the DB. Found: " + executor);
       }
       // If executor already exists, ignore it
     } catch (final ExecutorManagerException e) {
-      logger.error("Error inserting executor entry into DB", e);
+      LOG.error("Error inserting executor entry into DB", e);
       throw e;
     }
   }
@@ -290,7 +291,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     final boolean jobCallbackEnabled =
         props.getBoolean("azkaban.executor.jobcallback.enabled", true);
 
-    logger.info("Job callback enabled? " + jobCallbackEnabled);
+    LOG.info("Job callback enabled? " + jobCallbackEnabled);
 
     if (jobCallbackEnabled) {
       JobCallbackManager.initialize(props);
@@ -303,42 +304,42 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   private void configureMetricReports() throws MetricException {
     final Props props = getAzkabanProps();
     if (props != null && props.getBoolean("executor.metric.reports", false)) {
-      logger.info("Starting to configure Metric Reports");
+      LOG.info("Starting to configure Metric Reports");
       final MetricReportManager metricManager = MetricReportManager.getInstance();
       final IMetricEmitter metricEmitter = new InMemoryMetricEmitter(props);
       metricManager.addMetricEmitter(metricEmitter);
 
-      logger.info("Adding number of failed flow metric");
+      LOG.info("Adding number of failed flow metric");
       metricManager.addMetric(new NumFailedFlowMetric(metricManager, props
           .getInt(METRIC_INTERVAL
                   + NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME,
               props.getInt(METRIC_INTERVAL + "default"))));
 
-      logger.info("Adding number of failed jobs metric");
+      LOG.info("Adding number of failed jobs metric");
       metricManager.addMetric(new NumFailedJobMetric(metricManager, props
           .getInt(METRIC_INTERVAL
                   + NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME,
               props.getInt(METRIC_INTERVAL + "default"))));
 
-      logger.info("Adding number of running Jobs metric");
+      LOG.info("Adding number of running Jobs metric");
       metricManager.addMetric(new NumRunningJobMetric(metricManager, props
           .getInt(METRIC_INTERVAL
                   + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME,
               props.getInt(METRIC_INTERVAL + "default"))));
 
-      logger.info("Adding number of running flows metric");
+      LOG.info("Adding number of running flows metric");
       metricManager.addMetric(new NumRunningFlowMetric(this.runnerManager,
           metricManager, props.getInt(METRIC_INTERVAL
               + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
           props.getInt(METRIC_INTERVAL + "default"))));
 
-      logger.info("Adding number of queued flows metric");
+      LOG.info("Adding number of queued flows metric");
       metricManager.addMetric(new NumQueuedFlowMetric(this.runnerManager,
           metricManager, props.getInt(METRIC_INTERVAL
               + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
           props.getInt(METRIC_INTERVAL + "default"))));
 
-      logger.info("Completed configuring Metric Reports");
+      LOG.info("Completed configuring Metric Reports");
     }
 
   }
@@ -357,20 +358,20 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
         props.get(CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY);
     if (jmxAttributeEmitter != null) {
       try {
-        logger.info("jmxAttributeEmitter: " + jmxAttributeEmitter);
+        LOG.info("jmxAttributeEmitter: " + jmxAttributeEmitter);
         final Constructor<Props>[] constructors =
             (Constructor<Props>[]) Class.forName(jmxAttributeEmitter).getConstructors();
 
         constructors[0].newInstance(props.toProperties());
       } catch (final Exception e) {
-        logger.error("Encountered error while loading and instantiating "
+        LOG.error("Encountered error while loading and instantiating "
             + jmxAttributeEmitter, e);
         throw new IllegalStateException(
             "Encountered error while loading and instantiating "
                 + jmxAttributeEmitter, e);
       }
     } else {
-      logger.info("No value for property: "
+      LOG.info("No value for property: "
           + CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY + " was found");
     }
   }
@@ -408,7 +409,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     try {
       host = InetAddress.getLocalHost().getCanonicalHostName();
     } catch (final Exception e) {
-      logger.error("Failed to fetch LocalHostName");
+      LOG.error("Failed to fetch LocalHostName");
     }
     return host;
   }
@@ -437,7 +438,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     try {
       Thread.sleep(duration.toMillis());
     } catch (final InterruptedException e) {
-      logger.error(e);
+      LOG.error("Pause Thread Failure", e);
     }
   }
 
@@ -446,7 +447,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
    * a shutdown thread and returns immediately.
    */
   public void shutdown() {
-    logger.warn("Shutting down AzkabanExecutorServer...");
+    LOG.warn("Shutting down AzkabanExecutorServer...");
     new Thread(() -> {
       // Hack: Sleep for a little time to allow API calls to complete
       sleep(Duration.ofSeconds(2));
@@ -480,7 +481,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   @Override
   public void configureMBeanServer() {
-    logger.info("Registering MBeans...");
+    LOG.info("Registering MBeans...");
 
     this.mbeanRegistrationManager.registerMBean("executorJetty", new JmxJettyServer(this.server));
     this.mbeanRegistrationManager

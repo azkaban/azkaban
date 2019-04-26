@@ -13,32 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.AccessControlException;
-import org.apache.log4j.Logger;
 
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
@@ -47,18 +22,38 @@ import azkaban.utils.Props;
 import azkaban.server.session.Session;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.AccessControlException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
-  private static final long serialVersionUID = 1L;
-  private static final String PROXY_USER_SESSION_KEY =
-      "hdfs.browser.proxy.user";
-  private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM =
-      "hadoop.security.manager.class";
-  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE = 
-      "viewer.access_denied_message";
 
+  private static final Logger LOG = LoggerFactory.getLogger(HdfsBrowserServlet.class);
+  private static final long serialVersionUID = 1L;
+  private static final String PROXY_USER_SESSION_KEY = "hdfs.browser.proxy.user";
+  private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM = "hadoop.security.manager.class";
+  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE = "viewer.access_denied_message";
   private static final int DEFAULT_FILE_MAX_LINES = 1000;
-  private static Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
+
   private int fileMaxLines;
   private int defaultStartLine;
   private int defaultEndLine;
@@ -90,12 +85,12 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
 
     shouldProxy = props.getBoolean("azkaban.should.proxy", false);
     allowGroupProxy = props.getBoolean("allow.group.proxy", false);
-    logger.info("Hdfs browser should proxy: " + shouldProxy);
+    LOG.info("Hdfs browser should proxy: " + shouldProxy);
 
     props.put("fs.hdfs.impl.disable.cache", "true");
 
     try {
-      hadoopSecurityManager = loadHadoopSecurityManager(props, logger);
+      hadoopSecurityManager = loadHadoopSecurityManager(props);
     } catch (RuntimeException e) {
       e.printStackTrace();
       throw new RuntimeException("Failed to get hadoop security manager!"
@@ -114,16 +109,15 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
 
     viewers.add(defaultViewer);
 
-    logger.info("HDFS Browser initiated");
+    LOG.info("HDFS Browser initiated");
   }
 
-  private HadoopSecurityManager loadHadoopSecurityManager(Props props,
-      Logger logger) throws RuntimeException {
+  private HadoopSecurityManager loadHadoopSecurityManager(Props props) throws RuntimeException {
 
     Class<?> hadoopSecurityManagerClass =
         props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
             HdfsBrowserServlet.class.getClassLoader());
-    logger.info("Initializing hadoop security manager "
+    LOG.info("Initializing hadoop security manager "
         + hadoopSecurityManagerClass.getName());
     HadoopSecurityManager hadoopSecurityManager = null;
 
@@ -134,7 +128,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
           (HadoopSecurityManager) getInstanceMethod.invoke(
               hadoopSecurityManagerClass, props);
     } catch (InvocationTargetException e) {
-      logger.error("Could not instantiate Hadoop Security Manager "
+      LOG.error("Could not instantiate Hadoop Security Manager "
           + hadoopSecurityManagerClass.getName() + e.getCause());
       throw new RuntimeException(e.getCause());
     } catch (Exception e) {
@@ -270,8 +264,8 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     }
 
     Path path = getPath(req);
-    if (logger.isDebugEnabled()) {
-      logger.debug("path: '" + path.toString() + "'");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("path: '" + path.toString() + "'");
     }
 
     try {
@@ -282,7 +276,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
         return;
       }
     } catch (IOException ioe) {
-      logger.error("Got exception while checking for existence of path '"
+      LOG.error("Got exception while checking for existence of path '"
           + path + "'", ioe);
       errorPage(user, req, resp, session, path.toUri().getPath()
           + " Encountered error while trying to detect if path '" + path

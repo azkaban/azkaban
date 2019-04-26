@@ -46,7 +46,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
 
     if (statusLine.getStatusCode() >= 300) {
 
-      logger.error(String.format("unable to parse response as the response status is %s",
+      LOG.error(String.format("unable to parse response as the response status is %s",
           statusLine.getStatusCode()));
 
       throw new HttpResponseException(statusLine.getStatusCode(), responseBody);

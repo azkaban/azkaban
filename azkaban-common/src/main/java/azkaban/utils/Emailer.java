@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import static java.util.Objects.requireNonNull;
@@ -41,14 +40,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.internet.AddressException;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Singleton
 public class Emailer extends AbstractMailer implements Alerter {
 
+  private static final Logger LOG = LoggerFactory.getLogger(Emailer.class);
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
-  private static final Logger logger = Logger.getLogger(Emailer.class);
   private final CommonMetrics commonMetrics;
   private final String scheme;
   private final String clientHostname;
@@ -109,7 +110,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
     final List<String> emailList =
         (List<String>) slaOption.getEmails();
-    logger.info("Sending SLA email " + slaMessage);
+    LOG.info("Sending SLA email " + slaMessage);
     sendEmail(emailList, subject, slaMessage);
   }
 
@@ -135,7 +136,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         last72hoursExecutions = this.executorLoader.fetchFlowHistory(flow.getProjectId(), flow
             .getFlowId(), startTime);
       } catch (final ExecutorManagerException e) {
-        logger.error("unable to fetch past executions", e);
+        LOG.error("unable to fetch past executions", e);
       }
     }
 
@@ -209,7 +210,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   private MailCreator getMailCreator(final String name) {
     final MailCreator mailCreator = DefaultMailCreator.getCreator(name);
-    logger.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
+    LOG.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
     return mailCreator;
   }
 
@@ -218,10 +219,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     if (mailCreated) {
       try {
         message.sendEmail();
-        logger.info("Sent " + operation);
+        LOG.info("Sent " + operation);
         this.commonMetrics.markSendEmailSuccess();
       } catch (final Exception e) {
-        logger.error("Failed to send " + operation, e);
+        LOG.error("Failed to send " + operation, e);
         if (!(e instanceof AddressException)) {
           this.commonMetrics.markSendEmailFail();
         }

@@ -6,12 +6,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ExecJettyServerModule extends AbstractModule {
 
@@ -22,7 +24,7 @@ public class ExecJettyServerModule extends AbstractModule {
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
-  private static final Logger logger = Logger.getLogger(ExecJettyServerModule.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecJettyServerModule.class);
 
   @Override
   protected void configure() {
@@ -44,16 +46,16 @@ public class ExecJettyServerModule extends AbstractModule {
     server.setThreadPool(httpThreadPool);
 
     final boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
+    LOG.info("Setting up connector with stats on: " + isStatsOn);
 
     for (final Connector connector : server.getConnectors()) {
       connector.setStatsOn(isStatsOn);
-      logger.info(String.format(
+      LOG.info(String.format(
           "Jetty connector name: %s, default header buffer size: %d",
           connector.getName(), connector.getHeaderBufferSize()));
       connector.setHeaderBufferSize(props.getInt("jetty.headerBufferSize",
           DEFAULT_HEADER_BUFFER_SIZE));
-      logger.info(String.format(
+      LOG.info(String.format(
           "Jetty connector name: %s, (if) new header buffer size: %d",
           connector.getName(), connector.getHeaderBufferSize()));
     }
@@ -74,5 +76,4 @@ public class ExecJettyServerModule extends AbstractModule {
     root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
     return root;
   }
-
 }

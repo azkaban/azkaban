@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
 class Constants {
+
   static final String DROP_ALL_PARTITIONS_AND_ADD_LATEST =
       "drop.all.partitions.and.add.newest";
   static final String UPDATE_TABLE_LOCATION_TO_LATEST =

@@ -13,8 +13,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
+
 
 /**
  * Simple class to represent the resulting schema of a Hive query, which may or
@@ -23,6 +23,7 @@ package azkaban.jobtype.hiveutils;
  * particular version of Hive or its classes.
  */
 public class ResultSchema {
+
   final String name;
   final String type;
   final String comment;
@@ -44,5 +45,4 @@ public class ResultSchema {
   public String getType() {
     return type;
   }
-
 }

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.IOException;
@@ -33,7 +32,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * class handles the communication between the application and a Restful API based web server.
@@ -46,7 +47,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class RestfulApiClient<T> {
 
-  protected static Logger logger = Logger.getLogger(RestfulApiClient.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(RestfulApiClient.class);
 
   /**
    * helper function to build a valid URI.
@@ -117,7 +118,7 @@ public abstract class RestfulApiClient<T> {
   public T httpPost(final URI uri, final List<Pair<String, String>> params) throws IOException {
     // shortcut if the passed url is invalid.
     if (null == uri) {
-      logger.error(" unable to perform httpPost as the passed uri is null.");
+      LOG.error(" unable to perform httpPost as the passed uri is null.");
       return null;
     }
 

@@ -11,6 +11,11 @@
  */
 package azkaban.jobtype.javautils;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,12 +24,8 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
-import azkaban.flow.CommonJobProperties;
-import azkaban.utils.Props;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -37,7 +38,7 @@ public class Whitelist {
 
   public static final String WHITE_LIST_FILE_PATH_KEY = "whitelist.file.path";
   private static final String PROXY_USER_KEY = "user.to.proxy";
-  private static Logger logger = Logger.getLogger(Whitelist.class);
+  private static Logger LOG = LoggerFactory.getLogger(Whitelist.class);
 
   private final Set<String> whitelistSet;
 
@@ -46,8 +47,8 @@ public class Whitelist {
    */
   public Whitelist(String whitelistFilePath, FileSystem fs) {
     this.whitelistSet = retrieveWhitelist(fs, new Path(whitelistFilePath));
-    if (logger.isDebugEnabled()) {
-      logger.debug("Whitelist: " + whitelistSet);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Whitelist: " + whitelistSet);
     }
   }
 

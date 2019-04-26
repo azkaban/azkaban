@@ -39,7 +39,7 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
   public NumRunningJobMetric(final MetricReportManager manager, final long interval)
       throws MetricException {
     super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumRunningJobMetric");
+    LOG.debug("Instantiated NumRunningJobMetric");
   }
 
   /**

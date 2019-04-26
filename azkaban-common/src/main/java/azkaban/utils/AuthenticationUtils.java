@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AuthenticationUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(AuthenticationUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AuthenticationUtils.class);
 
   public static HttpURLConnection loginAuthenticatedURL(final URL url, final String keytabPrincipal,
       final String keytabPath) throws Exception {
@@ -45,7 +45,7 @@ public class AuthenticationUtils {
     conf.setClassLoader(ucl);
     UserGroupInformation.setConfiguration(conf);
 
-    logger.info(
+    LOG.info(
         "Logging in URL: " + url.toString() + " using Principal: " + keytabPrincipal + ", Keytab: "
             + keytabPath);
 

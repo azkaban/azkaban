@@ -19,7 +19,6 @@ import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.server.session.Session;
 import azkaban.trigger.TriggerManager;
-import azkaban.user.UserManager;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,7 +30,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -41,10 +41,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     ConnectorParams {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(JMXHttpServlet.class
-      .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(JMXHttpServlet.class);
 
-  private UserManager userManager;
   private AzkabanWebServer server;
   private ExecutorManagerAdapter executorManagerAdapter;
   private TriggerManager triggerManager;
@@ -54,7 +52,6 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     super.init(config);
 
     this.server = (AzkabanWebServer) getApplication();
-    this.userManager = this.server.getUserManager();
     this.executorManagerAdapter = this.server.getExecutorManager();
 
     this.triggerManager = this.server.getTriggerManager();
@@ -99,7 +96,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
             ret.put("attributes", info.getAttributes());
             ret.put("description", info.getDescription());
           } catch (final Exception e) {
-            logger.error(e);
+            LOG.error("MBean is invalid", e);
             ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
           }
         } else {
@@ -114,11 +111,11 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
           try {
             final ObjectName name = new ObjectName(mbeanName);
-            final Object obj = this.server.getMBeanRegistrationManager()
-                .getMBeanAttribute(name, attribute);
+            final Object obj =
+                this.server.getMBeanRegistrationManager().getMBeanAttribute(name, attribute);
             ret.put("value", obj);
           } catch (final Exception e) {
-            logger.error(e);
+            LOG.error("MBean is invalid", e);
             ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
           }
         }
@@ -143,7 +140,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
   }
 
   private void handleJMXPage(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session) throws IOException {
+      final Session session) {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/jmxpage.vm");
@@ -158,7 +155,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
         executorMBeans.put(hostPort, mbeans.get("mbeans"));
       } catch (final IOException e) {
-        logger.error("Cannot contact executor " + hostPort, e);
+        LOG.error("Cannot contact executor " + hostPort, e);
       }
     }
 
@@ -175,7 +172,6 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session) throws ServletException, IOException {
-
+      final Session session) {
   }
 }

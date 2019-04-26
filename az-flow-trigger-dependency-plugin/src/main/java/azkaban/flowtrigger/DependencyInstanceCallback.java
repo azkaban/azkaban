@@ -13,9 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger;
 
+
+/**
+ * Defines a set of callback functions for the dependency instance
+ */
 public interface DependencyInstanceCallback {
 
   /**

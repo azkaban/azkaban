@@ -13,13 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
+
 
 /**
  * Thrown when unexpected Hive metastore browsing problems come up
  */
 public class HiveMetaStoreBrowserException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
   public HiveMetaStoreBrowserException(String msg) {

@@ -14,7 +14,6 @@
  * the License.
  *
  */
-
 package azkaban.webapp;
 
 import static java.util.Objects.requireNonNull;
@@ -24,16 +23,17 @@ import azkaban.utils.Props;
 import javax.inject.Inject;
 import com.google.inject.Provider;
 import java.util.List;
-import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class WebServerProvider implements Provider<Server> {
 
-  private static final Logger logger = Logger.getLogger(WebServerProvider.class);
+  private static final Logger LOG = LoggerFactory.getLogger(WebServerProvider.class);
   private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
 
   @Inject
@@ -62,14 +62,14 @@ public class WebServerProvider implements Provider<Server> {
     // setting stats configuration for connectors
     setStatsOnConnectors(server);
 
-    logger.info(String.format(
+    LOG.info(String.format(
         "Starting %sserver on port: %d # Max threads: %d", useSsl ? "SSL " : "", port, maxThreads));
     return server;
   }
 
   private void setStatsOnConnectors(final Server server) {
     final boolean isStatsOn = this.props.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
+    LOG.info("Setting up connector with stats on: " + isStatsOn);
     for (final Connector connector : server.getConnectors()) {
       connector.setStatsOn(isStatsOn);
     }
@@ -95,7 +95,7 @@ public class WebServerProvider implements Provider<Server> {
     // set up vulnerable cipher suites to exclude
     final List<String> cipherSuitesToExclude = this.props
         .getStringList("jetty.excludeCipherSuites");
-    logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
+    LOG.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
     if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
       secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
     }

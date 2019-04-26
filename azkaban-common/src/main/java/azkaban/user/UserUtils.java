@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public final class UserUtils {
 
-  private static final Logger log = LoggerFactory.getLogger(UserUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UserUtils.class);
 
   private UserUtils() {
 
@@ -55,7 +55,7 @@ public final class UserUtils {
     try {
       watchService = FileSystems.getDefault().newWatchService();
     } catch (final IOException e) {
-      log.warn(" Failed to create WatchService ", e);
+      LOG.warn(" Failed to create WatchService ", e);
       throw e;
     }
 
@@ -73,7 +73,7 @@ public final class UserUtils {
 
       final File file = new File(fileName);
       if (!file.exists()) {
-        log.warn("Failed to setup watch service, user provided file " + fileName + " does not "
+        LOG.warn("Failed to setup watch service, user provided file " + fileName + " does not "
             + "exist.");
         continue;
       }
@@ -91,17 +91,17 @@ public final class UserUtils {
         dirToFilesMap.put(dir, fileName);
       } catch (final IOException e) {
         // Ignore the IOException
-        log.warn("IOException while setting up watch on conf " + fileName + ". ", e);
+        LOG.warn("IOException while setting up watch on conf " + fileName + ". ", e);
       }
     }
 
     // Return if WatchService is not initialized
     if (keys.size() == 0) {
-      log.warn("Watchservice was not setup for any config file(s).");
+      LOG.warn("Watchservice was not setup for any config file(s).");
       try {
         watchService.close();
       } catch (final IOException e) {
-        log.warn("IOException while closing watchService. ", e);
+        LOG.warn("IOException while closing watchService. ", e);
       }
       return;
     }
@@ -123,7 +123,7 @@ public final class UserUtils {
           // in the watch service.
           Thread.sleep(1000L);
         } catch (final InterruptedException ie) {
-          log.warn(ie.toString());
+          LOG.warn(ie.toString());
           Thread.currentThread().interrupt();
           return;
         }
@@ -140,12 +140,12 @@ public final class UserUtils {
           }
           // Match!
           // Reparse the config file
-          log.info("Modification detected, reloading config file " + filename + ".");
+          LOG.info("Modification detected, reloading config file " + filename + ".");
           try {
             configFileMap.get(filename).parseConfigFile();
           } catch (final Exception e) {
             // If there is any exception while parsing the config file, log it and move on
-            log.warn("Reload failed for config file " + filename + " due to ", e);
+            LOG.warn("Reload failed for config file " + filename + " due to ", e);
           }
         }
         watchKey.reset();
@@ -153,7 +153,7 @@ public final class UserUtils {
     };
 
     final Thread thread = new Thread(runnable);
-    log.info("Starting configuration watching thread.");
+    LOG.info("Starting configuration watching thread.");
     thread.start();
   }
 }

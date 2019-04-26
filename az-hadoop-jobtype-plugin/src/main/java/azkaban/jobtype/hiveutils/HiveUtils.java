@@ -13,14 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.hadoop.hive.cli.CliDriver;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Grab bag of utilities for working with Hive. End users should obtain
@@ -28,7 +28,7 @@ import org.apache.log4j.Logger;
  */
 public class HiveUtils {
   private final static Logger LOG =
-      Logger.getLogger("com.linkedin.hive.HiveUtils");
+      LoggerFactory.getLogger("com.linkedin.hive.HiveUtils");
 
   private HiveUtils() {
   }

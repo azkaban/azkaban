@@ -13,12 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
-
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
-import org.apache.log4j.Logger;
 
 import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
 import azkaban.jobtype.hiveutils.HiveQueryExecutor;
@@ -26,21 +21,25 @@ import azkaban.jobtype.hiveutils.azkaban.Utils;
 import azkaban.jobtype.hiveutils.azkaban.HiveAction;
 import azkaban.jobtype.hiveutils.azkaban.HiveViaAzkabanException;
 import azkaban.jobtype.hiveutils.util.AzkabanJobPropertyDescription;
-
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Execute the provided Hive query. Queries can be specified to Azkaban either
  * directly or as a pointer to a file provided with workflow.
  */
 public class ExecuteHiveQuery implements HiveAction {
-  private final static Logger LOG = Logger
+
+  private final static Logger LOG = LoggerFactory
       .getLogger("com.linkedin.hive.azkaban.hive.actions.ExecuteHiveQuery");
   @AzkabanJobPropertyDescription("Verbatim query to execute. Can also specify hive.query.nn where nn is a series of padded numbers, which will be executed in order")
   public static final String HIVE_QUERY = "hive.query";
@@ -68,8 +67,9 @@ public class ExecuteHiveQuery implements HiveAction {
       throws HiveViaAzkabanException {
     String file = properties.getProperty(HIVE_QUERY_FILE);
 
-    if (file == null)
+    if (file == null) {
       return null;
+    }
 
     LOG.info("Attempting to read query from file: " + file);
 
@@ -90,13 +90,14 @@ public class ExecuteHiveQuery implements HiveAction {
     } catch (IOException e) {
       throw new HiveViaAzkabanException(e);
     } finally {
-      if (br != null)
+      if (br != null) {
         try {
           br.close();
         } catch (IOException e) {
           // TODO: Just throw IOException and catch-wrap in the constructor...
           throw new HiveViaAzkabanException(e);
         }
+      }
     }
 
     return contents.toString();
@@ -107,8 +108,9 @@ public class ExecuteHiveQuery implements HiveAction {
       throws HiveViaAzkabanException {
     String url = properties.getProperty(HIVE_QUERY_URL);
 
-    if (url == null)
+    if (url == null) {
       return null;
+    }
 
     LOG.info("Attempting to retrieve query from URL: " + url);
 
@@ -128,13 +130,14 @@ public class ExecuteHiveQuery implements HiveAction {
     } catch (IOException e) {
       throw new HiveViaAzkabanException(e);
     } finally {
-      if (br != null)
+      if (br != null) {
         try {
           br.close();
         } catch (IOException e) {
           // TODO: Just throw IOException and catch-wrap in the constructor...
           throw new HiveViaAzkabanException(e);
         }
+      }
     }
 
     return contents.toString();
@@ -144,21 +147,24 @@ public class ExecuteHiveQuery implements HiveAction {
       String queryFromFile, String queryFromURL) throws HiveViaAzkabanException {
     int specifiedValues = 0;
 
-    for (String s : new String[] { singleLine, multiLine, queryFromFile,
-        queryFromURL }) {
-      if (s != null)
+    for (String s : new String[]{singleLine, multiLine, queryFromFile,
+        queryFromURL}) {
+      if (s != null) {
         specifiedValues++;
+      }
     }
 
-    if (specifiedValues == 0)
+    if (specifiedValues == 0) {
       throw new HiveViaAzkabanException("Must specify " + HIVE_QUERY + " xor "
           + HIVE_QUERY + ".nn xor " + HIVE_QUERY_FILE + " xor "
           + HIVE_QUERY_URL + " in properties. Exiting.");
+    }
 
-    if (specifiedValues != 1)
+    if (specifiedValues != 1) {
       throw new HiveViaAzkabanException("Must specify only " + HIVE_QUERY
           + " or " + HIVE_QUERY + ".nn or " + HIVE_QUERY_FILE + " or "
           + HIVE_QUERY_URL + " in properties, not more than one. Exiting.");
+    }
 
     if (singleLine != null) {
       LOG.info("Returning " + HIVE_QUERY + " = " + singleLine);

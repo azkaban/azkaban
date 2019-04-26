@@ -32,12 +32,14 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Singleton
 public class FetchActiveFlowDao {
 
-  private static final Logger logger = Logger.getLogger(FetchActiveFlowDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FetchActiveFlowDao.class);
 
   private final DatabaseOperator dbOperator;
 
@@ -53,7 +55,7 @@ public class FetchActiveFlowDao {
     final byte[] data = rs.getBytes("flow_data");
 
     if (data == null) {
-      logger.warn("Execution id " + id + " has flow_data = null. To clean up, update status to "
+      LOG.warn("Execution id " + id + " has flow_data = null. To clean up, update status to "
           + "FAILED manually, eg. "
           + "SET status = " + Status.FAILED.getNumVal() + " WHERE id = " + id);
     } else {
@@ -77,7 +79,7 @@ public class FetchActiveFlowDao {
     final int port = rs.getInt("port");
     final Executor executor;
     if (host == null) {
-      logger.warn("Executor id " + executorId + " (on execution " +
+      LOG.warn("Executor id " + executorId + " (on execution " +
           exFlow.getExecutionId() + ") wasn't found");
       executor = null;
     } else {

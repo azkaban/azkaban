@@ -13,10 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * wrapper class for a factor Filter .
@@ -26,7 +27,7 @@ import org.apache.log4j.Logger;
  */
 public final class FactorFilter<T, V> {
 
-  private static final Logger logger = Logger.getLogger(FactorFilter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FactorFilter.class);
 
   private final String factorName;
   private final Filter<T, V> filter;
@@ -51,7 +52,7 @@ public final class FactorFilter<T, V> {
       final Filter<T, V> filter) {
 
     if (null == factorName || factorName.length() == 0 || null == filter) {
-      logger.error(
+      LOG.error(
           "failed to create instance of FactorFilter, at least one of the input paramters are invalid");
       return null;
     }

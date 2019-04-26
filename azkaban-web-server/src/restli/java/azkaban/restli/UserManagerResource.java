@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.restli;
 
 import azkaban.restli.user.User;
@@ -28,13 +27,14 @@ import com.linkedin.restli.server.resources.ResourceContextHolder;
 import java.util.Set;
 import java.util.UUID;
 import javax.servlet.ServletException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @RestLiActions(name = "user", namespace = "azkaban.restli")
 public class UserManagerResource extends ResourceContextHolder {
 
-  private static final Logger logger = Logger
-      .getLogger(UserManagerResource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UserManagerResource.class);
 
   public AzkabanWebServer getAzkaban() {
     return AzkabanWebServer.getInstance();
@@ -45,8 +45,7 @@ public class UserManagerResource extends ResourceContextHolder {
       @ActionParam("password") final String password) throws UserManagerException,
       ServletException {
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
-    logger
-        .info("Attempting to login for " + username + " from ip '" + ip + "'");
+    LOG.info("Attempting to login for " + username + " from ip '" + ip + "'");
 
     final Session session = createSession(username, password, ip);
 
@@ -55,7 +54,7 @@ public class UserManagerResource extends ResourceContextHolder {
         .findSessionsByIP(session.getIp());
 
     // Check potential DDoS attack by bad hosts.
-    logger.info(
+    LOG.info(
         "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
             .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
 

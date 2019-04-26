@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import static org.junit.Assert.assertTrue;
@@ -24,6 +23,7 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.spi.LoggingEvent;
 import org.junit.Before;
 import org.junit.Test;
+
 
 /**
  * Test output of PatternLayoutEscapedTest It should be appending stack traces, escaping new lines,

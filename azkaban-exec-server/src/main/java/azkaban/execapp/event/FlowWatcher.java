@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp.event;
 
 import azkaban.executor.ExecutableFlow;
@@ -23,6 +22,7 @@ import azkaban.executor.Status;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
+
 
 public abstract class FlowWatcher {
 

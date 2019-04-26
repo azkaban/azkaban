@@ -5,11 +5,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Set;
-
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
 
 @SuppressWarnings("DefaultCharset")
 public class TestHadoopJobUtilsFindApplicationIdFromLog {

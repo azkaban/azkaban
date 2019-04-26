@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger;
 
 import java.util.ArrayList;
@@ -23,12 +22,14 @@ import java.util.Map;
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class Condition {
 
-  private static final Logger logger = Logger.getLogger(Condition.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Condition.class);
 
   private static final JexlEngine jexl = new JexlEngine();
   private static CheckerTypeLoader checkerLoader = null;
@@ -83,7 +84,7 @@ public class Condition {
 
     } catch (final Exception e) {
       e.printStackTrace();
-      logger.error("Failed to recreate condition from json.", e);
+      LOG.error("Failed to recreate condition from json.", e);
       throw new Exception("Failed to recreate condition from json.", e);
     }
 
@@ -119,7 +120,7 @@ public class Condition {
       checker.reset();
     }
     updateNextCheckTime();
-    logger.info("Done resetting checkers. The next check time will be "
+    LOG.info("Done resetting checkers. The next check time will be "
         + new DateTime(this.nextCheckTime));
   }
 
@@ -132,8 +133,8 @@ public class Condition {
   }
 
   public boolean isMet() {
-    if (logger.isDebugEnabled()) {
-      logger.debug("Testing condition " + this.expression);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Testing condition " + this.expression);
     }
     return this.expression.evaluate(this.context).equals(Boolean.TRUE);
   }

@@ -35,7 +35,7 @@ public enum Version {
 
   private final String _ver;
 
-  private Version(final String ver) {
+  Version(final String ver) {
     this._ver = ver;
   }
 

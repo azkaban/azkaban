@@ -13,14 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Loads & provides executors.
@@ -28,7 +29,7 @@ import org.apache.log4j.Logger;
 @Singleton
 public class ActiveExecutors {
 
-  private static final Logger logger = Logger.getLogger(ExecutorManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorManager.class);
 
   private volatile ImmutableSet<Executor> activeExecutors;
   private final ExecutorLoader executorLoader;
@@ -48,7 +49,7 @@ public class ActiveExecutors {
     final ImmutableSet<Executor> newExecutors = loadExecutors();
     if (newExecutors.isEmpty()) {
       final String error = "No active executors found";
-      logger.error(error);
+      LOG.error(error);
       throw new ExecutorManagerException(error);
     } else {
       this.activeExecutors = newExecutors;
@@ -65,8 +66,7 @@ public class ActiveExecutors {
   }
 
   private ImmutableSet<Executor> loadExecutors() throws ExecutorManagerException {
-    logger.info("Initializing executors from database.");
+    LOG.info("Initializing executors from database.");
     return ImmutableSet.copyOf(this.executorLoader.fetchActiveExecutors());
   }
-
 }

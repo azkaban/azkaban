@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class PluginUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(PluginUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PluginUtils.class);
   private static String LIBRARY_FOLDER_NAME = "lib";
 
   /**
@@ -49,7 +49,7 @@ public class PluginUtils {
         final URL url = file.toURI().toURL();
         urls.add(url);
       } catch (final MalformedURLException e) {
-        logger.error("File is not convertible to URL.", e);
+        LOG.error("File is not convertible to URL.", e);
       }
     }
     return urls;
@@ -81,13 +81,13 @@ public class PluginUtils {
                 urls.add(url);
               }
             } else {
-              logger.error(
+              LOG.error(
                   "External library path not found. path = " + extLibFile.getAbsolutePath()
               );
               continue;
             }
           } catch (final MalformedURLException e) {
-            logger.error(
+            LOG.error(
                 "Invalid External library path. path = " + extLibClassPath + " dir = " + pluginDir,
                 e
             );
@@ -96,7 +96,7 @@ public class PluginUtils {
       }
       return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
     } else {
-      logger.error("Library path not found. path = " + libDir);
+      LOG.error("Library path not found. path = " + libDir);
       return null;
     }
   }
@@ -135,7 +135,7 @@ public class PluginUtils {
     try {
       return urlClassLoader.loadClass(pluginClass);
     } catch (final ClassNotFoundException e) {
-      logger.error("Class not found. class = " + pluginClass);
+      LOG.error("Class not found. class = " + pluginClass);
       return null;
     }
   }

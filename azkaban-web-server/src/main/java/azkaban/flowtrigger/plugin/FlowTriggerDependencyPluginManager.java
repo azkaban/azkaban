@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger.plugin;
 
 import azkaban.flowtrigger.DependencyCheck;
@@ -42,15 +41,16 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 @Singleton
 public class FlowTriggerDependencyPluginManager {
 
+  private static final Logger LOG = LoggerFactory
+      .getLogger(FlowTriggerDependencyPluginManager.class);
   public static final String CONFIG_FILE = "dependency.properties";
   public static final String PRIVATE_CONFIG_FILE = "private.properties";
   public static final String DEPENDENCY_CLASS = "dependency.class";
   public static final String CLASS_PATH = "dependency.classpath";
-  private static final Logger logger = LoggerFactory
-      .getLogger(FlowTriggerDependencyPluginManager.class);
   private final String pluginDir;
   private final Map<String, DependencyCheck> dependencyTypeMap;
   private final ClassLoader prevClassLoader;
@@ -91,7 +91,7 @@ public class FlowTriggerDependencyPluginManager {
       input = new BufferedInputStream(new FileInputStream(file));
       props.load(input);
     } catch (final Exception e) {
-      logger.debug("unable to read the file " + file, e);
+      LOG.debug("unable to read the file " + file, e);
       throw new FlowTriggerDependencyPluginException(e);
     } finally {
       try {
@@ -99,7 +99,7 @@ public class FlowTriggerDependencyPluginManager {
           input.close();
         }
       } catch (final IOException e) {
-        logger.error("unable to close input stream when reading config from file " + file
+        LOG.error("unable to close input stream when reading config from file " + file
             .getAbsolutePath(), e);
       }
     }
@@ -144,7 +144,7 @@ public class FlowTriggerDependencyPluginManager {
           for (final File file : files) {
             final URL cpItem = file.toURI().toURL();
             if (!resources.contains(cpItem)) {
-              logger.info("adding to classpath " + cpItem);
+              LOG.info("adding to classpath " + cpItem);
               resources.add(cpItem);
             }
           }
@@ -179,7 +179,7 @@ public class FlowTriggerDependencyPluginManager {
         depCheck.init(pluginConfig);
         this.dependencyTypeMap.put(pluginName, depCheck);
       } catch (final Exception ex) {
-        logger.error("failed to initializing plugin in " + pluginDir, ex);
+        LOG.error("failed to initializing plugin in " + pluginDir, ex);
         throw new FlowTriggerDependencyPluginException(ex);
       }
     }
@@ -255,7 +255,7 @@ public class FlowTriggerDependencyPluginManager {
       try {
         depCheck.shutdown();
       } catch (final Exception ex) {
-        logger.error("failed to shutdown dependency check " + depCheck, ex);
+        LOG.error("failed to shutdown dependency check " + depCheck, ex);
       }
     }
   }

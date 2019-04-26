@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger.builtin;
 
 import azkaban.ServiceProvider;
@@ -27,16 +26,19 @@ import azkaban.sla.SlaType.ComponentType;
 import azkaban.sla.SlaType;
 import azkaban.sla.SlaType.StatusType;
 import azkaban.trigger.ConditionChecker;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class SlaChecker implements ConditionChecker {
 
   public static final String type = "SlaChecker";
-  private static final Logger logger = Logger.getLogger(SlaChecker.class);
+
+  private static final Logger LOG = LoggerFactory.getLogger(SlaChecker.class);
+
   private final String id;
   private final SlaOption slaOption;
   private final int execId;
@@ -145,12 +147,12 @@ public class SlaChecker implements ConditionChecker {
   // return true to trigger sla action
   @Override
   public Object eval() {
-    logger.info("Checking sla for execution " + this.execId);
+    LOG.info("Checking sla for execution " + this.execId);
     final ExecutableFlow flow;
     try {
       flow = this.executorLoader.fetchExecutableFlow(this.execId);
     } catch (final ExecutorManagerException e) {
-      logger.error("Can't get executable flow.", e);
+      LOG.error("Can't get executable flow.", e);
       e.printStackTrace();
       // something wrong, send out alerts
       return true;
@@ -163,7 +165,7 @@ public class SlaChecker implements ConditionChecker {
     try {
       flow = this.executorLoader.fetchExecutableFlow(this.execId);
     } catch (final ExecutorManagerException e) {
-      logger.error("Can't get executable flow.", e);
+      LOG.error("Can't get executable flow.", e);
       // something wrong, send out alerts
       return true;
     }
@@ -175,7 +177,7 @@ public class SlaChecker implements ConditionChecker {
     try {
       flow = this.executorLoader.fetchExecutableFlow(this.execId);
     } catch (final ExecutorManagerException e) {
-      logger.error("Can't get executable flow.", e);
+      LOG.error("Can't get executable flow.", e);
       // something wrong, send out alerts
       return true;
     }

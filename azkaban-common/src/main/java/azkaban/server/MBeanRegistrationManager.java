@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * A class to manager MBean Registration tasks
  */
 public class MBeanRegistrationManager {
-  private static final Logger logger = LoggerFactory.getLogger(MBeanRegistrationManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MBeanRegistrationManager.class);
 
   private List<ObjectName> registeredMBeans = new ArrayList<>();
   private MBeanServer mbeanServer = null;
@@ -44,10 +44,10 @@ public class MBeanRegistrationManager {
     try {
       mbeanName = new ObjectName(mbeanClass.getName() + ":name=" + name);
       getMbeanServer().registerMBean(mbean, mbeanName);
-      logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
+      LOG.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
       this.registeredMBeans.add(mbeanName);
     } catch (final Exception e) {
-      logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
+      LOG.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
     }
   }
 
@@ -68,10 +68,10 @@ public class MBeanRegistrationManager {
     try {
       for (final ObjectName name : registeredMBeans) {
         getMbeanServer().unregisterMBean(name);
-        logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
+        LOG.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
       }
     } catch (final Exception e) {
-      logger.error("Failed to cleanup MBeanServer", e);
+      LOG.error("Failed to cleanup MBeanServer", e);
     }
   }
 
@@ -92,7 +92,7 @@ public class MBeanRegistrationManager {
     try {
       return getMbeanServer().getMBeanInfo(name);
     } catch (final Exception e) {
-      logger.error("Load MBean Information Failure", e);
+      LOG.error("Load MBean Information Failure", e);
       return null;
     }
   }
@@ -107,7 +107,7 @@ public class MBeanRegistrationManager {
     try {
       return getMbeanServer().getAttribute(name, attribute);
     } catch (final Exception e) {
-      logger.error(
+      LOG.error(
           "Retrieve MBeanServer attribute Failure. "
               + "ObjectName = " + name.toString() + ", "
               + "attribute = " + attribute,
@@ -137,7 +137,7 @@ public class MBeanRegistrationManager {
 
       ret.put("attributes", attributes);
     } catch (final Exception e) {
-      logger.error("Invalid MBean Name. name = " + mbeanName, e);
+      LOG.error("Invalid MBean Name. name = " + mbeanName, e);
       ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
     }
 

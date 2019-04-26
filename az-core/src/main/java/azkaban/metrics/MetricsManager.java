@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class MetricsManager {
 
-  private static final Logger log = LoggerFactory.getLogger(MetricsManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MetricsManager.class);
   private final MetricRegistry registry;
 
   @Inject
@@ -110,20 +110,20 @@ public class MetricsManager {
     final String metricsServerURL = props.get(METRICS_SERVER_URL);
     if (metricsReporterClassName != null && metricsServerURL != null) {
       try {
-        log.info("metricsReporterClassName: " + metricsReporterClassName);
+        LOG.info("metricsReporterClassName: " + metricsReporterClassName);
         final Class metricsClass = Class.forName(metricsReporterClassName);
 
         final Constructor[] constructors = metricsClass.getConstructors();
         constructors[0].newInstance(reporterName, this.registry, metricsServerURL);
 
       } catch (final Exception e) {
-        log.error("Encountered error while loading and instantiating "
+        LOG.error("Encountered error while loading and instantiating "
             + metricsReporterClassName, e);
         throw new IllegalStateException("Encountered error while loading and instantiating "
             + metricsReporterClassName, e);
       }
     } else {
-      log.error(String.format("No value for property: %s or %s was found",
+      LOG.error(String.format("No value for property: %s or %s was found",
           CUSTOM_METRICS_REPORTER_CLASS_NAME, METRICS_SERVER_URL));
     }
   }

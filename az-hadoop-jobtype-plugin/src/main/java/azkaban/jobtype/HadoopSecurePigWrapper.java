@@ -17,6 +17,7 @@ package azkaban.jobtype;
 
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -32,22 +33,15 @@ import org.apache.pig.PigRunner;
 import org.apache.pig.tools.pigstats.JobStats;
 import org.apache.pig.tools.pigstats.PigStats;
 import org.apache.pig.tools.pigstats.PigStats.JobGraph;
-import azkaban.utils.Props;
 
 
 public class HadoopSecurePigWrapper {
 
+  private static final Logger LOG = Logger.getRootLogger();
   private static final String PIG_DUMP_HADOOP_COUNTER_PROPERTY = "pig.dump.hadoopCounter";
 
   private static File pigLogFile;
-
   private static Props props;
-
-  private static final Logger logger;
-
-  static {
-    logger = Logger.getRootLogger();
-  }
 
   public static void main(final String[] args) throws Exception {
     Properties jobProps = HadoopSecureWrapperUtils.loadAzkabanProps();
@@ -61,7 +55,7 @@ public class HadoopSecurePigWrapper {
     if (HadoopSecureWrapperUtils.shouldProxy(jobProps)) {
       String tokenFile = System.getenv(HADOOP_TOKEN_FILE_LOCATION);
       UserGroupInformation proxyUser =
-          HadoopSecureWrapperUtils.setupProxyUser(jobProps, tokenFile, logger);
+          HadoopSecureWrapperUtils.setupProxyUser(jobProps, tokenFile, LOG);
       proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {

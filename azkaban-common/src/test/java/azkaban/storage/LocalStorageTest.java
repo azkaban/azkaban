@@ -14,7 +14,6 @@
  * the License.
  *
  */
-
 package azkaban.storage;
 
 import static org.junit.Assert.assertNotNull;
@@ -30,10 +29,11 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class LocalStorageTest {
@@ -41,7 +41,7 @@ public class LocalStorageTest {
   static final String SAMPLE_FILE = "sample_flow_01.zip";
   static final String LOCAL_STORAGE = "LOCAL_STORAGE";
   static final File BASE_DIRECTORY = new File(LOCAL_STORAGE);
-  private static final Logger log = Logger.getLogger(LocalStorageTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LocalStorageTest.class);
   private LocalStorage localStorage;
 
   @Before
@@ -67,7 +67,7 @@ public class LocalStorageTest {
         1, 1, "testuser", Md5Hasher.md5Hash(testFile));
     final String key = this.localStorage.put(metadata, testFile);
     assertNotNull(key);
-    log.info("Key URI: " + key);
+    LOG.info("Key URI: " + key);
 
     final File expectedTargetFile = new File(BASE_DIRECTORY, new StringBuilder()
         .append(metadata.getProjectId())

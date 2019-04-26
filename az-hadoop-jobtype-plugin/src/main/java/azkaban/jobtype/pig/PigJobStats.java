@@ -13,46 +13,38 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.pig;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.pig.tools.pigstats.JobStats;
 import org.apache.pig.tools.pigstats.InputStats;
 import org.apache.pig.tools.pigstats.OutputStats;
 
+
 public class PigJobStats {
+
   private int numberMaps;
   private int numberReduces;
-
   private long minMapTime;
   private long maxMapTime;
   private long avgMapTime;
-
   private long minReduceTime;
   private long maxReduceTime;
   private long avgReduceTime;
-
   private long bytesWritten;
   private long hdfsBytesWritten;
-
   private long mapInputRecords;
   private long mapOutputRecords;
   private long reduceInputRecords;
   private long reduceOutputRecords;
-
   private long proactiveSpillCountObjects;
   private long proactiveSpillCountRecs;
-
   private long recordsWritten;
   private long smmSpillCount;
-
   private String errorMessage;
-
   private List<PigIoStats> inputStats;
   private List<PigIoStats> outputStats;
 

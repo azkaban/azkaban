@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import azkaban.Constants;
@@ -61,7 +60,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
-  private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
+  private static final Logger LOG = Logger.getLogger(JobRunner.class);
   private static final Object logCreatorLock = new Object();
 
   private static final String DEFAULT_LAYOUT =
@@ -562,7 +561,7 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       doRun();
     } catch (final Exception e) {
-      serverLogger.error("Unexpected exception", e);
+      LOG.error("Unexpected exception", e);
       throw e;
     }
   }

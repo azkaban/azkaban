@@ -14,7 +14,6 @@
  * the License.
  *
  */
-
 package azkaban.webapp;
 
 import static azkaban.webapp.servlet.AbstractAzkabanServlet.jarVersion;
@@ -38,10 +37,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 @Singleton
 public class StatusService {
 
-  private static final Logger log = LoggerFactory.getLogger(StatusService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StatusService.class);
   private static final File PACKAGE_JAR = new File(
       StatusService.class.getProtectionDomain().getCodeSource().getLocation().getPath());
   private final ExecutorLoader executorLoader;
@@ -60,7 +60,7 @@ public class StatusService {
     try {
       return PACKAGE_JAR.getCanonicalPath();
     } catch (final IOException e) {
-      log.error("Unable to obtain canonical path. Reporting absolute path instead", e);
+      LOG.error("Unable to obtain canonical path. Reporting absolute path instead", e);
       return PACKAGE_JAR.getAbsolutePath();
     }
   }
@@ -87,7 +87,7 @@ public class StatusService {
     try {
       return Files.readFirstLine(pidFile, StandardCharsets.UTF_8).trim();
     } catch (final IOException e) {
-      log.error("Unable to obtain PID", e);
+      LOG.error("Unable to obtain PID", e);
       return "unknown";
     }
   }
@@ -100,7 +100,7 @@ public class StatusService {
         executorMap.put(executor.getId(), executor);
       }
     } catch (final ExecutorManagerException e) {
-      log.error("Fetching executors failed!", e);
+      LOG.error("Fetching executors failed!", e);
     }
     return executorMap;
   }
@@ -109,7 +109,7 @@ public class StatusService {
     try {
       return this.dbOperator.query("SELECT 1", rs -> true);
     } catch (final SQLException e) {
-      log.error("DB Error", e);
+      LOG.error("DB Error", e);
     }
     return false;
   }

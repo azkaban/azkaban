@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileIOUtils {
 
-  private static final Logger log = LoggerFactory.getLogger(FileIOUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FileIOUtils.class);
 
   /**
    * Check if a directory is writable
@@ -87,7 +87,7 @@ public class FileIOUtils {
       try {
         FileUtils.deleteDirectory(dir);
       } catch (final IOException e) {
-        log.error("error when deleting dir {}", dir, e);
+        LOG.error("error when deleting dir {}", dir, e);
       }
     }
   }
@@ -105,7 +105,7 @@ public class FileIOUtils {
         .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
     } catch (final IOException e) {
-      log.error("Failed to write the number {} to the file {}", num, filePath, e);
+      LOG.error("Failed to write the number {} to the file {}", num, filePath, e);
       throw e;
     }
   }
@@ -153,7 +153,7 @@ public class FileIOUtils {
   public static Props loadOutputFileProps(final File file) {
     InputStream reader = null;
     try {
-      log.info("output properties file=" + file.getAbsolutePath());
+      LOG.info("output properties file=" + file.getAbsolutePath());
       reader = new BufferedInputStream(new FileInputStream(file));
       final Props outputProps = new Props();
       final String content = Streams.asString(reader).trim();
@@ -168,12 +168,12 @@ public class FileIOUtils {
       }
       return outputProps;
     } catch (final FileNotFoundException e) {
-      log.info(
+      LOG.info(
           String.format("File[%s] wasn't found, returning empty props.", file)
       );
       return new Props();
     } catch (final Exception e) {
-      log.error(
+      LOG.error(
           "Exception thrown when trying to load output file props.  Returning empty Props instead of failing. Is this really the best thing to do?",
           e);
       return new Props();

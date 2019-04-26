@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import java.security.Provider;
-import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
@@ -25,8 +24,6 @@ import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
  * Uses AES algorithm to encrypt and decrypt.
  */
 public class CryptoV1_1 implements ICrypto {
-
-  private static final Logger logger = Logger.getLogger(CryptoV1_1.class);
 
   private static final String CIPHERED_TEXT_KEY = "val";
   private static final String CRYPTO_ALGO = "PBEWITHSHA256AND128BITAES-CBC-BC";

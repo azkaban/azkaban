@@ -13,19 +13,20 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Handles removing of running executions (after they have been deemed to be be done or orphaned).
  */
 public class ExecutionFinalizer {
 
-  private static final Logger logger = Logger.getLogger(ExecutionFinalizer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutionFinalizer.class);
 
   private final ExecutorLoader executorLoader;
   private final ExecutorManagerUpdaterStage updaterStage;
@@ -87,7 +88,7 @@ public class ExecutionFinalizer {
       this.runningExecutions.get().remove(execId);
     } catch (final ExecutorManagerException e) {
       alertUser = false; // failed due to azkaban internal error, not to alert user
-      logger.error(e);
+      LOG.error("Error on Finalize Flow", e);
     }
 
     // TODO append to the flow log that we marked this flow as failed + the extraReasons

@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
-import org.apache.log4j.Logger;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 
@@ -25,8 +24,6 @@ import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
  * that haven't installed (or cannot install) JCE unlimited strength.
  */
 public class CryptoV1 implements ICrypto {
-
-  private static final Logger logger = Logger.getLogger(CryptoV1.class);
 
   private static final String CIPHERED_TEXT_KEY = "val";
   private static final ObjectMapper MAPPER = new ObjectMapper();

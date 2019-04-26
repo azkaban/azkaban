@@ -15,7 +15,6 @@
  */
 package azkaban.utils;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import java.io.File;
@@ -33,7 +32,8 @@ import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -41,7 +41,7 @@ import org.apache.log4j.Logger;
  */
 public class PropsUtils {
 
-  private static final Logger logger = Logger.getLogger(PropsUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PropsUtils.class);
   private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
@@ -119,12 +119,12 @@ public class PropsUtils {
    */
   public static Props loadPluginProps(final File pluginDir) {
     if (!pluginDir.exists()) {
-      logger.error("Error! Plugin path " + pluginDir.getPath() + " doesn't exist.");
+      LOG.error("Error! Plugin path " + pluginDir.getPath() + " doesn't exist.");
       return null;
     }
 
     if (!pluginDir.isDirectory()) {
-      logger.error("The plugin path " + pluginDir + " is not a directory.");
+      LOG.error("The plugin path " + pluginDir + " is not a directory.");
       return null;
     }
 
@@ -141,11 +141,11 @@ public class PropsUtils {
           return loadProps(null, propertiesFile);
         }
       } else {
-        logger.error("Plugin conf file " + propertiesFile + " not found.");
+        LOG.error("Plugin conf file " + propertiesFile + " not found.");
         return null;
       }
     } else {
-      logger.error("Plugin conf path " + propertiesDir + " not found.");
+      LOG.error("Plugin conf path " + propertiesDir + " not found.");
       return null;
     }
   }
@@ -224,7 +224,7 @@ public class PropsUtils {
     for (final String key : props.getKeySet()) {
       String value = props.get(key);
       if (value == null) {
-        logger.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
+        LOG.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
         value = "";
       }
 

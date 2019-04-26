@@ -33,7 +33,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used in unit tests to mock the "DB layer" (the real implementation is JdbcExecutorLoader).
@@ -41,7 +42,7 @@ import org.apache.log4j.Logger;
  */
 public class MockExecutorLoader implements ExecutorLoader {
 
-  private static final Logger logger = Logger.getLogger(MockExecutorLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MockExecutorLoader.class);
 
   Map<Integer, Integer> executionExecutorMapping = new ConcurrentHashMap<>();
   Map<Integer, ExecutableFlow> flows = new ConcurrentHashMap<>();
@@ -141,7 +142,7 @@ public class MockExecutorLoader implements ExecutorLoader {
     for (final File file : files) {
       try {
         final String logs = FileUtils.readFileToString(file, "UTF-8");
-        logger.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
+        LOG.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
       } catch (final IOException e) {
         throw new RuntimeException(e);
       }

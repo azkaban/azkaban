@@ -44,6 +44,8 @@ import org.xml.sax.SAXException;
  */
 public class XmlUserManager implements UserManager {
 
+  private static final Logger LOG = LoggerFactory.getLogger(XmlUserManager.class);
+
   public static final String XML_FILE_PARAM = "user.manager.xml.file";
   public static final String AZKABAN_USERS_TAG = "azkaban-users";
   public static final String USER_TAG = "user";
@@ -58,7 +60,6 @@ public class XmlUserManager implements UserManager {
   public static final String PROXY_ATTR = "proxy";
   public static final String GROUPS_ATTR = "groups";
   public static final String GROUPNAME_ATTR = "name";
-  private static final Logger logger = LoggerFactory.getLogger(XmlUserManager.class);
   private final String xmlPath;
 
   private HashMap<String, User> users;
@@ -82,7 +83,7 @@ public class XmlUserManager implements UserManager {
     try {
       UserUtils.setupWatch(parseConfigFileMap);
     } catch (final IOException e) {
-      logger.warn(" Failed to create WatchService " + e.getMessage());
+      LOG.warn(" Failed to create WatchService " + e.getMessage());
     }
   }
 
@@ -175,7 +176,7 @@ public class XmlUserManager implements UserManager {
     // Add the user to the node
     final User user = new User(userNameAttr.getNodeValue());
     users.put(username, user);
-    logger.info("Loading user " + user.getUserId());
+    LOG.info("Loading user " + user.getUserId());
 
     final Node roles = userAttrMap.getNamedItem(ROLES_ATTR);
     if (roles != null) {
@@ -240,7 +241,7 @@ public class XmlUserManager implements UserManager {
         final Permission.Type type = Permission.Type.valueOf(permString);
         perm.addPermission(type);
       } catch (final IllegalArgumentException e) {
-        logger.error("Error adding type " + permString
+        LOG.error("Error adding type " + permString
             + ". Permission doesn't exist.", e);
       }
     }
@@ -329,7 +330,7 @@ public class XmlUserManager implements UserManager {
     }
 
     groupRoles.put(groupName, roleSet);
-    logger.info("Group roles " + groupName + " added.");
+    LOG.info("Group roles " + groupName + " added.");
   }
 
   @Override

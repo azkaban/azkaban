@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 class OsMemoryUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(OsMemoryUtil.class);
+  private static final Logger LOG = LoggerFactory.getLogger(OsMemoryUtil.class);
 
   // This file is used by Linux. It doesn't exist on Mac for example.
   private static final String MEM_INFO_FILE = "/proc/meminfo";
@@ -61,7 +61,7 @@ class OsMemoryUtil {
       lines = Files.readAllLines(Paths.get(MEM_INFO_FILE), StandardCharsets.UTF_8);
     } catch (final IOException e) {
       final String errMsg = "Failed to open mem info file: " + MEM_INFO_FILE;
-      logger.error(errMsg, e);
+      LOG.error(errMsg, e);
       return 0;
     }
     return getOsTotalFreeMemorySizeFromStrings(lines, memKeysToCombine);
@@ -93,7 +93,7 @@ class OsMemoryUtil {
     if (count != length) {
       final String errMsg = String
           .format("Expect %d keys in the meminfo file. Got %d. content: %s", length, count, lines);
-      logger.error(errMsg);
+      LOG.error(errMsg);
       totalFree = 0;
     }
     return totalFree;
@@ -116,7 +116,7 @@ class OsMemoryUtil {
       return Long.parseLong(sizeString);
     } catch (final NumberFormatException e) {
       final String err = "Failed to parse the meminfo file. Line: " + line;
-      logger.error(err);
+      LOG.error(err);
       return 0;
     }
   }

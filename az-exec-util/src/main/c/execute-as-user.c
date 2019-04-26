@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 #include <dirent.h>
 #include <fcntl.h>
 #include <fts.h>
@@ -44,7 +43,6 @@ int INVALID_INPUT = 30;
  *  ./hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/native/container-executor/impl/container-executor.c
  *
  */
-
 int change_user(char *username, uid_t user, gid_t group) {
     if (user == getuid() && user == geteuid() &&
             group == getgid() && group == getegid()) {
@@ -126,5 +124,4 @@ int main(int argc, char **argv){
     else{
         return 0;
     }
-
 }

@@ -15,14 +15,15 @@
  */
 package azkaban.jobtype;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.log4j.Logger;
-import azkaban.flow.CommonJobProperties;
-import azkaban.utils.Props;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -38,7 +39,7 @@ import azkaban.utils.Props;
  */
 public class HadoopConfigurationInjector {
 
-  private static Logger _logger = Logger.getLogger(HadoopConfigurationInjector.class);
+  private static Logger LOG = LoggerFactory.getLogger(HadoopConfigurationInjector.class);
   // File to which the Hadoop configuration to inject will be written.
   private static final String INJECT_FILE = "hadoop-inject.xml";
   // Prefix for properties to be automatically injected into the Hadoop conf.
@@ -105,7 +106,7 @@ public class HadoopConfigurationInjector {
       conf.writeXml(xmlOut);
       xmlOut.close();
     } catch (Throwable e) {
-      _logger.error("Encountered error while preparing the Hadoop configuration resource file", e);
+      LOG.error("Encountered error while preparing the Hadoop configuration resource file", e);
     }
   }
 

@@ -35,12 +35,13 @@ import com.google.inject.Provides;
 import java.lang.reflect.Constructor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.mortbay.jetty.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This
@@ -49,7 +50,7 @@ import org.mortbay.jetty.Server;
  */
 public class AzkabanWebServerModule extends AbstractModule {
 
-  private static final Logger log = Logger.getLogger(AzkabanWebServerModule.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanWebServerModule.class);
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
   private final Props props;
@@ -93,12 +94,12 @@ public class AzkabanWebServerModule extends AbstractModule {
     final Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
     final UserManager manager;
     if (userManagerClass != null && userManagerClass.getConstructors().length > 0) {
-      log.info("Loading user manager class " + userManagerClass.getName());
+      LOG.info("Loading user manager class " + userManagerClass.getName());
       try {
         final Constructor<?> userManagerConstructor = userManagerClass.getConstructor(Props.class);
         manager = (UserManager) userManagerConstructor.newInstance(props);
       } catch (final Exception e) {
-        log.error("Could not instantiate UserManager " + userManagerClass.getName());
+        LOG.error("Could not instantiate UserManager " + userManagerClass.getName());
         throw new RuntimeException(e);
       }
     } else {
@@ -138,7 +139,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     engine.setProperty("runtime.log.invalid.references", devMode);
     engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
     engine.setProperty("runtime.log.logsystem.log4j.logger",
-        Logger.getLogger("org.apache.velocity.Logger"));
+        org.apache.log4j.Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
     return engine;
   }

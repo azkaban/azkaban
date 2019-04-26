@@ -34,8 +34,6 @@ import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import org.apache.commons.dbutils.QueryRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -44,8 +42,6 @@ import org.slf4j.LoggerFactory;
  * move towards more modular structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
-
-  private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
   private final Props props;
   private final AzkabanCommonModuleConfig config;

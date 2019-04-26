@@ -13,11 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger;
 
-public interface DependencyCheck {
 
+/**
+ * Defines dependency instance
+ */
+public interface DependencyCheck {
 
   /**
    * Non-blocking run of dependency check

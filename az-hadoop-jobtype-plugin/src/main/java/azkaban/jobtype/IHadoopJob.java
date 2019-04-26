@@ -15,6 +15,7 @@
  */
 package azkaban.jobtype;
 
+
 public interface IHadoopJob {
 
   /**

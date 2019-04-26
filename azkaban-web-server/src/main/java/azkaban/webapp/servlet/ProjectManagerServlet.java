@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
@@ -80,18 +79,21 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
+
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
   static final String FLOW_NAME_PARAM = "flowName";
   static final String FLOW_ID_PARAM = "flowId";
   static final String ERROR_PARAM = "error";
+
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectManagerServlet.class);
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
-  private static final Logger logger = Logger
-      .getLogger(ProjectManagerServlet.class);
   private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
       new NodeLevelComparator();
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
@@ -131,20 +133,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
     this.enableQuartz = server.getServerProps().getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false);
     if (this.lockdownCreateProjects) {
-      logger.info("Creation of projects is locked down");
+      LOG.info("Creation of projects is locked down");
     }
 
     this.lockdownUploadProjects =
         server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
     if (this.lockdownUploadProjects) {
-      logger.info("Uploading of projects is locked down");
+      LOG.info("Uploading of projects is locked down");
     }
 
     this.downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
 
-    logger.info("downloadBufferSize: " + this.downloadBufferSize);
+    LOG.info("downloadBufferSize: " + this.downloadBufferSize);
   }
 
   @Override
@@ -474,7 +476,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final User user = session.getUser();
     final String projectName = getParam(req, "project");
-    logger.info(user.getUserId() + " is downloading project: " + projectName);
+    LOG.info(user.getUserId() + " is downloading project: " + projectName);
 
     final Project project = this.projectManager.getProject(projectName);
     if (project == null) {
@@ -517,7 +519,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               projectZipFile.getAbsolutePath(), projectZipFile.length(),
               projectFileHandler.getFileType(),
               projectFileHandler.getFileName());
-      logger.info(logStr);
+      LOG.info(logStr);
 
       // now set up HTTP response for downloading file
       inStream = new FileInputStream(projectZipFile);
@@ -544,7 +546,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
     } catch (final Throwable e) {
-      logger.error(
+      LOG.error(
           "Encountered error while downloading project zip file for project: "
               + projectName + " by user: " + user.getUserId(), e);
       throw new ServletException(e);
@@ -624,7 +626,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     try {
       for (final Schedule schedule : this.scheduleManager.getSchedules()) {
         if (schedule.getProjectId() == project.getId()) {
-          logger.info("removing schedule " + schedule.getScheduleId());
+          LOG.info("removing schedule " + schedule.getScheduleId());
           this.scheduleManager.removeSchedule(schedule);
         }
       }
@@ -935,7 +937,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final HttpServletRequest req, final User user) throws ServletException {
     final String name = getParam(req, "name");
 
-    logger.info("Adding proxy user " + name + " by " + user.getUserId());
+    LOG.info("Adding proxy user " + name + " by " + user.getUserId());
     if (this.userManager.validateProxyUser(name, user)) {
       try {
         this.projectManager.addProjectProxyUser(project, name, user);
@@ -954,7 +956,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     final String name = getParam(req, "name");
 
-    logger.info("Removing proxy user " + name + " by " + user.getUserId());
+    LOG.info("Removing proxy user " + name + " by " + user.getUserId());
 
     try {
       this.projectManager.removeProjectProxyUser(project, name, user);
@@ -1141,18 +1143,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (projectManager.hasFlowTrigger(project, flow)) {
           if (isLocked) {
             if (this.scheduler.pauseFlowTriggerIfPresent(project.getId(), flow.getId())) {
-              logger.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+              LOG.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
                       " is paused");
             } else {
-              logger.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+              LOG.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
               " doesn't exist");
             }
           } else {
             if (this.scheduler.resumeFlowTriggerIfPresent(project.getId(), flow.getId())) {
-              logger.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+              LOG.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
                   " is resumed");
             } else {
-              logger.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
+              LOG.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
                   " doesn't exist");
             }
           }
@@ -1391,7 +1393,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Flow flow = null;
     try {
       project = this.projectManager.getProject(projectName);
-      logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
+      LOG.info("JobPage: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
@@ -1502,7 +1504,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       project = this.projectManager.getProject(projectName);
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
-        logger.info("Display project property. Project " + projectName + " not found.");
+        LOG.info("Display project property. Project " + projectName + " not found.");
         page.render();
         return;
       }
@@ -1516,7 +1518,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
-        logger.info("Display project property. Project " + projectName +
+        LOG.info("Display project property. Project " + projectName +
             " Flow " + flowName + " not found.");
         page.render();
         return;
@@ -1526,7 +1528,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
-        logger.info("Display project property. Project " + projectName +
+        LOG.info("Display project property. Project " + projectName +
             " Flow " + flowName + " Job " + jobName + " not found.");
         page.render();
         return;
@@ -1535,7 +1537,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final Props prop = this.projectManager.getProperties(project, flow, null, propSource);
       if (prop == null) {
         page.add("errorMsg", "Property " + propSource + " not found.");
-        logger.info("Display project property. Project " + projectName +
+        LOG.info("Display project property. Project " + projectName +
             " Flow " + flowName + " Job " + jobName +
             " Property " + propSource + " not found.");
         page.render();
@@ -1703,7 +1705,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String projectName = hasParam(req, "name") ? getParam(req, "name") : null;
     final String projectDescription =
         hasParam(req, "description") ? getParam(req, "description") : null;
-    logger.info("Create project " + projectName);
+    LOG.info("Create project " + projectName);
 
     final User user = session.getUser();
 
@@ -1717,7 +1719,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       message =
           "User " + user.getUserId()
               + " doesn't have permission to create projects.";
-      logger.info(message);
+      LOG.info(message);
       status = ERROR_PARAM;
     } else {
       try {
@@ -1762,7 +1764,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    logger.info(
+    LOG.info(
         "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
 
     final String autoFix = (String) multipart.get("fix");
@@ -1779,7 +1781,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final String message =
           "Project uploading is locked out. Only admin users and users with special permissions can upload projects. "
               + "User " + user.getUserId() + " doesn't have permission to upload project.";
-      logger.info(message);
+      LOG.info(message);
       registerError(ret, message, resp, 403);
     } else if (projectName == null || projectName.isEmpty()) {
       registerError(ret, "No project name found.", resp, 400);
@@ -1812,7 +1814,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final File tempDir = Utils.createTempDir();
       OutputStream out = null;
       try {
-        logger.info("Uploading file " + name);
+        LOG.info("Uploading file " + name);
         final File archiveFile = new File(tempDir, name);
         out = new BufferedOutputStream(new FileOutputStream(archiveFile));
         IOUtils.copy(item.getInputStream(), out);
@@ -1887,7 +1889,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                   .toString());
         }
       } catch (final Exception e) {
-        logger.info("Installation Failed.", e);
+        LOG.info("Installation Failed.", e);
         String error = e.getMessage();
         if (error.length() > 512) {
           error =
@@ -1903,7 +1905,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
-      logger.info("Upload: project " + projectName + " version is " + project.getVersion()
+      LOG.info("Upload: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       ret.put("version", String.valueOf(project.getVersion()));
     }

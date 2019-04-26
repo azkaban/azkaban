@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.reportal;
 
 import azkaban.executor.ExecutableFlow;
@@ -71,17 +70,19 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.log4j.Logger;
 import org.apache.velocity.tools.generic.EscapeTool;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ReportalServlet.class);
   private static final String REPORTAL_VARIABLE_PREFIX = "reportal.variable.";
   private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM =
       "hadoop.security.manager.class";
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(ReportalServlet.class);
   private final File reportalMailTempDirectory;
   private final Props props;
   private final String viewerName;
@@ -146,9 +147,9 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     ReportalMailCreator.azkaban = this.server;
 
     this.shouldProxy = this.props.getBoolean("azkaban.should.proxy", false);
-    logger.info("Hdfs browser should proxy: " + this.shouldProxy);
+    LOG.info("Hdfs browser should proxy: " + this.shouldProxy);
     try {
-      this.hadoopSecurityManager = loadHadoopSecurityManager(this.props, logger);
+      this.hadoopSecurityManager = loadHadoopSecurityManager(this.props);
       ReportalMailCreator.hadoopSecurityManager = this.hadoopSecurityManager;
     } catch (final RuntimeException e) {
       e.printStackTrace();
@@ -160,13 +161,12 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     this.cleanerThread.start();
   }
 
-  private HadoopSecurityManager loadHadoopSecurityManager(final Props props,
-      final Logger logger) throws RuntimeException {
+  private HadoopSecurityManager loadHadoopSecurityManager(final Props props) throws RuntimeException {
 
     final Class<?> hadoopSecurityManagerClass =
         props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
             ReportalServlet.class.getClassLoader());
-    logger.info("Initializing hadoop security manager "
+    LOG.info("Initializing hadoop security manager "
         + hadoopSecurityManagerClass.getName());
     HadoopSecurityManager hadoopSecurityManager = null;
 
@@ -177,7 +177,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
           (HadoopSecurityManager) getInstanceMethod.invoke(
               hadoopSecurityManagerClass, props);
     } catch (final InvocationTargetException e) {
-      logger.error("Could not instantiate Hadoop Security Manager "
+      LOG.error("Could not instantiate Hadoop Security Manager "
           + hadoopSecurityManagerClass.getName() + e.getCause());
       throw new RuntimeException(e.getCause());
     } catch (final Exception e) {
@@ -473,7 +473,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
               page.add("files", files);
             } catch (final Exception e) {
-              logger.error("Error encountered while processing files in "
+              LOG.error("Error encountered while processing files in "
                   + locationFull, e);
             }
           }
@@ -584,7 +584,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         rowScanner.close();
       }
     } catch (final Exception e) {
-      logger.debug("Error encountered while processing files in "
+      LOG.debug("Error encountered while processing files in "
           + locationFull, e);
     } finally {
       IOUtils.closeQuietly(csvInputStream);
@@ -1280,17 +1280,17 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     public void run() {
       while (!this.shutdown) {
         synchronized (this) {
-          logger.info("Cleaning old execution output dirs");
+          LOG.info("Cleaning old execution output dirs");
           cleanOldReportalOutputDirs();
 
-          logger.info("Cleaning Reportal mail temp directory");
+          LOG.info("Cleaning Reportal mail temp directory");
           cleanReportalMailTempDir();
         }
 
         try {
           Thread.sleep(this.CLEAN_INTERVAL_MS);
         } catch (final InterruptedException e) {
-          logger.error("CleanerThread's sleep was interrupted.", e);
+          LOG.error("CleanerThread's sleep was interrupted.", e);
         }
       }
     }
@@ -1315,7 +1315,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
             streamProvider.getOldFiles(ReportalMailCreator.outputLocation,
                 pastTimeThreshold);
       } catch (final Exception e) {
-        logger.error("Error getting old files from "
+        LOG.error("Error getting old files from "
             + ReportalMailCreator.outputLocation + " on "
             + ReportalMailCreator.outputFileSystem + " file system.", e);
       }
@@ -1326,7 +1326,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
           try {
             streamProvider.deleteFile(filePath);
           } catch (final Exception e) {
-            logger.error("Error deleting file " + filePath + " from "
+            LOG.error("Error deleting file " + filePath + " from "
                 + ReportalMailCreator.outputFileSystem + " file system.", e);
           }
         }
@@ -1352,7 +1352,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         try {
           FileUtils.deleteDirectory(tempDir);
         } catch (final IOException e) {
-          logger.error(
+          LOG.error(
               "Error cleaning Reportal mail temp dir " + tempDir.getPath(), e);
         }
       }

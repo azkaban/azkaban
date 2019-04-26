@@ -28,7 +28,6 @@
  * (e.g. jquery script hosted on google.com can be fetched, but jquery script
  * stored on local hdfs cannot)
  */
-
 package azkaban.viewer.hdfs;
 
 import java.io.IOException;
@@ -38,16 +37,18 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.AccessControlException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class HtmlFileViewer extends HdfsFileViewer {
 
+  private static final Logger LOG = LoggerFactory.getLogger(HtmlFileViewer.class);
   // only display the first 25M chars. it is used to prevent
   // showing/downloading gb of data
   private static final int BUFFER_LIMIT = 25000000;
   private static final String VIEWER_NAME = "Html";
-  private static final Logger logger = Logger.getLogger(HtmlFileViewer.class);
+
   private final Set<String> acceptedSuffix = new HashSet<>();
 
   public HtmlFileViewer() {
@@ -62,8 +63,7 @@ public class HtmlFileViewer extends HdfsFileViewer {
 
 
   @Override
-  public Set<Capability> getCapabilities(final FileSystem fs, final Path path)
-      throws AccessControlException {
+  public Set<Capability> getCapabilities(final FileSystem fs, final Path path) {
     final String fileName = path.getName();
     final int pos = fileName.lastIndexOf('.');
     if (pos < 0) {
@@ -82,12 +82,15 @@ public class HtmlFileViewer extends HdfsFileViewer {
   public void displayFile(final FileSystem fs, final Path path, final OutputStream outputStream,
       final int startLine, final int endLine) throws IOException {
 
-    if (logger.isDebugEnabled())
-      logger.debug("read in uncompressed html file");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("read in uncompressed html file");
+    }
 
     // BUFFER_LIMIT is the only thing we care about, line limit is redundant and actually not
     // very useful for html files. Thus using Integer.MAX_VALUE to effectively remove the endLine limit.
-    TextFileViewer.displayFileContent(fs, path, outputStream, startLine, Integer.MAX_VALUE, BUFFER_LIMIT);
+    TextFileViewer.displayFileContent(
+        fs, path, outputStream, startLine, Integer.MAX_VALUE, BUFFER_LIMIT
+    );
   }
 
   @Override

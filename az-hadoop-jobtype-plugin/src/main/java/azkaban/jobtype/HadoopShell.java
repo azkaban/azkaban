@@ -15,10 +15,10 @@
  */
 package azkaban.jobtype;
 
-import java.util.List;
-import org.apache.log4j.Logger;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.Props;
+import java.util.List;
+import org.apache.log4j.Logger;
 
 
 /**

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.metric;
 
 import java.util.ArrayList;
@@ -21,7 +20,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -32,11 +32,11 @@ import org.apache.log4j.Logger;
  */
 public class MetricReportManager {
 
+  private static final Logger LOG = LoggerFactory.getLogger(MetricReportManager.class);
   /**
    * Maximum number of metrics reporting threads
    */
   private static final int MAX_EMITTER_THREADS = 4;
-  private static final Logger logger = Logger.getLogger(MetricReportManager.class);
   // Singleton variable
   private static volatile MetricReportManager instance = null;
   private static volatile boolean isManagerEnabled;
@@ -54,7 +54,7 @@ public class MetricReportManager {
   private final ExecutorService executorService;
 
   private MetricReportManager() {
-    logger.debug("Instantiating Metric Manager");
+    LOG.debug("Instantiating Metric Manager");
     this.executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
     this.metrics = new ArrayList<>();
     this.metricEmitters = new LinkedList<>();
@@ -82,7 +82,7 @@ public class MetricReportManager {
     if (instance == null) {
       synchronized (MetricReportManager.class) {
         if (instance == null) {
-          logger.info("Instantiating MetricReportManager");
+          LOG.info("Instantiating MetricReportManager");
           instance = new MetricReportManager();
         }
       }
@@ -103,22 +103,23 @@ public class MetricReportManager {
         synchronized (metric) {
           metricSnapshot = metric.getSnapshot();
         }
-        logger.debug(String
-            .format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
+        LOG.debug(
+            String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName())
+        );
         // report to all emitters
         for (final IMetricEmitter metricEmitter : this.metricEmitters) {
           this.executorService.submit(() -> {
             try {
               metricEmitter.reportMetric(metricSnapshot);
             } catch (final Exception ex) {
-              logger.error(
+              LOG.error(
                   String.format("Failed to report %s metric due to ", metricSnapshot.getName()),
                   ex);
             }
           });
         }
       } catch (final CloneNotSupportedException ex) {
-        logger.error(
+        LOG.error(
             String.format("Failed to take snapshot for %s metric", metric.getClass().getName()),
             ex);
       }
@@ -156,11 +157,11 @@ public class MetricReportManager {
     }
 
     if (getMetricFromName(metric.getName()) == null) {
-      logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
+      LOG.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
       this.metrics.add(metric);
       metric.updateMetricManager(this);
     } else {
-      logger.error("Failed to add metric");
+      LOG.error("Failed to add metric");
     }
   }
 
@@ -191,7 +192,7 @@ public class MetricReportManager {
   }
 
   public void enableManager() {
-    logger.info("Enabling Metric Manager");
+    LOG.info("Enabling Metric Manager");
     isManagerEnabled = true;
   }
 
@@ -199,14 +200,14 @@ public class MetricReportManager {
    * Disable Metric Manager and ask all emitters to purge all available data.
    */
   public void disableManager() {
-    logger.info("Disabling Metric Manager");
+    LOG.info("Disabling Metric Manager");
     if (isManagerEnabled) {
       isManagerEnabled = false;
       for (final IMetricEmitter emitter : this.metricEmitters) {
         try {
           emitter.purgeAllData();
         } catch (final MetricException ex) {
-          logger.error("Failed to purge data ", ex);
+          LOG.error("Failed to purge data ", ex);
         }
       }
     }

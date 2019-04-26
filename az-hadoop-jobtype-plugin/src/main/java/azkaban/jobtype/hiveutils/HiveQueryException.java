@@ -13,10 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
 
+
 public class HiveQueryException extends Exception {
+
   private static final long serialVersionUID = 1L;
   private final String query;
   private final int code;

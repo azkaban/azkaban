@@ -13,6 +13,15 @@
  */
 package azkaban.jobtype.connectors.gobblin;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.jobtype.HadoopJavaJob;
+import azkaban.jobtype.connectors.gobblin.helper.HdfsToMySqlValidator;
+import azkaban.jobtype.connectors.gobblin.helper.IPropertiesValidator;
+import azkaban.jobtype.connectors.gobblin.helper.MySqlToHdfsValidator;
+import azkaban.utils.Props;
+import com.google.common.collect.Maps;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Predicate;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,15 +32,6 @@ import java.util.Objects;
 import java.util.Properties;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import com.google.common.collect.Maps;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Predicate;
-import azkaban.flow.CommonJobProperties;
-import azkaban.jobtype.HadoopJavaJob;
-import azkaban.jobtype.connectors.gobblin.helper.HdfsToMySqlValidator;
-import azkaban.jobtype.connectors.gobblin.helper.IPropertiesValidator;
-import azkaban.jobtype.connectors.gobblin.helper.MySqlToHdfsValidator;
-import azkaban.utils.Props;
 
 
 /**

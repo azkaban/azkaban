@@ -13,7 +13,6 @@
 * License for the specific language governing permissions and limitations under
 * the License.
 */
-
 package azkaban.project;
 
 import azkaban.Constants;
@@ -40,18 +39,19 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Loads yaml files to flows from project directory.
  */
 public class DirectoryYamlFlowLoader implements FlowLoader {
 
+  private static final Logger LOG = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
   // Pattern to match job variables in condition expressions: ${jobName:variable}
   public static final Pattern CONDITION_VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([^:{}]+):([^:{}]+)\\}");
   // Pattern to match conditionOnJobStatus macros, e.g. one_success, all_done
   public static final Pattern CONDITION_ON_JOB_STATUS_PATTERN =
       Pattern.compile("(?i)\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b");
-  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
   // Pattern to match a number or a string, e.g. 1234, "hello", 'foo'
   private static final Pattern DIGIT_STRING_PATTERN = Pattern.compile("\\d+|'.*'|\".*\"");
   // Valid operators in condition expressions: &&, ||, ==, !=, >, >=, <, <=
@@ -249,7 +249,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     for (int i = 0; i < operands.length; i++) {
       final Matcher matcher = CONDITION_ON_JOB_STATUS_PATTERN.matcher(operands[i]);
       if (matcher.matches()) {
-        this.logger.info("Operand " + operands[i] + " is a condition on job status.");
+        LOG.info("Operand " + operands[i] + " is a condition on job status.");
         if (foundConditionOnJobStatus) {
           this.errors.add("Invalid condition for " + node.getId()
               + ": cannot combine more than one conditionOnJobStatus macros.");

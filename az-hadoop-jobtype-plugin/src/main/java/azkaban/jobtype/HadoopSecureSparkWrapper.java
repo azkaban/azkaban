@@ -56,9 +56,7 @@ import org.apache.spark.util.Utils;
  */
 public class HadoopSecureSparkWrapper {
 
-  private static final Logger logger = Logger.getRootLogger();
-  private static final String EMPTY_STRING = "";
-
+  private static final Logger LOG = Logger.getRootLogger();
   //SPARK CONF PARAM
   private static final String SPARK_CONF_EXTRA_DRIVER_OPTIONS = "spark.driver.extraJavaOptions";
   private static final String SPARK_CONF_NUM_EXECUTORS = "spark.executor.instances";
@@ -71,7 +69,6 @@ public class HadoopSecureSparkWrapper {
   private static final String SPARK_EXECUTOR_DEFAULT_MEMORY = "1024M";
   private static final String SPARK_EXECUTOR_CORES = "spark.executor.cores";
   private static final String SPARK_EXECUTOR_DEFAULT_CORES = "1";
-
   //YARN CONF PARAM
   private static final String YARN_CONF_NODE_LABELING_ENABLED = "yarn.node-labels.enabled";
   public static final String DEFAULT_QUEUE = "default";
@@ -88,7 +85,7 @@ public class HadoopSecureSparkWrapper {
     if (HadoopSecureWrapperUtils.shouldProxy(jobProps)) {
       String tokenFile = System.getenv(HADOOP_TOKEN_FILE_LOCATION);
       UserGroupInformation proxyUser =
-          HadoopSecureWrapperUtils.setupProxyUser(jobProps, tokenFile, logger);
+          HadoopSecureWrapperUtils.setupProxyUser(jobProps, tokenFile, LOG);
       proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
@@ -122,7 +119,7 @@ public class HadoopSecureSparkWrapper {
 
     // Sample: [--driver-java-options, , --master, yarn-cluster, --class, myclass,
     // --conf, queue=default, --executor-memory, 1g, --num-executors, 15, my.jar, myparams]
-    logger.info("Args before adjusting driver java opts: " + Arrays.toString(newArgs));
+    LOG.info("Args before adjusting driver java opts: " + Arrays.toString(newArgs));
 
     // Adjust driver java opts param
     handleDriverJavaOpts(newArgs);
@@ -135,7 +132,7 @@ public class HadoopSecureSparkWrapper {
 
     // Realign params after adjustment
     newArgs = removeNullsFromArgArray(newArgs);
-    logger.info("Args after adjusting driver java opts: " + Arrays.toString(newArgs));
+    LOG.info("Args after adjusting driver java opts: " + Arrays.toString(newArgs));
 
     org.apache.spark.deploy.SparkSubmit$.MODULE$.main(newArgs);
   }
@@ -191,7 +188,7 @@ public class HadoopSecureSparkWrapper {
             .startsWith(SPARK_CONF_DYNAMIC_ALLOC_ENABLED)) // spark.dynamicAllocation.enabled
         ) {
 
-          logger.info(
+          LOG.info(
               "Azbakan enforces dynamic resource allocation. Ignore user param: " + argArray[i]
                   + " " + argArray[i
                   + 1]);
@@ -228,12 +225,12 @@ public class HadoopSecureSparkWrapper {
       if (isLargeContainerRequired(argArray, conf, sparkConf)) {
         // Case A
         requiredSparkDefaultQueue = true;
-        logger.info(
+        LOG.info(
             "Spark application requires Large containers. Scheduling this application into default queue by a "
                 + "default conf(spark.yarn.queue) in spark-defaults.conf.");
       } else {
         // Case B
-        logger.info(
+        LOG.info(
             "Dynamic allocation is enabled for selected spark version and application requires small container. "
                 + "Hence, scheduling this application into Org specific queue");
         if (queueParameterIndex == -1) {
@@ -245,14 +242,14 @@ public class HadoopSecureSparkWrapper {
       }
     } else {
       // Case C
-      logger.info(
+      LOG.info(
           "Spark version, selected for this application, doesn't support dynamic allocation. Scheduling this "
               + "application into default queue by a default conf(spark.yarn.queue) in spark-defaults.conf.");
       requiredSparkDefaultQueue = true;
     }
 
     if (queueParameterIndex != -1 && requiredSparkDefaultQueue) {
-      logger.info("Azbakan enforces spark.yarn.queue queue. Ignore user param: "
+      LOG.info("Azbakan enforces spark.yarn.queue queue. Ignore user param: "
           + argArray[queueParameterIndex] + " "
           + argArray[queueParameterIndex + 1]);
       argArray[queueParameterIndex] = null;
@@ -294,7 +291,7 @@ public class HadoopSecureSparkWrapper {
     double minMemSize = Double
         .parseDouble(System.getenv(HadoopSparkJob.SPARK_MIN_MEM_SIZE_ENV_VAR));
 
-    logger.info(
+    LOG.info(
         "RoundedMemoryGbSize: " + roundedMemoryGbSize + ", ExecutorVcore: " + executorVcore
             + ", MinRatio: " + minRatio
             + ", MinMemSize: " + minMemSize);
@@ -353,7 +350,7 @@ public class HadoopSecureSparkWrapper {
         // the user application.
         if (argArray[i].equals(SparkJobArg.SPARK_CONF_PREFIX.sparkParamName) && argArray[i + 1]
             .startsWith(SPARK_EXECUTOR_NODE_LABEL_EXP)) {
-          logger.info(
+          LOG.info(
               "Azbakan auto-sets node label expression. Ignore user param: " + argArray[i] + " "
                   + argArray[i + 1]);
           argArray[i] = null;

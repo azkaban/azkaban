@@ -29,19 +29,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ExecuteFlowAction implements TriggerAction {
 
   public static final String type = "ExecuteFlowAction";
-
   public static final String EXEC_ID = "ExecuteFlowAction.execid";
+
+  private static Logger LOG = LoggerFactory.getLogger(ExecuteFlowAction.class);
 
   private static ExecutorManagerAdapter executorManagerAdapter;
   private static TriggerManager triggerManager;
   private static ProjectManager projectManager;
-  private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
   private final String actionId;
   private final String projectName;
   private int projectId;
@@ -59,9 +60,9 @@ public class ExecuteFlowAction implements TriggerAction {
     this.executionOptions = executionOptions;
   }
 
-  public static void setLogger(final Logger logger) {
-    ExecuteFlowAction.logger = logger;
-  }
+//  public static void setLogger(final Logger logger) {
+//    ExecuteFlowAction.logger = logger;
+//  }
 
   public static ExecutorManagerAdapter getExecutorManager() {
     return executorManagerAdapter;
@@ -207,9 +208,9 @@ public class ExecuteFlowAction implements TriggerAction {
 
     exflow.setExecutionOptions(this.executionOptions);
 
-    logger.info("Invoking flow " + project.getName() + "." + this.flowName);
+    LOG.info("Invoking flow " + project.getName() + "." + this.flowName);
     executorManagerAdapter.submitExecutableFlow(exflow, this.submitUser);
-    logger.info("Invoked flow " + project.getName() + "." + this.flowName);
+    LOG.info("Invoked flow " + project.getName() + "." + this.flowName);
   }
 
   @Override

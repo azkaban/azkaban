@@ -14,7 +14,6 @@
  * the License.
  *
  */
-
 package azkaban.storage;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION;
@@ -32,7 +31,9 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Singleton
 public class StorageCleaner {
@@ -49,7 +50,7 @@ public class StorageCleaner {
    */
   static final String SQL_FETCH_PVR = "SELECT resource_id FROM project_versions WHERE project_id=? AND resource_id IS NOT NULL ORDER BY version DESC";
 
-  private static final Logger log = Logger.getLogger(StorageCleaner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StorageCleaner.class);
   private final DatabaseOperator databaseOperator;
   private final int maxArtifactsPerProject;
   private final Storage storage;
@@ -66,10 +67,10 @@ public class StorageCleaner {
             this.maxArtifactsPerProject));
 
     if (isCleanupPermitted()) {
-      log.info(String.format("%s Config: Max %d artifact(s) retained per project",
+      LOG.info(String.format("%s Config: Max %d artifact(s) retained per project",
           AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION, this.maxArtifactsPerProject));
     } else {
-      log.warn("Project cleanup disabled. All artifacts will be stored.");
+      LOG.warn("Project cleanup disabled. All artifacts will be stored.");
     }
   }
 
@@ -102,7 +103,7 @@ public class StorageCleaner {
       return;
     }
 
-    log.warn(String.format("Deleting project artifacts [id: %d]: %s", projectId, allResourceIds));
+    LOG.warn(String.format("Deleting project artifacts [id: %d]: %s", projectId, allResourceIds));
     allResourceIds.forEach(this::delete);
   }
 
@@ -131,7 +132,7 @@ public class StorageCleaner {
   private boolean delete(final String resourceId) {
     final boolean isDeleted = this.storage.delete(resourceId) && removeDbEntry(resourceId);
     if (!isDeleted) {
-      log.info("Failed to delete resourceId: " + resourceId);
+      LOG.info("Failed to delete resourceId: " + resourceId);
     }
     return isDeleted;
   }
@@ -141,7 +142,7 @@ public class StorageCleaner {
       final int nAffectedRows = this.databaseOperator.update(SQL_DELETE_RESOURCE_ID, resourceId);
       return nAffectedRows > 0;
     } catch (final SQLException e) {
-      log.error("Error while deleting DB metadata resource ID: " + resourceId, e);
+      LOG.error("Error while deleting DB metadata resource ID: " + resourceId, e);
     }
     return false;
   }
@@ -157,7 +158,7 @@ public class StorageCleaner {
             return results;
           }, projectId);
     } catch (final SQLException e) {
-      log.error("Error performing cleanup of Project: " + projectId, e);
+      LOG.error("Error performing cleanup of Project: " + projectId, e);
     }
     return Collections.emptyList();
   }

@@ -49,16 +49,18 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ScheduleServlet.class);
   public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
   public static final String PARAM_SETTINGS = "settings";
@@ -66,13 +68,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   public static final String PARAM_ALL_JOB_NAMES = "allJobNames";
   public static final String PARAM_STATUS = "status";
   public static final String PARAM_MESSAGE = "message";
-
   public static final String STATUS_SUCCESS = "success";
   public static final String STATUS_ERROR = "error";
   public static final String SLA_STATUS_SUCCESS = "SUCCESS";
-
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
+
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
@@ -218,7 +218,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (final ServletException e) {
       ret.put(PARAM_ERROR, e.getMessage());
     } catch (final ScheduleManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       ret.put(PARAM_ERROR, e.getMessage());
     }
 
@@ -226,7 +226,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private SlaOption parseSlaSetting(final String set, String flowName, List<String> emails) throws
       ScheduleManagerException {
-    logger.info("Trying to set sla with the following set: " + set);
+    LOG.info("Trying to set sla with the following set: " + set);
 
     final String[] parts = set.split(",", -1);
     final String id = parts[0];
@@ -266,7 +266,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     if (actions.size() > 0) {
-      logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
+      LOG.info("Parsing sla as id:" + id + " type:" + type + " sla:"
           + rule + " Duration:" + duration + " actions:" + actions);
       return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
           .setEmails(emails).createSlaOption();
@@ -303,7 +303,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         ret.put("schedule", jsonObj);
       }
     } catch (final ScheduleManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       ret.put(PARAM_ERROR, e);
     }
   }
@@ -373,7 +373,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (final ServletException e) {
       ret.put(PARAM_ERROR, e);
     } catch (final ScheduleManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       ret.put(PARAM_ERROR, e);
     }
   }
@@ -460,7 +460,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.scheduleManager.removeSchedule(sched);
-    logger.info("User '" + user.getUserId() + " has removed schedule "
+    LOG.info("User '" + user.getUserId() + " has removed schedule "
         + sched.getScheduleName());
     this.projectManager
         .postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
@@ -544,7 +544,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
             thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions);
-    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
+    LOG.info("User '" + user.getUserId() + "' has scheduled " + "["
         + projectName + flowName + " (" + projectId + ")" + "].");
     this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
         user.getUserId(), "Schedule " + schedule.toString()
@@ -596,7 +596,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       hasFlowTrigger = this.projectManager.hasFlowTrigger(project, flow);
     } catch (final Exception ex) {
-      logger.error(ex);
+      LOG.error("Fail to look for flow trigger", ex);
       ret.put(PARAM_STATUS, STATUS_ERROR);
       ret.put(PARAM_MESSAGE, String.format("Error looking for flow trigger of flow: %s.%s ",
           projectName, flowName));
@@ -658,7 +658,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             cronExpression);
 
-    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
+    LOG.info("User '" + user.getUserId() + "' has scheduled " + "["
         + projectName + flowName + " (" + projectId + ")" + "].");
     this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
         user.getUserId(), "Schedule " + schedule.toString()

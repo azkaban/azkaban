@@ -36,12 +36,13 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(JobSummaryServlet.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JobSummaryServlet.class);
 
   private final Props props;
   private final File webResourcesPath;

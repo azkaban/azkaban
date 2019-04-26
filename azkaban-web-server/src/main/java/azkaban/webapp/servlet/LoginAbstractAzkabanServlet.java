@@ -43,7 +43,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -53,8 +54,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = Logger
-      .getLogger(LoginAbstractAzkabanServlet.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(LoginAbstractAzkabanServlet.class);
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 
@@ -112,8 +112,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
 
     if (session != null) {
-      if (logger.isDebugEnabled()) {
-        logger.debug("Found session " + session.getUser());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Found session " + session.getUser());
       }
       if (handleFileGet(req, resp)) {
         return;
@@ -165,7 +165,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
     }
 
-    logger.info(buf.toString());
+    LOG.info(buf.toString());
   }
 
   private boolean handleFileGet(final HttpServletRequest req, final HttpServletResponse resp)
@@ -456,7 +456,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
           getApplication().getSessionCache().findSessionsByIP(session.getIp());
 
       // Check potential DDoS attack by bad hosts.
-      logger.info(
+      LOG.info(
           "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
               .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
       ret.put("status", "success");
@@ -476,7 +476,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected boolean isAjaxCall(final HttpServletRequest req) {
     final String value = req.getHeader("X-Requested-With");
     if (value != null) {
-      logger.info("has X-Requested-With " + value);
+      LOG.info("has X-Requested-With " + value);
       return value.equals("XMLHttpRequest");
     }
 

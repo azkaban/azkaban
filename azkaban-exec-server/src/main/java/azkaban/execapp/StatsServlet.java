@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import azkaban.executor.ConnectorParams;
@@ -38,7 +37,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Servlet to communicate with Azkaban exec server This servlet get requests from stats servlet in
@@ -47,7 +48,7 @@ import org.apache.log4j.Logger;
 public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   private static final long serialVersionUID = 2L;
-  private static final Logger logger = Logger.getLogger(StatsServlet.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StatsServlet.class);
 
   public boolean hasParam(final HttpServletRequest request, final String param) {
     return HttpRequestUtils.hasParam(request, param);
@@ -116,7 +117,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   private void handleChangeManagerStatusRequest(final HttpServletRequest req,
       final Map<String, Object> ret, final boolean enableMetricManager) {
     try {
-      logger.info("Updating metric manager status");
+      LOG.info("Updating metric manager status");
       if ((enableMetricManager && MetricReportManager.isInstantiated())
           || MetricReportManager.isAvailable()) {
         final MetricReportManager metricManager = MetricReportManager.getInstance();
@@ -130,7 +131,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      LOG.error("Handle Change Manager Status Request Failure", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -152,7 +153,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      LOG.error("Handle Change Emitter Points Failure", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -174,7 +175,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      LOG.error("Handle Change Cleaning Interval Failure ", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -257,7 +258,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
    * Update tracking interval for a given metrics
    */
   private void handleChangeMetricInterval(final HttpServletRequest req,
-      final Map<String, Object> ret) throws ServletException {
+      final Map<String, Object> ret) {
     try {
       final String metricName = getParam(req, STATS_MAP_METRICNAMEPARAM);
       final long newInterval = getLongParam(req, STATS_MAP_REPORTINGINTERVAL);
@@ -272,7 +273,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      LOG.error("Handle Change Metric Interval Failure", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }

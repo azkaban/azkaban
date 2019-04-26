@@ -13,23 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
 import java.util.EnumSet;
 import java.util.Set;
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.AccessControlException;
+import org.apache.hadoop.security.AccessControlException;
+
 
 public abstract class HdfsFileViewer {
+
   public abstract String getName();
 
-  public Set<Capability> getCapabilities(FileSystem fs, Path path)
-      throws AccessControlException {
+  public Set<Capability> getCapabilities(FileSystem fs, Path path) throws AccessControlException {
     return EnumSet.noneOf(Capability.class);
   }
 

@@ -53,8 +53,10 @@ import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Executor manager used to manage the client side job.
@@ -65,11 +67,11 @@ import org.joda.time.DateTime;
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorManager.class);
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
-  private static final Logger logger = Logger.getLogger(ExecutorManager.class);
   private final RunningExecutions runningExecutions;
   private final Props azkProps;
   private final CommonMetrics commonMetrics;
@@ -236,16 +238,16 @@ public class ExecutorManager extends EventHandler implements
         final ExecutorInfo executorInfo = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
         // executorInfo is null if the response was empty
         executor.setExecutorInfo(executorInfo);
-        logger.info(String.format(
+        LOG.info(String.format(
             "Successfully refreshed executor: %s with executor info : %s",
             executor, executorInfo));
       } catch (final TimeoutException e) {
         wasSuccess = false;
-        logger.error("Timed out while waiting for ExecutorInfo refresh"
+        LOG.error("Timed out while waiting for ExecutorInfo refresh"
             + executor, e);
       } catch (final Exception e) {
         wasSuccess = false;
-        logger.error("Failed to update ExecutorInfo for executor : "
+        LOG.error("Failed to update ExecutorInfo for executor : "
             + executor, e);
       }
 
@@ -375,10 +377,10 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private void loadRunningExecutions() throws ExecutorManagerException {
-    logger.info("Loading running flows from database..");
+    LOG.info("Loading running flows from database..");
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
         .fetchActiveFlows();
-    logger.info("Loaded " + activeFlows.size() + " running flows");
+    LOG.info("Loaded " + activeFlows.size() + " running flows");
     this.runningExecutions.get().putAll(activeFlows);
   }
 
@@ -570,7 +572,7 @@ public class ExecutorManager extends EventHandler implements
           RECENTLY_FINISHED_LIFETIME);
     } catch (final ExecutorManagerException e) {
       //Todo jamiesjc: fix error handling.
-      logger.error("Failed to fetch recently finished flows.", e);
+      LOG.error("Failed to fetch recently finished flows.", e);
     }
     return flows;
   }
@@ -733,14 +735,14 @@ public class ExecutorManager extends EventHandler implements
             return applicationId;
           }
           offset = data.getOffset() + data.getLength();
-          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+          this.LOG.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
               + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
         } else {
           finished = true;
         }
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+      this.LOG.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
     return null;
@@ -863,7 +865,7 @@ public class ExecutorManager extends EventHandler implements
       // Skip execution for locked flows.
       final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
           exflow.getProjectName());
-      logger.info(message);
+      LOG.info(message);
       return message;
     }
 
@@ -873,7 +875,7 @@ public class ExecutorManager extends EventHandler implements
     synchronized (exFlowKey.intern()) {
       final String flowId = exflow.getFlowId();
 
-      logger.info("Submitting execution flow " + flowId + " by " + userId);
+      LOG.info("Submitting execution flow " + flowId + " by " + userId);
 
       String message = "";
       if (this.queuedFlows.isFull()) {
@@ -882,7 +884,7 @@ public class ExecutorManager extends EventHandler implements
                 .format(
                     "Failed to submit %s for project %s. Azkaban has overrun its webserver queue capacity",
                     flowId, exflow.getProjectName());
-        logger.error(message);
+        LOG.error(message);
         this.commonMetrics.markSubmitFlowFail();
       } else {
         final int projectId = exflow.getProjectId();
@@ -963,11 +965,11 @@ public class ExecutorManager extends EventHandler implements
     final long beforeDeleteLogsTimestamp = System.currentTimeMillis();
     try {
       final int count = this.executorLoader.removeExecutionLogsByTime(millis);
-      logger.info("Cleaned up " + count + " log entries.");
+      LOG.info("Cleaned up " + count + " log entries.");
     } catch (final ExecutorManagerException e) {
-      logger.error("log clean up failed. ", e);
+      LOG.error("log clean up failed. ", e);
     }
-    logger.info(
+    LOG.info(
         "log clean up time: " + (System.currentTimeMillis() - beforeDeleteLogsTimestamp) / 1000
             + " seconds.");
   }
@@ -1051,7 +1053,7 @@ public class ExecutorManager extends EventHandler implements
       this.apiGateway.callWithExecutable(exflow, choosenExecutor,
           ConnectorParams.EXECUTE_ACTION);
     } catch (final ExecutorManagerException ex) {
-      logger.error("Rolling back executor assignment for execution id:"
+      LOG.error("Rolling back executor assignment for execution id:"
           + exflow.getExecutionId(), ex);
       this.executorLoader.unassignExecutor(exflow.getExecutionId());
       throw new ExecutorManagerException(ex);
@@ -1072,7 +1074,7 @@ public class ExecutorManager extends EventHandler implements
       this.notifyAll();
     }
 
-    logger.info(String.format(
+    LOG.info(String.format(
         "Successfully dispatched exec %d with error count %d",
         exflow.getExecutionId(), reference.getNumErrors()));
   }
@@ -1121,16 +1123,16 @@ public class ExecutorManager extends EventHandler implements
 
             wait(CLEANER_THREAD_WAIT_INTERVAL_MS);
           } catch (final InterruptedException e) {
-            ExecutorManager.logger.info("Interrupted. Probably to shut down.");
+            ExecutorManager.LOG.info("Interrupted. Probably to shut down.");
           }
         }
       }
     }
 
     private void cleanExecutionLogs() {
-      ExecutorManager.logger.info("Cleaning old logs from execution_logs");
+      ExecutorManager.LOG.info("Cleaning old logs from execution_logs");
       final long cutoff = System.currentTimeMillis() - this.executionLogsRetentionMs;
-      ExecutorManager.logger.info("Cleaning old log files before "
+      ExecutorManager.LOG.info("Cleaning old log files before "
           + new DateTime(cutoff).toString());
       cleanOldExecutionLogs(System.currentTimeMillis()
           - this.executionLogsRetentionMs);
@@ -1173,7 +1175,7 @@ public class ExecutorManager extends EventHandler implements
 
     public void setActive(final boolean isActive) {
       this.isActive = isActive;
-      ExecutorManager.logger.info("QueueProcessorThread active turned " + this.isActive);
+      ExecutorManager.LOG.info("QueueProcessorThread active turned " + this.isActive);
     }
 
     public void shutdown() {
@@ -1194,7 +1196,7 @@ public class ExecutorManager extends EventHandler implements
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);
           } catch (final Exception e) {
-            ExecutorManager.logger.error(
+            ExecutorManager.LOG.error(
                 "QueueProcessorThread Interrupted. Probably to shut down.", e);
           }
         }
@@ -1297,7 +1299,7 @@ public class ExecutorManager extends EventHandler implements
         final String message = "Failed to dispatch queued execution " + exflow.getId() + " because "
             + "reached " + ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED
             + " (tried " + reference.getNumErrors() + " executors)";
-        ExecutorManager.logger.error(message);
+        ExecutorManager.LOG.error(message);
         ExecutorManager.this.executionFinalizer.finalizeFlow(exflow, message, lastError);
       }
     }
@@ -1315,17 +1317,17 @@ public class ExecutorManager extends EventHandler implements
       try {
         Thread.sleep(this.sleepAfterDispatchFailure.toMillis());
       } catch (final InterruptedException e1) {
-        ExecutorManager.logger.warn("Sleep after dispatch failure was interrupted - ignoring");
+        ExecutorManager.LOG.warn("Sleep after dispatch failure was interrupted - ignoring");
       }
     }
 
     private void logFailedDispatchAttempt(final ExecutionReference reference,
         final ExecutableFlow exflow,
         final Executor selectedExecutor, final ExecutorManagerException e) {
-      ExecutorManager.logger.warn(String.format(
+      ExecutorManager.LOG.warn(String.format(
           "Executor %s responded with exception for exec: %d",
           selectedExecutor, exflow.getExecutionId()), e);
-      ExecutorManager.logger.info(String.format(
+      ExecutorManager.LOG.info(String.format(
           "Failed dispatch attempt for exec %d with error count %d",
           exflow.getExecutionId(), reference.getNumErrors()));
     }
@@ -1345,14 +1347,14 @@ public class ExecutorManager extends EventHandler implements
           executor = fetchExecutor(executorId);
 
           if (executor == null) {
-            ExecutorManager.logger
+            ExecutorManager.LOG
                 .warn(String
                     .format(
                         "User specified executor id: %d for execution id: %d is not active, Looking up db.",
                         executorId, executionId));
             executor = ExecutorManager.this.executorLoader.fetchExecutor(executorId);
             if (executor == null) {
-              ExecutorManager.logger
+              ExecutorManager.LOG
                   .warn(String
                       .format(
                           "User specified executor id: %d for execution id: %d is missing from db. Defaulting to availableExecutors",
@@ -1360,7 +1362,7 @@ public class ExecutorManager extends EventHandler implements
             }
           }
         } catch (final ExecutorManagerException ex) {
-          ExecutorManager.logger.error("Failed to fetch user specified executor for exec_id = "
+          ExecutorManager.LOG.error("Failed to fetch user specified executor for exec_id = "
               + executionId, ex);
         }
       }
@@ -1376,7 +1378,7 @@ public class ExecutorManager extends EventHandler implements
 
       // If no executor was specified by admin
       if (choosenExecutor == null) {
-        ExecutorManager.logger.info("Using dispatcher for execution id :"
+        ExecutorManager.LOG.info("Using dispatcher for execution id :"
             + exflow.getExecutionId());
         final ExecutorSelector selector = new ExecutorSelector(ExecutorManager.this.filterList,
             ExecutorManager.this.comparatorWeightsMap);
@@ -1387,7 +1389,7 @@ public class ExecutorManager extends EventHandler implements
 
     private void handleNoExecutorSelectedCase(final ExecutionReference reference,
         final ExecutableFlow exflow) throws ExecutorManagerException {
-      ExecutorManager.logger
+      ExecutorManager.LOG
           .info(String
               .format(
                   "Reached handleNoExecutorSelectedCase stage for exec %d with error count %d",

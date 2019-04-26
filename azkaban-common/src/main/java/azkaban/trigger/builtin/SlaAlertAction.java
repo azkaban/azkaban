@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger.builtin;
 
 import azkaban.ServiceProvider;
@@ -26,13 +25,15 @@ import azkaban.trigger.TriggerAction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class SlaAlertAction implements TriggerAction {
 
   public static final String type = "AlertAction";
 
-  private static final Logger logger = Logger.getLogger(SlaAlertAction.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SlaAlertAction.class);
 
   private final String actionId;
   private final SlaOption slaOption;
@@ -101,7 +102,7 @@ public class SlaAlertAction implements TriggerAction {
 
   @Override
   public void doAction() throws Exception {
-    logger.info("Alerting on sla failure.");
+    LOG.info("Alerting on sla failure.");
     if (slaOption.hasAlert()) {
       final Alerter alerter = this.alerters.get(SlaOption.ALERT_TYPE_EMAIL);
       if (alerter != null) {
@@ -110,10 +111,10 @@ public class SlaAlertAction implements TriggerAction {
           alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow));
         } catch (final Exception e) {
           e.printStackTrace();
-          logger.error("Failed to alert by " + SlaOption.ALERT_TYPE_EMAIL);
+          LOG.error("Failed to alert by " + SlaOption.ALERT_TYPE_EMAIL);
         }
       } else {
-        logger.error("Alerter type " + SlaOption.ALERT_TYPE_EMAIL
+        LOG.error("Alerter type " + SlaOption.ALERT_TYPE_EMAIL
             + " doesn't exist. Failed to alert.");
       }
     }

@@ -23,12 +23,14 @@ import java.sql.Statement;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Singleton
 public class MySQLDataSource extends AzkabanDataSource {
 
-  private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MySQLDataSource.class);
   private final DBMetrics dbMetrics;
 
   @Inject
@@ -98,9 +100,9 @@ public class MySQLDataSource extends AzkabanDataSource {
         try {
           invalidateConnection(connection);
         } catch (final Exception e) {
-          logger.error( "can not invalidate connection.", e);
+          LOG.error( "can not invalidate connection.", e);
         }
-        logger.error( "Failed to find write-enabled DB connection. Wait 15 seconds and retry."
+        LOG.error( "Failed to find write-enabled DB connection. Wait 15 seconds and retry."
             + " No.Attempt = " + retryAttempt, ex);
         /**
          * When database is completed down, DB connection fails to be fetched immediately. So we need
@@ -127,7 +129,7 @@ public class MySQLDataSource extends AzkabanDataSource {
     try {
       Thread.sleep(milliseconds);
     } catch (final InterruptedException e) {
-      logger.error("Sleep interrupted", e);
+      LOG.error("Sleep interrupted", e);
     }
   }
 

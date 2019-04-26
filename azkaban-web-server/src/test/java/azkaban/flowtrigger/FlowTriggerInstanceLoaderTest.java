@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 
 public class FlowTriggerInstanceLoaderTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerInstanceLoaderTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FlowTriggerInstanceLoaderTest.class);
   private static final String test_project_zip_dir = "flowtriggeryamltest";
   private static final String test_flow_file = "flow_trigger.flow";
   private static final int project_id = 123;
@@ -79,7 +79,7 @@ public class FlowTriggerInstanceLoaderTest {
       dbOperator.update("DROP ALL OBJECTS");
       dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
-      logger.error("unable to destroy db", e);
+      LOG.error("unable to destroy db", e);
     }
   }
 

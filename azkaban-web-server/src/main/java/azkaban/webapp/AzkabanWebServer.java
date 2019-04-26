@@ -89,7 +89,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.management.ObjectName;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.joda.time.DateTimeZone;
@@ -98,6 +97,8 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -120,10 +121,10 @@ import org.mortbay.thread.QueuedThreadPool;
 @Singleton
 public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanWebServer.class);
   public static final String DEFAULT_CONF_PATH = "conf";
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
       "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
-  private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final String DEFAULT_STATIC_DIR = "";
@@ -191,7 +192,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       System.setProperty("user.timezone", timezone);
       TimeZone.setDefault(TimeZone.getTimeZone(timezone));
       DateTimeZone.setDefault(DateTimeZone.forID(timezone));
-      logger.info("Setting timezone to " + timezone);
+      LOG.info("Setting timezone to " + timezone);
     }
 
     configureMBeanServer();
@@ -206,11 +207,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
 
-    logger.info("Starting Jetty Azkaban Web Server...");
+    LOG.info("Starting Jetty Azkaban Web Server...");
     final Props props = AzkabanServer.loadProps(args);
 
     if (props == null) {
-      logger.error("Azkaban Properties not loaded. Exiting..");
+      LOG.error("Azkaban Properties not loaded. Exiting..");
       System.exit(1);
     }
 
@@ -239,40 +240,40 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       public void run() {
         try {
           if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-            AzkabanWebServer.logger.info("Shutting down flow trigger scheduler...");
+            AzkabanWebServer.LOG.info("Shutting down flow trigger scheduler...");
             webServer.scheduler.shutdown();
           }
         } catch (final Exception e) {
-          AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
+          AzkabanWebServer.LOG.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
           if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-            AzkabanWebServer.logger.info("Shutting down flow trigger service...");
+            AzkabanWebServer.LOG.info("Shutting down flow trigger service...");
             webServer.flowTriggerService.shutdown();
           }
         } catch (final Exception e) {
-          AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
+          AzkabanWebServer.LOG.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
-          AzkabanWebServer.logger.info("Logging top memory consumers...");
+          AzkabanWebServer.LOG.info("Logging top memory consumers...");
           logTopMemoryConsumers();
 
-          AzkabanWebServer.logger.info("Shutting down http server...");
+          AzkabanWebServer.LOG.info("Shutting down http server...");
           webServer.close();
 
         } catch (final Exception e) {
-          AzkabanWebServer.logger.error("Exception while shutting down web server.", e);
+          AzkabanWebServer.LOG.error("Exception while shutting down web server.", e);
         }
 
-        AzkabanWebServer.logger.info("kk thx bye.");
+        AzkabanWebServer.LOG.info("kk thx bye.");
       }
 
       public void logTopMemoryConsumers() throws Exception {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          AzkabanWebServer.logger.info("logging top memory consumer");
+          AzkabanWebServer.LOG.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
@@ -285,7 +286,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
               new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
-            AzkabanWebServer.logger.info(line);
+            AzkabanWebServer.LOG.info(line);
           }
           is.close();
         }
@@ -322,10 +323,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
       final String pluginClass = pluginProps.getString("viewer.servlet.class");
       if (pluginClass == null) {
-        logger.error("Viewer class is not set.");
+        LOG.error("Viewer class is not set.");
         continue;
       } else {
-        logger.info("Plugin class " + pluginClass);
+        LOG.info("Plugin class " + pluginClass);
       }
 
       Class<?> viewerClass =
@@ -335,14 +336,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       }
 
       final String source = FileIOUtils.getSourcePathFromClass(viewerClass);
-      logger.info("Source jar " + source);
+      LOG.info("Source jar " + source);
       jarPaths.add("jar:file:" + source);
 
       Constructor<?> constructor = null;
       try {
         constructor = viewerClass.getConstructor(Props.class);
       } catch (final NoSuchMethodException e) {
-        logger.error("Constructor not found in " + pluginClass);
+        LOG.error("Constructor not found in " + pluginClass);
         continue;
       }
 
@@ -350,12 +351,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       try {
         obj = constructor.newInstance(pluginProps);
       } catch (final Exception e) {
-        logger.error(e);
-        logger.error(e.getCause());
+        LOG.error("New PlugIn Instance Failure", e);
+        LOG.error("New PlugIn Instance Failure", e.getCause());
       }
 
       if (!(obj instanceof AbstractAzkabanServlet)) {
-        logger.error("The object is not an AbstractAzkabanServlet");
+        LOG.error("The object is not an AbstractAzkabanServlet");
         continue;
       }
 
@@ -368,7 +369,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     // Velocity needs the jar resource paths to be set.
     final String jarResourcePath = StringUtils.join(jarPaths, ", ");
-    logger.info("Setting jar resource path " + jarResourcePath);
+    LOG.info("Setting jar resource path " + jarResourcePath);
     ve.addProperty("jar.resource.loader.path", jarResourcePath);
   }
 
@@ -388,10 +389,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(this.props);
       setup.loadTableInfo();
       if (setup.needsUpdating()) {
-        logger.error("Database is out of date.");
+        LOG.error("Database is out of date.");
         setup.printUpgradePlan();
 
-        logger.error("Exiting with error.");
+        LOG.error("Exiting with error.");
         System.exit(-1);
       }
     }
@@ -400,7 +401,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private void configureRoutes() throws TriggerManagerException {
     final String staticDir =
         this.props.getString("web.resource.dir", DEFAULT_STATIC_DIR);
-    logger.info("Setting up web resource dir " + staticDir);
+    LOG.info("Setting up web resource dir " + staticDir);
     final Context root = new Context(this.server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
@@ -465,17 +466,17 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
       // existing flow triggers
-      logger.info("starting flow trigger service");
+      LOG.info("starting flow trigger service");
       this.flowTriggerService.start();
-      logger.info("starting flow trigger scheduler");
+      LOG.info("starting flow trigger scheduler");
       this.scheduler.start();
     }
 
     try {
       this.server.start();
-      logger.info("Server started");
+      LOG.info("Server started");
     } catch (final Exception e) {
-      logger.warn(e);
+      LOG.warn("Starting Web Server Failure", e);
       Utils.croak(e.getMessage(), 1);
     }
   }
@@ -517,12 +518,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     this.metricsManager.addGauge("session-count", this.sessionCache::getSessionCount);
 
-    logger.info("starting reporting Web Server Metrics");
+    LOG.info("starting reporting Web Server Metrics");
     this.metricsManager.startReporting("AZ-WEB", this.props);
   }
 
   private void loadBuiltinCheckersAndActions() {
-    logger.info("Loading built-in checker and action types");
+    LOG.info("Loading built-in checker and action types");
     ExecuteFlowAction.setExecutorManager(this.executorManagerAdapter);
     ExecuteFlowAction.setProjectManager(this.projectManager);
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
@@ -599,7 +600,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   @Override
   public void configureMBeanServer() {
-    logger.info("Registering MBeans...");
+    LOG.info("Registering MBeans...");
 
     this.mbeanRegistrationManager.registerMBean("jetty", new JmxJettyServer(this.server));
     this.mbeanRegistrationManager.registerMBean("triggerManager", new JmxTriggerManager(this.triggerManager));
@@ -612,7 +613,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
           new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
     }
 
-    // Register Log4J loggers as JMX beans so the log level can be
+    // Register Log4J LOGs as JMX beans so the log level can be
     // updated via JConsole or Java VisualVM
     final HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
     this.mbeanRegistrationManager.registerMBean("log4jmxbean", log4jMBean);
@@ -621,11 +622,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
-      logger.info(
-          "************* loginLoggerObjName is null, make sure there is a logger with name "
+      LOG.info(
+          "************* loginLoggerObjName is null, make sure there is a LOG with name "
               + AZKABAN_ACCESS_LOGGER_NAME);
     } else {
-      logger.info("******** loginLoggerObjName: "
+      LOG.info("******** loginLoggerObjName: "
           + accessLogLoggerObjName.getCanonicalName());
     }
   }
@@ -638,7 +639,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       this.server.stop();
     } catch (final Exception e) {
       // Catch all while closing server
-      logger.error(e);
+      LOG.error("Stopping Web Server Failure", e);
     }
     this.server.destroy();
   }

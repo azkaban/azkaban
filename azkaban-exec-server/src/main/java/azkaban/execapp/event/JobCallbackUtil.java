@@ -40,19 +40,22 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.log4j.Logger;
 
+
 public class JobCallbackUtil {
 
-  private static final Logger logger = Logger.getLogger(JobCallbackUtil.class);
-
+  private static final Logger LOG = Logger.getLogger(JobCallbackUtil.class);
   private static final Map<JobCallbackStatusEnum, String> firstJobcallbackPropertyMap =
-      new HashMap<>(
-          JobCallbackStatusEnum.values().length);
+      new HashMap<>(JobCallbackStatusEnum.values().length);
 
   static {
     for (final JobCallbackStatusEnum statusEnum : JobCallbackStatusEnum.values()) {
       firstJobcallbackPropertyMap.put(statusEnum,
           replaceStatusToken(FIRST_JOB_CALLBACK_URL_TEMPLATE, statusEnum));
     }
+  }
+
+  private JobCallbackUtil() {
+
   }
 
   /**
@@ -91,7 +94,7 @@ public class JobCallbackUtil {
       final int maxNumCallback) {
 
     return parseJobCallbackProperties(props, status, contextInfo,
-        maxNumCallback, logger);
+        maxNumCallback, LOG);
   }
 
   /**
@@ -227,7 +230,7 @@ public class JobCallbackUtil {
   /**
    * This method takes the job context info. and put the values into a map with keys as the tokens.
    *
-   * @return Map<String,String>
+   * @return Map<String , String>
    */
   public static Map<String, String> buildJobContextInfoMap(final Event event,
       final String server) {

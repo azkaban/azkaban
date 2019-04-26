@@ -28,12 +28,14 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class NoteServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(NoteServlet.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NoteServlet.class);
 
   public static String type = null;
   public static String message = null;
@@ -111,7 +113,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
     type = getParam(req, "type");
     message = getParam(req, "message");
     url = getParam(req, "url");
-    logger.info("receive note message. Type: " + type + " message: " + message + " url: " + url);
+    LOG.info("receive note message. Type: " + type + " message: " + message + " url: " + url);
     ret.put("status", "success");
   }
 
@@ -119,7 +121,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
     type = null;
     message = null;
     url = null;
-    logger.info("removing note from memory.");
+    LOG.info("removing note from memory.");
     ret.put("status", "success");
   }
 

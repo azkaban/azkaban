@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
 import java.util.EnumSet;
@@ -21,7 +20,6 @@ import java.util.Set;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
@@ -31,12 +29,13 @@ import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.AccessControlException;
-import org.apache.log4j.Logger;
-
+import org.apache.hadoop.security.AccessControlException;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * This class implements a viewer of avro files
@@ -45,7 +44,7 @@ import org.codehaus.jackson.JsonGenerator;
  */
 public class AvroFileViewer extends HdfsFileViewer {
 
-  private static Logger logger = Logger.getLogger(AvroFileViewer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AvroFileViewer.class);
   // Will spend 5 seconds trying to pull data and then stop.
   private static long STOP_TIME = 2000l;
 
@@ -59,8 +58,8 @@ public class AvroFileViewer extends HdfsFileViewer {
   @Override
   public Set<Capability> getCapabilities(FileSystem fs, Path path)
       throws AccessControlException {
-    if (logger.isDebugEnabled()) {
-      logger.debug("path:" + path.toUri().getPath());
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("path:" + path.toUri().getPath());
     }
 
     DataFileStream<Object> avroDataStream = null;
@@ -72,9 +71,9 @@ public class AvroFileViewer extends HdfsFileViewer {
     } catch (AccessControlException e) {
       throw e;
     } catch (IOException e) {
-      if (logger.isDebugEnabled()) {
-        logger.debug(path.toUri().getPath() + " is not an avro file.");
-        logger.debug("Error in getting avro schema: ", e);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(path.toUri().getPath() + " is not an avro file.");
+        LOG.debug("Error in getting avro schema: ", e);
       }
       return EnumSet.noneOf(Capability.class);
     } finally {
@@ -83,15 +82,15 @@ public class AvroFileViewer extends HdfsFileViewer {
           avroDataStream.close();
         }
       } catch (IOException e) {
-        logger.error(e);
+        LOG.error("Close Avro Data Stream Failure", e);
       }
     }
   }
 
   @Override
   public String getSchema(FileSystem fs, Path path) {
-    if (logger.isDebugEnabled()) {
-      logger.debug("path:" + path.toUri().getPath());
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("path:" + path.toUri().getPath());
     }
 
     DataFileStream<Object> avroDataStream = null;
@@ -100,9 +99,9 @@ public class AvroFileViewer extends HdfsFileViewer {
       Schema schema = avroDataStream.getSchema();
       return schema.toString(true);
     } catch (IOException e) {
-      if (logger.isDebugEnabled()) {
-        logger.debug(path.toUri().getPath() + " is not an avro file.");
-        logger.debug("Error in getting avro schema: ", e);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(path.toUri().getPath() + " is not an avro file.");
+        LOG.debug("Error in getting avro schema: ", e);
       }
       return null;
     } finally {
@@ -111,15 +110,15 @@ public class AvroFileViewer extends HdfsFileViewer {
           avroDataStream.close();
         }
       } catch (IOException e) {
-        logger.error(e);
+        LOG.error("Close Avro Data Stream Failure", e);
       }
     }
   }
 
   private DataFileStream<Object> getAvroDataStream(FileSystem fs, Path path)
       throws IOException {
-    if (logger.isDebugEnabled()) {
-      logger.debug("path:" + path.toUri().getPath());
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("path:" + path.toUri().getPath());
     }
 
     GenericDatumReader<Object> avroReader = new GenericDatumReader<Object>();
@@ -151,8 +150,8 @@ public class AvroFileViewer extends HdfsFileViewer {
   public void displayFile(FileSystem fs, Path path, OutputStream outputStream,
       int startLine, int endLine) throws IOException {
 
-    if (logger.isDebugEnabled()) {
-      logger.debug("display avro file:" + path.toUri().getPath());
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("display avro file:" + path.toUri().getPath());
     }
 
     DataFileStream<Object> avroDatastream = null;
@@ -192,5 +191,4 @@ public class AvroFileViewer extends HdfsFileViewer {
       avroDatastream.close();
     }
   }
-
 }

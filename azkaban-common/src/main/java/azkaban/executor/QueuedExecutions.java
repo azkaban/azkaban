@@ -6,7 +6,9 @@ import java.util.Collections;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * <pre>
@@ -16,7 +18,7 @@ import org.apache.log4j.Logger;
  */
 public class QueuedExecutions {
 
-  private static final Logger logger = Logger.getLogger(QueuedExecutions.class);
+  private static final Logger LOG = LoggerFactory.getLogger(QueuedExecutions.class);
   final long capacity;
 
   /* map to easily access queued flows */
@@ -84,7 +86,7 @@ public class QueuedExecutions {
       this.queuedFlowList.put(pair);
     } catch (final InterruptedException e) {
       final String errMsg = "Failed to insert flow " + exflow.getExecutionId();
-      logger.error(errMsg, e);
+      LOG.error(errMsg, e);
       throw new ExecutorManagerException(errMsg);
     }
   }

@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
@@ -33,6 +32,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpRequestFutureTask;
 import org.apache.log4j.Logger;
 
+
 /**
  * Responsible for making the job callback HTTP requests.
  *
@@ -43,8 +43,7 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackRequestMaker {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackRequestMaker.class);
+  private static final Logger LOG = Logger.getLogger(JobCallbackRequestMaker.class);
 
   private static final int DEFAULT_TIME_OUT_MS = 3000;
   private static final int DEFAULT_RESPONSE_WAIT_TIME_OUT_MS = 5000;
@@ -70,7 +69,7 @@ public class JobCallbackRequestMaker {
     this.responseWaitTimeoutMS =
         props.getInt(JOBCALLBACK_RESPONSE_WAIT_TIMEOUT, DEFAULT_RESPONSE_WAIT_TIME_OUT_MS);
 
-    logger.info("responseWaitTimeoutMS: " + this.responseWaitTimeoutMS);
+    LOG.info("responseWaitTimeoutMS: " + this.responseWaitTimeoutMS);
 
     final RequestConfig requestConfig =
         RequestConfig.custom()
@@ -78,7 +77,7 @@ public class JobCallbackRequestMaker {
             .setConnectTimeout(connectionTimeout)
             .setSocketTimeout(socketTimeout).build();
 
-    logger.info("Global request configuration " + requestConfig.toString());
+    LOG.info("Global request configuration " + requestConfig.toString());
 
     final HttpClient httpClient =
         HttpClientBuilder.create().setDefaultRequestConfig(requestConfig)
@@ -86,7 +85,7 @@ public class JobCallbackRequestMaker {
 
     final int jobCallbackThreadPoolSize =
         props.getInt(JOBCALLBACK_THREAD_POOL_SIZE, DEFAULT_THREAD_POOL_SIZE);
-    logger.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
+    LOG.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
 
     final ExecutorService executorService =
         Executors.newFixedThreadPool(jobCallbackThreadPoolSize);
@@ -105,7 +104,7 @@ public class JobCallbackRequestMaker {
 
     instance = new JobCallbackRequestMaker(props);
     isInitialized = true;
-    logger.info("Initialization for " + JobCallbackRequestMaker.class.getName()
+    LOG.info("Initialization for " + JobCallbackRequestMaker.class.getName()
         + " is completed");
   }
 
@@ -192,8 +191,7 @@ public class JobCallbackRequestMaker {
     }
 
     @Override
-    public Integer handleResponse(final HttpResponse response)
-        throws ClientProtocolException, IOException {
+    public Integer handleResponse(final HttpResponse response) {
 
       final int statusCode = response.getStatusLine().getStatusCode();
       BufferedReader bufferedReader = null;

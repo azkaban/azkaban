@@ -34,12 +34,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Singleton
 public class ExecutionJobDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutorDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
@@ -66,7 +68,7 @@ public class ExecutionJobDao {
 
     final ExecutableFlow flow = node.getExecutableFlow();
     final String flowId = node.getParentFlow().getFlowPath();
-    logger.info("Uploading flowId " + flowId);
+    LOG.info("Uploading flowId " + flowId);
     try {
       this.dbOperator.update(INSERT_EXECUTION_NODE, flow.getExecutionId(),
           flow.getProjectId(), flow.getVersion(), flowId, node.getId(),

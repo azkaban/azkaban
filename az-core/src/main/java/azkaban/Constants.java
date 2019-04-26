@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban;
 
 import java.time.Duration;
+
 
 /**
  * Constants used in configuration files or shared among classes.

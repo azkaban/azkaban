@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
 import azkaban.utils.Pair;
@@ -22,7 +21,9 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * <pre>
@@ -34,7 +35,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class CandidateComparator<T> implements Comparator<T> {
 
-  protected static Logger logger = Logger.getLogger(CandidateComparator.class);
+  protected static Logger LOG = LoggerFactory.getLogger(CandidateComparator.class);
 
   // internal repository of the registered comparators .
   private final Map<String, FactorComparator<T>> factorComparatorList =
@@ -64,7 +65,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
   /**
    * function to register a factorComparator to the internal Map for future reference.
    *
-   * @param factorComparator : the comparator object to be registered.
+   * @param comparator : the comparator object to be registered.
    */
   protected void registerFactorComparator(final FactorComparator<T> comparator) {
     if (null == comparator ||
@@ -75,7 +76,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
 
     // add or replace the Comparator.
     this.factorComparatorList.put(comparator.getFactorName(), comparator);
-    logger.debug(String.format("Factor comparator added for '%s'. Weight = '%s'",
+    LOG.debug(String.format("Factor comparator added for '%s'. Weight = '%s'",
         comparator.getFactorName(), comparator.getWeight()));
   }
 
@@ -118,7 +119,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
    * @return a pair structure contains the score for both sides.
    */
   public Pair<Integer, Integer> getComparisonScore(final T object1, final T object2) {
-    logger.debug(String.format("start comparing '%s' with '%s',  total weight = %s ",
+    LOG.debug(String.format("start comparing '%s' with '%s',  total weight = %s ",
         object1 == null ? "(null)" : object1.toString(),
         object2 == null ? "(null)" : object2.toString(),
         this.getTotalWeight()));
@@ -128,16 +129,16 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
 
     // short cut if object equals.
     if (object1 == object2) {
-      logger.debug("[Comparator] same object.");
+      LOG.debug("[Comparator] same object.");
     } else
       // left side is null.
       if (object1 == null) {
-        logger.debug("[Comparator] left side is null, right side gets total weight.");
+        LOG.debug("[Comparator] left side is null, right side gets total weight.");
         result2 = this.getTotalWeight();
       } else
         // right side is null.
         if (object2 == null) {
-          logger.debug("[Comparator] right side is null, left side gets total weight.");
+          LOG.debug("[Comparator] right side is null, left side gets total weight.");
           result1 = this.getTotalWeight();
         } else
         // both side is not null,put them thru the full loop
@@ -147,14 +148,14 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
             final int result = comparator.compare(object1, object2);
             result1 = result1 + (result > 0 ? comparator.getWeight() : 0);
             result2 = result2 + (result < 0 ? comparator.getWeight() : 0);
-            logger.debug(String.format("[Factor: %s] compare result : %s (current score %s vs %s)",
+            LOG.debug(String.format("[Factor: %s] compare result : %s (current score %s vs %s)",
                 comparator.getFactorName(), result, result1, result2));
           }
         }
     // in case of same score, use tie-breaker to stabilize the result.
     if (result1 == result2) {
       final boolean result = this.tieBreak(object1, object2);
-      logger.debug("[TieBreaker] TieBreaker chose " +
+      LOG.debug("[TieBreaker] TieBreaker chose " +
           (result ? String.format("left side (%s)", null == object1 ? "null" : object1.toString()) :
               String.format("right side (%s)", null == object2 ? "null" : object2.toString())));
       if (result) {
@@ -164,7 +165,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
       }
     }
 
-    logger.debug(String.format("Result : %s vs %s ", result1, result2));
+    LOG.debug(String.format("Result : %s vs %s ", result1, result2));
     return new Pair<>(result1, result2);
   }
 

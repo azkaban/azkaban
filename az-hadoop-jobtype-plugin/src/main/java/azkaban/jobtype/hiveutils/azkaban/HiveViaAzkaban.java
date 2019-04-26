@@ -13,16 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban;
-
-import java.util.Properties;
 
 import azkaban.jobtype.hiveutils.HiveQueryExecutor;
 import azkaban.jobtype.hiveutils.HiveUtils;
 import azkaban.jobtype.hiveutils.azkaban.hive.actions.DropAllPartitionsAddLatest;
 import azkaban.jobtype.hiveutils.azkaban.hive.actions.ExecuteHiveQuery;
 import azkaban.jobtype.hiveutils.azkaban.hive.actions.UpdateTableLocationToLatest;
+import java.util.Properties;
+
 
 /**
  * Simple Java driver class to execute a Hive query provided via the Properties
@@ -31,6 +30,7 @@ import azkaban.jobtype.hiveutils.azkaban.hive.actions.UpdateTableLocationToLates
  * will be joined and fed to to Hive as one big query
  */
 public class HiveViaAzkaban {
+
   final private static String AZK_HIVE_ACTION = "azk.hive.action";
   public static final String EXECUTE_QUERY = "execute.query";
 

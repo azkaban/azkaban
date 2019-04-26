@@ -16,7 +16,8 @@ import java.util.Map.Entry;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -41,10 +42,10 @@ import org.xml.sax.SAXException;
  */
 public class XmlValidatorManager implements ValidatorManager {
 
+  private static final Logger LOG = LoggerFactory.getLogger(XmlValidatorManager.class);
   public static final String VALIDATOR_TAG = "validator";
   public static final String CLASSNAME_ATTR = "classname";
   public static final String ITEM_TAG = "property";
-  private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
   private static final Map<String, Long> resourceTimestamps = new HashMap<>();
   private static ValidatorClassLoader validatorLoader;
   private final String validatorDirPath;
@@ -61,7 +62,7 @@ public class XmlValidatorManager implements ValidatorManager {
         .getString(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, ValidatorConfigs.DEFAULT_VALIDATOR_DIR);
     final File validatorDir = new File(this.validatorDirPath);
     if (!validatorDir.canRead() || !validatorDir.isDirectory()) {
-      logger.warn("Validator directory " + this.validatorDirPath
+      LOG.warn("Validator directory " + this.validatorDirPath
           + " does not exist or is not a directory.");
     }
 
@@ -70,9 +71,9 @@ public class XmlValidatorManager implements ValidatorManager {
 
     // Load the validators specified in the xml file.
     try {
-      loadValidators(props, logger);
+      loadValidators(props, org.apache.log4j.Logger.getLogger(XmlValidatorManager.class));
     } catch (final Exception e) {
-      logger.error("Cannot load all the validators.");
+      LOG.error("Cannot load all the validators.");
       throw new ValidatorManagerException(e);
     }
   }
@@ -89,7 +90,7 @@ public class XmlValidatorManager implements ValidatorManager {
             if (resourceTimestamps.get(f.getName()) == null
                 || resourceTimestamps.get(f.getName()) != f.lastModified()) {
               reloadResources = true;
-              logger.info("Resource " + f.getName() + " is updated. Reload the classloader.");
+              LOG.info("Resource " + f.getName() + " is updated. Reload the classloader.");
               resourceTimestamps.put(f.getName(), f.lastModified());
             }
           }
@@ -106,7 +107,7 @@ public class XmlValidatorManager implements ValidatorManager {
           // that does the close for us.
           validatorLoader.close();
         } catch (final ValidatorManagerException e) {
-          logger.error("Cannot reload validator classloader because failure "
+          LOG.error("Cannot reload validator classloader because failure "
               + "to close the validator classloader.", e);
           // We do not throw the ValidatorManagerException because we do not want to crash Azkaban at runtime.
         }
@@ -126,17 +127,17 @@ public class XmlValidatorManager implements ValidatorManager {
    * org.apache.log4j.Logger)
    */
   @Override
-  public void loadValidators(final Props props, final Logger log) {
+  public void loadValidators(final Props props, final org.apache.log4j.Logger log) {
     this.validators = new LinkedHashMap<>();
     if (!props.containsKey(ValidatorConfigs.XML_FILE_PARAM)) {
-      logger.warn(
+      LOG.warn(
           "Azkaban properties file does not contain the key " + ValidatorConfigs.XML_FILE_PARAM);
       return;
     }
     final String xmlPath = props.get(ValidatorConfigs.XML_FILE_PARAM);
     final File file = new File(xmlPath);
     if (!file.exists()) {
-      logger.error("Azkaban validator configuration file " + xmlPath + " does not exist.");
+      LOG.error("Azkaban validator configuration file " + xmlPath + " does not exist.");
       return;
     }
 
@@ -176,7 +177,8 @@ public class XmlValidatorManager implements ValidatorManager {
     }
   }
 
-  private void parseValidatorTag(final Node node, final Props props, final Logger log) {
+  private void parseValidatorTag(final Node node, final Props props,
+      final org.apache.log4j.Logger log) {
     final NamedNodeMap validatorAttrMap = node.getAttributes();
     final Node classNameAttr = validatorAttrMap.getNamedItem(CLASSNAME_ATTR);
     if (classNameAttr == null) {
@@ -196,13 +198,13 @@ public class XmlValidatorManager implements ValidatorManager {
       final Class<? extends ProjectValidator> validatorClass =
           (Class<? extends ProjectValidator>) validatorLoader.loadClass(className);
       final Constructor<?> validatorConstructor =
-          validatorClass.getConstructor(Logger.class);
+          validatorClass.getConstructor(org.apache.log4j.Logger.class);
       final ProjectValidator validator = (ProjectValidator) validatorConstructor.newInstance(log);
       validator.initialize(props);
       this.validators.put(validator.getValidatorName(), validator);
-      logger.info("Added validator " + className + " to list of validators.");
+      LOG.info("Added validator " + className + " to list of validators.");
     } catch (final Exception e) {
-      logger.error("Could not instantiate ProjectValidator " + className);
+      LOG.error("Could not instantiate ProjectValidator " + className);
       throw new ValidatorManagerException(e);
     }
   }
@@ -223,7 +225,7 @@ public class XmlValidatorManager implements ValidatorManager {
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
     for (final Entry<String, ProjectValidator> validator : this.validators.entrySet()) {
       reports.put(validator.getKey(), validator.getValue().validateProject(project, projectDir));
-      logger.info("Validation status of validator " + validator.getKey() + " is "
+      LOG.info("Validation status of validator " + validator.getKey() + " is "
           + reports.get(validator.getKey()).getStatus());
     }
     return reports;

@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HadoopModule extends AbstractModule{
 
-  private static final Logger log = LoggerFactory.getLogger(HadoopModule.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HadoopModule.class);
   private final Props props;
 
   HadoopModule(final Props props) {
@@ -73,7 +73,7 @@ public class HadoopModule extends AbstractModule{
       auth.authorize();
       return FileSystem.get(hadoopConf);
     } catch (final IOException e) {
-      log.error("Unable to initialize HDFS", e);
+      LOG.error("Unable to initialize HDFS", e);
       throw new AzkabanException(e);
     }
   }

@@ -21,7 +21,8 @@ import java.sql.SQLException;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -38,7 +39,7 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseTransOperator {
 
-  private static final Logger logger = Logger.getLogger(DatabaseTransOperator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DatabaseTransOperator.class);
   private final Connection conn;
   private final QueryRunner queryRunner;
 
@@ -61,7 +62,7 @@ public class DatabaseTransOperator {
           .query(this.conn, "SELECT LAST_INSERT_ID();", new ScalarHandler<>(1)))
           .longValue();
     } catch (final SQLException ex) {
-      logger.error("can not get last insertion ID");
+      LOG.error("can not get last insertion ID");
       throw ex;
     }
     return num;

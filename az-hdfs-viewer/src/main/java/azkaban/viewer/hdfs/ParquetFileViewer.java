@@ -13,14 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
 import java.util.EnumSet;
 import java.util.Set;
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -29,15 +27,14 @@ import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.AccessControlException;
-import org.apache.log4j.Logger;
-
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import parquet.avro.AvroParquetReader;
 import parquet.avro.AvroSchemaConverter;
+
 
 /**
  * This class implements a viewer for Parquet files.
@@ -45,7 +42,7 @@ import parquet.avro.AvroSchemaConverter;
  * @author David Z. Chen (dchen@linkedin.com)
  */
 public class ParquetFileViewer extends HdfsFileViewer {
-  private static Logger logger = Logger.getLogger(ParquetFileViewer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ParquetFileViewer.class);
 
   // Will spend 5 seconds trying to pull data and then stop.
   private final static long STOP_TIME = 2000l;
@@ -58,20 +55,18 @@ public class ParquetFileViewer extends HdfsFileViewer {
   }
 
   @Override
-  public Set<Capability> getCapabilities(FileSystem fs, Path path)
-      throws AccessControlException {
-    if (logger.isDebugEnabled()) {
-      logger.debug("Parquet file path: " + path.toUri().getPath());
+  public Set<Capability> getCapabilities(FileSystem fs, Path path) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Parquet file path: " + path.toUri().getPath());
     }
 
     AvroParquetReader<GenericRecord> parquetReader = null;
     try {
       parquetReader = new AvroParquetReader<GenericRecord>(path);
     } catch (IOException e) {
-      if (logger.isDebugEnabled()) {
-        logger.debug(path.toUri().getPath() + " is not a Parquet file.");
-        logger.debug("Error in opening Parquet file: "
-            + e.getLocalizedMessage());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(path.toUri().getPath() + " is not a Parquet file.");
+        LOG.debug("Error in opening Parquet file: " + e.getLocalizedMessage());
       }
       return EnumSet.noneOf(Capability.class);
     } finally {
@@ -80,7 +75,7 @@ public class ParquetFileViewer extends HdfsFileViewer {
           parquetReader.close();
         }
       } catch (IOException e) {
-        logger.error(e);
+        LOG.error("Close Parquet Reader Failure", e);
       }
     }
     return EnumSet.of(Capability.READ, Capability.SCHEMA);
@@ -89,8 +84,8 @@ public class ParquetFileViewer extends HdfsFileViewer {
   @Override
   public void displayFile(FileSystem fs, Path path, OutputStream outputStream,
       int startLine, int endLine) throws IOException {
-    if (logger.isDebugEnabled()) {
-      logger.debug("Display Parquet file: " + path.toUri().getPath());
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Display Parquet file: " + path.toUri().getPath());
     }
 
     JsonGenerator json = null;
@@ -137,7 +132,7 @@ public class ParquetFileViewer extends HdfsFileViewer {
           .getLocalizedMessage()).getBytes("UTF-8"));
       throw e;
     } catch (Throwable t) {
-      logger.error(t.getMessage());
+      LOG.error(t.getMessage());
       return;
     } finally {
       if (json != null) {
@@ -161,7 +156,7 @@ public class ParquetFileViewer extends HdfsFileViewer {
       AvroSchemaConverter converter = new AvroSchemaConverter();
       schema = converter.convert(avroSchema).toString();
     } catch (IOException e) {
-      logger.warn("Cannot get schema for file: " + path.toUri().getPath());
+      LOG.warn("Cannot get schema for file: " + path.toUri().getPath());
       return null;
     }
 

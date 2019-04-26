@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger.database;
 
 import azkaban.Constants;
@@ -56,8 +55,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoader {
 
-  private static final Logger logger = LoggerFactory
-      .getLogger(JdbcFlowTriggerInstanceLoaderImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JdbcFlowTriggerInstanceLoaderImpl.class);
   private static final String[] DEPENDENCY_EXECUTIONS_COLUMNS = {"trigger_instance_id", "dep_name",
       "starttime", "endtime", "dep_status", "cancelleation_cause", "project_id", "project_version",
       "flow_id", "flow_version", "flow_exec_id"};
@@ -194,10 +192,10 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
               flowTriggers.put(flowConfigID, flowTrigger);
             }
           } else {
-            logger.error("Unable to find flow file for " + flowConfigID);
+            LOG.error("Unable to find flow file for " + flowConfigID);
           }
         } catch (final Exception ex) {
-          logger.error("error in getting flow file", ex);
+          LOG.error("error in getting flow file", ex);
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
         }
@@ -218,7 +216,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   private void handleSQLException(final SQLException ex)
       throws DependencyException {
     final String error = "exception when accessing db!";
-    logger.error(error, ex);
+    LOG.error(error, ex);
     throw new DependencyException(error, ex);
   }
 
@@ -330,10 +328,10 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
             triggerInstance.setFlowTrigger(flowTrigger);
           }
         } else {
-          logger.error("Unable to find flow file for " + triggerInstance);
+          LOG.error("Unable to find flow file for " + triggerInstance);
         }
       } catch (final Exception ex) {
-        logger.error("error in getting flow file", ex);
+        LOG.error("error in getting flow file", ex);
       } finally {
         FlowLoaderUtils.cleanUpDir(tempDir);
       }
@@ -407,7 +405,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
             .collect(Collectors.joining(", "));
         numDeleted = this.dbOperator.update(DELETE_EXECUTIONS.replace("?", ids));
       }
-      logger.info("{} dependency instance record(s) deleted", numDeleted);
+      LOG.info("{} dependency instance record(s) deleted", numDeleted);
       return numDeleted;
     } catch (final SQLException ex) {
       handleSQLException(ex);

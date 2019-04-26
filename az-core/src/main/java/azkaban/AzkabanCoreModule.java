@@ -20,8 +20,6 @@ import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -29,7 +27,6 @@ import org.slf4j.LoggerFactory;
  */
 public class AzkabanCoreModule extends AbstractModule {
 
-  private static final Logger log = LoggerFactory.getLogger(AzkabanCoreModule.class);
   private final Props props;
 
   public AzkabanCoreModule(final Props props) {

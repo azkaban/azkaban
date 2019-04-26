@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyCheck;
@@ -23,8 +22,6 @@ import azkaban.flowtrigger.DependencyInstanceContext;
 import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
 import azkaban.flowtrigger.DependencyPluginConfig;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,12 +32,14 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 
 /**
- * A factory class which maintaines all KafkaDependencyInstanceContext and creates new KafkaDependencyInstanceContext based on the configuration file.
+ * A factory class which maintaines all KafkaDependencyInstanceContext and creates new
+ * KafkaDependencyInstanceContext based on the configuration file.
  */
 
 @SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaDependencyCheck implements DependencyCheck {
-  private final static Logger log = LoggerFactory.getLogger(KafkaDependencyCheck.class);
+
+  private final static Logger LOG = LoggerFactory.getLogger(KafkaDependencyCheck.class);
   private final ExecutorService executorService;
   private KafkaEventMonitor dependencyMonitor;
 
@@ -53,20 +52,29 @@ public class KafkaDependencyCheck implements DependencyCheck {
     this.dependencyMonitor.remove(depContextCasted);
   }
 
-  private void validate(final DependencyInstanceConfig config, final DependencyInstanceRuntimeProps runtimeProps) {
-    final String LOG_SUFFIX = String.format("for dependency name: %s", config.get(DependencyInstanceConfigKey.NAME));
+  private void validate(final DependencyInstanceConfig config) {
+    final String LOG_SUFFIX = String
+        .format("for dependency name: %s", config.get(DependencyInstanceConfigKey.NAME));
 
     final String topic = config.get(DependencyInstanceConfigKey.TOPIC);
     final String match = config.get(DependencyInstanceConfigKey.MATCH);
-    Preconditions.checkNotNull(topic, DependencyInstanceConfigKey.TOPIC + " cannot be null " + LOG_SUFFIX);
-    Preconditions.checkNotNull(match, DependencyInstanceConfigKey.MATCH + " cannot be null " + LOG_SUFFIX);
+    Preconditions.checkNotNull(
+        topic,
+        DependencyInstanceConfigKey.TOPIC + " cannot be null " + LOG_SUFFIX
+    );
+    Preconditions.checkNotNull(
+        match,
+        DependencyInstanceConfigKey.MATCH + " cannot be null " + LOG_SUFFIX
+    );
   }
 
   @Override
   public DependencyInstanceContext run(final DependencyInstanceConfig config,
-      final DependencyInstanceRuntimeProps runtimeProps, final DependencyInstanceCallback callback) {
-    this.validate(config, runtimeProps);
-    final KafkaDependencyInstanceContext depInstance = new KafkaDependencyInstanceContext(config, this, callback);
+      final DependencyInstanceRuntimeProps runtimeProps,
+      final DependencyInstanceCallback callback) {
+    this.validate(config);
+    final KafkaDependencyInstanceContext depInstance = new KafkaDependencyInstanceContext(config,
+        this, callback);
 
     this.dependencyMonitor.add(depInstance);
     return depInstance;
@@ -74,7 +82,7 @@ public class KafkaDependencyCheck implements DependencyCheck {
 
   @Override
   public void shutdown() {
-    log.info("Shutting down KafkaDependencyCheck");
+    LOG.info("Shutting down KafkaDependencyCheck");
     // disallow new tasks
     this.executorService.shutdown();
 
@@ -83,7 +91,7 @@ public class KafkaDependencyCheck implements DependencyCheck {
       this.executorService.shutdownNow();
       // Wait a while for tasks to respond to being cancelled
       if (!this.executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-        log.error("KafkaDependencyCheck does not terminate.");
+        LOG.error("KafkaDependencyCheck does not terminate.");
       }
     } catch (final InterruptedException ex) {
       // Preserve interrupt status
@@ -93,10 +101,10 @@ public class KafkaDependencyCheck implements DependencyCheck {
 
   @Override
   public void init(final DependencyPluginConfig config) {
-    final Set<String> required = Sets.newHashSet(DependencyPluginConfigKey.KAKFA_BROKER_URL);
-    for (final String requiredField : required) {
-      Preconditions.checkNotNull(config.get(requiredField), requiredField + " is required");
-    }
+    Preconditions.checkNotNull(
+        config.get(DependencyPluginConfigKey.KAKFA_BROKER_URL),
+        DependencyPluginConfigKey.KAKFA_BROKER_URL + " is required"
+    );
     this.dependencyMonitor = new KafkaEventMonitor(config);
     this.executorService.submit(this.dependencyMonitor);
   }

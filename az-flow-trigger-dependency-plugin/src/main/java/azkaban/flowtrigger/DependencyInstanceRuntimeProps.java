@@ -13,11 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger;
 
+
 /**
- * Defines the dependency instance runtime props.
+ * Defines runtime props for the dependency instance
  */
 public interface DependencyInstanceRuntimeProps {
 

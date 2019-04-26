@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
 import azkaban.executor.ExecutableFlow;
@@ -23,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
 
 /**
  * De-normalized version of the candidateFilter, which also contains the implementation of the
@@ -58,7 +58,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
   public ExecutorFilter(final Collection<String> filterList) {
     // shortcut if the filter list is invalid. A little bit ugly to have to throw in constructor.
     if (null == filterList || filterList.size() == 0) {
-      logger.error(
+      LOG.error(
           "failed to initialize executor filter as the passed filter list is invalid or empty.");
       throw new IllegalArgumentException("filterList");
     }
@@ -68,7 +68,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
       if (filterRepository.containsKey(filterName)) {
         this.registerFactorFilter(filterRepository.get(filterName));
       } else {
-        logger.error(String.format("failed to initialize executor filter " +
+        LOG.error(String.format("failed to initialize executor filter " +
                 "as the filter implementation for requested factor '%s' doesn't exist.",
             filterName));
         throw new IllegalArgumentException("filterList");
@@ -100,14 +100,14 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
     return FactorFilter
         .create(STATICREMAININGFLOWSIZE_FILTER_NAME, (filteringTarget, referencingObject) -> {
           if (null == filteringTarget) {
-            logger.debug(String.format("%s : filtering out the target as it is null.",
+            LOG.debug(String.format("%s : filtering out the target as it is null.",
                 STATICREMAININGFLOWSIZE_FILTER_NAME));
             return false;
           }
 
           final ExecutorInfo stats = filteringTarget.getExecutorInfo();
           if (null == stats) {
-            logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
+            LOG.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
                 STATICREMAININGFLOWSIZE_FILTER_NAME,
                 filteringTarget.toString()));
             return false;
@@ -134,14 +134,14 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           public boolean filterTarget(final Executor filteringTarget,
               final ExecutableFlow referencingObject) {
             if (null == filteringTarget) {
-              logger.debug(String.format("%s : filtering out the target as it is null.",
+              LOG.debug(String.format("%s : filtering out the target as it is null.",
                   MINIMUMFREEMEMORY_FILTER_NAME));
               return false;
             }
 
             final ExecutorInfo stats = filteringTarget.getExecutorInfo();
             if (null == stats) {
-              logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
+              LOG.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
                   MINIMUMFREEMEMORY_FILTER_NAME,
                   filteringTarget.toString()));
               return false;
@@ -169,14 +169,14 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           public boolean filterTarget(final Executor filteringTarget,
               final ExecutableFlow referencingObject) {
             if (null == filteringTarget) {
-              logger.debug(String
+              LOG.debug(String
                   .format("%s : filtering out the target as it is null.", CPUSTATUS_FILTER_NAME));
               return false;
             }
 
             final ExecutorInfo stats = filteringTarget.getExecutorInfo();
             if (null == stats) {
-              logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
+              LOG.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
                   CPUSTATUS_FILTER_NAME,
                   filteringTarget.toString()));
               return false;

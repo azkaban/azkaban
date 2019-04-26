@@ -25,20 +25,20 @@ import azkaban.utils.PropsUtils;
 import azkaban.webapp.plugin.TriggerPlugin;
 import java.io.File;
 import java.lang.reflect.Constructor;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.mortbay.jetty.servlet.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class TriggerPluginLoader {
 
-  private static final Logger log = Logger.getLogger(TriggerPluginLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(TriggerPluginLoader.class);
   private final String pluginPath;
 
   public TriggerPluginLoader(final Props props) {
@@ -74,10 +74,10 @@ public class TriggerPluginLoader {
 
       final String pluginClass = pluginProps.getString("trigger.class");
       if (pluginClass == null) {
-        log.error("Trigger class is not set.");
+        LOG.error("Trigger class is not set.");
         continue;
       } else {
-        log.info("Plugin class " + pluginClass);
+        LOG.info("Plugin class " + pluginClass);
       }
 
       Class<?> triggerClass =
@@ -87,7 +87,7 @@ public class TriggerPluginLoader {
       }
 
       final String source = FileIOUtils.getSourcePathFromClass(triggerClass);
-      log.info("Source jar " + source);
+      LOG.info("Source jar " + source);
       jarPaths.add("jar:file:" + source);
 
       Constructor<?> constructor = null;
@@ -95,7 +95,7 @@ public class TriggerPluginLoader {
         constructor = triggerClass
             .getConstructor(String.class, Props.class, Context.class, AzkabanWebServer.class);
       } catch (final NoSuchMethodException e) {
-        log.error("Constructor not found in " + pluginClass);
+        LOG.error("Constructor not found in " + pluginClass);
         continue;
       }
 
@@ -103,11 +103,11 @@ public class TriggerPluginLoader {
       try {
         obj = constructor.newInstance(pluginName, pluginProps, root, azkabanWebServer);
       } catch (final Exception e) {
-        log.error(e);
+        LOG.error("Create Plugin Instance Failure", e);
       }
 
       if (!(obj instanceof TriggerPlugin)) {
-        log.error("The object is not an TriggerPlugin");
+        LOG.error("The object is not an TriggerPlugin");
         continue;
       }
 
@@ -117,7 +117,7 @@ public class TriggerPluginLoader {
 
     // Velocity needs the jar resource paths to be set.
     final String jarResourcePath = StringUtils.join(jarPaths, ", ");
-    log.info("Setting jar resource path " + jarResourcePath);
+    LOG.info("Setting jar resource path " + jarResourcePath);
     final VelocityEngine ve = azkabanWebServer.getVelocityEngine();
     ve.addProperty("jar.resource.loader.path", jarResourcePath);
 

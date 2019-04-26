@@ -13,18 +13,23 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import azkaban.Constants;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ExternalLinkUtils {
 
-  private static final Logger logger = Logger.getLogger(ExternalLinkUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExternalLinkUtils.class);
+
+  private ExternalLinkUtils() {
+
+  }
 
   public static String getExternalAnalyzerOnReq(final Props azkProps,
       final HttpServletRequest req) {
@@ -56,7 +61,7 @@ public class ExternalLinkUtils {
       final Props jobProps) {
     String urlTemplate = getURLForTopic(topic, azkProps);
     if (urlTemplate.isEmpty()) {
-      logger.error("No URL specified for topic " + topic);
+      LOG.error("No URL specified for topic " + topic);
       return "";
     }
     final String job = encodeToUTF8(jobId);
@@ -64,7 +69,7 @@ public class ExternalLinkUtils {
         jobProps.getString(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID));
 
     urlTemplate = urlTemplate.replace("${jobid}", job).replace("${execid}", execid);
-    logger.info("Creating link: " + urlTemplate);
+    LOG.info("Creating link: " + urlTemplate);
     return urlTemplate;
   }
 
@@ -72,7 +77,7 @@ public class ExternalLinkUtils {
       final HttpServletRequest req) {
     String urlTemplate = getURLForTopic(topic, azkProps);
     if (urlTemplate.isEmpty()) {
-      logger.error("No URL specified for topic " + topic);
+      LOG.error("No URL specified for topic " + topic);
       return "";
     }
     String flowExecutionURL = "";
@@ -82,7 +87,7 @@ public class ExternalLinkUtils {
     flowExecutionURL = encodeToUTF8(flowExecutionURL);
 
     urlTemplate = urlTemplate.replace("${url}", flowExecutionURL);
-    logger.info("Creating link: " + urlTemplate);
+    LOG.info("Creating link: " + urlTemplate);
     return urlTemplate;
   }
 
@@ -96,7 +101,7 @@ public class ExternalLinkUtils {
     try {
       return URLEncoder.encode(url, "UTF-8").replaceAll("\\+", "%20");
     } catch (final UnsupportedEncodingException e) {
-      logger.error("Specified encoding is not supported", e);
+      LOG.error("Specified encoding is not supported", e);
     }
     return "";
   }

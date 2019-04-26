@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ExecutionController extends EventHandler implements ExecutorManagerAdapter {
 
-  private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutionController.class);
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
@@ -115,7 +115,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       executors = this.executorLoader.fetchActiveExecutors();
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get all active executors.", e);
+      LOG.error("Failed to get all active executors.", e);
     }
     return executors;
   }
@@ -133,7 +133,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         ports.add(executor.getHost() + ":" + executor.getPort());
       }
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get primary server hosts.", e);
+      LOG.error("Failed to get primary server hosts.", e);
     }
     return ports;
   }
@@ -152,7 +152,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         }
       }
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get all active executor server hosts.", e);
+      LOG.error("Failed to get all active executor server hosts.", e);
     }
     return ports;
   }
@@ -170,7 +170,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
           this.executorLoader.fetchUnfinishedFlows().values()));
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flows for project " + projectId + ", flow "
+      LOG.error("Failed to get running flows for project " + projectId + ", flow "
           + flowId, e);
     }
     return executionIds;
@@ -196,7 +196,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getActiveFlowsWithExecutorHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get active flows with executor.", e);
+      LOG.error("Failed to get active flows with executor.", e);
     }
     return flows;
   }
@@ -223,7 +223,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
           this.executorLoader.fetchUnfinishedFlows().values());
 
     } catch (final ExecutorManagerException e) {
-      logger.error(
+      LOG.error(
           "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
           e);
     }
@@ -260,7 +260,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getFlowsHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flows.", e);
+      LOG.error("Failed to get running flows.", e);
     }
     return flows;
   }
@@ -281,7 +281,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flow ids.", e);
+      this.LOG.error("Failed to get running flow ids.", e);
     }
     return allIds;
   }
@@ -294,7 +294,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow ids.", e);
+      this.LOG.error("Failed to get queued flow ids.", e);
     }
     return allIds;
   }
@@ -315,7 +315,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow size.", e);
+      this.LOG.error("Failed to get queued flow size.", e);
     }
     return size;
   }
@@ -327,7 +327,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       flows = this.executorLoader.fetchRecentlyFinishedFlows(
           RECENTLY_FINISHED_LIFETIME);
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to fetch recently finished flows.", e);
+      LOG.error("Failed to fetch recently finished flows.", e);
     }
     return flows;
   }
@@ -490,14 +490,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
             return applicationId;
           }
           offset = data.getOffset() + data.getLength();
-          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+          LOG.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
               + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
         } else {
           finished = true;
         }
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+      LOG.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
     return null;
@@ -625,7 +625,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       // Skip execution for locked flows.
       final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
           exflow.getProjectName());
-      logger.info(message);
+      LOG.info(message);
       return message;
     }
 
@@ -635,7 +635,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     // causing two same flow submission entering this piece.
     synchronized (exFlowKey.intern()) {
       final String flowId = exflow.getFlowId();
-      logger.info("Submitting execution flow " + flowId + " by " + userId);
+      LOG.info("Submitting execution flow " + flowId + " by " + userId);
 
       String message = "";
 
@@ -761,5 +761,4 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     return this.executorLoader.fetchFlowHistory(projectId, flowId, from, length,
         status);
   }
-
 }

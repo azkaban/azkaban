@@ -2,14 +2,12 @@ package azkaban.jobtype;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import azkaban.utils.Props;
 
 // TODO kunkun-tang: This test class needs more refactors.
 public class TestHadoopJobUtilsResolveJarSpec {

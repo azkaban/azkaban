@@ -15,12 +15,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+
 
 /**
  * Crypto class that actually delegates to version specific implementation of ICrypto interface. In

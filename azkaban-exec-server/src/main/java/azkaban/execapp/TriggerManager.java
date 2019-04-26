@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import azkaban.execapp.action.KillExecutionAction;
@@ -34,14 +33,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class TriggerManager {
 
   private static final int SCHEDULED_THREAD_POOL_SIZE = 4;
-  private static final Logger logger = Logger.getLogger(TriggerManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(TriggerManager.class);
   private final ScheduledExecutorService scheduledService;
 
   @Inject
@@ -60,10 +60,6 @@ public class TriggerManager {
   private List<TriggerAction> createActions(final SlaOption sla, final int execId) {
     final List<TriggerAction> actions = new ArrayList<>();
     if (sla.hasAlert()) {
-      TriggerAction action = new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId);
-    }
-
-    if (sla.hasAlert()) {
       actions.add(new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId));
     }
     if(sla.hasKill()) {
@@ -75,7 +71,7 @@ public class TriggerManager {
         actions.add(new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, sla.getJobName()));
           break;
         default:
-          logger.info("Unknown action type " + sla.getType().getComponent());
+          LOG.info("Unknown action type " + sla.getType().getComponent());
           break;
       }
     }
@@ -97,7 +93,7 @@ public class TriggerManager {
       final Duration duration = slaOption.getDuration();
       final long durationInMillis = duration.toMillis();
 
-      logger.info("Adding sla trigger " + slaOption.toString() + " to execution " + execId
+      LOG.info("Adding sla trigger " + slaOption.toString() + " to execution " + execId
           + ", scheduled to trigger in " + durationInMillis / 1000 + " seconds");
       this.scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
     }

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
 
 import org.apache.hadoop.hive.cli.CliSessionState;
@@ -25,11 +24,13 @@ import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVEHISTORYFILELOC;
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.SCRATCHDIR;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
+
 /**
  * Guice-like module for creating a Hive instance. Easily turned back into a
  * full Guice module when we have need of it.
  */
 class HiveQueryExecutorModule {
+
   private HiveConf hiveConf = null;
   private CliSessionState ss = null;
 

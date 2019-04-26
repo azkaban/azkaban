@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SystemMemoryInfo {
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SystemMemoryInfo.class);
+  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SystemMemoryInfo.class);
   private static final long LOW_MEM_THRESHOLD = 3L * 1024L * 1024L; //3 GB
   private final OsMemoryUtil util;
 
@@ -40,7 +40,7 @@ public class SystemMemoryInfo {
       return true;
     }
     if (freeMemSize - xmx < LOW_MEM_THRESHOLD) {
-      logger.info(String.format(
+      LOG.info(String.format(
           "Free memory amount minus Xmx (%d - %d kb) is less than low mem threshold (%d kb), "
               + "memory request declined.",
           freeMemSize, xmx, LOW_MEM_THRESHOLD));

@@ -13,10 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
+
 class DropPartitionHQL implements HQL {
+
   private final String table;
   private final String partition;
   private final String value;

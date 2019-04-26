@@ -13,10 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban;
 
+
 public class HiveViaAzkabanException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
   public HiveViaAzkabanException(String s) {

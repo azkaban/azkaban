@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class DirectoryYamlFlowLoaderTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoaderTest
+  private static final Logger LOG = LoggerFactory.getLogger(DirectoryYamlFlowLoaderTest
       .class);
 
   private static final String BASIC_FLOW_YAML_DIR = "basicflowyamltest";
@@ -226,7 +226,7 @@ public class DirectoryYamlFlowLoaderTest {
     assertThat(loader.getEdgeMap().get(flowName).size()).isEqualTo(numEdge);
     assertThat(flow.getEdges().size()).isEqualTo(numEdge);
     for (final Edge edge : loader.getEdgeMap().get(flowName)) {
-      this.logger.info(flowName + ".flow has edge: " + edge.getId());
+      this.LOG.info(flowName + ".flow has edge: " + edge.getId());
       if (edge.getError() != null) {
         assertThat(edge.getError()).isEqualTo(edgeError);
       }

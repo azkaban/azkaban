@@ -14,7 +14,6 @@
  * the License.
  *
  */
-
 package azkaban.storage;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -39,7 +38,8 @@ import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -49,7 +49,7 @@ import org.apache.log4j.Logger;
 @Singleton
 public class StorageManager {
 
-  private static final Logger log = Logger.getLogger(StorageManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StorageManager.class);
 
   private final StorageCleaner storageCleaner;
   private final Storage storage;
@@ -99,7 +99,7 @@ public class StorageManager {
         version,
         uploader.getUserId(),
         md5);
-    log.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
+    LOG.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
         metadata, localFile.getName(), localFile.length()));
 
     /* upload to storage */
@@ -116,7 +116,7 @@ public class StorageManager {
           requireNonNull(md5),
           requireNonNull(resourceId)
       );
-      log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
+      LOG.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
           metadata, localFile.getName(), localFile.length(), resourceId));
     }
   }
@@ -128,7 +128,7 @@ public class StorageManager {
     try {
       this.storageCleaner.cleanupProjectArtifacts(projectId);
     } catch (final Exception e) {
-      log.error("Error occured during cleanup. Ignoring and continuing...", e);
+      LOG.error("Error occured during cleanup. Ignoring and continuing...", e);
     }
   }
 
@@ -150,7 +150,7 @@ public class StorageManager {
    * @return Handler object containing hooks to fetched project file
    */
   public ProjectFileHandler getProjectFile(final int projectId, final int version) {
-    log.info(
+    LOG.info(
         String.format("Fetching project file. project ID: %d version: %d", projectId, version));
     // TODO spyne: remove huge hack ! There should not be any special handling for Database Storage.
     if (this.storage instanceof DatabaseStorage) {

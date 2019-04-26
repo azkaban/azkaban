@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.alert.Alerter;
@@ -26,15 +25,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import javax.inject.Inject;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Updates running executions.
  */
 public class RunningExecutionsUpdater {
 
-  private static final Logger logger = Logger.getLogger(RunningExecutionsUpdater.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RunningExecutionsUpdater.class);
   // First email is sent after 1 minute of unresponsiveness
   final int numErrorsBeforeUnresponsiveEmail = 6;
   final long errorThreshold = 10000;
@@ -79,7 +80,7 @@ public class RunningExecutionsUpdater {
       final Optional<Executor> executorOption = entry.getKey();
       if (!executorOption.isPresent()) {
         for (final ExecutableFlow flow : entry.getValue()) {
-          logger.warn("Finalizing execution " + flow.getExecutionId()
+          LOG.warn("Finalizing execution " + flow.getExecutionId()
               + ". Executor id of this execution doesn't exist");
           finalizeFlows.add(flow);
         }
@@ -112,10 +113,10 @@ public class RunningExecutionsUpdater {
             }
           } catch (final ExecutorManagerException e) {
             final ExecutableFlow flow = e.getExecutableFlow();
-            logger.error(e);
+            LOG.error("Fail to update execution", e);
 
             if (flow != null) {
-              logger.warn("Finalizing execution " + flow.getExecutionId());
+              LOG.warn("Finalizing execution " + flow.getExecutionId());
               finalizeFlows.add(flow);
             }
           }
@@ -136,7 +137,7 @@ public class RunningExecutionsUpdater {
   private void handleException(final Entry<Optional<Executor>, List<ExecutableFlow>> entry,
       final Executor executor, final ExecutorManagerException e,
       final ArrayList<ExecutableFlow> finalizeFlows) {
-    logger.error("Failed to get update from executor " + executor.getHost(), e);
+    LOG.error("Failed to get update from executor " + executor.getHost(), e);
     boolean sendUnresponsiveEmail = false;
     final boolean executorRemoved = isExecutorRemoved(executor.getId());
     for (final ExecutableFlow flow : entry.getValue()) {
@@ -147,7 +148,7 @@ public class RunningExecutionsUpdater {
           .set("Failed to get update for flow " + pair.getSecond().getExecutionId());
 
       if (executorRemoved) {
-        logger.warn("Finalizing execution " + flow.getExecutionId()
+        LOG.warn("Finalizing execution " + flow.getExecutionId()
             + ". Executor is removed");
         finalizeFlows.add(flow);
       } else {
@@ -172,7 +173,7 @@ public class RunningExecutionsUpdater {
     try {
       fetchedExecutor = this.executorLoader.fetchExecutor(id);
     } catch (final ExecutorManagerException e) {
-      logger.error("Couldn't check if executor exists", e);
+      LOG.error("Couldn't check if executor exists", e);
       // don't know if removed or not -> default to false
       return false;
     }

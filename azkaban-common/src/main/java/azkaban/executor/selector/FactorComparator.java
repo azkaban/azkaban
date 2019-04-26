@@ -13,11 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
 import java.util.Comparator;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * wrapper class for a factor comparator .
@@ -26,7 +27,7 @@ import org.apache.log4j.Logger;
  */
 public final class FactorComparator<T> {
 
-  private static final Logger logger = Logger.getLogger(CandidateComparator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CandidateComparator.class);
 
   private final String factorName;
   private final Comparator<T> comparator;
@@ -55,7 +56,7 @@ public final class FactorComparator<T> {
       final Comparator<T> comparator) {
 
     if (null == factorName || factorName.length() == 0 || weight < 0 || null == comparator) {
-      logger.error(
+      LOG.error(
           "failed to create instance of FactorComparator, at least one of the input paramters are invalid");
       return null;
     }

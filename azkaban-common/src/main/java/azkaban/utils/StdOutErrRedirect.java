@@ -13,13 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * A class to encapsulate the redirection of stdout and stderr to log4j This allows us to catch
@@ -28,7 +28,7 @@ import org.apache.log4j.Logger;
 
 public class StdOutErrRedirect {
 
-  private static final Logger logger = Logger.getLogger(StdOutErrRedirect.class);
+  private static final Logger logger = LoggerFactory.getLogger(StdOutErrRedirect.class);
   private static final PrintStream infoStream = createStream(System.out, Level.INFO);
   private static final PrintStream errorStream = createStream(System.out, Level.ERROR);
 
@@ -52,7 +52,11 @@ public class StdOutErrRedirect {
 
     // Underlying mechanism to log to log4j - all print methods will use this
     private void write(final String string) {
-      logger.log(this.level, string);
+      if (Level.INFO.equals(level)) {
+        logger.info(string);
+      } else {
+        logger.error(string);
+      }
     }
 
     // String

@@ -13,13 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.server.session.Session;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerManager;
-import azkaban.trigger.TriggerManagerException;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -30,13 +28,14 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger
-      .getLogger(TriggerManagerServlet.class);
+  private static final Logger LOG = LoggerFactory.getLogger(TriggerManagerServlet.class);
   private TriggerManager triggerManager;
 
   @Override
@@ -76,8 +75,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleGetAllSchedules(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) {
 
     final Page page =
         newPage(req, resp, session,
@@ -97,8 +95,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxExpireTrigger(final HttpServletRequest req,
-      final Map<String, Object> ret, final User user) throws ServletException,
-      TriggerManagerException {
+      final Map<String, Object> ret, final User user) throws ServletException {
     final int triggerId = getIntParam(req, "triggerId");
     final Trigger t = this.triggerManager.getTrigger(triggerId);
     if (t == null) {
@@ -108,7 +105,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.triggerManager.expireTrigger(triggerId);
-    logger.info("User '" + user.getUserId() + " has removed trigger "
+    LOG.info("User '" + user.getUserId() + " has removed trigger "
         + t.getDescription());
 
     ret.put("status", "success");

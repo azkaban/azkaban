@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
 class AddExternalPartitionHQL implements HQL {
+
   // ALTER TABLE table_name ADD PARTITION (partCol = 'value1') location 'loc1';
   private final String table;
   private final String partition;

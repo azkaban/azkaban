@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger;
 
 import azkaban.Constants;
@@ -41,7 +40,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("FutureReturnValueIgnored")
 public class TriggerInstanceProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for flow '%s', project '%s' "
       + "has been cancelled on %s";
   private final static int THREAD_POOL_SIZE = 32;
@@ -73,7 +72,7 @@ public class TriggerInstanceProcessor {
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
     } catch (final Exception ex) {
-      logger.error("exception when executing the associated flow and updating flow exec id for "
+      LOG.error("exception when executing the associated flow and updating flow exec id for "
               + "trigger instance[id: {}]",
           triggerInst.getId(), ex);
       // if flow fails to be executed(e.g. running execution exceeds the allowed concurrent run

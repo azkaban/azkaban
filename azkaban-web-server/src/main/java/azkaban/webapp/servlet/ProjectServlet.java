@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.project.Project;
@@ -33,15 +32,16 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * The main page
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(ProjectServlet.class
-      .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectServlet.class);
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
       "lockdown.create.projects";
   private static final long serialVersionUID = -1;
@@ -59,7 +59,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     this.lockdownCreateProjects =
         server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
     if (this.lockdownCreateProjects) {
-      logger.info("Creation of projects is locked down");
+      LOG.info("Creation of projects is locked down");
     }
   }
 

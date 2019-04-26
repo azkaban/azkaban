@@ -29,13 +29,14 @@ import java.util.Arrays;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public abstract class AzkabanServer {
 
-  private static final Logger logger = Logger.getLogger(AzkabanServer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanServer.class);
   private static Props azkabanProperties = null;
 
   public static Props loadProps(final String[] args) {
@@ -60,18 +61,17 @@ public abstract class AzkabanServer {
 
     if (options.has(configDirectory)) {
       final String path = options.valueOf(configDirectory);
-      logger.info("Loading azkaban settings file from " + path);
+      LOG.info("Loading azkaban settings file from " + path);
       final File dir = new File(path);
       if (!dir.exists()) {
-        logger.error("Conf directory " + path + " doesn't exist.");
+        LOG.error("Conf directory " + path + " doesn't exist.");
       } else if (!dir.isDirectory()) {
-        logger.error("Conf directory " + path + " isn't a directory.");
+        LOG.error("Conf directory " + path + " isn't a directory.");
       } else {
         azkabanSettings = loadAzkabanConfigurationFromDirectory(dir);
       }
     } else {
-      logger
-          .info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
+      LOG.info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
       azkabanSettings = loadConfigurationFromAzkabanHome();
     }
 
@@ -102,18 +102,18 @@ public abstract class AzkabanServer {
     try {
       // This is purely optional
       if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
-        logger.info("Loading azkaban private properties file");
+        LOG.info("Loading azkaban private properties file");
         props = new Props(null, azkabanPrivatePropsFile);
       }
 
       if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
-        logger.info("Loading azkaban properties file");
+        LOG.info("Loading azkaban properties file");
         props = new Props(props, azkabanPropsFile);
       }
     } catch (final FileNotFoundException e) {
-      logger.error("File not found. Could not load azkaban config file", e);
+      LOG.error("File not found. Could not load azkaban config file", e);
     } catch (final IOException e) {
-      logger.error("File found, but error reading. Could not load azkaban config file", e);
+      LOG.error("File found, but error reading. Could not load azkaban config file", e);
     }
     return props;
   }
@@ -127,17 +127,17 @@ public abstract class AzkabanServer {
     final String azkabanHome = System.getenv("AZKABAN_HOME");
 
     if (azkabanHome == null) {
-      logger.error("AZKABAN_HOME not set. Will try default.");
+      LOG.error("AZKABAN_HOME not set. Will try default.");
       return null;
     }
     if (!new File(azkabanHome).isDirectory() || !new File(azkabanHome).canRead()) {
-      logger.error(azkabanHome + " is not a readable directory.");
+      LOG.error(azkabanHome + " is not a readable directory.");
       return null;
     }
 
     final File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
-      logger.error(azkabanHome + " does not contain a readable conf directory.");
+      LOG.error(azkabanHome + " does not contain a readable conf directory.");
       return null;
     }
 

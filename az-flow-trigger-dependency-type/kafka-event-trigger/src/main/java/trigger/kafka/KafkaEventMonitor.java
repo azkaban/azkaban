@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyPluginConfig;
@@ -38,11 +37,13 @@ import trigger.kafka.Constants.DependencyPluginConfigKey;
 
 
 /**
- * KafkaEventMonitor implements logic for kafka consumer and maintains the KafkaDepInstanceCollection for dependencies.
+ * KafkaEventMonitor implements logic for kafka consumer and maintains the
+ * KafkaDepInstanceCollection for dependencies.
  */
 @SuppressWarnings("FutureReturnValueIgnored")
 public class KafkaEventMonitor implements Runnable {
-  private final static Logger log = LoggerFactory.getLogger(KafkaEventMonitor.class);
+
+  private final static Logger LOG = LoggerFactory.getLogger(KafkaEventMonitor.class);
   private static final String GROUP_ID =
       "group_" + KafkaEventMonitor.class.getSimpleName() + System.currentTimeMillis();
   private final KafkaDepInstanceCollection depInstances;
@@ -109,7 +110,7 @@ public class KafkaEventMonitor implements Runnable {
               this.triggerDependencies(matchedList, record);
             }
           } catch (final Exception ex) {
-            log.error("failure when parsing record " + recordToProcess, ex);
+            LOG.error("failure when parsing record " + recordToProcess, ex);
           }
         }
         if (!this.subscribedTopics.isEmpty()) {
@@ -117,11 +118,11 @@ public class KafkaEventMonitor implements Runnable {
         }
       }
     } catch (final Exception ex) {
-      log.error("failure when consuming kafka events", ex);
+      LOG.error("failure when consuming kafka events", ex);
     } finally {
       // Failed to send SSL Close message.
       this.consumer.close();
-      log.info("kafka consumer closed...");
+      LOG.info("kafka consumer closed...");
     }
   }
 
@@ -130,7 +131,7 @@ public class KafkaEventMonitor implements Runnable {
    */
   @VisibleForTesting
   synchronized void consumerSubscriptionRebalance() {
-    log.debug("Subscribed Topics " + this.consumer.subscription());
+    LOG.debug("Subscribed Topics " + this.consumer.subscription());
     if (!this.subscribedTopics.isEmpty()) {
       final Iterator<String> iter = this.subscribedTopics.iterator();
       final List<String> topics = new ArrayList<>();
@@ -146,7 +147,8 @@ public class KafkaEventMonitor implements Runnable {
   /**
    * If the matcher returns true, remove the dependency from collection.
    */
-  private void triggerDependencies(final Set<String> matchedList, final ConsumerRecord<String, String> record) {
+  private void triggerDependencies(final Set<String> matchedList,
+      final ConsumerRecord<String, String> record) {
     final List<KafkaDependencyInstanceContext> deleteList = new LinkedList<>();
     for (final String it : matchedList) {
       final List<KafkaDependencyInstanceContext> possibleAvailableDeps =

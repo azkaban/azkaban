@@ -33,12 +33,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Singleton
 public class ExecutionFlowDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutionFlowDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutionFlowDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
@@ -79,7 +81,7 @@ public class ExecutionFlowDao {
 
     try {
       final long id = this.dbOperator.transaction(insertAndGetLastID);
-      logger.info("Flow given " + flow.getFlowId() + " given id " + id);
+      LOG.info("Flow given " + flow.getFlowId() + " given id " + id);
       flow.setExecutionId((int) id);
       updateExecutableFlow(flow);
     } catch (final SQLException e) {
@@ -443,7 +445,7 @@ public class ExecutionFlowDao {
         final byte[] data = rs.getBytes(3);
 
         if (data == null) {
-          ExecutionFlowDao.logger.error("Found a flow with empty data blob exec_id: " + id);
+          ExecutionFlowDao.LOG.error("Found a flow with empty data blob exec_id: " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
           try {

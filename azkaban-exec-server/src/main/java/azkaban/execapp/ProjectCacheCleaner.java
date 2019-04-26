@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import azkaban.utils.ExecutorServiceUtils;
@@ -36,18 +35,18 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * This class is responsible for deleting least recently accessed projects in the shared project
  * cache when there's no room to accommodate a new project.
  */
 class ProjectCacheCleaner {
 
-  private final File projectCacheDir;
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectCacheCleaner.class);
 
+  private final File projectCacheDir;
   // cache size in percentage of disk partition where {@link projectCacheDir} belongs to
   private final double percentageOfDisk;
-
-  private static final Logger log = LoggerFactory.getLogger(ProjectCacheCleaner.class);
 
   ProjectCacheCleaner(final File projectCacheDir, final double percentageOfDisk) {
     Preconditions.checkNotNull(projectCacheDir);
@@ -74,7 +73,7 @@ class ProjectCacheCleaner {
       if (project.exists() && project.isDirectory()) {
         projects.add(project.toPath());
       } else {
-        log.debug("Project {} doesn't exist or is non-dir.", project.getName());
+        LOG.debug("Project {} doesn't exist or is non-dir.", project.getName());
       }
     }
     return projects;
@@ -101,7 +100,7 @@ class ProjectCacheCleaner {
                 FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
         allProjects.add(projectDirMetadata);
       } catch (final Exception e) {
-        log.warn("Error while loading project dir metadata for project {}",
+        LOG.warn("Error while loading project dir metadata for project {}",
             project.getFileName(), e);
       }
     }
@@ -130,7 +129,7 @@ class ProjectCacheCleaner {
 
     for (final File toDelete : projectDirsToDelete) {
       deletionService.submit(() -> {
-        log.info("Deleting project dir {} from project cache to free up space", toDelete);
+        LOG.info("Deleting project dir {} from project cache to free up space", toDelete);
         FileIOUtils.deleteDirectorySilently(toDelete);
       });
     }
@@ -138,7 +137,7 @@ class ProjectCacheCleaner {
     try {
       new ExecutorServiceUtils().gracefulShutdown(deletionService, Duration.ofDays(1));
     } catch (final InterruptedException e) {
-      log.warn("Error when deleting files", e);
+      LOG.warn("Error when deleting files", e);
     }
   }
 
@@ -172,7 +171,7 @@ class ProjectCacheCleaner {
     final long start = System.currentTimeMillis();
     deleteProjectDirsInParallel(ImmutableSet.copyOf(projectDirsToDelete));
     final long end = System.currentTimeMillis();
-    log.info("Deleting {} project dir(s) took {} sec(s)", projectDirsToDelete.size(),
+    LOG.info("Deleting {} project dir(s) took {} sec(s)", projectDirsToDelete.size(),
         (end - start) / 1000);
   }
 
@@ -185,12 +184,12 @@ class ProjectCacheCleaner {
 
     final long start = System.currentTimeMillis();
     final List<ProjectDirectoryMetadata> allProjects = loadAllProjects();
-    log.info("Loading {} project dirs metadata completed in {} sec(s)",
+    LOG.info("Loading {} project dirs metadata completed in {} sec(s)",
         allProjects.size(), (System.currentTimeMillis() - start) / 1000);
 
     final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
     if (currentSpaceInBytes + newProjectSizeInBytes >= projectCacheMaxSizeInByte) {
-      log.info(
+      LOG.info(
           "Project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
           (currentSpaceInBytes + newProjectSizeInBytes) / (1024 * 1024),
           projectCacheMaxSizeInByte / (1024 * 1024));

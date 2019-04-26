@@ -11,7 +11,9 @@ import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Responsible keeping track of job related MBean attributes through listening to job related
@@ -21,9 +23,7 @@ import org.apache.log4j.Logger;
  */
 public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
 
-  private static final Logger logger = Logger
-      .getLogger(JmxJobMBeanManager.class);
-
+  private static final Logger LOG = LoggerFactory.getLogger(JmxJobMBeanManager.class);
   private static final JmxJobMBeanManager INSTANCE = new JmxJobMBeanManager();
 
   private final AtomicInteger runningJobCount = new AtomicInteger(0);
@@ -47,7 +47,7 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
   }
 
   public void initialize(final Props props) {
-    logger.info("Initializing " + getClass().getName());
+    LOG.info("Initializing " + getClass().getName());
     this.initialized = true;
   }
 
@@ -103,8 +103,8 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
       final EventData eventData = event.getData();
       final ExecutableNode node = jobRunner.getNode();
 
-      if (logger.isDebugEnabled()) {
-        logger.debug("*** got " + event.getType() + " " + node.getId() + " "
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("*** got " + event.getType() + " " + node.getId() + " "
             + event.getRunner().getClass().getName() + " status: "
             + eventData.getStatus());
       }
@@ -116,7 +116,7 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
         if (this.runningJobCount.intValue() > 0) {
           this.runningJobCount.decrementAndGet();
         } else {
-          logger.warn("runningJobCount not messed up, it is already zero "
+          LOG.warn("runningJobCount not messed up, it is already zero "
               + "and we are trying to decrement on job event "
               + EventType.JOB_FINISHED);
         }
@@ -131,8 +131,7 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
       }
 
     } else {
-      logger.warn("((((((((( Got a different runner: "
-          + event.getRunner().getClass().getName());
+      LOG.warn("((((((((( Got a different runner: " + event.getRunner().getClass().getName());
     }
   }
 

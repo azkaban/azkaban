@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
 import java.io.BufferedInputStream;
@@ -25,11 +24,12 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.HashSet;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.AccessControlException;
-import org.apache.log4j.Logger;
+import org.apache.hadoop.security.AccessControlException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Reads a image file if the file size is not larger than
@@ -39,7 +39,7 @@ import org.apache.log4j.Logger;
  */
 public class ImageFileViewer extends HdfsFileViewer {
 
-  private static Logger logger = Logger.getLogger(ImageFileViewer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ImageFileViewer.class);
   private static final long MAX_IMAGE_FILE_SIZE = 10485760L;
   private static final String VIEWER_NAME = "Image";
 
@@ -47,7 +47,7 @@ public class ImageFileViewer extends HdfsFileViewer {
 
   public ImageFileViewer() {
     final String[] imageSuffix = {
-      ".jpg", ".jpeg", ".tif", ".tiff", ".png", ".gif", ".bmp", ".svg"
+        ".jpg", ".jpeg", ".tif", ".tiff", ".png", ".gif", ".bmp", ".svg"
     };
     acceptedSuffix = new HashSet<String>(Arrays.asList(imageSuffix));
   }
@@ -58,8 +58,7 @@ public class ImageFileViewer extends HdfsFileViewer {
   }
 
   @Override
-  public Set<Capability> getCapabilities(FileSystem fs, Path path)
-      throws AccessControlException {
+  public Set<Capability> getCapabilities(FileSystem fs, Path path) throws AccessControlException {
     String fileName = path.getName();
     int pos = fileName.lastIndexOf('.');
     if (pos < 0) {
@@ -90,8 +89,8 @@ public class ImageFileViewer extends HdfsFileViewer {
   public void displayFile(FileSystem fs, Path path, OutputStream outputStream,
       int startLine, int endLine) throws IOException {
 
-    if (logger.isDebugEnabled()) {
-      logger.debug("read in image file");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("read in image file");
     }
 
     InputStream inputStream = null;

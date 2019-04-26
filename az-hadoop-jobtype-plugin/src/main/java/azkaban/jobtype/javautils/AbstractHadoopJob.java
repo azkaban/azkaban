@@ -13,9 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.javautils;
 
+import azkaban.jobtype.MapReduceJobState;
+import azkaban.jobtype.StatsUtils;
+import azkaban.utils.Props;
+import azkaban.utils.JSONUtils;
 import java.io.IOException;
 import java.io.File;
 import java.net.URI;
@@ -25,7 +28,6 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FileStatus;
@@ -41,19 +43,16 @@ import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.TaskReport;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.Reducer;
-import org.apache.log4j.Logger;
-
-import azkaban.jobtype.MapReduceJobState;
-import azkaban.jobtype.StatsUtils;
-import azkaban.utils.Props;
-import azkaban.utils.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
+
 public abstract class AbstractHadoopJob {
-  private static final Logger logger = Logger
-      .getLogger(AbstractHadoopJob.class);
+
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractHadoopJob.class);
 
   public static String COMMON_FILE_DATE_PATTERN = "yyyy-MM-dd-HH-mm";
   public static final String HADOOP_PREFIX = "hadoop-conf.";
@@ -105,7 +104,7 @@ public abstract class AbstractHadoopJob {
 
     jobClient = new JobClient(conf);
     runningJob = jobClient.submitJob(conf);
-    logger.info("See " + runningJob.getTrackingURL() + " for details.");
+    LOG.info("See " + runningJob.getTrackingURL() + " for details.");
     jobClient.monitorAndPrintJob(conf, runningJob);
 
     if (!runningJob.isSuccessful()) {
@@ -116,9 +115,10 @@ public abstract class AbstractHadoopJob {
     Counters counters = runningJob.getCounters();
     for (String groupName : counters.getGroupNames()) {
       Counters.Group group = counters.getGroup(groupName);
-      logger.info("Group: " + group.getDisplayName());
-      for (Counter counter : group)
-        logger.info(counter.getDisplayName() + ":\t" + counter.getValue());
+      LOG.info("Group: " + group.getDisplayName());
+      for (Counter counter : group) {
+        LOG.info(counter.getDisplayName() + ":\t" + counter.getValue());
+      }
     }
     updateMapReduceJobState(conf);
   }
@@ -159,31 +159,32 @@ public abstract class AbstractHadoopJob {
       conf.set("fs.default.name", "file:///");
       conf.set("mapred.local.dir", "/tmp/map-red");
 
-      logger.info("Running locally, no hadoop jar set.");
+      LOG.info("Running locally, no hadoop jar set.");
     } else {
       HadoopUtils.setClassLoaderAndJar(conf, getClass());
-      logger.info("Setting hadoop jar file for class:" + getClass()
+      LOG.info("Setting hadoop jar file for class:" + getClass()
           + "  to " + conf.getJar());
-      logger.info("*************************************************************************");
-      logger.info("          Running on Real Hadoop Cluster("
+      LOG.info("*************************************************************************");
+      LOG.info("          Running on Real Hadoop Cluster("
           + conf.get("mapred.job.tracker") + ")           ");
-      logger.info("*************************************************************************");
+      LOG.info("*************************************************************************");
     }
 
     // set JVM options if present
     if (props.containsKey("mapred.child.java.opts")) {
       conf.set("mapred.child.java.opts",
           props.getString("mapred.child.java.opts"));
-      logger.info("mapred.child.java.opts set to "
+      LOG.info("mapred.child.java.opts set to "
           + props.getString("mapred.child.java.opts"));
     }
 
     // set input and output paths if they are present
     if (props.containsKey("input.paths")) {
       List<String> inputPaths = props.getStringList("input.paths");
-      if (inputPaths.size() == 0)
+      if (inputPaths.size() == 0) {
         throw new IllegalArgumentException(
             "Must specify at least one value for property 'input.paths'");
+      }
       for (String path : inputPaths) {
         HadoopUtils.addAllSubPaths(conf, new Path(path));
       }
@@ -207,7 +208,7 @@ public abstract class AbstractHadoopJob {
       FileSystem fs = FileSystem.get(conf);
       String[] jarFiles = externalJarList.split(",");
       for (String jarFile : jarFiles) {
-        logger.info("Adding extenral jar File:" + jarFile);
+        LOG.info("Adding extenral jar File:" + jarFile);
         DistributedCache.addFileToClassPath(new Path(jarFile), conf, fs);
       }
     }
@@ -217,7 +218,7 @@ public abstract class AbstractHadoopJob {
     if (cacheFileList != null) {
       String[] cacheFiles = cacheFileList.split(",");
       for (String cacheFile : cacheFiles) {
-        logger.info("Adding Distributed Cache File:" + cacheFile);
+        LOG.info("Adding Distributed Cache File:" + cacheFile);
         DistributedCache.addCacheFile(new URI(cacheFile), conf);
       }
     }
@@ -227,7 +228,7 @@ public abstract class AbstractHadoopJob {
     if (archiveFileList != null) {
       String[] archiveFiles = archiveFileList.split(",");
       for (String archiveFile : archiveFiles) {
-        logger.info("Adding Distributed Cache Archive File:" + archiveFile);
+        LOG.info("Adding Distributed Cache Archive File:" + archiveFile);
         DistributedCache.addCacheArchive(new URI(archiveFile), conf);
       }
     }
@@ -244,18 +245,18 @@ public abstract class AbstractHadoopJob {
             if (!status[i].isDir()) {
               Path path =
                   new Path(hadoopCacheJarDir, status[i].getPath().getName());
-              logger.info("Adding Jar to Distributed Cache Archive File:"
+              LOG.info("Adding Jar to Distributed Cache Archive File:"
                   + path);
 
               DistributedCache.addFileToClassPath(path, conf, fs);
             }
           }
         } else {
-          logger.info("hdfs.default.classpath.dir " + hadoopCacheJarDir
+          LOG.info("hdfs.default.classpath.dir " + hadoopCacheJarDir
               + " is empty.");
         }
       } else {
-        logger.info("hdfs.default.classpath.dir " + hadoopCacheJarDir
+        LOG.info("hdfs.default.classpath.dir " + hadoopCacheJarDir
             + " filesystem doesn't exist");
       }
     }
@@ -302,7 +303,7 @@ public abstract class AbstractHadoopJob {
           new MapReduceJobState(runningJob, mapTaskReport, reduceTaskReport);
       writeMapReduceJobState(jobConf);
     } catch (IOException e) {
-      logger.error("Cannot update MapReduceJobState");
+      LOG.error("Cannot update MapReduceJobState");
     }
   }
 
@@ -322,7 +323,7 @@ public abstract class AbstractHadoopJob {
       mrStateFile = new File(jobStatsFileName);
       JSONUtils.toJSON(statsToJson(jobConf), mrStateFile);
     } catch (Exception e) {
-      logger.error("Cannot write JSON file.");
+      LOG.error("Cannot write JSON file.");
     }
   }
 

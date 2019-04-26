@@ -13,11 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.metric;
 
 import java.util.Timer;
 import java.util.TimerTask;
+
 
 /**
  * Metrics tracked after every interval using timer
@@ -76,7 +76,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
     if (!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot update timer");
     }
-    logger.debug(String
+    LOG.debug(String
         .format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
     this.timer.cancel();
     this.timer = new Timer();
@@ -96,5 +96,4 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * This method is responsible for making any post processing after tracking
    */
   protected abstract void postTrackingEventMethod();
-
 }

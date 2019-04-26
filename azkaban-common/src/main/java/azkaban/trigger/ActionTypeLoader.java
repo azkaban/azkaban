@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger;
 
 import azkaban.utils.Props;
@@ -21,13 +20,15 @@ import azkaban.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ActionTypeLoader {
 
   public static final String DEFAULT_TRIGGER_ACTION_PLUGIN_DIR =
       "plugins/triggeractions";
-  private static final Logger logger = Logger.getLogger(ActionTypeLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ActionTypeLoader.class);
   protected static Map<String, Class<? extends TriggerAction>> actionToClass =
       new HashMap<>();
 
@@ -35,7 +36,7 @@ public class ActionTypeLoader {
       final Map<String, Class<? extends TriggerAction>> builtinActions) {
     actionToClass.putAll(builtinActions);
     for (final String type : builtinActions.keySet()) {
-      logger.info("Loaded " + type + " action.");
+      LOG.info("Loaded " + type + " action.");
     }
   }
 
@@ -44,7 +45,7 @@ public class ActionTypeLoader {
 
   public synchronized void registerActionType(final String type,
       final Class<? extends TriggerAction> actionClass) {
-    logger.info("Registering action " + type);
+    LOG.info("Registering action " + type);
     if (!actionToClass.containsKey(type)) {
       actionToClass.put(type, actionClass);
     }

@@ -11,7 +11,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.connectors.gobblin.helper;
 
 import azkaban.utils.Props;
@@ -25,8 +24,6 @@ public interface IPropertiesValidator {
   /**
    * Validates props.
    * @param props
-   * @throws UndefinedPropertyException if required property is missing
-   * @throws IllegalArgumentException if property is set incorrectly
    */
-  public void validate(Props props);
+  void validate(Props props);
 }

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.reportal.util;
 
 import azkaban.executor.ExecutionOptions;
@@ -39,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -50,9 +48,13 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.Weeks;
 import org.joda.time.Years;
 import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class Reportal {
 
+  private static final Logger LOG = LoggerFactory.getLogger(Reportal.class);
   public static final String REPORTAL_CONFIG_PREFIX = "reportal.config.";
   public static final String REPORTAL_CONFIG_PREFIX_REGEX =
       "^reportal[.]config[.].+";
@@ -62,7 +64,6 @@ public class Reportal {
       "\\s*,\\s*|\\s*;\\s*|\\s+";
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   private static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
-  private static final Logger logger = Logger.getLogger(Reportal.class);
   public static Getter<Boolean> boolGetter = new Getter<>(false,
       Boolean.class);
   public static Getter<Integer> intGetter = new Getter<>(0,
@@ -284,7 +285,7 @@ public class Reportal {
       final long endScheduleTime = report.endSchedule == null ?
           DEFAULT_SCHEDULE_END_EPOCH_TIME : parseDateToEpoch(report.endSchedule);
 
-      logger.info("This report scheudle end time is " + endScheduleTime);
+      LOG.info("This report scheudle end time is " + endScheduleTime);
 
       scheduleManager.scheduleFlow(-1, this.project.getId(), this.project.getName(),
           flow.getId(), "ready", firstSchedTime.getMillis(), endScheduleTime,

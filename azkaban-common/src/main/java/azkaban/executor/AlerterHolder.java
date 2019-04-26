@@ -30,13 +30,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class AlerterHolder {
 
-  private static final Logger logger = Logger.getLogger(AlerterHolder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AlerterHolder.class);
   private Map<String, Alerter> alerters;
 
   @Inject
@@ -44,7 +45,7 @@ public class AlerterHolder {
     try {
       this.alerters = loadAlerters(props, mailAlerter);
     } catch (final Exception ex) {
-      logger.error(ex);
+      LOG.error("Load Alerters Failure", ex);
       this.alerters = new HashMap<>();
     }
   }
@@ -84,10 +85,10 @@ public class AlerterHolder {
 
       final String pluginClass = pluginProps.getString("alerter.class");
       if (pluginClass == null) {
-        logger.error("Alerter class is not set.");
+        LOG.error("Alerter class is not set.");
         continue;
       } else {
-        logger.info("Plugin class " + pluginClass);
+        LOG.info("Plugin class " + pluginClass);
       }
 
       Class<?> alerterClass =
@@ -98,14 +99,14 @@ public class AlerterHolder {
       }
 
       final String source = FileIOUtils.getSourcePathFromClass(alerterClass);
-      logger.info("Source jar " + source);
+      LOG.info("Source jar " + source);
       jarPaths.add("jar:file:" + source);
 
       Constructor<?> constructor = null;
       try {
         constructor = alerterClass.getConstructor(Props.class);
       } catch (final NoSuchMethodException e) {
-        logger.error("Constructor not found in " + pluginClass);
+        LOG.error("Constructor not found in " + pluginClass);
         continue;
       }
 
@@ -113,11 +114,11 @@ public class AlerterHolder {
       try {
         obj = constructor.newInstance(pluginProps);
       } catch (final Exception e) {
-        logger.error(e);
+        LOG.error("Create Alerter Instance Failure", e);
       }
 
       if (!(obj instanceof Alerter)) {
-        logger.error("The object is not an Alerter");
+        LOG.error("The object is not an Alerter");
         continue;
       }
 

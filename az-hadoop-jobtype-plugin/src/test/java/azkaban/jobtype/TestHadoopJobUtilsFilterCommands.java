@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
-
 import junit.framework.Assert;
+
 
 /**
  * Test class for filterCommands method in HadoopJobUtils

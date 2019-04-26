@@ -13,10 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.metric;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Abstract class for Metric
@@ -25,7 +26,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable {
 
-  protected static final Logger logger = Logger.getLogger(MetricReportManager.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(AbstractMetric.class);
   protected String name;
   protected T value;
   protected String type;
@@ -103,11 +104,11 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable {
    */
   @Override
   public void notifyManager() {
-    logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
+    LOG.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
       this.metricManager.reportMetric(this);
     } catch (final Throwable ex) {
-      logger.error(
+      LOG.error(
           String.format("Metric Manager is not set for %s metric", this.getClass().getName()), ex);
     }
   }

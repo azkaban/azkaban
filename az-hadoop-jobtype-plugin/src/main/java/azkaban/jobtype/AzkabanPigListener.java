@@ -15,6 +15,10 @@
  */
 package azkaban.jobtype;
 
+import azkaban.jobtype.pig.PigJobDagNode;
+import azkaban.jobtype.pig.PigJobStats;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.IOException;
 import java.io.File;
 import java.util.ArrayList;
@@ -31,7 +35,6 @@ import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.TaskReport;
-import org.apache.log4j.Logger;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.MapReduceOper;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.plans.MROperPlan;
 import org.apache.pig.impl.plan.OperatorKey;
@@ -40,10 +43,8 @@ import org.apache.pig.tools.pigstats.OutputStats;
 import org.apache.pig.tools.pigstats.PigProgressNotificationListener;
 import org.apache.pig.tools.pigstats.PigStats;
 import org.apache.pig.tools.pigstats.ScriptState;
-import azkaban.jobtype.pig.PigJobDagNode;
-import azkaban.jobtype.pig.PigJobStats;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -51,7 +52,7 @@ import azkaban.utils.Props;
  */
 public class AzkabanPigListener implements PigProgressNotificationListener {
 
-  private static Logger logger = Logger.getLogger(AzkabanPigListener.class);
+  private static Logger LOG = LoggerFactory.getLogger(AzkabanPigListener.class);
   private String statsFile;
 
   private Map<String, PigJobDagNode> dagNodeNameMap =
@@ -66,7 +67,7 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
 
   @Override
   public void initialPlanNotification(String scriptId, MROperPlan plan) {
-    logger.info("**********initialPlanNotification!**********");
+    LOG.info("**********initialPlanNotification!**********");
 
     // First pass: generate dagNodeNameMap.
     Map<OperatorKey, MapReduceOper> planKeys = plan.getKeys();
@@ -83,7 +84,7 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
       // This shows how we can get the basic info about all nameless jobs
       // before any execute. We can traverse the plan to build a DAG of this
       // info.
-      logger.info("initialPlanNotification: aliases: "
+      LOG.info("initialPlanNotification: aliases: "
           + StringUtils.join(aliases, ",") + ", name: " + node.getName()
           + ", features: " + StringUtils.join(features, ","));
     }
@@ -171,21 +172,21 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
       file = new File(statsFile);
       JSONUtils.toJSON(buildJobStatsJson(), file);
     } catch (Exception e) {
-      logger.error("Couldn't write stats file", e);
+      LOG.error("Couldn't write stats file", e);
     }
   }
 
   @Override
   public void jobFailedNotification(String scriptId, JobStats stats) {
     if (stats.getJobId() == null) {
-      logger.warn("jobId for failed job not found. This should only happen "
+      LOG.warn("jobId for failed job not found. This should only happen "
           + "in local mode");
       return;
     }
 
     PigJobDagNode node = dagNodeJobIdMap.get(stats.getJobId());
     if (node == null) {
-      logger.warn("Unrecognized jobId reported for failed job: "
+      LOG.warn("Unrecognized jobId reported for failed job: "
           + stats.getJobId());
       return;
     }
@@ -198,7 +199,7 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
   public void jobFinishedNotification(String scriptId, JobStats stats) {
     PigJobDagNode node = dagNodeJobIdMap.get(stats.getJobId());
     if (node == null) {
-      logger.warn("Unrecognized jobId reported for succeeded job: "
+      LOG.warn("Unrecognized jobId reported for succeeded job: "
           + stats.getJobId());
       return;
     }
@@ -208,9 +209,9 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
 
   @Override
   public void jobStartedNotification(String scriptId, String assignedJobId) {
-    logger.info("**********jobStartedNotification**********");
+    LOG.info("**********jobStartedNotification**********");
     PigStats.JobGraph jobGraph = PigStats.get().getJobGraph();
-    logger.info("jobStartedNotification - jobId " + assignedJobId
+    LOG.info("jobStartedNotification - jobId " + assignedJobId
         + ", jobGraph:\n" + jobGraph);
 
     // For each job in the graph, check if the stats for a job with this name
@@ -219,15 +220,16 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
     // with the same scope.
     for (JobStats jobStats : jobGraph) {
       if (assignedJobId.equals(jobStats.getJobId())) {
-        logger.info("jobStartedNotification - scope " + jobStats.getName()
+        LOG.info("jobStartedNotification - scope " + jobStats.getName()
             + " is jobId " + assignedJobId);
         PigJobDagNode node = this.dagNodeNameMap.get(jobStats.getName());
 
         if (node == null) {
-          logger
-              .warn("jobStartedNotification - unrecognized operator name "
+          LOG.warn(
+              "jobStartedNotification - unrecognized operator name "
                   + "found (" + jobStats.getName() + ") for jobId "
-                  + assignedJobId);
+                  + assignedJobId
+          );
         } else {
           node.setJobId(assignedJobId);
           addMapReduceJobState(node);
@@ -240,31 +242,31 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
 
   @Override
   public void jobsSubmittedNotification(String arg0, int arg1) {
-    logger.info("jobSubmittedNotification");
-    logger.info("The script id is " + arg0);
-    logger.info(arg1 + " jobs submitted.");
+    LOG.info("jobSubmittedNotification");
+    LOG.info("The script id is " + arg0);
+    LOG.info(arg1 + " jobs submitted.");
   }
 
   @Override
   public void launchCompletedNotification(String arg0, int arg1) {
-    logger.info("launchCompletedNotification");
-    logger.info("The script id is " + arg0);
-    logger.info("Finished " + arg1 + " jobs successfully");
+    LOG.info("launchCompletedNotification");
+    LOG.info("The script id is " + arg0);
+    LOG.info("Finished " + arg1 + " jobs successfully");
   }
 
   @Override
   public void launchStartedNotification(String arg0, int arg1) {
-    logger.info("lanchStartedNotification");
-    logger.info("launching script " + arg0);
-    logger.info("launching " + arg1 + " mr jobs");
+    LOG.info("lanchStartedNotification");
+    LOG.info("launching script " + arg0);
+    LOG.info("launching " + arg1 + " mr jobs");
   }
 
   @Override
   public void outputCompletedNotification(String arg0, OutputStats arg1) {
-    logger.info("outputCompletedNotification");
-    logger.info("The script id is " + arg0);
-    logger.info("The output stat name is " + arg1.getName());
-    logger.info("You can get a lot more useful information here.");
+    LOG.info("outputCompletedNotification");
+    LOG.info("The script id is " + arg0);
+    LOG.info("The output stat name is " + arg1.getName());
+    LOG.info("You can get a lot more useful information here.");
   }
 
   @Override
@@ -298,7 +300,7 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
     try {
       RunningJob runningJob = jobClient.getJob(node.getJobId());
       if (runningJob == null) {
-        logger.warn("Couldn't find job status for jobId=" + node.getJobId());
+        LOG.warn("Couldn't find job status for jobId=" + node.getJobId());
         return;
       }
 
@@ -315,7 +317,7 @@ public class AzkabanPigListener implements PigProgressNotificationListener {
         }
       }
     } catch (IOException e) {
-      logger.error("Error getting job info.", e);
+      LOG.error("Error getting job info.", e);
     }
   }
 

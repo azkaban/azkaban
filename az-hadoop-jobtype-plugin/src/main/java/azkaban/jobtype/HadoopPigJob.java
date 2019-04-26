@@ -15,6 +15,13 @@
  */
 package azkaban.jobtype;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.FileIOUtils;
+import azkaban.utils.Props;
+import azkaban.utils.StringUtils;
+import azkaban.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,13 +30,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 import org.apache.pig.PigRunner;
-import azkaban.flow.CommonJobProperties;
-import azkaban.jobExecutor.JavaProcessJob;
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.utils.FileIOUtils;
-import azkaban.utils.Props;
-import azkaban.utils.StringUtils;
-import azkaban.utils.Utils;
 
 
 /*
@@ -58,8 +58,8 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   private final boolean userPigJar;
   private File pigLogFile = null;
 
-  public HadoopPigJob(String jobid, Props sysProps, Props jobProps, Logger log) {
-    super(jobid, sysProps, jobProps, log);
+  public HadoopPigJob(String jobid, Props sysProps, Props jobProps, Logger logger) {
+    super(jobid, sysProps, jobProps, logger);
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
     HADOOP_SECURE_PIG_WRAPPER = HadoopSecurePigWrapper.class.getName();
     userPigJar = getJobProps().getBoolean("use.user.pig.jar", false);

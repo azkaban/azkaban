@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.database;
 
 import azkaban.server.AzkabanServer;
@@ -24,12 +23,13 @@ import java.util.Arrays;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class AzkabanDatabaseUpdater {
 
-  private static final Logger logger = Logger
-      .getLogger(AzkabanDatabaseUpdater.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanDatabaseUpdater.class);
 
   public static void main(final String[] args) throws Exception {
     final OptionParser parser = new OptionParser();
@@ -47,8 +47,8 @@ public class AzkabanDatabaseUpdater {
     final Props props = AzkabanServer.loadProps(args, parser);
 
     if (props == null) {
-      logger.error("Properties not found. Need it to connect to the db.");
-      logger.error("Exiting...");
+      LOG.error("Properties not found. Need it to connect to the db.");
+      LOG.error("Exiting...");
       return;
     }
 
@@ -57,7 +57,7 @@ public class AzkabanDatabaseUpdater {
     if (options.has(updateOption)) {
       updateDB = true;
     } else {
-      logger.info("Running DatabaseUpdater in test mode");
+      LOG.info("Running DatabaseUpdater in test mode");
     }
 
     String scriptDir = "sql";
@@ -70,26 +70,26 @@ public class AzkabanDatabaseUpdater {
 
   public static void runDatabaseUpdater(final Props props, final String sqlDir,
       final boolean updateDB) throws IOException, SQLException {
-    logger.info("Use scripting directory " + sqlDir);
+    LOG.info("Use scripting directory " + sqlDir);
 
     if (updateDB) {
-      logger.info("Will auto update any changes.");
+      LOG.info("Will auto update any changes.");
     } else {
-      logger.info("Running DatabaseUpdater in test mode. Use -u to update");
+      LOG.info("Running DatabaseUpdater in test mode. Use -u to update");
     }
 
     final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(props);
     setup.loadTableInfo();
     if (!setup.needsUpdating()) {
-      logger.info("Everything looks up to date.");
+      LOG.info("Everything looks up to date.");
       return;
     }
 
-    logger.info("Need to update the db.");
+    LOG.info("Need to update the db.");
     setup.printUpgradePlan();
 
     if (updateDB) {
-      logger.info("Updating DB");
+      LOG.info("Updating DB");
       setup.updateDatabase(true, true);
     }
   }

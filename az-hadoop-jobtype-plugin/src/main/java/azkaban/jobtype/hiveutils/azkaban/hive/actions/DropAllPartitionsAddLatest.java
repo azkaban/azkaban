@@ -13,12 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.log4j.Logger;
+import static azkaban.jobtype.hiveutils.azkaban.Utils.verifyProperty;
+import static azkaban.jobtype.hiveutils.azkaban.hive.actions.Constants.DROP_ALL_PARTITIONS_AND_ADD_LATEST;
 
 import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
 import azkaban.jobtype.hiveutils.HiveQueryExecutor;
@@ -26,14 +24,15 @@ import azkaban.jobtype.hiveutils.azkaban.HiveAction;
 import azkaban.jobtype.hiveutils.azkaban.HiveViaAzkabanException;
 import azkaban.jobtype.hiveutils.util.AzkHiveAction;
 import azkaban.jobtype.hiveutils.util.AzkabanJobPropertyDescription;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Properties;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static azkaban.jobtype.hiveutils.azkaban.Utils.verifyProperty;
-import static azkaban.jobtype.hiveutils.azkaban.hive.actions.Constants.DROP_ALL_PARTITIONS_AND_ADD_LATEST;
 
 /**
  * Drop all the existing partitions in specified table and then add the
@@ -60,9 +59,9 @@ import static azkaban.jobtype.hiveutils.azkaban.hive.actions.Constants.DROP_ALL_
  */
 @AzkHiveAction(DROP_ALL_PARTITIONS_AND_ADD_LATEST)
 public class DropAllPartitionsAddLatest implements HiveAction {
-  private final static Logger LOG =
-      Logger
-          .getLogger("com.linkedin.hive.azkaban.hive.actions.DropAllPartitionsAddLatest");
+
+  private final static Logger logger =
+      LoggerFactory.getLogger("com.linkedin.hive.azkaban.hive.actions.DropAllPartitionsAddLatest");
 
   public static final String DROP_AND_ADD = DROP_ALL_PARTITIONS_AND_ADD_LATEST;
 
@@ -106,7 +105,7 @@ public class DropAllPartitionsAddLatest implements HiveAction {
       FileSystem fs = FileSystem.get(conf);
 
       for (String table : tables) {
-        LOG.info("Determining HQL commands for table " + table);
+        logger.info("Determining HQL commands for table " + table);
         hql.addAll(addAndDrop(fs, tableLocations, table));
       }
       fs.close();
@@ -146,7 +145,7 @@ public class DropAllPartitionsAddLatest implements HiveAction {
 
     String toAdd = directories.remove(directories.size() - 1);
 
-    LOG.info("For table " + table + ", going to add " + toAdd
+    logger.info("For table " + table + ", going to add " + toAdd
         + " and attempt to drop " + directories.size() + " others");
     for (String directory : directories) {
       toDropAndAdd.add(new DropPartitionHQL(table, partition, directory, true));
@@ -156,5 +155,4 @@ public class DropAllPartitionsAddLatest implements HiveAction {
         toAdd, true));
     return toDropAndAdd;
   }
-
 }

@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.util;
 
 import java.lang.annotation.Documented;
+
 
 @Documented
 public @interface AzkHiveAction {

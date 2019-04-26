@@ -13,10 +13,10 @@
  */
 package azkaban.jobtype.javautils;
 
+import azkaban.utils.Props;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.lang.StringUtils;
-import azkaban.utils.Props;
 
 
 /**

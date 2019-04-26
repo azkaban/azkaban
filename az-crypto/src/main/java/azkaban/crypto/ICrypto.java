@@ -16,7 +16,7 @@ package azkaban.crypto;
  */
 public interface ICrypto {
 
-  static final String VERSION_IDENTIFIER = "ver";
+  String VERSION_IDENTIFIER = "ver";
 
   /**
    * Encrypts plain text using pass phrase and crypto version.
@@ -26,7 +26,7 @@ public interface ICrypto {
    * @param cryptoVersion Version of this encryption.
    * @return A ciphered text, Base64 encoded.
    */
-  public String encrypt(String plaintext, String passphrase, Version cryptoVersion);
+  String encrypt(String plaintext, String passphrase, Version cryptoVersion);
 
   /**
    * Decrypts ciphered text.
@@ -35,5 +35,5 @@ public interface ICrypto {
    * @param passphrase Passphrase that was used as a key to encrypt the ciphered text
    * @return plain text String
    */
-  public String decrypt(String cipheredText, String passphrase);
+  String decrypt(String cipheredText, String passphrase);
 }

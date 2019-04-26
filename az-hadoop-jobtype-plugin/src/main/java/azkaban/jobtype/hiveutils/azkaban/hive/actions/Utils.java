@@ -13,23 +13,27 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
+import azkaban.jobtype.hiveutils.azkaban.HiveViaAzkabanException;
+import java.io.IOException;
+import java.util.ArrayList;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import azkaban.jobtype.hiveutils.azkaban.HiveViaAzkabanException;
-
-import java.io.IOException;
-import java.util.ArrayList;
 
 class Utils {
-  private final static Logger LOG = Logger.getLogger(Utils.class);
 
-  static ArrayList<String> fetchDirectories(FileSystem fs, String location,
+  private final static Logger LOG = LoggerFactory.getLogger(Utils.class);
+
+  private Utils() {
+
+  }
+
+  public static ArrayList<String> fetchDirectories(FileSystem fs, String location,
       boolean returnFullPath) throws IOException, HiveViaAzkabanException {
     LOG.info("Fetching directories in " + location);
     Path p = new Path(location);
@@ -42,10 +46,12 @@ class Utils {
 
     ArrayList<String> files = new ArrayList<String>(statuses.length);
     for (FileStatus status : statuses) {
-      if (!status.isDir())
+      if (!status.isDirectory()) {
         continue;
-      if (status.getPath().getName().startsWith("."))
+      }
+      if (status.getPath().getName().startsWith(".")) {
         continue;
+      }
 
       files.add(returnFullPath ? status.getPath().toString() : status.getPath()
           .getName());

@@ -13,9 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban;
 
+
+/**
+ * Defines Hive Action Interface
+ */
 public interface HiveAction {
-  public void execute() throws HiveViaAzkabanException;
+
+  void execute() throws HiveViaAzkabanException;
 }

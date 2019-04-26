@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.database;
 
 import azkaban.database.DataSourceUtils.PropertyType;
@@ -37,7 +36,9 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated in favor of {@link azkaban.db.DatabaseSetup}.
@@ -45,13 +46,12 @@ import org.apache.log4j.Logger;
 @Deprecated
 public class AzkabanDatabaseSetup {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanDatabaseSetup.class);
   public static final String DATABASE_CHECK_VERSION = "database.check.version";
   public static final String DATABASE_AUTO_UPDATE_TABLES =
       "database.auto.update.tables";
   public static final String DATABASE_SQL_SCRIPT_DIR =
       "database.sql.scripts.dir";
-  private static final Logger logger = Logger
-      .getLogger(AzkabanDatabaseSetup.class);
   private static final String DEFAULT_SCRIPT_PATH = "sql";
   private static final String CREATE_SCRIPT_PREFIX = "create.";
   private static final String UPDATE_SCRIPT_PREFIX = "update.";
@@ -120,26 +120,26 @@ public class AzkabanDatabaseSetup {
 
   public void printUpgradePlan() {
     if (!this.tables.isEmpty()) {
-      logger.info("The following are installed tables");
+      LOG.info("The following are installed tables");
       for (final Map.Entry<String, String> installedTable : this.tables.entrySet()) {
-        logger.info(" " + installedTable.getKey() + " version:"
+        LOG.info(" " + installedTable.getKey() + " version:"
             + installedTable.getValue());
       }
     } else {
-      logger.info("No installed tables found.");
+      LOG.info("No installed tables found.");
     }
 
     if (!this.missingTables.isEmpty()) {
-      logger.info("The following are missing tables that need to be installed");
+      LOG.info("The following are missing tables that need to be installed");
       for (final String table : this.missingTables) {
-        logger.info(" " + table);
+        LOG.info(" " + table);
       }
     } else {
-      logger.info("There are no missing tables.");
+      LOG.info("There are no missing tables.");
     }
 
     if (!this.upgradeList.isEmpty()) {
-      logger.info("The following tables need to be updated.");
+      LOG.info("The following tables need to be updated.");
       for (final Map.Entry<String, List<String>> upgradeTable : this.upgradeList
           .entrySet()) {
         String tableInfo = " " + upgradeTable.getKey() + " versions:";
@@ -147,10 +147,10 @@ public class AzkabanDatabaseSetup {
           tableInfo += upVersion + ",";
         }
 
-        logger.info(tableInfo);
+        LOG.info(tableInfo);
       }
     } else {
-      logger.info("No tables need to be updated.");
+      LOG.info("No tables need to be updated.");
     }
   }
 
@@ -158,7 +158,7 @@ public class AzkabanDatabaseSetup {
       throws SQLException, IOException {
     // We call this because it has an unitialize check.
     if (!needsUpdating()) {
-      logger.info("Nothing to be done.");
+      LOG.info("Nothing to be done.");
       return;
     }
 
@@ -182,7 +182,7 @@ public class AzkabanDatabaseSetup {
   }
 
   private void loadTableVersion() throws SQLException {
-    logger.info("Searching for table versions in the properties table");
+    LOG.info("Searching for table versions in the properties table");
     if (this.tables.containsKey("properties")) {
       // Load version from settings
       final QueryRunner runner = new QueryRunner(this.dataSource);
@@ -201,12 +201,12 @@ public class AzkabanDatabaseSetup {
         }
       }
     } else {
-      logger.info("Properties table doesn't exist.");
+      LOG.info("Properties table doesn't exist.");
     }
   }
 
   private void loadInstalledTables() throws SQLException {
-    logger.info("Searching for installed tables");
+    LOG.info("Searching for installed tables");
     Connection conn = null;
     try {
       conn = this.dataSource.getConnection();
@@ -357,10 +357,10 @@ public class AzkabanDatabaseSetup {
     String scriptName = "";
     if (update) {
       scriptName = "update." + table + "." + version;
-      logger.info("Update table " + table + " to version " + version);
+      LOG.info("Update table " + table + " to version " + version);
     } else {
       scriptName = "create." + table;
-      logger.info("Creating new table " + table + " version " + version);
+      LOG.info("Creating new table " + table + " version " + version);
     }
 
     final String dbSpecificScript = scriptName + "." + dbType + ".sql";

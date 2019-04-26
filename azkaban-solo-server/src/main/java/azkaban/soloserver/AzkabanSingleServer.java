@@ -36,12 +36,13 @@ import java.security.Policy;
 import java.security.ProtectionDomain;
 import javax.inject.Inject;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class AzkabanSingleServer {
 
-  private static final Logger log = Logger.getLogger(AzkabanWebServer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AzkabanWebServer.class);
 
   private final AzkabanWebServer webServer;
   private final AzkabanExecutorServer executor;
@@ -57,13 +58,13 @@ public class AzkabanSingleServer {
     try {
       start(args);
     } catch (final Exception e) {
-      log.error("Failed to start single server. Shutting down.", e);
+      LOG.error("Failed to start single server. Shutting down.", e);
       System.exit(1);
     }
   }
 
   public static void start(String[] args) throws Exception {
-    log.info("Starting Azkaban Server");
+    LOG.info("Starting Azkaban Server");
 
     if (System.getSecurityManager() == null) {
       Policy.setPolicy(new Policy() {
@@ -81,8 +82,8 @@ public class AzkabanSingleServer {
 
     final Props props = AzkabanServer.loadProps(args);
     if (props == null) {
-      log.error("Properties not found. Need it to connect to the db.");
-      log.error("Exiting...");
+      LOG.error("Properties not found. Need it to connect to the db.");
+      LOG.error("Exiting...");
       return;
     }
 
@@ -113,22 +114,22 @@ public class AzkabanSingleServer {
     final File localConfFolder = new File("local/conf");
     if (!localConfFolder.exists()) {
       FileUtils.copyDirectory(templateFolder, localConfFolder.getParentFile());
-      log.info("Copied local conf templates from " + templateFolder.getAbsolutePath());
+      LOG.info("Copied local conf templates from " + templateFolder.getAbsolutePath());
     }
-    log.info("Using conf at " + localConfFolder.getAbsolutePath());
+    LOG.info("Using conf at " + localConfFolder.getAbsolutePath());
     return new String[]{"-conf", "local/conf"};
   }
 
   private void launch() throws Exception {
     // exec server first so that it's ready to accept calls by web server when web initializes
     AzkabanExecutorServer.launch(this.executor);
-    log.info("Azkaban Exec Server started...");
+    LOG.info("Azkaban Exec Server started...");
 
     this.executor.getFlowRunnerManager()
         .setExecutorActive(true, this.executor.getHost(), this.executor.getPort());
-    log.info("Azkaban Exec Server activated...");
+    LOG.info("Azkaban Exec Server activated...");
 
     AzkabanWebServer.launch(this.webServer);
-    log.info("Azkaban Web Server started...");
+    LOG.info("Azkaban Web Server started...");
   }
 }

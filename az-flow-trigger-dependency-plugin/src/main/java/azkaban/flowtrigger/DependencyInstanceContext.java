@@ -13,8 +13,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger;
+
 
 /**
  * Implementing class should hold context information for a running dependency

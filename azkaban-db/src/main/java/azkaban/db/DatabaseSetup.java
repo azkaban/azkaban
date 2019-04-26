@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.db;
 
 import java.io.BufferedInputStream;
@@ -27,7 +26,9 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Creates DB tables. The input to this class is a folder path, which includes all create table
@@ -39,7 +40,7 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseSetup {
 
-  private static final Logger logger = Logger .getLogger(DatabaseSetup.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DatabaseSetup.class);
   private static final String CREATE_SCRIPT_PREFIX = "create.";
   private static final String SQL_SCRIPT_SUFFIX = ".sql";
 
@@ -88,7 +89,7 @@ public class DatabaseSetup {
 
   private void runTableScripts(final Connection conn, final String table)
       throws IOException, SQLException {
-    logger.info("Creating new table " + table);
+    LOG.info("Creating new table " + table);
 
     final String dbSpecificScript = "create." + table + ".sql";
     final File script = new File(this.scriptPath, dbSpecificScript);

@@ -13,12 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.utils.Props;
 import org.apache.log4j.Logger;
+
 
 public class FakeJavaJob2 extends JavaProcessJob {
 

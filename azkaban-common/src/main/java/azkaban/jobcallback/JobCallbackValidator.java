@@ -12,7 +12,9 @@ import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
 import azkaban.utils.Props;
 import java.util.Collection;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Responsible for validating the job callback related properties at project upload time
@@ -21,8 +23,7 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackValidator {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackValidator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JobCallbackValidator.class);
 
   /**
    * Make sure all the job callback related properties are valid
@@ -47,8 +48,8 @@ public class JobCallbackValidator {
               maxPostBodyLength);
     }
 
-    if (logger.isDebugEnabled()) {
-      logger.debug("Found " + totalCallbackCount + " job callbacks for job "
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Found " + totalCallbackCount + " job callbacks for job "
           + jobName);
     }
     return totalCallbackCount;

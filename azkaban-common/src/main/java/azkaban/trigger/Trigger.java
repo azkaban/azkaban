@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger;
 
 import static java.util.Objects.requireNonNull;
@@ -23,13 +22,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Trigger {
 
-  private static final Logger logger = Logger.getLogger(Trigger.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Trigger.class);
   private static ActionTypeLoader actionTypeLoader;
   private final long submitTime;
   private final String submitUser;
@@ -94,7 +94,7 @@ public class Trigger {
 
     Trigger trigger = null;
     try {
-      logger.info("Decoding for " + JSONUtils.toJSON(obj));
+      LOG.info("Decoding for " + JSONUtils.toJSON(obj));
       final Condition triggerCond = Condition.fromJson(jsonObj.get("triggerCondition"));
       final Condition expireCond = Condition.fromJson(jsonObj.get("expireCondition"));
       final List<TriggerAction> actions = new ArrayList<>();
@@ -168,7 +168,7 @@ public class Trigger {
       trigger.setStatus(status);
     } catch (final Exception e) {
       e.printStackTrace();
-      logger.error("Failed to decode the trigger.", e);
+      LOG.error("Failed to decode the trigger.", e);
       throw new Exception("Failed to decode the trigger.", e);
     }
 

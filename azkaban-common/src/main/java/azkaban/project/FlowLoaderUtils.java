@@ -48,7 +48,7 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class FlowLoaderUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowLoaderUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FlowLoaderUtils.class);
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
   /**
@@ -88,10 +88,10 @@ public class FlowLoaderUtils {
       if (overridePropsInNodeBean(nodeBean, pathList, 0, prop)) {
         return nodeBean;
       } else {
-        logger.error("Error setting props for " + path);
+        LOG.error("Error setting props for " + path);
       }
     } catch (final Exception e) {
-      logger.error("Failed to set props, error loading flow YAML file " + flowFile);
+      LOG.error("Failed to set props, error loading flow YAML file " + flowFile);
     }
     return null;
   }
@@ -144,11 +144,11 @@ public class FlowLoaderUtils {
         if (!propsList.isEmpty()) {
           return propsList.get(0);
         } else {
-          logger.error("Error getting props for " + path);
+          LOG.error("Error getting props for " + path);
         }
       }
     } catch (final Exception e) {
-      logger.error("Failed to get props, error loading flow YAML file. ", e);
+      LOG.error("Failed to get props, error loading flow YAML file. ", e);
     }
     return null;
   }
@@ -184,7 +184,7 @@ public class FlowLoaderUtils {
       final NodeBean nodeBean = loader.load(flowFile);
       return loader.toFlowTrigger(nodeBean.getTrigger());
     } catch (final Exception e) {
-      logger.error("Failed to get flow trigger, error loading flow YAML file. ", e);
+      LOG.error("Failed to get flow trigger, error loading flow YAML file. ", e);
     }
     return null;
   }
@@ -290,7 +290,7 @@ public class FlowLoaderUtils {
         FileUtils.deleteDirectory(dir);
       }
     } catch (final IOException e) {
-      logger.error("Failed to delete the directory", e);
+      LOG.error("Failed to delete the directory", e);
       dir.deleteOnExit();
     }
   }

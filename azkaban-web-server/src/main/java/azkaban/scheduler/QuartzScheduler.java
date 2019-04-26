@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.scheduler;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -39,6 +38,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
  * mapping.
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class QuartzScheduler {
 
-  private static final Logger logger = LoggerFactory.getLogger(QuartzScheduler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(QuartzScheduler.class);
   private Scheduler scheduler = null;
 
   @Inject
@@ -72,7 +72,7 @@ public class QuartzScheduler {
 
   public void start() throws SchedulerException {
     this.scheduler.start();
-    logger.info("Quartz Scheduler started.");
+    LOG.info("Quartz Scheduler started.");
   }
 
   @VisibleForTesting
@@ -82,7 +82,7 @@ public class QuartzScheduler {
 
   public void shutdown() throws SchedulerException {
     this.scheduler.shutdown();
-    logger.info("Quartz Scheduler shut down.");
+    LOG.info("Quartz Scheduler shut down.");
   }
 
   /**
@@ -175,7 +175,7 @@ public class QuartzScheduler {
     requireNonNull(jobDescription, "jobDescription is null");
 
     if (ifJobExist(jobDescription.getJobName(), jobDescription.getGroupName())) {
-      logger.warn(String.format("can not register existing job with job name: "
+      LOG.warn(String.format("can not register existing job with job name: "
           + "%s and group name: %s", jobDescription.getJobName(), jobDescription.getGroupName()));
       return false;
     }
@@ -204,7 +204,7 @@ public class QuartzScheduler {
         .build();
 
     this.scheduler.scheduleJob(job, trigger);
-    logger.info("Quartz Schedule with jobDetail " + job.getDescription() + " is registered.");
+    LOG.info("Quartz Schedule with jobDetail " + job.getDescription() + " is registered.");
     return true;
   }
 

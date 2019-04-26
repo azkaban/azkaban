@@ -46,7 +46,7 @@ public class DirectoryFlowLoader implements FlowLoader {
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
 
-  private static final Logger logger = LoggerFactory.getLogger(DirectoryFlowLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DirectoryFlowLoader.class);
   private final Props props;
   private final Set<String> errors = new HashSet<>();
   private final Map<String, Flow> flowMap = new HashMap<>();
@@ -162,7 +162,7 @@ public class DirectoryFlowLoader implements FlowLoader {
             + e.getMessage());
       }
 
-      this.logger.info("Adding " + relative);
+      this.LOG.info("Adding " + relative);
       this.propsList.add(parent);
     }
 
@@ -253,7 +253,7 @@ public class DirectoryFlowLoader implements FlowLoader {
       final Props props = this.jobPropsMap.get(node.getId());
 
       if (props == null) {
-        this.logger.error("Job props not found!! For some reason.");
+        LOG.error("Job props not found!! For some reason.");
         continue;
       }
 

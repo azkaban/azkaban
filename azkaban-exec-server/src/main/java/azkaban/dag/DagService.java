@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.dag;
 
 import azkaban.utils.ExecutorServiceUtils;
@@ -28,6 +27,7 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Thread safe and non blocking service for DAG processing.
  *
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class DagService {
 
   private static final Duration SHUTDOWN_WAIT_TIMEOUT = Duration.ofSeconds(10);
-  private static final Logger logger = LoggerFactory.getLogger(DagService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DagService.class);
 
   private final ExecutorServiceUtils executorServiceUtils;
   private final ExecutorService executorService;
@@ -89,7 +89,7 @@ public class DagService {
    * Shuts down the service and waits for the tasks to finish.
    */
   public void shutdownAndAwaitTermination() throws InterruptedException {
-    logger.info("DagService is shutting down.");
+    LOG.info("DagService is shutting down.");
     this.executorServiceUtils.gracefulShutdown(this.executorService, SHUTDOWN_WAIT_TIMEOUT);
   }
 

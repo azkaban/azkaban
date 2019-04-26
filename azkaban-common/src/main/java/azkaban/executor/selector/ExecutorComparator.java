@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor.selector;
 
 import azkaban.executor.Executor;
@@ -106,8 +105,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * shortcuts if   the statistics object is missing from one or both sides of the executors.
    * </pre>
    *
-   * @param stat1 the first statistics  object to be checked .
-   * @param stat2 the second statistics object to be checked.
+   * @param statisticsObj1 the first statistics  object to be checked .
+   * @param statisticsObj2 the second statistics object to be checked.
    * @param caller the name of the calling function, for logging purpose.
    * @return true if the passed statistics are NOT both valid, a shortcut can be made (caller can
    * consume the result), false otherwise.
@@ -116,14 +115,14 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
       final ExecutorInfo statisticsObj2, final String caller) {
     // both doesn't expose the info
     if (null == statisticsObj1 && null == statisticsObj2) {
-      logger.debug(String.format("%s : neither of the executors exposed statistics info.",
+      LOG.debug(String.format("%s : neither of the executors exposed statistics info.",
           caller));
       return true;
     }
 
     //right side doesn't expose the info.
     if (null == statisticsObj2) {
-      logger.debug(String.format(
+      LOG.debug(String.format(
           "%s : choosing left side and the right side executor doesn't expose statistics info",
           caller));
       return true;
@@ -131,7 +130,7 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
     //left side doesn't expose the info.
     if (null == statisticsObj1) {
-      logger.debug(String.format(
+      LOG.debug(String.format(
           "%s : choosing right side and the left side executor doesn't expose statistics info",
           caller));
       return true;

@@ -22,6 +22,8 @@ import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVEAUXJARS;
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.METASTORECONNECTURLKEY;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
+import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
@@ -38,18 +40,13 @@ import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
-import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
-import azkaban.utils.Props;
 
 
 public class HadoopSecureHiveWrapper {
 
-  private static final String DOUBLE_QUOTE_STRING = Character
-      .toString(DOUBLE_QUOTE);
-  private static final String SINGLE_QUOTE_STRING = Character
-      .toString(SINGLE_QUOTE);
-
-  private static final Logger logger = Logger.getRootLogger();
+  private static final Logger LOG = Logger.getRootLogger();
+  private static final String DOUBLE_QUOTE_STRING = Character.toString(DOUBLE_QUOTE);
+  private static final String SINGLE_QUOTE_STRING = Character.toString(SINGLE_QUOTE);
 
   private static CliSessionState ss;
   private static String hiveScript;
@@ -64,7 +61,7 @@ public class HadoopSecureHiveWrapper {
     if (HadoopSecureWrapperUtils.shouldProxy(jobProps)) {
       String tokenFile = System.getenv(HADOOP_TOKEN_FILE_LOCATION);
       UserGroupInformation proxyUser =
-          HadoopSecureWrapperUtils.setupProxyUser(jobProps, tokenFile, logger);
+          HadoopSecureWrapperUtils.setupProxyUser(jobProps, tokenFile, LOG);
       proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
@@ -91,16 +88,16 @@ public class HadoopSecureHiveWrapper {
           System.getenv(HADOOP_TOKEN_FILE_LOCATION));
     }
 
-    logger.info("HiveConf = " + hiveConf);
-    logger.info("According to the conf, we're talking to the Hive hosted at: "
+    LOG.info("HiveConf = " + hiveConf);
+    LOG.info("According to the conf, we're talking to the Hive hosted at: "
         + HiveConf.getVar(hiveConf, METASTORECONNECTURLKEY));
 
     String orig = HiveConf.getVar(hiveConf, HIVEAUXJARS);
     String expanded = expandHiveAuxJarsPath(orig);
     if (orig == null || orig.equals(expanded)) {
-      logger.info("Hive aux jars variable not expanded");
+      LOG.info("Hive aux jars variable not expanded");
     } else {
-      logger.info("Expanded aux jars variable from [" + orig + "] to ["
+      LOG.info("Expanded aux jars variable from [" + orig + "] to ["
           + expanded + "]");
       HiveConf.setVar(hiveConf, HIVEAUXJARS, expanded);
     }
@@ -116,7 +113,7 @@ public class HadoopSecureHiveWrapper {
     // see also: code in ExecDriver.java
     ClassLoader loader = hiveConf.getClassLoader();
     String auxJars = HiveConf.getVar(hiveConf, HiveConf.ConfVars.HIVEAUXJARS);
-    logger.info("Got auxJars = " + auxJars);
+    LOG.info("Got auxJars = " + auxJars);
 
     if (StringUtils.isNotBlank(auxJars)) {
       loader =
@@ -135,7 +132,7 @@ public class HadoopSecureHiveWrapper {
     ss = new CliSessionState(hiveConf);
     SessionState.start(ss);
 
-    logger.info("SessionState = " + ss);
+    LOG.info("SessionState = " + ss);
     ss.out = System.out;
     ss.err = System.err;
     ss.in = System.in;
@@ -145,12 +142,12 @@ public class HadoopSecureHiveWrapper {
           "Can't process arguments from session state");
     }
 
-    logger.info("Executing query: " + hiveScript);
+    LOG.info("Executing query: " + hiveScript);
 
     CliDriver cli = new CliDriver();
     Map<String, String> hiveVarMap = getHiveVarMap(args);
 
-    logger.info("hiveVarMap: " + hiveVarMap);
+    LOG.info("hiveVarMap: " + hiveVarMap);
 
     if (!hiveVarMap.isEmpty()) {
       cli.setHiveVariables(getHiveVarMap(args));
@@ -158,7 +155,7 @@ public class HadoopSecureHiveWrapper {
 
     int returnCode = cli.processFile(hiveScript);
     if (returnCode != 0) {
-      logger.warn("Got exception " + returnCode + " from line: " + hiveScript);
+      LOG.warn("Got exception " + returnCode + " from line: " + hiveScript);
       throw new HiveQueryExecutionException(returnCode, hiveScript);
     }
   }
@@ -180,8 +177,7 @@ public class HadoopSecureHiveWrapper {
     File[] files = new File(original).listFiles();
 
     if (files == null || files.length == 0) {
-      logger
-          .info("No files in to expand in aux jar path. Returning original parameter");
+      LOG.info("No files in to expand in aux jar path. Returning original parameter");
       return original;
     }
 
@@ -222,10 +218,10 @@ public class HadoopSecureHiveWrapper {
         if (tokens.length == 2) {
           String name = tokens[0];
           String value = tokens[1];
-          logger.info("Setting: " + name + "=" + value + " to hiveConf");
+          LOG.info("Setting: " + name + "=" + value + " to hiveConf");
           hiveConf.set(name, value);
         } else {
-          logger.warn("Invalid hiveconf: " + hiveConfParam);
+          LOG.warn("Invalid hiveconf: " + hiveConfParam);
         }
       }
     }
@@ -244,12 +240,12 @@ public class HadoopSecureHiveWrapper {
         // Separate the parameter string at its first occurence of "="
         int gap = hiveVarParam.indexOf("=");
         if (gap == -1) {
-          logger.warn("Invalid hivevar: " + hiveVarParam);
+          LOG.warn("Invalid hivevar: " + hiveVarParam);
           continue;
         }
         String name = hiveVarParam.substring(0, gap);
         String value = hiveVarParam.substring(gap + 1);
-        logger.info("Setting hivevar: " + name + "=" + value);
+        LOG.info("Setting hivevar: " + name + "=" + value);
         hiveVarMap.put(name, value);
       }
     }

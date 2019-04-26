@@ -14,7 +14,6 @@
  * the License.
  *
  */
-
 package azkaban;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_ROOT_URI;
@@ -26,12 +25,9 @@ import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import javax.inject.Inject;
 import java.net.URI;
-import org.apache.log4j.Logger;
 
 
 public class AzkabanCommonModuleConfig {
-
-  private static final Logger log = Logger.getLogger(AzkabanCommonModuleConfig.class);
 
   private final Props props;
   private final URI hdfsRootUri;

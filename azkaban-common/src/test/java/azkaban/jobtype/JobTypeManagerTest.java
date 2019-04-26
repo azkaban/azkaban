@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import static azkaban.test.Utils.initServiceProvider;
@@ -35,6 +34,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 
 /**
  * Test the flow run, especially with embedded flows. Files are in unit/plugins/jobtypes

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
@@ -26,6 +25,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
+
 
 public class InteractiveTestJob extends AbstractProcessJob {
 

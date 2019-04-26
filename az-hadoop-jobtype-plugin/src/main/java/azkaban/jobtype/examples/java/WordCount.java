@@ -13,13 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.examples.java;
 
+import azkaban.jobtype.javautils.AbstractHadoopJob;
+import azkaban.utils.Props;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.StringTokenizer;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -35,33 +35,32 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import azkaban.jobtype.javautils.AbstractHadoopJob;
-import azkaban.utils.Props;
 
 public class WordCount extends AbstractHadoopJob {
 
-  private static final Logger logger = Logger.getLogger(WordCount.class);
+  private final static Logger LOG = LoggerFactory.getLogger(WordCount.class);
 
   private final String inputPath;
   private final String outputPath;
-  private boolean forceOutputOverrite;
+  private boolean forceOutputOverwrite;
 
   public WordCount(String name, Props props) {
     super(name, props);
     this.inputPath = props.getString("input.path");
     this.outputPath = props.getString("output.path");
-    this.forceOutputOverrite =
+    this.forceOutputOverwrite =
         props.getBoolean("force.output.overwrite", false);
   }
 
   public static class Map extends MapReduceBase implements
       Mapper<LongWritable, Text, Text, IntWritable> {
 
-    static enum Counters {
+    enum Counters {
       INPUT_WORDS
-    };
+    }
 
     private final static IntWritable one = new IntWritable(1);
     private Text word = new Text();
@@ -103,7 +102,7 @@ public class WordCount extends AbstractHadoopJob {
 
   @Override
   public void run() throws Exception {
-    logger.info(String.format("Starting %s", getClass().getSimpleName()));
+    LOG.info(String.format("Starting %s", getClass().getSimpleName()));
 
     // hadoop conf should be on the classpath
     JobConf jobconf = getJobConf();
@@ -121,7 +120,7 @@ public class WordCount extends AbstractHadoopJob {
     FileInputFormat.addInputPath(jobconf, new Path(inputPath));
     FileOutputFormat.setOutputPath(jobconf, new Path(outputPath));
 
-    if (forceOutputOverrite) {
+    if (forceOutputOverwrite) {
       FileSystem fs =
           FileOutputFormat.getOutputPath(jobconf).getFileSystem(jobconf);
       fs.delete(FileOutputFormat.getOutputPath(jobconf), true);
@@ -129,5 +128,4 @@ public class WordCount extends AbstractHadoopJob {
 
     super.run();
   }
-
 }

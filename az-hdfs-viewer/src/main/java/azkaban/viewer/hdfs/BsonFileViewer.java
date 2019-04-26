@@ -13,24 +13,20 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
+import com.mongodb.util.JSON;
 import java.util.EnumSet;
 import java.util.Set;
 import java.io.IOException;
 import java.io.OutputStream;
-
-import org.apache.hadoop.fs.permission.AccessControlException;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-
 import org.bson.BSONObject;
 import org.bson.BasicBSONCallback;
 import org.bson.BasicBSONDecoder;
 
-import com.mongodb.util.JSON;
 
 /**
  * File viewer for Mongo bson files.
@@ -53,8 +49,7 @@ public final class BsonFileViewer extends HdfsFileViewer {
   }
 
   @Override
-  public Set<Capability> getCapabilities(FileSystem fs, Path path)
-      throws AccessControlException {
+  public Set<Capability> getCapabilities(FileSystem fs, Path path) {
     if (path.getName().endsWith(".bson")) {
       return EnumSet.of(Capability.READ);
     }

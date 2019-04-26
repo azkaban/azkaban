@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.db.DatabaseOperator;
@@ -25,12 +24,11 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+
 
 @Singleton
 public class ExecutorDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject

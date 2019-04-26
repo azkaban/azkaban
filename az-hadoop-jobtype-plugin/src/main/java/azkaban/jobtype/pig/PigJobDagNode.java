@@ -13,27 +13,24 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.pig;
 
+import azkaban.jobtype.JobDagNode;
+import azkaban.jobtype.MapReduceJobState;
+import azkaban.jobtype.StatsUtils;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import azkaban.jobtype.JobDagNode;
-import azkaban.jobtype.MapReduceJobState;
-import azkaban.jobtype.StatsUtils;
-
 import org.apache.pig.tools.pigstats.JobStats;
 
-public class PigJobDagNode extends JobDagNode {
-  private String jobId;
 
+public class PigJobDagNode extends JobDagNode {
+
+  private String jobId;
   private List<String> features;
   private List<String> aliases;
-
   private PigJobStats jobStats;
 
   public PigJobDagNode(String name, String[] aliases, String[] features) {

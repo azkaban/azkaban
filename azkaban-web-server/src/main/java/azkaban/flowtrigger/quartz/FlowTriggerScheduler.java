@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.flowtrigger.quartz;
 
 import static java.util.Objects.requireNonNull;
@@ -46,10 +45,11 @@ import org.quartz.Trigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 @Singleton
 public class FlowTriggerScheduler {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerScheduler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FlowTriggerScheduler.class);
   private final ProjectLoader projectLoader;
   private final QuartzScheduler scheduler;
   private final ProjectManager projectManager;
@@ -101,15 +101,15 @@ public class FlowTriggerScheduler {
                     (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
                         generateGroupName(flow), contextMap));
             if (scheduleSuccess) {
-              logger.info("Successfully registered flow {}.{} to scheduler", project.getName(),
+              LOG.info("Successfully registered flow {}.{} to scheduler", project.getName(),
                   flow.getId());
             } else {
-              logger.info("Fail to register a duplicate flow {}.{} to scheduler", project.getName(),
+              LOG.info("Fail to register a duplicate flow {}.{} to scheduler", project.getName(),
                   flow.getId());
             }
           }
         } catch (final SchedulerException | IOException ex) {
-          logger.error("Error in registering flow {}.{}", project.getName(), flow.getId(), ex);
+          LOG.error("Error in registering flow {}.{}", project.getName(), flow.getId(), ex);
           throw ex;
         } finally {
           FlowLoaderUtils.cleanUpDir(tempDir);
@@ -161,7 +161,7 @@ public class FlowTriggerScheduler {
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0), isPaused, flow.isLocked());
         } catch (final Exception ex) {
-          logger.error("Unable to get flow trigger by job key {}", jobKey, ex);
+          LOG.error("Unable to get flow trigger by job key {}", jobKey, ex);
           scheduledFlowTrigger = null;
         }
 
@@ -169,7 +169,7 @@ public class FlowTriggerScheduler {
       }
       return flowTriggerJobDetails;
     } catch (final Exception ex) {
-      logger.error("Unable to get scheduled flow triggers", ex);
+      LOG.error("Unable to get scheduled flow triggers", ex);
       return new ArrayList<>();
     }
   }
@@ -183,10 +183,10 @@ public class FlowTriggerScheduler {
         try {
           if (this.scheduler
               .unscheduleJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow))) {
-            logger.info("Flow {}.{} unregistered from scheduler", project.getName(), flow.getId());
+            LOG.info("Flow {}.{} unregistered from scheduler", project.getName(), flow.getId());
           }
         } catch (final SchedulerException e) {
-          logger.error("Fail to unregister flow from scheduler {}.{}", project.getName(),
+          LOG.error("Fail to unregister flow from scheduler {}.{}", project.getName(),
               flow.getId(), e);
           throw e;
         }

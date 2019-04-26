@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobExecutor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -241,7 +240,7 @@ public class ProcessJobTest {
         Thread.sleep(10);
         super.run();
       } catch (final Exception ex) {
-        this.getLog().error(ex);
+        this.getLog().error("Job Process Failure", ex);
       }
     }
   }

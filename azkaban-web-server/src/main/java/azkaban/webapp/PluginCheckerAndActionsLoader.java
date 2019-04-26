@@ -25,18 +25,19 @@ import java.io.File;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class PluginCheckerAndActionsLoader {
 
-  private static final Logger log = Logger.getLogger(PluginCheckerAndActionsLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PluginCheckerAndActionsLoader.class);
 
   public void load(final String pluginPath) {
-    log.info("Loading plug-in checker and action types");
+    LOG.info("Loading plug-in checker and action types");
     final File triggerPluginPath = new File(pluginPath);
     if (!triggerPluginPath.exists()) {
-      log.error("plugin path " + pluginPath + " doesn't exist!");
+      LOG.error("plugin path " + pluginPath + " doesn't exist!");
       return;
     }
 
@@ -57,10 +58,10 @@ public class PluginCheckerAndActionsLoader {
 
       final String pluginClass = pluginProps.getString("trigger.class");
       if (pluginClass == null) {
-        log.error("Trigger class is not set.");
+        LOG.error("Trigger class is not set.");
         continue;
       } else {
-        log.info("Plugin class " + pluginClass);
+        LOG.info("Plugin class " + pluginClass);
       }
 
       URLClassLoader urlClassLoader = PluginUtils
@@ -76,14 +77,14 @@ public class PluginCheckerAndActionsLoader {
       }
 
       final String source = FileIOUtils.getSourcePathFromClass(triggerClass);
-      log.info("Source jar " + source);
+      LOG.info("Source jar " + source);
       jarPaths.add("jar:file:" + source);
 
       try {
         Utils.invokeStaticMethod(urlClassLoader, pluginClass,
             "initiateCheckerTypes", pluginProps, this);
       } catch (final Exception e) {
-        log.error("Unable to initiate checker types for " + pluginClass);
+        LOG.error("Unable to initiate checker types for " + pluginClass);
         continue;
       }
 
@@ -91,7 +92,7 @@ public class PluginCheckerAndActionsLoader {
         Utils.invokeStaticMethod(urlClassLoader, pluginClass,
             "initiateActionTypes", pluginProps, this);
       } catch (final Exception e) {
-        log.error("Unable to initiate action types for " + pluginClass);
+        LOG.error("Unable to initiate action types for " + pluginClass);
         continue;
       }
     }

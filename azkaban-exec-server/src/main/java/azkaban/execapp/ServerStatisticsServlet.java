@@ -25,14 +25,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ServerStatisticsServlet extends HttpServlet {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ServerStatisticsServlet.class);
   private static final long serialVersionUID = 1L;
   private static final int cacheTimeInMilliseconds = 1000;
-  private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
   private static final String noCacheParamName = "nocache";
   private static final boolean exists_Bash = new File("/bin/bash").exists();
   private static final boolean exists_Cat = new File("/bin/cat").exists();
@@ -135,7 +136,7 @@ public class ServerStatisticsServlet extends HttpServlet {
             }
           }
         } else {
-          logger.error(
+          LOG.error(
               "failed to get total/free memory info as the bash call returned invalid result."
                   + String.format(" Output from the bash call - %s ", output.toString()));
         }
@@ -145,12 +146,12 @@ public class ServerStatisticsServlet extends HttpServlet {
         stats.setRemainingMemoryPercent(
             totalMemory == 0 ? 0 : ((double) totalFreeMemory / (double) totalMemory) * 100);
       } catch (final Exception ex) {
-        logger.error("failed fetch system memory info "
+        LOG.error("failed fetch system memory info "
             + "as exception is captured when fetching result from bash call. Ex -" + ex
             .getMessage());
       }
     } else {
-      logger.error(
+      LOG.error(
           "failed fetch system memory info, one or more files from the following list are missing -  "
               + "'/bin/bash'," + "'/bin/cat'," + "'/proc/loadavg'");
     }
@@ -162,10 +163,10 @@ public class ServerStatisticsServlet extends HttpServlet {
         && result.split("\\s+").length > 2) {
       try {
         returnResult = Long.parseLong(result.split("\\s+")[1]);
-        logger.debug(field + ":" + returnResult);
+        LOG.debug(field + ":" + returnResult);
       } catch (final NumberFormatException e) {
         returnResult = 0L;
-        logger.error(String.format("yielding 0 for %s as output is invalid - %s", field, result));
+        LOG.error(String.format("yielding 0 for %s as output is invalid - %s", field, result));
       }
     }
     return returnResult;
@@ -205,7 +206,7 @@ public class ServerStatisticsServlet extends HttpServlet {
       stats.setNumberOfAssignedFlows(assignedFlows);
       stats.setLastDispatchedTime(runnerMgr.getLastFlowSubmittedTime());
     } else {
-      logger.error("failed to get data for remaining flow capacity or LastDispatchedTime"
+      LOG.error("failed to get data for remaining flow capacity or LastDispatchedTime"
           + " as the AzkabanExecutorServer has yet been initialized.");
     }
   }
@@ -235,18 +236,18 @@ public class ServerStatisticsServlet extends HttpServlet {
           try {
             cpuUsage = Double.parseDouble(splitedresult[0]);
           } catch (final NumberFormatException e) {
-            logger.error("yielding 0.0 for CPU usage as output is invalid -" + output.get(0));
+            LOG.error("yielding 0.0 for CPU usage as output is invalid -" + output.get(0));
           }
-          logger.info("System load : " + cpuUsage);
+          LOG.info("System load : " + cpuUsage);
           stats.setCpuUpsage(cpuUsage);
         }
       } catch (final Exception ex) {
-        logger.error("failed fetch system load info "
+        LOG.error("failed fetch system load info "
             + "as exception is captured when fetching result from bash call. Ex -" + ex
             .getMessage());
       }
     } else {
-      logger.error(
+      LOG.error(
           "failed fetch system load info, one or more files from the following list are missing -  "
               + "'/bin/bash'," + "'/bin/cat'," + "'/proc/loadavg'");
     }

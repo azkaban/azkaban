@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.File;
@@ -32,15 +31,17 @@ import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMultipart;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class EmailMessage {
 
+  private static final Logger LOG = LoggerFactory.getLogger(EmailMessage.class);
   private static final int MAX_EMAIL_RETRY_COUNT = 5;
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
   private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
-  private final Logger logger = Logger.getLogger(EmailMessage.class);
   private final List<String> _toAddress = new ArrayList<>();
   private final int _mailPort;
   private final ArrayList<BodyPart> _attachments = new ArrayList<>();
@@ -230,7 +231,7 @@ public class EmailMessage {
         connectToSMTPServer(s);
         return;
       } catch (final Exception e) {
-        this.logger.error("Connecting to SMTP server failed, attempt: " + attempt, e);
+        LOG.error("Connecting to SMTP server failed, attempt: " + attempt, e);
       }
     }
     s.close();
@@ -246,7 +247,7 @@ public class EmailMessage {
         s.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
         return;
       } catch (final Exception e) {
-        this.logger.error("Sending email messages failed, attempt: " + attempt, e);
+        LOG.error("Sending email messages failed, attempt: " + attempt, e);
       }
     }
     s.close();

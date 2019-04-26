@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ExecutorServiceUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(ExecutorServiceUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorServiceUtils.class);
   private static final TimeUnit MILLI_SECONDS_TIME_UNIT = TimeUnit.MILLISECONDS;
 
   /**
@@ -52,7 +52,7 @@ public class ExecutorServiceUtils {
       service.shutdownNow(); // Cancel currently executing tasks
       // Wait a while for tasks to respond to being cancelled
       if (!service.awaitTermination(timeout_in_unit_of_miliseconds, MILLI_SECONDS_TIME_UNIT)) {
-        logger.error("The executor service did not terminate.");
+        LOG.error("The executor service did not terminate.");
       }
     }
   }

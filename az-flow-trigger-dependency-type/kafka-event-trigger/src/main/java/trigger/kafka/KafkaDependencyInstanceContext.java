@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package trigger.kafka;
 
 import azkaban.flowtrigger.DependencyInstanceCallback;
@@ -23,11 +22,13 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import trigger.kafka.Constants.DependencyInstanceConfigKey;
 
+
 /**
  * KafkaDependencyInstanceContext maintains attributes of a running instance of kafka dependency.
  */
 public class KafkaDependencyInstanceContext implements DependencyInstanceContext {
-  private final static Logger log = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);
+
+  private final static Logger LOG = LoggerFactory.getLogger(KafkaDependencyInstanceContext.class);
   private final KafkaDependencyCheck depCheck;
   private final DependencyInstanceCallback callback;
   private final String topicName;
@@ -45,7 +46,7 @@ public class KafkaDependencyInstanceContext implements DependencyInstanceContext
 
   @Override
   public void cancel() {
-    log.info(String.format("Canceling dependency %s", this));
+    LOG.info(String.format("Canceling dependency %s", this));
     this.depCheck.remove(this);
     this.callback.onCancel(this);
   }

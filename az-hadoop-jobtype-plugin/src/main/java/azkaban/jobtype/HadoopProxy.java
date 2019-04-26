@@ -17,12 +17,12 @@ package azkaban.jobtype;
 
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
-import java.io.File;
-import org.apache.log4j.Logger;
 import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
+import java.io.File;
+import org.apache.log4j.Logger;
 
 
 /**

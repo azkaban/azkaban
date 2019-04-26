@@ -39,16 +39,16 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
-import javax.servlet.ServletException;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @RestLiActions(name = "project", namespace = "azkaban.restli")
 public class ProjectManagerResource extends ResourceContextHolder {
 
-  private static final Logger logger = Logger
-      .getLogger(ProjectManagerResource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectManagerResource.class);
 
   public AzkabanWebServer getAzkaban() {
     return AzkabanWebServer.getInstance();
@@ -59,8 +59,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
       @ActionParam("projectName") final String projectName,
       @ActionParam("packageUrl") final String packageUrl)
       throws ProjectManagerException, RestLiServiceException, UserManagerException,
-      ServletException, IOException, SchedulerException, ExecutorManagerException {
-    logger.info("Deploy called. {projectName: " + projectName + ", packageUrl:" + packageUrl + "}");
+      IOException, SchedulerException, ExecutorManagerException {
+    LOG.info("Deploy called. {projectName: " + projectName + ", packageUrl:" + packageUrl + "}");
 
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
     final User user = ResourceUtils.getUserFromSessionId(sessionId);
@@ -71,7 +71,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     final boolean enableQuartz = getAzkaban().getServerProps().getBoolean(ConfigurationKeys
         .ENABLE_QUARTZ, false);
 
-    logger.info("Deploy: reference of project " + projectName + " is " + System.identityHashCode
+    LOG.info("Deploy: reference of project " + projectName + " is " + System.identityHashCode
         (project));
     if (project == null) {
       final String errorMsg = "Project '" + projectName + "' not found.";
@@ -88,17 +88,17 @@ public class ProjectManagerResource extends ResourceContextHolder {
       final String errorMsg =
           "User " + user.getUserId()
               + " has no permission to write to project " + project.getName();
-      logger.error(errorMsg);
+      LOG.error(errorMsg);
       throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
     }
 
-    logger.info("Target package URL is " + packageUrl);
+    LOG.info("Target package URL is " + packageUrl);
     URL url = null;
     try {
       url = new URL(packageUrl);
     } catch (final MalformedURLException e) {
       final String errorMsg = "URL " + packageUrl + " is malformed.";
-      logger.error(errorMsg, e);
+      LOG.error(errorMsg, e);
       throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
     }
 
@@ -110,15 +110,15 @@ public class ProjectManagerResource extends ResourceContextHolder {
       // connection
       // timeout. This will cause the call to block until the download is
       // complete.
-      logger.info("Downloading package from " + packageUrl);
+      LOG.info("Downloading package from " + packageUrl);
       FileUtils.copyURLToFile(url, archiveFile);
 
-      logger.info("Downloaded to " + archiveFile.toString());
+      LOG.info("Downloaded to " + archiveFile.toString());
     } catch (final IOException e) {
       final String errorMsg =
           "Download of URL " + packageUrl + " to " + archiveFile.toString()
               + " failed";
-      logger.error(errorMsg, e);
+      LOG.error(errorMsg, e);
       if (tempDir.exists()) {
         FileUtils.deleteDirectory(tempDir);
       }
@@ -142,12 +142,12 @@ public class ProjectManagerResource extends ResourceContextHolder {
       }
 
       checkReports(reports);
-      logger.info("Deploy: project " + projectName + " version is " + project.getVersion()
+      LOG.info("Deploy: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       return Integer.toString(project.getVersion());
     } catch (final ProjectManagerException | ExecutorManagerException e) {
       final String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
-      logger.error(errorMsg, e);
+      LOG.error(errorMsg, e);
       throw e;
     } finally {
       if (tempDir.exists()) {

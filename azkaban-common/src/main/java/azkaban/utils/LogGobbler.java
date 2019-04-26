@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import com.google.common.base.Joiner;
@@ -22,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
 
 public class LogGobbler extends Thread {
 
@@ -84,5 +84,4 @@ public class LogGobbler extends Thread {
   public String getRecentLog() {
     return Joiner.on(System.getProperty("line.separator")).join(this.buffer);
   }
-
 }

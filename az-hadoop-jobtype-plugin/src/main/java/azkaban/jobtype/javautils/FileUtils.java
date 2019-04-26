@@ -23,7 +23,8 @@ import java.util.List;
 import org.apache.commons.io.filefilter.AndFileFilter;
 import org.apache.commons.io.filefilter.FileFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -31,7 +32,7 @@ import org.apache.log4j.Logger;
  */
 public class FileUtils {
 
-  private static Logger logger = Logger.getLogger(FileUtils.class);
+  private static Logger LOG = LoggerFactory.getLogger(FileUtils.class);
 
   /**
    * Delete file or directory.
@@ -67,7 +68,7 @@ public class FileUtils {
       deleteFileOrDirectory(file);
       return true;
     } catch (Exception e) {
-      logger.warn("Failed to delete file. file = " + file.getAbsolutePath(), e);
+      LOG.warn("Failed to delete file. file = " + file.getAbsolutePath(), e);
       return false;
     }
   }

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp.event;
 
 import azkaban.event.Event;
@@ -24,9 +23,11 @@ import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
 import azkaban.spi.EventType;
 
+
 public class LocalFlowWatcher extends FlowWatcher {
 
   private final LocalFlowWatcherListener watcherListener;
+
   private FlowRunner runner;
   private boolean isShutdown = false;
 

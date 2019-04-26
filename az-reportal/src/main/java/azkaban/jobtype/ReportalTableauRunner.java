@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import azkaban.reportal.util.tableau.Countdown;
@@ -22,13 +21,17 @@ import azkaban.reportal.util.tableau.URLResponse;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ReportalTableauRunner extends ReportalAbstractRunner {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ReportalTableauRunner.class);
+
   public static final String TIMEOUT = "tableau.timeout.minutes";
   public static final String TABLEAU_URL = "tableau.url";
-  private static final Logger logger = Logger.getLogger(ReportalTableauRunner.class);
+
   private final int timeout;
   private final String tableauUrl;
 
@@ -41,7 +44,7 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
   private void refreshExtract(final String tableauUrl, final String workbook) throws Exception {
     final URLResponse urlResponse = new URLResponse(tableauUrl, URLResponse.Path.REFRESH_EXTRACT,
         workbook);
-    logger.info(urlResponse.getContents());
+    LOG.info(urlResponse.getContents());
   }
 
   private Result getLastExtractStatus(final String tableauUrl, final String workbook, final Duration
@@ -55,19 +58,18 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
     while (countdown.moreTimeRemaining()) {
       urlResponse.refreshContents();
       if (urlResponse.indicatesSuccess()) {
-        logger.info(urlResponse.getContents());
+        LOG.info(urlResponse.getContents());
         return (Result.SUCCESS);
       } else if (urlResponse.indicatesError()) {
-        logger.error(urlResponse.getContents());
+        LOG.error(urlResponse.getContents());
         return (Result.FAIL);
       }
       TimeUnit.MINUTES.sleep(1);
       countdown.countDownByOneMinute();
-      logger.info("Re-attempting connection with workbook " + workbook + ".");
+      LOG.info("Re-attempting connection with workbook " + workbook + ".");
     }
     return Result.TIMEOUT;
   }
-
 
   private void handleRefreshFailure(final Result result, final String workbook) throws Exception {
     assert result == Result.FAIL || result == Result.TIMEOUT;
@@ -84,18 +86,17 @@ public class ReportalTableauRunner extends ReportalAbstractRunner {
      * once the status is found, log the results and cancel the job if
      * the status was an error or a timeout
      */
-    logger.info("Refreshing extract to workbook " + workbook);
+    LOG.info("Refreshing extract to workbook " + workbook);
     refreshExtract(this.tableauUrl, workbook);
-    logger.info("Getting last extract status from workbook " + workbook + "\n"
+    LOG.info("Getting last extract status from workbook " + workbook + "\n"
         + "Will wait for Tableau to refresh for up to " + this.timeout + " mins");
 
     final Result result = getLastExtractStatus(this.tableauUrl, workbook, Duration.ofMinutes(
         this.timeout));
 
-    logger.info("result:" + result.getMessage());
+    LOG.info("result:" + result.getMessage());
     if (result == Result.FAIL || result == Result.TIMEOUT) {
       handleRefreshFailure(result, workbook);
     }
   }
-
 }

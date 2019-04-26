@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.db.EncodingType;
@@ -37,14 +36,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class ExecutionLogsDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutionLogsDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutionLogsDao.class);
   private final DatabaseOperator dbOperator;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
 
@@ -77,7 +77,7 @@ public class ExecutionLogsDao {
     try {
       this.dbOperator.transaction(transaction);
     } catch (final SQLException e) {
-      logger.error("uploadLogFile failed.", e);
+      LOG.error("uploadLogFile failed.", e);
       throw new ExecutorManagerException("uploadLogFile failed.", e);
     }
   }
@@ -127,10 +127,10 @@ public class ExecutionLogsDao {
             + pos, encType, buffer, pos);
       }
     } catch (final SQLException e) {
-      logger.error("Error writing log part.", e);
+      LOG.error("Error writing log part.", e);
       throw new SQLException("Error writing log part", e);
     } catch (final IOException e) {
-      logger.error("Error chunking.", e);
+      LOG.error("Error chunking.", e);
       throw new SQLException("Error chunking", e);
     }
   }
@@ -142,7 +142,7 @@ public class ExecutionLogsDao {
     try {
       return this.dbOperator.update(DELETE_BY_TIME, millis);
     } catch (final SQLException e) {
-      logger.error("delete execution logs failed", e);
+      LOG.error("delete execution logs failed", e);
       throw new ExecutorManagerException(
           "Error deleting old execution_logs before " + millis, e);
     }

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.project;
 
 import static java.util.Objects.requireNonNull;
@@ -45,13 +44,14 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class ProjectManager {
 
-  private static final Logger logger = Logger.getLogger(ProjectManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectManager.class);
   private final AzkabanProjectLoader azkabanProjectLoader;
   private final ProjectLoader projectLoader;
   private final Props props;
@@ -105,7 +105,7 @@ public class ProjectManager {
         final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(flowFile);
         return flowTrigger != null;
       } catch (final Exception ex) {
-        logger.error("error in getting flow file", ex);
+        LOG.error("error in getting flow file", ex);
         throw ex;
       } finally {
         FlowLoaderUtils.cleanUpDir(tempDir);
@@ -180,7 +180,7 @@ public class ProjectManager {
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
-      logger.error("Bad regex pattern " + regexPattern);
+      LOG.error("Bad regex pattern " + regexPattern);
       return array;
     }
 
@@ -208,7 +208,7 @@ public class ProjectManager {
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
-      logger.error("Bad regex pattern " + regexPattern);
+      LOG.error("Bad regex pattern " + regexPattern);
       return allProjects;
     }
     for (final Project project : getProjects()) {
@@ -235,12 +235,12 @@ public class ProjectManager {
       try {
         fetchedProject = this.projectLoader.fetchProjectByName(name);
         if (fetchedProject != null) {
-          logger.info("Project " + name + " not found in cache, fetched from DB.");
+          LOG.info("Project " + name + " not found in cache, fetched from DB.");
         } else {
-          logger.info("No active project with name " + name + " exists in cache or DB.");
+          LOG.info("No active project with name " + name + " exists in cache or DB.");
         }
       } catch (final ProjectManagerException e) {
-        logger.error("Could not load project from store.", e);
+        LOG.error("Could not load project from store.", e);
       }
     }
     return fetchedProject;
@@ -255,7 +255,7 @@ public class ProjectManager {
       try {
         fetchedProject = this.projectLoader.fetchProjectById(id);
       } catch (final ProjectManagerException e) {
-        logger.error("Could not load project from store.", e);
+        LOG.error("Could not load project from store.", e);
       }
     }
     return fetchedProject;
@@ -280,7 +280,7 @@ public class ProjectManager {
         throw new ProjectManagerException("Project already exists.");
       }
 
-      logger.info("Trying to create " + projectName + " by user "
+      LOG.info("Trying to create " + projectName + " by user "
           + creator.getUserId());
       newProject = this.projectLoader.createNewProject(projectName, description, creator);
       this.projectsByName.put(newProject.getName(), newProject);
@@ -358,7 +358,7 @@ public class ProjectManager {
           jobName == null ? flow.getId() : flow.getId() + Constants.PATH_DELIMITER + jobName;
       props = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
     } catch (final Exception e) {
-      this.logger.error("Failed to get props from flow file. " + e);
+      LOG.error("Failed to get props from flow file. " + e);
     } finally {
       FlowLoaderUtils.cleanUpDir(tempDir);
     }
@@ -406,7 +406,7 @@ public class ProjectManager {
         this.projectLoader
             .uploadFlowFile(flow.getProjectId(), flow.getVersion(), flowFile, flowVersion + 1);
       } catch (final Exception e) {
-        this.logger.error("Failed to set job override property. " + e);
+        LOG.error("Failed to set job override property. " + e);
       } finally {
         FlowLoaderUtils.cleanUpDir(tempDir);
       }
@@ -435,7 +435,7 @@ public class ProjectManager {
 
   public void addProjectProxyUser(final Project project, final String proxyName,
       final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId() + " adding proxy user "
+    LOG.info("User " + modifier.getUserId() + " adding proxy user "
         + proxyName + " to project " + project.getName());
     project.addProxyUser(proxyName);
 
@@ -447,7 +447,7 @@ public class ProjectManager {
 
   public void removeProjectProxyUser(final Project project, final String proxyName,
       final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId() + " removing proxy user "
+    LOG.info("User " + modifier.getUserId() + " removing proxy user "
         + proxyName + " from project " + project.getName());
     project.removeProxyUser(proxyName);
 
@@ -460,7 +460,7 @@ public class ProjectManager {
   public void updateProjectPermission(final Project project, final String name,
       final Permission perm, final boolean group, final User modifier)
       throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId()
+    LOG.info("User " + modifier.getUserId()
         + " updating permissions for project " + project.getName() + " for "
         + name + " " + perm.toString());
     this.projectLoader.updatePermission(project, name, perm, group);
@@ -477,7 +477,7 @@ public class ProjectManager {
 
   public void removeProjectPermission(final Project project, final String name,
       final boolean group, final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId()
+    LOG.info("User " + modifier.getUserId()
         + " removing permissions for project " + project.getName() + " for "
         + name);
     this.projectLoader.removePermission(project, name, group);

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import static java.util.Objects.requireNonNull;
@@ -38,15 +37,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
   public static final String JSON_MIME_TYPE = "application/json";
-  private static final Logger logger = Logger.getLogger(ExecutorServlet.class
-      .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorServlet.class);
   private static final long serialVersionUID = -3528600004096666451L;
   private AzkabanExecutorServer application;
   private FlowRunnerManager flowRunnerManager;
@@ -98,7 +97,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     final HashMap<String, Object> respMap = new HashMap<>();
     try {
       if (!hasParam(req, ConnectorParams.ACTION_PARAM)) {
-        logger.error("Parameter action not set");
+        LOG.error("Parameter action not set");
         respMap.put("error", "Parameter action not set");
       } else {
         final String action = getParam(req, ConnectorParams.ACTION_PARAM);
@@ -107,16 +106,16 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         } else if (action.equals(ConnectorParams.PING_ACTION)) {
           respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE);
         } else if (action.equals(ConnectorParams.RELOAD_JOBTYPE_PLUGINS_ACTION)) {
-          logger.info("Reloading Jobtype plugins");
+          LOG.info("Reloading Jobtype plugins");
           handleReloadJobTypePlugins(respMap);
         } else if (action.equals(ConnectorParams.ACTIVATE)) {
-          logger.warn("Setting ACTIVE flag to true");
+          LOG.warn("Setting ACTIVE flag to true");
           setActive(true, respMap);
         } else if (action.equals(ConnectorParams.GET_STATUS)) {
-          logger.debug("Get Executor Status: ");
+          LOG.debug("Get Executor Status: ");
           getStatus(respMap);
         } else if (action.equals(ConnectorParams.DEACTIVATE)) {
-          logger.warn("Setting ACTIVE flag to false");
+          LOG.warn("Setting ACTIVE flag to false");
           setActive(false, respMap);
         } else if (action.equals(ConnectorParams.SHUTDOWN)) {
           shutdown(respMap);
@@ -124,7 +123,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
           final String user = getParam(req, ConnectorParams.USER_PARAM, null);
 
-          logger.info("User " + user + " has called action " + action + " on "
+          LOG.info("User " + user + " has called action " + action + " on "
               + execid);
           if (action.equals(ConnectorParams.METADATA_ACTION)) {
             handleFetchMetaDataEvent(execid, req, resp, respMap);
@@ -137,25 +136,25 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           } else if (action.equals(ConnectorParams.STATUS_ACTION)) {
             handleAjaxFlowStatus(respMap, execid);
           } else if (action.equals(ConnectorParams.CANCEL_ACTION)) {
-            logger.info("Cancel called.");
+            LOG.info("Cancel called.");
             handleAjaxCancel(respMap, execid, user);
           } else if (action.equals(ConnectorParams.PAUSE_ACTION)) {
-            logger.info("Paused called.");
+            LOG.info("Paused called.");
             handleAjaxPause(respMap, execid, user);
           } else if (action.equals(ConnectorParams.RESUME_ACTION)) {
-            logger.info("Resume called.");
+            LOG.info("Resume called.");
             handleAjaxResume(respMap, execid, user);
           } else if (action.equals(ConnectorParams.MODIFY_EXECUTION_ACTION)) {
-            logger.info("Modify Execution Action");
+            LOG.info("Modify Execution Action");
             handleModifyExecutionRequest(respMap, execid, user, req);
           } else {
-            logger.error("action: '" + action + "' not supported.");
+            LOG.error("action: '" + action + "' not supported.");
             respMap.put("error", "action: '" + action + "' not supported.");
           }
         }
       }
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
     writeJSON(resp, respMap);
@@ -174,7 +173,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         this.flowRunnerManager.retryFailures(execId, user);
       }
     } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -195,7 +194,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         result = this.flowRunnerManager.readFlowLogs(execId, startByte, length);
         respMap.putAll(result.toObject());
       } catch (final Exception e) {
-        logger.error(e.getMessage(), e);
+        LOG.error(e.getMessage(), e);
         respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
       }
     } else {
@@ -207,7 +206,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
                 length);
         respMap.putAll(result.toObject());
       } catch (final Exception e) {
-        logger.error(e.getMessage(), e);
+        LOG.error(e.getMessage(), e);
         respMap.put("error", e.getMessage());
       }
     }
@@ -224,7 +223,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           this.flowRunnerManager.readJobAttachments(execId, jobId, attempt);
       respMap.put("attachments", result);
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -246,7 +245,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
               length);
       respMap.putAll(result.toObject());
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -287,7 +286,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     try {
       this.flowRunnerManager.submitFlow(execId);
     } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -313,7 +312,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       this.flowRunnerManager.pauseFlow(execid, user);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -329,7 +328,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       this.flowRunnerManager.resumeFlow(execid, user);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -345,7 +344,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       this.flowRunnerManager.cancelFlow(execid, user);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -355,7 +354,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       this.flowRunnerManager.reloadJobTypePlugins();
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -365,7 +364,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       setActiveInternal(value);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -383,14 +382,14 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
    */
   private void shutdown(final Map<String, Object> respMap) {
     try {
-      logger.warn("Shutting down executor...");
+      LOG.warn("Shutting down executor...");
 
       // Set the executor to inactive. Will receive no new flows.
       setActiveInternal(false);
       this.application.shutdown();
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -406,7 +405,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       respMap.put("isActive", String.valueOf(executor.isActive()));
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {
-      logger.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
     }
   }

@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
+
 public abstract class HadoopSecurityManager {
 
   public static final String ENABLE_PROXYING = "azkaban.should.proxy"; // boolean

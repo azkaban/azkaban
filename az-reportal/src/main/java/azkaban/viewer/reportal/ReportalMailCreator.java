@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.reportal;
 
 import azkaban.executor.ExecutableFlow;
@@ -49,9 +48,13 @@ import java.util.Scanner;
 import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class ReportalMailCreator implements MailCreator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ReportalMailCreator.class);
   public static final String REPORTAL_MAIL_CREATOR = "ReportalMailCreator";
   public static final int NUM_PREVIEW_ROWS = 50;
   //Attachment that equal or larger than 10MB will be skipped in the email
@@ -62,8 +65,6 @@ public class ReportalMailCreator implements MailCreator {
   public static String outputFileSystem = "";
   public static String reportalStorageUser = "";
   public static File reportalMailTempDirectory;
-
-  private static final Logger logger = Logger.getLogger(ReportalMailCreator.class);
 
   static {
     DefaultMailCreator.registerCreator(REPORTAL_MAIL_CREATOR,
@@ -84,7 +85,8 @@ public class ReportalMailCreator implements MailCreator {
 
   @Override
   public boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow>
-      pastExecutions, EmailMessage message, String azkabanName, String scheme, String clientHostname,
+      pastExecutions, EmailMessage message, String azkabanName, String scheme,
+      String clientHostname,
       String clientPortNumber, String... reasons) {
 
     ExecutionOptions option = flow.getExecutionOptions();
@@ -138,7 +140,7 @@ public class ReportalMailCreator implements MailCreator {
       try {
         return createMessage(project, flow, message, urlPrefix, printData);
       } catch (Exception e) {
-        logger.error("Message creation failed for " + flow.getId(), e);
+        LOG.error("Message creation failed for " + flow.getId(), e);
       }
     }
 
@@ -156,9 +158,11 @@ public class ReportalMailCreator implements MailCreator {
     message.println("<html>");
     message.println("<head></head>");
     message
-        .println("<body style='font-family: verdana; color: #000000; background-color: #cccccc; padding: 20px;'>");
+        .println(
+            "<body style='font-family: verdana; color: #000000; background-color: #cccccc; padding: 20px;'>");
     message
-        .println("<div style='background-color: #ffffff; border: 1px solid #aaaaaa; padding: 20px;-webkit-border-radius: 15px; -moz-border-radius: 15px; border-radius: 15px;'>");
+        .println(
+            "<div style='background-color: #ffffff; border: 1px solid #aaaaaa; padding: 20px;-webkit-border-radius: 15px; -moz-border-radius: 15px; border-radius: 15px;'>");
     // Title
     message.println("<b>" + project.getMetadata().get("title") + "</b>");
     message
@@ -192,7 +196,8 @@ public class ReportalMailCreator implements MailCreator {
     while (flowParameters.containsKey("reportal.variable." + i + ".from")) {
       if (i == 0) {
         message
-            .println("<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
+            .println(
+                "<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
         message.println("Variables");
         message.println("</div>");
         message
@@ -282,7 +287,7 @@ public class ReportalMailCreator implements MailCreator {
       try {
         streamProvider.cleanUp();
       } catch (IOException e) {
-        logger.error("Stream provider cleanup failed for " + flow.getId(), e);
+        LOG.error("Stream provider cleanup failed for " + flow.getId(), e);
       }
 
       boolean emptyResults = true;
@@ -298,7 +303,8 @@ public class ReportalMailCreator implements MailCreator {
         job.getAttempt();
 
         message
-            .println("<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
+            .println(
+                "<div style='margin-top: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-weight: bold;'>");
         message.println(file);
         message.println("</div>");
         message.println("<div>");
@@ -349,9 +355,9 @@ public class ReportalMailCreator implements MailCreator {
 
       if (totalFileSize < MAX_ATTACHMENT_SIZE) {
         for (i = 0; i < fileList.length; i++) {
-            String file = fileList[i];
-            File tempOutputFile = new File(tempFolder, file);
-            message.addAttachment(file, tempOutputFile);
+          String file = fileList[i];
+          File tempOutputFile = new File(tempFolder, file);
+          message.addAttachment(file, tempOutputFile);
         }
       }
 
@@ -367,10 +373,11 @@ public class ReportalMailCreator implements MailCreator {
     }
 
     message.println("</div>");
-    if (totalFileSize >= MAX_ATTACHMENT_SIZE){
-      message.println("<tr>The total size of the reports (" + totalFileSize/1024/1024 + "MB) is bigger than the allowed maximum size of " +
-              MAX_ATTACHMENT_SIZE/1024/1024 + "MB. " +
-                  "It is too big to be attached in this message. Please use the link above titled Result Data to download the reports</tr>");
+    if (totalFileSize >= MAX_ATTACHMENT_SIZE) {
+      message.println("<tr>The total size of the reports (" + totalFileSize / 1024 / 1024
+          + "MB) is bigger than the allowed maximum size of " +
+          MAX_ATTACHMENT_SIZE / 1024 / 1024 + "MB. " +
+          "It is too big to be attached in this message. Please use the link above titled Result Data to download the reports</tr>");
     }
     message.println("</body>").println("</html>");
 

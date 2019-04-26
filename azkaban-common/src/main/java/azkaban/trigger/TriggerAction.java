@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger;
 
 import java.util.Map;
+
 
 public interface TriggerAction {
 
@@ -33,5 +33,4 @@ public interface TriggerAction {
   void setContext(Map<String, Object> context);
 
   String getDescription();
-
 }

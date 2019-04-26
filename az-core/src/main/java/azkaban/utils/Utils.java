@@ -40,9 +40,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.quartz.CronExpression;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -50,8 +50,8 @@ import org.quartz.CronExpression;
  */
 public class Utils {
 
+  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PluginUtils.class);
   private static final Random RANDOM = new Random();
-  private static final Logger logger = Logger.getLogger(Utils.class);
 
   /**
    * Private constructor.
@@ -386,7 +386,7 @@ public class Utils {
         ce.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
         return ce;
       } catch (final ParseException pe) {
-        logger.error("this cron expression {" + cronExpression + "} can not be parsed. "
+        LOG.error("this cron expression {" + cronExpression + "} can not be parsed. "
             + "Please Check Quartz Cron Syntax.");
       }
       return null;

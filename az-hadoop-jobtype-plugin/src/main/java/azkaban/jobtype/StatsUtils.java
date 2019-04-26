@@ -33,13 +33,14 @@ import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Counters.Group;
 import org.apache.hadoop.mapred.RunningJob;
-import org.apache.log4j.Logger;
 import org.apache.pig.impl.util.ObjectSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class StatsUtils {
 
-  private static Logger logger = Logger.getLogger(StatsUtils.class);
+  private static Logger LOG = LoggerFactory.getLogger(StatsUtils.class);
 
   private static final Set<String> JOB_CONF_KEYS = new HashSet<String>(
       Arrays.asList(new String[]{
@@ -70,9 +71,9 @@ public class StatsUtils {
       conf.addResource(in);
       return getJobConf(conf);
     } catch (FileNotFoundException e) {
-      logger.warn("Job conf not found.");
+      LOG.warn("Job conf not found.");
     } catch (IOException e) {
-      logger.warn("Error while retrieving job conf: " + e.getMessage());
+      LOG.warn("Error while retrieving job conf: " + e.getMessage());
     }
     return null;
   }
@@ -95,7 +96,7 @@ public class StatsUtils {
         }
       }
     } catch (IOException e) {
-      logger.warn("Error while reading job conf: " + e.getMessage());
+      LOG.warn("Error while reading job conf: " + e.getMessage());
     }
     return jobConfProperties;
   }

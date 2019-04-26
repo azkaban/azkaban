@@ -13,13 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils;
+
 
 /**
  * Thrown when a query sent for execution ends unsuccessfully.
  */
 public class HiveQueryExecutionException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
   /**

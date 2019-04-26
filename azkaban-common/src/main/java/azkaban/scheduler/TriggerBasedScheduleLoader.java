@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.scheduler;
 
 import azkaban.Constants;
@@ -31,12 +30,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
-  private static final Logger logger = Logger
-      .getLogger(TriggerBasedScheduleLoader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(TriggerBasedScheduleLoader.class);
 
   private final TriggerManagerAdapter triggerManager;
 
@@ -160,7 +160,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           act.getExecutionOptions(),
           triggerTimeChecker.getCronExpression());
     } else {
-      logger.error("Failed to parse schedule from trigger!");
+      LOG.error("Failed to parse schedule from trigger!");
       throw new ScheduleManagerException(
           "Failed to parse schedule from trigger!");
     }
@@ -215,10 +215,10 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
       this.lastUpdateTime = Math.max(this.lastUpdateTime, t.getLastModifyTime());
       final Schedule s = triggerToSchedule(t);
       schedules.add(s);
-      logger.info("loaded schedule for "
-          + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");
+      LOG.info(
+          "loaded schedule for " + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")"
+      );
     }
     return schedules;
   }
-
 }

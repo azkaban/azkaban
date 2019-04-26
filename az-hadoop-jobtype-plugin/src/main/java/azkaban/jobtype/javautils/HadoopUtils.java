@@ -15,6 +15,7 @@
  */
 package azkaban.jobtype.javautils;
 
+import azkaban.utils.Props;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,8 +28,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.log4j.Logger;
-import azkaban.utils.Props;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,7 +37,7 @@ import azkaban.utils.Props;
  */
 public class HadoopUtils {
 
-  private static final Logger logger = Logger.getLogger(HadoopUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HadoopUtils.class);
 
   public static void setClassLoaderAndJar(JobConf conf, Class<?> jobClass) {
     conf.setClassLoader(Thread.currentThread().getContextClassLoader());
@@ -53,7 +54,7 @@ public class HadoopUtils {
       for (Enumeration<?> itr = loader.getResources(fileName); itr
           .hasMoreElements(); ) {
         URL url = (URL) itr.nextElement();
-        logger.info("findContainingJar finds url:" + url);
+        LOG.info("findContainingJar finds url:" + url);
         if ("jar".equals(url.getProtocol())) {
           String toReturn = url.getPath();
           if (toReturn.startsWith("file:")) {
@@ -90,7 +91,7 @@ public class HadoopUtils {
     if (fs.exists(path)) {
       for (FileStatus status : fs.listStatus(path)) {
         if (!shouldPathBeIgnored(status.getPath())) {
-          if (status.isDir()) {
+          if (status.isDirectory()) {
             addAllSubPaths(conf, status.getPath());
           } else {
             FileInputFormat.addInputPath(conf, status.getPath());

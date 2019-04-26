@@ -24,7 +24,9 @@ import javax.inject.Inject;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * This interface is to define Base Data Access Object contract for Azkaban. All azkaban DB related
@@ -35,7 +37,7 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseOperator {
 
-  private static final Logger logger = Logger.getLogger(DatabaseOperator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DatabaseOperator.class);
 
   private final QueryRunner queryRunner;
 
@@ -55,7 +57,6 @@ public class DatabaseOperator {
    * Executes the given Azkaban related SELECT SQL operations. it will call
    * {@link AzkabanDataSource#getConnection()} inside queryrunner.query.
    *
-   * @param sqlQuery The SQL query statement to execute.
    * @param resultHandler The handler used to create the result object
    * @param params Initialize the PreparedStatement's IN parameters
    * @param <T> The type of object that the qeury handler returns
@@ -68,7 +69,7 @@ public class DatabaseOperator {
       return this.queryRunner.query(baseQuery, resultHandler, params);
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
-      logger.error("query failed", ex);
+      LOG.error("query failed", ex);
       if (this.dbMetrics != null) {
         this.dbMetrics.markDBFailQuery();
       }
@@ -97,7 +98,7 @@ public class DatabaseOperator {
       return res;
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
-      logger.error("transaction failed", ex);
+      LOG.error("transaction failed", ex);
       if (this.dbMetrics != null) {
         this.dbMetrics.markDBFailTransaction();
       }
@@ -121,7 +122,7 @@ public class DatabaseOperator {
       return this.queryRunner.update(updateClause, params);
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
-      logger.error("update failed", ex);
+      LOG.error("update failed", ex);
       if (this.dbMetrics != null) {
         this.dbMetrics.markDBFailUpdate();
       }

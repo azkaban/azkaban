@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp.action;
 
 import azkaban.Constants;
@@ -22,15 +21,15 @@ import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.TriggerAction;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class KillExecutionAction implements TriggerAction {
 
   public static final String type = "KillExecutionAction";
 
-  private static final Logger logger = Logger
-      .getLogger(KillExecutionAction.class);
+  private static final Logger LOG = LoggerFactory.getLogger(KillExecutionAction.class);
 
   private final String actionId;
   private final int execId;
@@ -82,7 +81,7 @@ public class KillExecutionAction implements TriggerAction {
 
   @Override
   public void doAction() throws Exception {
-    logger.info("ready to kill execution " + this.execId);
+    LOG.info("ready to kill execution " + this.execId);
     ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class)
         .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
   }

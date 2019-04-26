@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.dag;
 
 import static java.util.Objects.requireNonNull;
@@ -21,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * Node in a DAG: Directed acyclic graph.

@@ -47,7 +47,7 @@ class FlowPreparer {
   // Name of the file which keeps project directory size
   static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
 
-  private static final Logger log = LoggerFactory.getLogger(FlowPreparer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FlowPreparer.class);
 
   // TODO spyne: move to config class
   private final File executionsDir;
@@ -137,18 +137,18 @@ class FlowPreparer {
         final long start = System.currentTimeMillis();
         execDir = setupExecutionDir(project.getInstalledDir(), flow);
         final long end = System.currentTimeMillis();
-        log.info("Setting up execution dir {} took {} sec(s)", execDir, (end - start) / 1000);
+        LOG.info("Setting up execution dir {} took {} sec(s)", execDir, (end - start) / 1000);
       }
 
       final long flowPrepCompletionTime = System.currentTimeMillis();
-      log.info("Flow preparation completed in {} sec(s), out ot which {} sec(s) was spent inside "
+      LOG.info("Flow preparation completed in {} sec(s), out ot which {} sec(s) was spent inside "
               + "critical section. [execid: {}, path: {}]",
           (flowPrepCompletionTime - flowPrepStartTime) / 1000,
           (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
           flow.getExecutionId(), execDir.getPath());
     } catch (final Exception ex) {
       FileIOUtils.deleteDirectorySilently(tempDir);
-      log.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
+      LOG.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
       throw new ExecutorManagerException(ex);
     } finally {
       if (projectFileHandler != null) {
@@ -181,7 +181,7 @@ class FlowPreparer {
     try {
       Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
     } catch (final IOException ex) {
-      log.warn("Error when updating last modified time for {}", path, ex);
+      LOG.warn("Error when updating last modified time for {}", path, ex);
     }
   }
 
@@ -232,7 +232,7 @@ class FlowPreparer {
 
     // If directory exists, assume it's prepared and skip.
     if (proj.getInstalledDir().exists()) {
-      log.info("Project {} already cached. Skipping download. ExecId: {}", proj, execId);
+      LOG.info("Project {} already cached. Skipping download. ExecId: {}", proj, execId);
       // Hit the local cache.
       this.projectCacheHitRatio.markHit();
       // Update last modified time of the file keeping project dir size when the project is
@@ -251,7 +251,7 @@ class FlowPreparer {
     final File tempDir = createTempDir(proj);
     downloadAndUnzipProject(proj, tempDir);
 
-    log.info("Downloading zip file for project {} when preparing execution [execid {}] "
+    LOG.info("Downloading zip file for project {} when preparing execution [execid {}] "
             + "completed in {} second(s)", proj, execId,
         (System.currentTimeMillis() - start) / 1000);
 

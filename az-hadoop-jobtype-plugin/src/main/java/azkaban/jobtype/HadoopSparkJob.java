@@ -147,17 +147,17 @@ public class HadoopSparkJob extends AbstractHadoopJavaProcessJob {
 
 
   public HadoopSparkJob(final String jobid, final Props sysProps, final Props jobProps,
-      final Logger log) {
-    super(jobid, sysProps, jobProps, log);
+      final Logger logger) {
+    super(jobid, sysProps, jobProps, logger);
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
   }
 
   private static String testableGetMainArguments(final Props jobProps, final String workingDir,
-      final Logger log) {
+      final Logger logger) {
 
     // if we ever need to recreate a failure scenario in the test case
-    log.debug(jobProps);
-    log.debug(workingDir);
+    logger.debug(jobProps.toString());
+    logger.debug(workingDir);
 
     final List<String> argList = new ArrayList<>();
 
@@ -182,7 +182,7 @@ public class HadoopSparkJob extends AbstractHadoopJavaProcessJob {
       if (!sparkJobArg.needSpecialTreatment) {
         handleStandardArgument(jobProps, argList, sparkJobArg);
       } else if (sparkJobArg.equals(SparkJobArg.SPARK_JARS)) {
-        sparkJarsHelper(jobProps, workingDir, log, argList);
+        sparkJarsHelper(jobProps, workingDir, logger, argList);
       } else if (sparkJobArg.equals(SparkJobArg.SPARK_CONF_PREFIX)) {
         sparkConfPrefixHelper(jobProps, argList);
       } else if (sparkJobArg.equals(SparkJobArg.DRIVER_JAVA_OPTIONS)) {
@@ -190,7 +190,7 @@ public class HadoopSparkJob extends AbstractHadoopJavaProcessJob {
       } else if (sparkJobArg.equals(SparkJobArg.SPARK_FLAG_PREFIX)) {
         sparkFlagPrefixHelper(jobProps, argList);
       } else if (sparkJobArg.equals(SparkJobArg.EXECUTION_JAR)) {
-        executionJarHelper(jobProps, workingDir, log, argList);
+        executionJarHelper(jobProps, workingDir, logger, argList);
       } else if (sparkJobArg.equals(SparkJobArg.PARAMS)) {
         paramsHelper(jobProps, argList);
       } else if (sparkJobArg.equals(SparkJobArg.SPARK_VERSION)) {

@@ -13,24 +13,31 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban;
 
 import java.util.Collection;
 import java.util.Properties;
 
+
 public class Utils {
+
+  private Utils() {
+
+  }
+
   public static String joinNewlines(Collection<String> strings) {
-    if (strings == null || strings.size() == 0)
+    if (strings == null || strings.size() == 0) {
       return null;
+    }
 
     StringBuilder sb = new StringBuilder();
 
     for (String s : strings) {
       String trimmed = s.trim();
       sb.append(trimmed);
-      if (!trimmed.endsWith("\n"))
+      if (!trimmed.endsWith("\n")) {
         sb.append("\n");
+      }
     }
 
     return sb.toString();
@@ -47,6 +54,5 @@ public class Utils {
     }
     // TODO: Add a log entry here for the value
     return value;
-
   }
 }

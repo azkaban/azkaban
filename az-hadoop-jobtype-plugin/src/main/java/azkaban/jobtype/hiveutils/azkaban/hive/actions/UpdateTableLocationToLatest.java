@@ -13,12 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.hiveutils.azkaban.hive.actions;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.log4j.Logger;
+import static azkaban.jobtype.hiveutils.azkaban.Utils.verifyProperty;
 
 import azkaban.jobtype.hiveutils.HiveQueryExecutionException;
 import azkaban.jobtype.hiveutils.HiveQueryExecutor;
@@ -26,30 +23,32 @@ import azkaban.jobtype.hiveutils.azkaban.HiveAction;
 import azkaban.jobtype.hiveutils.azkaban.HiveViaAzkabanException;
 import azkaban.jobtype.hiveutils.util.AzkHiveAction;
 import azkaban.jobtype.hiveutils.util.AzkabanJobPropertyDescription;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Properties;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static azkaban.jobtype.hiveutils.azkaban.Utils.verifyProperty;
 
 /**
  * Alter the specified table's location to the 'latest' directory found in
  * specified base directory, where latest is defined as greate lexically.</p>
  *
  * For example, if we have a base dir foo with directories:</p>
- *   /foo/2012-01-01</p>
- *       /2012-01-02</p>
- *       /2012-01-03</p>
+ * /foo/2012-01-01</p>
+ * /2012-01-02</p>
+ * /2012-01-03</p>
  * and we specify table as 'bar', this action will execute
  * ALTER TABLE bar SET LOCATION '/foo/2012-01-03';</p>
  * </p>
  */
 @AzkHiveAction(Constants.UPDATE_TABLE_LOCATION_TO_LATEST)
 public class UpdateTableLocationToLatest implements HiveAction {
-  private final static Logger LOG = Logger
-      .getLogger(UpdateTableLocationToLatest.class);
+
+  private final static Logger LOG = LoggerFactory.getLogger(UpdateTableLocationToLatest.class);
 
   public static final String UPDATE_TABLE_LOCATION_TO_LATEST =
       Constants.UPDATE_TABLE_LOCATION_TO_LATEST;

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
@@ -35,12 +34,13 @@ import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final Logger LOG = LoggerFactory.getLogger(FlowTriggerServlet.class);
   private static final long serialVersionUID = 1L;
   private FlowTriggerScheduler scheduler;
   private ProjectManager projectManager;
-  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerServlet.class);
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -120,15 +120,15 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
           try {
             if (ajaxName.equals("pauseTrigger")) {
               if (this.scheduler.pauseFlowTriggerIfPresent(projectId, flowId)) {
-                logger.info("Flow trigger for flow {}.{} is paused", project.getName(), flowId);
+                LOG.info("Flow trigger for flow {}.{} is paused", project.getName(), flowId);
               } else {
-                logger.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
+                LOG.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
               }
             } else {
               if (this.scheduler.resumeFlowTriggerIfPresent(projectId, flowId)) {
-                logger.info("Flow trigger for flow {}.{} is resumed", project.getName(), flowId);
+                LOG.info("Flow trigger for flow {}.{} is resumed", project.getName(), flowId);
               } else {
-                logger.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
+                LOG.warn("Flow trigger for flow {}.{} doesn't exist", project.getName(), flowId);
               }
             }
             ret.put("status", "success");

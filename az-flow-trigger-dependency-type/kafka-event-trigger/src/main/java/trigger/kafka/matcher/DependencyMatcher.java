@@ -13,16 +13,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package trigger.kafka.matcher;
 
+
 /**
- *  A generic interface that allows user to define their own matching method. 
+ * A generic interface that allows user to define their own matching method.
  */
 public interface DependencyMatcher<T> {
+
   /**
    * Determine whether the dependency condition is match with the Kafka event.
    */
-   boolean isMatch(T payload);
-
+  boolean isMatch(T payload);
 }
