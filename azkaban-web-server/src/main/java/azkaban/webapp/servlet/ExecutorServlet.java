@@ -54,7 +54,6 @@ import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -152,6 +151,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
+    } else if (ajaxName.equals("ramp")) {
+      ajaxRampActions(req, resp, ret, session.getUser());
     } else if (ajaxName.equals("fetchscheduledflowgraph")) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
@@ -967,5 +968,31 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     ret.put("execid", exflow.getExecutionId());
+  }
+
+  private void ajaxRampActions(final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
+
+    try {
+      Object body = HttpRequestUtils.getJsonBody(req);
+      if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
+        Map<String, String> result = new HashMap<>();
+        if (body instanceof List) { // A list of actions
+          List<Map<String, Object>> rampActions = (List<Map<String, Object>>)body;
+          result = this.executorManagerAdapter.doRampActions(rampActions);
+        } else if (body instanceof Map) {
+          List<Map<String, Object>> rampActions = new ArrayList<>();
+          rampActions.add((Map<String, Object>) body);
+          result = this.executorManagerAdapter.doRampActions(rampActions);
+        } else {
+          result.put("error", "Invalid Body Format");
+        }
+        ret.putAll(result);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+      ret.put("error", "Error on update Ramp. " + e.getMessage());
+    }
   }
 }

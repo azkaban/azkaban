@@ -37,6 +37,7 @@ public class ExecutableFlowBase extends ExecutableNode {
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
   public static final String INHERITED_PARAM = "inherited";
+  private static final String FLOW_ID_FORMAT_PATTERN = "%s.%s";
   private static final Logger logger = LoggerFactory.getLogger(ExecutableFlowBase.class);
 
   private final HashMap<String, ExecutableNode> executableNodes =
@@ -111,6 +112,10 @@ public class ExecutableFlowBase extends ExecutableNode {
 
   public String getFlowId() {
     return this.flowId;
+  }
+
+  public String getFlowName() {
+    return String.format(FLOW_ID_FORMAT_PATTERN, this.getProjectName(), this.flowId);
   }
 
   protected void setFlow(final Project project, final Flow flow) {

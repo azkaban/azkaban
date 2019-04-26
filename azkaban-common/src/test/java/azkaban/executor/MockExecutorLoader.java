@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
@@ -33,7 +32,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Used in unit tests to mock the "DB layer" (the real implementation is JdbcExecutorLoader).
@@ -41,7 +42,7 @@ import org.apache.log4j.Logger;
  */
 public class MockExecutorLoader implements ExecutorLoader {
 
-  private static final Logger logger = Logger.getLogger(MockExecutorLoader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MockExecutorLoader.class);
 
   Map<Integer, Integer> executionExecutorMapping = new ConcurrentHashMap<>();
   Map<Integer, ExecutableFlow> flows = new ConcurrentHashMap<>();
@@ -141,7 +142,7 @@ public class MockExecutorLoader implements ExecutorLoader {
     for (final File file : files) {
       try {
         final String logs = FileUtils.readFileToString(file, "UTF-8");
-        logger.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
+        LOGGER.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
       } catch (final IOException e) {
         throw new RuntimeException(e);
       }
@@ -455,6 +456,77 @@ public class MockExecutorLoader implements ExecutorLoader {
   public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     return 1;
+  }
+
+  @Override
+  public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
+    ExecutableRampMap map = ExecutableRampMap.createInstance();
+    map.add("rampId",
+        ExecutableRamp.createInstance(
+        "dali",
+        "RampPolicy",
+        ExecutableRamp.Metadata.createInstance(
+            5,
+            10,
+            false
+        ),
+        ExecutableRamp.State.createInstance(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            0,
+            true)
+    ));
+    return map;
+  }
+
+  @Override
+  public ExecutableRampItemsMap fetchExecutableRampItemsMap() throws ExecutorManagerException {
+    ExecutableRampItemsMap map = ExecutableRampItemsMap.createInstance();
+    map.add("rampId", "dependencyId", "defaultValue");
+    return map;
+  }
+
+  @Override
+  public ExecutableRampDependencyMap fetchExecutableRampDependencyMap() throws ExecutorManagerException {
+    ExecutableRampDependencyMap map = ExecutableRampDependencyMap.createInstance();
+    map.add("dependency", "defaultValue", "pig,hive,spark");
+    return map;
+  }
+
+  @Override
+  public ExecutableRampExceptionalFlowItemsMap fetchExecutableRampExceptionalFlowItemsMap() throws ExecutorManagerException {
+    ExecutableRampExceptionalFlowItemsMap map = ExecutableRampExceptionalFlowItemsMap.createInstance();
+    map.add("rampId", "flowId", ExecutableRampStatus.SELECTED, 15500000L);
+    return map;
+  }
+
+  @Override
+  public ExecutableRampExceptionalJobItemsMap fetchExecutableRampExceptionalJobItemsMap() throws ExecutorManagerException {
+    ExecutableRampExceptionalJobItemsMap map = ExecutableRampExceptionalJobItemsMap.createInstance();
+    map.add("rampId", "flowId", "jobId", ExecutableRampStatus.UNSELECTED, 15000000L);
+    return map;
+  }
+
+  @Override
+  public void updateExecutedRampFlows(final String ramp, ExecutableRampExceptionalItems executableRampExceptionalItems)
+      throws ExecutorManagerException {
+
+  }
+
+  @Override
+  public void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException {
+
+  }
+
+  @Override
+  public Map<String, String> doRampActions(List<Map<String, Object>> rampActionsMap) throws ExecutorManagerException {
+    return null;
   }
 
   @Override
