@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger.builtin;
 
 import azkaban.executor.ExecutableFlow;
@@ -31,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
+
 
 public class ExecuteFlowAction implements TriggerAction {
 
@@ -175,11 +175,8 @@ public class ExecuteFlowAction implements TriggerAction {
     if (this.executionOptions != null) {
       jsonObj.put("executionOptions", this.executionOptions.toObject());
     }
-    if (this.executionOptions.getSlaOptions() != null) {
-      final List<Object> slaOptionsObj = new ArrayList<>();
-      for (final SlaOption sla : this.executionOptions.getSlaOptions()) {
-        slaOptionsObj.add(sla.toObject());
-      }
+    List<Object> slaOptionsObj = SlaOption.convertToObjects(this.executionOptions.getSlaOptions());
+    if (slaOptionsObj != null) {
       jsonObj.put("slaOptions", slaOptionsObj);
     }
     return jsonObj;
@@ -229,5 +226,4 @@ public class ExecuteFlowAction implements TriggerAction {
   public String getId() {
     return this.actionId;
   }
-
 }

@@ -1,29 +1,43 @@
+/*
+ * Copyright 2019 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.jobtype.javautils;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.commons.io.filefilter.AndFileFilter;
 import org.apache.commons.io.filefilter.FileFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.log4j.Logger;
 
 
+/**
+ * Utilities Function of File Related Operations
+ */
 public class FileUtils {
+
   private static Logger logger = Logger.getLogger(FileUtils.class);
 
   /**
    * Delete file or directory.
    * (Apache FileUtils.deleteDirectory has a bug and is not working.)
-   *
-   * @param file
-   * @throws IOException
    */
-  public static void deleteFileOrDirectory(File file) throws IOException {
+  public static void deleteFileOrDirectory(File file) {
     if (!file.isDirectory()) {
       file.delete();
       return;
@@ -42,12 +56,18 @@ public class FileUtils {
     deleteFileOrDirectory(file);
   }
 
+  /**
+   * Try to delete File or Directory
+   *
+   * @param file file object
+   * @return success delete or not
+   */
   public static boolean tryDeleteFileOrDirectory(File file) {
     try {
       deleteFileOrDirectory(file);
       return true;
     } catch (Exception e) {
-      logger.warn("Failed to delete " + file.getAbsolutePath(), e);
+      logger.warn("Failed to delete file. file = " + file.getAbsolutePath(), e);
       return false;
     }
   }
@@ -55,30 +75,31 @@ public class FileUtils {
   /**
    * Find files while input can use wildcard * or ?
    *
-   * @param filesStr File path(s) delimited by delimiter
+   * @param filesString File path(s) delimited by delimiter
    * @param delimiter Separator of file paths.
    * @return List of absolute path of files
    */
-  public static Collection<String> listFiles(String filesStr, String delimiter) {
-    ValidationUtils.validateNotEmpty(filesStr, "fileStr");
+  public static Collection<String> listFiles(String filesString, String delimiter) {
+    ValidationUtils.validateNotEmpty(filesString, "fileStr");
 
     List<String> files = new ArrayList<String>();
-    for (String s : filesStr.split(delimiter)) {
-      File f = new File(s);
-      if (!f.getName().contains("*") && !f.getName().contains("?")) {
-        files.add(f.getAbsolutePath());
-        continue;
-      }
-
-      FileFilter fileFilter = new AndFileFilter(new WildcardFileFilter(f.getName()), FileFileFilter.FILE);
-      File parent = f.getParentFile() == null ? f : f.getParentFile();
-      File[] filteredFiles = parent.listFiles(fileFilter);
-      if(filteredFiles == null) {
-        continue;
-      }
-
-      for (File file : filteredFiles) {
+    for (String fileString : filesString.split(delimiter)) {
+      File file = new File(fileString);
+      if (!file.getName().contains("*") && !file.getName().contains("?")) {
         files.add(file.getAbsolutePath());
+        continue;
+      }
+
+      FileFilter fileFilter = new AndFileFilter(new WildcardFileFilter(file.getName()),
+          FileFileFilter.FILE);
+      File parent = file.getParentFile() == null ? file : file.getParentFile();
+      File[] filteredFiles = parent.listFiles(fileFilter);
+      if (filteredFiles == null) {
+        continue;
+      }
+
+      for (File filteredFile : filteredFiles) {
+        files.add(filteredFile.getAbsolutePath());
       }
     }
     return files;

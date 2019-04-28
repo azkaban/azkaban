@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobExecutor;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
@@ -30,6 +29,7 @@ import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
+import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
@@ -62,10 +62,10 @@ public class ProcessJob extends AbstractProcessJob {
   private static final String CREATE_FILE = "touch";
   private static final int SUCCESSFUL_EXECUTION = 0;
   private static final String TEMP_FILE_NAME = "user_can_write";
+
   private final CommonMetrics commonMetrics;
   private volatile AzkabanProcess process;
   private volatile boolean killed = false;
-
   // For testing only. True if the job process exits successfully.
   private volatile boolean success;
 
@@ -141,8 +141,8 @@ public class ProcessJob extends AbstractProcessJob {
       handleError("Bad property definition! " + e.getMessage(), e);
     }
 
-    if (this.sysProps.getBoolean(MEMCHECK_ENABLED, true)
-        && this.jobProps.getBoolean(AZKABAN_MEMORY_CHECK, true)) {
+    if (this.getSysProps().getBoolean(MEMCHECK_ENABLED, true)
+        && this.getJobProps().getBoolean(AZKABAN_MEMORY_CHECK, true)) {
       final Pair<Long, Long> memPair = getProcMemoryRequirement();
       final long xms = memPair.getFirst();
       final long xmx = memPair.getSecond();
@@ -212,18 +212,19 @@ public class ProcessJob extends AbstractProcessJob {
 
     // change krb5ccname env var so that each job execution gets its own cache
     final Map<String, String> envVars = getEnvironmentVariables();
-    envVars.put(KRB5CCNAME, getKrb5ccname(this.jobProps));
+    envVars.put(KRB5CCNAME, getKrb5ccname(this.getJobProps()));
 
     // determine whether to run as Azkaban or run as effectiveUser,
     // by default, run as effectiveUser
     String executeAsUserBinaryPath = null;
     String effectiveUser = null;
-    final boolean isExecuteAsUser = this.sysProps.getBoolean(EXECUTE_AS_USER, true);
+    final boolean isExecuteAsUser = this.getSysProps().getBoolean(EXECUTE_AS_USER, true);
 
     //Get list of users we never execute flows as. (ie: root, azkaban)
     final Set<String> blackListedUsers = new HashSet<>(
         Arrays.asList(
-            this.sysProps.getString(Constants.ConfigurationKeys.BLACK_LISTED_USERS, "root,azkaban")
+            this.getSysProps()
+                .getString(Constants.ConfigurationKeys.BLACK_LISTED_USERS, "root,azkaban")
                 .split(",")
         )
     );
@@ -231,9 +232,9 @@ public class ProcessJob extends AbstractProcessJob {
     // nativeLibFolder specifies the path for execute-as-user file,
     // which will change user from Azkaban to effectiveUser
     if (isExecuteAsUser) {
-      final String nativeLibFolder = this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER);
+      final String nativeLibFolder = this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER);
       executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
-      effectiveUser = getEffectiveUser(this.jobProps);
+      effectiveUser = getEffectiveUser(this.getJobProps());
       // Throw exception if Azkaban tries to run flow as a prohibited user
       if (blackListedUsers.contains(effectiveUser)) {
         throw new RuntimeException(
@@ -378,7 +379,7 @@ public class ProcessJob extends AbstractProcessJob {
   private boolean canWriteInCurrentWorkingDirectory(final String effectiveUser)
       throws IOException {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
-        this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+        this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
     final List<String> checkIfUserCanWriteCommand = Arrays
         .asList(CREATE_FILE, getWorkingDirectory() + "/" + TEMP_FILE_NAME);
     final int result = executeAsUser.execute(effectiveUser, checkIfUserCanWriteCommand);
@@ -397,8 +398,8 @@ public class ProcessJob extends AbstractProcessJob {
   private void assignUserFileOwnership(final String effectiveUser, final String fileName) throws
       Exception {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
-        this.sysProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
-    final String groupName = this.sysProps.getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
+        this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+    final String groupName = this.getSysProps().getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
     final List<String> changeOwnershipCommand = Arrays
         .asList(CHOWN, effectiveUser + ":" + groupName, fileName);
     info("Change ownership of " + fileName + " to " + effectiveUser + ":" + groupName + ".");
@@ -431,9 +432,9 @@ public class ProcessJob extends AbstractProcessJob {
 
   protected List<String> getCommandList() {
     final List<String> commands = new ArrayList<>();
-    commands.add(this.jobProps.getString(COMMAND));
-    for (int i = 1; this.jobProps.containsKey(COMMAND + "." + i); i++) {
-      commands.add(this.jobProps.getString(COMMAND + "." + i));
+    commands.add(this.getJobProps().getString(COMMAND));
+    for (int i = 1; this.getJobProps().containsKey(COMMAND + "." + i); i++) {
+      commands.add(this.getJobProps().getString(COMMAND + "." + i));
     }
 
     return commands;
@@ -481,6 +482,6 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   public String getPath() {
-    return this._jobPath == null ? "" : this._jobPath;
+    return Utils.ifNull(this.getJobPath(), "");
   }
 }

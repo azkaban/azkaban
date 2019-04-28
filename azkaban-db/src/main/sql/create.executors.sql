@@ -3,8 +3,7 @@ CREATE TABLE executors (
   host   VARCHAR(64) NOT NULL,
   port   INT         NOT NULL,
   active BOOLEAN                          DEFAULT FALSE,
-  UNIQUE (host, port),
-  UNIQUE INDEX executor_id (id)
+  UNIQUE (host, port)
 );
 
 CREATE INDEX executor_connection

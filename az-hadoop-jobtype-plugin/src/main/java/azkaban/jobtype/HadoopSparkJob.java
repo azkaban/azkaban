@@ -13,18 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
-
-import static azkaban.security.commons.HadoopSecurityManager.ENABLE_PROXYING;
-import static azkaban.security.commons.HadoopSecurityManager.OBTAIN_BINARY_TOKEN;
-import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
+import azkaban.utils.Utils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,10 +32,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.StringTokenizer;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.apache.tools.ant.DirectoryScanner;
+
 
 /**
  * <pre>
@@ -80,7 +77,7 @@ import org.apache.tools.ant.DirectoryScanner;
  *                  should set up dynamic allocation properly and set related conf in spark-default.conf)
  *
  * spark.node.labeling.enforced (set to true if we want to enforce node labeling policy.
-  *                 Enabling node labeling policy for spark job type is different from enabling node
+ *                 Enabling node labeling policy for spark job type is different from enabling node
  *                  labeling feature in YARN. This config inside Spark job type is to enforce node
  *                  labeling is used for all Spark applications submitted via Azkaban Spark job type.
  *                  If set to true, our client wrapper will ignore user specified queue. If this
@@ -92,7 +89,7 @@ import org.apache.tools.ant.DirectoryScanner;
  *
  * @see azkaban.jobtype.HadoopSecureSparkWrapper
  */
-public class HadoopSparkJob extends JavaProcessJob {
+public class HadoopSparkJob extends AbstractHadoopJavaProcessJob {
 
   // SPARK_HOME ENV VAR for HadoopSecureSparkWrapper(Spark Client)
   public static final String SPARK_HOME_ENV_VAR = "SPARK_HOME";
@@ -148,39 +145,14 @@ public class HadoopSparkJob extends JavaProcessJob {
   // Spark configuration property to specify additional Namenodes to fetch tokens for
   private static final String SPARK_CONF_ADDITIONAL_NAMENODES = "spark.yarn.access.namenodes";
 
-  // security variables
-  private String userToProxy = null;
-
-  private boolean shouldProxy = false;
-
-  private boolean obtainTokens = false;
-
-  private File tokenFile = null;
-
-  private HadoopSecurityManager hadoopSecurityManager;
 
   public HadoopSparkJob(final String jobid, final Props sysProps, final Props jobProps,
       final Logger log) {
     super(jobid, sysProps, jobProps, log);
-
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
-
-    this.shouldProxy = getSysProps().getBoolean(ENABLE_PROXYING, false);
-    getJobProps().put(ENABLE_PROXYING, Boolean.toString(this.shouldProxy));
-    this.obtainTokens = getSysProps().getBoolean(OBTAIN_BINARY_TOKEN, false);
-
-    if (this.shouldProxy) {
-      getLog().info("Initiating hadoop security manager.");
-      try {
-        this.hadoopSecurityManager =
-            HadoopJobUtils.loadHadoopSecurityManager(getSysProps(), log);
-      } catch (final RuntimeException e) {
-        throw new RuntimeException("Failed to get hadoop security manager!" + e);
-      }
-    }
   }
 
-  static String testableGetMainArguments(final Props jobProps, final String workingDir,
+  private static String testableGetMainArguments(final Props jobProps, final String workingDir,
       final Logger log) {
 
     // if we ever need to recreate a failure scenario in the test case
@@ -291,33 +263,14 @@ public class HadoopSparkJob extends JavaProcessJob {
     }
   }
 
-  private static String getSourcePathFromClass(final Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      final String name = containedClass.getName();
-      final StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
-  }
-
   /**
    * Add additional namenodes specified in the Spark Configuration
    * ({@link #SPARK_CONF_ADDITIONAL_NAMENODES}) to the Props provided.
+   *
    * @param props Props to add additional namenodes to.
    * @see HadoopJobUtils#addAdditionalNamenodesToProps(Props, String)
    */
-  void addAdditionalNamenodesFromConf(final Props props) {
+  private void addAdditionalNamenodesFromConf(final Props props) {
     final String sparkConfDir = getSparkLibConf()[1];
     final File sparkConfFile = new File(sparkConfDir, "spark-defaults.conf");
     try {
@@ -341,25 +294,21 @@ public class HadoopSparkJob extends JavaProcessJob {
   }
 
   @Override
+  public Props appendExtraProps(Props props) {
+    addAdditionalNamenodesFromConf(props);
+    return props;
+  }
+
+  @Override
   public void run() throws Exception {
-    HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(),
-        getWorkingDirectory());
+    HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
+    hadoopProxy.setupPropsForProxy(getAllProps(), getJobProps(), getLog());
+    setupHadoopJobProperties();
+    super.run();
+  }
 
-    if (this.shouldProxy && this.obtainTokens) {
-      this.userToProxy = getJobProps().getString(HadoopSecurityManager.USER_TO_PROXY);
-      getLog().info("Need to proxy. Getting tokens.");
-      // get tokens in to a file, and put the location in props
-      final Props props = new Props();
-      props.putAll(getJobProps());
-      props.putAll(getSysProps());
-      addAdditionalNamenodesFromConf(props);
-      this.tokenFile =
-          HadoopJobUtils
-              .getHadoopTokens(this.hadoopSecurityManager, props, getLog());
-      getJobProps().put("env." + HADOOP_TOKEN_FILE_LOCATION,
-          this.tokenFile.getAbsolutePath());
-    }
-
+  @Override
+  public void setupHadoopJobProperties() {
     // If we enable dynamic resource allocation or node labeling in jobtype property,
     // then set proper env var for client wrapper(HadoopSecureSparkWrapper) to modify spark job conf
     // before calling spark-submit to enforce every spark job uses dynamic allocation or node labeling
@@ -374,8 +323,9 @@ public class HadoopSparkJob extends JavaProcessJob {
     if (getSysProps().getBoolean(SPARK_AUTO_NODE_LABELING_JOBTYPE_PROPERTY, Boolean.FALSE)) {
       final String desiredNodeLabel = getSysProps().get(SPARK_DESIRED_NODE_LABEL_JOBTYPE_PROPERTY);
       if (desiredNodeLabel == null) {
-        throw new RuntimeException(SPARK_DESIRED_NODE_LABEL_JOBTYPE_PROPERTY  + " must be configured when " +
-            SPARK_AUTO_NODE_LABELING_JOBTYPE_PROPERTY + " is set to true.");
+        throw new RuntimeException(
+            SPARK_DESIRED_NODE_LABEL_JOBTYPE_PROPERTY + " must be configured when " +
+                SPARK_AUTO_NODE_LABELING_JOBTYPE_PROPERTY + " is set to true.");
       }
       getJobProps().put("env." + SPARK_AUTO_NODE_LABELING_ENV_VAR, Boolean.TRUE.toString());
       getJobProps().put("env." + SPARK_DESIRED_NODE_LABEL_ENV_VAR, desiredNodeLabel);
@@ -390,8 +340,9 @@ public class HadoopSparkJob extends JavaProcessJob {
             SPARK_MIN_MEM_VCORE_RATIO_JOBTYPE_PROPERTY + " must be configured.");
       }
       if (!NumberUtils.isNumber(minMemVcoreRatio)) {
-        throw new RuntimeException(SPARK_MIN_MEM_VCORE_RATIO_JOBTYPE_PROPERTY + " is configured as " +
-            minMemVcoreRatio + ", but it must be a number.");
+        throw new RuntimeException(
+            SPARK_MIN_MEM_VCORE_RATIO_JOBTYPE_PROPERTY + " is configured as " +
+                minMemVcoreRatio + ", but it must be a number.");
       }
       if (!NumberUtils.isNumber(minMemSize)) {
         throw new RuntimeException(SPARK_MIN_MEM_SIZE_JOBTYPE_PROPERTY + " is configured as " +
@@ -399,21 +350,6 @@ public class HadoopSparkJob extends JavaProcessJob {
       }
       getJobProps().put("env." + SPARK_MIN_MEM_VCORE_RATIO_ENV_VAR, minMemVcoreRatio);
       getJobProps().put("env." + SPARK_MIN_MEM_SIZE_ENV_VAR, minMemSize);
-    }
-    try {
-      super.run();
-    } catch (final Throwable t) {
-      t.printStackTrace();
-      getLog().error("caught error running the job");
-      throw new Exception(t);
-    } finally {
-      if (this.tokenFile != null) {
-        HadoopJobUtils.cancelHadoopTokens(this.hadoopSecurityManager, this.userToProxy,
-            this.tokenFile, getLog());
-        if (this.tokenFile.exists()) {
-          this.tokenFile.delete();
-        }
-      }
     }
   }
 
@@ -458,25 +394,8 @@ public class HadoopSparkJob extends JavaProcessJob {
       args += " " + typeSysJVMArgs2;
     }
 
-    if (this.shouldProxy) {
-      info("Setting up secure proxy info for child process");
-      String secure;
-      secure =
-          " -D" + HadoopSecurityManager.USER_TO_PROXY + "="
-              + getJobProps().getString(HadoopSecurityManager.USER_TO_PROXY);
-      final String extraToken =
-          getSysProps().getString(HadoopSecurityManager.OBTAIN_BINARY_TOKEN,
-              "false");
-      if (extraToken != null) {
-        secure +=
-            " -D" + HadoopSecurityManager.OBTAIN_BINARY_TOKEN + "="
-                + extraToken;
-      }
-      info("Secure settings = " + secure);
-      args += secure;
-    } else {
-      info("Not setting up secure proxy info for child process");
-    }
+    args += getJVMProxySecureArgument();
+
     return args;
   }
 
@@ -484,22 +403,21 @@ public class HadoopSparkJob extends JavaProcessJob {
   protected String getMainArguments() {
     // Build the main() arguments for HadoopSecureSparkWrapper, which are then
     // passed to spark-submit
-    return testableGetMainArguments(this.jobProps, getWorkingDirectory(), getLog());
+    return testableGetMainArguments(this.getJobProps(), getWorkingDirectory(), getLog());
   }
 
   @Override
   protected List<String> getClassPaths() {
     // The classpath for the process that runs HadoopSecureSparkWrapper
-    final String pluginDir = getSysProps().get("plugin.dir");
     final List<String> classPath = super.getClassPaths();
 
     // To add az-core jar classpath
-    classPath.add(getSourcePathFromClass(Props.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
 
     // To add az-common jar classpath
-    classPath.add(getSourcePathFromClass(JavaProcessJob.class));
-    classPath.add(getSourcePathFromClass(HadoopSecureHiveWrapper.class));
-    classPath.add(getSourcePathFromClass(HadoopSecurityManager.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(JavaProcessJob.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(HadoopSecureHiveWrapper.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(HadoopSecurityManager.class));
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
@@ -507,18 +425,8 @@ public class HadoopSparkJob extends JavaProcessJob {
     final List<String> typeClassPath =
         getSysProps().getStringList("jobtype.classpath", null, ",");
     info("Adding jobtype.classpath: " + typeClassPath);
-    if (typeClassPath != null) {
-      // fill in this when load this jobtype
-      for (final String jar : typeClassPath) {
-        File jarFile = new File(jar);
-        if (!jarFile.isAbsolute()) {
-          jarFile = new File(pluginDir + File.separatorChar + jar);
-        }
-        if (!classPath.contains(jarFile.getAbsolutePath())) {
-          classPath.add(jarFile.getAbsolutePath());
-        }
-      }
-    }
+
+    Utils.mergeTypeClassPaths(classPath, typeClassPath, getSysProps().get("plugin.dir"));
 
     // Decide spark home/conf and append Spark classpath for the client.
     final String[] sparkHomeConf = getSparkLibConf();
@@ -529,30 +437,27 @@ public class HadoopSparkJob extends JavaProcessJob {
     final List<String> typeGlobalClassPath =
         getSysProps().getStringList("jobtype.global.classpath", null, ",");
     info("Adding jobtype.global.classpath: " + typeGlobalClassPath);
-    if (typeGlobalClassPath != null) {
-      for (final String jar : typeGlobalClassPath) {
-        if (!classPath.contains(jar)) {
-          classPath.add(jar);
-        }
-      }
-    }
+    Utils.mergeStringList(classPath, typeGlobalClassPath);
 
     info("Final classpath: " + classPath);
     return classPath;
   }
 
   /**
-   * This method is used to retrieve Spark home and conf locations. Below logic is mentioned in detail.
+   * This method is used to retrieve Spark home and conf locations. Below logic is mentioned in
+   * detail.
    * a) If user has specified spark version in job property, e.g. spark-version=1.6.0, then
-   *    i) If spark.{sparkVersion}.home is set in commonprivate.properties/private.properties, then that will be returned.
-   *   ii) If spark.{sparkVersion}.home is not set and spark.home.dir is set then it will retrieve Spark directory inside
-   *       spark.home.dir, matching spark.home.prefix + sparkVersion pattern.
-   * b) If user has not specified spark version in job property, use default spark.home configured in the jobtype
-   *    plugin's config
+   * i) If spark.{sparkVersion}.home is set in commonprivate.properties/private.properties, then
+   * that will be returned.
+   * ii) If spark.{sparkVersion}.home is not set and spark.home.dir is set then it will retrieve
+   * Spark directory inside
+   * spark.home.dir, matching spark.home.prefix + sparkVersion pattern.
+   * b) If user has not specified spark version in job property, use default spark.home configured
+   * in the jobtype
+   * plugin's config
    * c) If spark home is not found by both of the above cases, then throw RuntimeException.
-   * @return
    */
-  protected String[] getSparkLibConf() {
+  private String[] getSparkLibConf() {
     String sparkHome = null;
     String sparkConf = null;
     // If user has specified version in job property. e.g. spark-version=1.6.0
@@ -578,7 +483,7 @@ public class HadoopSparkJob extends JavaProcessJob {
         sparkHome = System.getenv(SPARK_HOME_ENV_VAR);
       }
       sparkConf = (System.getenv(SPARK_CONF_DIR_ENV_VAR) != null) ?
-        System.getenv(SPARK_CONF_DIR_ENV_VAR) : (sparkHome + "/conf");
+          System.getenv(SPARK_CONF_DIR_ENV_VAR) : (sparkHome + "/conf");
       info("Using system default spark: " + sparkHome + " and conf: " + sparkConf);
     }
 
@@ -606,12 +511,16 @@ public class HadoopSparkJob extends JavaProcessJob {
 
   /**
    * This method is used to get spark home from plugin's jobtype config.
-   * If spark.{sparkVersion}.home is set in commonprivate.properties/private.properties, then that will be returned.
-   * If spark.{sparkVersion}.home is not set and spark.base.dir is set then it will retrieve Spark directory inside
-   * spark.base.dir, matching spark.home.prefix + sparkVersion pattern. Regex pattern can be passed as properties for
+   * If spark.{sparkVersion}.home is set in commonprivate.properties/private.properties, then that
+   * will be returned.
+   * If spark.{sparkVersion}.home is not set and spark.base.dir is set then it will retrieve Spark
+   * directory inside
+   * spark.base.dir, matching spark.home.prefix + sparkVersion pattern. Regex pattern can be passed
+   * as properties for
    * version formatting.
-   * @param sparkVersion
-   * @return
+   *
+   * @param sparkVersion the version of spark
+   * @return return the spark home
    */
   private String getSparkHome(final String sparkVersion) {
     String sparkHome = getSysProps().get("spark." + sparkVersion + ".home");
@@ -623,11 +532,12 @@ public class HadoopSparkJob extends JavaProcessJob {
       final String replaceTo = getSysProps().get(SPARK_VERSION_REGEX_TO_REPLACE);
       final String replaceWith =
           getSysProps().get(SPARK_VERSION_REGEX_TO_REPLACE_WITH) != null ? getSysProps()
-          .get(SPARK_VERSION_REGEX_TO_REPLACE_WITH) : "";
+              .get(SPARK_VERSION_REGEX_TO_REPLACE_WITH) : "";
       final String versionPatterToMatch =
-          sparkHomePrefix + ( replaceTo != null ? sparkVersion
+          sparkHomePrefix + (replaceTo != null ? sparkVersion
               .replace(replaceTo, replaceWith) : sparkVersion) + "*";
-      info("Looking for spark at  " + sparkDir + " directory with " + sparkHomePrefix + " prefix for " + sparkVersion
+      info("Looking for spark at  " + sparkDir + " directory with " + sparkHomePrefix
+          + " prefix for " + sparkVersion
           + " version.");
       final DirectoryScanner scanner = new DirectoryScanner();
       scanner.setBasedir(sparkDir);
@@ -640,8 +550,8 @@ public class HadoopSparkJob extends JavaProcessJob {
         final String sparkReferenceDoc = getSysProps().get(SPARK_REFERENCE_DOCUMENT);
         final String exceptionMessage =
             sparkReferenceDoc == null ? "SPARK version specified by User is not available."
-            : "SPARK version specified by User is not available. Available versions are mentioned at: "
-                + sparkReferenceDoc;
+                : "SPARK version specified by User is not available. Available versions are mentioned at: "
+                    + sparkReferenceDoc;
         throw new RuntimeException(exceptionMessage);
       }
     }
@@ -652,6 +562,7 @@ public class HadoopSparkJob extends JavaProcessJob {
    * Given the dir path of Spark Home, return the dir path of Spark lib.
    * It is either sparkHome/lib or sparkHome/jars based on the version of
    * Spark chosen by user.
+   *
    * @param sparkHome dir path of Spark Home
    * @return dir path of Spark lib
    */
@@ -679,12 +590,8 @@ public class HadoopSparkJob extends JavaProcessJob {
   public void cancel() throws InterruptedException {
     super.cancel();
 
-    info("Cancel called.  Killing the Spark job on the cluster");
+    info("Cancel called.  Killing the launched Spark jobs on the cluster");
 
-    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
-    info("Log file path is: " + logFilePath);
-
-    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, this.jobProps,
-        this.tokenFile, getLog());
+    hadoopProxy.killAllSpawnedHadoopJobs(getJobProps(), getLog());
   }
 }

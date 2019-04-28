@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -293,7 +292,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("size", getDisplayExecutionPageSize());
-
     page.add("System", System.class);
     page.add("TimeUtils", TimeUtils.class);
     page.add("WebUtils", WebUtils.class);
