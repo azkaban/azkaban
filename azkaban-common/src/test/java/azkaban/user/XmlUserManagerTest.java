@@ -16,7 +16,6 @@
 
 package azkaban.user;
 
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -88,6 +86,7 @@ public class XmlUserManagerTest {
   /**
    * Test auto reload of user XML
    */
+  @Ignore("Disabled for now: flaky & slow. See https://github.com/azkaban/azkaban/issues/2220")
   @Test
   public void testAutoReload() throws Exception {
     final Props props = new Props(this.baseProps);
