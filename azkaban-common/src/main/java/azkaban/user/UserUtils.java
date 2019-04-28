@@ -130,7 +130,11 @@ public final class UserUtils {
             // Match!
             // reparse the config file
             log.info("Modification detected, reloading config file " + filename);
-            configFileMap.get(filename).parseConfigFile();
+            try {
+              configFileMap.get(filename).parseConfigFile();
+            } catch (Exception e) {
+              log.error("Failed parsing config file after update: " + filename, e);
+            }
             break;
           }
         }

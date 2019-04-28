@@ -19,7 +19,9 @@ package azkaban.user;
 import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,6 +29,7 @@ import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -60,6 +63,7 @@ public class XmlUserManager implements UserManager {
   public static final String GROUPNAME_ATTR = "name";
   private static final Logger logger = LoggerFactory.getLogger(XmlUserManager.class);
   private final String xmlPath;
+  private volatile boolean fail;
 
   private HashMap<String, User> users;
   private HashMap<String, String> userPassword;
@@ -112,9 +116,26 @@ public class XmlUserManager implements UserManager {
           "Exception while parsing user xml. Document builder not created.", e);
     }
 
+    final FileInputStream fileInputStream;
+    try {
+      fileInputStream = new FileInputStream(file);
+      // consume the stream
+      String content = IOUtils.toString(fileInputStream, StandardCharsets.UTF_8);
+      System.out.println("content = " + content);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
     Document doc = null;
     try {
-      doc = builder.parse(file);
+      // demonstrate empty stream failure
+      if (this.fail) {
+        this.fail = false;
+        doc = builder.parse(fileInputStream);
+      } else {
+        this.fail = true;
+        doc = builder.parse(file);
+      }
     } catch (final SAXException e) {
       throw new IllegalArgumentException("Exception while parsing " + this.xmlPath
           + ". Invalid XML.", e);

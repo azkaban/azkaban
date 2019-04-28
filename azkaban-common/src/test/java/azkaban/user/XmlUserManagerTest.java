@@ -16,7 +16,6 @@
 
 package azkaban.user;
 
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -133,12 +131,14 @@ public class XmlUserManagerTest {
         fail("File did not update.");
       }
       // Try for a minute polling every 2 seconds if the config is reloaded
-      Awaitility.await().atMost(60L, TimeUnit.SECONDS).
+      Awaitility.await().atMost(10L, TimeUnit.SECONDS).
           pollInterval(2L, TimeUnit.SECONDS).until(
           () -> {
             User user;
             try {
               user = manager.getUser("user8", "password8");
+              // write again
+              Files.write(filePath, lines);
             } catch (UserManagerException e) {
               System.out.println("user8 has updated password. " + e.getMessage());
               user = null;
