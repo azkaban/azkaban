@@ -93,6 +93,9 @@ public class Constants {
       "Flow %s in project %s is locked. This is either a repeatedly failing flow, or an ineffcient"
           + " flow. Please refer to the Dr. Elephant report for this flow for more information.";
 
+  // Default maximum number of concurrent runs for a single flow
+  public static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
+
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
@@ -225,6 +228,12 @@ public class Constants {
 
     public static final String USE_MULTIPLE_EXECUTORS = "azkaban.use.multiple.executors";
     public static final String MAX_CONCURRENT_RUNS_ONEFLOW = "azkaban.max.concurrent.runs.oneflow";
+
+    // list of whitelisted flows, with specific max number of concurrent runs. Format:
+    // <project 1>,<flow 1>,<number>;<project 2>,<flow 2>,<number>
+    public static final String CONCURRENT_RUNS_ONEFLOW_WHITELIST =
+        "azkaban.concurrent.runs.oneflow.whitelist";
+
     public static final String WEBSERVER_QUEUE_SIZE = "azkaban.webserver.queue.size";
     public static final String ACTIVE_EXECUTOR_REFRESH_IN_MS =
         "azkaban.activeexecutor.refresh.milisecinterval";

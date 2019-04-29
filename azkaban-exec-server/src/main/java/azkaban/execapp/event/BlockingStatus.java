@@ -13,14 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp.event;
 
 import azkaban.executor.Status;
 
+
 public class BlockingStatus {
 
-  private static final long WAIT_TIME = 5 * 60 * 1000;
+  private static final long WAIT_TIME = 300000;  // 5 * 60 * 1000
   private final int execId;
   private final String jobId;
   private Status status;

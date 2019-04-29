@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -46,11 +45,11 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+
 /**
  * Abstract Servlet that handles auto login when the session hasn't been verified.
  */
-public abstract class LoginAbstractAzkabanServlet extends
-    AbstractAzkabanServlet {
+public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
 
@@ -252,7 +251,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp,
-      final String errorMsg) throws ServletException, IOException {
+      final String errorMsg) {
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
     page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
@@ -329,7 +328,7 @@ public abstract class LoginAbstractAzkabanServlet extends
           final String response =
               AbstractAzkabanServlet
                   .createJsonResponse("error", "Invalid Session. Need to re-login",
-                  "login", null);
+                      "login", null);
           writeResponse(resp, response);
         } else {
           handleLogin(req, resp, "Enter username and password");
@@ -368,7 +367,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   }
 
   private Session createSession(final String username, final String password, final String ip)
-      throws UserManagerException, ServletException {
+      throws UserManagerException {
     final UserManager manager = getApplication().getUserManager();
     final User user = manager.getUser(username, password);
 
@@ -394,6 +393,47 @@ public abstract class LoginAbstractAzkabanServlet extends
     }
 
     return false;
+  }
+
+  /**
+   * Filter Project based on user authorization
+   *
+   * @param project project
+   * @param user user
+   * @param type permission allowance
+   * @return authorized project itself or null if the project is not authorized
+   */
+  protected Project filterProjectByPermission(final Project project, final User user,
+      final Permission.Type type) {
+    return filterProjectByPermission(project, user, type, null);
+  }
+
+  /**
+   * Filter Project based on user authorization
+   *
+   * @param project project
+   * @param user user
+   * @param type permission allowance
+   * @param ret return map for holding messages
+   * @return authorized project itself or null if the project is not authorized
+   */
+  protected Project filterProjectByPermission(final Project project, final User user,
+      final Permission.Type type, final Map<String, Object> ret) {
+    if (project == null) {
+      if (ret != null) {
+        ret.put("error", "Project 'null' not found.");
+      }
+    } else if (!hasPermission(project, user, type)) {
+      if (ret != null) {
+        ret.put("error",
+            "User '" + user.getUserId() + "' doesn't have " + type.name()
+                + " permissions on " + project.getName());
+      }
+    } else {
+      return project;
+    }
+
+    return null;
   }
 
   protected void handleAjaxLoginAction(final HttpServletRequest req,
@@ -433,7 +473,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     writer.flush();
   }
 
-  protected boolean isAjaxCall(final HttpServletRequest req) throws ServletException {
+  protected boolean isAjaxCall(final HttpServletRequest req) {
     final String value = req.getHeader("X-Requested-With");
     if (value != null) {
       logger.info("has X-Requested-With " + value);

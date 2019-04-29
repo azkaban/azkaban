@@ -15,17 +15,14 @@
  */
 package azkaban.jobtype;
 
-import azkaban.flow.CommonJobProperties;
-import azkaban.utils.Props;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.Map;
-import java.util.Properties;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
+import azkaban.flow.CommonJobProperties;
+import azkaban.utils.Props;
 
 
 /**
@@ -40,16 +37,15 @@ import org.apache.log4j.Logger;
  * constructed.
  */
 public class HadoopConfigurationInjector {
-  private static Logger _logger = Logger.getLogger(HadoopConfigurationInjector.class);
 
+  private static Logger _logger = Logger.getLogger(HadoopConfigurationInjector.class);
   // File to which the Hadoop configuration to inject will be written.
   private static final String INJECT_FILE = "hadoop-inject.xml";
-
   // Prefix for properties to be automatically injected into the Hadoop conf.
   public static final String INJECT_PREFIX = "hadoop-inject.";
-
   public static final String WORKFLOW_ID_SEPERATOR = "$";
   private static final String WORKFLOW_ID_CONFIG = "yarn.workflow.id";
+
   /*
    * To be called by the forked process to load the generated links and Hadoop
    * configuration properties to automatically inject.
@@ -114,7 +110,7 @@ public class HadoopConfigurationInjector {
   }
 
   private static void addHadoopProperty(Props props, String propertyName) {
-      props.put(INJECT_PREFIX + propertyName, props.get(propertyName));
+    props.put(INJECT_PREFIX + propertyName, props.get(propertyName));
   }
 
   private static void addHadoopWorkflowProperty(Props props, String propertyName) {
@@ -142,7 +138,7 @@ public class HadoopConfigurationInjector {
         CommonJobProperties.SUBMIT_USER
     };
 
-    for(String propertyName : propsToInject) {
+    for (String propertyName : propsToInject) {
       addHadoopProperty(props, propertyName);
     }
     addHadoopWorkflowProperty(props, WORKFLOW_ID_CONFIG);

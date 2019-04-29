@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
@@ -54,11 +53,12 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
-import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
+
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
+
   public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
   public static final String PARAM_SETTINGS = "settings";
@@ -194,7 +194,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       final Map<String, String> settings = getParamGroup(req, PARAM_SETTINGS);
 
       List<SlaOption> slaOptions = new ArrayList<>();
-       for (final String set : settings.keySet()) {
+      for (final String set : settings.keySet()) {
         final SlaOption slaOption;
         try {
           slaOption = parseSlaSetting(settings.get(set), sched.getFlowName(), slaEmails);
@@ -203,7 +203,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         }
         slaOptions.add(slaOption);
       }
-
 
       if (slaOptions.isEmpty()) {
         throw new ScheduleManagerException(
@@ -274,7 +273,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
     return null;
 
-    }
+  }
 
   private Duration parseDuration(final String duration) {
     final int hour = Integer.parseInt(duration.split(":")[0]);
@@ -381,19 +380,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
       final int projectId, final User user, final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectId);
-
-    if (project == null) {
-      ret.put(PARAM_ERROR, "Project '" + project + "' not found.");
-    } else if (!hasPermission(project, user, type)) {
-      ret.put(STATUS_ERROR,
-          "User '" + user.getUserId() + "' doesn't have " + type.name()
-              + " permissions on " + project.getName());
-    } else {
-      return project;
-    }
-
-    return null;
+    return filterProjectByPermission(this.projectManager.getProject(projectId), user, type, ret);
   }
 
   private void handleGetAllSchedules(final HttpServletRequest req,

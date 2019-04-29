@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.time.Instant;
@@ -30,10 +29,14 @@ import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 import org.joda.time.Years;
 
+
+/**
+ * Utilities for Time Operations
+ */
 public class TimeUtils {
 
-  public static final String DATE_TIME_ZONE_PATTERN = "yyyy/MM/dd HH:mm:ss z";
-  public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+  private static final String DATE_TIME_ZONE_PATTERN = "yyyy/MM/dd HH:mm:ss z";
+  private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
   /**
    * Formats the given millisecond instant into a string using the pattern "yyyy/MM/dd HH:mm:ss z"
@@ -59,6 +62,13 @@ public class TimeUtils {
     return formatter.format(zonedDateTime);
   }
 
+  /**
+   * Format time period pair to Duration String
+   *
+   * @param startTime start time
+   * @param endTime end time
+   * @return Duration String
+   */
   public static String formatDuration(final long startTime, final long endTime) {
     if (startTime == -1) {
       return "-";
@@ -93,6 +103,12 @@ public class TimeUtils {
     return days + "d " + hours + "h " + minutes + "m";
   }
 
+  /**
+   * Format ReadablePeriod object to string
+   *
+   * @param period readable period object
+   * @return String presentation of ReadablePeriod Object
+   */
   public static String formatPeriod(final ReadablePeriod period) {
     String periodStr = "null";
 
@@ -126,6 +142,12 @@ public class TimeUtils {
     return periodStr;
   }
 
+  /**
+   * Parse Period String to a ReadablePeriod Object
+   *
+   * @param periodStr string formatted period
+   * @return ReadablePeriod Object
+   */
   public static ReadablePeriod parsePeriodString(final String periodStr) {
     final ReadablePeriod period;
     final char periodUnit = periodStr.charAt(periodStr.length() - 1);
@@ -165,11 +187,17 @@ public class TimeUtils {
     return period;
   }
 
+  /**
+   * Convert ReadablePeriod Object to string
+   *
+   * @param period ReadablePeriod Object
+   * @return string formatted ReadablePeriod Object
+   */
   public static String createPeriodString(final ReadablePeriod period) {
     String periodStr = "null";
 
     if (period == null) {
-      return "null";
+      return periodStr;
     }
 
     if (period.get(DurationFieldType.years()) > 0) {
@@ -197,5 +225,4 @@ public class TimeUtils {
 
     return periodStr;
   }
-
 }

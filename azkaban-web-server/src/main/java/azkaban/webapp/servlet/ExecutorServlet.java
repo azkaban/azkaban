@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -492,36 +491,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
       final String projectName, final User user, final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectName);
-
-    if (project == null) {
-      ret.put("error", "Project '" + project + "' not found.");
-    } else if (!hasPermission(project, user, type)) {
-      ret.put("error",
-          "User '" + user.getUserId() + "' doesn't have " + type.name()
-              + " permissions on " + project.getName());
-    } else {
-      return project;
-    }
-
-    return null;
+    return filterProjectByPermission(this.projectManager.getProject(projectName), user, type, ret);
   }
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
       final int projectId, final User user, final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectId);
-
-    if (project == null) {
-      ret.put("error", "Project '" + project + "' not found.");
-    } else if (!hasPermission(project, user, type)) {
-      ret.put("error",
-          "User '" + user.getUserId() + "' doesn't have " + type.name()
-              + " permissions on " + project.getName());
-    } else {
-      return project;
-    }
-
-    return null;
+    return filterProjectByPermission(this.projectManager.getProject(projectId), user, type, ret);
   }
 
   private void ajaxRestartFailed(final HttpServletRequest req,
@@ -554,8 +529,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
     final long startMs = System.currentTimeMillis();
-    final Project project =
-        getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+    final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
       return;
     }
@@ -566,17 +540,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     resp.setCharacterEncoding("utf-8");
 
     try {
-      final LogData data =
-          this.executorManagerAdapter.getExecutableFlowLog(exFlow, offset, length);
-      if (data == null) {
-        ret.put("length", 0);
-        ret.put("offset", offset);
-        ret.put("data", "");
-      } else {
-        ret.put("length", data.getLength());
-        ret.put("offset", data.getOffset());
-        ret.put("data", StringEscapeUtils.escapeHtml(data.getData()));
-      }
+      final LogData data = this.executorManagerAdapter.getExecutableFlowLog(exFlow, offset, length);
+      ret.putAll(appendLogData(data, offset));
+
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
@@ -596,8 +562,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchJobLogs(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    final Project project =
-        getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+    final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
       return;
     }
@@ -611,27 +576,33 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     try {
       final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
       if (node == null) {
-        ret.put("error",
-            "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+        ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
         return;
       }
 
       final int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-      final LogData data =
-          this.executorManagerAdapter.getExecutionJobLog(exFlow, jobId, offset, length,
-              attempt);
-      if (data == null) {
-        ret.put("length", 0);
-        ret.put("offset", offset);
-        ret.put("data", "");
-      } else {
-        ret.put("length", data.getLength());
-        ret.put("offset", data.getOffset());
-        ret.put("data", StringEscapeUtils.escapeHtml(data.getData()));
-      }
+      final LogData data = this.executorManagerAdapter.getExecutionJobLog(exFlow, jobId, offset, length, attempt);
+      ret.putAll(appendLogData(data, offset));
+
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
+  }
+
+  private Map<String, Object> appendLogData(final LogData data, final int defaultOffset) {
+    Map<String, Object> parameters = new HashMap<>();
+
+    if (data == null) {
+      parameters.put("length", 0);
+      parameters.put("offset", defaultOffset);
+      parameters.put("data", "");
+    } else {
+      parameters.put("length", data.getLength());
+      parameters.put("offset", data.getOffset());
+      parameters.put("data", StringEscapeUtils.escapeHtml(data.getData()));
+    }
+
+    return parameters;
   }
 
   private void ajaxFetchJobStats(final HttpServletRequest req,

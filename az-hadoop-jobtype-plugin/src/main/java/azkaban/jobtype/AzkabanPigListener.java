@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import java.io.IOException;
@@ -27,7 +26,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobID;
@@ -42,13 +40,17 @@ import org.apache.pig.tools.pigstats.OutputStats;
 import org.apache.pig.tools.pigstats.PigProgressNotificationListener;
 import org.apache.pig.tools.pigstats.PigStats;
 import org.apache.pig.tools.pigstats.ScriptState;
-
 import azkaban.jobtype.pig.PigJobDagNode;
 import azkaban.jobtype.pig.PigJobStats;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
+
+/**
+ * Pig Listener Implementation
+ */
 public class AzkabanPigListener implements PigProgressNotificationListener {
+
   private static Logger logger = Logger.getLogger(AzkabanPigListener.class);
   private String statsFile;
 

@@ -404,6 +404,34 @@ public class ExecutorManagerTest {
     this.manager.submitExecutableFlow(flow4, this.user.getUserId());
   }
 
+  // Flows can be whitelisted to support a specified max number of concurrent flows.
+  @Test(expected = ExecutorManagerException.class)
+  public void testConcurrentRunWhitelist() throws Exception {
+    testSetUpForRunningFlows();
+    this.props.put(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST, "basicyamlshelltest,"
+        + "bashSleep,4");
+    final ExecutableFlow flow1 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow1.setExecutionId(101);
+    final ExecutableFlow flow2 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow2.setExecutionId(102);
+    final ExecutableFlow flow3 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow3.setExecutionId(103);
+    final ExecutableFlow flow4 = TestUtils
+        .createTestExecutableFlowFromYaml("basicyamlshelltest", "bashSleep");
+    flow4.setExecutionId(104);
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow1);
+    this.manager.submitExecutableFlow(flow2, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow2);
+    this.manager.submitExecutableFlow(flow3, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow3);
+    this.manager.submitExecutableFlow(flow4, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow4);
+  }
+
   @Ignore
   @Test
   public void testFetchAllActiveFlows() throws Exception {
