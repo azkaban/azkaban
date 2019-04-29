@@ -26,7 +26,8 @@ class OsMemoryUtil {
   static final ImmutableSet<String> MEM_KEYS = ImmutableSet
       .of("MemFree", "Buffers", "Cached", "SwapFree");
 
-  static final ImmutableSet<String> PHYSICAL_MEM_KEYS = ImmutableSet.of("MemFree");
+  static final ImmutableSet<String> MEM_AVAILABLE_KEYS = ImmutableSet.of("MemFree", "Active(file)",
+      "Inactive(file)", "SReclaimable");
 
   /**
    * Includes OS cache and free swap.
@@ -43,7 +44,7 @@ class OsMemoryUtil {
    * support this memory check.
    */
   long getOsFreePhysicalMemorySize() {
-    return getAggregatedFreeMemorySize(PHYSICAL_MEM_KEYS);
+    return getAggregatedFreeMemorySize(MEM_AVAILABLE_KEYS);
   }
 
   private long getAggregatedFreeMemorySize(final Set<String> memKeysToCombine) {

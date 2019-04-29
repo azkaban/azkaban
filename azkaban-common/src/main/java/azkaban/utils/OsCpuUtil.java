@@ -31,7 +31,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Utility class for getting CPU usage (in percentage)
  *
- * CPU information is obtained from /proc/stat, so only Linux systems will support this class
+ * CPU information is obtained from /proc/stat, so only Linux systems will support this class.
+ * Calculation procedure is taken from:
+ * https://github.com/Leo-G/DevopsWiki/wiki/How-Linux-CPU-Usage-Time-and-Percentage-is-calculated
  *
  * Assumes frequent calls at regular intervals to {@link #getCpuLoad() getCpuLoad}. The length of
  * time over which cpu load is calculated can be adjusted with parameter

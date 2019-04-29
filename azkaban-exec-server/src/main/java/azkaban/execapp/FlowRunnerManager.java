@@ -1063,6 +1063,9 @@ public class FlowRunnerManager implements EventListener,
     private final SystemMemoryInfo memInfo = SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
     private final OsCpuUtil cpuUtil = SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
 
+    private boolean areFlowThreadsAvailable;
+    private boolean isFreeMemoryAvailable;
+    private boolean isCpuLoadUnderMax;
 
     public boolean shouldPoll() {
       if (satisfiesFlowThreadsAvailableCriteria() && satisfiesFreeMemoryCriteria()
@@ -1077,16 +1080,28 @@ public class FlowRunnerManager implements EventListener,
     }
 
     private boolean satisfiesFlowThreadsAvailableCriteria() {
-      final int flowThreadsAvailableConfig = this.azkabanProps.
-          getInt(ConfigurationKeys.AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE, 0);
+      final boolean flowThreadsAvailableConfig = this.azkabanProps.
+          getBoolean(ConfigurationKeys.AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE, false);
 
       // allow polling if not present or configured with invalid value
-      if (flowThreadsAvailableConfig <= 0) {
+      if (!flowThreadsAvailableConfig) {
         return true;
       }
       final int remainingFlowThreads = FlowRunnerManager.this.getMaxNumRunningFlows() -
           FlowRunnerManager.this.getNumRunningFlows();
-      return remainingFlowThreads > 0;
+      final boolean flowThreadsAvailable = remainingFlowThreads > 0;
+      if (this.areFlowThreadsAvailable != flowThreadsAvailable) {
+        this.areFlowThreadsAvailable = flowThreadsAvailable;
+        if (flowThreadsAvailable) {
+          FlowRunnerManager.logger.info("Polling criteria satisfied: available flow threads (" +
+              remainingFlowThreads + ").");
+        } else {
+          FlowRunnerManager.logger.info("Polling criteria NOT satisfied: available flow threads (" +
+              remainingFlowThreads + ").");
+        }
+      }
+
+      return flowThreadsAvailable;
     }
 
     private boolean satisfiesFreeMemoryCriteria() {
@@ -1098,7 +1113,18 @@ public class FlowRunnerManager implements EventListener,
         return true;
       }
       final int minFreeMemoryConfigKb = minFreeMemoryConfigGb * 1024 * 1024;
-      return this.memInfo.isFreePhysicalMemoryAbove(minFreeMemoryConfigKb);
+      final boolean haveEnoughMemory =
+          this.memInfo.isFreePhysicalMemoryAbove(minFreeMemoryConfigKb);
+      if (this.isFreeMemoryAvailable != haveEnoughMemory) {
+        this.isFreeMemoryAvailable = haveEnoughMemory;
+        if (haveEnoughMemory) {
+          FlowRunnerManager.logger.info("Polling criteria satisfied: available free memory.");
+        } else {
+          FlowRunnerManager.logger.info("Polling criteria NOT satisfied: available free memory.");
+        }
+      }
+
+      return haveEnoughMemory;
     }
 
     private boolean satisfiesCpuUtilizationCriteria() {
@@ -1111,7 +1137,22 @@ public class FlowRunnerManager implements EventListener,
       }
 
       final double cpuLoad = this.cpuUtil.getCpuLoad();
-      return (cpuLoad == -1) ? true : cpuLoad < maxCpuUtilizationConfig;
+      if (cpuLoad == -1) {
+        return true;
+      }
+      final boolean cpuLoadWithinParams = cpuLoad < maxCpuUtilizationConfig;
+      if (this.isCpuLoadUnderMax != cpuLoadWithinParams) {
+        this.isCpuLoadUnderMax = cpuLoadWithinParams;
+        if (cpuLoadWithinParams) {
+          FlowRunnerManager.logger.info("Polling criteria satisfied: Cpu utilization (" +
+              cpuLoad + "%).");
+        } else {
+          FlowRunnerManager.logger.info("Polling criteria NOT satisfied: Cpu utilization (" +
+              cpuLoad + "%).");
+        }
+      }
+
+      return cpuLoadWithinParams;
     }
 
   }
