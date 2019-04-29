@@ -114,7 +114,14 @@ public final class UserUtils {
         try {
           watchKey = watchService.take();
           // Wait for a second to ensure there is only one event for a modification.
-          // WatchService otherwise creates two events 1 for content and 1 for modification time.
+          // For a file update, WatchService creates two ENTRY_MODIFY events, 1 for content and 1
+          // for modification time.
+          // Adding the sleep consolidates both the events into one with a count of 2 which
+          // avoids multiple reloads of same file.
+          // One second seems excessive, however, these events happen very less often and it is
+          // more important that the config reloads successfully than immediately.
+          // If there is any modification happening to file(s) in the meantime, it is all queued up
+          // in the watch service.
           Thread.sleep(1000L);
         } catch (final InterruptedException ie) {
           log.warn(ie.getMessage());
@@ -129,11 +136,17 @@ public final class UserUtils {
           @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
           final String filename = dir.resolve(name).toString();
           // Lookup the file in dirToFilesMap
-          if (dirToFilesMap.containsEntry(dir, filename)) {
-            // Match!
-            // reparse the config file
-            log.info("Modification detected, reloading config file " + filename + ".");
+          if (!dirToFilesMap.containsEntry(dir, filename)) {
+            continue;
+          }
+          // Match!
+          // Reparse the config file
+          log.info("Modification detected, reloading config file " + filename + ".");
+          try {
             configFileMap.get(filename).parseConfigFile();
+          } catch (final Exception e) {
+            // If there is any exception while parsing the config file, log it and move on
+            log.warn("Reload failed for config file " + filename + " due to " + e.getMessage());
           }
         }
         watchKey.reset();
