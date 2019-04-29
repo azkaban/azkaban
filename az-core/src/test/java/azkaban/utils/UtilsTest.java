@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import org.apache.commons.lang.SystemUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,8 +64,10 @@ public class UtilsTest {
 
   @Test
   public void testRunProcess() throws IOException, InterruptedException {
-    ArrayList<String> result =
-        Utils.runProcess("/bin/bash", "-c", "ls");
+    final String[] LS_COMMAND = SystemUtils.IS_OS_WINDOWS
+        ? new String[]{"cmd", "/c", "dir"}
+        : new String[]{"/bin/bash", "-c", "ls"};
+    final ArrayList<String> result = Utils.runProcess(LS_COMMAND);
     Assert.assertNotEquals(result.size(), 0);
   }
 }
