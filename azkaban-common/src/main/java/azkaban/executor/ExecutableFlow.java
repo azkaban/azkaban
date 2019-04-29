@@ -213,9 +213,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.azkabanFlowVersion = azkabanFlowVersion;
   }
 
-  public boolean isLocked() { return isLocked; }
+  public boolean isLocked() { return this.isLocked; }
 
-  public void setLocked(boolean locked) { isLocked = locked; }
+  public void setLocked(boolean locked) { this.isLocked = locked; }
 
   @Override
   public Map<String, Object> toObject() {

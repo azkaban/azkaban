@@ -467,7 +467,7 @@ public class Flow {
     this.projectId = projectId;
   }
 
-  public boolean isLocked() { return isLocked; }
+  public boolean isLocked() { return this.isLocked; }
 
-  public void setLocked(boolean locked) { isLocked = locked; }
+  public void setLocked(boolean locked) { this.isLocked = locked; }
 }
