@@ -125,12 +125,12 @@ public class PostgreSQLDataSource extends AzkabanDataSource {
 
   @Override
   public boolean allowsOnDuplicateKey() {
-    return true;
+    return false;
   }
 
   @Override
   public boolean allowsOnConflict() {
-    return false;
+    return true;
   }
 
   @Override
