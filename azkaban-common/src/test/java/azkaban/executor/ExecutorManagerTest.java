@@ -514,6 +514,21 @@ public class ExecutorManagerTest {
     verify(this.loader, Mockito.times(2)).unassignExecutor(-1);
   }
 
+  @Test
+  public void testSetFlowLock() throws Exception {
+    testSetUpForRunningFlows();
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    flow1.setLocked(true);
+    String msg = this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    assertThat(msg).isEqualTo("Flow derived-member-data for project flow is locked.");
+
+    // unlock the flow
+    flow1.setLocked(false);
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow1);
+    verify(this.loader).addActiveExecutableReference(any());
+  }
+
   /*
    * TODO: will move below method to setUp() and run before every test for both runningFlows and queuedFlows
    */
