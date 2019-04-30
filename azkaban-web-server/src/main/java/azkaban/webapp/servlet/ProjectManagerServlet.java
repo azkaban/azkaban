@@ -31,6 +31,7 @@ import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
+import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.project.ProjectWhitelist;
@@ -80,8 +81,9 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
@@ -90,8 +92,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   static final String ERROR_PARAM = "error";
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
-  private static final Logger logger = Logger
-      .getLogger(ProjectManagerServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
   private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
       new NodeLevelComparator();
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
@@ -1837,6 +1838,28 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
         // reset locks for flows as needed
         lockFlowsForProject(project, lockedFlows);
+
+        // remove schedule of renamed/deleted flows
+        final Set<String> flowNameList = new HashSet<>();
+        for (final Flow flow : project.getFlows()) {
+          flowNameList.add(flow.getId());
+        }
+
+        try {
+          for (final Schedule schedule : this.scheduleManager.getSchedules()) {
+            if (schedule.getProjectId() == project.getId() &&
+                !flowNameList.contains(schedule.getFlowName())) {
+              logger.info(
+                  "Removing schedule with id {} of renamed/deleted flow: {} from project: {}.",
+                  schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
+              this.scheduleManager.removeSchedule(schedule);
+              this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
+                  "Schedule " + schedule.toString() + " has been removed.");
+            }
+          }
+        } catch (final ScheduleManagerException e) {
+          throw new ServletException(e);
+        }
 
         final StringBuffer errorMsgs = new StringBuffer();
         final StringBuffer warnMsgs = new StringBuffer();
