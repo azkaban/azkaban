@@ -45,6 +45,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
+  public static final String IS_LOCKED_PARAM = "isLocked";
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
@@ -250,6 +251,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
+    flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+
     return flowObj;
   }
 
@@ -291,6 +294,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
               .collect(Collectors.toList());
       this.executionOptions.setSlaOptions(slaOptions);
     }
+
+    this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
   }
 
   @Override
