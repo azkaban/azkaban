@@ -38,9 +38,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class XmlUserManagerTest {
 
+  private static final Logger log = LoggerFactory.getLogger(XmlUserManagerTest.class);
   private final Props baseProps = new Props();
 
   @Before
@@ -115,7 +118,7 @@ public class XmlUserManagerTest {
     // Modify the password for user8
     // TODO : djaiswal : Find a better way to modify XML
     final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
-    System.out.println("File modification time = " + origModifiedTime.toString());
+    log.info("File modification time = " + origModifiedTime.toString());
     final List<String> lines = new ArrayList<>();
     for (final String line : Files.readAllLines(filePath)) {
       if (line.contains("password8")) {
@@ -130,7 +133,7 @@ public class XmlUserManagerTest {
       // Update the file
       Files.write(filePath, lines);
       final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
-      System.out.println("File modification time after write = " + lastModifiedTime.toString());
+      log.info("File modification time after write = " + lastModifiedTime.toString());
       if (origModifiedTime.equals(lastModifiedTime)) {
         // File did not update
         fail("File did not update.");
@@ -143,7 +146,7 @@ public class XmlUserManagerTest {
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              System.out.println("user8 has updated password. " + e.toString());
+              log.info("user8 has updated password. " + e.toString());
               user = null;
             }
             return user == null;
@@ -155,7 +158,7 @@ public class XmlUserManagerTest {
         if (!user8.getUserId().equals("user8")) {
           fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
         }
-        System.out.println("Config reloaded successfully.");
+        log.info("Config reloaded successfully.");
       } catch (final UserManagerException e) {
         fail("Test failed " + e.toString());
       }
@@ -197,14 +200,14 @@ public class XmlUserManagerTest {
     // Modify the password for user8
     // TODO : djaiswal : Find a better way to modify XML
     final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
-    System.out.println("File modification time = " + origModifiedTime.toString());
+    log.info("File modification time = " + origModifiedTime.toString());
 
     // Make sure the file gets reverted back.
     try {
       // Update the file to make it empty.
       Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
       final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
-      System.out.println("File modification time after write = " + lastModifiedTime.toString());
+      log.info("File modification time after write = " + lastModifiedTime.toString());
       if (origModifiedTime.equals(lastModifiedTime)) {
         // File did not update
         fail("File did not update.");
@@ -217,7 +220,7 @@ public class XmlUserManagerTest {
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              System.out.println("user8 has updated password. " + e.toString());
+              log.info("user8 has updated password. " + e.toString());
               user = null;
             }
             return user == null;
@@ -225,7 +228,7 @@ public class XmlUserManagerTest {
 
       fail("Test should never reach here.");
     } catch (final ConditionTimeoutException te) {
-      System.out.println("The config did not reload in 30 seconds due to bad config data.");
+      log.info("The config did not reload in 30 seconds due to bad config data.");
     } finally {
       // Delete the file
       Files.delete(filePath);
