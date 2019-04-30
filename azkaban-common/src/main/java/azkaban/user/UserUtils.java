@@ -55,7 +55,7 @@ public final class UserUtils {
     try {
       watchService = FileSystems.getDefault().newWatchService();
     } catch (final IOException e) {
-      log.warn(" Failed to create WatchService " + e.getMessage());
+      log.warn(" Failed to create WatchService " + e.toString());
       throw e;
     }
 
@@ -92,7 +92,7 @@ public final class UserUtils {
       } catch (final IOException e) {
         // Ignore the IOException
         log.warn("IOException while setting up watch on conf " + fileName + ". "
-            + e.getMessage());
+            + e.toString());
       }
     }
 
@@ -102,7 +102,7 @@ public final class UserUtils {
       try {
         watchService.close();
       } catch (final IOException e) {
-        log.warn("IOException while closing watchService. " + e.getMessage());
+        log.warn("IOException while closing watchService. " + e.toString());
       }
       return;
     }
@@ -124,7 +124,7 @@ public final class UserUtils {
           // in the watch service.
           Thread.sleep(1000L);
         } catch (final InterruptedException ie) {
-          log.warn(ie.getMessage());
+          log.warn(ie.toString());
           Thread.currentThread().interrupt();
           return;
         }
@@ -146,7 +146,7 @@ public final class UserUtils {
             configFileMap.get(filename).parseConfigFile();
           } catch (final Exception e) {
             // If there is any exception while parsing the config file, log it and move on
-            log.warn("Reload failed for config file " + filename + " due to " + e.getMessage());
+            log.warn("Reload failed for config file " + filename + " due to " + e.toString());
           }
         }
         watchKey.reset();

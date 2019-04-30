@@ -143,7 +143,7 @@ public class XmlUserManagerTest {
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              System.out.println("user8 has updated password. " + e.getMessage());
+              System.out.println("user8 has updated password. " + e.toString());
               user = null;
             }
             return user == null;
@@ -153,17 +153,13 @@ public class XmlUserManagerTest {
       try {
         user8 = manager.getUser("user8", "passwordModified");
         if (!user8.getUserId().equals("user8")) {
-          System.out
-              .println("Failed to get correct user. Expected user8, got " + user8.getUserId());
           fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
         }
         System.out.println("Config reloaded successfully.");
       } catch (final UserManagerException e) {
-        System.out.println("Test failed " + e.getMessage());
-        fail("Test failed " + e.getMessage());
+        fail("Test failed " + e.toString());
       }
     } catch (final ConditionTimeoutException te) {
-      System.out.println("The config did not reload in 30 seconds");
       fail("The config did not reload in 30 seconds");
     } finally {
       // Delete the file
@@ -221,13 +217,12 @@ public class XmlUserManagerTest {
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              System.out.println("user8 has updated password. " + e.getMessage());
+              System.out.println("user8 has updated password. " + e.toString());
               user = null;
             }
             return user == null;
           });
 
-      System.out.println("Test should never reach here.");
       fail("Test should never reach here.");
     } catch (final ConditionTimeoutException te) {
       System.out.println("The config did not reload in 30 seconds due to bad config data.");
