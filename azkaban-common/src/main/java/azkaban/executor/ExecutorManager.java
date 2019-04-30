@@ -16,8 +16,6 @@
 
 package azkaban.executor;
 
-import static java.util.Objects.requireNonNull;
-
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
@@ -28,20 +26,14 @@ import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
-import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.Thread.State;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,8 +50,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
@@ -75,16 +65,6 @@ import org.joda.time.DateTime;
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
-  private static final String SPARK_JOB_TYPE = "spark";
-  private static final String APPLICATION_ID = "${application.id}";
-  // The regex to look for while fetching application ID from the Hadoop/Spark job log
-  private static final Pattern APPLICATION_ID_PATTERN = Pattern
-      .compile("application_\\d+_\\d+");
-  // The regex to look for while validating the content from RM job link
-  private static final Pattern FAILED_TO_READ_APPLICATION_PATTERN = Pattern
-      .compile("Failed to read the application");
-  private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
-      .compile("Invalid Application ID");
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
@@ -166,16 +146,6 @@ public class ExecutorManager extends EventHandler implements
     this.updaterThread.start();
     this.cleanerThread.start();
     this.queueProcessor.start();
-  }
-
-  private String findApplicationIdFromLog(final String logData) {
-    final Matcher matcher = APPLICATION_ID_PATTERN.matcher(logData);
-    String appId = null;
-    if (matcher.find()) {
-      appId = matcher.group().substring(12);
-    }
-    this.logger.info("Application ID is " + appId);
-    return appId;
   }
 
   private QueueProcessorThread setupQueueProcessor() {
@@ -722,6 +692,15 @@ public class ExecutorManager extends EventHandler implements
     return jobStats;
   }
 
+  /**
+   * If the resource manager and job history server urls are configured, fetch the application
+   * id from the job log and then construct the job link url.
+   *
+   * @param exFlow The executable flow.
+   * @param jobId The job id.
+   * @param attempt The job execution attempt.
+   * @return the job link url.
+   */
   @Override
   public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
     if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) || !this.azkProps
@@ -729,66 +708,19 @@ public class ExecutorManager extends EventHandler implements
         .containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
       return null;
     }
-
     final String applicationId = getApplicationId(exFlow, jobId, attempt);
-    if (applicationId == null) {
-      return null;
-    }
-
-    final URL url;
-    final String jobLinkUrl;
-    boolean isRMJobLinkValid = true;
-
-    try {
-      url = new URL(this.azkProps.getString(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL)
-          .replace(APPLICATION_ID, applicationId));
-      final String keytabPrincipal = requireNonNull(
-          this.azkProps.getString(ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL));
-      final String keytabPath = requireNonNull(this.azkProps.getString(ConfigurationKeys
-          .AZKABAN_KEYTAB_PATH));
-      final HttpURLConnection connection = AuthenticationUtils.loginAuthenticatedURL(url,
-          keytabPrincipal, keytabPath);
-
-      try (final BufferedReader in = new BufferedReader(
-          new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-        String inputLine;
-        while ((inputLine = in.readLine()) != null) {
-          if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()
-              || INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
-            this.logger.info(
-                "RM job link is invalid or has expired for application_" + applicationId);
-            isRMJobLinkValid = false;
-            break;
-          }
-        }
-      }
-    } catch (final Exception e) {
-      this.logger.error("Failed to get job link for application_" + applicationId, e);
-      return null;
-    }
-
-    if (isRMJobLinkValid) {
-      jobLinkUrl = url.toString();
-    } else {
-      // If RM job link is invalid or has expired, fetch the job link from JHS or SHS.
-      if (exFlow.getExecutableNode(jobId).getType().equals(SPARK_JOB_TYPE)) {
-        jobLinkUrl =
-            this.azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL).replace
-                (APPLICATION_ID, applicationId);
-      } else {
-        jobLinkUrl =
-            this.azkProps.get(ConfigurationKeys.HISTORY_SERVER_JOB_URL).replace(APPLICATION_ID,
-                applicationId);
-      }
-    }
-
-    this.logger.info(
-        "Job link url is " + jobLinkUrl + " for execution " + exFlow.getExecutionId() + ", job "
-            + jobId);
-    return jobLinkUrl;
+    return ExecutionControllerUtils.createJobLinkUrl(exFlow, jobId, applicationId, this.azkProps);
   }
 
-  private String getApplicationId(final ExecutableFlow exFlow, final String jobId,
+  /**
+   * Get the application id from the job log.
+   *
+   * @param exFlow The executable flow.
+   * @param jobId The job id.
+   * @param attempt The job execution attempt.
+   * @return the application id.
+   */
+  String getApplicationId(final ExecutableFlow exFlow, final String jobId,
       final int attempt) {
     String applicationId;
     boolean finished = false;
@@ -797,7 +729,7 @@ public class ExecutorManager extends EventHandler implements
       while (!finished) {
         final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
         if (data != null && data.getLength() != 0) {
-          applicationId = findApplicationIdFromLog(data.getData());
+          applicationId = ExecutionControllerUtils.findApplicationIdFromLog(data.getData());
           if (applicationId != null) {
             return applicationId;
           }
@@ -972,8 +904,9 @@ public class ExecutorManager extends EventHandler implements
         }
 
         if (!running.isEmpty()) {
-          int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
-              exflow.getProjectName(), flowId, maxConcurrentRunsOneFlow, maxConcurrentRunsPerFlowMap);
+          final int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
+              exflow.getProjectName(), flowId, this.maxConcurrentRunsOneFlow,
+              this.maxConcurrentRunsPerFlowMap);
           if (running.size() > maxConcurrentRuns) {
             this.commonMetrics.markSubmitFlowSkip();
             throw new ExecutorManagerException("Flow " + flowId
