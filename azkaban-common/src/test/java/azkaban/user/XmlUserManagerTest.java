@@ -146,7 +146,7 @@ public class XmlUserManagerTest {
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              log.info("user8 has updated password. " + e.toString());
+              log.info("user8 has updated password. ", e);
               user = null;
             }
             return user == null;
@@ -220,7 +220,7 @@ public class XmlUserManagerTest {
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              log.info("user8 has updated password. " + e.toString());
+              log.info("user8 has updated password. ", e);
               user = null;
             }
             return user == null;
