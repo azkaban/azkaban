@@ -470,15 +470,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   /**
-   * Get the application id from the job log.
+   * Get the Hadoop/Spark application id from the job log.
    *
    * @param exFlow The executable flow.
    * @param jobId The job id.
    * @param attempt The job execution attempt.
    * @return the application id.
    */
-  String getApplicationId(final ExecutableFlow exFlow, final String jobId,
-      final int attempt) {
+  String getApplicationId(final ExecutableFlow exFlow, final String jobId, final int attempt) {
     String applicationId;
     boolean finished = false;
     int offset = 0;
