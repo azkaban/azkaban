@@ -47,14 +47,14 @@
 
     var projectId = ${project.id};
     var projectName = "${project.name}";
-    var flowId = "${flowid}";
+    var flowId = "${flowId}";
     var execId = null;
     var pageSize = "${size}";
 
     var flowPageSettings = {
       projectId: ${project.id},
       projectName: "${project.name}",
-      flowId: "${flowid}",
+      flowId: "${flowId}",
       pageSize: ${size},
 
       executionUrl: contextURL + "/executor",
@@ -91,13 +91,14 @@
     <div class="container-full">
       <div class="row">
         <div class="header-title">
-          <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow
-            <small>$flowid</small>
+          <h1><a href="${context}/manager?project=${project.name}&flow=${flowId}">Flow
+            <small>$flowId</small>
           </a></h1>
         </div>
         <div class="header-control">
           <div class="pull-right header-form">
-            <button type="button" class="btn btn-sm btn-success" id="executebtn">
+            #set($isDisabled = "#if(${isLocked})disabled#end")
+            <button type="button" class="btn btn-sm btn-success ${isDisabled}" id="executebtn">
               Schedule / Execute Flow
             </button>
           </div>
@@ -111,7 +112,7 @@
         <li><a
             href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
         </a></li>
-        <li class="active"><strong>Flow</strong> $flowid</li>
+        <li class="active"><strong>Flow</strong> $flowId</li>
       </ol>
     </div>
   </div>

@@ -13,22 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.TIPStatus;
 import org.apache.hadoop.mapred.TaskReport;
 
+
 /**
  * Container that holds state of a MapReduce job
  */
 public class MapReduceJobState {
+
   private String jobId;
   private String jobName;
   private String trackingURL;
@@ -39,13 +39,10 @@ public class MapReduceJobState {
   private float reduceProgress;
   private long jobStartTime;
   private long jobLastUpdateTime;
-
   private int totalMappers;
   private int finishedMappersCount;
-
   private int totalReducers;
   private int finishedReducersCount;
-
   private Counters counters;
 
   public MapReduceJobState() {

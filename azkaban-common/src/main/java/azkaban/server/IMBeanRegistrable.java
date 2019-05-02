@@ -13,12 +13,17 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-package azkaban.user;
+package azkaban.server;
 
 /**
- * Lambda interface for parsing user config file.
+ * Interface for MBean Registration
  */
-public interface ParseConfigFile {
-  void parseConfigFile();
+public interface IMBeanRegistrable {
+
+  MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
+
+  /**
+   * Function to configure MBean Server
+   */
+  void configureMBeanServer();
 }

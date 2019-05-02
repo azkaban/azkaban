@@ -16,7 +16,6 @@
 
 package azkaban.user;
 
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
@@ -26,6 +25,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,13 +35,15 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class XmlUserManagerTest {
 
+  private static final Logger log = LoggerFactory.getLogger(XmlUserManagerTest.class);
   private final Props baseProps = new Props();
 
   @Before
@@ -92,10 +95,16 @@ public class XmlUserManagerTest {
   public void testAutoReload() throws Exception {
     final Props props = new Props(this.baseProps);
     final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String path = configURL.getPath();
+    final String origpath = configURL.getPath();
+    // Copy the file to keep original file unmodified
+    final String path = origpath.replace("test1", "test1_auto_reload");
+    final Path filePath = Paths.get(path);
+    Files.copy(Paths.get(origpath), filePath, StandardCopyOption.REPLACE_EXISTING);
+    // sleep for a second to have different modification time.
+    Thread.sleep(1000L);
     props.put(XmlUserManager.XML_FILE_PARAM, path);
 
-    UserManager manager;
+    final UserManager manager;
     try {
       manager = new XmlUserManager(props);
     } catch (final RuntimeException e) {
@@ -108,13 +117,10 @@ public class XmlUserManagerTest {
 
     // Modify the password for user8
     // TODO : djaiswal : Find a better way to modify XML
-    List<String> lines = new ArrayList<>();
-    List<String> origLines = new ArrayList<>();
-    Path filePath = Paths.get(path);
-    FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
-    System.out.println("File modification time = " + origModifiedTime.toString());
-    for (String line : Files.readAllLines(filePath)) {
-      origLines.add(line);
+    final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
+    log.info("File modification time = " + origModifiedTime.toString());
+    final List<String> lines = new ArrayList<>();
+    for (final String line : Files.readAllLines(filePath)) {
       if (line.contains("password8")) {
         lines.add(line.replace("password8", "passwordModified"));
       } else {
@@ -126,21 +132,21 @@ public class XmlUserManagerTest {
     try {
       // Update the file
       Files.write(filePath, lines);
-      FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
-      System.out.println("File modification time after write = " + lastModifiedTime.toString());
+      final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
+      log.info("File modification time after write = " + lastModifiedTime.toString());
       if (origModifiedTime.equals(lastModifiedTime)) {
         // File did not update
         fail("File did not update.");
       }
-      // Try for a minute polling every 2 seconds if the config is reloaded
-      Awaitility.await().atMost(60L, TimeUnit.SECONDS).
-          pollInterval(2L, TimeUnit.SECONDS).until(
+      // Try for 30 seconds polling every 10 seconds if the config is reloaded
+      Awaitility.await().atMost(30L, TimeUnit.SECONDS).
+          pollInterval(10L, TimeUnit.SECONDS).until(
           () -> {
             User user;
             try {
               user = manager.getUser("user8", "password8");
-            } catch (UserManagerException e) {
-              System.out.println("user8 has updated password. " + e.getMessage());
+            } catch (final UserManagerException e) {
+              log.info("user8 has updated password. ", e);
               user = null;
             }
             return user == null;
@@ -150,21 +156,82 @@ public class XmlUserManagerTest {
       try {
         user8 = manager.getUser("user8", "passwordModified");
         if (!user8.getUserId().equals("user8")) {
-          System.out
-              .println("Failed to get correct user. Expected user8, got " + user8.getUserId());
           fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
         }
-        System.out.println("Config reloaded successfully.");
+        log.info("Config reloaded successfully.");
       } catch (final UserManagerException e) {
-        System.out.println("Test failed " + e.getMessage());
-        fail("Test failed " + e.getMessage());
+        fail("Test failed " + e.toString());
       }
-    } catch (ConditionTimeoutException te) {
-      System.out.println("The config did not reload in 60 seconds");
-      fail("The config did not reload in 60 seconds");
+    } catch (final ConditionTimeoutException te) {
+      fail("The config did not reload in 30 seconds");
     } finally {
-      // Revert the file back
-      Files.write(Paths.get(path), origLines);
+      // Delete the file
+      Files.delete(filePath);
+    }
+  }
+
+  /**
+   * Test auto reload of user XML
+   */
+  @Test
+  public void testAutoReloadFail() throws Exception {
+    final Props props = new Props(this.baseProps);
+    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
+    final String origpath = configURL.getPath();
+    // Copy the file to keep original file unmodified
+    final String path = origpath.replace("test1", "test1_auto_reload_fail");
+    final Path filePath = Paths.get(path);
+    Files.copy(Paths.get(origpath), filePath, StandardCopyOption.REPLACE_EXISTING);
+    // sleep for a second to have different modification time.
+    Thread.sleep(1000L);
+    props.put(XmlUserManager.XML_FILE_PARAM, path);
+
+    final UserManager manager;
+    try {
+      manager = new XmlUserManager(props);
+    } catch (final RuntimeException e) {
+      fail("Should have found the xml file");
+      return;
+    }
+
+    // Get the user8 from existing XML with password == password8
+    final User user8 = manager.getUser("user8", "password8");
+
+    // Modify the password for user8
+    // TODO : djaiswal : Find a better way to modify XML
+    final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
+    log.info("File modification time = " + origModifiedTime.toString());
+
+    // Make sure the file gets reverted back.
+    try {
+      // Update the file to make it empty.
+      Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
+      final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
+      log.info("File modification time after write = " + lastModifiedTime.toString());
+      if (origModifiedTime.equals(lastModifiedTime)) {
+        // File did not update
+        fail("File did not update.");
+      }
+      // Try for 30 seconds polling every 10 seconds if the config is reloaded
+      Awaitility.await().atMost(30L, TimeUnit.SECONDS).
+          pollInterval(10L, TimeUnit.SECONDS).until(
+          () -> {
+            User user;
+            try {
+              user = manager.getUser("user8", "password8");
+            } catch (final UserManagerException e) {
+              log.info("user8 has updated password. ", e);
+              user = null;
+            }
+            return user == null;
+          });
+
+      fail("Test should never reach here.");
+    } catch (final ConditionTimeoutException te) {
+      log.info("The config did not reload in 30 seconds due to bad config data.");
+    } finally {
+      // Delete the file
+      Files.delete(filePath);
     }
   }
 

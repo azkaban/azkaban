@@ -13,12 +13,17 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package azkaban.jobtype;
 
-package azkaban.user;
+public interface IHadoopJob {
 
-/**
- * Lambda interface for parsing user config file.
- */
-public interface ParseConfigFile {
-  void parseConfigFile();
+  /**
+   * Hadoop Proxy Wrapper Object
+   */
+  HadoopProxy hadoopProxy = new HadoopProxy();
+
+  /**
+   * Setup Hadoop-related Job Properties
+   */
+  void setupHadoopJobProperties();
 }
