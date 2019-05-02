@@ -85,8 +85,8 @@ import org.quartz.SchedulerException;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
-  static final String FLOW_ID_PARAM = "flowId";
   static final String FLOW_NAME_PARAM = "flowName";
+  static final String FLOW_ID_PARAM = "flowId";
   static final String ERROR_PARAM = "error";
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
@@ -1411,7 +1411,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      page.add(FLOW_ID_PARAM, flow.getId());
+      page.add("flowid", flow.getId());
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
@@ -1522,7 +1522,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      page.add(FLOW_ID_PARAM, flow.getId());
+      page.add("flowid", flow.getId());
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
@@ -1615,7 +1615,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
       } else {
-        page.add(FLOW_ID_PARAM, flow.getId());
+        page.add("flowid", flow.getId());
         page.add("isLocked", flow.isLocked());
         if (flow.isLocked()) {
           final Props props = this.projectManager.getProps();
