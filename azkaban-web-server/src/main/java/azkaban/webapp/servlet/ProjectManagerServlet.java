@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -1755,16 +1756,25 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
-    final Project project = this.projectManager.getProject(projectName);
-    if (project == null || !project.isActive()) {
-      final String failureCause = project == null ? "doesn't exist." : "was already removed.";
-      registerError(ret, "Installation Failed. Project '" + projectName + " "
-          + failureCause, resp, 410);
+    final Project project = validateUploadAndGetProject(resp, ret, user, projectName);
+    if (project == null) {
       return;
     }
 
-    logger.info(
-        "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
+    final FileItem item = (FileItem) multipart.get("file");
+    final String name = item.getName();
+    String type = null;
+
+    final String contentType = item.getContentType();
+    if (contentType != null && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) ||
+        contentType.startsWith("application/x-zip-compressed") ||
+        contentType.startsWith("application/octet-stream"))) {
+      type = "zip";
+    } else {
+      item.delete();
+      registerError(ret, "File type " + contentType + " unrecognized.", resp, 400);
+      return;
+    }
 
     final String autoFix = (String) multipart.get("fix");
 
@@ -1775,6 +1785,87 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
     }
 
+    ret.put("projectId", String.valueOf(project.getId()));
+
+    final File tempDir = Utils.createTempDir();
+    OutputStream out = null;
+    try {
+      logger.info("Uploading file " + name);
+      final File archiveFile = new File(tempDir, name);
+      out = new BufferedOutputStream(new FileOutputStream(archiveFile));
+      IOUtils.copy(item.getInputStream(), out);
+      out.close();
+
+      if (this.enableQuartz) {
+        //todo chengren311: should maintain atomicity,
+        // e.g, if uploadProject fails, associated schedule shouldn't be added.
+        this.scheduler.unschedule(project);
+      }
+
+      // get the locked flows for the project, so that they can be locked again after upload
+      final List<String> lockedFlows = getLockedFlows(project);
+
+      final Map<String, ValidationReport> reports = this.projectManager
+          .uploadProject(project, archiveFile, type, user, props);
+
+      if (this.enableQuartz) {
+        this.scheduler.schedule(project, user.getUserId());
+      }
+
+      // reset locks for flows as needed
+      lockFlowsForProject(project, lockedFlows);
+
+      // remove schedule of renamed/deleted flows
+      removeScheduleOfDeletedFlows(project, this.scheduleManager, (schedule) -> {
+        logger.info(
+            "Removed schedule with id {} of renamed/deleted flow: {} from project: {}.",
+            schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
+        this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
+            "Schedule " + schedule.toString() + " has been removed.");
+      });
+
+      registerErrorsAndWarningsFromValidationReport(resp, ret, reports);
+    } catch (final Exception e) {
+      logger.info("Installation Failed.", e);
+      String error = e.getMessage();
+      if (error.length() > 512) {
+        error = error.substring(0, 512) + "<br>Too many errors to display.<br>";
+      }
+      registerError(ret, "Installation Failed.<br>" + error, resp, 500);
+    } finally {
+      if (out != null) {
+        out.close();
+      }
+      if (tempDir.exists()) {
+        FileUtils.deleteDirectory(tempDir);
+      }
+    }
+
+    logger.info("Upload: project " + projectName + " version is " + project.getVersion()
+        + ", reference is " + System.identityHashCode(project));
+    ret.put("version", String.valueOf(project.getVersion()));
+  }
+
+  /**
+   * @return project. Null if invalid upload params or not enough permissions to proceed.
+   */
+  private Project validateUploadAndGetProject(final HttpServletResponse resp,
+      final Map<String, String> ret, final User user, final String projectName) {
+    if (projectName == null || projectName.isEmpty()) {
+      registerError(ret, "No project name found.", resp, 400);
+      return null;
+    }
+    final Project project = this.projectManager.getProject(projectName);
+    if (project == null || !project.isActive()) {
+      final String failureCause = (project == null) ? "doesn't exist." : "was already removed.";
+      registerError(ret, "Installation Failed. Project '" + projectName + " "
+          + failureCause, resp, 410);
+      return null;
+    }
+
+    logger.info(
+        "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
+
     if (this.lockdownUploadProjects && !UserUtils
         .hasPermissionforAction(this.userManager, user, Type.UPLOADPROJECTS)) {
       final String message =
@@ -1782,153 +1873,83 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + "User " + user.getUserId() + " doesn't have permission to upload project.";
       logger.info(message);
       registerError(ret, message, resp, 403);
-    } else if (projectName == null || projectName.isEmpty()) {
-      registerError(ret, "No project name found.", resp, 400);
-    } else if (project == null) {
-      registerError(ret, "Installation Failed. Project '" + projectName
-          + "' doesn't exist.", resp, 400);
-    } else if (!hasPermission(project, user, Type.WRITE)) {
-      registerError(ret, "Installation Failed. User '" + user.getUserId()
-          + "' does not have write access.", resp, 400);
-    } else {
-      ret.put("projectId", String.valueOf(project.getId()));
+      return null;
+    }
+    if (!hasPermission(project, user, Type.WRITE)) {
+      registerError(ret,
+          "Installation Failed. User '" + user.getUserId() + "' does not have write access.",
+          resp, 400);
+      return null;
+    }
+    return project;
+  }
 
-      final FileItem item = (FileItem) multipart.get("file");
-      final String name = item.getName();
-      String type = null;
+  /**
+   * Remove schedule of renamed/deleted flows
+   *
+   * @param project project from which old flows will be unscheduled
+   * @param scheduleManager the schedule manager
+   * @param onDeletedSchedule a callback function to execute with every deleted schedule
+   */
+  static void removeScheduleOfDeletedFlows(final Project project,
+      final ScheduleManager scheduleManager, final Consumer<Schedule> onDeletedSchedule)
+      throws ScheduleManagerException {
+    final Set<String> flowNameList = project.getFlows().stream().map(f -> f.getId()).collect(
+        Collectors.toSet());
 
-      final String contentType = item.getContentType();
-      if (contentType != null
-          && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE)
-          || contentType.startsWith("application/x-zip-compressed") || contentType
-          .startsWith("application/octet-stream"))) {
-        type = "zip";
-      } else {
-        item.delete();
-        registerError(ret, "File type " + contentType + " unrecognized.", resp, 400);
-
-        return;
+    for (final Schedule schedule : scheduleManager.getSchedules()) {
+      if (schedule.getProjectId() == project.getId() &&
+          !flowNameList.contains(schedule.getFlowName())) {
+        scheduleManager.removeSchedule(schedule);
+        onDeletedSchedule.accept(schedule);
       }
+    }
+  }
 
-      final File tempDir = Utils.createTempDir();
-      OutputStream out = null;
-      try {
-        logger.info("Uploading file " + name);
-        final File archiveFile = new File(tempDir, name);
-        out = new BufferedOutputStream(new FileOutputStream(archiveFile));
-        IOUtils.copy(item.getInputStream(), out);
-        out.close();
-
-        if (this.enableQuartz) {
-          //todo chengren311: should maintain atomicity,
-          // e.g, if uploadProject fails, associated schedule shouldn't be added.
-          this.scheduler.unschedule(project);
-        }
-
-        // get the locked flows for the project, so that they can be locked again after upload
-        List<String> lockedFlows = getLockedFlows(project);
-
-        final Map<String, ValidationReport> reports =
-            this.projectManager.uploadProject(project, archiveFile, type, user,
-                props);
-
-        if (this.enableQuartz) {
-          this.scheduler.schedule(project, user.getUserId());
-        }
-
-        // reset locks for flows as needed
-        lockFlowsForProject(project, lockedFlows);
-
-        // remove schedule of renamed/deleted flows
-        final Set<String> flowNameList = new HashSet<>();
-        for (final Flow flow : project.getFlows()) {
-          flowNameList.add(flow.getId());
-        }
-
-        try {
-          for (final Schedule schedule : this.scheduleManager.getSchedules()) {
-            if (schedule.getProjectId() == project.getId() &&
-                !flowNameList.contains(schedule.getFlowName())) {
-              logger.info(
-                  "Removing schedule with id {} of renamed/deleted flow: {} from project: {}.",
-                  schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
-              this.scheduleManager.removeSchedule(schedule);
-              this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
-                  "Schedule " + schedule.toString() + " has been removed.");
-            }
+  private void registerErrorsAndWarningsFromValidationReport(final HttpServletResponse resp,
+      final Map<String, String> ret, final Map<String, ValidationReport> reports) {
+    final StringBuffer errorMsgs = new StringBuffer();
+    final StringBuffer warnMsgs = new StringBuffer();
+    for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
+      final ValidationReport report = reportEntry.getValue();
+      if (!report.getInfoMsgs().isEmpty()) {
+        for (final String msg : report.getInfoMsgs()) {
+          switch (ValidationReport.getInfoMsgLevel(msg)) {
+            case ERROR:
+              errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+              break;
+            case WARN:
+              warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+              break;
+            default:
+              break;
           }
-        } catch (final ScheduleManagerException e) {
-          throw new ServletException(e);
-        }
-
-        final StringBuffer errorMsgs = new StringBuffer();
-        final StringBuffer warnMsgs = new StringBuffer();
-        for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
-          final ValidationReport report = reportEntry.getValue();
-          if (!report.getInfoMsgs().isEmpty()) {
-            for (final String msg : report.getInfoMsgs()) {
-              switch (ValidationReport.getInfoMsgLevel(msg)) {
-                case ERROR:
-                  errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                  break;
-                case WARN:
-                  warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                  break;
-                default:
-                  break;
-              }
-            }
-          }
-          if (!report.getErrorMsgs().isEmpty()) {
-            errorMsgs.append("Validator " + reportEntry.getKey()
-                + " reports errors:<ul>");
-            for (final String msg : report.getErrorMsgs()) {
-              errorMsgs.append("<li>" + msg + "</li>");
-            }
-            errorMsgs.append("</ul>");
-          }
-          if (!report.getWarningMsgs().isEmpty()) {
-            warnMsgs.append("Validator " + reportEntry.getKey()
-                + " reports warnings:<ul>");
-            for (final String msg : report.getWarningMsgs()) {
-              warnMsgs.append("<li>" + msg + "</li>");
-            }
-            warnMsgs.append("</ul>");
-          }
-        }
-        if (errorMsgs.length() > 0) {
-          // If putting more than 4000 characters in the cookie, the entire
-          // message
-          // will somehow get discarded.
-          registerError(ret, errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
-              : errorMsgs.toString(), resp, 500);
-        }
-        if (warnMsgs.length() > 0) {
-          ret.put(
-              "warn",
-              warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs
-                  .toString());
-        }
-      } catch (final Exception e) {
-        logger.info("Installation Failed.", e);
-        String error = e.getMessage();
-        if (error.length() > 512) {
-          error =
-              error.substring(0, 512) + "<br>Too many errors to display.<br>";
-        }
-        registerError(ret, "Installation Failed.<br>" + error, resp, 500);
-      } finally {
-        if (out != null) {
-          out.close();
-        }
-        if (tempDir.exists()) {
-          FileUtils.deleteDirectory(tempDir);
         }
       }
-
-      logger.info("Upload: project " + projectName + " version is " + project.getVersion()
-          + ", reference is " + System.identityHashCode(project));
-      ret.put("version", String.valueOf(project.getVersion()));
+      if (!report.getErrorMsgs().isEmpty()) {
+        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
+        for (final String msg : report.getErrorMsgs()) {
+          errorMsgs.append("<li>" + msg + "</li>");
+        }
+        errorMsgs.append("</ul>");
+      }
+      if (!report.getWarningMsgs().isEmpty()) {
+        warnMsgs.append("Validator " + reportEntry.getKey() + " reports warnings:<ul>");
+        for (final String msg : report.getWarningMsgs()) {
+          warnMsgs.append("<li>" + msg + "</li>");
+        }
+        warnMsgs.append("</ul>");
+      }
+    }
+    if (errorMsgs.length() > 0) {
+      // If putting more than 4000 characters in the cookie, the entire message will somehow
+      // get discarded.
+      registerError(ret,
+          errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000) : errorMsgs.toString(), resp,
+          500);
+    }
+    if (warnMsgs.length() > 0) {
+      ret.put("warn", warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs.toString());
     }
   }
 
