@@ -52,7 +52,7 @@ public class HadoopHiveJob extends AbstractHadoopJavaProcessJob {
   public void run() throws Exception {
     setupHadoopJobProperties();
     HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
-    hadoopProxy.setupPropsForProxy(getAllProps(), getJobProps(), getLog());
+    getHadoopProxy().setupPropsForProxy(getAllProps(), getJobProps(), getLog());
     super.run();
   }
 
@@ -174,6 +174,6 @@ public class HadoopHiveJob extends AbstractHadoopJavaProcessJob {
 
     info("Cancel called.  Killing the Hive launched MR jobs on the cluster");
 
-    hadoopProxy.killAllSpawnedHadoopJobs(getJobProps(), getLog());
+    getHadoopProxy().killAllSpawnedHadoopJobs(getJobProps(), getLog());
   }
 }

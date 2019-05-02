@@ -18,9 +18,9 @@ package azkaban.jobtype;
 public interface IHadoopJob {
 
   /**
-   * Hadoop Proxy Wrapper Object
+   * Get HadoopProxy Instance
    */
-  HadoopProxy hadoopProxy = new HadoopProxy();
+  HadoopProxy getHadoopProxy();
 
   /**
    * Setup Hadoop-related Job Properties

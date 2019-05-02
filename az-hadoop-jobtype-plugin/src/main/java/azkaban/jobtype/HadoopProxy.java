@@ -36,7 +36,8 @@ public class HadoopProxy {
   private String userToProxy = null;
   private File tokenFile = null;
 
-  public HadoopProxy() {
+  public HadoopProxy(Props sysProps, Props jobProps, final Logger logger) {
+    init(sysProps, jobProps, logger);
   }
 
   public boolean isProxyEnabled() {
@@ -50,7 +51,7 @@ public class HadoopProxy {
    * @param jobProps job properties
    * @param logger logger handler
    */
-  public void init(Props sysProps, Props jobProps, final Logger logger) {
+  private void init(Props sysProps, Props jobProps, final Logger logger) {
     shouldProxy = sysProps.getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
     jobProps.put(HadoopSecurityManager.ENABLE_PROXYING, Boolean.toString(shouldProxy));
     obtainTokens = sysProps.getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN, false);

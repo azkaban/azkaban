@@ -69,7 +69,7 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   public void run() throws Exception {
     setupHadoopJobProperties();
     HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
-    hadoopProxy.setupPropsForProxy(getAllProps(), getJobProps(), getLog());
+    getHadoopProxy().setupPropsForProxy(getAllProps(), getJobProps(), getLog());
     super.run();
   }
 
@@ -262,6 +262,6 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
 
     info("Cancel called.  Killing the Pig launched MR jobs on the cluster");
 
-    hadoopProxy.killAllSpawnedHadoopJobs(getJobProps(), getLog());
+    getHadoopProxy().killAllSpawnedHadoopJobs(getJobProps(), getLog());
   }
 }

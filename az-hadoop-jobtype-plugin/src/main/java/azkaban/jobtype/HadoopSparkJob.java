@@ -302,7 +302,7 @@ public class HadoopSparkJob extends AbstractHadoopJavaProcessJob {
   @Override
   public void run() throws Exception {
     HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
-    hadoopProxy.setupPropsForProxy(getAllProps(), getJobProps(), getLog());
+    getHadoopProxy().setupPropsForProxy(getAllProps(), getJobProps(), getLog());
     setupHadoopJobProperties();
     super.run();
   }
@@ -592,6 +592,6 @@ public class HadoopSparkJob extends AbstractHadoopJavaProcessJob {
 
     info("Cancel called.  Killing the launched Spark jobs on the cluster");
 
-    hadoopProxy.killAllSpawnedHadoopJobs(getJobProps(), getLog());
+    getHadoopProxy().killAllSpawnedHadoopJobs(getJobProps(), getLog());
   }
 }

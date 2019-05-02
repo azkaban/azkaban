@@ -36,6 +36,7 @@ import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.IMBeanRegistrable;
 import azkaban.server.AzkabanServer;
+import azkaban.server.MBeanRegistrationManager;
 import azkaban.server.session.SessionCache;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
@@ -130,6 +131,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   @Deprecated
   private static AzkabanWebServer app;
 
+  private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final VelocityEngine velocityEngine;
   private final StatusService statusService;
   private final Server server;
@@ -588,6 +590,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   private void setTriggerPlugins(final Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
+  }
+
+  @Override
+  public MBeanRegistrationManager getMBeanRegistrationManager() {
+    return this.mbeanRegistrationManager;
   }
 
   @Override
