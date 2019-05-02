@@ -89,13 +89,13 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         }
         ret = result;
       } else if (JMX_GET_MBEANS.equals(ajax)) {
-        ret.put("mbeans", this.server.mbeanRegistrationManager.getMBeanNames());
+        ret.put("mbeans", this.server.getMBeanRegistrationManager().getMBeanNames());
       } else if (JMX_GET_MBEAN_INFO.equals(ajax)) {
         if (hasParam(req, JMX_MBEAN)) {
           final String mbeanName = getParam(req, JMX_MBEAN);
           try {
             final ObjectName name = new ObjectName(mbeanName);
-            final MBeanInfo info = this.server.mbeanRegistrationManager.getMBeanInfo(name);
+            final MBeanInfo info = this.server.getMBeanRegistrationManager().getMBeanInfo(name);
             ret.put("attributes", info.getAttributes());
             ret.put("description", info.getDescription());
           } catch (final Exception e) {
@@ -114,7 +114,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
           try {
             final ObjectName name = new ObjectName(mbeanName);
-            final Object obj = this.server.mbeanRegistrationManager.getMBeanAttribute(name, attribute);
+            final Object obj = this.server.getMBeanRegistrationManager()
+                .getMBeanAttribute(name, attribute);
             ret.put("value", obj);
           } catch (final Exception e) {
             logger.error(e);
@@ -125,7 +126,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         if (!hasParam(req, JMX_MBEAN)) {
           ret.put("error", "Parameters 'mbean' must be set");
         } else {
-          ret.putAll(this.server.mbeanRegistrationManager.getMBeanResult(getParam(req, JMX_MBEAN)));
+          ret.putAll(
+              this.server.getMBeanRegistrationManager().getMBeanResult(getParam(req, JMX_MBEAN)));
         }
       } else {
         ret.put("commands", new String[]{
@@ -146,7 +148,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/jmxpage.vm");
 
-    page.add("mbeans", this.server.mbeanRegistrationManager.getMBeanNames());
+    page.add("mbeans", this.server.getMBeanRegistrationManager().getMBeanNames());
 
     final Map<String, Object> executorMBeans = new HashMap<>();
     for (final String hostPort : this.executorManagerAdapter.getAllActiveExecutorServerHosts()) {

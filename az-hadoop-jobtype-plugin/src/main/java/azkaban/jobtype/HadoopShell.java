@@ -34,10 +34,12 @@ public class HadoopShell extends ProcessJob implements IHadoopJob {
   public static final String WHITELIST_REGEX = "command.whitelist.regex";
   public static final String BLACKLIST_REGEX = "command.blacklist.regex";
 
+  private final HadoopProxy hadoopProxy;
+
   public HadoopShell(String jobid, Props sysProps, Props jobProps, Logger logger)
       throws RuntimeException {
     super(jobid, sysProps, jobProps, logger);
-    hadoopProxy.init(sysProps, jobProps, logger);
+    this.hadoopProxy = new HadoopProxy(sysProps, jobProps, logger);
   }
 
   @Override
@@ -55,6 +57,11 @@ public class HadoopShell extends ProcessJob implements IHadoopJob {
     } finally {
       hadoopProxy.cancelHadoopTokens(getLog());
     }
+  }
+
+  @Override
+  public HadoopProxy getHadoopProxy() {
+    return this.hadoopProxy;
   }
 
   /**

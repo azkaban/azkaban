@@ -68,12 +68,13 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
     final Map<String, Object> ret = new HashMap<>();
 
     if (hasParam(req, JMX_GET_MBEANS)) {
-      ret.put("mbeans", this.server.mbeanRegistrationManager.getMBeanNames());
+      ret.put("mbeans", this.server.getMBeanRegistrationManager().getMBeanNames());
     } else if (hasParam(req, JMX_GET_ALL_MBEAN_ATTRIBUTES)) {
       if (!hasParam(req, JMX_MBEAN)) {
         ret.put("error", "Parameters 'mbean' must be set");
       } else {
-        ret.putAll(this.server.mbeanRegistrationManager.getMBeanResult(getParam(req, JMX_MBEAN)));
+        ret.putAll(
+            this.server.getMBeanRegistrationManager().getMBeanResult(getParam(req, JMX_MBEAN)));
       }
     }
 
