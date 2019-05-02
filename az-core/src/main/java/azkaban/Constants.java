@@ -95,12 +95,27 @@ public class Constants {
 
   // Default maximum number of concurrent runs for a single flow
   public static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
+  
+  // How often executors will poll new executions in Poll Dispatch model
+  public static final int DEFAULT_AZKABAN_POLLING_INTERVAL_MS = 1000;
 
+  // Executors can use cpu load calculated from this period to take/skip polling turns
+  public static final int DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC = 60;
+
+  
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
+    public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =
+        "azkaban.polling_criteria.flow_threads_available";
+    public static final String AZKABAN_POLLING_CRITERIA_MIN_FREE_MEMORY_GB =
+        "azkaban.polling_criteria.min_free_memory_gb";
+    public static final String AZKABAN_POLLING_CRITERIA_MAX_CPU_UTILIZATION_PCT =
+        "azkaban.polling_criteria.max_cpu_utilization_pct";
+    public static final String AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC =
+        "azkaban.polling_criteria.cpu_load_period_sec";
 
     // Configures properties for Azkaban executor health check
     public static final String AZKABAN_EXECUTOR_HEALTHCHECK_INTERVAL_MIN = "azkaban.executor.healthcheck.interval.min";
