@@ -76,8 +76,11 @@ public class OsCpuUtil {
     if (this.collectedCpuStats.isEmpty()) {
       return -1;
     }
-    final CpuStats oldestCpuStats = this.collectedCpuStats.pollLast();
     final CpuStats newestCpuStats = getCpuStats();
+    if (newestCpuStats == null) {
+      return -1;
+    }
+    final CpuStats oldestCpuStats = this.collectedCpuStats.pollLast();
     this.collectedCpuStats.push(newestCpuStats);
 
     return calcCpuLoad(oldestCpuStats, newestCpuStats);
