@@ -47,14 +47,14 @@
 
     var projectId = ${project.id};
     var projectName = "${project.name}";
-    var flowId = "${flowId}";
+    var flowId = "${flowid}";
     var execId = null;
     var pageSize = "${size}";
 
     var flowPageSettings = {
       projectId: ${project.id},
       projectName: "${project.name}",
-      flowId: "${flowId}",
+      flowId: "${flowid}",
       pageSize: ${size},
 
       executionUrl: contextURL + "/executor",
@@ -91,8 +91,8 @@
     <div class="container-full">
       <div class="row">
         <div class="header-title">
-          <h1><a href="${context}/manager?project=${project.name}&flow=${flowId}">Flow
-            <small>$flowId</small>
+          <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow
+            <small>$flowid</small>
           </a></h1>
         </div>
         <div class="header-control">
@@ -112,7 +112,7 @@
         <li><a
             href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
         </a></li>
-        <li class="active"><strong>Flow</strong> $flowId</li>
+        <li class="active"><strong>Flow</strong> $flowid</li>
       </ol>
     </div>
   </div>
