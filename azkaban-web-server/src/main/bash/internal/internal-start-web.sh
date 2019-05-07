@@ -56,7 +56,14 @@ else
 fi
 AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$serverpath"
 
-java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $@ &
+if test -z ${JAVA_HOME}
+then
+    JAVA_BIN=java
+else
+    JAVA_BIN=${JAVA_HOME}/bin/java
+fi
+
+$JAVA_BIN $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $@ &
 
 echo $! > $azkaban_dir/currentpid
 
