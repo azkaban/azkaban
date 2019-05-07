@@ -1771,7 +1771,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       type = "zip";
     } else {
       item.delete();
-      registerError(ret, "File type " + contentType + " unrecognized.", resp, 400);
+      registerError(ret, "File type " + contentType + " unrecognized.", resp,
+          HttpServletResponse.SC_BAD_REQUEST);
       return;
     }
 
@@ -1830,7 +1831,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (error.length() > 512) {
         error = error.substring(0, 512) + "<br>Too many errors to display.<br>";
       }
-      registerError(ret, "Installation Failed.<br>" + error, resp, 500);
+      registerError(ret, "Installation Failed.<br>" + error, resp,
+          HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     } finally {
       if (out != null) {
         out.close();
@@ -1851,14 +1853,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private Project validateUploadAndGetProject(final HttpServletResponse resp,
       final Map<String, String> ret, final User user, final String projectName) {
     if (projectName == null || projectName.isEmpty()) {
-      registerError(ret, "No project name found.", resp, 400);
+      registerError(ret, "No project name found.", resp, HttpServletResponse.SC_BAD_REQUEST);
       return null;
     }
     final Project project = this.projectManager.getProject(projectName);
     if (project == null || !project.isActive()) {
       final String failureCause = (project == null) ? "doesn't exist." : "was already removed.";
       registerError(ret, "Installation Failed. Project '" + projectName + " "
-          + failureCause, resp, 410);
+          + failureCause, resp, HttpServletResponse.SC_GONE);
       return null;
     }
 
@@ -1871,13 +1873,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           "Project uploading is locked out. Only admin users and users with special permissions can upload projects. "
               + "User " + user.getUserId() + " doesn't have permission to upload project.";
       logger.info(message);
-      registerError(ret, message, resp, 403);
+      registerError(ret, message, resp, HttpServletResponse.SC_FORBIDDEN);
       return null;
     }
     if (!hasPermission(project, user, Type.WRITE)) {
       registerError(ret,
           "Installation Failed. User '" + user.getUserId() + "' does not have write access.",
-          resp, 400);
+          resp, HttpServletResponse.SC_BAD_REQUEST);
       return null;
     }
     return project;
@@ -1943,7 +1945,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       // get discarded.
       registerError(ret,
           errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000) : errorMsgs.toString(), resp,
-          500);
+          HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
     if (warnMsgs.length() > 0) {
       ret.put("warn", warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs.toString());
