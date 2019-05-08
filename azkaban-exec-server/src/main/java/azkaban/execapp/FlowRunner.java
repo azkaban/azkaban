@@ -36,8 +36,12 @@ import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.execapp.lockingcache.LockingCache;
+import azkaban.execapp.lockingcache.LockingCacheEntry;
 import azkaban.execapp.metric.NumFailedJobMetric;
 import azkaban.execapp.metric.NumRunningJobMetric;
+import azkaban.execapp.projectcache.ProjectCacheKey;
+import azkaban.execapp.projectcache.ProjectDirectoryInfo;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -60,8 +64,10 @@ import azkaban.project.ProjectManagerException;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
+import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -131,6 +137,10 @@ public class FlowRunner extends EventHandler implements Runnable {
   private final SwapQueue<ExecutableNode> finishedNodes;
   private final AzkabanEventReporter azkabanEventReporter;
   private final AlerterHolder alerterHolder;
+  private final LockingCache<ProjectCacheKey, ProjectDirectoryInfo> projectCache;
+  private final ExecMetrics execMetrics;
+  private final File executionsDir;
+
   private Logger logger;
   private Appender flowAppender;
   private File logFile;
@@ -150,7 +160,6 @@ public class FlowRunner extends EventHandler implements Runnable {
   private volatile boolean flowFailed = false;
   private volatile boolean flowFinished = false;
   private volatile boolean flowKilled = false;
-
   // The following is state that will trigger a retry of all failed jobs
   private volatile boolean retryFailedJobs = false;
 
@@ -159,11 +168,13 @@ public class FlowRunner extends EventHandler implements Runnable {
    */
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
-      final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter, final
-  AlerterHolder alerterHolder)
+      final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter,
+      final AlerterHolder alerterHolder,
+      final LockingCache<ProjectCacheKey, ProjectDirectoryInfo> projectCache,
+      final File executionsDir, final ExecMetrics execMetrics)
       throws ExecutorManagerException {
     this(flow, executorLoader, projectLoader, jobtypeManager, null, azkabanProps,
-        azkabanEventReporter, alerterHolder);
+        azkabanEventReporter, alerterHolder, projectCache, executionsDir, execMetrics);
   }
 
   /**
@@ -172,13 +183,14 @@ public class FlowRunner extends EventHandler implements Runnable {
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
       final ExecutorService executorService, final Props azkabanProps,
-      final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder)
-      throws ExecutorManagerException {
+      final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder,
+      final LockingCache<ProjectCacheKey, ProjectDirectoryInfo> projectCache,
+      final File executionsDir, final ExecMetrics execMetrics) {
     this.execId = flow.getExecutionId();
     this.flow = flow;
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
-    this.execDir = new File(flow.getExecutionPath());
+    this.execDir = createExecutionDir(executionsDir, flow);
     this.jobtypeManager = jobtypeManager;
 
     final ExecutionOptions options = flow.getExecutionOptions();
@@ -190,6 +202,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.finishedNodes = new SwapQueue<>();
     this.azkabanProps = azkabanProps;
     this.alerterHolder = alerterHolder;
+    this.projectCache = projectCache;
+    this.execMetrics = execMetrics;
+    this.executionsDir = executionsDir;
 
     // Add the flow listener only if a non-null eventReporter is available.
     if (azkabanEventReporter != null) {
@@ -236,6 +251,16 @@ public class FlowRunner extends EventHandler implements Runnable {
   @Override
   public void run() {
     try {
+      ProjectCacheKey key = new ProjectCacheKey(this.flow.getProjectId(), this.flow.getVersion());
+
+      try (Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
+          LockingCacheEntry<ProjectDirectoryInfo> entry = projectCache.get(key)) {
+         // set the project directory
+        ProjectDirectoryInfo projectDirInfo = entry.getValue();
+        FileIOUtils.createDeepHardlink(projectDirInfo.getDirectory(), execDir);
+        flow.setExecutionPath(projectDirInfo.getDirectory().getPath());
+      }
+
       if (this.executorService == null) {
         this.executorService = Executors.newFixedThreadPool(this.numJobThreads);
       }
@@ -285,6 +310,31 @@ public class FlowRunner extends EventHandler implements Runnable {
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
       }
+    }
+  }
+
+  /**
+   * Set up the execution directory.
+   *
+   * @param executionsDir directory for staging executions
+   * @param flow executable flow
+   * @return the execution directory
+   * @throws IOException
+   */
+  private File createExecutionDir(final File executionsDir,
+      final ExecutableFlow flow) {
+    File execDir = null;
+    try {
+      final int execId = flow.getExecutionId();
+      execDir = new File(executionsDir, String.valueOf(execId));
+      flow.setExecutionPath(execDir.getPath());
+      execDir.mkdirs();
+      return execDir;
+    } catch (final Exception ex) {
+      if (execDir != null) {
+        FileIOUtils.deleteDirectorySilently(execDir);
+      }
+      throw ex;
     }
   }
 

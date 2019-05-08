@@ -268,6 +268,15 @@ public class Constants {
     public static final String PROJECT_CACHE_SIZE_PERCENTAGE = "azkaban"
         + ".project_cache_size_percentage_of_disk";
 
+    // allowed max size of shared project dir (percentage of partition size), e.g 0.8
+    public static final String PROJECT_CACHE_MIN_SIZE_PERCENTAGE = "azkaban"
+        + ".project_cache_min_size_percentage_of_disk";
+
+    // the cache cleanup thread will check to see if there is work to be done at the specified
+    // interval.
+    public static final String PROJECT_DIR_CACHE_CLEANUP_INTERVAL_SEC =
+        "azkaban.project_cache_cleanup_interval_sec";
+
     // how many older versions of project files are kept in DB before deleting them
     public static final String PROJECT_VERSION_RETENTION = "project.version.retention";
 

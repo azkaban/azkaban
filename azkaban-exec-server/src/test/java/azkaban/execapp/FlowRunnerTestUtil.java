@@ -19,12 +19,17 @@ package azkaban.execapp;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.execapp.lockingcache.LockingCache;
+import azkaban.execapp.lockingcache.LockingCacheLoader;
+import azkaban.execapp.projectcache.ProjectCacheKey;
+import azkaban.execapp.projectcache.ProjectDirectoryInfo;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
@@ -45,6 +50,8 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -62,6 +69,33 @@ public class FlowRunnerTestUtil {
   private final File projectDir;
   private final ProjectLoader projectLoader;
   private ExecutorLoader executorLoader;
+  private final LockingCache<ProjectCacheKey, ProjectDirectoryInfo> projectCache;
+  private final ExecMetrics execMetrics;
+  private final MetricRegistry metricRegistry;
+
+  private static class FlowRunnerTestProjectCacheLoader implements
+      LockingCacheLoader<ProjectCacheKey, ProjectDirectoryInfo> {
+    private final File execDir;
+
+    FlowRunnerTestProjectCacheLoader(File execDir) {
+      this.execDir = execDir;
+    }
+
+    @Override
+    public ProjectDirectoryInfo load(ProjectCacheKey key) throws Exception {
+      return new ProjectDirectoryInfo(key, execDir, 1);
+    }
+
+    @Override
+    public Map<ProjectCacheKey, ProjectDirectoryInfo> loadAll() throws Exception {
+      return new HashMap<>();
+    }
+
+    @Override
+    public void remove(ProjectCacheKey key, ProjectDirectoryInfo value) throws Exception {
+
+    }
+  }
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
       throws Exception {
@@ -69,13 +103,20 @@ public class FlowRunnerTestUtil {
     this.projectDir = ExecutionsTestUtil.getFlowDir(flowName);
     this.workingDir = temporaryFolder.newFolder();
     this.project = new Project(1, "testProject");
+    this.metricRegistry = new MetricRegistry();
 
     this.flowMap = FlowRunnerTestUtil
         .prepareProject(this.project, this.projectDir, this.workingDir);
+    this.projectCache = new LockingCache<>(new FlowRunnerTestProjectCacheLoader(this.projectDir),
+        x -> 1);
 
     this.executorLoader = mock(ExecutorLoader.class);
     this.projectLoader = mock(ProjectLoader.class);
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+
+    this.execMetrics = mock(ExecMetrics.class);
+    when(this.execMetrics.getFlowSetupTimerContext()).thenReturn(metricRegistry.timer
+        ("FlowRunnerTestUtil").time());
 
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
@@ -139,14 +180,14 @@ public class FlowRunnerTestUtil {
 
   public static ExecutableFlow prepareExecDir(final File workingDir, final File execDir,
       final String flowName, final int execId) throws IOException {
-    FileUtils.copyDirectory(execDir, workingDir);
-    final File jsonFlowFile = new File(workingDir, flowName + ".flow");
+//    FileUtils.copyDirectory(execDir, workingDir);
+    final File jsonFlowFile = new File(execDir, flowName + ".flow");
     final Object flowObj = JSONUtils.parseJSONFromFile(jsonFlowFile);
     final Project project = new Project(1, "test");
     final Flow flow = Flow.flowFromObject(flowObj);
     final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
     execFlow.setExecutionId(execId);
-    execFlow.setExecutionPath(workingDir.getPath());
+//    execFlow.setExecutionPath(workingDir.getPath());
     return execFlow;
   }
 
@@ -255,7 +296,9 @@ public class FlowRunnerTestUtil {
     this.executorLoader.uploadExecutableFlow(exFlow);
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class));
+            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class),
+            projectCache, workingDir, execMetrics);
+    // TODO: mock project cache and exec metrics
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }
