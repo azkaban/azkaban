@@ -1,7 +1,7 @@
 package azkaban.jobtype;
 
-public enum SparkJobArg {
 
+public enum SparkJobArg {
   // standard spark submit arguments, ordered in the spark-submit --help order
   MASTER("master", false), // just to trick the eclipse formatter
   DEPLOY_MODE("deploy-mode", false), //
@@ -55,5 +55,4 @@ public enum SparkJobArg {
   final String sparkParamName;
 
   final boolean needSpecialTreatment;
-
 }

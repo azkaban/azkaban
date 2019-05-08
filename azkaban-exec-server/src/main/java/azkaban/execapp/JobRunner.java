@@ -105,6 +105,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
     this.executionId = node.getParentFlow().getExecutionId();
     this.jobId = node.getId();
+
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
@@ -757,10 +758,10 @@ public class JobRunner extends EventHandler implements Runnable {
       this.props.put(CommonJobProperties.EXECUTION_LINK,
           String.format("%s/executor?execid=%d", baseURL, this.executionId));
       this.props.put(CommonJobProperties.JOBEXEC_LINK, String.format(
-          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.jobId));
+          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.node.getNestedId()));
       this.props.put(CommonJobProperties.ATTEMPT_LINK, String.format(
           "%s/executor?execid=%d&job=%s&attempt=%d", baseURL, this.executionId,
-          this.jobId, this.node.getAttempt()));
+          this.node.getNestedId(), this.node.getAttempt()));
       this.props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
           "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
       this.props.put(CommonJobProperties.JOB_LINK, String.format(

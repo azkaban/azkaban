@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,11 @@ class OsMemoryUtil {
   // This file is used by Linux. It doesn't exist on Mac for example.
   private static final String MEM_INFO_FILE = "/proc/meminfo";
 
-  private static final ImmutableSet<String> MEM_KEYS = ImmutableSet
+  static final ImmutableSet<String> MEM_KEYS = ImmutableSet
       .of("MemFree", "Buffers", "Cached", "SwapFree");
+
+  static final ImmutableSet<String> MEM_AVAILABLE_KEYS = ImmutableSet.of("MemFree", "Active(file)",
+      "Inactive(file)", "SReclaimable");
 
   /**
    * Includes OS cache and free swap.
@@ -32,6 +36,18 @@ class OsMemoryUtil {
    * this memory check.
    */
   long getOsTotalFreeMemorySize() {
+    return getAggregatedFreeMemorySize(MEM_KEYS);
+  }
+
+  /**
+   * @return the free physical memory size of the OS. 0 if there is an error or the OS doesn't
+   * support this memory check.
+   */
+  long getOsFreePhysicalMemorySize() {
+    return getAggregatedFreeMemorySize(MEM_AVAILABLE_KEYS);
+  }
+
+  private long getAggregatedFreeMemorySize(final Set<String> memKeysToCombine) {
     if (!Files.isRegularFile(Paths.get(MEM_INFO_FILE))) {
       // Mac doesn't support /proc/meminfo for example.
       return 0;
@@ -48,19 +64,20 @@ class OsMemoryUtil {
       logger.error(errMsg, e);
       return 0;
     }
-    return getOsTotalFreeMemorySizeFromStrings(lines);
+    return getOsTotalFreeMemorySizeFromStrings(lines, memKeysToCombine);
   }
 
   /**
    * @param lines text lines from the procinfo file
    * @return the total size of free memory in kB. 0 if there is an error.
    */
-  long getOsTotalFreeMemorySizeFromStrings(final List<String> lines) {
+  long getOsTotalFreeMemorySizeFromStrings(final List<String> lines,
+      final Set<String> memKeysToCombine) {
     long totalFree = 0;
     int count = 0;
 
     for (final String line : lines) {
-      for (final String keyName : MEM_KEYS) {
+      for (final String keyName : memKeysToCombine) {
         if (line.startsWith(keyName)) {
           count++;
           final long size = parseMemoryLine(line);
@@ -72,7 +89,7 @@ class OsMemoryUtil {
       }
     }
 
-    final int length = MEM_KEYS.size();
+    final int length = memKeysToCombine.size();
     if (count != length) {
       final String errMsg = String
           .format("Expect %d keys in the meminfo file. Got %d. content: %s", length, count, lines);

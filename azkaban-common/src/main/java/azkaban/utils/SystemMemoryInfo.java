@@ -48,4 +48,20 @@ public class SystemMemoryInfo {
     }
     return true;
   }
+
+  /**
+   * @param memKb represents a memory value in kb
+   * @return true if available physical memory is greater than memKb
+   *
+   * Verifies if the currently available physical memory is greater than a given value.
+   */
+  public boolean isFreePhysicalMemoryAbove(final long memKb) {
+    final long freeMemSize = this.util.getOsFreePhysicalMemorySize();
+    if (freeMemSize == 0) {
+      // Fail open.
+      // On the platforms that don't support the mem info file, the returned size will be 0.
+      return true;
+    }
+    return freeMemSize - memKb > 0;
+  }
 }

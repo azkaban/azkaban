@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger.builtin;
 
 import azkaban.trigger.ConditionChecker;
@@ -27,6 +26,7 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.quartz.CronExpression;
+
 
 public class BasicTimeChecker implements ConditionChecker {
 
@@ -215,5 +215,4 @@ public class BasicTimeChecker implements ConditionChecker {
   @Override
   public void setContext(final Map<String, Object> context) {
   }
-
 }

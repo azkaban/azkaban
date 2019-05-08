@@ -22,11 +22,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -56,8 +58,7 @@ public class XmlUserManager implements UserManager {
   public static final String PROXY_ATTR = "proxy";
   public static final String GROUPS_ATTR = "groups";
   public static final String GROUPNAME_ATTR = "name";
-  private static final Logger logger = Logger.getLogger(XmlUserManager.class
-      .getName());
+  private static final Logger logger = LoggerFactory.getLogger(XmlUserManager.class);
   private final String xmlPath;
 
   private HashMap<String, User> users;
@@ -73,6 +74,16 @@ public class XmlUserManager implements UserManager {
     this.xmlPath = props.getString(XML_FILE_PARAM);
 
     parseXMLFile();
+
+    // Create a thread which listens to any change in user config file and
+    // reloads it.
+    final Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
+    parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
+    try {
+      UserUtils.setupWatch(parseConfigFileMap);
+    } catch (final IOException e) {
+      logger.warn(" Failed to create WatchService " + e.getMessage());
+    }
   }
 
   private void parseXMLFile() {
