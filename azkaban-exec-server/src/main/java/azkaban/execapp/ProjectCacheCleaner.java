@@ -189,15 +189,20 @@ class ProjectCacheCleaner {
         allProjects.size(), (System.currentTimeMillis() - start) / 1000);
 
     final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
-    if (currentSpaceInBytes + newProjectSizeInBytes >= projectCacheMaxSizeInByte) {
+    final long spaceToUseInBytes = currentSpaceInBytes + newProjectSizeInBytes;
+    if (spaceToUseInBytes >= projectCacheMaxSizeInByte) {
       log.info(
           "Project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
-          (currentSpaceInBytes + newProjectSizeInBytes) / (1024 * 1024),
+          (spaceToUseInBytes) / (1024 * 1024),
           projectCacheMaxSizeInByte / (1024 * 1024));
 
       final long freeCacheSpaceInBytes = projectCacheMaxSizeInByte - currentSpaceInBytes;
-
       deleteLeastRecentlyUsedProjects(newProjectSizeInBytes - freeCacheSpaceInBytes, allProjects);
+    } else {
+      log.info(
+          "Project cache usage[{} MB] < cache limit[{} MB], no need to delete any project dir",
+          (spaceToUseInBytes) / (1024 * 1024),
+          projectCacheMaxSizeInByte / (1024 * 1024));
     }
   }
 }
