@@ -176,6 +176,10 @@ class ProjectCacheCleaner {
         (end - start) / 1000);
   }
 
+  private long bytesToMB(final long bytes) {
+    return bytes / (1024 * 1024);
+  }
+
   /**
    * Deleting least recently accessed project dirs when there's no room to accommodate new project
    */
@@ -193,16 +197,16 @@ class ProjectCacheCleaner {
     if (spaceToUseInBytes >= projectCacheMaxSizeInByte) {
       log.info(
           "Project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
-          (spaceToUseInBytes) / (1024 * 1024),
-          projectCacheMaxSizeInByte / (1024 * 1024));
+          bytesToMB(spaceToUseInBytes),
+          bytesToMB(projectCacheMaxSizeInByte));
 
       final long freeCacheSpaceInBytes = projectCacheMaxSizeInByte - currentSpaceInBytes;
       deleteLeastRecentlyUsedProjects(newProjectSizeInBytes - freeCacheSpaceInBytes, allProjects);
     } else {
       log.info(
           "Project cache usage[{} MB] < cache limit[{} MB], no need to delete any project dir",
-          (spaceToUseInBytes) / (1024 * 1024),
-          projectCacheMaxSizeInByte / (1024 * 1024));
+          bytesToMB(spaceToUseInBytes),
+          bytesToMB(projectCacheMaxSizeInByte));
     }
   }
 }
