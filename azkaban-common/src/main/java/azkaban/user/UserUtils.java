@@ -45,11 +45,16 @@ public final class UserUtils {
 
   /**
    * Creates a watch thread which listens to specified files' modification and reloads
-   * configurations
+   * configurations.
+   *
+   * @param sensitivity a string value of the enum {@link SensitivityWatchEventModifier}, or null
    */
-  static void setupWatch(final Map<String, ParseConfigFile> configFileMap) throws IOException {
+  static void setupWatch(final Map<String, ParseConfigFile> configFileMap,
+      final String sensitivity, final long watchGracePeriodMillis) throws IOException {
     Preconditions.checkNotNull(configFileMap);
     Preconditions.checkArgument(configFileMap.size() > 0);
+
+    final long watchGracePeriod = resolveWatchGracePeriod(watchGracePeriodMillis);
 
     final WatchService watchService;
     try {
@@ -84,7 +89,7 @@ public final class UserUtils {
           // There is no entry for this directory, create a watchkey
           final WatchKey watchKey = dir.register(watchService,
               new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
-              SensitivityWatchEventModifier.MEDIUM);
+              resolveSensitivity(sensitivity));
           keys.put(watchKey, dir);
         }
         // Add the config file to dir map
@@ -121,7 +126,7 @@ public final class UserUtils {
           // more important that the config reloads successfully than immediately.
           // If there is any modification happening to file(s) in the meantime, it is all queued up
           // in the watch service.
-          Thread.sleep(1000L);
+          Thread.sleep(watchGracePeriod);
         } catch (final InterruptedException ie) {
           log.warn(ie.toString());
           Thread.currentThread().interrupt();
@@ -156,4 +161,21 @@ public final class UserUtils {
     log.info("Starting configuration watching thread.");
     thread.start();
   }
+
+  private static long resolveWatchGracePeriod(final long watchGracePeriodMillis) {
+    if (watchGracePeriodMillis < 0L) {
+      return 1000L;
+    }
+    return watchGracePeriodMillis;
+  }
+
+  private static SensitivityWatchEventModifier resolveSensitivity(final String sensitivity) {
+    if (sensitivity == null) {
+      // default sensitivity: MEDIUM (30 s)
+      return SensitivityWatchEventModifier.MEDIUM;
+    } else {
+      return SensitivityWatchEventModifier.valueOf(sensitivity.toUpperCase());
+    }
+  }
+
 }

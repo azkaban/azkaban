@@ -18,6 +18,7 @@ package azkaban.user;
 
 import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
+import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -45,6 +46,12 @@ import org.xml.sax.SAXException;
 public class XmlUserManager implements UserManager {
 
   public static final String XML_FILE_PARAM = "user.manager.xml.file";
+  /**
+   * value must be from the enum {@link SensitivityWatchEventModifier}
+   */
+  public static final String XML_FILE_WATCH_SENSITIVITY = "user.manager.xml.watchSensitivity";
+  public static final String XML_FILE_WATCH_GRACE_PERIOD_MILLIS =
+      "user.manager.xml.watchGracePeriodMillis";
   public static final String AZKABAN_USERS_TAG = "azkaban-users";
   public static final String USER_TAG = "user";
   public static final String ROLE_TAG = "role";
@@ -80,7 +87,10 @@ public class XmlUserManager implements UserManager {
     final Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
     parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
     try {
-      UserUtils.setupWatch(parseConfigFileMap);
+      UserUtils.setupWatch(
+          parseConfigFileMap,
+          props.get(XML_FILE_WATCH_SENSITIVITY),
+          props.getLong(XML_FILE_WATCH_GRACE_PERIOD_MILLIS, -1L));
     } catch (final IOException e) {
       logger.warn(" Failed to create WatchService " + e.getMessage());
     }

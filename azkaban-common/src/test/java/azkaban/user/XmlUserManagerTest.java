@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
 import com.google.common.io.Resources;
+import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,6 +49,10 @@ public class XmlUserManagerTest {
 
   @Before
   public void setUp() throws Exception {
+    this.baseProps.put(XmlUserManager.XML_FILE_WATCH_SENSITIVITY,
+        SensitivityWatchEventModifier.HIGH.name());
+    // avoid sleeping extra 1000 ms after watcher notification
+    this.baseProps.put(XmlUserManager.XML_FILE_WATCH_GRACE_PERIOD_MILLIS, 10L);
   }
 
   @After
@@ -138,9 +143,10 @@ public class XmlUserManagerTest {
         // File did not update
         fail("File did not update.");
       }
-      // Try for 30 seconds polling every 10 seconds if the config is reloaded
-      Awaitility.await().atMost(30L, TimeUnit.SECONDS).
-          pollInterval(10L, TimeUnit.SECONDS).until(
+      // Try for polling if the config is reloaded
+      // HIGH sensitivity is 2 seconds
+      Awaitility.await().atMost(10L, TimeUnit.SECONDS).
+          pollInterval(10L, TimeUnit.MILLISECONDS).until(
           () -> {
             User user;
             try {
@@ -163,7 +169,7 @@ public class XmlUserManagerTest {
         fail("Test failed " + e.toString());
       }
     } catch (final ConditionTimeoutException te) {
-      fail("The config did not reload in 30 seconds");
+      fail("The config did not reload");
     } finally {
       // Delete the file
       Files.delete(filePath);
@@ -212,9 +218,10 @@ public class XmlUserManagerTest {
         // File did not update
         fail("File did not update.");
       }
-      // Try for 30 seconds polling every 10 seconds if the config is reloaded
-      Awaitility.await().atMost(30L, TimeUnit.SECONDS).
-          pollInterval(10L, TimeUnit.SECONDS).until(
+      // Try polling if the config is reloaded although it shouldn't
+      // HIGH sensitivity is 2 seconds
+      Awaitility.await().atMost(5L, TimeUnit.SECONDS).
+          pollInterval(10L, TimeUnit.MILLISECONDS).until(
           () -> {
             User user;
             try {
@@ -228,7 +235,7 @@ public class XmlUserManagerTest {
 
       fail("Test should never reach here.");
     } catch (final ConditionTimeoutException te) {
-      log.info("The config did not reload in 30 seconds due to bad config data.");
+      log.info("As expected, the config did not reload due to bad config data.");
     } finally {
       // Delete the file
       Files.delete(filePath);
