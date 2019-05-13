@@ -21,6 +21,7 @@ import azkaban.flow.Flow;
 import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.user.FileWatcher;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
@@ -77,7 +78,7 @@ public class TestUtils {
     final Props props = new Props();
     props.put(XmlUserManager.XML_FILE_PARAM, ExecutionsTestUtil.getDataRootDir()
         + "azkaban-users.xml");
-    final UserManager manager = new XmlUserManager(props);
+    final UserManager manager = new XmlUserManager(props, FileWatcher::new);
     return manager;
   }
 

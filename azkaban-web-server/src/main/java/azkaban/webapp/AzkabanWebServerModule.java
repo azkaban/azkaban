@@ -27,6 +27,7 @@ import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
+import azkaban.user.FileWatcher;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
@@ -102,7 +103,7 @@ public class AzkabanWebServerModule extends AbstractModule {
         throw new RuntimeException(e);
       }
     } else {
-      manager = new XmlUserManager(props);
+      manager = new XmlUserManager(props, FileWatcher::new);
     }
     return manager;
   }
