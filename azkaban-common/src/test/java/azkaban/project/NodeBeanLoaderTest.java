@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowTriggerProps;
+import azkaban.executor.ExecutionOptions;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
@@ -203,6 +204,10 @@ public class NodeBeanLoaderTest {
     validateFlowTrigger(flowTrigger, MAX_WAIT_MINS, CRON_EXPRESSION, 2);
     validateTriggerDependency(flowTrigger, TRIGGER_NAME_1, TRIGGER_TYPE, PARAMS_1);
     validateTriggerDependency(flowTrigger, TRIGGER_NAME_2, TRIGGER_TYPE, PARAMS_2);
+    assertThat(flowTrigger.getExecutionOptions()).isNotNull();
+    assertThat(flowTrigger.getExecutionOptions().getConcurrentOption())
+        .isEqualTo(ExecutionOptions.CONCURRENT_OPTION_PIPELINE);
+    assertThat(flowTrigger.getExecutionOptions().getPipelineLevel()).isEqualTo(2);
   }
 
   @Test

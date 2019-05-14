@@ -29,6 +29,7 @@ public class FlowTriggerBean {
   private Long maxWaitMins = null;
   private Map<String, String> schedule;
   private List<TriggerDependencyBean> triggerDependencies;
+  private Map<String, Object> executionOptions;
 
   public Long getMaxWaitMins() {
     return this.maxWaitMins;
@@ -55,12 +56,21 @@ public class FlowTriggerBean {
     this.triggerDependencies = triggerDependencies;
   }
 
+  public Map<String, Object> getExecutionOptions() {
+    return this.executionOptions;
+  }
+
+  public void setExecutionOptions(final Map<String, Object> executionOptions) {
+    this.executionOptions = executionOptions;
+  }
+
   @Override
   public String toString() {
     return "FlowTriggerBean{" +
         "maxWaitMins='" + this.maxWaitMins + '\'' +
         ", schedule=" + this.schedule +
         ", triggerDependencies=" + this.triggerDependencies +
+        ", executionOptions=" + this.executionOptions +
         '}';
   }
 }

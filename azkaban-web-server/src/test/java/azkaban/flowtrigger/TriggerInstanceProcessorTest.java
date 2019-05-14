@@ -25,6 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.MockExecutorLoader;
@@ -55,6 +57,7 @@ import org.assertj.core.util.Lists;
 import org.assertj.core.util.Maps;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 
@@ -72,11 +75,18 @@ public class TriggerInstanceProcessorTest {
   private CountDownLatch updateExecIDLatch;
   private ExecutorLoader executorLoader;
 
+  private static ExecutionOptions createExecutionOptions() {
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_PIPELINE);
+    return executionOptions;
+  }
+
   private static TriggerInstance createTriggerInstance() throws ParseException {
     final FlowTrigger flowTrigger = new FlowTrigger(
         new CronSchedule("* * * * ? *"),
         new ArrayList<>(),
-        Duration.ofMinutes(1)
+        Duration.ofMinutes(1),
+        createExecutionOptions()
     );
     final Project proj = new Project(1, "proj");
     final Flow flow = new Flow("123");
@@ -141,7 +151,12 @@ public class TriggerInstanceProcessorTest {
     final TriggerInstance triggerInstance = createTriggerInstance();
     this.processor.processSucceed(triggerInstance);
     this.submitFlowLatch.await(10L, TimeUnit.SECONDS);
-    verify(this.executorManager).submitExecutableFlow(any(), anyString());
+    final ArgumentCaptor<ExecutableFlow> executableFlowArgumentCaptor = ArgumentCaptor
+        .forClass(ExecutableFlow.class);
+    verify(this.executorManager)
+        .submitExecutableFlow(executableFlowArgumentCaptor.capture(), anyString());
+    assertThat(executableFlowArgumentCaptor.getValue().getExecutionOptions().toObject())
+        .isEqualTo(createExecutionOptions().toObject());
     this.updateExecIDLatch.await(10L, TimeUnit.SECONDS);
     verify(this.triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
   }

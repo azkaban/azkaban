@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import azkaban.executor.ExecutionOptions;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -41,13 +42,14 @@ public class FlowTrigger implements Serializable {
   private final Map<String, FlowTriggerDependency> dependencies;
   private final CronSchedule schedule;
   private final Duration maxWaitDuration;
+  private final ExecutionOptions executionOptions;
 
   /**
    * @throws IllegalArgumentException if illegal argument is found or there is duplicate
    * dependency name or duplicate dependency type and params
    */
   public FlowTrigger(final CronSchedule schedule, final List<FlowTriggerDependency> dependencies,
-      @Nullable final Duration maxWaitDuration) {
+      @Nullable final Duration maxWaitDuration, final ExecutionOptions executionOptions) {
     // will perform some basic validation here, and further validation will be performed on
     // parsing time when NodeBeanLoader parses the XML to flow trigger.
     Preconditions.checkNotNull(schedule, "schedule cannot be null");
@@ -61,6 +63,7 @@ public class FlowTrigger implements Serializable {
     dependencies.forEach(dep -> builder.put(dep.getName(), dep));
     this.dependencies = builder.build();
     this.maxWaitDuration = maxWaitDuration;
+    this.executionOptions = executionOptions;
   }
 
   /**
@@ -80,6 +83,7 @@ public class FlowTrigger implements Serializable {
     return "FlowTrigger{" +
         "schedule=" + this.schedule +
         ", maxWaitDurationInMins=" + this.maxWaitDuration +
+        ", executionOptions=" + this.executionOptions +
         "\n " + StringUtils.join(this.dependencies.values(), "\n") + '}';
   }
 
@@ -116,5 +120,9 @@ public class FlowTrigger implements Serializable {
 
   public CronSchedule getSchedule() {
     return this.schedule;
+  }
+
+  public ExecutionOptions getExecutionOptions() {
+    return this.executionOptions;
   }
 }
