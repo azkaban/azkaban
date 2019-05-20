@@ -86,7 +86,9 @@ public class ProjectManager {
     // config files for the validators.
     new XmlValidatorManager(prop);
     loadAllProjects();
+    logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
+    logger.info("ProjectManager instance created.");
   }
 
   public boolean hasFlowTrigger(final Project project, final Flow flow)
@@ -117,6 +119,7 @@ public class ProjectManager {
 
   private void loadAllProjects() {
     final List<Project> projects;
+    logger.info("Loading active projects.");
     try {
       projects = this.projectLoader.fetchAllActiveProjects();
     } catch (final ProjectManagerException e) {
@@ -127,6 +130,7 @@ public class ProjectManager {
       this.projectsById.put(proj.getId(), proj);
     }
 
+    logger.info("Loading flows from active projects.");
     for (final Project proj : projects) {
       loadAllProjectFlows(proj);
     }
