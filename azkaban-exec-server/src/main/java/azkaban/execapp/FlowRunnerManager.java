@@ -1038,7 +1038,7 @@ public class FlowRunnerManager implements EventListener,
       } else {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
-          final ExecutableFlow execId = FlowRunnerManager.this.executorLoader
+          final ExecutableFlow exFlow = FlowRunnerManager.this.executorLoader
               .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active,
                   executableFlow -> {
                     final ExecutorTags requiredExecutorTags =
@@ -1046,9 +1046,9 @@ public class FlowRunnerManager implements EventListener,
                     return requiredExecutorTags == null
                         || this.executorTags.containsAll(requiredExecutorTags);
                   });
-          if (execId != null) {
-            FlowRunnerManager.logger.info("Submitting flow " + execId);
-            submitFlow(execId.getExecutionId());
+          if (exFlow != null) {
+            FlowRunnerManager.logger.info("Submitting flow " + exFlow.getExecutionId());
+            submitFlow(exFlow.getExecutionId());
             FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
           }
         } catch (final Exception e) {
