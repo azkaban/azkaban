@@ -45,13 +45,14 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class ProjectManager {
 
-  private static final Logger logger = Logger.getLogger(ProjectManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProjectManager.class);
   private final AzkabanProjectLoader azkabanProjectLoader;
   private final ProjectLoader projectLoader;
   private final Props props;
@@ -184,7 +185,7 @@ public class ProjectManager {
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
-      logger.error("Bad regex pattern " + regexPattern);
+      logger.error("Bad regex pattern {}", regexPattern);
       return array;
     }
 
@@ -212,7 +213,7 @@ public class ProjectManager {
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
-      logger.error("Bad regex pattern " + regexPattern);
+      logger.error("Bad regex pattern {}", regexPattern);
       return allProjects;
     }
     for (final Project project : getProjects()) {
@@ -239,9 +240,9 @@ public class ProjectManager {
       try {
         fetchedProject = this.projectLoader.fetchProjectByName(name);
         if (fetchedProject != null) {
-          logger.info("Project " + name + " not found in cache, fetched from DB.");
+          logger.info("Project {} not found in cache, fetched from DB.", name);
         } else {
-          logger.info("No active project with name " + name + " exists in cache or DB.");
+          logger.info("No active project with name {} exists in cache or DB.", name);
         }
       } catch (final ProjectManagerException e) {
         logger.error("Could not load project from store.", e);
@@ -284,8 +285,7 @@ public class ProjectManager {
         throw new ProjectManagerException("Project already exists.");
       }
 
-      logger.info("Trying to create " + projectName + " by user "
-          + creator.getUserId());
+      logger.info("Trying to create {} by user {}", projectName, creator.getUserId());
       newProject = this.projectLoader.createNewProject(projectName, description, creator);
       this.projectsByName.put(newProject.getName(), newProject);
       this.projectsById.put(newProject.getId(), newProject);
@@ -439,20 +439,19 @@ public class ProjectManager {
 
   public void addProjectProxyUser(final Project project, final String proxyName,
       final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId() + " adding proxy user "
-        + proxyName + " to project " + project.getName());
+    logger.info("User {} adding proxy user {} to project {}", modifier.getUserId(), proxyName,
+        project.getName());
     project.addProxyUser(proxyName);
 
     this.projectLoader.postEvent(project, EventType.PROXY_USER,
-        modifier.getUserId(), "Proxy user " + proxyName
-            + " is added to project.");
+        modifier.getUserId(), "Proxy user " + proxyName + " is added to project.");
     updateProjectSetting(project);
   }
 
   public void removeProjectProxyUser(final Project project, final String proxyName,
       final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId() + " removing proxy user "
-        + proxyName + " from project " + project.getName());
+    logger.info("User {} removing proxy user {} from project {}", modifier.getUserId(),
+        proxyName, project.getName());
     project.removeProxyUser(proxyName);
 
     this.projectLoader.postEvent(project, EventType.PROXY_USER,
@@ -464,9 +463,8 @@ public class ProjectManager {
   public void updateProjectPermission(final Project project, final String name,
       final Permission perm, final boolean group, final User modifier)
       throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId()
-        + " updating permissions for project " + project.getName() + " for "
-        + name + " " + perm.toString());
+    logger.info("User {} updating permissions for project {} for {} {}", modifier.getUserId(),
+        project.getName(), name, perm.toString());
     this.projectLoader.updatePermission(project, name, perm, group);
     if (group) {
       this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
@@ -481,9 +479,8 @@ public class ProjectManager {
 
   public void removeProjectPermission(final Project project, final String name,
       final boolean group, final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId()
-        + " removing permissions for project " + project.getName() + " for "
-        + name);
+    logger.info("User {} removing permissions for project {} for {}", modifier.getUserId(),
+        project.getName(), name);
     this.projectLoader.removePermission(project, name, group);
     if (group) {
       this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
