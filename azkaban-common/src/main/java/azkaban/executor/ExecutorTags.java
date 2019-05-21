@@ -28,6 +28,10 @@ public class ExecutorTags implements Iterable<String> {
     return new ExecutorTags(Collections.emptyList());
   }
 
+  public boolean containsAll(final ExecutorTags requiredExecutorTags) {
+    return this.tags.containsAll(requiredExecutorTags.tags);
+  }
+
   @Override
   public Iterator<String> iterator() {
     return this.tags.iterator();

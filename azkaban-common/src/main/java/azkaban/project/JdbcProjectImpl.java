@@ -796,19 +796,10 @@ public class JdbcProjectImpl implements ProjectLoader {
     logger.info("Flow upload " + flow.getId() + " is byte size " + data.length);
     final String INSERT_FLOW =
         "INSERT INTO project_flows (project_id, version, flow_id, modified_time, encoding_type, json) values (?,?,?,?,?,?)";
-    final String INSERT_FLOW_REQUIRED_TAGS =
-        "INSERT INTO project_flow_required_tags (project_id, version, flow_id, tag) values (?,?,?,?)";
     try {
-      this.dbOperator.transaction(transOperator -> {
-        final int rows = transOperator
-            .update(INSERT_FLOW, project.getId(), version, flow.getId(), System.currentTimeMillis(),
-                encType.getNumVal(), data);
-        for (final String tag : flow.getRequiredExecutorTags()) {
-          transOperator
-              .update(INSERT_FLOW_REQUIRED_TAGS, project.getId(), version, flow.getId(), tag);
-        }
-        return rows;
-      });
+      this.dbOperator
+          .update(INSERT_FLOW, project.getId(), version, flow.getId(), System.currentTimeMillis(),
+              encType.getNumVal(), data);
     } catch (final SQLException e) {
       logger.error("Error inserting flow", e);
       throw new ProjectManagerException("Error inserting flow " + flow.getId(), e);
@@ -973,8 +964,6 @@ public class JdbcProjectImpl implements ProjectLoader {
         .map(excluded -> " AND version != " + excluded).collect(Collectors.joining());
     final String VERSION_FILTER = " AND version < ?" + EXCLUDED_VERSIONS_FILTER;
 
-    final String DELETE_FLOW_REQUIRED_TAGS =
-        "DELETE FROM project_flow_required_tags WHERE project_id=?" + VERSION_FILTER;
     final String DELETE_FLOW = "DELETE FROM project_flows WHERE project_id=?" + VERSION_FILTER;
     final String DELETE_PROPERTIES =
         "DELETE FROM project_properties WHERE project_id=?" + VERSION_FILTER;
@@ -985,7 +974,6 @@ public class JdbcProjectImpl implements ProjectLoader {
     // Todo jamiesjc: delete flow files
 
     final SQLTransaction<Integer> cleanOlderProjectTransaction = transOperator -> {
-      transOperator.update(DELETE_FLOW_REQUIRED_TAGS, projectId, version);
       transOperator.update(DELETE_FLOW, projectId, version);
       transOperator.update(DELETE_PROPERTIES, projectId, version);
       transOperator.update(DELETE_PROJECT_FILES, projectId, version);

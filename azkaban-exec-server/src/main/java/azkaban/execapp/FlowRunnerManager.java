@@ -32,6 +32,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorTags;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
@@ -202,6 +203,7 @@ public class FlowRunnerManager implements EventListener,
     this.validateProxyUser = this.azkabanProps.getBoolean("proxy.user.lock.down", false);
 
     final String globalPropsPath = props.getString("executor.global.properties", null);
+    logger.info("Loading global job properties from '" + globalPropsPath + "'");
     if (globalPropsPath != null) {
       this.globalProps = new Props(null, globalPropsPath);
     }
@@ -1008,6 +1010,7 @@ public class FlowRunnerManager implements EventListener,
     private final long pollingIntervalMs;
     private final ScheduledExecutorService scheduler;
     private int executorId = -1;
+    private ExecutorTags executorTags = null;
 
     public PollingService(final long pollingIntervalMs) {
       this.pollingIntervalMs = pollingIntervalMs;
@@ -1027,6 +1030,7 @@ public class FlowRunnerManager implements EventListener,
                 .fetchExecutor(AzkabanExecutorServer.getApp().getHost(),
                     AzkabanExecutorServer.getApp().getPort()), "The executor can not be null");
             this.executorId = executor.getId();
+            this.executorTags = executor.getExecutorData().getTags();
           } catch (final Exception e) {
             FlowRunnerManager.logger.error("Failed to fetch executor ", e);
           }
@@ -1034,11 +1038,17 @@ public class FlowRunnerManager implements EventListener,
       } else {
         try {
           // Todo jamiesjc: check executor capacity before polling from DB
-          final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
-          if (execId != -1) {
+          final ExecutableFlow execId = FlowRunnerManager.this.executorLoader
+              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active,
+                  executableFlow -> {
+                    final ExecutorTags requiredExecutorTags =
+                        executableFlow.getRequiredExecutorTags();
+                    return requiredExecutorTags == null
+                        || this.executorTags.containsAll(requiredExecutorTags);
+                  });
+          if (execId != null) {
             FlowRunnerManager.logger.info("Submitting flow " + execId);
-            submitFlow(execId);
+            submitFlow(execId.getExecutionId());
             FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
           }
         } catch (final Exception e) {

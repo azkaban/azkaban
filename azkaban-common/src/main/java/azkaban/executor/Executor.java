@@ -30,6 +30,7 @@ public class Executor implements Comparable<Executor> {
   private final String host;
   private final int port;
   private boolean isActive;
+  private final ExecutorData executorData;
   // cached copy of the latest statistics from  the executor.
   private ExecutorInfo cachedExecutorStats;
   private Date lastStatsUpdatedTime;
@@ -41,7 +42,8 @@ public class Executor implements Comparable<Executor> {
    * integer range
    * </pre>
    */
-  public Executor(final int id, final String host, final int port, final boolean isActive) {
+  public Executor(final int id, final String host, final int port, final boolean isActive,
+      final ExecutorData executorData) {
     if (!Utils.isValidPort(port)) {
       throw new IllegalArgumentException(String.format(
           "Invalid port number %d for host %s, executor_id %d", port, host, id));
@@ -51,6 +53,7 @@ public class Executor implements Comparable<Executor> {
     this.host = host;
     this.port = port;
     this.isActive = isActive;
+    this.executorData = executorData;
   }
 
   @Override
@@ -120,6 +123,10 @@ public class Executor implements Comparable<Executor> {
 
   public int getId() {
     return this.id;
+  }
+
+  public ExecutorData getExecutorData() {
+    return this.executorData;
   }
 
   public ExecutorInfo getExecutorInfo() {

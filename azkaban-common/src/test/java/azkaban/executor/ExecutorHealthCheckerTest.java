@@ -1,18 +1,18 @@
 /*
-* Copyright 2019 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2019 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,7 +66,7 @@ public class ExecutorHealthCheckerTest {
     this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.flow1.setExecutionId(EXECUTION_ID_11);
     this.flow1.setStatus(Status.RUNNING);
-    this.executor1 = new Executor(1, "localhost", 12345, true);
+    this.executor1 = new Executor(1, "localhost", 12345, true, null);
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
     when(this.alerterHolder.get("email")).thenReturn(this.mailAlerter);
   }

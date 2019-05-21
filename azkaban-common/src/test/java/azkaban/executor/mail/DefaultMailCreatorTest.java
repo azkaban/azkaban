@@ -67,7 +67,7 @@ public class DefaultMailCreatorTest {
 
     this.mailCreator = new DefaultMailCreator();
 
-    this.executor = new Executor(1, "executor1-host", 1234, true);
+    this.executor = new Executor(1, "executor1-host", 1234, true, null);
     this.flow = new Flow("mail-creator-test");
     this.project = new Project(1, "test-project");
     this.options = new ExecutionOptions();

@@ -68,7 +68,7 @@ public class ExecutorApiGatewayTest {
         .httpPost(eq(new URI("http://executor-2:1234/executor")), this.params.capture()))
         .thenReturn(JSONUtils.toJSON(map));
     final Map<String, Object> response = this.gateway
-        .updateExecutions(new Executor(2, "executor-2", 1234, true),
+        .updateExecutions(new Executor(2, "executor-2", 1234, true, null),
             Collections.singletonList(new ExecutableFlow()));
     assertEquals(map, response);
     assertEquals(new Pair<>("executionId", "[-1]"), this.params.getValue().get(0));

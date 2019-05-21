@@ -128,7 +128,7 @@ public class EmailerTest {
     final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
         this.executorLoader);
-    final Executor executor = new Executor(1, "executor1-host", 1234, true);
+    final Executor executor = new Executor(1, "executor1-host", 1234, true, null);
     final List<ExecutableFlow> executions = Arrays.asList(exFlow, exFlow);
     final ExecutorManagerException exception = DefaultMailCreatorTest.createTestStracktrace();
     emailer.alertOnFailedUpdate(executor, executions, exception);

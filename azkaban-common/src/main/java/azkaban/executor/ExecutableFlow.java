@@ -45,6 +45,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
+  public static final String REQUIREDEXECUTORTAGS_PARAM = "requiredExecutorTags";
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
@@ -58,6 +59,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
+  private ExecutorTags requiredExecutorTags;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -119,6 +121,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     if (flow.getFailureEmails() != null) {
       this.executionOptions.setFailureEmails(flow.getFailureEmails());
     }
+
+    this.requiredExecutorTags = flow.getRequiredExecutorTags();
   }
 
   @Override
@@ -211,6 +215,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.azkabanFlowVersion = azkabanFlowVersion;
   }
 
+  public ExecutorTags getRequiredExecutorTags() {
+    return this.requiredExecutorTags;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -243,6 +251,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
         .forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
+
+    if (this.requiredExecutorTags != null) {
+      final List<String> requiredExecutorTagNames = new ArrayList<>();
+      this.requiredExecutorTags.forEach(requiredExecutorTagNames::add);
+      flowObj.put(REQUIREDEXECUTORTAGS_PARAM, requiredExecutorTagNames);
+    }
 
     return flowObj;
   }
@@ -284,6 +298,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
           flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
               .collect(Collectors.toList());
       this.executionOptions.setSlaOptions(slaOptions);
+    }
+
+    if (flowObj.containsKey(REQUIREDEXECUTORTAGS_PARAM)) {
+      this.requiredExecutorTags = new ExecutorTags(flowObj.getList(REQUIREDEXECUTORTAGS_PARAM));
     }
   }
 

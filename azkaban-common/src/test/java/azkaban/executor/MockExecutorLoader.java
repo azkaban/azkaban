@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -353,12 +354,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor addExecutor(final String host, final int port, final ExecutorTags tags)
+  public Executor addExecutor(final String host, final int port, final ExecutorData data)
       throws ExecutorManagerException {
     Executor executor = null;
     if (fetchExecutor(host, port) == null) {
       this.executorIdCounter++;
-      executor = new Executor(this.executorIdCounter, host, port, true);
+      executor = new Executor(this.executorIdCounter, host, port, true, null);
       this.executors.add(executor);
     }
     return executor;
@@ -452,9 +453,10 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public ExecutableFlow selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final Predicate<ExecutableFlow> evaluateCandidate)
       throws ExecutorManagerException {
-    return 1;
+    return null;
   }
 
   @Override

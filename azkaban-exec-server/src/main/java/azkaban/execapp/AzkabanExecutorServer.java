@@ -34,6 +34,7 @@ import azkaban.execapp.metric.NumQueuedFlowMetric;
 import azkaban.execapp.metric.NumRunningFlowMetric;
 import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.executor.Executor;
+import azkaban.executor.ExecutorData;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutorTags;
@@ -43,8 +44,8 @@ import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.metrics.MetricsManager;
-import azkaban.server.IMBeanRegistrable;
 import azkaban.server.AzkabanServer;
+import azkaban.server.IMBeanRegistrable;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
@@ -264,16 +265,20 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       final String host = requireNonNull(getHost());
       final int port = getPort();
       checkState(port != -1);
-      final Executor executor = this.executionLoader.fetchExecutor(host, port);
-      if (executor == null) {
+      final ExecutorTags tags = ExecutorTags
+          .getTagsFromProps(this.props, ConfigurationKeys.AZKABAN_EXECUTOR_TAGS);
+      final ExecutorData data = new ExecutorData(tags);
+      final Executor existingExecutor = this.executionLoader.fetchExecutor(host, port);
+      if (existingExecutor == null) {
         logger.info("This executor wasn't found in the DB. Adding self.");
-        final ExecutorTags tags = ExecutorTags
-            .getTagsFromProps(this.props, ConfigurationKeys.AZKABAN_EXECUTOR_TAGS);
-        this.executionLoader.addExecutor(host, port, tags);
+        this.executionLoader.addExecutor(host, port, data);
       } else {
-        logger.info("This executor is already in the DB. Found: " + executor);
+        // If executor already exists, update it because the executor data might have changed
+        logger.info("This executor is already in the DB. Found: " + existingExecutor);
+        final Executor newExecutor = new Executor(existingExecutor.getId(), host, port, false,
+            data);
+        this.executionLoader.updateExecutor(newExecutor);
       }
-      // If executor already exists, ignore it
     } catch (final ExecutorManagerException e) {
       logger.error("Error inserting executor entry into DB", e);
       throw e;

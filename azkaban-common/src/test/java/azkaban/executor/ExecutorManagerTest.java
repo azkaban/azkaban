@@ -99,8 +99,8 @@ public class ExecutorManagerTest {
   private ExecutorManager createMultiExecutorManagerInstance() throws Exception {
     this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
     this.props.put(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, "false");
-    this.loader.addExecutor("localhost", 12345, ExecutorTags.empty());
-    this.loader.addExecutor("localhost", 12346, ExecutorTags.empty());
+    this.loader.addExecutor("localhost", 12345, null);
+    this.loader.addExecutor("localhost", 12346, null);
     return createExecutorManager();
   }
 
@@ -132,8 +132,8 @@ public class ExecutorManagerTest {
   @Test
   public void testMultipleExecutorScenario() throws Exception {
     this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
-    final Executor executor1 = this.loader.addExecutor("localhost", 12345, ExecutorTags.empty());
-    final Executor executor2 = this.loader.addExecutor("localhost", 12346, ExecutorTags.empty());
+    final Executor executor1 = this.loader.addExecutor("localhost", 12345, null);
+    final Executor executor2 = this.loader.addExecutor("localhost", 12346, null);
 
     final ExecutorManager manager = createExecutorManager();
     final Set<Executor> activeExecutors =
@@ -168,7 +168,7 @@ public class ExecutorManagerTest {
   @Test
   public void testSetupExecutorsSucess() throws Exception {
     this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
-    final Executor executor1 = this.loader.addExecutor("localhost", 12345, ExecutorTags.empty());
+    final Executor executor1 = this.loader.addExecutor("localhost", 12345, null);
     final ExecutorManager manager = createExecutorManager();
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
         new Executor[]{executor1});
@@ -176,8 +176,8 @@ public class ExecutorManagerTest {
     // mark older executor as inactive
     executor1.setActive(false);
     this.loader.updateExecutor(executor1);
-    final Executor executor2 = this.loader.addExecutor("localhost", 12346, ExecutorTags.empty());
-    final Executor executor3 = this.loader.addExecutor("localhost", 12347, ExecutorTags.empty());
+    final Executor executor2 = this.loader.addExecutor("localhost", 12346, null);
+    final Executor executor3 = this.loader.addExecutor("localhost", 12347, null);
     manager.setupExecutors();
 
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
@@ -191,7 +191,7 @@ public class ExecutorManagerTest {
   @Test(expected = ExecutorManagerException.class)
   public void testSetupExecutorsException() throws Exception {
     this.props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
-    final Executor executor1 = this.loader.addExecutor("localhost", 12345, ExecutorTags.empty());
+    final Executor executor1 = this.loader.addExecutor("localhost", 12345, null);
     final ExecutorManager manager = createExecutorManager();
     final Set<Executor> activeExecutors =
         new HashSet(manager.getAllActiveExecutors());
@@ -530,8 +530,8 @@ public class ExecutorManagerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 2);
 
     final List<Executor> executors = new ArrayList<>();
-    final Executor executor1 = new Executor(1, "localhost", 12345, true);
-    final Executor executor2 = new Executor(2, "localhost", 12346, true);
+    final Executor executor1 = new Executor(1, "localhost", 12345, true, null);
+    final Executor executor2 = new Executor(2, "localhost", 12346, true, null);
     executors.add(executor1);
     executors.add(executor2);
 

@@ -10,12 +10,3 @@ CREATE TABLE project_flows (
 
 CREATE INDEX flow_index
   ON project_flows (project_id, version);
-
-CREATE TABLE project_flow_required_tags (
-  project_id    INT           NOT NULL,
-  version       INT           NOT NULL,
-  flow_id       VARCHAR(128),
-  tag           VARCHAR(64)   NOT NULL,
-  PRIMARY KEY (project_id, version, flow_id, tag),
-  FOREIGN KEY (project_id, version, flow_id) REFERENCES project_flows (project_id, version, flow_id)
-);

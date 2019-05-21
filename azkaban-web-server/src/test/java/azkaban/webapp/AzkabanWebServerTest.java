@@ -39,7 +39,6 @@ import azkaban.executor.ExecutorDao;
 import azkaban.executor.ExecutorEventsDao;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorTags;
 import azkaban.executor.FetchActiveFlowDao;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
@@ -129,7 +128,7 @@ public class AzkabanWebServerTest {
     final ExecutorLoader executorLoader = injector.getInstance(ExecutorLoader.class);
     assertNotNull(executorLoader);
 
-    final Executor executor = executorLoader.addExecutor("localhost", 60000, ExecutorTags.empty());
+    final Executor executor = executorLoader.addExecutor("localhost", 60000, null);
     executor.setActive(true);
     executorLoader.updateExecutor(executor);
 

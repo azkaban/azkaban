@@ -24,6 +24,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -300,9 +301,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor addExecutor(final String host, final int port, final ExecutorTags tags)
+  public Executor addExecutor(final String host, final int port, final ExecutorData data)
       throws ExecutorManagerException {
-    return this.executorDao.addExecutor(host, port, tags);
+    return this.executorDao.addExecutor(host, port, data);
   }
 
   @Override
@@ -347,9 +348,10 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public ExecutableFlow selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final Predicate<ExecutableFlow> evaluateCandidate)
       throws ExecutorManagerException {
-    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive);
+    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive, evaluateCandidate);
   }
 
   @Override

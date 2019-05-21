@@ -24,6 +24,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 public interface ExecutorLoader {
 
@@ -125,7 +126,7 @@ public interface ExecutorLoader {
    *
    * @return Executor
    */
-  Executor addExecutor(String host, int port, ExecutorTags tags)
+  Executor addExecutor(String host, int port, ExecutorData data)
       throws ExecutorManagerException;
 
   /**
@@ -283,7 +284,8 @@ public interface ExecutorLoader {
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
 
-  int selectAndUpdateExecution(final int executorId, boolean isActive)
+  ExecutableFlow selectAndUpdateExecution(final int executorId, boolean isActive,
+      Predicate<ExecutableFlow> evaluateCandidate)
       throws ExecutorManagerException;
 
 }
