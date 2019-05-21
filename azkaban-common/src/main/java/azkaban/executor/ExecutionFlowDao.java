@@ -317,11 +317,11 @@ public class ExecutionFlowDao {
         FetchExecutableFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
     final SQLTransaction<ExecutableFlow> selectAndUpdateExecution = transOperator -> {
-      final List<ExecutableFlow> execIds = transOperator.query(selectExecutionForUpdate,
+      final List<ExecutableFlow> execFlows = transOperator.query(selectExecutionForUpdate,
           new FetchExecutableFlows(), executorId);
 
       ExecutableFlow executableFlow = null;
-      for (final ExecutableFlow candidateExecFlow : execIds) {
+      for (final ExecutableFlow candidateExecFlow : execFlows) {
         if (evaluateCandidate.test(candidateExecFlow)) {
           logger.info("Executor {} accepting execution {}", executorId,
               candidateExecFlow.getExecutionId());
@@ -372,7 +372,7 @@ public class ExecutionFlowDao {
         "SELECT exec_id, enc_type, flow_data from execution_flows"
             + " WHERE status = " + Status.PREPARING.getNumVal()
             + " and executor_id is NULL and flow_data is NOT NULL and %s"
-            + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC LIMIT 1 FOR UPDATE";
+            + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC FOR UPDATE";
 
     static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
         String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
