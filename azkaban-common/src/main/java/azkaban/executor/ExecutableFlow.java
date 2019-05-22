@@ -45,6 +45,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
+  public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String REQUIREDEXECUTORTAGS_PARAM = "requiredExecutorTags";
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -59,6 +60,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
+  private boolean isLocked;
   private ExecutorTags requiredExecutorTags;
 
   public ExecutableFlow(final Project project, final Flow flow) {
@@ -69,6 +71,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.lastModifiedTimestamp = project.getLastModifiedTimestamp();
     this.lastModifiedUser = project.getLastModifiedUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
+    setLocked(flow.isLocked());
     this.setFlow(project, flow);
   }
 
@@ -215,6 +218,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.azkabanFlowVersion = azkabanFlowVersion;
   }
 
+  public boolean isLocked() { return this.isLocked; }
+
+  public void setLocked(boolean locked) { this.isLocked = locked; }
+
   public ExecutorTags getRequiredExecutorTags() {
     return this.requiredExecutorTags;
   }
@@ -251,6 +258,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
         .forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
+
+    flowObj.put(IS_LOCKED_PARAM, this.isLocked);
 
     if (this.requiredExecutorTags != null) {
       final List<String> requiredExecutorTagNames = new ArrayList<>();
@@ -299,6 +308,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
               .collect(Collectors.toList());
       this.executionOptions.setSlaOptions(slaOptions);
     }
+
+    this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
 
     if (flowObj.containsKey(REQUIREDEXECUTORTAGS_PARAM)) {
       this.requiredExecutorTags = new ExecutorTags(flowObj.getList(REQUIREDEXECUTORTAGS_PARAM));

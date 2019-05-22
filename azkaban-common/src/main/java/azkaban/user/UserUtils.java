@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public final class UserUtils {
 
   private static final Logger log = LoggerFactory.getLogger(UserUtils.class);
+
   private UserUtils() {
 
   }
@@ -53,8 +54,8 @@ public final class UserUtils {
     final WatchService watchService;
     try {
       watchService = FileSystems.getDefault().newWatchService();
-    } catch (IOException e) {
-      log.warn(" Failed to create WatchService " + e.getMessage());
+    } catch (final IOException e) {
+      log.warn(" Failed to create WatchService ", e);
       throw e;
     }
 
@@ -64,9 +65,9 @@ public final class UserUtils {
     final Multimap<Path, String> dirToFilesMap = HashMultimap.create();
 
     // Iterate over each file.
-    for (Map.Entry<String, ParseConfigFile> entry : configFileMap.entrySet()) {
-      String fileName = entry.getKey();
-      ParseConfigFile parser = entry.getValue();
+    for (final Map.Entry<String, ParseConfigFile> entry : configFileMap.entrySet()) {
+      final String fileName = entry.getKey();
+      final ParseConfigFile parser = entry.getValue();
       Preconditions.checkNotNull(fileName);
       Preconditions.checkNotNull(parser);
 
@@ -78,20 +79,19 @@ public final class UserUtils {
       }
 
       try {
-        Path dir = Paths.get(fileName).getParent();
+        final Path dir = Paths.get(fileName).getParent();
         if (!dirToFilesMap.containsKey(dir)) {
-          // There is not entry for this directory, create a watchkey
-          WatchKey watchKey = dir.register(watchService,
+          // There is no entry for this directory, create a watchkey
+          final WatchKey watchKey = dir.register(watchService,
               new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY},
-              SensitivityWatchEventModifier.HIGH);
+              SensitivityWatchEventModifier.MEDIUM);
           keys.put(watchKey, dir);
         }
         // Add the config file to dir map
         dirToFilesMap.put(dir, fileName);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         // Ignore the IOException
-        log.warn("IOException while setting up watch on conf " + fileName + ". "
-            + e.getMessage());
+        log.warn("IOException while setting up watch on conf " + fileName + ". ", e);
       }
     }
 
@@ -100,38 +100,52 @@ public final class UserUtils {
       log.warn("Watchservice was not setup for any config file(s).");
       try {
         watchService.close();
-      } catch (IOException e) {
-        log.warn("IOException while closing watchService. " + e.getMessage());
+      } catch (final IOException e) {
+        log.warn("IOException while closing watchService. ", e);
       }
       return;
     }
 
-    Runnable runnable = () -> {
+    final Runnable runnable = () -> {
       // Watchservice is established, now listen for the events till eternity!
-      for (;; ) {
-        WatchKey watchKey;
+      for (; ; ) {
+        final WatchKey watchKey;
         try {
           watchKey = watchService.take();
-        } catch (InterruptedException ie) {
-          log.warn(ie.getMessage());
+          // Wait for a second to ensure there is only one event for a modification.
+          // For a file update, WatchService creates two ENTRY_MODIFY events, 1 for content and 1
+          // for modification time.
+          // Adding the sleep consolidates both the events into one with a count of 2 which
+          // avoids multiple reloads of same file.
+          // One second seems excessive, however, these events happen very less often and it is
+          // more important that the config reloads successfully than immediately.
+          // If there is any modification happening to file(s) in the meantime, it is all queued up
+          // in the watch service.
+          Thread.sleep(1000L);
+        } catch (final InterruptedException ie) {
+          log.warn(ie.toString());
           Thread.currentThread().interrupt();
           return;
         }
 
         // Get the directory for which watch service event triggered.
-        Path dir = keys.get(watchKey);
-        for (WatchEvent<?> event : watchKey.pollEvents()) {
+        final Path dir = keys.get(watchKey);
+        for (final WatchEvent<?> event : watchKey.pollEvents()) {
           // Make sure the modification happened to user config file
-          @SuppressWarnings("unchecked")
-          final Path name = ((WatchEvent<Path>) event).context();
+          @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
           final String filename = dir.resolve(name).toString();
           // Lookup the file in dirToFilesMap
-          if (dirToFilesMap.containsEntry(dir, filename)) {
-            // Match!
-            // reparse the config file
-            log.info("Modification detected, reloading config file " + filename);
+          if (!dirToFilesMap.containsEntry(dir, filename)) {
+            continue;
+          }
+          // Match!
+          // Reparse the config file
+          log.info("Modification detected, reloading config file " + filename + ".");
+          try {
             configFileMap.get(filename).parseConfigFile();
-            break;
+          } catch (final Exception e) {
+            // If there is any exception while parsing the config file, log it and move on
+            log.warn("Reload failed for config file " + filename + " due to ", e);
           }
         }
         watchKey.reset();

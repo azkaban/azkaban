@@ -26,9 +26,11 @@ import org.apache.log4j.Logger;
  */
 public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implements IHadoopJob {
 
+  private final HadoopProxy hadoopProxy;
+
   public AbstractHadoopJavaProcessJob(String jobid, Props sysProps, Props jobProps, Logger logger) {
     super(jobid, sysProps, jobProps, logger);
-    hadoopProxy.init(sysProps, jobProps, logger);
+    this.hadoopProxy = new HadoopProxy(sysProps, jobProps, logger);
   }
 
   @Override
@@ -65,5 +67,10 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
   public Props appendExtraProps(Props props) {
     HadoopJobUtils.addAdditionalNamenodesToPropsFromMRJob(props, getLog());
     return props;
+  }
+
+  @Override
+  public HadoopProxy getHadoopProxy() {
+    return hadoopProxy;
   }
 }

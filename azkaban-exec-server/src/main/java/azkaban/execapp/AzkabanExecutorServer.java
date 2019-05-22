@@ -46,6 +46,7 @@ import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.metrics.MetricsManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.IMBeanRegistrable;
+import azkaban.server.MBeanRegistrationManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
@@ -87,6 +88,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private static AzkabanExecutorServer app;
 
+  private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final ExecutorLoader executionLoader;
   private final FlowRunnerManager runnerManager;
   private final MetricsManager metricsManager;
@@ -498,5 +500,10 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       this.mbeanRegistrationManager
           .registerMBean("jobCallbackJMXMBean", jobCallbackMgr.getJmxJobCallbackMBean());
     }
+  }
+
+  @Override
+  public MBeanRegistrationManager getMBeanRegistrationManager() {
+    return this.mbeanRegistrationManager;
   }
 }

@@ -70,6 +70,7 @@ azkaban.FlowTableView = Backbone.View.extend({
       };
       var successHandler = function (data) {
         console.log("Success");
+        console.log("data", data);
         target.loaded = true;
         target.loading = false;
         createJobListFunction(data, targetTBody);
@@ -107,29 +108,29 @@ azkaban.FlowTableView = Backbone.View.extend({
         var hoverMenuDiv = document.createElement('div');
         $(hoverMenuDiv).addClass('pull-right');
         $(hoverMenuDiv).addClass('job-buttons');
+       if (!data.isLocked) {
+          var divRunJob = document.createElement('button');
+          $(divRunJob).attr('type', 'button');
+          $(divRunJob).addClass("btn");
+          $(divRunJob).addClass("btn-success");
+          $(divRunJob).addClass("btn-xs");
+          $(divRunJob).addClass("runJob");
+          $(divRunJob).text("Run Job");
+          divRunJob.jobName = name;
+          divRunJob.flowId = flowId;
+          $(hoverMenuDiv).append(divRunJob);
 
-        var divRunJob = document.createElement('button');
-        $(divRunJob).attr('type', 'button');
-        $(divRunJob).addClass("btn");
-        $(divRunJob).addClass("btn-success");
-        $(divRunJob).addClass("btn-xs");
-        $(divRunJob).addClass("runJob");
-        $(divRunJob).text("Run Job");
-        divRunJob.jobName = name;
-        divRunJob.flowId = flowId;
-        $(hoverMenuDiv).append(divRunJob);
-
-        var divRunWithDep = document.createElement("button");
-        $(divRunWithDep).attr('type', 'button');
-        $(divRunWithDep).addClass("btn");
-        $(divRunWithDep).addClass("btn-success");
-        $(divRunWithDep).addClass("btn-xs");
-        $(divRunWithDep).addClass("runWithDep");
-        $(divRunWithDep).text("Run With Dependencies");
-        divRunWithDep.jobName = name;
-        divRunWithDep.flowId = flowId;
-        $(hoverMenuDiv).append(divRunWithDep);
-
+          var divRunWithDep = document.createElement("button");
+          $(divRunWithDep).attr('type', 'button');
+          $(divRunWithDep).addClass("btn");
+          $(divRunWithDep).addClass("btn-success");
+          $(divRunWithDep).addClass("btn-xs");
+          $(divRunWithDep).addClass("runWithDep");
+          $(divRunWithDep).text("Run With Dependencies");
+          divRunWithDep.jobName = name;
+          divRunWithDep.flowId = flowId;
+          $(hoverMenuDiv).append(divRunWithDep);
+        }
         $(li).append(hoverMenuDiv);
       }
 
@@ -224,6 +225,12 @@ azkaban.FlowTableView = Backbone.View.extend({
   executeFlow: function (evt) {
     console.log("Execute Flow");
     var flowId = $(evt.currentTarget).attr('flowid');
+
+    var isFlowLocked = $(evt.currentTarget).hasClass("disabled");
+    if (isFlowLocked) {
+      evt.stopPropagation();
+      return;
+    }
 
     var executingData = {
       project: projectName,

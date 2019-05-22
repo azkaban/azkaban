@@ -88,14 +88,34 @@ public class Constants {
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
+  // Default locked flow error message
+  public static final String DEFAULT_LOCKED_FLOW_ERROR_MESSAGE =
+      "Flow %s in project %s is locked. This is either a repeatedly failing flow, or an ineffcient"
+          + " flow. Please refer to the Dr. Elephant report for this flow for more information.";
+
   // Default maximum number of concurrent runs for a single flow
   public static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
+  
+  // How often executors will poll new executions in Poll Dispatch model
+  public static final int DEFAULT_AZKABAN_POLLING_INTERVAL_MS = 1000;
 
+  // Executors can use cpu load calculated from this period to take/skip polling turns
+  public static final int DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC = 60;
+
+  
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
+    public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =
+        "azkaban.polling_criteria.flow_threads_available";
+    public static final String AZKABAN_POLLING_CRITERIA_MIN_FREE_MEMORY_GB =
+        "azkaban.polling_criteria.min_free_memory_gb";
+    public static final String AZKABAN_POLLING_CRITERIA_MAX_CPU_UTILIZATION_PCT =
+        "azkaban.polling_criteria.max_cpu_utilization_pct";
+    public static final String AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC =
+        "azkaban.polling_criteria.cpu_load_period_sec";
 
     // Configures comma-separated executor tags provided by a particular executor
     public static final String AZKABAN_EXECUTOR_TAGS = "azkaban.executor.tags";
@@ -256,6 +276,10 @@ public class Constants {
 
     // number of rows to be displayed on the executions page.
     public static final String DISPLAY_EXECUTION_PAGE_SIZE = "azkaban.display.execution_page_size";
+
+    // locked flow error message. Parameters passed in are the flow name and project name.
+    public static final String AZKABAN_LOCKED_FLOW_ERROR_MESSAGE =
+        "azkaban.locked.flow.error.message";
   }
 
   public static class FlowProperties {

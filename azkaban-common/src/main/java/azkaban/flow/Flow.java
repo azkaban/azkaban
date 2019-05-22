@@ -53,6 +53,7 @@ public class Flow {
   private boolean isEmbeddedFlow = false;
   private double azkabanFlowVersion = Constants.DEFAULT_AZKABAN_FLOW_VERSION;
   private String condition = null;
+  private boolean isLocked = false;
 
   public Flow(final String id) {
     this.id = id;
@@ -66,6 +67,7 @@ public class Flow {
     final Boolean isEmbeddedFlow = (Boolean) flowObject.get("embeddedFlow");
     final Double azkabanFlowVersion = (Double) flowObject.get("azkabanFlowVersion");
     final String condition = (String) flowObject.get("condition");
+    final Boolean isLocked = (Boolean) flowObject.get("isLocked");
 
     final Flow flow = new Flow(id);
     if (layedout != null) {
@@ -82,6 +84,10 @@ public class Flow {
 
     if (condition != null) {
       flow.setCondition(condition);
+    }
+
+    if (isLocked != null) {
+      flow.setLocked(isLocked);
     }
 
     final int projId = (Integer) flowObject.get("project.id");
@@ -361,6 +367,7 @@ public class Flow {
     flowObj.put("embeddedFlow", this.isEmbeddedFlow);
     flowObj.put("azkabanFlowVersion", this.azkabanFlowVersion);
     flowObj.put("condition", this.condition);
+    flowObj.put("isLocked", this.isLocked);
     flowObj.put("requiredExecutorTags", this.requiredExecutorTags);
 
     if (this.errors != null) {
@@ -475,4 +482,7 @@ public class Flow {
     this.projectId = projectId;
   }
 
+  public boolean isLocked() { return this.isLocked; }
+
+  public void setLocked(boolean locked) { this.isLocked = locked; }
 }

@@ -45,10 +45,13 @@ public abstract class AbstractProcessJob extends AbstractJob {
   private static final String SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER = "[MASKED]";
   private static final String JOB_DUMP_PROPERTIES_IN_LOG = "job.dump.properties";
 
-  private final String jobPath;
-  protected String cwd;
-  private volatile Props jobProps;
-  private volatile Props sysProps;
+  //Notes: These variables will be accessed directly throw inherited classes,
+  //       which are out of this package. Please remain them to be protected
+  protected final String _jobPath;
+  protected String _cwd;
+  protected volatile Props jobProps;
+  protected volatile Props sysProps;
+
   private volatile Props generatedProperties;
 
   protected AbstractProcessJob(final String jobId, final Props sysProps, final Props jobProps,
@@ -57,11 +60,16 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
     this.jobProps = jobProps;
     this.sysProps = sysProps;
-    this.cwd = getWorkingDirectory();
-    this.jobPath = this.cwd;
+    this._cwd = getWorkingDirectory();
+    this._jobPath = this._cwd;
   }
 
-  private File createOutputPropsFile(final String id, final String workingDir) {
+  /**
+   * This public function will be deprecated since it tends to be a Utility Function
+   * Please use azkaban.utils.FileIOUtils.createOutputPropsFile(String, String, String) instead.
+   */
+  @Deprecated
+  public File createOutputPropsFile(final String id, final String workingDir) {
     this.info("cwd=" + workingDir);
 
     try {
@@ -82,6 +90,22 @@ public abstract class AbstractProcessJob extends AbstractJob {
     return this.sysProps;
   }
 
+  /**
+   * Re-configure Job Props
+   * @param props new props
+   */
+  public void setJobProps(Props props) {
+    this.jobProps = props;
+  }
+
+  /**
+   * Re-configure System Props
+   * @param props props
+   */
+  public void setSysProps(Props props) {
+    this.sysProps = props;
+  }
+
   public Props getAllProps() {
     Props props = new Props();
     props.putAll(jobProps);
@@ -94,7 +118,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
   }
 
   public String getJobPath() {
-    return this.jobPath;
+    return this._jobPath;
   }
 
   protected void resolveProps() {
@@ -139,18 +163,18 @@ public abstract class AbstractProcessJob extends AbstractJob {
   public File[] initPropsFiles() {
     // Create properties file with additionally all input generated properties.
     final File[] files = new File[2];
-    files[0] = createFlattenedPropsFile(this.cwd);
+    files[0] = createFlattenedPropsFile(this._cwd);
 
     this.jobProps.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
     this.jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
 
-    files[1] = createOutputPropsFile(getId(), this.cwd);
+    files[1] = createOutputPropsFile(getId(), this._cwd);
     this.jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
     return files;
   }
 
   public String getCwd() {
-    return this.cwd;
+    return this._cwd;
   }
 
   /**
@@ -171,11 +195,16 @@ public abstract class AbstractProcessJob extends AbstractJob {
    * @return working directory property
    */
   public String getWorkingDirectory() {
-    final String workingDir = getJobProps().getString(WORKING_DIR, this.jobPath);
+    final String workingDir = getJobProps().getString(WORKING_DIR, this._jobPath);
     return Utils.ifNull(workingDir, "");
   }
 
-  private Props loadOutputFileProps(final File outputPropertiesFile) {
+  /**
+   * This public function will be deprecated since it tends to be a Utility function
+   * Please use azkaban.utils.FileIOUtils.loadOutputFileProps(String file) instead.
+   */
+  @Deprecated
+  public Props loadOutputFileProps(final File outputPropertiesFile) {
     InputStream reader = null;
     try {
       this.info("output properties file=" + outputPropertiesFile.getAbsolutePath());
@@ -208,7 +237,12 @@ public abstract class AbstractProcessJob extends AbstractJob {
     }
   }
 
-  private File createFlattenedPropsFile(final String workingDir) {
+  /**
+   * This public function will be deprecated since it tends to be a Utility function
+   * Please use azkaban.utils.FileIOUtils.createOutputPropsFile(String, String, String) instead.
+   */
+  @Deprecated
+  public File createFlattenedPropsFile(final String workingDir) {
     try {
       final File directory = new File(workingDir);
       // The temp file prefix must be at least 3 characters.

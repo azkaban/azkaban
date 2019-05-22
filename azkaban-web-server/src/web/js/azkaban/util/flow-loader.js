@@ -75,6 +75,8 @@ var nodeClickCallback = function (event, model, node) {
 
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
       + flowId + "&job=" + jobId;
+  var logURL = contextURL + "/executor?execid=" + execId + "&job="
+      + node.nestedId;
   var menu = [];
 
   if (type == "flow") {
@@ -142,7 +144,28 @@ var nodeClickCallback = function (event, model, node) {
     ]);
   }
   else {
-    menu = [
+    // this applies for type != 'flow' ie. job nodes in 2 cases:
+    // 1. Flow -> Graph tab
+    // 2. Execution -> Graph tab
+    menu = [];
+    if (node.status != 'READY' && node.status != 'SKIPPED') {
+      // For "Flow Graph" (not an execution) node.status = READY, so this
+      // condition also works correctly for it
+      $.merge(menu, [
+        {
+          title: "Open Log...", callback: function () {
+            window.location.href = logURL;
+          }
+        },
+        {
+          title: "Open Log in New Window...", callback: function () {
+            window.open(logURL);
+          }
+        },
+        {break: 1}
+      ]);
+    }
+    $.merge(menu, [
       //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
       //  {break: 1},
       {
@@ -161,13 +184,13 @@ var nodeClickCallback = function (event, model, node) {
           model.trigger("centerNode", node)
         }
       }
-    ];
+    ]);
   }
   contextMenuView.show(event, menu);
 }
 
 var jobClickCallback = function (event, model, node) {
-  console.log("Node clicked callback");
+  console.log("Job clicked callback");
   var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;

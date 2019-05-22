@@ -139,7 +139,8 @@
         <button type="button" id="retrybtn" class="btn btn-success btn-sm">Retry Failed</button>
       </li>
       <li class="nav-button pull-right">
-        <button type="button" id="executebtn" class="btn btn-success btn-sm">Prepare Execution
+        #set($isDisabled = "#if(${isLocked})disabled#end")
+        <button type="button" id="executebtn" class="btn btn-success btn-sm ${isDisabled}">Prepare Execution
         </button>
       </li>
     </ul>

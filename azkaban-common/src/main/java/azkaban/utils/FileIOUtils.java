@@ -21,6 +21,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import org.apache.commons.fileupload.util.Streams;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -124,7 +126,8 @@ public class FileIOUtils {
   }
 
   public static String getSourcePathFromClass(final Class<?> containedClass) {
-    final String containedClassPath = containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
+    final String containedClassPath = containedClass.getProtectionDomain().getCodeSource()
+        .getLocation().getPath();
 
     File file = new File(containedClassPath);
 
@@ -141,6 +144,62 @@ public class FileIOUtils {
     }
   }
 
+  /**
+   * Load output file into a Props object
+   *
+   * @param file output properties file
+   * @return Props object
+   */
+  public static Props loadOutputFileProps(final File file) {
+    InputStream reader = null;
+    try {
+      log.info("output properties file=" + file.getAbsolutePath());
+      reader = new BufferedInputStream(new FileInputStream(file));
+      final Props outputProps = new Props();
+      final String content = Streams.asString(reader).trim();
+
+      if (!content.isEmpty()) {
+        final Map<String, Object> propMap =
+            (Map<String, Object>) JSONUtils.parseJSONFromString(content);
+
+        for (final Map.Entry<String, Object> entry : propMap.entrySet()) {
+          outputProps.put(entry.getKey(), entry.getValue().toString());
+        }
+      }
+      return outputProps;
+    } catch (final FileNotFoundException e) {
+      log.info(
+          String.format("File[%s] wasn't found, returning empty props.", file)
+      );
+      return new Props();
+    } catch (final Exception e) {
+      log.error(
+          "Exception thrown when trying to load output file props.  Returning empty Props instead of failing. Is this really the best thing to do?",
+          e);
+      return new Props();
+    } finally {
+      IOUtils.closeQuietly(reader);
+    }
+  }
+
+  /**
+   * Create Temp File in a working directory
+   *
+   * @param prefix file prefix
+   * @param suffix file suffix
+   * @param workingDir working directory
+   * @return File handle
+   */
+  public static File createOutputPropsFile(final String prefix,
+      final String suffix, final String workingDir) {
+    try {
+      final File directory = new File(workingDir);
+      final File tempFile = File.createTempFile(prefix, suffix, directory);
+      return tempFile;
+    } catch (final IOException e) {
+      throw new RuntimeException("Failed to create temp output property file ", e);
+    }
+  }
 
   /**
    * Hard link files and recurse into directories.

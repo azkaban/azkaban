@@ -77,11 +77,11 @@ public class XmlUserManager implements UserManager {
 
     // Create a thread which listens to any change in user config file and
     // reloads it.
-    Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
+    final Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
     parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
     try {
       UserUtils.setupWatch(parseConfigFileMap);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logger.warn(" Failed to create WatchService " + e.getMessage());
     }
   }

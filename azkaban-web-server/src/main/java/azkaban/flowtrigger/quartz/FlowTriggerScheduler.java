@@ -154,10 +154,12 @@ public class FlowTriggerScheduler {
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
           final boolean isPaused = this.scheduler
               .isJobPaused(FlowTriggerQuartzJob.JOB_NAME, groupName);
+          final Project project = projectManager.getProject(projectId);
+          final Flow flow = project.getFlow(flowId);
           scheduledFlowTrigger = new ScheduledFlowTrigger(projectId,
               this.projectManager.getProject(projectId).getName(),
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
-              : quartzTriggers.get(0), isPaused);
+              : quartzTriggers.get(0), isPaused, flow.isLocked());
         } catch (final Exception ex) {
           logger.error("Unable to get flow trigger by job key {}", jobKey, ex);
           scheduledFlowTrigger = null;
@@ -217,10 +219,11 @@ public class FlowTriggerScheduler {
     private final Trigger quartzTrigger;
     private final String submitUser;
     private final boolean isPaused;
+    private final boolean isLocked;
 
     public ScheduledFlowTrigger(final int projectId, final String projectName, final String flowId,
         final FlowTrigger flowTrigger, final String submitUser,
-        final Trigger quartzTrigger, final boolean isPaused) {
+        final Trigger quartzTrigger, final boolean isPaused, final boolean isLocked) {
       this.projectId = projectId;
       this.projectName = projectName;
       this.flowId = flowId;
@@ -228,6 +231,7 @@ public class FlowTriggerScheduler {
       this.submitUser = submitUser;
       this.quartzTrigger = quartzTrigger;
       this.isPaused = isPaused;
+      this.isLocked = isLocked;
     }
 
     public boolean isPaused() {
@@ -262,5 +266,7 @@ public class FlowTriggerScheduler {
     public String getSubmitUser() {
       return this.submitUser;
     }
+
+    public boolean isLocked() { return this.isLocked; }
   }
 }

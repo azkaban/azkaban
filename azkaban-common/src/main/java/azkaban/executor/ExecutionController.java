@@ -59,12 +59,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String,String>, Integer> maxConcurrentRunsPerFlowMap;
   private final CommonMetrics commonMetrics;
+  private final Props azkProps;
 
   @Inject
   ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
   ExecutorHealthChecker executorHealthChecker) {
+    this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
@@ -447,9 +449,57 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     return jobStats;
   }
 
+  /**
+   * If the resource manager and job history server urls are configured, fetch the application
+   * id from the job log and then construct the job link url.
+   *
+   * @param exFlow The executable flow.
+   * @param jobId The job id.
+   * @param attempt The job execution attempt.
+   * @return the job link url.
+   */
   @Override
   public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
-    // Todo: deprecate this method
+    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
+      return null;
+    }
+    final String applicationId = getApplicationId(exFlow, jobId, attempt);
+    return ExecutionControllerUtils.createJobLinkUrl(exFlow, jobId, applicationId, this.azkProps);
+  }
+
+  /**
+   * Get the Hadoop/Spark application id from the job log.
+   *
+   * @param exFlow The executable flow.
+   * @param jobId The job id.
+   * @param attempt The job execution attempt.
+   * @return the application id.
+   */
+  String getApplicationId(final ExecutableFlow exFlow, final String jobId, final int attempt) {
+    String applicationId;
+    boolean finished = false;
+    int offset = 0;
+    try {
+      while (!finished) {
+        final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+        if (data != null && data.getLength() != 0) {
+          applicationId = ExecutionControllerUtils.findApplicationIdFromLog(data.getData());
+          if (applicationId != null) {
+            return applicationId;
+          }
+          offset = data.getOffset() + data.getLength();
+          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+              + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
+        } else {
+          finished = true;
+        }
+      }
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+          ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
+    }
     return null;
   }
 
@@ -571,6 +621,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
       throws ExecutorManagerException {
+    if (exflow.isLocked()) {
+      // Skip execution for locked flows.
+      final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
+          exflow.getProjectName());
+      logger.info(message);
+      return message;
+    }
+
     final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
     // Use project and flow name to prevent race condition when same flow is submitted by API and
     // schedule at the same time
@@ -598,8 +656,9 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       }
 
       if (!running.isEmpty()) {
-        int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
-            exflow.getProjectName(), flowId, maxConcurrentRunsOneFlow, maxConcurrentRunsPerFlowMap);
+        final int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
+            exflow.getProjectName(), flowId, this.maxConcurrentRunsOneFlow,
+            this.maxConcurrentRunsPerFlowMap);
         if (running.size() > maxConcurrentRuns) {
           this.commonMetrics.markSubmitFlowSkip();
           throw new ExecutorManagerException("Flow " + flowId

@@ -20,7 +20,10 @@ package azkaban.server;
  */
 public interface IMBeanRegistrable {
 
-  MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
+  /**
+   * Get MBeanRegistrationManager Instance
+   */
+  MBeanRegistrationManager getMBeanRegistrationManager();
 
   /**
    * Function to configure MBean Server

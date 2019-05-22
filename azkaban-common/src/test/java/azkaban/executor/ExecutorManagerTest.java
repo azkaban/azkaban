@@ -69,6 +69,8 @@ public class ExecutorManagerTest {
   private User user;
   private ExecutableFlow flow1;
   private ExecutableFlow flow2;
+  private ExecutionReference ref1;
+  private ExecutionReference ref2;
   private AlerterHolder alertHolder;
   private ExecutorApiGateway apiGateway;
   private Alerter mailAlerter;
@@ -514,6 +516,43 @@ public class ExecutorManagerTest {
     verify(this.loader, Mockito.times(2)).unassignExecutor(-1);
   }
 
+  @Test
+  public void testSetFlowLock() throws Exception {
+    testSetUpForRunningFlows();
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    flow1.setLocked(true);
+    final String msg = this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    assertThat(msg).isEqualTo("Flow derived-member-data for project flow is locked.");
+
+    // unlock the flow
+    flow1.setLocked(false);
+    this.manager.submitExecutableFlow(flow1, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(flow1);
+    verify(this.loader).addActiveExecutableReference(any());
+  }
+
+  /**
+   * Test fetching application id from log data.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testGetApplicationIdFromLog() throws Exception {
+    testSetUpForRunningFlows();
+    this.runningExecutions.get().put(1, new Pair<>(this.ref1, this.flow1));
+    // Verify that application id is obtained successfully from the log data.
+    final Map<String, Object> logData1 = ImmutableMap.of("offset", 0, "length", 33, "data",
+        "Submitted application_12345_6789.");
+    when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
+        .thenReturn(logData1);
+    Assert.assertEquals("12345_6789", this.manager.getApplicationId(this.flow1, "job1", 0));
+    // Verify that application id is null when log data length is 0 (no new data available).
+    final Map<String, Object> logData2 = ImmutableMap.of("offset", 33, "length", 0, "data", "");
+    when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
+        .thenReturn(logData2);
+    Assert.assertEquals(null, this.manager.getApplicationId(this.flow1, "job1", 0));
+  }
+
   /*
    * TODO: will move below method to setUp() and run before every test for both runningFlows and queuedFlows
    */
@@ -542,12 +581,10 @@ public class ExecutorManagerTest {
     this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
-    final ExecutionReference ref1 =
-        new ExecutionReference(this.flow1.getExecutionId(), executor1);
-    final ExecutionReference ref2 =
-        new ExecutionReference(this.flow2.getExecutionId(), executor2);
-    this.activeFlows.put(this.flow1.getExecutionId(), new Pair<>(ref1, this.flow1));
-    this.activeFlows.put(this.flow2.getExecutionId(), new Pair<>(ref2, this.flow2));
+    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), executor1);
+    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2);
+    this.activeFlows.put(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1));
+    this.activeFlows.put(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
   }
 
