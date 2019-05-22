@@ -52,32 +52,28 @@ public class ExecutionController extends EventHandler implements ExecutorManager
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
-  private static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
   private final ExecutorLoader executorLoader;
   private final ExecutorApiGateway apiGateway;
   private final AlerterHolder alerterHolder;
   private final ExecutorHealthChecker executorHealthChecker;
   private final int maxConcurrentRunsOneFlow;
+  private final Map<Pair<String,String>, Integer> maxConcurrentRunsPerFlowMap;
   private final CommonMetrics commonMetrics;
+  private final Props azkProps;
 
   @Inject
   ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
   ExecutorHealthChecker executorHealthChecker) {
+    this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
     this.executorHealthChecker = executorHealthChecker;
-    this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
-  }
-
-  private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
-    // The default threshold is set to 30 for now, in case some users are affected. We may
-    // decrease this number in future, to better prevent DDos attacks.
-    return azkProps.getInt(ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW,
-        DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW);
+    this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
+    this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
   }
 
   @Override
@@ -453,9 +449,57 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     return jobStats;
   }
 
+  /**
+   * If the resource manager and job history server urls are configured, fetch the application
+   * id from the job log and then construct the job link url.
+   *
+   * @param exFlow The executable flow.
+   * @param jobId The job id.
+   * @param attempt The job execution attempt.
+   * @return the job link url.
+   */
   @Override
   public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
-    // Todo: deprecate this method
+    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) || !this.azkProps
+        .containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
+      return null;
+    }
+    final String applicationId = getApplicationId(exFlow, jobId, attempt);
+    return ExecutionControllerUtils.createJobLinkUrl(exFlow, jobId, applicationId, this.azkProps);
+  }
+
+  /**
+   * Get the Hadoop/Spark application id from the job log.
+   *
+   * @param exFlow The executable flow.
+   * @param jobId The job id.
+   * @param attempt The job execution attempt.
+   * @return the application id.
+   */
+  String getApplicationId(final ExecutableFlow exFlow, final String jobId, final int attempt) {
+    String applicationId;
+    boolean finished = false;
+    int offset = 0;
+    try {
+      while (!finished) {
+        final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+        if (data != null && data.getLength() != 0) {
+          applicationId = ExecutionControllerUtils.findApplicationIdFromLog(data.getData());
+          if (applicationId != null) {
+            return applicationId;
+          }
+          offset = data.getOffset() + data.getLength();
+          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+              + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
+        } else {
+          finished = true;
+        }
+      }
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+          ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
+    }
     return null;
   }
 
@@ -577,6 +621,14 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
       throws ExecutorManagerException {
+    if (exflow.isLocked()) {
+      // Skip execution for locked flows.
+      final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
+          exflow.getProjectName());
+      logger.info(message);
+      return message;
+    }
+
     final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
     // Use project and flow name to prevent race condition when same flow is submitted by API and
     // schedule at the same time
@@ -604,10 +656,13 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       }
 
       if (!running.isEmpty()) {
-        if (running.size() > this.maxConcurrentRunsOneFlow) {
+        final int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
+            exflow.getProjectName(), flowId, this.maxConcurrentRunsOneFlow,
+            this.maxConcurrentRunsPerFlowMap);
+        if (running.size() > maxConcurrentRuns) {
           this.commonMetrics.markSubmitFlowSkip();
           throw new ExecutorManagerException("Flow " + flowId
-              + " has more than " + this.maxConcurrentRunsOneFlow + " concurrent runs. Skipping",
+              + " has more than " + maxConcurrentRuns + " concurrent runs. Skipping",
               ExecutorManagerException.Reason.SkippedExecution);
         } else if (options.getConcurrentOption().equals(
             ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {

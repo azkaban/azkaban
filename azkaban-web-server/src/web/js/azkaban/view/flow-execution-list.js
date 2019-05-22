@@ -398,7 +398,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
       var a = document.createElement("a");
       $(a).attr("href", logURL);
       //$(a).attr("id", node.id + "-log-link");
-      $(a).text("Details");
+      $(a).text("Log");
       $(tdDetails).append(a);
     }
 

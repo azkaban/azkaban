@@ -16,6 +16,7 @@
  */
 package azkaban;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
@@ -29,6 +30,7 @@ import azkaban.spi.StorageException;
 import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
+import azkaban.utils.OsCpuUtil;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -62,6 +64,15 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
+    bind(OsCpuUtil.class).toProvider(() -> {
+      final int cpuLoadPeriodSec = this.props
+          .getInt(ConfigurationKeys.AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC,
+              Constants.DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC);
+      final int pollingIntervalMs = this.props
+          .getInt(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
+              Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
+      return new OsCpuUtil(Math.max(1, (cpuLoadPeriodSec * 1000) / pollingIntervalMs));
+    });
   }
 
   public Class<? extends Storage> resolveStorageClassType() {

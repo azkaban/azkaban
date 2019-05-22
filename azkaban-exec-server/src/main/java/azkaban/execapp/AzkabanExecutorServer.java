@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys;
@@ -43,7 +42,9 @@ import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.metrics.MetricsManager;
+import azkaban.server.IMBeanRegistrable;
 import azkaban.server.AzkabanServer;
+import azkaban.server.MBeanRegistrationManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
@@ -54,7 +55,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
@@ -63,15 +63,10 @@ import java.security.Permission;
 import java.security.Policy;
 import java.security.ProtectionDomain;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
@@ -79,8 +74,9 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 
+
 @Singleton
-public class AzkabanExecutorServer {
+public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
@@ -90,15 +86,13 @@ public class AzkabanExecutorServer {
 
   private static AzkabanExecutorServer app;
 
+  private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final ExecutorLoader executionLoader;
   private final FlowRunnerManager runnerManager;
   private final MetricsManager metricsManager;
   private final Props props;
   private final Server server;
   private final Context root;
-
-  private final ArrayList<ObjectName> registeredMBeans = new ArrayList<>();
-  private MBeanServer mbeanServer;
 
   @Inject
   public AzkabanExecutorServer(final Props props,
@@ -365,8 +359,7 @@ public class AzkabanExecutorServer {
       try {
         logger.info("jmxAttributeEmitter: " + jmxAttributeEmitter);
         final Constructor<Props>[] constructors =
-            (Constructor<Props>[]) Class.forName(jmxAttributeEmitter)
-                .getConstructors();
+            (Constructor<Props>[]) Class.forName(jmxAttributeEmitter).getConstructors();
 
         constructors[0].newInstance(props.toProperties());
       } catch (final Exception e) {
@@ -396,70 +389,6 @@ public class AzkabanExecutorServer {
   public FlowRunnerManager getFlowRunnerManager() {
     return this.runnerManager;
   }
-
-  private void configureMBeanServer() {
-    logger.info("Registering MBeans...");
-    this.mbeanServer = ManagementFactory.getPlatformMBeanServer();
-
-    registerMbean("executorJetty", new JmxJettyServer(this.server));
-    registerMbean("flowRunnerManager", new JmxFlowRunnerManager(this.runnerManager));
-    registerMbean("jobJMXMBean", JmxJobMBeanManager.getInstance());
-
-    if (JobCallbackManager.isInitialized()) {
-      final JobCallbackManager jobCallbackMgr = JobCallbackManager.getInstance();
-      registerMbean("jobCallbackJMXMBean",
-          jobCallbackMgr.getJmxJobCallbackMBean());
-    }
-  }
-
-  public void close() {
-    try {
-      for (final ObjectName name : this.registeredMBeans) {
-        this.mbeanServer.unregisterMBean(name);
-        logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
-      }
-    } catch (final Exception e) {
-      logger.error("Failed to cleanup MBeanServer", e);
-    }
-  }
-
-  private void registerMbean(final String name, final Object mbean) {
-    final Class<?> mbeanClass = mbean.getClass();
-    final ObjectName mbeanName;
-    try {
-      mbeanName = new ObjectName(mbeanClass.getName() + ":name=" + name);
-      this.mbeanServer.registerMBean(mbean, mbeanName);
-      logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
-      this.registeredMBeans.add(mbeanName);
-    } catch (final Exception e) {
-      logger.error("Error registering mbean " + mbeanClass.getCanonicalName(),
-          e);
-    }
-
-  }
-
-  public List<ObjectName> getMbeanNames() {
-    return this.registeredMBeans;
-  }
-
-  public MBeanInfo getMBeanInfo(final ObjectName name) {
-    try {
-      return this.mbeanServer.getMBeanInfo(name);
-    } catch (final Exception e) {
-      logger.error(e);
-      return null;
-    }
-  }
-
-  public Object getMBeanAttribute(final ObjectName name, final String attribute) {
-    try {
-      return this.mbeanServer.getAttribute(name, attribute);
-    } catch (final Exception e) {
-      logger.error(e);
-      return null;
-    }
-  }
-
 
   /**
    * Get the hostname
@@ -546,6 +475,27 @@ public class AzkabanExecutorServer {
     this.server.stop();
     this.server.destroy();
     getFlowRunnerManager().shutdownNow();
-    close();
+    this.mbeanRegistrationManager.closeMBeans();
+  }
+
+  @Override
+  public void configureMBeanServer() {
+    logger.info("Registering MBeans...");
+
+    this.mbeanRegistrationManager.registerMBean("executorJetty", new JmxJettyServer(this.server));
+    this.mbeanRegistrationManager
+        .registerMBean("flowRunnerManager", new JmxFlowRunnerManager(this.runnerManager));
+    this.mbeanRegistrationManager.registerMBean("jobJMXMBean", JmxJobMBeanManager.getInstance());
+
+    if (JobCallbackManager.isInitialized()) {
+      final JobCallbackManager jobCallbackMgr = JobCallbackManager.getInstance();
+      this.mbeanRegistrationManager
+          .registerMBean("jobCallbackJMXMBean", jobCallbackMgr.getJmxJobCallbackMBean());
+    }
+  }
+
+  @Override
+  public MBeanRegistrationManager getMBeanRegistrationManager() {
+    return this.mbeanRegistrationManager;
   }
 }

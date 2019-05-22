@@ -17,11 +17,14 @@ package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
@@ -37,11 +40,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ExecutionControllerTest {
 
+  private final CommonMetrics commonMetrics = new CommonMetrics(
+      new MetricsManager(new MetricRegistry()));
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new
       HashMap<>();
@@ -55,9 +61,6 @@ public class ExecutionControllerTest {
   private AlerterHolder alertHolder;
   private ExecutorHealthChecker executorHealthChecker;
   private Props props;
-  private final CommonMetrics commonMetrics = new CommonMetrics(
-      new MetricsManager(new MetricRegistry()));
-
   private User user;
   private ExecutableFlow flow1;
   private ExecutableFlow flow2;
@@ -171,12 +174,25 @@ public class ExecutionControllerTest {
 
   @Test
   public void testSubmitFlowsExceedingMaxConcurrentRuns() throws Exception {
+    this.props.put(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST, "exectest1,"
+        + "exec2,3");
     submitFlow(this.flow2, this.ref2);
     submitFlow(this.flow3, this.ref3);
     assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
         ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
         .flow4.getId() + " has more than 1 concurrent runs. Skipping");
   }
+
+  @Test
+  public void testSubmitFlowsConcurrentWhitelist() throws Exception {
+    this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
+    submitFlow(this.flow2, this.ref2);
+    submitFlow(this.flow3, this.ref3);
+    assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
+        ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
+        .flow4.getId() + " has more than 1 concurrent runs. Skipping");
+  }
+
 
   @Test
   public void testSubmitFlowsWithSkipOption() throws Exception {
@@ -210,6 +226,41 @@ public class ExecutionControllerTest {
     // Verify that executor is called to cancel flow2.
     verify(this.apiGateway).callWithReferenceByUser(this.ref2, ConnectorParams.CANCEL_ACTION,
         this.user.getUserId());
+  }
+
+  @Test
+  public void testSetFlowLock() throws Exception {
+    // trying to execute a locked flow should raise an error
+    this.flow1.setLocked(true);
+    final String msg = this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
+    assertThat(msg).isEqualTo("Flow derived-member-data for project flow is locked.");
+
+    // should succeed after unlocking the flow
+    this.flow1.setLocked(false);
+    this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
+    verify(this.loader).uploadExecutableFlow(this.flow1);
+  }
+
+  /**
+   * Test fetching application id from log data.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testGetApplicationIdFromLog() throws Exception {
+    when(this.loader.fetchActiveFlowByExecId(this.flow1.getExecutionId()))
+        .thenReturn(new Pair<>(this.ref1, this.flow1));
+    // Verify that application id is obtained successfully from the log data.
+    final Map<String, Object> logData1 = ImmutableMap.of("offset", 0, "length", 33, "data",
+        "Submitted application_12345_6789.");
+    when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
+        .thenReturn(logData1);
+    Assert.assertEquals("12345_6789", this.controller.getApplicationId(this.flow1, "job1", 0));
+    // Verify that application id is null when log data length is 0 (no new data available).
+    final Map<String, Object> logData2 = ImmutableMap.of("offset", 33, "length", 0, "data", "");
+    when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
+        .thenReturn(logData2);
+    Assert.assertEquals(null, this.controller.getApplicationId(this.flow1, "job1", 0));
   }
 
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws

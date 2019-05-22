@@ -182,7 +182,8 @@
                     Pause
                   </button>
                 #else
-                  <button type="button" id="resumebtn" class="btn btn-info btn-sm"
+                  #set($isDisabled = "#if(${trigger.isLocked()})disabled#end")
+                  <button type="button" id="resumebtn" class="btn btn-info btn-sm  ${isDisabled}"
                           onclick="resumeTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">
                     Resume
                   </button>

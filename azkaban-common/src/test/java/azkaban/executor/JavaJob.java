@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.List;
@@ -43,33 +44,14 @@ public class JavaJob extends JavaProcessJob {
     super(jobid, sysProps, new Props(sysProps, jobProps), log);
   }
 
-  private static String getSourcePathFromClass(final Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      final String name = containedClass.getName();
-      final StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
-  }
-
   @Override
   protected List<String> getClassPaths() {
     final List<String> classPath = super.getClassPaths();
 
-    classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
-    classPath.add(getSourcePathFromClass(Props.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(JavaJobRunnerMain.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
 
-    final String loggerPath = getSourcePathFromClass(org.apache.log4j.Logger.class);
+    final String loggerPath = FileIOUtils.getSourcePathFromClass(org.apache.log4j.Logger.class);
     if (!classPath.contains(loggerPath)) {
       classPath.add(loggerPath);
     }

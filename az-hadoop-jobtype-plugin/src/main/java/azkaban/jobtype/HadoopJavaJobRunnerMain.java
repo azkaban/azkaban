@@ -13,17 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
@@ -39,7 +35,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -48,11 +43,11 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+
 
 public class HadoopJavaJobRunnerMain {
 
@@ -67,8 +62,8 @@ public class HadoopJavaJobRunnerMain {
 
   public static final String CANCEL_METHOD_PARAM = "method.cancel";
   public static final String RUN_METHOD_PARAM = "method.run";
-  public static final String[] PROPS_CLASSES = new String[] {
-      "azkaban.utils.Props", "azkaban.common.utils.Props" };
+  public static final String[] PROPS_CLASSES = new String[]{
+      "azkaban.utils.Props", "azkaban.common.utils.Props"};
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout("%p %m\n");
 
@@ -194,17 +189,17 @@ public class HadoopJavaJobRunnerMain {
       try {
         final Method generatedPropertiesMethod =
             _javaObject.getClass().getMethod(GET_GENERATED_PROPERTIES_METHOD,
-                new Class<?>[] {});
+                new Class<?>[]{});
         Object outputGendProps =
-            generatedPropertiesMethod.invoke(_javaObject, new Object[] {});
+            generatedPropertiesMethod.invoke(_javaObject, new Object[]{});
 
         if (outputGendProps != null) {
           final Method toPropertiesMethod =
               outputGendProps.getClass().getMethod("toProperties",
-                  new Class<?>[] {});
+                  new Class<?>[]{});
           Properties properties =
               (Properties) toPropertiesMethod.invoke(outputGendProps,
-                  new Object[] {});
+                  new Object[]{});
 
           Props outputProps = new Props(null, properties);
           outputGeneratedProperties(outputProps);
@@ -247,7 +242,7 @@ public class HadoopJavaJobRunnerMain {
   private void runMethod(Object obj, String runMethod)
       throws IllegalAccessException, InvocationTargetException,
       NoSuchMethodException {
-    obj.getClass().getMethod(runMethod, new Class<?>[] {}).invoke(obj);
+    obj.getClass().getMethod(runMethod, new Class<?>[]{}).invoke(obj);
   }
 
   private void outputGeneratedProperties(Props outputProperties) {
@@ -305,7 +300,7 @@ public class HadoopJavaJobRunnerMain {
       } catch (NoSuchMethodException e) {
       }
 
-      if (method != null)
+      if (method != null) {
         try {
           method.invoke(_javaObject);
         } catch (Exception e) {
@@ -313,7 +308,7 @@ public class HadoopJavaJobRunnerMain {
             _logger.error("Cancel method failed! ", e);
           }
         }
-      else {
+      } else {
         throw new RuntimeException("Job " + _jobName
             + " does not have cancel method " + _cancelMethod);
       }
@@ -369,7 +364,7 @@ public class HadoopJavaJobRunnerMain {
       Constructor<?> propsCon =
           getConstructor(propsClass, propsClass, Properties[].class);
       Object props =
-          propsCon.newInstance(null, new Properties[] { properties });
+          propsCon.newInstance(null, new Properties[]{properties});
 
       Constructor<?> con =
           getConstructor(runningClass, String.class, propsClass);
