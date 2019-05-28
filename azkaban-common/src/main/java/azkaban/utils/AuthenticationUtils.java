@@ -17,11 +17,7 @@ package azkaban.utils;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL.Token;
@@ -37,21 +33,23 @@ public class AuthenticationUtils {
 
   public static HttpURLConnection loginAuthenticatedURL(final URL url, final String keytabPrincipal,
       final String keytabPath) throws Exception {
-    final List<URL> resources = new ArrayList<>();
-    resources.add(url);
-
-    final URLClassLoader ucl = new URLClassLoader(resources.toArray(new URL[resources.size()]));
-    final Configuration conf = new Configuration();
-    conf.setClassLoader(ucl);
-    UserGroupInformation.setConfiguration(conf);
 
     logger.info(
         "Logging in URL: " + url.toString() + " using Principal: " + keytabPrincipal + ", Keytab: "
             + keytabPath);
 
-    UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
+    UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
 
-    final HttpURLConnection connection = UserGroupInformation.getLoginUser().doAs(
+    if (loginUser == null) {
+      UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
+      loginUser = UserGroupInformation.getLoginUser();
+      logger.info("Logged in with user " + loginUser);
+    } else {
+      logger.info("Login user (" + loginUser + ") already created, refreshing tgt.");
+      loginUser.checkTGTAndReloginFromKeytab();
+    }
+
+    final HttpURLConnection connection = loginUser.doAs(
         (PrivilegedExceptionAction<HttpURLConnection>) () -> {
           final Token token = new Token();
           return new AuthenticatedURL().openConnection(url, token);
