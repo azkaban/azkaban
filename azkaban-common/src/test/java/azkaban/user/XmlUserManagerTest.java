@@ -16,28 +16,35 @@
 
 package azkaban.user;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
 import com.google.common.io.Resources;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileTime;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +52,20 @@ public class XmlUserManagerTest {
 
   private static final Logger log = LoggerFactory.getLogger(XmlUserManagerTest.class);
   private final Props baseProps = new Props();
+  @Mock
+  private FileWatcher fileWatcher;
+  @Mock
+  private WatchKey watchKey;
+  @Mock
+  private WatchEvent<Path> watchEvent;
 
   @Before
   public void setUp() throws Exception {
+    MockitoAnnotations.initMocks(this);
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
   }
 
   /**
@@ -63,7 +77,7 @@ public class XmlUserManagerTest {
 
     // Should throw
     try {
-      final XmlUserManager manager = new XmlUserManager(props);
+      final XmlUserManager manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final UndefinedPropertyException e) {
       return;
     }
@@ -80,7 +94,7 @@ public class XmlUserManagerTest {
     props.put(XmlUserManager.XML_FILE_PARAM, "unit/test-conf/doNotExist.xml");
 
     try {
-      final UserManager manager = new XmlUserManager(props);
+      final UserManager manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final RuntimeException e) {
       return;
     }
@@ -100,25 +114,17 @@ public class XmlUserManagerTest {
     final String path = origpath.replace("test1", "test1_auto_reload");
     final Path filePath = Paths.get(path);
     Files.copy(Paths.get(origpath), filePath, StandardCopyOption.REPLACE_EXISTING);
-    // sleep for a second to have different modification time.
-    Thread.sleep(1000L);
     props.put(XmlUserManager.XML_FILE_PARAM, path);
 
-    final UserManager manager;
-    try {
-      manager = new XmlUserManager(props);
-    } catch (final RuntimeException e) {
-      fail("Should have found the xml file");
-      return;
-    }
+    final CountDownLatch managerLoaded = setupMocks(filePath);
+
+    final UserManager manager = new XmlUserManager(props, () -> this.fileWatcher);
 
     // Get the user8 from existing XML with password == password8
     User user8 = manager.getUser("user8", "password8");
 
     // Modify the password for user8
     // TODO : djaiswal : Find a better way to modify XML
-    final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
-    log.info("File modification time = " + origModifiedTime.toString());
     final List<String> lines = new ArrayList<>();
     for (final String line : Files.readAllLines(filePath)) {
       if (line.contains("password8")) {
@@ -132,38 +138,28 @@ public class XmlUserManagerTest {
     try {
       // Update the file
       Files.write(filePath, lines);
-      final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
-      log.info("File modification time after write = " + lastModifiedTime.toString());
-      if (origModifiedTime.equals(lastModifiedTime)) {
-        // File did not update
-        fail("File did not update.");
-      }
-      // Try for 30 seconds polling every 10 seconds if the config is reloaded
-      Awaitility.await().atMost(30L, TimeUnit.SECONDS).
-          pollInterval(10L, TimeUnit.SECONDS).until(
+
+      managerLoaded.countDown();
+
+      // Wait until login fails with the old password
+      Awaitility.await().atMost(10L, TimeUnit.SECONDS).
+          pollInterval(10L, TimeUnit.MILLISECONDS).until(
           () -> {
             User user;
             try {
               user = manager.getUser("user8", "password8");
             } catch (final UserManagerException e) {
-              log.info("user8 has updated password. ", e);
               user = null;
             }
             return user == null;
           });
 
-      // Fetch the updated user8 info
-      try {
-        user8 = manager.getUser("user8", "passwordModified");
-        if (!user8.getUserId().equals("user8")) {
-          fail("Failed to get correct user. Expected user8, got " + user8.getUserId());
-        }
-        log.info("Config reloaded successfully.");
-      } catch (final UserManagerException e) {
-        fail("Test failed " + e.toString());
-      }
-    } catch (final ConditionTimeoutException te) {
-      fail("The config did not reload in 30 seconds");
+      // Assert that login succeeds with the modified password
+      user8 = manager.getUser("user8", "passwordModified");
+      assertEquals("user8", user8.getUserId());
+
+      Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
+
     } finally {
       // Delete the file
       Files.delete(filePath);
@@ -182,13 +178,13 @@ public class XmlUserManagerTest {
     final String path = origpath.replace("test1", "test1_auto_reload_fail");
     final Path filePath = Paths.get(path);
     Files.copy(Paths.get(origpath), filePath, StandardCopyOption.REPLACE_EXISTING);
-    // sleep for a second to have different modification time.
-    Thread.sleep(1000L);
     props.put(XmlUserManager.XML_FILE_PARAM, path);
+
+    final CountDownLatch managerLoaded = setupMocks(filePath);
 
     final UserManager manager;
     try {
-      manager = new XmlUserManager(props);
+      manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final RuntimeException e) {
       fail("Should have found the xml file");
       return;
@@ -196,39 +192,22 @@ public class XmlUserManagerTest {
 
     // Get the user8 from existing XML with password == password8
     final User user8 = manager.getUser("user8", "password8");
+    assertEquals("user8", user8.getUserId());
 
-    // Modify the password for user8
-    // TODO : djaiswal : Find a better way to modify XML
-    final FileTime origModifiedTime = Files.getLastModifiedTime(filePath);
-    log.info("File modification time = " + origModifiedTime.toString());
+    // Update the file to make it empty.
+    Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
+    managerLoaded.countDown();
 
     // Make sure the file gets reverted back.
     try {
-      // Update the file to make it empty.
-      Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
-      final FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
-      log.info("File modification time after write = " + lastModifiedTime.toString());
-      if (origModifiedTime.equals(lastModifiedTime)) {
-        // File did not update
-        fail("File did not update.");
-      }
-      // Try for 30 seconds polling every 10 seconds if the config is reloaded
-      Awaitility.await().atMost(30L, TimeUnit.SECONDS).
-          pollInterval(10L, TimeUnit.SECONDS).until(
-          () -> {
-            User user;
-            try {
-              user = manager.getUser("user8", "password8");
-            } catch (final UserManagerException e) {
-              log.info("user8 has updated password. ", e);
-              user = null;
-            }
-            return user == null;
-          });
+      managerLoaded.await(10L, TimeUnit.SECONDS);
+      assertEquals(0, managerLoaded.getCount());
+      // assert that watcher.take() was still called after the failed reload
+      Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
 
-      fail("Test should never reach here.");
-    } catch (final ConditionTimeoutException te) {
-      log.info("The config did not reload in 30 seconds due to bad config data.");
+      // Nothing should've changed, login should succeed as originally
+      final User user = manager.getUser("user8", "password8");
+      assertEquals("user8", user.getUserId());
     } finally {
       // Delete the file
       Files.delete(filePath);
@@ -244,7 +223,7 @@ public class XmlUserManagerTest {
 
     UserManager manager = null;
     try {
-      manager = new XmlUserManager(props);
+      manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final RuntimeException e) {
       e.printStackTrace();
       fail("XmlUserManager should've found file azkaban-users.xml");
@@ -304,6 +283,32 @@ public class XmlUserManagerTest {
 
     final User user9 = manager.getUser("user9", "password9");
     checkUser(user9, "", "");
+  }
+
+  private CountDownLatch setupMocks(final Path filePath) throws IOException, InterruptedException {
+    // mock registering the parent folder, but only if registered with the right args
+    Mockito.doReturn(this.watchKey).when(this.fileWatcher).register(
+        Paths.get(filePath.getParent().toString()));
+
+    Mockito.doReturn(this.watchKey).when(this.fileWatcher).take();
+
+    Mockito.doReturn(filePath).when(this.watchEvent).context();
+
+    // thread-safe latch to allow releasing an event
+    final CountDownLatch managerLoaded = new CountDownLatch(2);
+
+    Mockito.doAnswer(invocation -> {
+      // avoid busy-looping in UserUtils.java
+      long sleepMillis = managerLoaded.getCount() == 0 ? 5_000L : 10L;
+      if (managerLoaded.getCount() == 1) {
+        // go back to returning an empty list
+        managerLoaded.countDown();
+        return Collections.singletonList(this.watchEvent);
+      }
+      Thread.sleep(sleepMillis);
+      return Collections.emptyList();
+    }).when(this.fileWatcher).pollEvents(this.watchKey);
+    return managerLoaded;
   }
 
   private void checkUser(final User user, final String rolesStr, final String groupsStr) {
