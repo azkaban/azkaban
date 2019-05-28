@@ -189,6 +189,15 @@ public class JobCallbackUtilTest {
   }
 
   @Test
+  public void multipleOccurrencesOfTheSameTokenTest() {
+    final String urlWithOneToken =
+        "test1=" + CONTEXT_FLOW_TOKEN + "&test2=" + CONTEXT_FLOW_TOKEN;
+    final String result =
+        JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
+    Assert.assertEquals("test1=" + FLOW_NAME + "&test2=" + FLOW_NAME, result);
+  }
+
+  @Test
   public void allTokensTest() {
 
     final String urlWithOneToken =
