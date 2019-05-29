@@ -41,7 +41,7 @@ public class FileWatcherTest {
   private Path setPath() {
     final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
     final String origpath = configURL.getPath();
-    // Copy the file to keep original file unmodified
+    // Generate a path for test file.
     final String path = origpath.replace("test1", "file_watcher");
     return Paths.get(path);
   }
