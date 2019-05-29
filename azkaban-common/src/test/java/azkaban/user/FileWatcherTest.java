@@ -18,8 +18,10 @@ package azkaban.user;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.io.Resources;
 import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,8 +35,16 @@ import org.junit.Test;
 
 public class FileWatcherTest {
 
-  private static final Path PATH = Paths.get("build/tmp/FileWatcherTest");
+  private final Path PATH = setPath();
   private FileWatcher fileWatcher;
+
+  private Path setPath() {
+    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
+    final String origpath = configURL.getPath();
+    // Generate a path for test file.
+    final String path = origpath.replace("test1", "file_watcher");
+    return Paths.get(path);
+  }
 
   @Before
   public void setUp() throws Exception {
