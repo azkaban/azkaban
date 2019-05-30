@@ -21,17 +21,15 @@ import azkaban.flow.Flow;
 import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
-import azkaban.user.FileWatcher;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import com.google.common.base.Charsets;
-import org.apache.commons.io.IOUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Commonly used utils method for unit/integration tests
@@ -78,7 +76,7 @@ public class TestUtils {
     final Props props = new Props();
     props.put(XmlUserManager.XML_FILE_PARAM, ExecutionsTestUtil.getDataRootDir()
         + "azkaban-users.xml");
-    final UserManager manager = new XmlUserManager(props, FileWatcher::new);
+    final UserManager manager = new XmlUserManager(props);
     return manager;
   }
 
