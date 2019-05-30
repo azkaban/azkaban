@@ -69,9 +69,13 @@ public class XmlUserManager implements UserManager {
   private HashMap<String, Set<String>> proxyUserMap;
 
   /**
-   * The constructor.
+   * The mandatory UserManager(Props) constructor, which is called via reflection.
    */
-  public XmlUserManager(final Props props, final FileWatcherFactory fileWatcherFactory) {
+  public XmlUserManager(final Props props) {
+    this(props, FileWatcher::new);
+  }
+
+  XmlUserManager(final Props props, final FileWatcherFactory fileWatcherFactory) {
     this.xmlPath = props.getString(XML_FILE_PARAM);
 
     parseXMLFile();
