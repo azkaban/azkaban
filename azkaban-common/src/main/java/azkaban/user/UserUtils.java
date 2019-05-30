@@ -43,7 +43,7 @@ public final class UserUtils {
    * Creates a watch thread which listens to specified files' modification and reloads
    * configurations
    */
-  static void setupWatch(final Map<String, ParseConfigFile> configFileMap,
+  public static void setupWatch(final Map<String, ParseConfigFile> configFileMap,
       final FileWatcher watcher) {
     Preconditions.checkNotNull(configFileMap);
     Preconditions.checkArgument(configFileMap.size() > 0);
