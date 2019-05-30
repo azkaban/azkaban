@@ -16,6 +16,7 @@
 
 package azkaban.user;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.io.Resources;
@@ -72,12 +73,14 @@ public class FileWatcherTest {
 
     final WatchKey key = this.fileWatcher.take();
     final List<WatchEvent<?>> events = this.fileWatcher.pollEvents(key);
-    assertEquals(1, events.size());
+    // depending on the OS & file system there may be at least 1 or 2 events even with 1 write()
+    assertThat(events.size()).isGreaterThanOrEqualTo(1);
 
-    final WatchEvent<?> event = events.get(0);
-    @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
-    final String resolvedFileName = dir.resolve(name).toString();
-    assertEquals(PATH.toString(), resolvedFileName);
+    for (WatchEvent<?> event : events) {
+      @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
+      final String resolvedFileName = dir.resolve(name).toString();
+      assertEquals(PATH.toString(), resolvedFileName);
+    }
   }
 
   private void write() throws IOException {
