@@ -341,6 +341,22 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("jobLinkUrl", jobLinkUrl);
     page.add("jobType", node.getType());
 
+    final Status attemptStatus;
+    if (attempt == node.getAttempt()) {
+      attemptStatus = node.getStatus();
+    } else {
+      attemptStatus = node.getPastAttemptList().get(attempt).getStatus();
+    }
+    page.add("attemptStatus", attemptStatus.toString());
+
+    final int pastAttempts;
+    if (node.getAttempt() > 0) {
+      pastAttempts = node.getPastAttemptList().size();
+    } else {
+      pastAttempts = 0;
+    }
+    page.add("pastAttempts", pastAttempts);
+
     if (node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED) {
       page.add("jobFailed", true);
     } else {

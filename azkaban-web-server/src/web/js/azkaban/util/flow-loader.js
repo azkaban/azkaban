@@ -76,7 +76,7 @@ var nodeClickCallback = function (event, model, node) {
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
       + flowId + "&job=" + jobId;
   var logURL = contextURL + "/executor?execid=" + execId + "&job="
-      + node.nestedId;
+      + node.nestedId + "&attempt=" + node.attempt;
   var menu = [];
 
   if (type == "flow") {
