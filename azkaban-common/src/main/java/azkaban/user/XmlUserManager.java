@@ -16,6 +16,7 @@
 
 package azkaban.user;
 
+import azkaban.user.FileWatcher.FileWatcherFactory;
 import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
 import java.io.File;
@@ -68,9 +69,13 @@ public class XmlUserManager implements UserManager {
   private HashMap<String, Set<String>> proxyUserMap;
 
   /**
-   * The constructor.
+   * The mandatory UserManager(Props) constructor, which is called via reflection.
    */
   public XmlUserManager(final Props props) {
+    this(props, FileWatcher::new);
+  }
+
+  XmlUserManager(final Props props, final FileWatcherFactory fileWatcherFactory) {
     this.xmlPath = props.getString(XML_FILE_PARAM);
 
     parseXMLFile();
@@ -80,9 +85,9 @@ public class XmlUserManager implements UserManager {
     final Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
     parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
     try {
-      UserUtils.setupWatch(parseConfigFileMap);
+      UserUtils.setupWatch(parseConfigFileMap, fileWatcherFactory.get());
     } catch (final IOException e) {
-      logger.warn(" Failed to create WatchService " + e.getMessage());
+      logger.warn("Failed to create WatchService", e);
     }
   }
 

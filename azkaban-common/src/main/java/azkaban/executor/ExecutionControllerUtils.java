@@ -318,7 +318,14 @@ public class ExecutionControllerUtils {
       jobLinkUrl = url.toString();
     } else {
       // If RM job link is invalid or has expired, fetch the job link from JHS or SHS.
-      if (exFlow.getExecutableNode(jobId).getType().equals(SPARK_JOB_TYPE)) {
+      final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
+      if (node == null) {
+        logger.error(
+            "Invalid job link. Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+        return null;
+      }
+
+      if (node.getType().equals(SPARK_JOB_TYPE)) {
         jobLinkUrl =
             azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL).replace
                 (APPLICATION_ID, applicationId);

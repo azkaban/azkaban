@@ -30,7 +30,7 @@
   <script type="text/javascript" src="${context}/js/flowstats.js"></script>
   <script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js?v=1559149862"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-trigger-list.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>

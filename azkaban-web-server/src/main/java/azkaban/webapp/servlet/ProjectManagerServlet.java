@@ -31,6 +31,7 @@ import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
+import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.project.ProjectWhitelist;
@@ -70,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -80,18 +82,19 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
+
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
   static final String FLOW_NAME_PARAM = "flowName";
   static final String FLOW_ID_PARAM = "flowId";
   static final String ERROR_PARAM = "error";
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
-  private static final Logger logger = Logger
-      .getLogger(ProjectManagerServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
   private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
       new NodeLevelComparator();
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
@@ -1119,7 +1122,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * @param project the project for the flow.
    * @param ret the return value.
    * @param req the http request.
-   * @throws ServletException
    */
   private void ajaxSetFlowLock(final Project project,
       final HashMap<String, Object> ret, final HttpServletRequest req)
@@ -1132,20 +1134,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    boolean isLocked = Boolean.parseBoolean(getParam(req, FLOW_IS_LOCKED_PARAM));
+    final boolean isLocked = Boolean.parseBoolean(getParam(req, FLOW_IS_LOCKED_PARAM));
 
     // if there is a change in the locked value, then check to see if the project has a flow trigger
     // that needs to be paused/resumed.
     if (isLocked != flow.isLocked()) {
       try {
-        if (projectManager.hasFlowTrigger(project, flow)) {
+        if (this.projectManager.hasFlowTrigger(project, flow)) {
           if (isLocked) {
             if (this.scheduler.pauseFlowTriggerIfPresent(project.getId(), flow.getId())) {
               logger.info("Flow trigger for flow " + project.getName() + "." + flow.getId() +
-                      " is paused");
+                  " is paused");
             } else {
               logger.warn("Flow trigger for flow " + project.getName() + "." + flow.getId() +
-              " doesn't exist");
+                  " doesn't exist");
             }
           } else {
             if (this.scheduler.resumeFlowTriggerIfPresent(project.getId(), flow.getId())) {
@@ -1157,7 +1159,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             }
           }
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         ret.put(ERROR_PARAM, e);
       }
     }
@@ -1174,7 +1176,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * @param project the project containing the flow.
    * @param ret the return value.
    * @param req the http request.
-   * @throws ServletException
    */
   private void ajaxIsFlowLocked(final Project project,
       final HashMap<String, Object> ret, final HttpServletRequest req)
@@ -1754,16 +1755,26 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
-    final Project project = this.projectManager.getProject(projectName);
-    if (project == null || !project.isActive()) {
-      final String failureCause = project == null ? "doesn't exist." : "was already removed.";
-      registerError(ret, "Installation Failed. Project '" + projectName + " "
-          + failureCause, resp, 410);
+    final Project project = validateUploadAndGetProject(resp, ret, user, projectName);
+    if (project == null) {
       return;
     }
 
-    logger.info(
-        "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
+    final FileItem item = (FileItem) multipart.get("file");
+    final String name = item.getName();
+    String type = null;
+
+    final String contentType = item.getContentType();
+    if (contentType != null && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) ||
+        contentType.startsWith("application/x-zip-compressed") ||
+        contentType.startsWith("application/octet-stream"))) {
+      type = "zip";
+    } else {
+      item.delete();
+      registerError(ret, "File type " + contentType + " unrecognized.", resp,
+          HttpServletResponse.SC_BAD_REQUEST);
+      return;
+    }
 
     final String autoFix = (String) multipart.get("fix");
 
@@ -1774,144 +1785,178 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
     }
 
+    ret.put("projectId", String.valueOf(project.getId()));
+
+    final File tempDir = Utils.createTempDir();
+    OutputStream out = null;
+    try {
+      logger.info("Uploading file " + name);
+      final File archiveFile = new File(tempDir, name);
+      out = new BufferedOutputStream(new FileOutputStream(archiveFile));
+      IOUtils.copy(item.getInputStream(), out);
+      out.close();
+
+      if (this.enableQuartz) {
+        //todo chengren311: should maintain atomicity,
+        // e.g, if uploadProject fails, associated schedule shouldn't be added.
+        this.scheduler.unschedule(project);
+      }
+
+      // get the locked flows for the project, so that they can be locked again after upload
+      final List<String> lockedFlows = getLockedFlows(project);
+
+      final Map<String, ValidationReport> reports = this.projectManager
+          .uploadProject(project, archiveFile, type, user, props);
+
+      if (this.enableQuartz) {
+        this.scheduler.schedule(project, user.getUserId());
+      }
+
+      // reset locks for flows as needed
+      lockFlowsForProject(project, lockedFlows);
+
+      // remove schedule of renamed/deleted flows
+      removeScheduleOfDeletedFlows(project, this.scheduleManager, (schedule) -> {
+        logger.info(
+            "Removed schedule with id {} of renamed/deleted flow: {} from project: {}.",
+            schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
+        this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
+            "Schedule " + schedule.toString() + " has been removed.");
+      });
+
+      registerErrorsAndWarningsFromValidationReport(resp, ret, reports);
+    } catch (final Exception e) {
+      logger.info("Installation Failed.", e);
+      String error = e.getMessage();
+      if (error.length() > 512) {
+        error = error.substring(0, 512) + "<br>Too many errors to display.<br>";
+      }
+      registerError(ret, "Installation Failed.<br>" + error, resp,
+          HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    } finally {
+      if (out != null) {
+        out.close();
+      }
+      if (tempDir.exists()) {
+        FileUtils.deleteDirectory(tempDir);
+      }
+    }
+
+    logger.info("Upload: project " + projectName + " version is " + project.getVersion()
+        + ", reference is " + System.identityHashCode(project));
+    ret.put("version", String.valueOf(project.getVersion()));
+  }
+
+  /**
+   * @return project. Null if invalid upload params or not enough permissions to proceed.
+   */
+  private Project validateUploadAndGetProject(final HttpServletResponse resp,
+      final Map<String, String> ret, final User user, final String projectName) {
+    if (projectName == null || projectName.isEmpty()) {
+      registerError(ret, "No project name found.", resp, HttpServletResponse.SC_BAD_REQUEST);
+      return null;
+    }
+    final Project project = this.projectManager.getProject(projectName);
+    if (project == null || !project.isActive()) {
+      final String failureCause = (project == null) ? "doesn't exist." : "was already removed.";
+      registerError(ret, "Installation Failed. Project '" + projectName + " "
+          + failureCause, resp, HttpServletResponse.SC_GONE);
+      return null;
+    }
+
+    logger.info(
+        "Upload: reference of project " + projectName + " is " + System.identityHashCode(project));
+
     if (this.lockdownUploadProjects && !UserUtils
         .hasPermissionforAction(this.userManager, user, Type.UPLOADPROJECTS)) {
       final String message =
           "Project uploading is locked out. Only admin users and users with special permissions can upload projects. "
               + "User " + user.getUserId() + " doesn't have permission to upload project.";
       logger.info(message);
-      registerError(ret, message, resp, 403);
-    } else if (projectName == null || projectName.isEmpty()) {
-      registerError(ret, "No project name found.", resp, 400);
-    } else if (project == null) {
-      registerError(ret, "Installation Failed. Project '" + projectName
-          + "' doesn't exist.", resp, 400);
-    } else if (!hasPermission(project, user, Type.WRITE)) {
-      registerError(ret, "Installation Failed. User '" + user.getUserId()
-          + "' does not have write access.", resp, 400);
-    } else {
-      ret.put("projectId", String.valueOf(project.getId()));
+      registerError(ret, message, resp, HttpServletResponse.SC_FORBIDDEN);
+      return null;
+    }
+    if (!hasPermission(project, user, Type.WRITE)) {
+      registerError(ret,
+          "Installation Failed. User '" + user.getUserId() + "' does not have write access.",
+          resp, HttpServletResponse.SC_BAD_REQUEST);
+      return null;
+    }
+    return project;
+  }
 
-      final FileItem item = (FileItem) multipart.get("file");
-      final String name = item.getName();
-      String type = null;
+  /**
+   * Remove schedule of renamed/deleted flows
+   *
+   * @param project project from which old flows will be unscheduled
+   * @param scheduleManager the schedule manager
+   * @param onDeletedSchedule a callback function to execute with every deleted schedule
+   */
+  static void removeScheduleOfDeletedFlows(final Project project,
+      final ScheduleManager scheduleManager, final Consumer<Schedule> onDeletedSchedule)
+      throws ScheduleManagerException {
+    final Set<String> flowNameList = project.getFlows().stream().map(f -> f.getId()).collect(
+        Collectors.toSet());
 
-      final String contentType = item.getContentType();
-      if (contentType != null
-          && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE)
-          || contentType.startsWith("application/x-zip-compressed") || contentType
-          .startsWith("application/octet-stream"))) {
-        type = "zip";
-      } else {
-        item.delete();
-        registerError(ret, "File type " + contentType + " unrecognized.", resp, 400);
-
-        return;
+    for (final Schedule schedule : scheduleManager.getSchedules()) {
+      if (schedule.getProjectId() == project.getId() &&
+          !flowNameList.contains(schedule.getFlowName())) {
+        scheduleManager.removeSchedule(schedule);
+        onDeletedSchedule.accept(schedule);
       }
-
-      final File tempDir = Utils.createTempDir();
-      OutputStream out = null;
-      try {
-        logger.info("Uploading file " + name);
-        final File archiveFile = new File(tempDir, name);
-        out = new BufferedOutputStream(new FileOutputStream(archiveFile));
-        IOUtils.copy(item.getInputStream(), out);
-        out.close();
-
-        if (this.enableQuartz) {
-          //todo chengren311: should maintain atomicity,
-          // e.g, if uploadProject fails, associated schedule shouldn't be added.
-          this.scheduler.unschedule(project);
-        }
-
-        // get the locked flows for the project, so that they can be locked again after upload
-        List<String> lockedFlows = getLockedFlows(project);
-
-        final Map<String, ValidationReport> reports =
-            this.projectManager.uploadProject(project, archiveFile, type, user,
-                props);
-
-        if (this.enableQuartz) {
-          this.scheduler.schedule(project, user.getUserId());
-        }
-
-        // reset locks for flows as needed
-        lockFlowsForProject(project, lockedFlows);
-
-        final StringBuffer errorMsgs = new StringBuffer();
-        final StringBuffer warnMsgs = new StringBuffer();
-        for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
-          final ValidationReport report = reportEntry.getValue();
-          if (!report.getInfoMsgs().isEmpty()) {
-            for (final String msg : report.getInfoMsgs()) {
-              switch (ValidationReport.getInfoMsgLevel(msg)) {
-                case ERROR:
-                  errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                  break;
-                case WARN:
-                  warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                  break;
-                default:
-                  break;
-              }
-            }
-          }
-          if (!report.getErrorMsgs().isEmpty()) {
-            errorMsgs.append("Validator " + reportEntry.getKey()
-                + " reports errors:<ul>");
-            for (final String msg : report.getErrorMsgs()) {
-              errorMsgs.append("<li>" + msg + "</li>");
-            }
-            errorMsgs.append("</ul>");
-          }
-          if (!report.getWarningMsgs().isEmpty()) {
-            warnMsgs.append("Validator " + reportEntry.getKey()
-                + " reports warnings:<ul>");
-            for (final String msg : report.getWarningMsgs()) {
-              warnMsgs.append("<li>" + msg + "</li>");
-            }
-            warnMsgs.append("</ul>");
-          }
-        }
-        if (errorMsgs.length() > 0) {
-          // If putting more than 4000 characters in the cookie, the entire
-          // message
-          // will somehow get discarded.
-          registerError(ret, errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
-              : errorMsgs.toString(), resp, 500);
-        }
-        if (warnMsgs.length() > 0) {
-          ret.put(
-              "warn",
-              warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs
-                  .toString());
-        }
-      } catch (final Exception e) {
-        logger.info("Installation Failed.", e);
-        String error = e.getMessage();
-        if (error.length() > 512) {
-          error =
-              error.substring(0, 512) + "<br>Too many errors to display.<br>";
-        }
-        registerError(ret, "Installation Failed.<br>" + error, resp, 500);
-      } finally {
-        if (out != null) {
-          out.close();
-        }
-        if (tempDir.exists()) {
-          FileUtils.deleteDirectory(tempDir);
-        }
-      }
-
-      logger.info("Upload: project " + projectName + " version is " + project.getVersion()
-          + ", reference is " + System.identityHashCode(project));
-      ret.put("version", String.valueOf(project.getVersion()));
     }
   }
 
-  /** @return the list of locked flows for the specified project. */
-  private List<String> getLockedFlows(Project project) {
-    List<Flow> flows = project.getFlows();
+  private void registerErrorsAndWarningsFromValidationReport(final HttpServletResponse resp,
+      final Map<String, String> ret, final Map<String, ValidationReport> reports) {
+    final StringBuffer errorMsgs = new StringBuffer();
+    final StringBuffer warnMsgs = new StringBuffer();
+    for (final Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
+      final ValidationReport report = reportEntry.getValue();
+      for (final String msg : report.getInfoMsgs()) {
+        switch (ValidationReport.getInfoMsgLevel(msg)) {
+          case ERROR:
+            errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+            break;
+          case WARN:
+            warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+            break;
+          default:
+            break;
+        }
+      }
+      if (!report.getErrorMsgs().isEmpty()) {
+        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
+        for (final String msg : report.getErrorMsgs()) {
+          errorMsgs.append("<li>" + msg + "</li>");
+        }
+        errorMsgs.append("</ul>");
+      }
+      if (!report.getWarningMsgs().isEmpty()) {
+        warnMsgs.append("Validator " + reportEntry.getKey() + " reports warnings:<ul>");
+        for (final String msg : report.getWarningMsgs()) {
+          warnMsgs.append("<li>" + msg + "</li>");
+        }
+        warnMsgs.append("</ul>");
+      }
+    }
+    if (errorMsgs.length() > 0) {
+      // If putting more than 4000 characters in the cookie, the entire message will somehow
+      // get discarded.
+      registerError(ret,
+          errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000) : errorMsgs.toString(), resp,
+          HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+    if (warnMsgs.length() > 0) {
+      ret.put("warn", warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs.toString());
+    }
+  }
+
+  /**
+   * @return the list of locked flows for the specified project.
+   */
+  private List<String> getLockedFlows(final Project project) {
+    final List<Flow> flows = project.getFlows();
     return flows.stream().filter(flow -> flow.isLocked()).map(flow -> flow.getId())
         .collect(Collectors.toList());
   }
@@ -1922,9 +1967,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * @param project the project
    * @param lockedFlows list of flow IDs of flows to lock
    */
-  private void lockFlowsForProject(Project project, List<String> lockedFlows) {
-    for (String flowId: lockedFlows) {
-      Flow flow = project.getFlow(flowId);
+  private void lockFlowsForProject(final Project project, final List<String> lockedFlows) {
+    for (final String flowId : lockedFlows) {
+      final Flow flow = project.getFlow(flowId);
       if (flow != null) {
         flow.setLocked(true);
       }

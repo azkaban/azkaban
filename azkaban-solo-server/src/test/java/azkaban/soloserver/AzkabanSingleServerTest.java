@@ -86,6 +86,7 @@ public class AzkabanSingleServerTest {
     props.put("server.useSSL", "true");
     props.put("jetty.use.ssl", "false");
     props.put("user.manager.xml.file", new File(confPath, "azkaban-users.xml").getPath());
+    props.put("user.manager.class", "azkaban.user.XmlUserManager");
     props.put(ConfigurationKeys.EXECUTOR_PORT, "12321");
 
     // Quartz settings

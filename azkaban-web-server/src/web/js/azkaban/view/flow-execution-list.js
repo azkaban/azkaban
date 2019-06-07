@@ -43,7 +43,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     var flowStartTime = data.startTime;
     this.updateProgressBar(data, flowStartTime, flowLastTime);
 
-    this.expandFailedOrKilledJobs(data.nodes);
+    this.expandRunningFailedOrKilledJobs(data.nodes);
   },
 
 //
@@ -72,7 +72,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
     if (update.nodes) {
       this.updateJobRow(update.nodes, executingBody);
-      this.expandFailedOrKilledJobs(update.nodes);
+      this.expandRunningFailedOrKilledJobs(update.nodes);
     }
 
     var data = this.model.get("data");
@@ -112,8 +112,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
       var startTimeTd = $(row).find("> td.startTime");
       if (node.startTime == -1) {
         $(startTimeTd).text("-");
-      }
-      else {
+      } else {
         var startdate = new Date(node.startTime);
         $(startTimeTd).text(getDateFormat(startdate));
       }
@@ -121,8 +120,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
       var endTimeTd = $(row).find("> td.endTime");
       if (node.endTime == -1) {
         $(endTimeTd).text("-");
-      }
-      else {
+      } else {
         var enddate = new Date(node.endTime);
         $(endTimeTd).text(getDateFormat(enddate));
       }
@@ -164,8 +162,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
       if (node.endTime == -1) {
         $(elapsedTime).text(
             getDuration(node.startTime, (new Date()).getTime()));
-      }
-      else {
+      } else {
         $(elapsedTime).text(getDuration(node.startTime, node.endTime));
       }
 
@@ -297,22 +294,23 @@ azkaban.ExecutionListView = Backbone.View.extend({
     } // else do nothing
   },
 
-  expandFailedOrKilledJobs: function (nodes) {
-    var hasFailedOrKilled = false;
+  expandRunningFailedOrKilledJobs: function (nodes) {
+    var isRunningFailedOrKilled = false;
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 
       if (node.type === "flow") {
-        if (this.expandFailedOrKilledJobs(node.nodes || [])) {
-          hasFailedOrKilled = true;
+        if (this.expandRunningFailedOrKilledJobs(node.nodes || [])) {
+          isRunningFailedOrKilled = true;
           this.setFlowExpansion(node, true);
         }
 
-      } else if (node.status === "FAILED" || node.status === "KILLED") {
-        hasFailedOrKilled = true;
+      } else if (node.status === "RUNNING" || node.status === "FAILED" ||
+          node.status === "KILLED") {
+        isRunningFailedOrKilled = true;
       }
     }
-    return hasFailedOrKilled;
+    return isRunningFailedOrKilled;
   },
 
   addNodeRow: function (node, body) {
