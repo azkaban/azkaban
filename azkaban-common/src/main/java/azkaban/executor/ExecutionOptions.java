@@ -20,12 +20,14 @@ import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
 import com.google.gson.GsonBuilder;
+import org.apache.commons.lang.StringUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -36,8 +38,15 @@ public class ExecutionOptions {
   public static final String CONCURRENT_OPTION_PIPELINE = "pipeline";
   public static final String CONCURRENT_OPTION_IGNORE = "ignore";
   public static final String FLOW_PRIORITY = "flowPriority";
-  /* override dispatcher selection and use executor id specified */
+  /*
+  * override dispatcher selection and set to value '<azkaban.server.hostname>:<executor:port>' or 'executor id'
+  * Azkaban will attempt to find an executor with specified executor id or host/port in above value and use it for the flow.
+  * azkaban.server.hostname if empty defaults to canonical hostname of host.
+  * executor.port if empty defaults to some random port, so u will need to check database to get the executor port.
+  * recommend u set this port via 'executor.port' configuration parameter for more clarity.
+  */
   public static final String USE_EXECUTOR = "useExecutor";
+  public static final String HOST_PORT_DELIMITER = ":" ;
   public static final int DEFAULT_FLOW_PRIORITY = 5;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
@@ -285,4 +294,76 @@ public class ExecutionOptions {
   public enum FailureAction {
     FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
   }
+
+  /**
+   * extract executor id from  useExecutorParamValue
+   * @param useExecutorParamValue should be a valid integer.
+   * @return integer or null if useExecutorParamValue is not an integer
+   */
+  public static Integer useExecutorById(String useExecutorParamValue) {
+    if (StringUtils.isEmpty(useExecutorParamValue)){
+      return null;
+    }
+    try {
+      return Integer.parseInt(useExecutorParamValue);
+    } catch (NumberFormatException notInteger) {
+      return null;
+    }
+  }
+
+  /**
+   * extract executor host/port details from  useExecutorParamValue
+   * @param useExecutorParamValue in proper format i.e. 'host:port'
+   * @return null if useExecutorParamValue not in proper format i.e. 'host:port' else a valid HostPort object
+   */
+  public static HostPort useExecutorByHostPort(String useExecutorParamValue) {
+    if (StringUtils.isEmpty(useExecutorParamValue) || !useExecutorParamValue.contains(HOST_PORT_DELIMITER)){
+      return null;
+    }
+    String[] splits = useExecutorParamValue.split(HOST_PORT_DELIMITER);
+    if (splits.length < 2) {
+      return null;
+    }
+
+    String host = splits[0].trim();
+    if(StringUtils.isEmpty(host)){
+      return null;
+    }
+
+    int port = -1;
+    try {
+      port = Integer.parseInt(splits[1].trim());
+      if (port < 0) {
+        return null;
+      }
+    } catch (NumberFormatException notInteger) {
+      return null;
+    }
+
+    return new HostPort(host, port);
+  }
+
+  public static class HostPort {
+    public final String host;
+    public final int port;
+
+    public HostPort(String host, int port) {
+      this.host = host;
+      this.port = port;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      HostPort other = (HostPort) o;
+      return this.port == other.port && this.host.equalsIgnoreCase(other.host);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(host, port);
+    }
+  }
+
 }

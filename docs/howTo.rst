@@ -7,7 +7,7 @@ Force execution to an executor
 ------------------------------
 
 Only users with admin privileges can use this override. In flow params:
-set ``"useExecutor" = EXECUTOR_ID``.
+set ``"useExecutor" = EXECUTOR_ID`` or set ``"useExecutor" = <azkaban.server.hostname>:<executor:port>`` .
 
 Setting flow priority in multiple executor mode
 -----------------------------------------------

@@ -37,11 +37,16 @@ public final class HttpRequestUtilsTest {
 
   /* Helper method to get a test flow and add required properties */
   public static ExecutableFlow createExecutableFlow() throws IOException {
+    return createExecutableFlow("2");
+  }
+
+  /* Helper method to get a test flow and add required properties */
+  public static ExecutableFlow createExecutableFlow(String useExecutor) throws IOException {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow.getExecutionOptions().getFlowParameters()
         .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()
-        .put(ExecutionOptions.USE_EXECUTOR, "2");
+        .put(ExecutionOptions.USE_EXECUTOR, useExecutor);
     return flow;
   }
 
@@ -77,6 +82,83 @@ public final class HttpRequestUtilsTest {
         .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.USE_EXECUTOR));
+  }
+
+  @Test
+  public void TestForInValidUseExecutorFlowParameter() throws IOException,
+          ExecutorManagerException, UserManagerException {
+    final UserManager manager = TestUtils.createTestXmlUserManager();
+    final User user = manager.getUser("testAdmin", "testAdmin");
+
+    final ExecutableFlow hostOnlyFlow = createExecutableFlow("hostOnly:");
+    try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+              hostOnlyFlow.getExecutionOptions(), user);
+    } catch (ExecutorManagerException expected) {
+      if (!expected.getMessage().contains("should either be an integer or in format 'hostName:validPortNumber'")) {
+        Assert.fail("we excepted validation msg to specify improper format was provided but got msg: " + expected.getMessage());
+      }
+    }
+
+    final ExecutableFlow portOnlyFlow = createExecutableFlow(":9090");
+    try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+              portOnlyFlow.getExecutionOptions(), user);
+    } catch (ExecutorManagerException expected) {
+      if (!expected.getMessage().contains("should either be an integer or in format 'hostName:validPortNumber'")) {
+        Assert.fail("we excepted validation msg to specify improper format was provided but got msg: " + expected.getMessage());
+      }
+    }
+
+    final ExecutableFlow emptyFlow = createExecutableFlow(":");
+    try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+              emptyFlow.getExecutionOptions(), user);
+    } catch (ExecutorManagerException expected) {
+      if (!expected.getMessage().contains("should either be an integer or in format 'hostName:validPortNumber'")) {
+        Assert.fail("we excepted validation msg to specify improper format was provided but got msg: " + expected.getMessage());
+      }
+    }
+
+    final ExecutableFlow noSemiColonFlow = createExecutableFlow("");
+    try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+              noSemiColonFlow.getExecutionOptions(), user);
+    } catch (ExecutorManagerException expected) {
+      if (!expected.getMessage().contains("should either be an integer or in format 'hostName:validPortNumber'")) {
+        Assert.fail("we excepted validation msg to specify improper format was provided but got msg: " + expected.getMessage());
+      }
+    }
+
+
+    final ExecutableFlow badPortFlow = createExecutableFlow("host:badPort");
+    try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+              badPortFlow.getExecutionOptions(), user);
+    } catch (ExecutorManagerException expected) {
+      if (!expected.getMessage().contains("should either be an integer or in format 'hostName:validPortNumber'")) {
+        Assert.fail("we excepted validation msg to specify improper format was provided but got msg: " + expected.getMessage());
+      }
+    }
+
+    final ExecutableFlow badPort2Flow = createExecutableFlow("host:-2");
+    try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+              badPort2Flow.getExecutionOptions(), user);
+    } catch (ExecutorManagerException expected) {
+      if (!expected.getMessage().contains("should either be an integer or in format 'hostName:validPortNumber'")) {
+        Assert.fail("we excepted validation msg to specify improper format was provided but got msg: " + expected.getMessage());
+      }
+    }
+  }
+
+  @Test
+  public void TestForValidUseExecutorFlowParameter() throws IOException, UserManagerException, ExecutorManagerException {
+    final UserManager manager = TestUtils.createTestXmlUserManager();
+    final User user = manager.getUser("testAdmin", "testAdmin");
+    final ExecutableFlow goodFlow = createExecutableFlow("localhost:9009");
+    //no exception should be thrown
+    HttpRequestUtils.filterAdminOnlyFlowParams(manager, goodFlow.getExecutionOptions(), user);
   }
 
   /* Test exception, if param is a valid integer */
