@@ -466,8 +466,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("flowid", flow.getFlowId());
 
     // check the current flow definition to see if the flow is locked.
-    Flow currentFlow = project.getFlow(flow.getFlowId());
-    page.add("isLocked", currentFlow.isLocked());
+    final Flow currentFlow = project.getFlow(flow.getFlowId());
+    boolean isCurrentFlowLocked = false;
+    if(currentFlow != null) {
+      isCurrentFlowLocked = currentFlow.isLocked();
+    } else {
+      logger.info("Flow {} not found in project {}.", flow.getFlowId(), project.getName());
+    }
+    page.add("isLocked", isCurrentFlowLocked);
 
     page.render();
   }
