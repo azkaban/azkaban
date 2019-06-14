@@ -2,6 +2,7 @@ languages: java
 # TODO: Add openjdk8 once it is available in Travis.
 jdk:
   - oraclejdk8
+dist: trusty
 sudo: false
 script: ./gradlew clean build --scan --no-daemon --info
 
