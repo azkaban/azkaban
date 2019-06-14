@@ -62,17 +62,26 @@ def mysqlToPostgresqlFilter = {
  */
 task concat() {
     doLast {
-        ext.destFile = "$buildDir/sql/create-all-mysql-" + version + '.sql';
-        ant.concat(destfile: destFile, fixlastline: 'yes') {
-            logger.info('Concating create scripts to ' + destFile)
+        ext.destFileMysql = "${buildDir}/sql/create-all-mysql-" + version + '.sql';
+        ant.concat(destfile: destFileMysql, fixlastline: 'yes') {
+            logger.info('Concating create scripts to ' + destFileMysql)
             fileset(dir: 'src/main/sql') {
-                exclude(name: 'database.properties')
-                exclude(name: 'upgrade.*.sql')
+                include(name: 'create.*.sql')
+                exclude(name: '*-postresql.sql')
+            }
+        }
+        ext.intFilePostgresql = 'build/tmp/sql/create-all-postgresql-intermediate-' + version + '' +
+                '.sql';
+        ant.concat(destfile: intFilePostgresql, fixlastline: 'yes') {
+            logger.info('Concating create scripts to ' + intFilePostgresql)
+            fileset(dir: 'src/main/sql') {
+                include(name: 'create.*.sql')
+                exclude(name: '*-mysql.sql')
             }
         }
         copy {
-            from(destFile) {
-                rename 'mysql', 'postgresql'
+            from(intFilePostgresql) {
+                rename 'postgresql-intermediate', 'postgresql'
                 filter mysqlToPostgresqlFilter
             }
             into 'build/sql'
