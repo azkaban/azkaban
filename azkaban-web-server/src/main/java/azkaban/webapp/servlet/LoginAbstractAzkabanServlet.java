@@ -451,16 +451,23 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
       cookie.setPath("/");
       resp.addCookie(cookie);
-      getApplication().getSessionCache().addSession(session);
+
       final Set<Session> sessionsOfSameIP =
           getApplication().getSessionCache().findSessionsByIP(session.getIp());
-
       // Check potential DDoS attack by bad hosts.
       logger.info(
           "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
               .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
-      ret.put("status", "success");
-      ret.put("session.id", session.getSessionId());
+
+      final boolean sessionAdded = getApplication().getSessionCache().addSession(session);
+      if (sessionAdded) {
+        ret.put("status", "success");
+        ret.put("session.id", session.getSessionId());
+      } else {
+        ret.put("error", "Potential DDoS found, the number of sessions for this user and IP "
+            + "exceeds allowed limit " + getApplication().getSessionCache()
+            .getMaxNumberOfSessionsPerIpPerUser());
+      }
     } else {
       ret.put("error", "Incorrect Login.");
     }

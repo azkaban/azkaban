@@ -50,10 +50,8 @@ public class UserManagerResource extends ResourceContextHolder {
 
     final Session session = createSession(username, password, ip);
 
-
     final Set<Session> sessionsOfSameIP = getAzkaban().getSessionCache()
         .findSessionsByIP(session.getIp());
-
     // Check potential DDoS attack by bad hosts.
     logger.info(
         "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
@@ -81,9 +79,15 @@ public class UserManagerResource extends ResourceContextHolder {
 
     final String randomUID = UUID.randomUUID().toString();
     final Session session = new Session(randomUID, user, ip);
-    getAzkaban().getSessionCache().addSession(session);
-
-    return session;
+    final boolean sessionAdded = getAzkaban().getSessionCache().addSession(session);
+    if (sessionAdded) {
+      return session;
+    } else {
+      throw new UserManagerException(
+          "Potential DDoS found, the number of sessions for this user and IP "
+              + "exceeds allowed limit " + getAzkaban().getSessionCache()
+              .getMaxNumberOfSessionsPerIpPerUser());
+    }
   }
 
   private Session getSessionFromSessionId(final String sessionId) {
