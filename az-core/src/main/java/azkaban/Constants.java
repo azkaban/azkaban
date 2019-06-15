@@ -102,7 +102,6 @@ public class Constants {
   // Executors can use cpu load calculated from this period to take/skip polling turns
   public static final int DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC = 60;
 
-
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
@@ -263,6 +262,8 @@ public class Constants {
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
+
+    // allowed max number of sessions per user per IP
     public static final String MAX_SESSION_NUMBER_PER_IP_PER_USER = "azkaban.session"
         + ".max_number_per_ip_per_user";
 
