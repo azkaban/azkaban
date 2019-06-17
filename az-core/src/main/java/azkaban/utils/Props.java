@@ -449,10 +449,10 @@ public class Props {
    * as output
    */
   public List<String> getStringListFromCluster(final String key) {
-    List<String> curlist = getStringList(key, "\\s*;\\s*");
+    final List<String> curlist = getStringList(key, "\\s*;\\s*");
     // remove empty elements in the array
-    for (Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
-      String a = iter.next();
+    for (final Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
+      final String a = iter.next();
       if (a.length() == 0) {
         iter.remove();
       }
@@ -544,6 +544,8 @@ public class Props {
    * UndefinedPropertyException will be thrown. If the value isn't a long, then a parse exception
    * will be thrown.
    */
+  //todo burgerkingeater: it might be better to return null instead of throwing exception to
+  // avoid repetitive exception handling
   public long getLong(final String name) {
     if (containsKey(name)) {
       return Long.parseLong(get(name));
@@ -700,13 +702,13 @@ public class Props {
    * Returns a java.util.Properties file populated with both current and parent properties.
    */
   public Properties toAllProperties() {
-    Properties allProp = new Properties();
+    final Properties allProp = new Properties();
     // import local properties
     allProp.putAll(toProperties());
 
     // import parent properties
-    if (_parent != null) {
-      allProp.putAll(_parent.toProperties());
+    if (this._parent != null) {
+      allProp.putAll(this._parent.toProperties());
     }
 
     return allProp;

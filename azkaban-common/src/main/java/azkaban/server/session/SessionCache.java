@@ -17,6 +17,7 @@
 package azkaban.server.session;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
 import com.google.common.cache.Cache;
@@ -103,19 +104,24 @@ public class SessionCache {
       // first search for duplicate sessions sharing the same IP
       final Set<Session> sessionsWithSameIP = this.findSessionsByIP(session.getIp());
       // then search for duplicate sessions sharing the same user
-      int duplicateSessionCount = 0;
-      for (final Session sessionByIP : sessionsWithSameIP) {
-        if (sessionByIP.getUser().equals(session.getUser())) {
-          duplicateSessionCount++;
-          // if the number of sessions sharing the same IP and user >= the defined limit
-          if (duplicateSessionCount >= this.maxNumberOfSessionsPerIpPerUser.get()) {
-            return true;
-          }
-        }
+      final int duplicateSessionCount = this.getSessionCountByUser(sessionsWithSameIP,
+          session.getUser());
+      return duplicateSessionCount >= this.maxNumberOfSessionsPerIpPerUser.get();
+    }
+    return false;
+  }
+
+  /**
+   * return the number of sessions from given session set who have the given user.
+   */
+  private int getSessionCountByUser(final Set<Session> sessions, final User user) {
+    int duplicateSessionCount = 0;
+    for (final Session sessionByIP : sessions) {
+      if (sessionByIP.getUser().equals(user)) {
+        duplicateSessionCount++;
       }
     }
-
-    return false;
+    return duplicateSessionCount;
   }
 
   /**
