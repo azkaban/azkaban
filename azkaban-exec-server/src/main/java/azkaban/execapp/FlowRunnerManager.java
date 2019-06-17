@@ -61,6 +61,8 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -564,6 +566,19 @@ public class FlowRunnerManager implements EventListener,
     return runner.getExecutableFlow();
   }
 
+  /**
+   * delete execution dir pertaining to the given execution id
+   */
+  private void deleteExecutionDir(final int executionId) {
+    final Path flowExecutionDir = Paths.get(this.executionDirectory.toPath().toString(),
+        String.valueOf(executionId));
+    try {
+      FileUtils.deleteDirectory(flowExecutionDir.toFile());
+    } catch (final IOException e) {
+      logger.warn("Error when deleting directory " + flowExecutionDir.toAbsolutePath() + ".", e);
+    }
+  }
+
   @Override
   public void handleEvent(final Event event) {
     if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
@@ -575,6 +590,7 @@ public class FlowRunnerManager implements EventListener,
         logger.info("Flow " + flow.getExecutionId()
             + " is finished. Adding it to recently finished flows list.");
         this.runningFlows.remove(flow.getExecutionId());
+        this.deleteExecutionDir(flow.getExecutionId());
       } else if (event.getType() == EventType.FLOW_STARTED) {
         // add flow level SLA checker
         this.triggerManager
