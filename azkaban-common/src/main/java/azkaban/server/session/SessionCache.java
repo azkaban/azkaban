@@ -100,8 +100,9 @@ public class SessionCache {
    */
   private boolean isViolatingMaxNumberOfSessionPerIpPerUser(final Session session) {
     if (this.maxNumberOfSessionsPerIpPerUser.isPresent()) {
-      // get sessions sharing the same IP and user
+      // first search for duplicate sessions sharing the same IP
       final Set<Session> sessionsWithSameIP = this.findSessionsByIP(session.getIp());
+      // then search for duplicate sessions sharing the same user
       int duplicateSessionCount = 0;
       for (final Session sessionByIP : sessionsWithSameIP) {
         if (sessionByIP.getUser().equals(session.getUser())) {
@@ -113,6 +114,7 @@ public class SessionCache {
         }
       }
     }
+
     return false;
   }
 
