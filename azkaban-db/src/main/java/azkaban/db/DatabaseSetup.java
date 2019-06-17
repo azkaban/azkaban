@@ -39,7 +39,7 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseSetup {
 
-  private static final Logger logger = Logger .getLogger(DatabaseSetup.class);
+  private static final Logger logger = Logger.getLogger(DatabaseSetup.class);
   private static final String CREATE_SCRIPT_PREFIX = "create.";
   private static final String SQL_SCRIPT_SUFFIX = ".sql";
 
@@ -68,7 +68,9 @@ public class DatabaseSetup {
         final String name = script.getName();
         final String[] nameSplit = name.split("\\.");
         final String tableName = nameSplit[1];
-        tables.add(tableName);
+        if (!tableName.endsWith("-postgresql")) {
+          tables.add(tableName);
+        }
       }
     }
     return tables;
