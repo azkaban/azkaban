@@ -958,7 +958,6 @@ public class FlowRunnerManager implements EventListener,
         }
       }
     }
-    }
 
     private void cleanRecentlyFinished() {
       final long cleanupThreshold =
