@@ -50,7 +50,6 @@ import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.OsCpuUtil;
-import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
@@ -570,12 +569,14 @@ public class FlowRunnerManager implements EventListener,
    * delete execution dir pertaining to the given execution id
    */
   private void deleteExecutionDir(final int executionId) {
-    final Path flowExecutionDir = Paths.get(this.executionDirectory.toPath().toString(),
-        String.valueOf(executionId));
-    try {
-      FileUtils.deleteDirectory(flowExecutionDir.toFile());
-    } catch (final IOException e) {
-      logger.warn("Error when deleting directory " + flowExecutionDir.toAbsolutePath() + ".", e);
+    synchronized (this.executionDirDeletionSync) {
+      final Path flowExecutionDir = Paths.get(this.executionDirectory.toPath().toString(),
+          String.valueOf(executionId));
+      try {
+        FileUtils.deleteDirectory(flowExecutionDir.toFile());
+      } catch (final IOException e) {
+        logger.warn("Error when deleting directory " + flowExecutionDir.toAbsolutePath() + ".", e);
+      }
     }
   }
 
@@ -868,17 +869,6 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
-  private Set<Pair<Integer, Integer>> getActiveProjectVersions() {
-    final Set<Pair<Integer, Integer>> activeProjectVersions = new HashSet<>();
-    for (final FlowRunner runner : FlowRunnerManager.this.runningFlows.values()) {
-      final ExecutableFlow flow = runner.getExecutableFlow();
-      activeProjectVersions.add(new Pair<>(flow
-          .getProjectId(), flow.getVersion()));
-    }
-    return activeProjectVersions;
-  }
-
-
   private class CleanerThread extends Thread {
 
     // Every 2 mins clean the recently finished list
@@ -888,7 +878,6 @@ public class FlowRunnerManager implements EventListener,
     private final long flowMaxRunningTimeInMins = FlowRunnerManager.this.azkabanProps.getInt(
         Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, -1);
     private boolean shutdown = false;
-    private final long lastExecutionDirCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;
 
