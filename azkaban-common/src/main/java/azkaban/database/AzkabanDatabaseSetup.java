@@ -238,7 +238,8 @@ public class AzkabanDatabaseSetup {
         // this doesn't work because the file actually contains multiple tables and the file name
         // pattern doesn't match with any of those. Until this new file the convention has been that
         // each file has a single table and the file name matches the table name.
-        if ("quartz-tables-all".equals(tableName)) {
+        if ("quartz-tables-all-mysql".equals(tableName)
+            || "quartz-tables-all-postgresql".equals(tableName)) {
           continue;
         }
         if (!this.tables.containsKey(tableName)) {
