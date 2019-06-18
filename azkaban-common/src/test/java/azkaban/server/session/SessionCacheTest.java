@@ -28,15 +28,33 @@ public final class SessionCacheTest {
   final long shortTTL = 100L;
   final long longTTL = 10 * 10 * 100L;
 
-  SessionCache createSessionCacheWithTTL(long ttl) throws Exception {
-    Props props = new Props();
-    props.put(ConfigurationKeys.SESSION_TIME_TO_LIVE, ttl);
+  SessionCache createSessionCache(final long TTL, final Long maxSessionNumberPerIpPerUser) {
+    final Props props = new Props();
+    props.put(ConfigurationKeys.SESSION_TIME_TO_LIVE, TTL);
+    if (maxSessionNumberPerIpPerUser != null) {
+      props.put(ConfigurationKeys.MAX_SESSION_NUMBER_PER_IP_PER_USER, maxSessionNumberPerIpPerUser);
+    }
     return new SessionCache(props);
   }
 
   @Test
-  public void SessionCacheHit() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
+  public void SessionCacheRejectDDoS() {
+    final SessionCache sessionCache = createSessionCache(this.longTTL, 2L);
+    final Session session1 = new Session("TEST_SESSION_ID1", new User("TEST_USER_HIT"),
+        "123.12.12.123");
+    final Session session2 = new Session("TEST_SESSION_ID2", new User("TEST_USER_HIT"),
+        "123.12.12.123");
+    final Session session3 = new Session("TEST_SESSION_ID3", new User("TEST_USER_HIT"),
+        "123.12.12.123");
+
+    assertThat(sessionCache.addSession(session1)).isTrue();
+    assertThat(sessionCache.addSession(session2)).isTrue();
+    assertThat(sessionCache.addSession(session3)).isFalse();
+  }
+
+  @Test
+  public void SessionCacheHit() {
+    final SessionCache sessionCache = createSessionCache(this.longTTL, null);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
         "123.12.12.123");
     sessionCache.addSession(session);
@@ -44,8 +62,8 @@ public final class SessionCacheTest {
   }
 
   @Test
-  public void SessionCacheCount() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
+  public void SessionCacheCount() {
+    final SessionCache sessionCache = createSessionCache(this.longTTL, null);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_HIT"),
         "123.12.12.123");
     assertThat(sessionCache.getSessionCount()).isEqualTo(0);
@@ -56,8 +74,8 @@ public final class SessionCacheTest {
   }
 
   @Test
-  public void SessionCacheFindByIP() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
+  public void SessionCacheFindByIP() {
+    final SessionCache sessionCache = createSessionCache(this.longTTL, null);
     final String ip = "123.12.12.123";
     final String id1 = "TEST_ID1";
     final String id2 = "TEST_ID2";
@@ -74,7 +92,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheMiss() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(shortTTL);
+    final SessionCache sessionCache = createSessionCache(this.shortTTL, null);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
         "123.12.12.123");
     sessionCache.addSession(session);
@@ -84,7 +102,7 @@ public final class SessionCacheTest {
 
   @Test
   public void SessionCacheNoExpired() throws Exception {
-    final SessionCache sessionCache = createSessionCacheWithTTL(longTTL);
+    final SessionCache sessionCache = createSessionCache(this.longTTL, null);
     final Session session = new Session("TEST_SESSION_ID", new User("TEST_USER_MISS"),
             "123.12.12.123");
     sessionCache.addSession(session);
