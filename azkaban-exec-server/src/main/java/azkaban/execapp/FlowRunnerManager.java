@@ -154,7 +154,6 @@ public class FlowRunnerManager implements EventListener,
   private int threadPoolQueueSize = -1;
   private Props globalProps;
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 60 * 1000; // 1 min
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
@@ -172,10 +171,7 @@ public class FlowRunnerManager implements EventListener,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
-    this.executionDirRetention = props.getLong("execution.dir.retention",
-        this.executionDirRetention);
     this.azkabanEventReporter = azkabanEventReporter;
-    logger.info("Execution dir retention set to " + this.executionDirRetention + " ms");
 
     this.executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
     if (!this.executionDirectory.exists()) {
