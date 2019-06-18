@@ -465,7 +465,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         ret.put("session.id", session.getSessionId());
       } else {
         ret.put("error", "Potential DDoS found, the number of sessions for this user and IP "
-            + "reaches allowed limit (" + getApplication().getSessionCache()
+            + "reached allowed limit (" + getApplication().getSessionCache()
             .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
       }
     } else {

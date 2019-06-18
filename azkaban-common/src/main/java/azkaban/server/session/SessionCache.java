@@ -101,22 +101,22 @@ public class SessionCache {
    */
   private boolean isViolatingMaxNumberOfSessionPerIpPerUser(final Session session) {
     if (this.maxNumberOfSessionsPerIpPerUser.isPresent()) {
-      // first search for duplicate sessions sharing the same IP
-      final Set<Session> sessionsWithSameIP = this.findSessionsByIP(session.getIp());
-      // then search for duplicate sessions sharing the same user
-      final int duplicateSessionCount = this.getSessionCountByUser(sessionsWithSameIP,
-          session.getUser());
+      final int duplicateSessionCount = this.getSessionCountByUserByIP(session.getUser(),
+          session.getIp());
       return duplicateSessionCount >= this.maxNumberOfSessionsPerIpPerUser.get();
     }
     return false;
   }
 
   /**
-   * return the number of sessions from given session set who have the given user.
+   * Return the number of sessions sharing the given user and ip.
    */
-  private int getSessionCountByUser(final Set<Session> sessions, final User user) {
+  private int getSessionCountByUserByIP(final User user, final String ip) {
+    // first search for duplicate sessions with the given IP
+    final Set<Session> sessionsWithSameIP = this.findSessionsByIP(ip);
+    // then search for duplicate sessions with the given user
     int duplicateSessionCount = 0;
-    for (final Session sessionByIP : sessions) {
+    for (final Session sessionByIP : sessionsWithSameIP) {
       if (sessionByIP.getUser().equals(user)) {
         duplicateSessionCount++;
       }

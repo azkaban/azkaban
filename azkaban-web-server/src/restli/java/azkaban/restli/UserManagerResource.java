@@ -85,7 +85,7 @@ public class UserManagerResource extends ResourceContextHolder {
     } else {
       throw new UserManagerException(
           "Potential DDoS found, the number of sessions for this user and IP "
-              + "reaches allowed limit (" + getAzkaban().getSessionCache()
+              + "reached allowed limit (" + getAzkaban().getSessionCache()
               .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
     }
   }
