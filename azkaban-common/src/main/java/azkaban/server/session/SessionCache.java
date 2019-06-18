@@ -17,15 +17,20 @@
 package azkaban.server.session;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.user.User;
 import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cache for web session.
@@ -45,6 +50,8 @@ public class SessionCache {
   private final Cache<String, Session> cache;
 
   private final long effectiveSessionTimeToLive;
+  private final Optional<Long> maxNumberOfSessionsPerIpPerUser;
+  private static final Logger log = LoggerFactory.getLogger(SessionCache.class);
 
   /**
    * Constructor taking global props.
@@ -53,10 +60,26 @@ public class SessionCache {
   public SessionCache(final Props props) {
     this.effectiveSessionTimeToLive = props.getLong(ConfigurationKeys.SESSION_TIME_TO_LIVE,
         DEFAULT_SESSION_TIME_TO_LIVE);
+
+    Long maxNumberOfSessions;
+    try {
+      maxNumberOfSessions = props.getLong(ConfigurationKeys.MAX_SESSION_NUMBER_PER_IP_PER_USER);
+    } catch (final UndefinedPropertyException exception) {
+      maxNumberOfSessions = null;
+      log.warn("{} is not configured. The number of sessions per IP per user is not being capped.",
+          ConfigurationKeys.MAX_SESSION_NUMBER_PER_IP_PER_USER);
+    }
+
+    this.maxNumberOfSessionsPerIpPerUser = Optional.ofNullable(maxNumberOfSessions);
+
     this.cache = CacheBuilder.newBuilder()
         .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))
         .expireAfterAccess(this.effectiveSessionTimeToLive, TimeUnit.MILLISECONDS)
         .build();
+  }
+
+  public Optional<Long> getMaxNumberOfSessionsPerIpPerUser() {
+    return this.maxNumberOfSessionsPerIpPerUser;
   }
 
   /**
@@ -75,11 +98,49 @@ public class SessionCache {
     return this.cache.size();
   }
 
+
   /**
-   * Adds a session to the cache. Accessible through the session ID.
+   * @return <code>true</code> The number of cached session sharing the same IP and user equals
+   * or greater than the allowed limit if defined;
+   * <code>false</code> otherwise.
    */
-  public void addSession(final Session session) {
+  private boolean isViolatingMaxNumberOfSessionPerIpPerUser(final Session session) {
+    if (this.maxNumberOfSessionsPerIpPerUser.isPresent()) {
+      final int duplicateSessionCount = this.getSessionCountByUserByIP(session.getUser(),
+          session.getIp());
+      return duplicateSessionCount >= this.maxNumberOfSessionsPerIpPerUser.get();
+    }
+    return false;
+  }
+
+  /**
+   * Return the number of sessions sharing the given user and ip.
+   */
+  private int getSessionCountByUserByIP(final User user, final String ip) {
+    // first search for duplicate sessions with the given IP
+    final Set<Session> sessionsWithSameIP = this.findSessionsByIP(ip);
+    // then search for duplicate sessions with the given user
+    int duplicateSessionCount = 0;
+    for (final Session sessionByIP : sessionsWithSameIP) {
+      if (sessionByIP.getUser().equals(user)) {
+        duplicateSessionCount++;
+      }
+    }
+    return duplicateSessionCount;
+  }
+
+  /**
+   * Adds a session to the cache.
+   * @return  <code>true</code> Session is successfully added while not violating the duplicate
+   *                            IP and user check;
+   *          <code>false</code> otherwise.
+   */
+  public boolean addSession(final Session session) {
+    if (isViolatingMaxNumberOfSessionPerIpPerUser(session)) {
+      return false;
+    }
     this.cache.put(session.getSessionId(), session);
+    return true;
   }
 
   /**
