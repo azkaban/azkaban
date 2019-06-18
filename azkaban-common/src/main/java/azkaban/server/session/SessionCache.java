@@ -29,6 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cache for web session.
@@ -49,6 +51,7 @@ public class SessionCache {
 
   private final long effectiveSessionTimeToLive;
   private final Optional<Long> maxNumberOfSessionsPerIpPerUser;
+  private static final Logger log = LoggerFactory.getLogger(SessionCache.class);
 
   /**
    * Constructor taking global props.
@@ -63,6 +66,8 @@ public class SessionCache {
       maxNumberOfSessions = props.getLong(ConfigurationKeys.MAX_SESSION_NUMBER_PER_IP_PER_USER);
     } catch (final UndefinedPropertyException exception) {
       maxNumberOfSessions = null;
+      log.warn("{} is not configured. The number of sessions per IP per user is not being capped.",
+          ConfigurationKeys.MAX_SESSION_NUMBER_PER_IP_PER_USER);
     }
 
     this.maxNumberOfSessionsPerIpPerUser = Optional.ofNullable(maxNumberOfSessions);
