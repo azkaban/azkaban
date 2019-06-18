@@ -58,7 +58,7 @@ public class SessionCache {
     this.effectiveSessionTimeToLive = props.getLong(ConfigurationKeys.SESSION_TIME_TO_LIVE,
         DEFAULT_SESSION_TIME_TO_LIVE);
 
-    Long maxNumberOfSessions = null;
+    Long maxNumberOfSessions;
     try {
       maxNumberOfSessions = props.getLong(ConfigurationKeys.MAX_SESSION_NUMBER_PER_IP_PER_USER);
     } catch (final UndefinedPropertyException exception) {
