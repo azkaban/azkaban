@@ -54,6 +54,12 @@ public abstract class AzkabanServer {
         .describedAs("conf")
         .ofType(String.class);
 
+    final OptionSpec<String> localConfigFile = parser.acceptsAll(
+        Arrays.asList("l", "local-conf-file"), "The local conf file for Azkaban.")
+        .withRequiredArg()
+        .describedAs("conf")
+        .ofType(String.class);
+
     // Grabbing the azkaban settings from the conf directory.
     Props azkabanSettings = null;
     final OptionSet options = parser.parse(args);
@@ -73,6 +79,23 @@ public abstract class AzkabanServer {
       logger
           .info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
       azkabanSettings = loadConfigurationFromAzkabanHome();
+    }
+
+    if (options.has(localConfigFile)) {
+      final String path = options.valueOf(localConfigFile);
+      logger.info("Loading local azkaban settings file from " + path);
+      final File file = new File(path);
+      if (!file.exists()) {
+        logger.error("Local conf file " + path + " doesn't exist.");
+      } else if (!file.isFile()) {
+        logger.error("Local conf file " + path + " isn't a file.");
+      } else {
+        try {
+          azkabanSettings = new Props(azkabanSettings, file);
+        } catch (final IOException e) {
+          logger.error("Error reading local conf file " + path, e);
+        }
+      }
     }
 
     if (azkabanSettings != null) {
@@ -110,6 +133,7 @@ public abstract class AzkabanServer {
         logger.info("Loading azkaban properties file");
         props = new Props(props, azkabanPropsFile);
       }
+
     } catch (final FileNotFoundException e) {
       logger.error("File not found. Could not load azkaban config file", e);
     } catch (final IOException e) {
