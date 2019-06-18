@@ -50,7 +50,6 @@ import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.OsCpuUtil;
-import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
@@ -61,6 +60,8 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -153,7 +154,6 @@ public class FlowRunnerManager implements EventListener,
   private int threadPoolQueueSize = -1;
   private Props globalProps;
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 60 * 1000; // 1 min
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
   // Indicate if the executor is set to active.
@@ -171,10 +171,7 @@ public class FlowRunnerManager implements EventListener,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
-    this.executionDirRetention = props.getLong("execution.dir.retention",
-        this.executionDirRetention);
     this.azkabanEventReporter = azkabanEventReporter;
-    logger.info("Execution dir retention set to " + this.executionDirRetention + " ms");
 
     this.executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
     if (!this.executionDirectory.exists()) {
@@ -564,6 +561,21 @@ public class FlowRunnerManager implements EventListener,
     return runner.getExecutableFlow();
   }
 
+  /**
+   * delete execution dir pertaining to the given execution id
+   */
+  private void deleteExecutionDir(final int executionId) {
+    synchronized (this.executionDirDeletionSync) {
+      final Path flowExecutionDir = Paths.get(this.executionDirectory.toPath().toString(),
+          String.valueOf(executionId));
+      try {
+        FileUtils.deleteDirectory(flowExecutionDir.toFile());
+      } catch (final IOException e) {
+        logger.warn("Error when deleting directory " + flowExecutionDir.toAbsolutePath() + ".", e);
+      }
+    }
+  }
+
   @Override
   public void handleEvent(final Event event) {
     if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
@@ -575,6 +587,7 @@ public class FlowRunnerManager implements EventListener,
         logger.info("Flow " + flow.getExecutionId()
             + " is finished. Adding it to recently finished flows list.");
         this.runningFlows.remove(flow.getExecutionId());
+        this.deleteExecutionDir(flow.getExecutionId());
       } else if (event.getType() == EventType.FLOW_STARTED) {
         // add flow level SLA checker
         this.triggerManager
@@ -852,21 +865,8 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
-  private Set<Pair<Integer, Integer>> getActiveProjectVersions() {
-    final Set<Pair<Integer, Integer>> activeProjectVersions = new HashSet<>();
-    for (final FlowRunner runner : FlowRunnerManager.this.runningFlows.values()) {
-      final ExecutableFlow flow = runner.getExecutableFlow();
-      activeProjectVersions.add(new Pair<>(flow
-          .getProjectId(), flow.getVersion()));
-    }
-    return activeProjectVersions;
-  }
-
-
   private class CleanerThread extends Thread {
 
-    // Every 5 mins, clean execution dir.
-    private static final long EXECUTION_DIR_CLEAN_INTERVAL_MS = 5 * 60 * 1000;
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
     // Every 5 mins kill flows running longer than allowed max running time
@@ -874,7 +874,6 @@ public class FlowRunnerManager implements EventListener,
     private final long flowMaxRunningTimeInMins = FlowRunnerManager.this.azkabanProps.getInt(
         Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, -1);
     private boolean shutdown = false;
-    private long lastExecutionDirCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;
 
@@ -913,12 +912,6 @@ public class FlowRunnerManager implements EventListener,
               this.lastRecentlyFinishedCleanTime = currentTime;
             }
 
-            if (currentTime - EXECUTION_DIR_CLEAN_INTERVAL_MS > this.lastExecutionDirCleanTime) {
-              FlowRunnerManager.logger.info("Cleaning old execution dirs");
-              cleanOlderExecutionDirs();
-              this.lastExecutionDirCleanTime = currentTime;
-            }
-
             if (this.flowMaxRunningTimeInMins > 0
                 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS
                 > this.lastLongRunningFlowCleanTime) {
@@ -946,38 +939,6 @@ public class FlowRunnerManager implements EventListener,
           } catch (final Throwable t) {
             FlowRunnerManager.logger.warn(
                 "Uncaught throwable, please look into why it is not caught", t);
-          }
-        }
-      }
-    }
-
-    //todo burgerkingeater: cleaning execution dir should be done when flow finishes.
-    private void cleanOlderExecutionDirs() {
-      final File dir = FlowRunnerManager.this.executionDirectory;
-
-      final long pastTimeThreshold =
-          System.currentTimeMillis() - FlowRunnerManager.this.executionDirRetention;
-      final File[] executionDirs = dir
-          .listFiles(path -> path.isDirectory() && path.lastModified() < pastTimeThreshold);
-
-      for (final File exDir : executionDirs) {
-        try {
-          final int execId = Integer.valueOf(exDir.getName());
-          if (FlowRunnerManager.this.runningFlows.containsKey(execId)
-              || FlowRunnerManager.this.recentlyFinishedFlows.containsKey(execId)) {
-            continue;
-          }
-        } catch (final NumberFormatException e) {
-          FlowRunnerManager.logger.error("Can't delete exec dir " + exDir.getName()
-              + " it is not a number");
-          continue;
-        }
-
-        synchronized (FlowRunnerManager.this.executionDirDeletionSync) {
-          try {
-            FileUtils.deleteDirectory(exDir);
-          } catch (final IOException e) {
-            FlowRunnerManager.logger.error("Error cleaning execution dir " + exDir.getPath(), e);
           }
         }
       }
