@@ -57,7 +57,6 @@ public class Constants {
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
-  public static final String AZKABAN_LOCAL_PROPOERTIES_FILE = "azkaban.local.properties";
   public static final String DEFAULT_CONF_PATH = "conf";
   public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
@@ -96,14 +95,14 @@ public class Constants {
 
   // Default maximum number of concurrent runs for a single flow
   public static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
-  
+
   // How often executors will poll new executions in Poll Dispatch model
   public static final int DEFAULT_AZKABAN_POLLING_INTERVAL_MS = 1000;
 
   // Executors can use cpu load calculated from this period to take/skip polling turns
   public static final int DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC = 60;
 
-  
+
   public static class ConfigurationKeys {
 
     // Configures Azkaban to use new polling model for dispatching
