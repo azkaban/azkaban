@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -167,7 +168,7 @@ public class JavaJobRunnerMain {
   }
 
   private void runMethodAsProxyUser(Properties props, final Object obj,
-      final String runMethod) throws IOException, InterruptedException {
+      final String runMethod) throws IOException, InterruptedException, UndeclaredThrowableException {
     UserGroupInformation ugi =
         SecurityUtils.getProxiedUser(props, _logger, new Configuration());
     _logger.info("user " + ugi + " authenticationMethod "
