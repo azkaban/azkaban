@@ -26,6 +26,7 @@ import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -222,7 +223,7 @@ public class HadoopJavaJobRunnerMain {
 
   private void runMethodAsUser(Properties props, final Object obj,
       final String runMethod, final UserGroupInformation ugi)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, UndeclaredThrowableException {
     ugi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
       public Void run() throws Exception {
