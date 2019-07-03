@@ -86,6 +86,7 @@ azkaban.FlowTableView = Backbone.View.extend({
   createJobListTable: function (data, innerTable) {
     var nodes = data.nodes;
     var flowId = data.flowId;
+    var flowDisplayName = data.flowDisplayName;
     var project = data.project;
     var requestURL = contextURL + "/manager?project=" + project + "&flow="
         + flowId + "&job=";
@@ -118,6 +119,7 @@ azkaban.FlowTableView = Backbone.View.extend({
           $(divRunJob).text("Run Job");
           divRunJob.jobName = name;
           divRunJob.flowId = flowId;
+          divRunJob.flowDisplayName = flowDisplayName;
           $(hoverMenuDiv).append(divRunJob);
 
           var divRunWithDep = document.createElement("button");
@@ -129,6 +131,7 @@ azkaban.FlowTableView = Backbone.View.extend({
           $(divRunWithDep).text("Run With Dependencies");
           divRunWithDep.jobName = name;
           divRunWithDep.flowId = flowId;
+          divRunWithDep.flowDisplayName = flowDisplayName;
           $(hoverMenuDiv).append(divRunWithDep);
         }
         $(li).append(hoverMenuDiv);
@@ -196,11 +199,13 @@ azkaban.FlowTableView = Backbone.View.extend({
     console.log("Run Job");
     var jobId = evt.currentTarget.jobName;
     var flowId = evt.currentTarget.flowId;
+    var flowDisplayName = evt.currentTarget.flowDisplayName;
 
     var executingData = {
       project: projectName,
       ajax: "executeFlow",
       flow: flowId,
+      flowDisplayName: flowDisplayName,
       job: jobId
     };
 
@@ -210,12 +215,14 @@ azkaban.FlowTableView = Backbone.View.extend({
   runWithDep: function (evt) {
     var jobId = evt.currentTarget.jobName;
     var flowId = evt.currentTarget.flowId;
+    var flowDisplayName = evt.currentTarget.flowDisplayName;
     console.log("Run With Dep");
 
     var executingData = {
       project: projectName,
       ajax: "executeFlow",
       flow: flowId,
+      flowDisplayName: flowDisplayName,
       job: jobId,
       withDep: true
     };
@@ -225,6 +232,7 @@ azkaban.FlowTableView = Backbone.View.extend({
   executeFlow: function (evt) {
     console.log("Execute Flow");
     var flowId = $(evt.currentTarget).attr('flowid');
+    var flowDisplayName = $(evt.currentTarget).attr('flowdisplayname');
 
     var isFlowLocked = $(evt.currentTarget).hasClass("disabled");
     if (isFlowLocked) {
@@ -235,7 +243,8 @@ azkaban.FlowTableView = Backbone.View.extend({
     var executingData = {
       project: projectName,
       ajax: "executeFlow",
-      flow: flowId
+      flow: flowId,
+      flowDisplayName: flowDisplayName,
     };
 
     this.executeFlowDialog(executingData);

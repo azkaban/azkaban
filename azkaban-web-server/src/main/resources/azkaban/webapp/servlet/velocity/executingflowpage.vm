@@ -101,7 +101,7 @@
         </a></li>
         <li><a
             href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong>
-          $flowid
+          $flowdisplayname
         </a></li>
         <li class="active"><strong>Execution</strong> $execid</li>
       </ol>

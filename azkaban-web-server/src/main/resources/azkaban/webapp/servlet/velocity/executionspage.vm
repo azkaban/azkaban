@@ -100,7 +100,7 @@
                 #end
               </td>
               <td><a
-                  href="${context}/manager?project=$vmutils.getProjectName(${flow.getFirst().projectId})&flow=${flow.getFirst().flowId}">${flow.getFirst().flowId}</a>
+                  href="${context}/manager?project=$vmutils.getProjectName(${flow.getFirst().projectId})&flow=${flow.getFirst().flowId}">${flow.getFirst().flowDisplayName}</a>
               </td>
               <td>
                 <a href="${context}/manager?project=$vmutils.getProjectName(${flow.getFirst().projectId})">$vmutils.getProjectName(${flow.getFirst().projectId})</a>
@@ -165,7 +165,7 @@
                 <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
               </td>
               <td><a
-                  href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a>
+                  href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowDisplayName}</a>
               </td>
               <td>
                 <a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>

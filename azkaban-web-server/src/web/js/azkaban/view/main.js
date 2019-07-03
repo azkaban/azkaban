@@ -97,9 +97,10 @@ azkaban.ProjectTableView = Backbone.View.extend({
     var requestURL = contextURL + "/manager?project=" + data.project + "&flow=";
     for (var i = 0; i < flows.length; ++i) {
       var id = flows[i].flowId;
+      var displayName = flows[i].flowDisplayName
       var ida = document.createElement("a");
       ida.project = data.project;
-      $(ida).text(id);
+      $(ida).text(displayName);
       $(ida).attr("href", requestURL + id);
       $(ida).addClass('list-group-item');
       $(innerTable).append(ida);

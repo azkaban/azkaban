@@ -118,7 +118,7 @@
               </td>
             #*todo chengren311: keep result of vmutils.getProjectName as a variable *#
               <td><a
-                  href="${context}/manager?project=${trigger.getProjectName()}&flow=${trigger.getFlowId()}">${trigger.getFlowId()}</a>
+                  href="${context}/manager?project=${trigger.getProjectName()}&flow=${trigger.getFlowId()}">${trigger.getFlowDisplayName()}</a>
               </td>
               <td>
                 <a href="${context}/manager?project=${trigger.getProjectName()}">${trigger.getProjectName()}</a>

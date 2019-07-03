@@ -52,6 +52,7 @@ public class Flow {
   private double azkabanFlowVersion = Constants.DEFAULT_AZKABAN_FLOW_VERSION;
   private String condition = null;
   private boolean isLocked = false;
+  private String displayName;
 
   public Flow(final String id) {
     this.id = id;
@@ -61,6 +62,7 @@ public class Flow {
     final Map<String, Object> flowObject = (Map<String, Object>) object;
 
     final String id = (String) flowObject.get("id");
+    final String displayName = (String) flowObject.get("displayName");
     final Boolean layedout = (Boolean) flowObject.get("layedout");
     final Boolean isEmbeddedFlow = (Boolean) flowObject.get("embeddedFlow");
     final Double azkabanFlowVersion = (Double) flowObject.get("azkabanFlowVersion");
@@ -68,6 +70,8 @@ public class Flow {
     final Boolean isLocked = (Boolean) flowObject.get("isLocked");
 
     final Flow flow = new Flow(id);
+    flow.displayName = displayName;
+
     if (layedout != null) {
       flow.setLayedOut(layedout);
     }
@@ -280,6 +284,15 @@ public class Flow {
     return this.id;
   }
 
+
+  public String getDisplayName() {
+    return this.displayName == null ? getId() : this.displayName;
+  }
+
+  public void setDisplayName(final String displayName) {
+    this.displayName = displayName;
+  }
+
   public void addError(final String error) {
     if (this.errors == null) {
       this.errors = new ArrayList<>();
@@ -341,6 +354,9 @@ public class Flow {
     final HashMap<String, Object> flowObj = new HashMap<>();
     flowObj.put("type", "flow");
     flowObj.put("id", getId());
+    if (this.displayName != null) {
+      flowObj.put("displayName", this.displayName);
+    }
     flowObj.put("project.id", this.projectId);
     flowObj.put("version", this.version);
     flowObj.put("props", objectizeProperties());
@@ -467,7 +483,11 @@ public class Flow {
     this.projectId = projectId;
   }
 
-  public boolean isLocked() { return this.isLocked; }
+  public boolean isLocked() {
+    return this.isLocked;
+  }
 
-  public void setLocked(boolean locked) { this.isLocked = locked; }
+  public void setLocked(final boolean locked) {
+    this.isLocked = locked;
+  }
 }

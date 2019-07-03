@@ -591,7 +591,8 @@ var initFlowPage = function (settings) {
     var executingData = {
       project: settings.projectName,
       ajax: "executeFlow",
-      flow: settings.flowId
+      flow: settings.flowId,
+      flowDisplayName: settings.flowDisplayName
     };
 
     flowExecuteDialogView.show(executingData);

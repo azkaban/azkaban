@@ -175,6 +175,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   show: function (data) {
     var projectName = data.project;
     var flowId = data.flow;
+    var flowDisplayName = data.flowDisplayName
     var jobId = data.job;
 
     // ExecId is optional
@@ -187,10 +188,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var self = this;
     var loadCallback = function () {
       if (jobId) {
-        self.showExecuteJob(projectName, flowId, jobId, data.withDep);
+        self.showExecuteJob(projectName, flowId, flowDisplayName, jobId, data.withDep);
       }
       else {
-        self.showExecuteFlow(projectName, flowId);
+        self.showExecuteFlow(projectName, flowId, flowDisplayName);
       }
     }
 
@@ -199,17 +200,17 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     this.loadFlowInfo(projectName, flowId, execId);
   },
 
-  showExecuteFlow: function (projectName, flowId) {
-    $("#execute-flow-panel-title").text("Execute Flow " + flowId);
+  showExecuteFlow: function (projectName, flowId, flowDisplayName) {
+    $("#execute-flow-panel-title").text("Execute Flow " + flowDisplayName);
     this.showExecutionOptionPanel();
 
     // Triggers a render
     this.model.trigger("change:graph");
   },
 
-  showExecuteJob: function (projectName, flowId, jobId, withDep) {
+  showExecuteJob: function (projectName, flowId, flowDisplayName, jobId, withDep) {
     sideMenuDialogView.menuSelect($("#flow-option"));
-    $("#execute-flow-panel-title").text("Execute Flow " + flowId);
+    $("#execute-flow-panel-title").text("Execute Flow " + flowDisplayName);
 
     var data = this.model.get("data");
     var disabled = this.model.get("disabled");

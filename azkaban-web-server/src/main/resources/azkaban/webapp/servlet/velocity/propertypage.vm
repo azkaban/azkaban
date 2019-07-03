@@ -57,7 +57,7 @@
             href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
         </a></li>
         <li><a
-            href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid
+            href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowdisplayname
         </a></li>
         <li><a
             href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid

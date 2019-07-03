@@ -109,7 +109,7 @@
                   <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
                 </td>
                 <td class="tb-name">
-                  <a href="${context}/executor?execid=${flow.executionId}">${flow.flowId}</a>
+                  <a href="${context}/executor?execid=${flow.executionId}">${flow.flowDisplayName}</a>
                 </td>
                 <td>
                   <a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>

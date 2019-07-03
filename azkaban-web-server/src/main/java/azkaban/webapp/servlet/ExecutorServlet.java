@@ -404,6 +404,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", triggerInst.getFlowId());
+    final Flow flow = project.getFlow(triggerInst.getFlowId());
+    page.add("flowdisplayname", flow == null ? triggerInst.getFlowId() : flow.getDisplayName());
 
     page.render();
   }
@@ -464,6 +466,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
+    page.add("flowdisplayname", flow.getFlowDisplayName());
 
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());

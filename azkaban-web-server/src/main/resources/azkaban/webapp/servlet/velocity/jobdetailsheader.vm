@@ -48,7 +48,7 @@
       <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName
       </a></li>
       <li><a
-          href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid
+          href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowdisplayname
       </a></li>
       <li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid
       </a></li>
