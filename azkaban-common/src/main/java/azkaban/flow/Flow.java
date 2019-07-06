@@ -17,6 +17,7 @@
 package azkaban.flow;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutorTags;
 import azkaban.executor.mail.DefaultMailCreator;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +44,7 @@ public class Flow {
   private List<String> failureEmail = new ArrayList<>();
   private List<String> successEmail = new ArrayList<>();
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+  private ExecutorTags requiredExecutorTags = ExecutorTags.empty();
   private ArrayList<String> errors;
   private int version = -1;
   private Map<String, Object> metadata = new HashMap<>();
@@ -122,6 +124,10 @@ public class Flow {
     if (flowObject.containsKey("mailCreator")) {
       flow.mailCreator = flowObject.get("mailCreator").toString();
     }
+
+    final List<String> requiredExecutorTags = (List<String>) flowObject.get("requiredExecutorTags");
+    flow.requiredExecutorTags = new ExecutorTags(requiredExecutorTags);
+
     return flow;
   }
 
@@ -240,6 +246,14 @@ public class Flow {
     this.failureEmail.addAll(emails);
   }
 
+  public ExecutorTags getRequiredExecutorTags() {
+    return this.requiredExecutorTags;
+  }
+
+  public void setRequiredExecutorTags(final ExecutorTags tags) {
+    this.requiredExecutorTags = tags;
+  }
+
   public int getNumLevels() {
     return this.numLevels;
   }
@@ -354,6 +368,7 @@ public class Flow {
     flowObj.put("azkabanFlowVersion", this.azkabanFlowVersion);
     flowObj.put("condition", this.condition);
     flowObj.put("isLocked", this.isLocked);
+    flowObj.put("requiredExecutorTags", this.requiredExecutorTags);
 
     if (this.errors != null) {
       flowObj.put("errors", this.errors);

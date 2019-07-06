@@ -55,7 +55,7 @@ public class RunningExecutionsUpdaterTest {
     MockitoAnnotations.initMocks(this);
     this.execution = new ExecutableFlow();
     this.execution.setExecutionId(EXECUTION_ID_77);
-    this.activeExecutor = new Executor(1, "activeExecutor-1", 9999, true);
+    this.activeExecutor = new Executor(1, "activeExecutor-1", 9999, true, null);
     this.runningExecutions = new RunningExecutions();
     this.runningExecutions.get().put(EXECUTION_ID_77, new Pair<>(
         new ExecutionReference(EXECUTION_ID_77, this.activeExecutor), this.execution));

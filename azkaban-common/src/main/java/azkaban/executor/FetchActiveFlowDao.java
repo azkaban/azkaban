@@ -82,7 +82,19 @@ public class FetchActiveFlowDao {
       executor = null;
     } else {
       final boolean executorStatus = rs.getBoolean("executorStatus");
-      executor = new Executor(executorId, host, port, executorStatus);
+      final EncodingType encType = EncodingType.fromInteger(rs.getInt("executorEncType"));
+      final byte[] data = rs.getBytes("executorData");
+      final ExecutorData executorData;
+      if (data != null) {
+        try {
+          executorData = ExecutorData.fromObject(GZIPUtils.transformBytesToObject(data, encType));
+        } catch (final IOException e) {
+          throw new SQLException("Error fetching executor data", e);
+        }
+      } else {
+        executorData = null;
+      }
+      executor = new Executor(executorId, host, port, executorStatus, executorData);
     }
     final ExecutionReference ref = new ExecutionReference(exFlow.getExecutionId(), executor);
     return new Pair<>(ref, exFlow);
@@ -176,7 +188,8 @@ public class FetchActiveFlowDao {
     // Select flows that are not in finished status
     private static final String FETCH_UNFINISHED_EXECUTABLE_FLOWS =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ex.executor_id executorId, et.active executorStatus"
+            + "et.port port, ex.executor_id executorId, et.active executorStatus, "
+            + "et.enc_type executorEncType, et.executor_data executorData"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
@@ -188,7 +201,8 @@ public class FetchActiveFlowDao {
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ex.executor_id executorId, et.active executorStatus"
+            + "et.port port, ex.executor_id executorId, et.active executorStatus, "
+            + "et.enc_type executorEncType, et.executor_data executorData"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
@@ -232,7 +246,8 @@ public class FetchActiveFlowDao {
         "SELECT ex.exec_id exec_id, ex.project_id project_id, ex.version version, "
             + "ex.flow_id flow_id, et.host host, et.port port, ex.executor_id executorId, "
             + "ex.status status, ex.submit_time submit_time, ex.start_time start_time, "
-            + "ex.end_time end_time, ex.submit_user submit_user, et.active executorStatus"
+            + "ex.end_time end_time, ex.submit_user submit_user, et.active executorStatus, "
+            + "et.enc_type executorEncType, et.executor_data executorData"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
@@ -267,7 +282,8 @@ public class FetchActiveFlowDao {
     // Select the flow that is dispatched and not in finished status by execution id
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXEC_ID =
         "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ex.executor_id executorId, et.active executorStatus"
+            + "et.port port, ex.executor_id executorId, et.active executorStatus, "
+            + "et.enc_type executorEncType, et.executor_data executorData"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"

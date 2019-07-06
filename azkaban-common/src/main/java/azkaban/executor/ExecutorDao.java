@@ -17,6 +17,10 @@
 package azkaban.executor;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.db.EncodingType;
+import azkaban.utils.GZIPUtils;
+import azkaban.utils.JSONUtils;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -107,7 +111,7 @@ public class ExecutorDao {
     }
   }
 
-  Executor addExecutor(final String host, final int port)
+  Executor addExecutor(final String host, final int port, final ExecutorData data)
       throws ExecutorManagerException {
     // verify, if executor already exists
     if (fetchExecutor(host, port) != null) {
@@ -115,17 +119,20 @@ public class ExecutorDao {
           "Executor %s:%d already exist", host, port));
     }
     // add new executor
-    addExecutorHelper(host, port);
+    addExecutorHelper(host, port, data);
 
     // fetch newly added executor
     return fetchExecutor(host, port);
   }
 
-  private void addExecutorHelper(final String host, final int port)
+  private void addExecutorHelper(final String host, final int port, final ExecutorData data)
       throws ExecutorManagerException {
-    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
+    final String INSERT =
+        "INSERT INTO executors (host, port, enc_type, executor_data) values (?,?,?,?)";
     try {
-      this.dbOperator.update(INSERT, host, port);
+      final ExecutorDataBytes executorDataBytes = ExecutorDataBytes.from(data);
+      this.dbOperator.update(INSERT, host, port, executorDataBytes.getEncType(),
+          executorDataBytes.getBytes());
     } catch (final SQLException e) {
       throw new ExecutorManagerException(String.format("Error adding %s:%d ",
           host, port), e);
@@ -134,16 +141,19 @@ public class ExecutorDao {
 
   public void updateExecutor(final Executor executor) throws ExecutorManagerException {
     final String UPDATE =
-        "UPDATE executors SET host=?, port=?, active=? where id=?";
+        "UPDATE executors SET host=?, port=?, active=?, enc_type=?, executor_data=? where id=?";
 
     try {
+      final ExecutorData data = executor.getExecutorData();
+      final ExecutorDataBytes executorDataBytes = ExecutorDataBytes.from(data);
       final int rows = this.dbOperator.update(UPDATE, executor.getHost(), executor.getPort(),
-          executor.isActive(), executor.getId());
+          executor.isActive(), executorDataBytes.getEncType(), executorDataBytes.getBytes(),
+          executor.getId());
       if (rows == 0) {
         throw new ExecutorManagerException("No executor with id :" + executor.getId());
       }
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error inactivating executor "
+      throw new ExecutorManagerException("Error updating executor "
           + executor.getId(), e);
     }
   }
@@ -169,15 +179,15 @@ public class ExecutorDao {
       ResultSetHandler<List<Executor>> {
 
     static String FETCH_ALL_EXECUTORS =
-        "SELECT id, host, port, active FROM executors";
+        "SELECT id, host, port, active, enc_type, executor_data FROM executors";
     static String FETCH_ACTIVE_EXECUTORS =
-        "SELECT id, host, port, active FROM executors where active=true";
+        "SELECT id, host, port, active, enc_type, executor_data FROM executors where active=true";
     static String FETCH_EXECUTOR_BY_ID =
-        "SELECT id, host, port, active FROM executors where id=?";
+        "SELECT id, host, port, active, enc_type, executor_data FROM executors where id=?";
     static String FETCH_EXECUTOR_BY_HOST_PORT =
-        "SELECT id, host, port, active FROM executors where host=? AND port=?";
+        "SELECT id, host, port, active, enc_type, executor_data FROM executors where host=? AND port=?";
     static String FETCH_EXECUTION_EXECUTOR =
-        "SELECT ex.id, ex.host, ex.port, ex.active FROM "
+        "SELECT ex.id, ex.host, ex.port, ex.active, ex.enc_type, ex.executor_data FROM "
             + " executors ex INNER JOIN execution_flows ef "
             + "on ex.id = ef.executor_id  where exec_id=?";
 
@@ -193,11 +203,56 @@ public class ExecutorDao {
         final String host = rs.getString(2);
         final int port = rs.getInt(3);
         final boolean active = rs.getBoolean(4);
-        final Executor executor = new Executor(id, host, port, active);
+        final EncodingType encType = EncodingType.fromInteger(rs.getInt(5));
+        final byte[] data = rs.getBytes(6);
+        final ExecutorData executorData;
+        if (data != null) {
+          try {
+            executorData = ExecutorData.fromObject(GZIPUtils.transformBytesToObject(data, encType));
+          } catch (final IOException e) {
+            throw new SQLException("Error fetching executor data", e);
+          }
+        } else {
+          executorData = null;
+        }
+        final Executor executor = new Executor(id, host, port, active, executorData);
         executors.add(executor);
       } while (rs.next());
 
       return executors;
+    }
+  }
+
+  private static class ExecutorDataBytes {
+
+    private Integer encType;
+    private byte[] bytes;
+
+    private ExecutorDataBytes() {
+    }
+
+    public Integer getEncType() {
+      return this.encType;
+    }
+
+    public byte[] getBytes() {
+      return this.bytes;
+    }
+
+    public static ExecutorDataBytes from(final ExecutorData data) throws SQLException {
+      final ExecutorDataBytes edb = new ExecutorDataBytes();
+      if (data != null) {
+        edb.encType = EncodingType.GZIP.getNumVal();
+        try {
+          edb.bytes = GZIPUtils.gzipString(JSONUtils.toJSON(data.toObject()), "UTF-8");
+        } catch (final IOException e) {
+          throw new SQLException("Error writing executor data", e);
+        }
+      } else {
+        edb.encType = null;
+        edb.bytes = null;
+      }
+      return edb;
     }
   }
 }

@@ -18,6 +18,10 @@
           <td>none</td>
         {/condition}
       </tr>
+      <tr>
+        <td class="property-key">Required Executor Tags</td>
+        <td>{#requiredExecutorTags}{.} {/requiredExecutorTags}</td>
+      </tr>
       </tbody>
     </table>
   </div>

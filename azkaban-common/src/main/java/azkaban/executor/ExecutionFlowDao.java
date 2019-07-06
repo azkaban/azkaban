@@ -29,16 +29,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ExecutionFlowDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutionFlowDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionFlowDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject
@@ -306,24 +308,33 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public ExecutableFlow selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final Predicate<ExecutableFlow> evaluateCandidate)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ? where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
-        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
-        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
+        FetchExecutableFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
+        FetchExecutableFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
-    final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
-      final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), executorId);
+    final SQLTransaction<ExecutableFlow> selectAndUpdateExecution = transOperator -> {
+      final List<ExecutableFlow> execFlows = transOperator.query(selectExecutionForUpdate,
+          new FetchExecutableFlows(), executorId);
 
-      int execId = -1;
-      if (!execIds.isEmpty()) {
-        execId = execIds.get(0);
-        transOperator.update(UPDATE_EXECUTION, executorId, execId);
+      ExecutableFlow executableFlow = null;
+      for (final ExecutableFlow candidateExecFlow : execFlows) {
+        if (evaluateCandidate.test(candidateExecFlow)) {
+          logger.info("Executor {} accepting execution {}", executorId,
+              candidateExecFlow.getExecutionId());
+          executableFlow = candidateExecFlow;
+          transOperator.update(UPDATE_EXECUTION, executorId, executableFlow.getExecutionId());
+          break;
+        } else {
+          logger.info("Executor {} rejecting execution {}", executorId,
+              candidateExecFlow.getExecutionId());
+        }
       }
       transOperator.getConnection().commit();
-      return execId;
+      return executableFlow;
     };
 
     try {
@@ -331,36 +342,6 @@ public class ExecutionFlowDao {
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error selecting and updating execution with executor "
           + executorId, e);
-    }
-  }
-
-  public static class SelectFromExecutionFlows implements
-      ResultSetHandler<List<Integer>> {
-
-    private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
-        "SELECT exec_id from execution_flows WHERE status = " + Status.PREPARING.getNumVal()
-            + " and executor_id is NULL and flow_data is NOT NULL and %s"
-            + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC LIMIT 1 FOR UPDATE";
-
-    public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
-            "(use_executor is NULL or use_executor = ?)");
-
-    public static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "use_executor = ?");
-
-    @Override
-    public List<Integer> handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return Collections.emptyList();
-      }
-      final List<Integer> execIds = new ArrayList<>();
-      do {
-        final int execId = rs.getInt(1);
-        execIds.add(execId);
-      } while (rs.next());
-
-      return execIds;
     }
   }
 
@@ -386,6 +367,19 @@ public class ExecutionFlowDao {
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? AND status=? "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
+
+    private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
+        "SELECT exec_id, enc_type, flow_data from execution_flows"
+            + " WHERE status = " + Status.PREPARING.getNumVal()
+            + " and executor_id is NULL and flow_data is NOT NULL and %s"
+            + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC FOR UPDATE";
+
+    static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
+        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
+            "(use_executor is NULL or use_executor = ?)");
+
+    static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
+        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "use_executor = ?");
 
     @Override
     public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {

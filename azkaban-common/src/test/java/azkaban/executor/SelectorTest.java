@@ -504,9 +504,9 @@ public class SelectorTest {
   @Test
   public void testCreatingExecutorSelectorWithEmptyFilterComparatorList() throws Exception {
     final List<Executor> executorList = new ArrayList<>();
-    executorList.add(new Executor(1, "host1", 80, true));
-    executorList.add(new Executor(2, "host2", 80, true));
-    executorList.add(new Executor(3, "host3", 80, true));
+    executorList.add(new Executor(1, "host1", 80, true, null));
+    executorList.add(new Executor(2, "host2", 80, true, null));
+    executorList.add(new Executor(3, "host3", 80, true, null));
 
     executorList.get(0)
         .setExecutorInfo(new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89, 0));
@@ -528,9 +528,9 @@ public class SelectorTest {
     final Map<String, Integer> comparatorMap;
     comparatorMap = new HashMap<>();
     final List<Executor> executorList = new ArrayList<>();
-    executorList.add(new Executor(1, "host1", 80, true));
-    executorList.add(new Executor(2, "host2", 80, true));
-    executorList.add(new Executor(3, "host3", 80, true));
+    executorList.add(new Executor(1, "host1", 80, true, null));
+    executorList.add(new Executor(2, "host2", 80, true, null));
+    executorList.add(new Executor(3, "host3", 80, true, null));
 
     executorList.get(0)
         .setExecutorInfo(new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89, 0));

@@ -151,6 +151,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     flow.setAzkabanFlowVersion(Constants.AZKABAN_FLOW_VERSION_2_0);
     final Props props = azkabanFlow.getProps();
     FlowLoaderUtils.addEmailPropsToFlow(flow, props);
+    FlowLoaderUtils.addRequiredExecutorTagsToFlow(flow, props);
     props.setSource(flowFile.getName());
 
     flow.addAllFlowProperties(ImmutableList.of(new FlowProps(props)));

@@ -116,6 +116,9 @@ public class Constants {
     public static final String AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC =
         "azkaban.polling_criteria.cpu_load_period_sec";
 
+    // Configures comma-separated executor tags provided by a particular executor
+    public static final String AZKABAN_EXECUTOR_TAGS = "azkaban.executor.tags";
+
     // Configures properties for Azkaban executor health check
     public static final String AZKABAN_EXECUTOR_HEALTHCHECK_INTERVAL_MIN = "azkaban.executor.healthcheck.interval.min";
     public static final String AZKABAN_EXECUTOR_MAX_FAILURE_COUNT = "azkaban.executor.max.failurecount";
