@@ -22,13 +22,6 @@ repositories {
     maven {
       url 'https://mvnrepository.com/artifact/org.apache.shiro/shiro-web'
     }
-    maven {
-        url 'https://mvnrepository.com/artifact/org.codeartisans.shiro/shiro-ext-x509-web'
-    }
-    maven {
-        url 'https://mvnrepository.com/artifact/org.codeartisans.shiro/shiro-ext-x509-core'
-    }
-
 }
 dependencies {
     compile project(':az-core')
@@ -59,8 +52,7 @@ dependencies {
     
   	compile group: 'org.apache.shiro', name: 'shiro-web', version: '1.4.0'
 	compile group: 'org.apache.shiro', name: 'shiro-core', version: '1.4.0'
-    compile 'org.codeartisans.shiro:shiro-ext-x509-web:1.1'
-    compile 'org.codeartisans.shiro:shiro-ext-x509-core:1.1'
+	    
 
     testRuntime deps.h2
 
