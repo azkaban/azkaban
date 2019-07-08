@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.SimpleAccount;
 import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleRole;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.mgt.DefaultSecurityManager;
@@ -37,7 +36,7 @@ import org.apache.shiro.subject.Subject;
 /**
  * Xml implementation of the UserManager. Looks for the property user.manager.xml.file in the
  * azkaban properties.
- *
+ * <p>
  * The xml to be in the following form: <azkaban-users> <user username="username" password="azkaban"
  * shiroRoles="admin" groups="azkaban"/> </azkaban-users>
  */
@@ -128,10 +127,11 @@ public class ShiroUserManager implements UserManager {
     user.setPermissions(getUserPermission(currentUser));
 
     // find user roles and add it to azkaban user!
-    for (Entry<String, SimpleRole> sr : this.shiroRoles.entrySet()){
-      if(currentUser.hasRole(sr.getValue().getName())) {
+    for (Entry<String, SimpleRole> sr : this.shiroRoles.entrySet()) {
+      if (currentUser.hasRole(sr.getValue().getName())) {
         user.addRole(sr.getValue().getName());
-        logger.info("User [" + currentUser.getPrincipal() + "] has role:"+sr.getValue().getName());
+        logger
+            .info("User [" + currentUser.getPrincipal() + "] has role:" + sr.getValue().getName());
       }
     }
 
@@ -157,7 +157,7 @@ public class ShiroUserManager implements UserManager {
   @Override
   public boolean validateUser(final String username) {
     boolean validate = this.shiroUsers.containsKey(username);
-    logger.info("ShiroUserManager:validateUser: User "+username+" is valid ? " + validate);
+    logger.info("ShiroUserManager:validateUser: User " + username + " is valid ? " + validate);
     return validate;
   }
 
@@ -183,7 +183,7 @@ public class ShiroUserManager implements UserManager {
   @Override
   public boolean validateGroup(final String group) {
     // Return true. Validation should be added when groups are added to the xml.
-    logger.info("ShiroUserManager:validateGroup: Group "+group+" is valid ? " + true);
+    logger.info("ShiroUserManager:validateGroup: Group " + group + " is valid ? " + true);
     return true;
   }
 
