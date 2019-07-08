@@ -4,7 +4,7 @@ import azkaban.jobExecutor.AbstractJob;
 import azkaban.utils.Props;
 import com.google.common.io.Files;
 import java.io.File;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,9 +28,9 @@ public class JdbcSqlJob extends AbstractJob {
 
   private final Props jobProps;
   private final Props sysProps;
+  private final String sqlDatabase;
   private Connection connection;
   private BasicDataSource dataSource;
-  private final String sqlDatabase;
 
   public JdbcSqlJob(final String jobId, final Props sysProps, final Props jobProps,
       final Logger log) {
@@ -48,7 +48,6 @@ public class JdbcSqlJob extends AbstractJob {
 
   /**
    *
-   * @throws Exception
    */
   @Override
   public void run() throws Exception {
@@ -88,8 +87,6 @@ public class JdbcSqlJob extends AbstractJob {
 
   /**
    *
-   * @param sql
-   * @throws SQLException
    */
   private void executeSql(String sql) throws SQLException {
 
@@ -160,9 +157,6 @@ public class JdbcSqlJob extends AbstractJob {
 
   /**
    *
-   * @param sqlFileJobPropsName
-   * @return
-   * @throws Exception
    */
   private String getSqlFromFile(String sqlFileJobPropsName) throws Exception {
 
@@ -183,14 +177,13 @@ public class JdbcSqlJob extends AbstractJob {
           + "! please check Job Parameter " + sqlFileJobPropsName + "!");
     }
 
-    String rawSql = Files.toString(sqlFile, Charset.forName("UTF-8"));
+    String rawSql = Files.toString(sqlFile, StandardCharsets.UTF_8);
     rawSql = replaceSQLParams(rawSql);
     return rawSql;
   }
 
   /**
    *
-   * @return
    */
   private BasicDataSource getDataSource() {
     if (dataSource == null) {
@@ -205,7 +198,6 @@ public class JdbcSqlJob extends AbstractJob {
 
   /**
    *
-   * @throws Exception
    */
   @Override
   public void cancel() throws Exception {
