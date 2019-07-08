@@ -52,7 +52,9 @@ dependencies {
     
   	compile group: 'org.apache.shiro', name: 'shiro-web', version: '1.4.0'
 	compile group: 'org.apache.shiro', name: 'shiro-core', version: '1.4.0'
-	    
+    compile group: 'io.buji', name: 'buji-pac4j', version: '4.1.0'
+    compile group: 'org.pac4j', name: 'pac4j-core', version: '3.7.0'
+    runtime group: 'org.pac4j', name: 'pac4j-oidc', version: '3.7.0'
 
     testRuntime deps.h2
 

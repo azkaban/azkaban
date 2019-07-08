@@ -65,9 +65,9 @@ public class ShiroUserManager implements UserManager {
 
     for (Realm realm : securityManager.getRealms()) {
       logger.info("Shiro realm is " + realm.getName());
-      if (realm.getName().contains("AzkabanIniRealm")) {
+      //if (realm.getName().contains("AzkabanIniRealm")) {
         this.currentRealm = (AzkabanIniRealm) realm;
-      }
+      //}
     }
 
     // this.currentRealm = (AzkabanIniRealm) SecurityUtils.getSecurityManager(); // ????
@@ -167,7 +167,7 @@ public class ShiroUserManager implements UserManager {
     SimpleRole shiroRole = this.shiroRoles.get(roleName);
     azkaban.user.Permission azPermission = new azkaban.user.Permission();
 
-    for (Permission p : shiroRole.getPermissions()) {
+    for (org.apache.shiro.authz.Permission p : shiroRole.getPermissions()) {
       try {
         final azkaban.user.Permission.Type type =
             azkaban.user.Permission.Type.valueOf((p.toString().toUpperCase()));
