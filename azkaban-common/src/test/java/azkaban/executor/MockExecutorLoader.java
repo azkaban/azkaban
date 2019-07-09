@@ -353,12 +353,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor addExecutor(final String host, final int port)
+  public Executor addExecutor(final String host, final int port, final boolean isActive)
       throws ExecutorManagerException {
     Executor executor = null;
     if (fetchExecutor(host, port) == null) {
       this.executorIdCounter++;
-      executor = new Executor(this.executorIdCounter, host, port, true);
+      executor = new Executor(this.executorIdCounter, host, port, isActive);
       this.executors.add(executor);
     }
     return executor;

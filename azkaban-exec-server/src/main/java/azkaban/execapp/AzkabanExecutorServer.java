@@ -265,10 +265,11 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       final String host = requireNonNull(getHost());
       final int port = getPort();
       checkState(port != -1);
+      final boolean isInitiallyActive = isInitiallyActive();
       final Executor executor = this.executionLoader.fetchExecutor(host, port);
       if (executor == null) {
         logger.info("This executor wasn't found in the DB. Adding self.");
-        this.executionLoader.addExecutor(host, port);
+        this.executionLoader.addExecutor(host, port, isInitiallyActive);
       } else {
         logger.info("This executor is already in the DB. Found: " + executor);
       }
@@ -424,6 +425,10 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
     // The first connector is created upon initializing the server. That's the one that has the port.
     return connectors[0].getLocalPort();
+  }
+
+  public boolean isInitiallyActive() {
+    return this.props.getBoolean(ConfigurationKeys.AZKABAN_EXECUTOR_INITIALLY_ACTIVE, false);
   }
 
   /**
