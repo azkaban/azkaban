@@ -21,7 +21,10 @@
     <div class="row">
       <div class="header-title">
         <h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution
-          <small>$jobid</small>
+          <small>
+            $jobid
+            <span id="flowStatus" class="$attemptStatus">$attemptStatus</span>
+          </small>
         </a></h1>
       </div>
       <div class="header-control">
@@ -53,6 +56,7 @@
       <li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid
       </a></li>
       <li class="active"><strong>Job</strong> $jobid</li>
+      <li class="active"><strong>Attempt</strong> $attempt</li>
     </ol>
   </div>
 </div>
