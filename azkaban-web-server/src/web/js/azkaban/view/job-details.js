@@ -31,7 +31,7 @@ azkaban.JobLogView = Backbone.View.extend({
   },
 
   render: function () {
-    var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
+    var re = /(https?:\/\/\S+)/g;
     var log = this.model.get("logData");
     log = log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
     $("#logSection").html(log);
