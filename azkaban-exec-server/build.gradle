@@ -52,6 +52,10 @@ distributions {
             from('src/main/resources/commonprivate.properties') {
                 into 'plugins/jobtypes'
             }
+            from(project(':az-hadoop-jobtype-plugin').files('src/jobtypes/jdbcSql')) {
+                into 'plugins/jobtypes/jdbcSql'
+                fileMode = 0755
+            }
             from('../azkaban-common/src/main/bash') {
                 into 'bin'
                 fileMode = 0755

@@ -69,6 +69,12 @@ distributions {
             from(jar) {
                 into 'lib'
             }
+            from('src/jobtypes/jdbcSql') {
+                into 'plugins/jobtypes/jdbcSql'
+            }
+            from('src/jobtypes/jdbcSql') {
+                into 'plugins/jobtypes/jdbcSql'
+            }
         }
     }
 }
