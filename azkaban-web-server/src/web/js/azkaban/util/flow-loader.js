@@ -148,7 +148,9 @@ var nodeClickCallback = function (event, model, node) {
     // 1. Flow -> Graph tab
     // 2. Execution -> Graph tab
     menu = [];
-    if (node.status != 'READY' && node.status != 'SKIPPED') {
+    // Include job log links in job context menu unless job hasn't been started
+    if (node.status !== 'READY' && node.status !== 'SKIPPED'
+        && node.status !== 'DISABLED' && node.status !== 'CANCELLED') {
       // For "Flow Graph" (not an execution) node.status = READY, so this
       // condition also works correctly for it
       $.merge(menu, [
