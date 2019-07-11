@@ -148,23 +148,6 @@ var nodeClickCallback = function (event, model, node) {
     // 1. Flow -> Graph tab
     // 2. Execution -> Graph tab
     menu = [];
-    if (node.status != 'READY' && node.status != 'SKIPPED') {
-      // For "Flow Graph" (not an execution) node.status = READY, so this
-      // condition also works correctly for it
-      $.merge(menu, [
-        {
-          title: "Open Log...", callback: function () {
-            window.location.href = logURL;
-          }
-        },
-        {
-          title: "Open Log in New Window...", callback: function () {
-            window.open(logURL);
-          }
-        },
-        {break: 1}
-      ]);
-    }
     $.merge(menu, [
       //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
       //  {break: 1},
@@ -185,6 +168,23 @@ var nodeClickCallback = function (event, model, node) {
         }
       }
     ]);
+    if (node.status != 'READY' && node.status != 'SKIPPED') {
+      // For "Flow Graph" (not an execution) node.status = READY, so this
+      // condition also works correctly for it
+      $.merge(menu, [
+        {break: 1},
+        {
+          title: "Open Log...", callback: function () {
+            window.location.href = logURL;
+          }
+        },
+        {
+          title: "Open Log in New Window...", callback: function () {
+            window.open(logURL);
+          }
+        }
+      ]);
+    }
   }
   contextMenuView.show(event, menu);
 }
