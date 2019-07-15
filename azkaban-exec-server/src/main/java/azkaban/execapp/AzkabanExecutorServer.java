@@ -238,6 +238,9 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
     loadCustomJMXAttributeProcessor(this.props);
 
+    // Before starting, make FlowRunnerManager accept executions if active=true
+    initActive();
+
     try {
       this.server.start();
     } catch (final Exception e) {
@@ -258,6 +261,28 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   private void startReportingExecMetrics() {
     logger.info("starting reporting Executor Metrics");
     this.metricsManager.startReporting("AZ-EXEC", this.props);
+  }
+
+  private void initActive() throws ExecutorManagerException {
+    final Executor executor;
+    try {
+      final String host = requireNonNull(getHost());
+      // TODO "pick any free port" can't be supported like this because it's only available after the
+      // jetty server has been started. this works if executor.port is set
+      final int port = props.getInt(ConfigurationKeys.EXECUTOR_PORT, -1);
+      checkState(port != -1);
+      executor = this.executionLoader.fetchExecutor(host, port);
+    } catch (final ExecutorManagerException e) {
+      logger.error("Error fetching executor entry from DB", e);
+      throw e;
+    }
+    if (executor == null) {
+      logger.info("This executor wasn't found in the DB. Setting active=false.");
+      getFlowRunnerManager().setActiveInternal(false);
+    } else {
+      logger.info("This executor is already in the DB. Found active=" + executor.isActive());
+      getFlowRunnerManager().setActiveInternal(executor.isActive());
+    }
   }
 
   private void insertExecutorEntryIntoDB() throws ExecutorManagerException {
