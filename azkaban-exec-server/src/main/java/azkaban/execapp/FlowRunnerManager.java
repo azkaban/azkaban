@@ -968,10 +968,11 @@ public class FlowRunnerManager implements EventListener,
   @SuppressWarnings("FutureReturnValueIgnored")
   private class PollingService {
 
-    private final long pollingIntervalMs;
     private final ScheduledExecutorService scheduler;
-    private int executorId = -1;
     private final PollingCriteria pollingCriteria;
+    private final long pollingIntervalMs;
+    private int executorId = -1;
+    private int numRetries = 0;
 
     public PollingService(final long pollingIntervalMs, final PollingCriteria pollingCriteria) {
       this.pollingIntervalMs = pollingIntervalMs;
@@ -1002,12 +1003,30 @@ public class FlowRunnerManager implements EventListener,
               .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
           if (execId != -1) {
             FlowRunnerManager.logger.info("Submitting flow " + execId);
-            submitFlow(execId);
-            FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
+            try {
+              submitFlow(execId);
+              FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
+              this.numRetries = 0;
+            } catch (final ExecutorManagerException e) {
+              // If the flow fails to be submitted, then unset its executor id in DB so that other
+              // executors can pick up this flow and submit again.
+              FlowRunnerManager.this.executorLoader.unsetExecutorIdForExecution(execId);
+              throw new ExecutorManagerException(
+                  "Unset executor id " + this.executorId + " for execution " + execId, e);
+            }
           }
         } catch (final Exception e) {
           FlowRunnerManager.logger.error("Failed to submit flow ", e);
           FlowRunnerManager.this.commonMetrics.markDispatchFail();
+          this.numRetries = this.numRetries + 1;
+          try {
+            // Implement exponential backoff retries when flow submission fails,
+            // i.e., sleep 1s, 2s, 4s, 8s ... before next retries.
+            Thread.sleep((long) (Math.pow(2, this.numRetries) * 1000));
+          } catch (final InterruptedException ie) {
+            FlowRunnerManager.logger
+                .warn("Sleep after flow submission failure was interrupted - ignoring");
+          }
         }
       }
     }
@@ -1028,16 +1047,16 @@ public class FlowRunnerManager implements EventListener,
     private boolean isFreeMemoryAvailable;
     private boolean isCpuLoadUnderMax;
 
+    public PollingCriteria(final Props azkabanProps) {
+      this.azkabanProps = azkabanProps;
+    }
+
     public boolean shouldPoll() {
       if (satisfiesFlowThreadsAvailableCriteria() && satisfiesFreeMemoryCriteria()
           && satisfiesCpuUtilizationCriteria()) {
         return true;
       }
       return false;
-    }
-
-    public PollingCriteria(final Props azkabanProps) {
-      this.azkabanProps = azkabanProps;
     }
 
     private boolean satisfiesFlowThreadsAvailableCriteria() {

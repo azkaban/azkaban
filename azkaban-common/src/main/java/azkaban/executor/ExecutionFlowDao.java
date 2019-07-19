@@ -293,10 +293,11 @@ public class ExecutionFlowDao {
    * set executor id to null for the execution id
    */
   public void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException {
-    final String UNSET_EXECUTOR = "UPDATE execution_flows SET executor_id = null where exec_id = ?";
+    final String UNSET_EXECUTOR = "UPDATE execution_flows SET executor_id = null, update_time = ? where exec_id = ?";
 
     final SQLTransaction<Integer> unsetExecutor =
-        transOperator -> transOperator.update(UNSET_EXECUTOR, executionId);
+        transOperator -> transOperator.update(UNSET_EXECUTOR, System.currentTimeMillis(),
+            executionId);
 
     try {
       this.dbOperator.transaction(unsetExecutor);
@@ -308,7 +309,8 @@ public class ExecutionFlowDao {
 
   public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
-    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ? where exec_id = ?";
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
+        + "where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
@@ -320,7 +322,7 @@ public class ExecutionFlowDao {
       int execId = -1;
       if (!execIds.isEmpty()) {
         execId = execIds.get(0);
-        transOperator.update(UPDATE_EXECUTION, executorId, execId);
+        transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
       }
       transOperator.getConnection().commit();
       return execId;
@@ -340,7 +342,7 @@ public class ExecutionFlowDao {
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE status = " + Status.PREPARING.getNumVal()
             + " and executor_id is NULL and flow_data is NOT NULL and %s"
-            + " ORDER BY flow_priority DESC, submit_time ASC, exec_id ASC LIMIT 1 FOR UPDATE";
+            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1 FOR UPDATE";
 
     public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
         String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
