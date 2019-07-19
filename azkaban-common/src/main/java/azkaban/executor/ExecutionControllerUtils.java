@@ -27,8 +27,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -46,8 +48,7 @@ public class ExecutionControllerUtils {
   private static final String SPARK_JOB_TYPE = "spark";
   private static final String APPLICATION_ID = "${application.id}";
   // The regex to look for while fetching application ID from the Hadoop/Spark job log
-  private static final Pattern APPLICATION_ID_PATTERN = Pattern
-      .compile("application_\\d+_\\d+");
+  private static final Pattern APPLICATION_ID_PATTERN = Pattern.compile("application_(\\d+_\\d+)");
   // The regex to look for while validating the content from RM job link
   private static final Pattern FAILED_TO_READ_APPLICATION_PATTERN = Pattern
       .compile("Failed to read the application");
@@ -300,12 +301,14 @@ public class ExecutionControllerUtils {
           new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
         String inputLine;
         while ((inputLine = in.readLine()) != null) {
-          if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()
-              || INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
-            logger.info(
-                "RM job link is invalid or has expired for application_" + applicationId);
+          if (FAILED_TO_READ_APPLICATION_PATTERN.matcher(inputLine).find()) {
+            logger.info("RM job link has expired for application_" + applicationId);
             isRMJobLinkValid = false;
             break;
+          }
+          if (INVALID_APPLICATION_ID_PATTERN.matcher(inputLine).find()) {
+            logger.info("Invalid application id application_" + applicationId);
+            return null;
           }
         }
       }
@@ -317,44 +320,46 @@ public class ExecutionControllerUtils {
     if (isRMJobLinkValid) {
       jobLinkUrl = url.toString();
     } else {
-      // If RM job link is invalid or has expired, fetch the job link from JHS or SHS.
+      // If RM job url has expired, build the url to the JHS or SHS instead.
       final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
       if (node == null) {
         logger.error(
-            "Invalid job link. Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+            "Failed to create job url. Job " + jobId + " doesn't exist in " + exFlow
+                .getExecutionId());
         return null;
       }
 
       if (node.getType().equals(SPARK_JOB_TYPE)) {
-        jobLinkUrl =
-            azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL).replace
-                (APPLICATION_ID, applicationId);
+        jobLinkUrl = azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)
+            .replace(APPLICATION_ID, applicationId);
       } else {
-        jobLinkUrl =
-            azkProps.get(ConfigurationKeys.HISTORY_SERVER_JOB_URL).replace(APPLICATION_ID,
-                applicationId);
+        jobLinkUrl = azkProps.get(ConfigurationKeys.HISTORY_SERVER_JOB_URL)
+            .replace(APPLICATION_ID, applicationId);
       }
     }
 
-    logger.info(
-        "Job link url is " + jobLinkUrl + " for execution " + exFlow.getExecutionId() + ", job "
-            + jobId);
+    logger.info("Job link url is " + jobLinkUrl + " for execution " + exFlow.getExecutionId() +
+        ", job " + jobId);
     return jobLinkUrl;
   }
 
   /**
-   * Find the application id from job log by matching "application_<id>" pattern.
+   * Find all the application ids the job log data contains by matching "application_<id>" pattern.
+   * Application ids are returned in the order they appear.
    *
-   * @param logData the log data
-   * @return the application id
+   * @param logData The log data.
+   * @return The set of application ids found.
    */
-  public static String findApplicationIdFromLog(final String logData) {
+  public static Set<String> findApplicationIdsFromLog(final String logData) {
+    final Set<String> applicationIds = new LinkedHashSet<>();
     final Matcher matcher = APPLICATION_ID_PATTERN.matcher(logData);
-    String appId = null;
-    if (matcher.find()) {
-      appId = matcher.group().substring(12);
+
+    while (matcher.find()) {
+      final String appId = matcher.group(1);
+      applicationIds.add(appId);
     }
-    logger.info("Application ID is " + appId);
-    return appId;
+
+    logger.info("Application Ids found: " + applicationIds.toString());
+    return applicationIds;
   }
 }

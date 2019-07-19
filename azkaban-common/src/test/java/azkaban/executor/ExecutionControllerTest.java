@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -242,7 +243,7 @@ public class ExecutionControllerTest {
   }
 
   /**
-   * Test fetching application id from log data.
+   * Test fetching application ids from log data.
    *
    * @throws Exception the exception
    */
@@ -250,17 +251,33 @@ public class ExecutionControllerTest {
   public void testGetApplicationIdFromLog() throws Exception {
     when(this.loader.fetchActiveFlowByExecId(this.flow1.getExecutionId()))
         .thenReturn(new Pair<>(this.ref1, this.flow1));
-    // Verify that application id is obtained successfully from the log data.
+
+    // Verify that application ids are obtained successfully from the log data.
     final Map<String, Object> logData1 = ImmutableMap.of("offset", 0, "length", 33, "data",
         "Submitted application_12345_6789.");
+    Map<String, Object> logDataEnd = ImmutableMap.of("offset", 33, "length", 0, "data", "");
     when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
-        .thenReturn(logData1);
-    Assert.assertEquals("12345_6789", this.controller.getApplicationId(this.flow1, "job1", 0));
-    // Verify that application id is null when log data length is 0 (no new data available).
-    final Map<String, Object> logData2 = ImmutableMap.of("offset", 33, "length", 0, "data", "");
+        .thenReturn(logData1, logDataEnd);
+    Set<String> appIds = this.controller.getApplicationIds(this.flow1, "job1", 0);
+    Assert.assertEquals(1, appIds.size());
+    Assert.assertEquals("12345_6789", appIds.iterator().next());
+
+    final Map<String, Object> logData2 = ImmutableMap.of("offset", 0, "length", 93, "data",
+        "Submitted application_12345_6789.\n Attempt job_12345_6789. Accepted application_98765_4321. ");
+    logDataEnd = ImmutableMap.of("offset", 93, "length", 0, "data", "");
     when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
-        .thenReturn(logData2);
-    Assert.assertEquals(null, this.controller.getApplicationId(this.flow1, "job1", 0));
+        .thenReturn(logData2, logDataEnd);
+    appIds = this.controller.getApplicationIds(this.flow1, "job1", 0);
+    Assert.assertEquals(2, appIds.size());
+    final Iterator iterator = appIds.iterator();
+    Assert.assertEquals("12345_6789", iterator.next());
+    Assert.assertEquals("98765_4321", iterator.next());
+
+    // Verify that an empty list is returned when log data length is 0 (no new data available).
+    final Map<String, Object> logData3 = ImmutableMap.of("offset", 0, "length", 0, "data", "");
+    when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
+        .thenReturn(logData3);
+    Assert.assertEquals(0, this.controller.getApplicationIds(this.flow1, "job1", 0).size());
   }
 
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws

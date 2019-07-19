@@ -29,15 +29,28 @@
       </div>
       <div class="header-control">
         <div class="pull-right header-form">
-          #if ($jobLinkUrl)
-            #if ($jobType == "spark")
-              <a href="$jobLinkUrl" target="_blank" class="btn btn-primary btn-sm"
-                 id="jobLinkUrl">Spark Job Log</a>
-            #else
-              <a href="$jobLinkUrl" target="_blank" class="btn btn-primary btn-sm"
-                 id="jobLinkUrl">Hadoop Job Log</a>
-            #end
+          #set($jobLogLinkBtnText = "#if($jobType == 'spark')Spark Job Log#{else}Hadoop Job Log#end")
+          #set($jobLogLinkBtnClass = "#if($jobFailed == 'true')btn-danger#{else}btn-primary#end")
+          #if ($jobLogUrlsByAppId.size() == 1)
+            <a href="${jobLogUrlsByAppId.get($jobLogUrlsByAppId.entrySet().iterator().next().getKey())}"
+               target="_blank" class="btn btn-sm ${jobLogLinkBtnClass}" id="jobLogLink">
+              ${jobLogLinkBtnText}
+            </a>
           #end
+          #if ($jobLogUrlsByAppId.size() > 1)
+            <div class="btn-group">
+              <button type="button" class="btn btn-sm dropdown-toggle ${jobLogLinkBtnClass}"
+                      data-toggle="dropdown">
+                ${jobLogLinkBtnText} <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                #foreach ($jobLogLink in $jobLogUrlsByAppId.entrySet())
+                  <li><a target="_blank" href="$jobLogLink.value">$jobLogLink.key</a></li>
+                #end
+              </ul>
+            </div>
+          #end
+
           <a href="${context}/manager?project=${projectName}&flow=${parentflowid}&job=$jobname"
              class="btn btn-info btn-sm">Job Properties</a>
         </div>
