@@ -745,10 +745,10 @@ public class ExecutorManager extends EventHandler implements
     try {
       LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       while (data != null && data.getLength() > 0) {
-        applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(data.getData()));
-        offset = data.getOffset() + data.getLength();
         this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
+        applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(data.getData()));
+        offset = data.getOffset() + data.getLength();
         data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {

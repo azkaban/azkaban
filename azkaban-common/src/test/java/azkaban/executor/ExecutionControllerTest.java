@@ -1,18 +1,18 @@
 /*
-* Copyright 2018 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -262,9 +262,9 @@ public class ExecutionControllerTest {
     Assert.assertEquals(1, appIds.size());
     Assert.assertEquals("12345_6789", appIds.iterator().next());
 
-    final Map<String, Object> logData2 = ImmutableMap.of("offset", 0, "length", 93, "data",
-        "Submitted application_12345_6789.\n Attempt job_12345_6789. Accepted application_98765_4321. ");
-    logDataEnd = ImmutableMap.of("offset", 93, "length", 0, "data", "");
+    final Map<String, Object> logData2 = ImmutableMap.of("offset", 0, "length", 100, "data",
+        "Submitted application_12345_6789.\n AttemptID: attempt_12345_6789. Accepted application_98765_4321. ");
+    logDataEnd = ImmutableMap.of("offset", 100, "length", 0, "data", "");
     when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
         .thenReturn(logData2, logDataEnd);
     appIds = this.controller.getApplicationIds(this.flow1, "job1", 0);
