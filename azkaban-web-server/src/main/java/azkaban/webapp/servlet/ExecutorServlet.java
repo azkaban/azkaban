@@ -54,6 +54,7 @@ import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -284,9 +285,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void handleExecutionJobDetailsPage(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
+    final Page page = newPage(req, resp, session,
+        "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
     final User user = session.getUser();
     final int execId = getIntParam(req, "execid");
     final String jobId = getParam(req, "job");
@@ -297,7 +297,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ExecutableFlow flow = null;
     ExecutableNode node = null;
-    final String jobLinkUrl;
     try {
       flow = this.executorManagerAdapter.getExecutableFlow(execId);
       if (flow == null) {
@@ -309,16 +308,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
       node = flow.getExecutableNodePath(jobId);
       if (node == null) {
-        page.add("errorMsg",
-            "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
+        page.add("errorMsg", "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
         return;
       }
 
-      jobLinkUrl = this.executorManagerAdapter.getJobLinkUrl(flow, jobId, attempt);
-
-      final List<ViewerPlugin> jobViewerPlugins =
-          PluginRegistry.getRegistry().getViewerPluginsForJobType(
-              node.getType());
+      final List<ViewerPlugin> jobViewerPlugins = PluginRegistry.getRegistry()
+          .getViewerPluginsForJobType(node.getType());
       page.add("jobViewerPlugins", jobViewerPlugins);
     } catch (final ExecutorManagerException e) {
       page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
@@ -334,11 +329,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    final Map<String, String> jobLogUrlsByAppId = this.executorManagerAdapter
+        .getExternalJobLogUrls(flow, jobId, attempt);
+    page.add("jobLogUrlsByAppId", jobLogUrlsByAppId);
+
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
-    page.add("jobLinkUrl", jobLinkUrl);
     page.add("jobType", node.getType());
     page.add("attemptStatus", attempt == node.getAttempt() ?
         node.getStatus() : node.getPastAttemptList().get(attempt).getStatus());
@@ -467,7 +465,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
     boolean isCurrentFlowLocked = false;
-    if(currentFlow != null) {
+    if (currentFlow != null) {
       isCurrentFlowLocked = currentFlow.isLocked();
     } else {
       logger.info("Flow {} not found in project {}.", flow.getFlowId(), project.getName());
@@ -586,7 +584,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       }
 
       final int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-      final LogData data = this.executorManagerAdapter.getExecutionJobLog(exFlow, jobId, offset, length, attempt);
+      final LogData data = this.executorManagerAdapter
+          .getExecutionJobLog(exFlow, jobId, offset, length, attempt);
       ret.putAll(appendLogData(data, offset));
 
     } catch (final ExecutorManagerException e) {
@@ -595,7 +594,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   }
 
   private Map<String, Object> appendLogData(final LogData data, final int defaultOffset) {
-    Map<String, Object> parameters = new HashMap<>();
+    final Map<String, Object> parameters = new HashMap<>();
 
     if (data == null) {
       parameters.put("length", 0);

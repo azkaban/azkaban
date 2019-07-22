@@ -83,7 +83,8 @@ public interface ExecutorManagerAdapter {
   public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId,
       int attempt) throws ExecutorManagerException;
 
-  public String getJobLinkUrl(ExecutableFlow exFlow, String jobId, int attempt);
+  public Map<String, String> getExternalJobLogUrls(ExecutableFlow exFlow, String jobId,
+      int attempt);
 
   public void cancelFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException;
