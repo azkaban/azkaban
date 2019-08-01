@@ -255,7 +255,7 @@ public class FlowRunnerTestUtil {
     this.executorLoader.uploadExecutableFlow(exFlow);
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class));
+            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), null);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }
