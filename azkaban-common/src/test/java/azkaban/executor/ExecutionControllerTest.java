@@ -44,6 +44,7 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 
 public class ExecutionControllerTest {
 
@@ -248,25 +249,22 @@ public class ExecutionControllerTest {
    * @throws Exception the exception
    */
   @Test
-  public void testGetApplicationIdFromLog() throws Exception {
+  public void testGetApplicationIdsFromLog() throws Exception {
     when(this.loader.fetchActiveFlowByExecId(this.flow1.getExecutionId()))
         .thenReturn(new Pair<>(this.ref1, this.flow1));
 
     // Verify that application ids are obtained successfully from the log data.
-    final Map<String, Object> logData1 = ImmutableMap.of("offset", 0, "length", 33, "data",
-        "Submitted application_12345_6789.");
-    Map<String, Object> logDataEnd = ImmutableMap.of("offset", 33, "length", 0, "data", "");
+    final String logData1 = "Submitted application_12345_6789.";
     when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
-        .thenReturn(logData1, logDataEnd);
+        .then(getLogChunksMock(logData1));
     Set<String> appIds = this.controller.getApplicationIds(this.flow1, "job1", 0);
     Assert.assertEquals(1, appIds.size());
     Assert.assertEquals("12345_6789", appIds.iterator().next());
 
-    final Map<String, Object> logData2 = ImmutableMap.of("offset", 0, "length", 100, "data",
-        "Submitted application_12345_6789.\n AttemptID: attempt_12345_6789. Accepted application_98765_4321. ");
-    logDataEnd = ImmutableMap.of("offset", 100, "length", 0, "data", "");
+    final String logData2 = " Submitted application_12345_6789.\n AttemptID: attempt_12345_6789. "
+        + "Accepted application_98765_4321.";
     when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
-        .thenReturn(logData2, logDataEnd);
+        .then(getLogChunksMock(logData2));
     appIds = this.controller.getApplicationIds(this.flow1, "job1", 0);
     Assert.assertEquals(2, appIds.size());
     final Iterator iterator = appIds.iterator();
@@ -274,10 +272,33 @@ public class ExecutionControllerTest {
     Assert.assertEquals("98765_4321", iterator.next());
 
     // Verify that an empty list is returned when log data length is 0 (no new data available).
-    final Map<String, Object> logData3 = ImmutableMap.of("offset", 0, "length", 0, "data", "");
     when(this.apiGateway.callWithReference(any(), eq(ConnectorParams.LOG_ACTION), any()))
-        .thenReturn(logData3);
+        .then(getLogChunksMock(""));
     Assert.assertEquals(0, this.controller.getApplicationIds(this.flow1, "job1", 0).size());
+  }
+
+  private Answer<Object> getLogChunksMock(final String logData) {
+    return invocationOnMock -> {
+      String offsetStr = null, lengthStr = null;
+      for (final Object arg : invocationOnMock.getArguments()) {
+        if (!(arg instanceof Pair)) {
+          continue;
+        }
+        final Pair pairArg = (Pair) arg;
+        if ("offset".equals(pairArg.getFirst())) {
+          offsetStr = (String) pairArg.getSecond();
+        } else if ("length".equals(pairArg.getFirst())) {
+          lengthStr = (String) pairArg.getSecond();
+        }
+      }
+      Assert.assertNotNull(offsetStr);
+      Assert.assertNotNull(lengthStr);
+      final int offset = Integer.parseInt(offsetStr);
+      final int length = Integer.parseInt(lengthStr);
+      final int actualLength = Math.min(length, Math.max(0, logData.length() - offset));
+      final String logChunk = logData.substring(offset, offset + actualLength);
+      return ImmutableMap.of("offset", offset, "length", actualLength, "data", logChunk);
+    };
   }
 
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
