@@ -36,6 +36,8 @@ import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.FlowLoader;
 import azkaban.project.FlowLoaderFactory;
 import azkaban.project.Project;
@@ -45,6 +47,7 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -253,9 +256,10 @@ public class FlowRunnerTestUtil {
     }
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
     this.executorLoader.uploadExecutableFlow(exFlow);
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), null);
+            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }
