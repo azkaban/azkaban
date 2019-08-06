@@ -34,7 +34,7 @@ azkaban.LoginView = Backbone.View.extend({
 
     $.ajax({
       async: "false",
-      url: contextURL,
+      url: contextURL+"/",
       dataType: "json",
       type: "POST",
       data: {
