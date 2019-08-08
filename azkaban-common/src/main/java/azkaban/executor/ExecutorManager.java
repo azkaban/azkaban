@@ -747,8 +747,18 @@ public class ExecutorManager extends EventHandler implements
       while (data != null && data.getLength() > 0) {
         this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
-        applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(data.getData()));
-        offset = data.getOffset() + data.getLength();
+        String logData = data.getData();
+        final int indexOfLastSpace = logData.lastIndexOf(' ');
+        final int indexOfLastTab = logData.lastIndexOf('\t');
+        final int indexOfLastEoL = logData.lastIndexOf('\n');
+        final int indexOfLastDelim = Math
+            .max(indexOfLastEoL, Math.max(indexOfLastSpace, indexOfLastTab));
+        if (indexOfLastDelim > -1) {
+          // index + 1 to avoid looping forever if indexOfLastDelim is zero
+          logData = logData.substring(0, indexOfLastDelim + 1);
+        }
+        applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(logData));
+        offset = data.getOffset() + logData.length();
         data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
