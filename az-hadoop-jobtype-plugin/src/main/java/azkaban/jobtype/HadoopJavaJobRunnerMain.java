@@ -341,6 +341,7 @@ public class HadoopJavaJobRunnerMain {
           + " was not found. Cannot run job.");
     }
 
+    Class<?> loggerClass = logger.getClass();
     Class<?> propsClass = null;
     for (String propClassName : PROPS_CLASSES) {
       try {
@@ -351,7 +352,8 @@ public class HadoopJavaJobRunnerMain {
       }
 
       if (propsClass != null
-          && getConstructor(runningClass, String.class, propsClass) != null) {
+          && ((getConstructor(runningClass, String.class, propsClass) != null)
+          || (getConstructor(runningClass, String.class, propsClass, propsClass, loggerClass) != null))) {
         // is this the props class
         break;
       }
@@ -359,7 +361,28 @@ public class HadoopJavaJobRunnerMain {
     }
 
     Object obj = null;
-    if (propsClass != null
+    if (propsClass != null && loggerClass != null &&
+        getConstructor(runningClass, String.class, propsClass, propsClass, loggerClass) != null) {
+      // Handle cases where jobtype has ctor of format
+      // (java.lang.String,azkaban.utils.Props,azkaban.utils.Props,org.apache.log4j.Logger)
+      logger.info("Creating object for ctor(java.lang.String,azkaban.utils.Props,azkaban.utils"
+          + ".Props,org.apache.log4j.Logger)");
+      // Create SysProps class
+      Constructor<?> sysPropsCon =
+          getConstructor(propsClass, propsClass, Properties[].class);
+      Object sysProps =
+          sysPropsCon.newInstance(null, new Properties[]{properties});
+      // Create jobProps class
+      Constructor<?> jobPropsCon =
+          getConstructor(propsClass, propsClass, Properties[].class);
+      Object jobProps =
+          jobPropsCon.newInstance(null, new Properties[]{properties});
+
+      Constructor<?> con =
+          getConstructor(runningClass, String.class, propsClass, propsClass, loggerClass);
+      logger.info("Constructor found " + con.toGenericString());
+      obj = con.newInstance(jobName, sysProps, jobProps, Logger.getLogger(con.getClass()));
+    } else if (propsClass != null
         && getConstructor(runningClass, String.class, propsClass) != null) {
       // Create props class
       Constructor<?> propsCon =
