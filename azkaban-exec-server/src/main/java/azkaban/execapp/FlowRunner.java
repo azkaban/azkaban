@@ -16,9 +16,9 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -103,7 +103,7 @@ import org.apache.log4j.PatternLayout;
  */
 public class FlowRunner extends EventHandler implements Runnable {
 
-  private static Splitter SPLIT_ON_COMMA = Splitter.on(",").omitEmptyStrings().trimResults();
+  private static final Splitter SPLIT_ON_COMMA = Splitter.on(",").omitEmptyStrings().trimResults();
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
@@ -126,7 +126,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private final JobRunnerEventListener listener = new JobRunnerEventListener();
   private final FlowRunnerEventListener flowListener = new FlowRunnerEventListener();
   private final Set<JobRunner> activeJobRunners = Collections
-      .newSetFromMap(new ConcurrentHashMap<JobRunner, Boolean>());
+      .newSetFromMap(new ConcurrentHashMap<>());
   // Thread safe swap queue for finishedExecutions.
   private final SwapQueue<ExecutableNode> finishedNodes;
   private final AzkabanEventReporter azkabanEventReporter;
@@ -1356,11 +1356,11 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   public FlowRunnerEventListener getFlowRunnerEventListener() {
-    return flowListener;
+    return this.flowListener;
   }
 
   public JobRunnerEventListener getJobRunnerEventListener() {
-    return listener;
+    return this.listener;
   }
 
   // Class helps report the flow start and stop events.
@@ -1391,12 +1391,13 @@ public class FlowRunner extends EventHandler implements Runnable {
       // Propagate flow properties to Event Reporter
       if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
         // In Flow 2.0, flow has designated properties (defined at its own level in Yaml)
-        propagateMetadataFromProps(metaData, flow.getInputProps(), "flow", flow.getId(), logger);
+        FlowRunner.propagateMetadataFromProps(metaData, flow.getInputProps(), "flow", flow.getId(),
+            FlowRunner.this.logger);
       } else {
         // In Flow 1.0, flow properties are combination of shared properties in individual files (order not defined,
         // .. because it's loaded by fs list order and put in a HashMap).
         Props combinedProps = new Props();
-        for (Props sharedProp : flowRunner.sharedProps.values()) {
+        for (final Props sharedProp : flowRunner.sharedProps.values()) {
           // sharedProp.getFlattened() gets its parent's props too, so we don't have to recurse
           combinedProps.putAll(sharedProp.getFlattened());
         }
@@ -1404,7 +1405,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         // In Flow 1.0, flow's inputProps contains overrides, so apply that as override to combined shared props
         combinedProps = new Props(combinedProps, flow.getInputProps());
 
-        propagateMetadataFromProps(metaData, combinedProps, "flow", flow.getId(), logger);
+        FlowRunner.propagateMetadataFromProps(metaData, combinedProps, "flow", flow.getId(),
+            FlowRunner.this.logger);
       }
 
       return metaData;
@@ -1455,7 +1457,8 @@ public class FlowRunner extends EventHandler implements Runnable {
           jobRunner.getProps().getString(JobProperties.USER_TO_PROXY, null));
 
       // Propagate job properties to Event Reporter
-      propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(), logger);
+      FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
+          FlowRunner.this.logger);
 
       return metaData;
     }
@@ -1505,7 +1508,8 @@ public class FlowRunner extends EventHandler implements Runnable {
             .getInstance(TriggerManager.class);
         triggerManager
             .addTrigger(FlowRunner.this.flow.getExecutionId(),
-                SlaOption.getJobLevelSLAOptions(flow.getExecutionOptions().getSlaOptions()));
+                SlaOption.getJobLevelSLAOptions(
+                    FlowRunner.this.flow.getExecutionOptions().getSlaOptions()));
       }
     }
   }
@@ -1520,8 +1524,8 @@ public class FlowRunner extends EventHandler implements Runnable {
    * @param logger Logger from invoking class for log sanity.
    */
   @VisibleForTesting
-  static void propagateMetadataFromProps(Map<String, String> metaData, Props inputProps, String nodeType,
-      String nodeName, Logger logger) {
+  static void propagateMetadataFromProps(final Map<String, String> metaData, final Props inputProps,
+      final String nodeType, final String nodeName, final Logger logger) {
 
     // Backward compatibility: Unless user specifies, this will be absent from flows and jobs
     // .. if so, do a no-op like before
@@ -1534,17 +1538,20 @@ public class FlowRunner extends EventHandler implements Runnable {
       throw new IllegalArgumentException("Input params should not be null or empty.");
     }
 
-    final String propsToPropagate = inputProps.getString(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE);
+    final String propsToPropagate = inputProps
+        .getString(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE);
     if (Strings.isNullOrEmpty(propsToPropagate)) {
       // Nothing to propagate
-      logger.info(String.format("No properties to propagate to metadata for %s: %s", nodeType, nodeName));
+      logger.info(
+          String.format("No properties to propagate to metadata for %s: %s", nodeType, nodeName));
       return;
     } else {
-      logger.info(String.format("Propagating: %s to metadata for %s: %s", propsToPropagate, nodeType, nodeName));
+      logger.info(String
+          .format("Propagating: %s to metadata for %s: %s", propsToPropagate, nodeType, nodeName));
     }
 
     final List<String> propsToPropagateList = SPLIT_ON_COMMA.splitToList(propsToPropagate);
-    for (String propKey : propsToPropagateList) {
+    for (final String propKey : propsToPropagateList) {
       if (!inputProps.containsKey(propKey)) {
         logger.warn(String.format("%s does not contains: %s property; "
             + "skipping propagation to metadata", nodeName, propKey));
