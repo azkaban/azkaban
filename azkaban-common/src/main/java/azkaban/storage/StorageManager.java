@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
@@ -122,11 +123,12 @@ public class StorageManager {
   }
 
   /**
-   * Clean up project artifacts based on project ID. See {@link StorageCleaner#cleanupProjectArtifacts(int)}
+   * Clean up project artifacts of a given project id, except those with the project versions
+   * provided.
    */
-  public void cleanupProjectArtifacts(final int projectId) {
+  public void cleanupProjectArtifacts(final int projectId, final List<Integer> versionsToExclude) {
     try {
-      this.storageCleaner.cleanupProjectArtifacts(projectId);
+      this.storageCleaner.cleanupProjectArtifacts(projectId, versionsToExclude);
     } catch (final Exception e) {
       log.error("Error occured during cleanup. Ignoring and continuing...", e);
     }
@@ -164,11 +166,11 @@ public class StorageManager {
     final String resourceId = requireNonNull(pfh.getResourceId(),
         String.format("URI is null. project ID: %d version: %d",
             pfh.getProjectId(), pfh.getVersion()));
-    try (InputStream is = this.storage.get(resourceId)) {
+    try (final InputStream is = this.storage.get(resourceId)) {
       final File file = createTempOutputFile(pfh);
 
       /* Copy from storage to output stream */
-      try (FileOutputStream fos = new FileOutputStream(file)) {
+      try (final FileOutputStream fos = new FileOutputStream(file)) {
         IOUtils.copy(is, fos);
       }
 

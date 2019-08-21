@@ -258,9 +258,8 @@ class AzkabanProjectLoader {
         .collect(Collectors.toList());
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
         project.getVersion() - this.projectVersionRetention, versionsWithUnfinishedExecutions);
-
     // Clean up storage
-    this.storageManager.cleanupProjectArtifacts(project.getId());
+    this.storageManager.cleanupProjectArtifacts(project.getId(), versionsWithUnfinishedExecutions);
   }
 
   private File unzipFile(final File archiveFile) throws IOException {
