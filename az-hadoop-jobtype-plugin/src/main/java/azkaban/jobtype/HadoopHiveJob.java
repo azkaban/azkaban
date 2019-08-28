@@ -16,12 +16,8 @@
 package azkaban.jobtype;
 
 import azkaban.flow.CommonJobProperties;
-import azkaban.jobExecutor.JavaProcessJob;
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
-import azkaban.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,28 +60,8 @@ public class HadoopHiveJob extends AbstractHadoopJavaProcessJob {
   @Override
   protected String getJVMArguments() {
     String args = super.getJVMArguments();
-
-    String typeUserGlobalJVMArgs =
-        getJobProps().getString("jobtype.global.jvm.args", null);
-    if (typeUserGlobalJVMArgs != null) {
-      args += " " + typeUserGlobalJVMArgs;
-    }
-    String typeSysGlobalJVMArgs =
-        getSysProps().getString("jobtype.global.jvm.args", null);
-    if (typeSysGlobalJVMArgs != null) {
-      args += " " + typeSysGlobalJVMArgs;
-    }
-    String typeUserJVMArgs = getJobProps().getString("jobtype.jvm.args", null);
-    if (typeUserJVMArgs != null) {
-      args += " " + typeUserJVMArgs;
-    }
-    String typeSysJVMArgs = getSysProps().getString("jobtype.jvm.args", null);
-    if (typeSysJVMArgs != null) {
-      args += " " + typeSysJVMArgs;
-    }
-
+    args += getJVMJobTypeParameters();
     args += getJVMProxySecureArgument();
-
     return args;
   }
 
@@ -129,26 +105,12 @@ public class HadoopHiveJob extends AbstractHadoopJavaProcessJob {
 
     List<String> classPath = super.getClassPaths();
 
-    // To add az-core jar classpath
-    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
-
-    // To add az-common jar classpath
-    classPath.add(FileIOUtils.getSourcePathFromClass(JavaProcessJob.class));
-    classPath.add(FileIOUtils.getSourcePathFromClass(HadoopSecureHiveWrapper.class));
-    classPath.add(FileIOUtils.getSourcePathFromClass(HadoopSecurityManager.class));
+    classPath.addAll(getAzkabanCommonClassPaths());
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
 
-    List<String> typeClassPath =
-        getSysProps().getStringList("jobtype.classpath", null, ",");
-    Utils.mergeTypeClassPaths(classPath, typeClassPath, getSysProps().get("plugin.dir"));
-
-    List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    Utils.mergeStringList(classPath, typeGlobalClassPath);
-
-    return classPath;
+    return mergeSysTypeClassPaths(classPath);
   }
 
   private String getScript() {

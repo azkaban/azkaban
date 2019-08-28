@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobExecutor;
 
 import azkaban.server.AzkabanServer;
@@ -24,6 +23,8 @@ import azkaban.utils.Utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 
 public class JavaProcessJob extends ProcessJob {
@@ -36,6 +37,9 @@ public class JavaProcessJob extends ProcessJob {
   public static final String MAIN_ARGS = "main.args";
   public static final String JVM_PARAMS = "jvm.args";
   public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
+  public static final String DEPENDENCY_CLS_RAMP_PROP_PREFIX = "azkaban.ramp.jar:";
+  public static final String DEPENDENCY_REG_RAMP_PROP_PREFIX = "azkaban.ramp.reg:";
+  public static final String DEPENDENCY_CFG_RAMP_PROP_PREFIX = "azkaban.ramp.cfg:";
 
   public static final String DEFAULT_INITIAL_MEMORY_SIZE = "64M";
   public static final String DEFAULT_MAX_MEMORY_SIZE = "256M";
@@ -112,6 +116,29 @@ public class JavaProcessJob extends ProcessJob {
     }
 
     return classpathList;
+  }
+
+  protected Map<String, String> getRampItems(String prefix) {
+    return getJobProps()
+        .getKeySet()
+        .stream()
+        .filter(propKey -> propKey.startsWith(prefix))
+        .map(getJobProps()::get)
+        .collect(Collectors.toMap(
+            key -> key,
+            key -> getJobProps().get(key)
+        ));
+  }
+
+  protected List<String> mergeSysTypeClassPaths(List<String> classPath) {
+    Utils.mergeTypeClassPaths(classPath,
+        getSysProps().getStringList("jobtype.classpath", null, ","),
+        getSysProps().get("plugin.dir"));
+
+    Utils.mergeStringList(classPath,
+        getSysProps().getStringList("jobtype.global.classpath", null, ","));
+
+    return classPath;
   }
 
   protected String getInitialMemorySize() {
