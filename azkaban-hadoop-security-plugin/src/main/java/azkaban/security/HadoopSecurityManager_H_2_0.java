@@ -235,7 +235,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     if (hsmInstance == null) {
       synchronized (HadoopSecurityManager_H_2_0.class) {
         if (hsmInstance == null) {
-          logger.info("getting new instance");
+          logger.info("getting new instance of HadoopSecurityManager");
           hsmInstance = new HadoopSecurityManager_H_2_0(props);
         }
       }
@@ -452,8 +452,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       hcatToken.setService(new Text(tokenSignatureOverwrite.trim()
           .toLowerCase()));
 
-      logger.info(HIVE_TOKEN_SIGNATURE_KEY + ":"
-          + (tokenSignatureOverwrite == null ? "" : tokenSignatureOverwrite));
+      logger.info(HIVE_TOKEN_SIGNATURE_KEY + ":" + tokenSignatureOverwrite);
     }
 
     logger.info("Created hive metastore token.");
@@ -470,37 +469,47 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       throws HadoopSecurityManagerException {
     final String userToProxy = props.getString(JobProperties.USER_TO_PROXY);
 
-    logger.info("Getting hadoop tokens based on props for " + userToProxy);
     doPrefetch(tokenFile, props, logger, userToProxy);
   }
 
   private void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
+    // Create suffix to be added to headless user, the suffix is a valid email ID which conforms
+    // to Kubernetes.
+    final String suffix =
+        props.getBoolean(HadoopSecurityManager.APPEND_SUBMIT_USER, false) &&
+            props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) != null ?
+            "/" + props.getString(Constants.FlowProperties.AZKABAN_FLOW_SUBMIT_USER) +
+                props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) : "";
+
+    final String userToProxyFQN = userToProxy + suffix;
+    logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
+
     final Credentials cred = new Credentials();
-    fetchMetaStoreToken(props, logger, userToProxy, cred);
-    fetchJHSToken(props, logger, userToProxy, cred);
+    fetchMetaStoreToken(props, logger, userToProxyFQN, cred);
+    fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
+      getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          getToken(userToProxy);
+          getToken(userToProxyFQN);
           return null;
         }
 
-        private void getToken(final String userToProxy) throws InterruptedException,
+        private void getToken(final String userToProxyFQN) throws InterruptedException,
             IOException, HadoopSecurityManagerException {
           logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN + ": "
               + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger);
+            registerCustomCredential(props, cred, userToProxyFQN, logger);
           }
 
-          fetchNameNodeToken(userToProxy, props, logger, cred);
+          fetchNameNodeToken(userToProxyFQN, props, logger, cred);
 
-          fetchJobTrackerToken(userToProxy, props, logger, cred);
+          fetchJobTrackerToken(userToProxyFQN, props, logger, cred);
 
         }
       });
@@ -512,6 +521,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
 
     } catch (final Exception e) {
+      logger.warn("User = " + userToProxy);
       throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
           + e.getMessage() + e.getCause(), e);
     } catch (final Throwable t) {
