@@ -40,6 +40,11 @@ public abstract class HadoopSecurityManager {
   public static final String OBTAIN_NAMENODE_TOKEN = "obtain.namenode.token";
   public static final String OBTAIN_HCAT_TOKEN = "obtain.hcat.token";
 
+  // Add LDAP user to fetch delegation token in addition to proxy user
+  public static final String APPEND_SUBMIT_USER = "append.submit.user";
+  // Add suffix to user name e.g, for GRID users, GRID.LINKEDIN.COM
+  public static final String SUBMIT_USER_SUFFIX = "submit.user.suffix";
+
   public static boolean shouldProxy(final Properties prop) {
     final String shouldProxy = prop.getProperty(ENABLE_PROXYING);
 
