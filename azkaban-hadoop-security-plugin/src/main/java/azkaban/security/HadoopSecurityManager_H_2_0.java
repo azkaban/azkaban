@@ -521,6 +521,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
 
     } catch (final Exception e) {
+      logger.warn("User = " + userToProxy);
       throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
           + e.getMessage() + e.getCause(), e);
     } catch (final Throwable t) {
