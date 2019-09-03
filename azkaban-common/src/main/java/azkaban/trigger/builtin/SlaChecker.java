@@ -69,16 +69,23 @@ public class SlaChecker implements ConditionChecker {
 
   private Boolean isSlaMissed(final ExecutableFlow flow) {
     final SlaType type = slaOption.getType();
+    logger.info("SLA type for flow " + flow.getId() + " is " + type);
     if (flow.getStartTime() < 0) {
+      logger.info("Start time is less than 0 for flow " + flow.getId());
       return false;
     }
 
     Status status;
     if (type.getComponent() == SlaType.ComponentType.FLOW) {
+      logger.info("SLA type is flow.");
       if (this.checkTime < flow.getStartTime()) {
+        logger.info("checktime = " + this.checkTime);
+        logger.info("SLA duration = " + slaOption.getDuration().toMillis() + " ms");
         this.checkTime = flow.getStartTime() + slaOption.getDuration().toMillis();
+        logger.info("checktime updated to " + this.checkTime);
       }
       status = flow.getStatus();
+      logger.info("Flow status = " + status.toString());
     } else { // JOB
       final ExecutableNode node = flow.getExecutableNode(slaOption.getJobName());
       if (node.getStartTime() < 0) {
@@ -92,8 +99,10 @@ public class SlaChecker implements ConditionChecker {
     if (this.checkTime < DateTime.now().getMillis()) {
       switch (slaOption.getType()) {
         case FLOW_FINISH:
+          logger.info("isFlowFinished?");
           return !isFlowFinished(status);
          case FLOW_SUCCEED:
+           logger.info("isFlowSucceeded?");
             return !isFlowSucceeded(status);
          case JOB_FINISH:
             return !isJobFinished(status);
@@ -101,6 +110,7 @@ public class SlaChecker implements ConditionChecker {
             return !isJobFinished(status);
       }
     } else if (slaOption.getType().getStatus() == StatusType.SUCCEED) {
+      logger.info("slaOption.status = SUCCEED and status = " + status.toString());
       return (status == Status.FAILED || status == Status.KILLED);
     }
     return false;
@@ -162,6 +172,7 @@ public class SlaChecker implements ConditionChecker {
     final ExecutableFlow flow;
     try {
       flow = this.executorLoader.fetchExecutableFlow(this.execId);
+      logger.info("Flow for execid " + this.execId + " is " + flow.getId());
     } catch (final ExecutorManagerException e) {
       logger.error("Can't get executable flow.", e);
       // something wrong, send out alerts
