@@ -357,7 +357,7 @@
             <div class="alert alert-danger" id="change-permission-error-msg"></div>
             <fieldset class="form-horizontal">
               <div class="form-group">
-                <label for="path" class="col-sm-2 control-label">User</label>
+                <label for="path" class="col-sm-2 control-label" id="change-type">User</label>
                 <div class="col-sm-10">
                   <input type="text" name="userid" id="user-box" class="form-control">
                 </div>

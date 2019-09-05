@@ -171,6 +171,16 @@ azkaban.ChangePermissionView = Backbone.View.extend({
     var executeInput = $("#" + prefix + "-execute-checkbox");
     var scheduleInput = $("#" + prefix + "-schedule-checkbox");
 
+    if (group) {
+      $('#change-type').text("Group");
+    }
+    else if (proxy) {
+      $('#change-type').text("Proxy");
+    }
+    else {
+      $('#change-type').text("User");
+    }
+
     if (newPerm) {
       if (group) {
         $('#change-title').text("Add New Group Permissions");
