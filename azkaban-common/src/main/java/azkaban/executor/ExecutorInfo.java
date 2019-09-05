@@ -105,6 +105,7 @@ import org.codehaus.jackson.map.ObjectMapper;
       this.numberOfAssignedFlows = numberOfAssignedFlows;
     }
 
+    @SuppressWarnings("EqualsHashCode")
     @Override
     public boolean equals(Object obj)
     {
