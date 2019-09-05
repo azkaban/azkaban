@@ -120,13 +120,13 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var overrideFailureEmails = this.model.get("failureEmailsOverride");
 
     if (overrideSuccessEmails) {
-      $('#override-success-emails').attr('checked', true);
+      $('#override-success-emails').prop('checked', true);
     }
     else {
       $('#success-emails').attr('disabled', 'disabled');
     }
     if (overrideFailureEmails) {
-      $('#override-failure-emails').attr('checked', true);
+      $('#override-failure-emails').prop('checked', true);
     }
     else {
       $('#failure-emails').attr('disabled', 'disabled');
@@ -143,11 +143,11 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     }
 
     if (notifyFailure.first) {
-      $('#notify-failure-first').attr('checked', true);
+      $('#notify-failure-first').prop('checked', true);
       $('#notify-failure-first').parent('.btn').addClass('active');
     }
     if (notifyFailure.last) {
-      $('#notify-failure-last').attr('checked', true);
+      $('#notify-failure-last').prop('checked', true);
       $('#notify-failure-last').parent('.btn').addClass('active');
     }
 
