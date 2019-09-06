@@ -148,12 +148,10 @@ azkaban.ChangePermissionView = Backbone.View.extend({
     $('#change-permission-error-msg').hide();
   },
 
-  display: function (userid, newPerm, group, proxy) {
+  display: function (userid, newPerm, group) {
     // 6 is the length of the prefix "group-"
     this.userid = group ? userid.substring(6, userid.length) : userid;
-    if (group == true) {
-      this.userid = userid.substring(6, userid.length)
-    } else if (proxy == true) {
+    if (group) {
       this.userid = userid.substring(6, userid.length)
     } else {
       this.userid = userid
@@ -174,9 +172,6 @@ azkaban.ChangePermissionView = Backbone.View.extend({
     if (group) {
       $('#change-type').text("Group");
     }
-    else if (proxy) {
-      $('#change-type').text("Proxy");
-    }
     else {
       $('#change-type').text("User");
     }
@@ -184,9 +179,6 @@ azkaban.ChangePermissionView = Backbone.View.extend({
     if (newPerm) {
       if (group) {
         $('#change-title').text("Add New Group Permissions");
-      }
-      else if (proxy) {
-        $('#change-title').text("Add New Proxy User Permissions");
       }
       else {
         $('#change-title').text("Add New User Permissions");
@@ -231,12 +223,7 @@ azkaban.ChangePermissionView = Backbone.View.extend({
   handleCheckboxClick: function (evt) {
     console.log("click");
     var targetName = evt.currentTarget.name;
-    if (targetName == "proxy") {
-      this.doProxy = evt.currentTarget.checked;
-    }
-    else {
-      this.permission[targetName] = evt.currentTarget.checked;
-    }
+    this.permission[targetName] = evt.currentTarget.checked;
     this.changeCheckbox(evt);
   },
 
@@ -353,11 +340,11 @@ $(function () {
     el: $('#remove-proxy')
   });
   $('#addUser').bind('click', function () {
-    changePermissionView.display("", true, false, false);
+    changePermissionView.display("", true, false);
   });
 
   $('#addGroup').bind('click', function () {
-    changePermissionView.display("", true, true, false);
+    changePermissionView.display("", true, true);
   });
 
   $('#addProxyUser').bind('click', function () {
