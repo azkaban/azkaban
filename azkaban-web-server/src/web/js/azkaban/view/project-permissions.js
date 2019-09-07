@@ -26,7 +26,6 @@ azkaban.PermissionTableView = Backbone.View.extend({
 
   initialize: function (settings) {
     this.group = settings.group;
-    this.proxy = settings.proxy;
   },
 
   render: function () {
@@ -34,8 +33,7 @@ azkaban.PermissionTableView = Backbone.View.extend({
 
   handleChangePermission: function (evt) {
     var currentTarget = evt.currentTarget;
-    changePermissionView.display(currentTarget.id, false, this.group,
-        this.proxy);
+    changePermissionView.display(currentTarget.id, false, this.group);
   }
 });
 
@@ -317,18 +315,14 @@ azkaban.ChangePermissionView = Backbone.View.extend({
 $(function () {
   permissionTableView = new azkaban.PermissionTableView({
     el: $('#permissions-table'),
-    group: false,
-    proxy: false
+    group: false
   });
   groupPermissionTableView = new azkaban.PermissionTableView({
     el: $('#group-permissions-table'),
-    group: true,
-    proxy: false
+    group: true
   });
   proxyTableView = new azkaban.ProxyTableView({
-    el: $('#proxy-user-table'),
-    group: false,
-    proxy: true
+    el: $('#proxy-user-table')
   });
   changePermissionView = new azkaban.ChangePermissionView({
     el: $('#change-permission')
