@@ -1222,6 +1222,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
 
+        setNeedsMoreUsersIfAppropriate(page, project, session);
+
         final boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
         if (adminPerm) {
           page.add("admin", true);
@@ -1346,6 +1348,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
 
+        setNeedsMoreUsersIfAppropriate(page, project, session);
+
         if (perm.isPermissionSet(Type.ADMIN)) {
           page.add("admin", true);
         }
@@ -1411,6 +1415,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.render();
         return;
       }
+
+      setNeedsMoreUsersIfAppropriate(page, project, session);
 
       page.add("flowid", flow.getId());
       final Node node = flow.getNode(jobName);
@@ -1613,6 +1619,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       page.add("project", project);
       flow = project.getFlow(flowName);
+
+      setNeedsMoreUsersIfAppropriate(page, project, session);
+
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
       } else {
@@ -1672,6 +1681,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             "validatorFixLink",
             this.projectManager.getProps().get(
                 ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM));
+
+        setNeedsMoreUsersIfAppropriate(page, project, session);
 
         final boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
         if (adminPerm) {
@@ -1974,6 +1985,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         flow.setLocked(true);
       }
     }
+  }
+
+  private void setNeedsMoreUsersIfAppropriate(final Page page, final Project project, final Session session) {
+    // See if the project has only one admin user with no admin groups.
+    // If it does AND the current user has the ability to add an admin, let's force the user to do so before
+    // allowing any execution or scheduling of flows.
+
+    boolean hasEnoughUsersGroups = project.getUsersWithPermission(Type.ADMIN).size() > 1
+                              || project.getGroupsWithPermission(Type.ADMIN).size() > 0
+                              || !hasPermission(session.getUser(), Type.ADMIN);
+
+    page.add("hasEnoughUsersGroups", hasEnoughUsersGroups);
   }
 
   private void handleUpload(final HttpServletRequest req, final HttpServletResponse resp,

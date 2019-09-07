@@ -594,6 +594,11 @@ var initFlowPage = function (settings) {
       flow: settings.flowId
     };
 
+    if (!hasEnoughUsersGroups) {
+      forceAdditionalUserView.show();
+      return;
+    }
+
     flowExecuteDialogView.show(executingData);
   });
 

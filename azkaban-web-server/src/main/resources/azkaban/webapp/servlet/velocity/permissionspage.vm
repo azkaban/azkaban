@@ -23,6 +23,7 @@
 
   <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/add-more-users-groups-modal.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
     var currentTime = ${currentTime};
@@ -56,6 +57,7 @@
       <div class="col-xs-12 col-sm-9">
 
         #set ($project_page = "permissions")
+        #parse ("azkaban/webapp/servlet/velocity/addmoreusersgroupsalert.vm")
         #parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
       ## User permissions table.
@@ -398,6 +400,7 @@
 
     #parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
     #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+    #parse ("azkaban/webapp/servlet/velocity/addmoreusersgroupsmodal.vm")
   </div><!-- /container-full -->
   #end
 </body>

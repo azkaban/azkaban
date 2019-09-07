@@ -242,6 +242,11 @@ azkaban.FlowTableView = Backbone.View.extend({
   },
 
   executeFlowDialog: function (executingData) {
+    if (!hasEnoughUsersGroups) {
+      forceAdditionalUserView.show();
+      return;
+    }
+
     flowExecuteDialogView.show(executingData);
   },
 

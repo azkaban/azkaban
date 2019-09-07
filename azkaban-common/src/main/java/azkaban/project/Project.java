@@ -217,6 +217,17 @@ public class Project {
     return users;
   }
 
+  public List<String> getGroupsWithPermission(final Type type) {
+    final ArrayList<String> groups = new ArrayList<>();
+    for (final Map.Entry<String, Permission> entry : this.groupPermissionMap.entrySet()) {
+      final Permission perm = entry.getValue();
+      if (perm.isPermissionSet(type)) {
+        groups.add(entry.getKey());
+      }
+    }
+    return groups;
+  }
+
   public List<Pair<String, Permission>> getUserPermissions() {
     final ArrayList<Pair<String, Permission>> permissions =
         new ArrayList<>();

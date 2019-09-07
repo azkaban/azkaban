@@ -24,14 +24,17 @@
   <script type="text/javascript" src="${context}/js/moment.min.js"></script>
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/project.js?v=1556216524794"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project.js?v=1567820073"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/add-more-users-groups-modal.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
     var currentTime = ${currentTime};
     var timezone = "${timezone}";
     var errorMessage = null;
     var successMessage = null;
+
+    var hasEnoughUsersGroups = $hasEnoughUsersGroups;
 
     var projectId = ${project.id};
     var execAccess = ${exec};
@@ -63,6 +66,7 @@
       <div class="col-xs-12 col-sm-9" id="flow-tabs">
 
         #set ($project_page = "flows")
+        #parse ("azkaban/webapp/servlet/velocity/addmoreusersgroupsalert.vm")
         #parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
         <div id="flow-tabs">
@@ -111,6 +115,7 @@
     #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
     #parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
     #parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
+    #parse ("azkaban/webapp/servlet/velocity/addmoreusersgroupsmodal.vm")
 
   </div><!-- /container -->
   #end
