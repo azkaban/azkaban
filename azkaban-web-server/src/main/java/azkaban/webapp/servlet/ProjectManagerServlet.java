@@ -119,6 +119,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
+  private boolean forceMultipleUsers;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -146,6 +147,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
+
+    this.forceMultipleUsers = server.getServerProps().getBoolean("azkaban.forceMultipleUsers", false);
 
     logger.info("downloadBufferSize: " + this.downloadBufferSize);
   }
@@ -1989,12 +1992,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private void setNeedsMoreUsersIfAppropriate(final Page page, final Project project, final Session session) {
     // See if the project has only one admin user with no admin groups.
-    // If it does AND the current user has the ability to add an admin, let's force the user to do so before
-    // allowing any execution or scheduling of flows.
+    // If it does AND the forceMultipleUsers flag is set AND the current user has the ability to add
+    // an admin, let's force the user to do so before allowing any execution or scheduling of flows.
 
     boolean hasEnoughUsersGroups = project.getUsersWithPermission(Type.ADMIN).size() > 1
                               || project.getGroupsWithPermission(Type.ADMIN).size() > 0
-                              || !hasPermission(session.getUser(), Type.ADMIN);
+                              || !hasPermission(session.getUser(), Type.ADMIN)
+                              || !this.forceMultipleUsers;
 
     page.add("hasEnoughUsersGroups", hasEnoughUsersGroups);
   }
