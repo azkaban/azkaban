@@ -104,6 +104,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
       "project.download.buffer.size";
+
+  private static final String AZKABAN_FORCE_MULTIPLE_USERS =
+      "executor.connector.stats";
   private static final Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
     @Override
     public int compare(final Flow f1, final Flow f2) {
@@ -148,7 +151,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
 
-    this.forceMultipleUsers = server.getServerProps().getBoolean("azkaban.forceMultipleUsers", false);
+    this.forceMultipleUsers = server.getServerProps().getBoolean(AZKABAN_FORCE_MULTIPLE_USERS, false);
 
     logger.info("downloadBufferSize: " + this.downloadBufferSize);
   }
