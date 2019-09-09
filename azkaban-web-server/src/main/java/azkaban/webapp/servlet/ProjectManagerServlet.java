@@ -1993,10 +1993,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     // If it does AND the forceMultipleUsers flag is set AND the current user has the ability to add
     // an admin, let's force the user to do so before allowing any execution or scheduling of flows.
 
-    boolean hasEnoughUsersGroups = project.getUsersWithPermission(Type.ADMIN).size() > 1
+    boolean hasEnoughUsersGroups = !this.forceMultipleUsers
+                              || project.getUsersWithPermission(Type.ADMIN).size() > 1
                               || project.getGroupsWithPermission(Type.ADMIN).size() > 0
-                              || !hasPermission(session.getUser(), Type.ADMIN)
-                              || !this.forceMultipleUsers;
+                              || !hasPermission(session.getUser(), Type.ADMIN);
 
     page.add("hasEnoughUsersGroups", hasEnoughUsersGroups);
   }
