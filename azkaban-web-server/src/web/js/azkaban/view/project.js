@@ -242,6 +242,8 @@ azkaban.FlowTableView = Backbone.View.extend({
   },
 
   executeFlowDialog: function (executingData) {
+    // Before showing the executeFlowDialog - see if we should force the user
+    // to add more users/groups with admin privileges to the project.
     if (!hasEnoughUsersGroups) {
       forceAdditionalUserView.show();
       return;
