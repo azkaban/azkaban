@@ -440,7 +440,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final int from = Integer.valueOf(getParam(req, "start"));
     final int length = Integer.valueOf(getParam(req, "length"));
 
-    final ArrayList<ExecutableFlow> exFlows = new ArrayList<>();
+    final List<ExecutableFlow> exFlows = new ArrayList<>();
     int total = 0;
     try {
       total =
@@ -455,7 +455,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     ret.put("from", from);
     ret.put("length", length);
 
-    final ArrayList<Object> history = new ArrayList<>();
+    final List<Object> history = new ArrayList<>();
     for (final ExecutableFlow flow : exFlows) {
       final HashMap<String, Object> flowInfo = new HashMap<>();
       flowInfo.put("execId", flow.getExecutionId());
@@ -793,8 +793,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchProjectFlows(final Project project,
       final HashMap<String, Object> ret, final HttpServletRequest req)
       throws ServletException {
-    final ArrayList<Map<String, Object>> flowList =
-        new ArrayList<>();
+    final List<Map<String, Object>> flowList = new ArrayList<>();
     for (final Flow flow : project.getFlows()) {
       if (!flow.isEmbeddedFlow()) {
         final HashMap<String, Object> flowObj = new HashMap<>();
@@ -822,8 +821,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final ArrayList<Map<String, Object>> nodeList =
-        new ArrayList<>();
+    final List<Map<String, Object>> nodeList = new ArrayList<>();
     for (final Node node : flow.getNodes()) {
       final HashMap<String, Object> nodeObj = new HashMap<>();
       nodeObj.put("id", node.getId());
@@ -839,7 +837,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       nodeList.add(nodeObj);
       final Set<Edge> inEdges = flow.getInEdges(node.getId());
       if (inEdges != null && !inEdges.isEmpty()) {
-        final ArrayList<String> inEdgesList = new ArrayList<>();
+        final List<String> inEdgesList = new ArrayList<>();
         for (final Edge edge : inEdges) {
           inEdgesList.add(edge.getSourceId());
         }
@@ -906,15 +904,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String flowId = getParam(req, "flow");
     final Flow flow = project.getFlow(flowId);
 
-    final ArrayList<Node> flowNodes = new ArrayList<>(flow.getNodes());
+    final List<Node> flowNodes = new ArrayList<>(flow.getNodes());
     Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
 
-    final ArrayList<Object> nodeList = new ArrayList<>();
+    final List<Object> nodeList = new ArrayList<>();
     for (final Node node : flowNodes) {
       final HashMap<String, Object> nodeObj = new HashMap<>();
       nodeObj.put("id", node.getId());
 
-      final ArrayList<String> dependencies = new ArrayList<>();
+      final List<String> dependencies = new ArrayList<>();
       Collection<Edge> collection = flow.getInEdges(node.getId());
       if (collection != null) {
         for (final Edge edge : collection) {
@@ -922,7 +920,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
-      final ArrayList<String> dependents = new ArrayList<>();
+      final List<String> dependents = new ArrayList<>();
       collection = flow.getOutEdges(node.getId());
       if (collection != null) {
         for (final Edge edge : collection) {
@@ -1083,8 +1081,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * this only returns user permissions, but not group permissions and proxy users
    */
   private void ajaxGetPermissions(final Project project, final HashMap<String, Object> ret) {
-    final ArrayList<HashMap<String, Object>> permissions =
-        new ArrayList<>();
+    final List<HashMap<String, Object>> permissions = new ArrayList<>();
     for (final Pair<String, Permission> perm : project.getUserPermissions()) {
       final HashMap<String, Object> permObj = new HashMap<>();
       final String userId = perm.getFirst();
@@ -1099,8 +1096,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private void ajaxGetGroupPermissions(final Project project,
       final HashMap<String, Object> ret) {
-    final ArrayList<HashMap<String, Object>> permissions =
-        new ArrayList<>();
+    final List<HashMap<String, Object>> permissions = new ArrayList<>();
     for (final Pair<String, Permission> perm : project.getGroupPermissions()) {
       final HashMap<String, Object> permObj = new HashMap<>();
       final String userId = perm.getFirst();
@@ -1314,7 +1310,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (CollectionUtils.isNotEmpty(jobInfo)) {
         page.add("history", jobInfo);
 
-        final ArrayList<Object> dataSeries = new ArrayList<>();
+        final List<Object> dataSeries = new ArrayList<>();
         for (final ExecutableJobInfo info : jobInfo) {
           final Map<String, Object> map = info.toObject();
           dataSeries.add(map);
@@ -1445,7 +1441,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("condition", node.getCondition());
       }
 
-      final ArrayList<String> dependencies = new ArrayList<>();
+      final List<String> dependencies = new ArrayList<>();
       final Set<Edge> inEdges = flow.getInEdges(node.getId());
       if (inEdges != null) {
         for (final Edge dependency : inEdges) {
@@ -1456,7 +1452,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("dependencies", dependencies);
       }
 
-      final ArrayList<String> dependents = new ArrayList<>();
+      final List<String> dependents = new ArrayList<>();
       final Set<Edge> outEdges = flow.getOutEdges(node.getId());
       if (outEdges != null) {
         for (final Edge dependent : outEdges) {
@@ -1468,7 +1464,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       // Resolve property dependencies
-      final ArrayList<String> source = new ArrayList<>();
+      final List<String> source = new ArrayList<>();
       final String nodeSource = node.getPropsSource();
       if (nodeSource != null) {
         source.add(nodeSource);
@@ -1482,8 +1478,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("properties", source);
       }
 
-      final ArrayList<Pair<String, String>> parameters =
-          new ArrayList<>();
+      final List<Pair<String, String>> parameters = new ArrayList<>();
       // Parameter
       for (final String key : jobProp.getKeySet()) {
         final String value = jobProp.get(key);
@@ -1560,7 +1555,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       page.add("jobid", node.getId());
 
       // Resolve property dependencies
-      final ArrayList<String> inheritProps = new ArrayList<>();
+      final List<String> inheritProps = new ArrayList<>();
       FlowProps parent = flow.getFlowProps(propSource);
       while (parent.getInheritedSource() != null) {
         inheritProps.add(parent.getInheritedSource());
@@ -1570,7 +1565,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("inheritedproperties", inheritProps);
       }
 
-      final ArrayList<String> dependingProps = new ArrayList<>();
+      final List<String> dependingProps = new ArrayList<>();
       FlowProps child =
           flow.getFlowProps(flow.getNode(jobName).getPropsSource());
       while (!child.getSource().equals(propSource)) {
@@ -1581,8 +1576,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("dependingproperties", dependingProps);
       }
 
-      final ArrayList<Pair<String, String>> parameters =
-          new ArrayList<>();
+      final List<Pair<String, String>> parameters = new ArrayList<>();
       // Parameter
       for (final String key : prop.getKeySet()) {
         final String value = prop.get(key);

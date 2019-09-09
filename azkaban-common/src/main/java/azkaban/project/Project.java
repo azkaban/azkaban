@@ -207,7 +207,7 @@ public class Project {
   }
 
   public List<String> getUsersWithPermission(final Type type) {
-    final ArrayList<String> users = new ArrayList<>();
+    final List<String> users = new ArrayList<>();
     for (final Map.Entry<String, Permission> entry : this.userPermissionMap.entrySet()) {
       final Permission perm = entry.getValue();
       if (perm.isPermissionSet(type)) {
@@ -218,7 +218,7 @@ public class Project {
   }
 
   public List<String> getGroupsWithPermission(final Type type) {
-    final ArrayList<String> groups = new ArrayList<>();
+    final List<String> groups = new ArrayList<>();
     for (final Map.Entry<String, Permission> entry : this.groupPermissionMap.entrySet()) {
       final Permission perm = entry.getValue();
       if (perm.isPermissionSet(type)) {
@@ -229,8 +229,7 @@ public class Project {
   }
 
   public List<Pair<String, Permission>> getUserPermissions() {
-    final ArrayList<Pair<String, Permission>> permissions =
-        new ArrayList<>();
+    final List<Pair<String, Permission>> permissions = new ArrayList<>();
 
     for (final Map.Entry<String, Permission> entry : this.userPermissionMap.entrySet()) {
       permissions.add(new Pair<>(entry.getKey(), entry
@@ -241,8 +240,7 @@ public class Project {
   }
 
   public List<Pair<String, Permission>> getGroupPermissions() {
-    final ArrayList<Pair<String, Permission>> permissions =
-        new ArrayList<>();
+    final List<Pair<String, Permission>> permissions = new ArrayList<>();
 
     for (final Map.Entry<String, Permission> entry : this.groupPermissionMap.entrySet()) {
       permissions.add(new Pair<>(entry.getKey(), entry
@@ -330,7 +328,7 @@ public class Project {
       projectObject.put("metadata", this.metadata);
     }
 
-    final ArrayList<String> proxyUserList = new ArrayList<>(this.proxyUsers);
+    final List<String> proxyUserList = new ArrayList<>(this.proxyUsers);
     projectObject.put("proxyUsers", proxyUserList);
 
     return projectObject;
