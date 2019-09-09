@@ -123,7 +123,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
-  private boolean forceMultipleUsers;
+  private boolean forceMultipleUsers = false;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
