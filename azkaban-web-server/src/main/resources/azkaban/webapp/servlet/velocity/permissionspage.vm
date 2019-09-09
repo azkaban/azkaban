@@ -21,7 +21,7 @@
   #parse ("azkaban/webapp/servlet/velocity/style.vm")
   #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js?v=1568065399"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
