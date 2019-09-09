@@ -106,7 +106,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       "project.download.buffer.size";
 
   private static final String AZKABAN_FORCE_MULTIPLE_USERS =
-      "executor.connector.stats";
+      "azkaban.forceMultipleUsers";
+
   private static final Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
     @Override
     public int compare(final Flow f1, final Flow f2) {
