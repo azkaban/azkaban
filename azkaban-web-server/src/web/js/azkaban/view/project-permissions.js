@@ -229,32 +229,32 @@ azkaban.ChangePermissionView = Backbone.View.extend({
     var perm = this.permission;
 
     if (perm.admin) {
-      $("#admin-change").attr("checked", true);
-      $("#read-change").attr("checked", true);
+      $("#admin-change").prop("checked", true);
+      $("#read-change").prop("checked", true);
       $("#read-change").attr("disabled", "disabled");
 
-      $("#write-change").attr("checked", true);
+      $("#write-change").prop("checked", true);
       $("#write-change").attr("disabled", "disabled");
 
-      $("#execute-change").attr("checked", true);
+      $("#execute-change").prop("checked", true);
       $("#execute-change").attr("disabled", "disabled");
 
-      $("#schedule-change").attr("checked", true);
+      $("#schedule-change").prop("checked", true);
       $("#schedule-change").attr("disabled", "disabled");
     }
     else {
-      $("#admin-change").attr("checked", false);
+      $("#admin-change").prop("checked", false);
 
-      $("#read-change").attr("checked", perm.read);
+      $("#read-change").prop("checked", perm.read);
       $("#read-change").attr("disabled", null);
 
-      $("#write-change").attr("checked", perm.write);
+      $("#write-change").prop("checked", perm.write);
       $("#write-change").attr("disabled", null);
 
-      $("#execute-change").attr("checked", perm.execute);
+      $("#execute-change").prop("checked", perm.execute);
       $("#execute-change").attr("disabled", null);
 
-      $("#schedule-change").attr("checked", perm.schedule);
+      $("#schedule-change").prop("checked", perm.schedule);
       $("#schedule-change").attr("disabled", null);
     }
 
