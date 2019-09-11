@@ -19,6 +19,7 @@ package azkaban.webapp.servlet;
 import azkaban.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.tools.generic.EscapeTool;
@@ -56,6 +57,7 @@ public class Page {
    */
   public void render() {
     try {
+      sanitizeContextContents();
       this.response.setHeader("Content-type", "text/html; charset=UTF-8");
       this.response.setCharacterEncoding("UTF-8");
       this.response.setContentType(this.mimeType);
@@ -70,6 +72,15 @@ public class Page {
    */
   public void add(final String name, final Object value) {
     this.context.put(name, value);
+  }
+
+  private void sanitizeContextContents() {
+    for(Object key: this.context.getKeys()) {
+      Object value = this.context.get((String)key);
+      if(key instanceof String && value instanceof String) {
+        this.context.put((String)key, StringEscapeUtils.escapeHtml((String)value));
+      }
+    }
   }
 
   public void setMimeType(final String type) {
