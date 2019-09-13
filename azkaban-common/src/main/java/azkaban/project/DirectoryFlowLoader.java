@@ -324,6 +324,7 @@ public class DirectoryFlowLoader implements FlowLoader {
         final Props jobProp = this.jobPropsMap.get(base.getId());
 
         FlowLoaderUtils.addEmailPropsToFlow(flow, jobProp);
+        FlowLoaderUtils.addDisplayNameToFlow(flow, jobProp);
 
         flow.addAllFlowProperties(this.flowPropsList);
         final Set<String> visitedNodesOnPath = new HashSet<>();

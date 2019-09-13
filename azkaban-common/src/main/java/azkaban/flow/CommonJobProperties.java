@@ -61,6 +61,11 @@ public class CommonJobProperties {
    */
   public static final String FAILURE_EMAILS = "failure.emails";
 
+  /**
+   * Name to display in the UI instead of the flow id
+   */
+  public static final String DISPLAY_NAME = "displayName";
+
   /*
    * The following are the common props that will be added to the job by azkaban
    */
@@ -89,7 +94,7 @@ public class CommonJobProperties {
    * The job's log file absolute path.
    */
   public static final String JOB_LOG_FILE = "azkaban.job.log.file";
-  
+
   /**
    * The executing flow id
    */

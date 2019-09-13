@@ -225,6 +225,10 @@ public class FlowLoaderUtils {
     flow.addSuccessEmails(successEmail);
   }
 
+  public static void addDisplayNameToFlow(final Flow flow, final Props props) {
+    flow.setDisplayName(props.getString(CommonJobProperties.DISPLAY_NAME, null));
+  }
+
   /**
    * Generate flow loader report validation report.
    *

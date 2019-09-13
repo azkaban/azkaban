@@ -278,6 +278,7 @@ azkaban.FlowTabView = Backbone.View.extend({
       project: projectName,
       ajax: "executeFlow",
       flow: flowId,
+      flowDisplayName: flowDisplayName,
       execid: execId,
       exgraph: data
     };

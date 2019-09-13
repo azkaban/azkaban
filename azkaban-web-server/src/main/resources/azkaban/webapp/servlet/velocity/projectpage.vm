@@ -76,7 +76,8 @@
                       <button type="button"
                               title=""
                               class="btn btn-xs btn-success execute-flow ${isDisabled}"
-                              flowId="${flow.id}">Execute Flow
+                              flowId="${flow.id}"
+                              flowDisplayName="${flow.displayName}">Execute Flow
                       </button>
                       <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions"
                          class="btn btn-info btn-xs">Executions</a>
@@ -85,7 +86,7 @@
                     </div>
                   #end
                   <span class="glyphicon glyphicon-chevron-down flow-expander-icon"></span>
-                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.displayName}</a>
                 </div>
                 <div id="${flow.id}-child" class="panel-collapse panel-list collapse">
                   <ul class="list-group list-group-collapse expanded-flow-job-list"

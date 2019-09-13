@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public class ExecutableFlowBase extends ExecutableNode {
 
   public static final String FLOW_ID_PARAM = "flowId";
+  public static final String FLOW_DISPLAY_NAME_PARAM = "flowDisplayName";
   public static final String NODES_PARAM = "nodes";
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
@@ -46,6 +47,7 @@ public class ExecutableFlowBase extends ExecutableNode {
   private ArrayList<String> startNodes;
   private ArrayList<String> endNodes;
   private String flowId;
+  private String flowDisplayName;
 
   public ExecutableFlowBase(final Project project, final Node node, final Flow flow,
       final ExecutableFlowBase parent) {
@@ -113,8 +115,13 @@ public class ExecutableFlowBase extends ExecutableNode {
     return this.flowId;
   }
 
+  public String getFlowDisplayName() {
+    return this.flowDisplayName == null ? getFlowId() : this.flowDisplayName;
+  }
+
   protected void setFlow(final Project project, final Flow flow) {
     this.flowId = flow.getId();
+    this.flowDisplayName = flow.getDisplayName();
     this.flowProps.putAll(flow.getAllFlowProps());
 
     for (final Node node : flow.getNodes()) {
@@ -219,6 +226,7 @@ public class ExecutableFlowBase extends ExecutableNode {
     super.fillMapFromExecutable(flowObjMap);
 
     flowObjMap.put(FLOW_ID_PARAM, this.flowId);
+    flowObjMap.put(FLOW_DISPLAY_NAME_PARAM, this.flowDisplayName);
 
     final ArrayList<Object> nodes = new ArrayList<>();
     for (final ExecutableNode node : this.executableNodes.values()) {
@@ -248,6 +256,7 @@ public class ExecutableFlowBase extends ExecutableNode {
     super.fillExecutableFromMapObject(flowObjMap);
 
     this.flowId = flowObjMap.getString(FLOW_ID_PARAM);
+    this.flowDisplayName = flowObjMap.getString(FLOW_DISPLAY_NAME_PARAM);
     final List<Object> nodes = flowObjMap.<Object>getList(NODES_PARAM);
 
     if (nodes != null) {

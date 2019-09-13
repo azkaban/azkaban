@@ -89,17 +89,19 @@ public class FlowTriggerScheduler {
           final FlowTrigger flowTrigger = FlowLoaderUtils.getFlowTriggerFromYamlFile(flowFile);
 
           if (flowTrigger != null) {
-            final Map<String, Object> contextMap = ImmutableMap
-                .of(FlowTriggerQuartzJob.SUBMIT_USER, submitUser,
-                    FlowTriggerQuartzJob.FLOW_TRIGGER, flowTrigger,
-                    FlowTriggerQuartzJob.FLOW_ID, flow.getId(),
-                    FlowTriggerQuartzJob.FLOW_VERSION, latestFlowVersion,
-                    FlowTriggerQuartzJob.PROJECT_ID, project.getId());
+            final Map<String, Object> contextMap = ImmutableMap.<String, Object>builder()
+                .put(FlowTriggerQuartzJob.SUBMIT_USER, submitUser)
+                .put(FlowTriggerQuartzJob.FLOW_TRIGGER, flowTrigger)
+                .put(FlowTriggerQuartzJob.FLOW_ID, flow.getId())
+                .put(FlowTriggerQuartzJob.FLOW_VERSION, latestFlowVersion)
+                .put(FlowTriggerQuartzJob.FLOW_DISPLAY_NAME, flow.getDisplayName())
+                .put(FlowTriggerQuartzJob.PROJECT_ID, project.getId())
+                .build();
             final boolean scheduleSuccess = this.scheduler
                 .scheduleJobIfAbsent(flowTrigger.getSchedule().getCronExpression(),
                     new QuartzJobDescription
-                    (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
-                        generateGroupName(flow), contextMap));
+                        (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
+                            generateGroupName(flow), contextMap));
             if (scheduleSuccess) {
               logger.info("Successfully registered flow {}.{} to scheduler", project.getName(),
                   flow.getId());
@@ -147,6 +149,8 @@ public class FlowTriggerScheduler {
           final JobDataMap jobDataMap = job.getJobDataMap();
 
           final String flowId = jobDataMap.getString(FlowTriggerQuartzJob.FLOW_ID);
+          final String flowDisplayName = jobDataMap
+              .getString(FlowTriggerQuartzJob.FLOW_DISPLAY_NAME);
           final int projectId = jobDataMap.getInt(FlowTriggerQuartzJob.PROJECT_ID);
           final FlowTrigger flowTrigger = (FlowTrigger) jobDataMap
               .get(FlowTriggerQuartzJob.FLOW_TRIGGER);
@@ -154,11 +158,11 @@ public class FlowTriggerScheduler {
           final List<? extends Trigger> quartzTriggers = quartzScheduler.getTriggersOfJob(jobKey);
           final boolean isPaused = this.scheduler
               .isJobPaused(FlowTriggerQuartzJob.JOB_NAME, groupName);
-          final Project project = projectManager.getProject(projectId);
+          final Project project = this.projectManager.getProject(projectId);
           final Flow flow = project.getFlow(flowId);
           scheduledFlowTrigger = new ScheduledFlowTrigger(projectId,
               this.projectManager.getProject(projectId).getName(),
-              flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
+              flowId, flowDisplayName, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0), isPaused, flow.isLocked());
         } catch (final Exception ex) {
           logger.error("Unable to get flow trigger by job key {}", jobKey, ex);
@@ -215,6 +219,7 @@ public class FlowTriggerScheduler {
     private final int projectId;
     private final String projectName;
     private final String flowId;
+    private final String flowDisplayName;
     private final FlowTrigger flowTrigger;
     private final Trigger quartzTrigger;
     private final String submitUser;
@@ -222,11 +227,12 @@ public class FlowTriggerScheduler {
     private final boolean isLocked;
 
     public ScheduledFlowTrigger(final int projectId, final String projectName, final String flowId,
-        final FlowTrigger flowTrigger, final String submitUser,
+        final String flowDisplayName, final FlowTrigger flowTrigger, final String submitUser,
         final Trigger quartzTrigger, final boolean isPaused, final boolean isLocked) {
       this.projectId = projectId;
       this.projectName = projectName;
       this.flowId = flowId;
+      this.flowDisplayName = flowDisplayName;
       this.flowTrigger = flowTrigger;
       this.submitUser = submitUser;
       this.quartzTrigger = quartzTrigger;
@@ -250,6 +256,10 @@ public class FlowTriggerScheduler {
       return this.flowId;
     }
 
+    public String getFlowDisplayName() {
+      return this.flowDisplayName;
+    }
+
     public FlowTrigger getFlowTrigger() {
       return this.flowTrigger;
     }
@@ -267,6 +277,8 @@ public class FlowTriggerScheduler {
       return this.submitUser;
     }
 
-    public boolean isLocked() { return this.isLocked; }
+    public boolean isLocked() {
+      return this.isLocked;
+    }
   }
 }
