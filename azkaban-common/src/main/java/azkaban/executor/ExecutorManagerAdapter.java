@@ -21,6 +21,7 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public interface ExecutorManagerAdapter {
   public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
       throws IOException;
 
-  public List<ExecutableFlow> getRecentlyFinishedFlows();
+  public List<ExecutableFlow> getRecentlyFinishedFlows(Duration duration);
 
   public List<ExecutableFlow> getExecutableFlows(int skip, int size)
       throws ExecutorManagerException;

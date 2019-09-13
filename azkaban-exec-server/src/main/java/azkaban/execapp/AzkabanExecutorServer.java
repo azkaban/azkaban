@@ -33,6 +33,10 @@ import azkaban.execapp.metric.NumFailedJobMetric;
 import azkaban.execapp.metric.NumQueuedFlowMetric;
 import azkaban.execapp.metric.NumRunningFlowMetric;
 import azkaban.execapp.metric.NumRunningJobMetric;
+import azkaban.execapp.metric.NumSucceededFlowMetric;
+import azkaban.execapp.metric.NumSucceededJobMetric;
+import azkaban.execapp.metric.NumFinishedFlowMetric;
+import azkaban.execapp.metric.NumFinishedJobMetric;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -337,6 +341,31 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
           metricManager, props.getInt(METRIC_INTERVAL
               + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
           props.getInt(METRIC_INTERVAL + "default"))));
+
+
+      logger.info("Adding number of success jobs metric");
+      metricManager.addMetric(new NumSucceededJobMetric(metricManager, props
+              .getInt(METRIC_INTERVAL
+                              + NumSucceededJobMetric.NUM_SUCCEEDED_JOB_METRIC_NAME,
+                      props.getInt(METRIC_INTERVAL + "default"))));
+
+      logger.info("Adding number of success flows metric");
+      metricManager.addMetric(new NumSucceededFlowMetric(metricManager, props
+              .getInt(METRIC_INTERVAL
+                              + NumSucceededFlowMetric.NUM_SUCCEEDED_FLOW_METRIC_NAME,
+                      props.getInt(METRIC_INTERVAL + "default"))));
+
+      logger.info("Adding number of finished jobs metric");
+      metricManager.addMetric(new NumFinishedJobMetric(metricManager, props.
+              getInt(METRIC_INTERVAL
+                              + NumFinishedJobMetric.NUM_FINISHED_JOB_METRIC_NAME,
+                      props.getInt(METRIC_INTERVAL + "default"))));
+
+      logger.info("Adding number of finished flows metric");
+      metricManager.addMetric(new NumFinishedFlowMetric(metricManager, props.
+              getInt(METRIC_INTERVAL
+                              + NumFinishedFlowMetric.NUM_FINISHED_FLOW_METRIC_NAME,
+                      props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Completed configuring Metric Reports");
     }

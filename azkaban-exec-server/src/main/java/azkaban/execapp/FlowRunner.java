@@ -37,7 +37,9 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.execapp.metric.NumFailedJobMetric;
+import azkaban.execapp.metric.NumFinishedJobMetric;
 import azkaban.execapp.metric.NumRunningJobMetric;
+import azkaban.execapp.metric.NumSucceededJobMetric;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -1091,6 +1093,14 @@ public class FlowRunner extends EventHandler implements Runnable {
       // Adding NumFailedJobMetric listener
       jobRunner.addListener((NumFailedJobMetric) metricManager
           .getMetricFromName(NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME));
+
+      // Adding NumSucceededJobMetric listener
+      jobRunner.addListener((NumSucceededJobMetric) metricManager
+              .getMetricFromName(NumSucceededJobMetric.NUM_SUCCEEDED_JOB_METRIC_NAME));
+
+      // Adding NumFinishedJobMetric listener
+      jobRunner.addListener((NumFinishedJobMetric) metricManager
+              .getMetricFromName(NumFinishedJobMetric.NUM_FINISHED_JOB_METRIC_NAME));
 
     }
 
