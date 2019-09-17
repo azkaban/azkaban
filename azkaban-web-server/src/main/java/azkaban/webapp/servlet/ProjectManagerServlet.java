@@ -1633,7 +1633,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (flow.isLocked()) {
           final Props props = this.projectManager.getProps();
           final String flowLockErrorMessage = flow.getFlowLockErrorMessage();
-          final String lockedFlowMsg = flowLockErrorMessage != null ? flowLockErrorMessage : String.format(props.getString(ConfigurationKeys
+          final String lockedFlowMsg = flowLockErrorMessage != null ? flowLockErrorMessage :
+              String.format(props.getString(ConfigurationKeys
                   .AZKABAN_LOCKED_FLOW_ERROR_MESSAGE, Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE),
               flow.getId(), projectName);
           page.add("error_message", lockedFlowMsg);

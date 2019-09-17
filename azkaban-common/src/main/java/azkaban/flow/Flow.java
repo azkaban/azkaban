@@ -482,7 +482,7 @@ public class Flow {
     return this.flowLockErrorMessage;
   }
 
-  public void setFlowLockErrorMessage(String flowLockErrorMessage) {
+  public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
     this.flowLockErrorMessage = flowLockErrorMessage;
   }
 }
