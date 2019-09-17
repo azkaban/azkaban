@@ -49,6 +49,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
+  public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
+
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
@@ -64,6 +66,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private double azkabanFlowVersion;
   private boolean isLocked;
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
+  private String flowLockErrorMessage;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -74,6 +77,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.lastModifiedUser = project.getLastModifiedUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
     setLocked(flow.isLocked());
+    setFlowLockErrorMessage(flow.getFlowLockErrorMessage());
     this.setFlow(project, flow);
   }
 
@@ -222,6 +226,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setLocked(boolean locked) { this.isLocked = locked; }
 
+  public String getFlowLockErrorMessage() {
+    return this.flowLockErrorMessage;
+  }
+
+  public void setFlowLockErrorMessage(String flowLockErrorMessage) {
+    this.flowLockErrorMessage = flowLockErrorMessage;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -256,6 +268,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+    flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
 
     return flowObj;
   }
@@ -300,6 +313,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
+    this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
   }
 
   @Override
