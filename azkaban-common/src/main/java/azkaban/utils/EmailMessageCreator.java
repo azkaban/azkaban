@@ -24,6 +24,7 @@ import javax.mail.NoSuchProviderException;
 public class EmailMessageCreator {
 
   public static final int DEFAULT_SMTP_PORT = 25;
+  public static final int DEFAULT_SMTP_SSL_PORT = 465;
 
   private final String mailHost;
   private final int mailPort;
@@ -31,12 +32,14 @@ public class EmailMessageCreator {
   private final String mailPassword;
   private final String mailSender;
   private final String tls;
+  private final String ssl;
   private final boolean usesAuth;
 
   @Inject
   public EmailMessageCreator(final Props props) {
     this.mailHost = props.getString("mail.host", "localhost");
-    this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
+    this.ssl = props.getString("mail.ssl", "false");
+    this.mailPort = props.getInt("mail.port", "false".equalsIgnoreCase(this.ssl) ? DEFAULT_SMTP_PORT : DEFAULT_SMTP_SSL_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
@@ -49,6 +52,7 @@ public class EmailMessageCreator {
         this.mailHost, this.mailPort, this.mailUser, this.mailPassword, this);
     message.setFromAddress(this.mailSender);
     message.setTLS(this.tls);
+    message.setSSL(this.ssl);
     message.setAuth(this.usesAuth);
     return message;
   }

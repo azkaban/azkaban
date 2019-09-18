@@ -16,8 +16,10 @@
 
 package azkaban.utils;
 
+import com.sun.net.ssl.internal.ssl.Provider;
 import java.io.File;
 import java.io.InputStream;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -52,6 +54,7 @@ public class EmailMessage {
   private String _fromAddress;
   private String _mimeType = "text/plain";
   private String _tls;
+  private String _ssl;
   private long _totalAttachmentSizeSoFar;
   private boolean _usesAuth = true;
   private boolean _enableAttachementEmbedment = true;
@@ -104,6 +107,10 @@ public class EmailMessage {
 
   public EmailMessage setTLS(final String tls) {
     this._tls = tls;
+    return this;
+  }
+  public EmailMessage setSSL(final String ssl) {
+    this._ssl = ssl;
     return this;
   }
 
@@ -178,6 +185,13 @@ public class EmailMessage {
     props.put("mail.smtp.connectiontimeout", _connectionTimeout);
     props.put("mail.smtp.starttls.enable", this._tls);
     props.put("mail.smtp.ssl.trust", this._mailHost);
+    if ("true".equalsIgnoreCase(this._ssl)) {
+      Security.addProvider(new Provider());
+      final String sslFactory = "javax.net.ssl.SSLSocketFactory";
+      props.put("mail.smtp.socketFactory.class", sslFactory);
+      props.put("mail.smtp.socketFactory.fallback", "false");
+      props.put("mail.smtp.socketFactory.port", this._mailPort);
+    }
 
     final JavaxMailSender sender = this.creator.createSender(props);
     final Message message = sender.createMessage();
