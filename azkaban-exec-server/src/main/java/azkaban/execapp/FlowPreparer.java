@@ -205,7 +205,7 @@ class FlowPreparer {
     final ProjectFileHandler projectFileHandler = requireNonNull(this.storageManager
         .getProjectFile(proj.getProjectId(), proj.getVersion()));
     try {
-      checkState("zip".equals(projectFileHandler.getFileType()));
+      checkState("zip".equalsIgnoreCase(projectFileHandler.getFileType()));
       final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
       final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, dest);

@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -359,8 +360,9 @@ public class JdbcProjectImpl implements ProjectLoader {
        * As we don't know the num_chunks before uploading the file, we initialize it to 0,
        * and will update it after uploading completes.
        */
+      String lowercaseFileExtension = FilenameUtils.getExtension(localFile.getName()).toLowerCase();
       transOperator.update(INSERT_PROJECT_VERSION, projectId, version, updateTime, uploader,
-          Files.getFileExtension(localFile.getName()), localFile.getName(), md5, 0, resourceId);
+          lowercaseFileExtension, localFile.getName(), md5, 0, resourceId);
     } catch (final SQLException e) {
       final String msg = String
           .format("Error initializing project id: %d version: %d ", projectId, version);
