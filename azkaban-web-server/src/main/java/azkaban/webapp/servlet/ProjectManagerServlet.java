@@ -80,6 +80,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.SchedulerException;
@@ -1762,17 +1763,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final FileItem item = (FileItem) multipart.get("file");
     final String name = item.getName();
-    String type = null;
+    final String lowercaseExtension = FilenameUtils.getExtension(name).toLowerCase();
 
+    final Boolean hasZipExtension = lowercaseExtension.equals("zip");
     final String contentType = item.getContentType();
-    if (contentType != null && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) ||
-        contentType.startsWith("application/x-zip-compressed") ||
-        contentType.startsWith("application/octet-stream"))) {
-      type = "zip";
-    } else {
+    if (contentType == null || !hasZipExtension ||
+        (!contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) &&
+        !contentType.startsWith("application/x-zip-compressed") &&
+        !contentType.startsWith("application/octet-stream"))) {
       item.delete();
-      registerError(ret, "File type " + contentType + " unrecognized.", resp,
-          HttpServletResponse.SC_BAD_REQUEST);
+      if (!hasZipExtension) {
+        registerError(ret, "File extension '" + lowercaseExtension + "' unrecognized.", resp,
+            HttpServletResponse.SC_BAD_REQUEST);
+      } else {
+        registerError(ret, "Content type '" + contentType + "' does not match extension '" + lowercaseExtension + "'", resp,
+            HttpServletResponse.SC_BAD_REQUEST);
+      }
       return;
     }
 
@@ -1806,7 +1812,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final List<String> lockedFlows = getLockedFlows(project);
 
       final Map<String, ValidationReport> reports = this.projectManager
-          .uploadProject(project, archiveFile, type, user, props);
+          .uploadProject(project, archiveFile, lowercaseExtension, user, props);
 
       if (this.enableQuartz) {
         this.scheduler.schedule(project, user.getUserId());
