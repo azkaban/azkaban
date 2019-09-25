@@ -64,11 +64,11 @@ public class StorageCleanerTest {
         eq(StorageCleaner.SQL_FETCH_PVR), anyObject(), eq(TEST_PROJECT_ID)))
         .thenReturn(project_versions);
 
-    when(this.storage.delete("14/14-10.zip")).thenReturn(true);
-    when(this.storage.delete("14/14-9.zip")).thenReturn(true);
+    when(this.storage.deleteProject("14/14-10.zip")).thenReturn(true);
+    when(this.storage.deleteProject("14/14-9.zip")).thenReturn(true);
     // This one shouldn't be deleted because it's shared with latest version
-    when(this.storage.delete("14/14-8.zip")).thenThrow(RuntimeException.class);
-    when(this.storage.delete("14/14-7.zip")).thenReturn(false);
+    when(this.storage.deleteProject("14/14-8.zip")).thenThrow(RuntimeException.class);
+    when(this.storage.deleteProject("14/14-7.zip")).thenReturn(false);
     when(this.databaseOperator.update(any(), anyVararg())).thenReturn(1);
   }
 
@@ -93,7 +93,7 @@ public class StorageCleanerTest {
     assertTrue(storageCleaner.isCleanupPermitted());
     storageCleaner.cleanupProjectArtifacts(TEST_PROJECT_ID, new ArrayList<>());
 
-    verify(this.storage, never()).delete(anyString());
+    verify(this.storage, never()).deleteProject(anyString());
   }
 
   @Test
@@ -107,12 +107,12 @@ public class StorageCleanerTest {
     storageCleaner.cleanupProjectArtifacts(TEST_PROJECT_ID, Arrays.asList(3));
 
     // Verify that latest artifact cannot be deleted
-    verify(this.storage, never()).delete("14/14-8.zip");
+    verify(this.storage, never()).deleteProject("14/14-8.zip");
     // Verify that artifact with project version 3 cannot be deleted
-    verify(this.storage, never()).delete("14/14-9.zip");
+    verify(this.storage, never()).deleteProject("14/14-9.zip");
     // Verify that remaining artifacts should be deleted
-    verify(this.storage, times(1)).delete("14/14-10.zip");
-    verify(this.storage, times(1)).delete("14/14-7.zip");
+    verify(this.storage, times(1)).deleteProject("14/14-10.zip");
+    verify(this.storage, times(1)).deleteProject("14/14-7.zip");
 
     verify(this.databaseOperator, never()).update(SQL_DELETE_RESOURCE_ID, "14/14-8.zip");
     verify(this.databaseOperator, never()).update(SQL_DELETE_RESOURCE_ID, "14/14-9.zip");

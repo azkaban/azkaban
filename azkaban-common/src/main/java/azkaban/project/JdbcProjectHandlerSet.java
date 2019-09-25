@@ -17,13 +17,18 @@ package azkaban.project;
 
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
+import azkaban.spi.Dependency;
 import azkaban.user.Permission;
 import azkaban.utils.GZIPUtils;
+import azkaban.utils.InvalidHashException;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.ThinArchiveUtils;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,7 +36,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.io.IOUtils;
 
 
 /**
@@ -288,7 +295,7 @@ class JdbcProjectHandlerSet {
       ResultSetHandler<List<ProjectFileHandler>> {
 
     public static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id "
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id, startup_dependencies "
             + "FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
@@ -308,11 +315,23 @@ class JdbcProjectHandlerSet {
         final byte[] md5 = rs.getBytes(7);
         final int numChunks = rs.getInt(8);
         final String resourceId = rs.getString(9);
+        final Blob startupDependenciesBlob = rs.getBlob(10);
+
+        Set<Dependency> startupDependencies = Collections.emptySet();
+        if (startupDependenciesBlob != null) {
+          try {
+            startupDependencies = ThinArchiveUtils.parseStartupDependencies(
+                IOUtils.toString(startupDependenciesBlob.getBinaryStream(), StandardCharsets.UTF_8));
+          } catch (IOException | InvalidHashException e) {
+            // This should never happen unless the file is malformed in the database.
+            // The file was already validated when the project was uploaded.
+            throw new SQLException(e);
+          }
+        }
 
         final ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName,
-                numChunks, md5,
-                resourceId);
+            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5,
+                startupDependencies, resourceId);
 
         handlers.add(handler);
       } while (rs.next());

@@ -14,6 +14,8 @@
  * the License.
  */
 
+apply plugin: "maven-publish"
+
 /**
  * Place foundation classes in this sub-module.
  */
@@ -32,6 +34,7 @@ artifacts {
 
 dependencies {
     compile deps.jexl
+    compile deps.commonsCodec
     compile deps.commonsLang
     compile deps.jodaTime
     compile deps.io

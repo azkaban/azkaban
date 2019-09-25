@@ -43,3 +43,6 @@ currentpid
 
 #python
 __pycache__/
+
+#test artifacts
+LOCAL_STORAGE/

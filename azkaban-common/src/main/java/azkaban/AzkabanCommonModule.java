@@ -22,6 +22,7 @@ import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.project.ArchiveUnthinner;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;

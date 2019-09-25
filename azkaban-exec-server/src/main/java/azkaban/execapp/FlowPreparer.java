@@ -16,15 +16,18 @@
  */
 package azkaban.execapp;
 
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.Objects.requireNonNull;
-
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
-import azkaban.storage.StorageManager;
+import azkaban.spi.Dependency;
+import azkaban.spi.DependencyFile;
+import azkaban.spi.FileOrigin;
+import azkaban.storage.ProjectStorageManager;
+import azkaban.utils.DependencyTransferException;
+import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
+import azkaban.utils.InvalidHashException;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -35,10 +38,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static azkaban.utils.ThinArchiveUtils.*;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 
 class FlowPreparer {
@@ -52,15 +61,16 @@ class FlowPreparer {
   private final File executionsDir;
   // TODO spyne: move to config class
   private final File projectCacheDir;
-  private final StorageManager storageManager;
+  private final ProjectStorageManager projectStorageManager;
   // Null if cache clean-up is disabled
   private final Optional<ProjectCacheCleaner> projectCacheCleaner;
   private final ProjectCacheHitRatio projectCacheHitRatio;
+  private final DependencyTransferManager dependencyTransferManager;
 
-  FlowPreparer(final StorageManager storageManager, final File executionsDir,
-      final File projectsDir, final ProjectCacheCleaner cleaner,
-      final ProjectCacheHitRatio projectCacheHitRatio) {
-    Preconditions.checkNotNull(storageManager);
+  FlowPreparer(final ProjectStorageManager projectStorageManager, final DependencyTransferManager dependencyTransferManager,
+      final File projectsDir, final ProjectCacheCleaner cleaner, final ProjectCacheHitRatio projectCacheHitRatio,
+      final File executionsDir) {
+    Preconditions.checkNotNull(projectStorageManager);
     Preconditions.checkNotNull(executionsDir);
     Preconditions.checkNotNull(projectsDir);
     Preconditions.checkNotNull(projectCacheHitRatio);
@@ -68,11 +78,12 @@ class FlowPreparer {
     Preconditions.checkArgument(projectsDir.exists());
     Preconditions.checkArgument(executionsDir.exists());
 
-    this.storageManager = storageManager;
+    this.projectStorageManager = projectStorageManager;
     this.executionsDir = executionsDir;
     this.projectCacheDir = projectsDir;
     this.projectCacheCleaner = Optional.ofNullable(cleaner);
     this.projectCacheHitRatio = projectCacheHitRatio;
+    this.dependencyTransferManager = dependencyTransferManager;
   }
 
   /**
@@ -199,18 +210,69 @@ class FlowPreparer {
     return tempDir;
   }
 
-  private void downloadAndUnzipProject(final ProjectDirectoryMetadata projectDirectoryMetadata, final File dest)
+  @VisibleForTesting
+  void downloadAndUnzipProject(final ProjectDirectoryMetadata proj, final int execId, final File dest)
       throws IOException {
-    final ProjectFileHandler projectFileHandler = requireNonNull(this.storageManager
-        .getProjectFile(projectDirectoryMetadata.getProjectId(), projectDirectoryMetadata.getVersion()));
+    final long start = System.currentTimeMillis();
+    final ProjectFileHandler projectFileHandler = requireNonNull(this.projectStorageManager
+        .getProjectFile(proj.getProjectId(), proj.getVersion()));
+    LOGGER.info("Downloading zip file for project {} when preparing "
+            + "execution [execid {}] completed in {} second(s)", proj, execId,
+        (System.currentTimeMillis() - start) / 1000);
+
     try {
       checkState("zip".equalsIgnoreCase(projectFileHandler.getFileType()));
       final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
       final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, dest);
-      projectDirectoryMetadata.setDirSizeInByte(calculateDirSizeAndSave(dest));
+
+      // Download all startup dependencies. If this is a fat archive, it will be an empty set (so we won't download
+      // anything). Note that we are getting our list of startup dependencies from the DB, NOT from the startup-dependencies.json
+      // file contained in the archive. Both should be IDENTICAL, however we chose to get the list from the DB
+      // because this will be consistent with how containerized executions determine the startup dependency list.
+      downloadAllDependencies(proj, execId, dest, projectFileHandler.getStartupDependencies());
+
+      proj.setDirSizeInByte(calculateDirSizeAndSave(dest));
     } finally {
       projectFileHandler.deleteLocalFile();
+    }
+  }
+
+  /**
+   * Download necessary JAR dependencies from storage
+   *
+   * @param proj project to download
+   * @param execId execution id number
+   * @param folder root of unzipped project
+   * @param dependencies the set of dependencies to download
+   */
+  private void downloadAllDependencies(final ProjectDirectoryMetadata proj, final int execId, final File folder,
+      final Set<Dependency> dependencies) {
+    // Download all of the dependencies from storage
+    LOGGER.info("Downloading {} JAR dependencies... Project: {}, ExecId: {}", dependencies.size(), proj, execId);
+    Set<DependencyFile> depFiles = dependencies.stream().map(d -> getDependencyFile(folder, d)).collect(Collectors.toSet());
+    try {
+      final long start = System.currentTimeMillis();
+      this.dependencyTransferManager.downloadAllDependencies(depFiles, FileOrigin.STORAGE);
+      LOGGER.info("Downloading {} JAR dependencies for project {} when preparing "
+              + "execution [execid {}] completed in {} second(s)", dependencies.size(), proj, execId,
+          (System.currentTimeMillis() - start) / 1000);
+    } catch (DependencyTransferException e) {
+      // Uh oh, if you get this error you can blame an intern. Projects should only successfully upload
+      // if ALL their necessary dependencies were persisted successfully to storage. Looks like that didn't happen
+      // in this case. If re-uploading the project doesn't solve the issue, wiping all rows from the
+      // validated_dependencies table should resolve things. It's possible that somehow an entry was written to the
+      // DB that indicated a dependency was validated and persisted to storage, but in reality it was deleted from
+      // storage or for whatever reason no longer exists in storage. Future project uploads will see that entry in
+      // the DB and will ASSUME that the file must exist in storage when in reality it doesn't - so by clearing that
+      // table, you reset the cache and force new projects to persist all dependencies. It is IMPERATIVE that
+      // ALL entries in the validated_dependencies table reference a file that exists in storage. The opposite does
+      // not have to be true. Each persisted dependency in storage does not necessarily need any accompanying entries
+      // in the validated_dependencies table. The validated_dependencies table is a cache and thus it is safe to
+      // delete any and all rows at any time and it will rebuild automatically as more projects are uploaded.
+      LOGGER.error("Error downloading one or more dependencies when preparing execId {}. Try re-uploading project {}",
+          execId, proj);
+      throw e;
     }
   }
 
@@ -218,6 +280,7 @@ class FlowPreparer {
    * Download project zip and unzip it if not exists locally.
    *
    * @param proj project to download
+   * @param execId execution id number
    * @return the temp dir where the new project is downloaded to, null if no project is downloaded.
    * @throws IOException if downloading or unzipping fails.
    */
@@ -244,15 +307,9 @@ class FlowPreparer {
 
     this.projectCacheHitRatio.markMiss();
 
-    final long start = System.currentTimeMillis();
-
     // Download project to a temp dir if not exists in local cache.
     final File tempDir = createTempDir(proj);
-    downloadAndUnzipProject(proj, tempDir);
-
-    LOGGER.info("Downloading zip file for project {} when preparing execution [execid {}] "
-            + "completed in {} second(s)", proj, execId,
-        (System.currentTimeMillis() - start) / 1000);
+    downloadAndUnzipProject(proj, execId, tempDir);
 
     return tempDir;
   }

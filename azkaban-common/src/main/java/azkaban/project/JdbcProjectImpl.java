@@ -34,19 +34,20 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.GZIPUtils;
+import azkaban.utils.HashUtils;
 import azkaban.utils.JSONUtils;
-import azkaban.utils.Md5Hasher;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
-import com.google.common.io.Files;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -216,7 +217,8 @@ public class JdbcProjectImpl implements ProjectLoader {
     final SQLTransaction<Integer> uploadProjectFileTransaction = transOperator -> {
 
       /* Step 1: Update DB with new project info */
-      addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader,
+      // Database storage does not support thin archives, so we just set the startupDependencies file to null.
+      addProjectToProjectVersions(transOperator, projectId, version, localFile, null, uploader,
           computeHash(localFile), null);
       transOperator.getConnection().commit();
 
@@ -243,15 +245,15 @@ public class JdbcProjectImpl implements ProjectLoader {
 
 
   private byte[] computeHash(final File localFile) {
-    logger.info("Creating message digest for upload " + localFile.getName());
+    logger.info("Creating MD5 hash for upload " + localFile.getName());
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(localFile);
+      md5 = HashUtils.MD5.getHashBytes(localFile);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
 
-    logger.info("Md5 hash created");
+    logger.info("MD5 hash created");
     return md5;
   }
 
@@ -260,13 +262,14 @@ public class JdbcProjectImpl implements ProjectLoader {
       final int projectId,
       final int version,
       final File localFile,
+      final File startupDependencies,
       final String uploader,
       final byte[] md5,
       final String resourceId) throws ProjectManagerException {
 
     // when one transaction completes, it automatically commits.
     final SQLTransaction<Integer> transaction = transOperator -> {
-      addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader, md5,
+      addProjectToProjectVersions(transOperator, projectId, version, localFile, startupDependencies, uploader, md5,
           resourceId);
       return 1;
     };
@@ -301,13 +304,14 @@ public class JdbcProjectImpl implements ProjectLoader {
       final int projectId,
       final int version,
       final File localFile,
+      final File startupDependencies,
       final String uploader,
       final byte[] md5,
       final String resourceId) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
-        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id) values "
-        + "(?,?,?,?,?,?,?,?,?)";
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id, startup_dependencies) values "
+        + "(?,?,?,?,?,?,?,?,?,?)";
 
     try {
       /*
@@ -315,13 +319,30 @@ public class JdbcProjectImpl implements ProjectLoader {
        * and will update it after uploading completes.
        */
       String lowercaseFileExtension = FilenameUtils.getExtension(localFile.getName()).toLowerCase();
+
+      // Get the startup dependencies input stream (or null if the file does not exist - indicating this is
+      // a fat archive).
+      InputStream startupDependenciesStream = getStartupDependenciesInputStream(startupDependencies);
+
+      // Perform the DB update
       transOperator.update(INSERT_PROJECT_VERSION, projectId, version, updateTime, uploader,
-          lowercaseFileExtension, localFile.getName(), md5, 0, resourceId);
+          lowercaseFileExtension, localFile.getName(), md5, 0, resourceId, startupDependenciesStream);
     } catch (final SQLException e) {
       final String msg = String
           .format("Error initializing project id: %d version: %d ", projectId, version);
       logger.error(msg, e);
       throw new ProjectManagerException(msg, e);
+    }
+  }
+
+  private InputStream getStartupDependenciesInputStream(File startupDependencies) {
+    try {
+      // If startupDependencies is null, we assume this is a fat archive and return null. If it is not null,
+      // we assume the file exists and return an input stream for the file.
+      return startupDependencies != null ? new FileInputStream(startupDependencies) : null;
+    } catch (FileNotFoundException e) {
+      // This shouldn't happen, the file should always exist if it is non-null.
+      throw new RuntimeException(e);
     }
   }
 
@@ -476,19 +497,19 @@ public class JdbcProjectImpl implements ProjectLoader {
     // Check md5.
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(file);
+      md5 = HashUtils.MD5.getHashBytes(file);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
 
-    if (Arrays.equals(projHandler.getMd5Hash(), md5)) {
+    if (Arrays.equals(projHandler.getMD5Hash(), md5)) {
       logger.info("Md5 Hash is valid");
     } else {
       throw new ProjectManagerException(
           String.format("Md5 Hash failed on project %s version %s retrieval of file %s. "
                   + "Expected hash: %s , got hash: %s",
               projHandler.getProjectId(), projHandler.getVersion(), file.getAbsolutePath(),
-              Arrays.toString(projHandler.getMd5Hash()), Arrays.toString(md5)));
+              Arrays.toString(projHandler.getMD5Hash()), Arrays.toString(md5)));
     }
 
     projHandler.setLocalFile(file);

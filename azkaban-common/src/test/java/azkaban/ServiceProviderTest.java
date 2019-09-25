@@ -27,7 +27,7 @@ import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
 import azkaban.storage.HdfsStorage;
 import azkaban.storage.LocalStorage;
-import azkaban.storage.StorageManager;
+import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.Props;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Guice;
@@ -42,7 +42,8 @@ public class ServiceProviderTest {
 
   private static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
   private static final String AZKABAN_TEST_HDFS_STORAGE_TYPE = "HDFS";
-  private static final String AZKABAN_TEST_STORAGE_HDFS_URI= "hdfs://test.com:9000/azkaban/";
+  private static final String AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI= "hdfs://test.com:9000/azkaban/prj/";
+  private static final String AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI= "hdfs://test.com:9000/azkaban/dep/";
 
   // Test if one class is singletonly guiced. could be called by
   // AZ Common, Web, or Exec Modules.
@@ -73,7 +74,7 @@ public class ServiceProviderTest {
     SERVICE_PROVIDER.setInjector(injector);
 
     assertThat(injector.getInstance(JdbcProjectImpl.class)).isNotNull();
-    assertThat(injector.getInstance(StorageManager.class)).isNotNull();
+    assertThat(injector.getInstance(ProjectStorageManager.class)).isNotNull();
     assertThat(injector.getInstance(DatabaseStorage.class)).isNotNull();
     assertThat(injector.getInstance(LocalStorage.class)).isNotNull();
     assertThatThrownBy(
@@ -90,12 +91,10 @@ public class ServiceProviderTest {
     final Props props = new Props();
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
-    props
-        .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, AZKABAN_TEST_HDFS_STORAGE_TYPE);
-    props
-        .put(Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH, "./");
-    props .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_ROOT_URI,
-        AZKABAN_TEST_STORAGE_HDFS_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, AZKABAN_TEST_HDFS_STORAGE_TYPE);
+    props.put(Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH, "./");
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI, AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI);
 
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)

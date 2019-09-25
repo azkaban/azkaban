@@ -25,7 +25,7 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.Md5Hasher;
+import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
 import com.google.common.io.Files;
 import java.io.File;
@@ -163,9 +163,9 @@ public class JdbcProjectImplTest {
   private byte[] computeHash(final File localFile) {
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(localFile);
+      md5 = HashUtils.MD5.getHashBytes(localFile);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
     return md5;
   }
@@ -176,7 +176,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1",
+    this.loader.addProjectVersion(project.getId(), newVersion, testFile, null, "uploadUser1",
         computeHash(testFile), "resourceId1");
     final int currVersion = this.loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);

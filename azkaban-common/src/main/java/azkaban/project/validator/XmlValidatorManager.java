@@ -1,6 +1,7 @@
 package azkaban.project.validator;
 
 import azkaban.project.Project;
+import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
@@ -45,8 +46,7 @@ public class XmlValidatorManager implements ValidatorManager {
   public static final String CLASSNAME_ATTR = "classname";
   public static final String ITEM_TAG = "property";
   private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
-  private static final Map<String, Long> resourceTimestamps = new HashMap<>();
-  private static ValidatorClassLoader validatorLoader;
+  private ValidatorClassLoader validatorLoader;
   private final String validatorDirPath;
   private Map<String, ProjectValidator> validators;
 
@@ -65,8 +65,8 @@ public class XmlValidatorManager implements ValidatorManager {
           + " does not exist or is not a directory.");
     }
 
-    // Check for updated validator JAR files
-    checkResources();
+    // Initialize the class loader.
+    initClassLoader();
 
     // Load the validators specified in the xml file.
     try {
@@ -77,21 +77,14 @@ public class XmlValidatorManager implements ValidatorManager {
     }
   }
 
-  private void checkResources() {
+  private void initClassLoader() {
     final File validatorDir = new File(this.validatorDirPath);
     final List<URL> resources = new ArrayList<>();
-    boolean reloadResources = false;
     try {
       if (validatorDir.canRead() && validatorDir.isDirectory()) {
         for (final File f : validatorDir.listFiles()) {
           if (f.getName().endsWith(".jar")) {
             resources.add(f.toURI().toURL());
-            if (resourceTimestamps.get(f.getName()) == null
-                || resourceTimestamps.get(f.getName()) != f.lastModified()) {
-              reloadResources = true;
-              logger.info("Resource " + f.getName() + " is updated. Reload the classloader.");
-              resourceTimestamps.put(f.getName(), f.lastModified());
-            }
           }
         }
       }
@@ -99,26 +92,12 @@ public class XmlValidatorManager implements ValidatorManager {
       throw new ValidatorManagerException(e);
     }
 
-    if (reloadResources) {
-      if (validatorLoader != null) {
-        try {
-          // Since we cannot use Java 7 feature inside Azkaban (....), we need a customized class loader
-          // that does the close for us.
-          validatorLoader.close();
-        } catch (final ValidatorManagerException e) {
-          logger.error("Cannot reload validator classloader because failure "
-              + "to close the validator classloader.", e);
-          // We do not throw the ValidatorManagerException because we do not want to crash Azkaban at runtime.
-        }
-      }
-      validatorLoader = new ValidatorClassLoader(resources.toArray(new URL[resources.size()]));
-    }
+    validatorLoader = new ValidatorClassLoader(resources.toArray(new URL[resources.size()]));
   }
 
   /**
-   * Instances of the validators are created here rather than in the constructors. This is because
-   * some validators might need to maintain project-specific states. By instantiating the validators
-   * here, it ensures that the validator objects are project-specific, rather than global.
+   * Creates instances of the validators, passing in any props that are global and not project specific.
+   * These validator instances are global and will be used for all projects.
    *
    * {@inheritDoc}
    *
@@ -193,6 +172,7 @@ public class XmlValidatorManager implements ValidatorManager {
     }
     final String className = classNameAttr.getNodeValue();
     try {
+      // Attempt to instantiate original ProjectValidator
       final Class<? extends ProjectValidator> validatorClass =
           (Class<? extends ProjectValidator>) validatorLoader.loadClass(className);
       final Constructor<?> validatorConstructor =
@@ -218,11 +198,42 @@ public class XmlValidatorManager implements ValidatorManager {
     props.put(keyAttr.getNodeValue(), valueAttr.getNodeValue());
   }
 
+  /**
+   * Gets a SHA1 hash of the combined cache keys for all loaded validators.
+   *
+   * @see azkaban.project.validator.ProjectValidatorCacheable#getCacheKey(azkaban.project.Project, java.io.File,
+   * azkaban.utils.Props)
+   */
   @Override
-  public Map<String, ValidationReport> validate(final Project project, final File projectDir) {
+  public String getCacheKey(final Project project, final File projectDir, final Props props) {
+    final Props nonNullProps = props == null ? new Props() : props;
+
+    StringBuilder compoundedKey = new StringBuilder();
+    for (final Entry<String, ProjectValidator> validator : this.validators.entrySet()) {
+      try {
+        // Attempt to cast to ProjectValidatorCacheable
+        ProjectValidatorCacheable cacheableValidator = (ProjectValidatorCacheable) validator.getValue();
+        compoundedKey.append(cacheableValidator.getCacheKey(project, projectDir, nonNullProps));
+      } catch (ClassCastException e) {
+        // Swallow this error - the validator must not have been a cacheable validator
+      }
+    }
+    return HashUtils.SHA1.getHashStr(compoundedKey.toString());
+  }
+
+  /**
+   * Validates the project with all loaded validators.
+   *
+   * @see azkaban.project.validator.ProjectValidator#validateProject(azkaban.project.Project, java.io.File,
+   * azkaban.utils.Props)
+   */
+  @Override
+  public Map<String, ValidationReport> validate(final Project project, final File projectDir, final Props additionalProps) {
+    final Props nonNullAdditionalProps = additionalProps == null ? new Props() : additionalProps;
+
     final Map<String, ValidationReport> reports = new LinkedHashMap<>();
     for (final Entry<String, ProjectValidator> validator : this.validators.entrySet()) {
-      reports.put(validator.getKey(), validator.getValue().validateProject(project, projectDir));
+      reports.put(validator.getKey(), validator.getValue().validateProject(project, projectDir, nonNullAdditionalProps));
       logger.info("Validation status of validator " + validator.getKey() + " is "
           + reports.get(validator.getKey()).getStatus());
     }

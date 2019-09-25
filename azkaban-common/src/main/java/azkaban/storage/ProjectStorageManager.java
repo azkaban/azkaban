@@ -26,15 +26,14 @@ import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
-import azkaban.spi.StorageMetadata;
+import azkaban.spi.ProjectStorageMetadata;
 import azkaban.user.User;
-import azkaban.utils.Md5Hasher;
+import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,13 +42,13 @@ import org.apache.log4j.Logger;
 
 
 /**
- * StorageManager manages and coordinates all interactions with the Storage layer. This also
+ * StorageManager manages and coordinates all project related interactions with the Storage layer. This also
  * includes bookkeeping like updating DB with the new versionm, etc
  */
 @Singleton
-public class StorageManager {
+public class ProjectStorageManager {
 
-  private static final Logger log = Logger.getLogger(StorageManager.class);
+  private static final Logger log = Logger.getLogger(ProjectStorageManager.class);
 
   private final StorageCleaner storageCleaner;
   private final Storage storage;
@@ -57,7 +56,7 @@ public class StorageManager {
   private final File tempDir;
 
   @Inject
-  public StorageManager(final Props props, final Storage storage,
+  public ProjectStorageManager(final Props props, final Storage storage,
       final ProjectLoader projectLoader,
       final StorageCleaner storageCleaner) {
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
@@ -89,12 +88,13 @@ public class StorageManager {
       final Project project,
       final int version,
       final File localFile,
+      final File startupDependencies,
       final User uploader) {
     byte[] md5 = null;
     if (!(this.storage instanceof DatabaseStorage)) {
       md5 = computeHash(localFile);
     }
-    final StorageMetadata metadata = new StorageMetadata(
+    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(
         project.getId(),
         version,
         uploader.getUserId(),
@@ -103,7 +103,7 @@ public class StorageManager {
         metadata, localFile.getName(), localFile.length()));
 
     /* upload to storage */
-    final String resourceId = this.storage.put(metadata, localFile);
+    final String resourceId = this.storage.putProject(metadata, localFile);
 
     /* Add metadata to db */
     // TODO spyne: remove hack. Database storage should go through the same flow
@@ -112,6 +112,7 @@ public class StorageManager {
           project.getId(),
           version,
           localFile,
+          startupDependencies,
           uploader.getUserId(),
           requireNonNull(md5),
           requireNonNull(resourceId)
@@ -136,7 +137,7 @@ public class StorageManager {
   private byte[] computeHash(final File localFile) {
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(localFile);
+      md5 = HashUtils.MD5.getHashBytes(localFile);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
@@ -155,7 +156,7 @@ public class StorageManager {
         String.format("Fetching project file. project ID: %d version: %d", projectId, version));
     // TODO spyne: remove huge hack ! There should not be any special handling for Database Storage.
     if (this.storage instanceof DatabaseStorage) {
-      return ((DatabaseStorage) this.storage).get(projectId, version);
+      return ((DatabaseStorage) this.storage).getProject(projectId, version);
     }
 
     /* Fetch meta data from db */
@@ -165,7 +166,8 @@ public class StorageManager {
     final String resourceId = requireNonNull(pfh.getResourceId(),
         String.format("URI is null. project ID: %d version: %d",
             pfh.getProjectId(), pfh.getVersion()));
-    try (final InputStream is = this.storage.get(resourceId)) {
+
+    try (final InputStream is = this.storage.getProject(resourceId)) {
       final File file = createTempOutputFile(pfh);
 
       /* Copy from storage to output stream */
@@ -186,12 +188,11 @@ public class StorageManager {
   }
 
   private void validateChecksum(final File file, final ProjectFileHandler pfh) throws IOException {
-    final byte[] hash = Md5Hasher.md5Hash(file);
-    checkState(Arrays.equals(pfh.getMd5Hash(), hash),
+    final byte[] hash = HashUtils.MD5.getHashBytes(file);
+    checkState(HashUtils.isSameHash(pfh.getMD5Hash(), hash),
         String.format("MD5 HASH Failed. project ID: %d version: %d Expected: %s Actual: %s",
-            pfh.getProjectId(), pfh.getVersion(),
-            Arrays.toString(pfh.getMd5Hash()),
-            Arrays.toString(hash))
+            pfh.getProjectId(), pfh.getVersion(), HashUtils.bytesHashToString(pfh.getMD5Hash()),
+            HashUtils.bytesHashToString(hash))
     );
   }
 

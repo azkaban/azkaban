@@ -17,30 +17,25 @@
 
 package azkaban.execapp;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
-import azkaban.storage.StorageManager;
+import azkaban.spi.Dependency;
+import azkaban.spi.FileOrigin;
+import azkaban.storage.ProjectStorageManager;
+import azkaban.test.executions.ThinArchiveTestUtils;
+import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
+import azkaban.utils.Utils;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -49,28 +44,51 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static azkaban.test.executions.ThinArchiveTestUtils.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 
 public class FlowPreparerTest {
 
   public static final String SAMPLE_FLOW_01 = "sample_flow_01";
+
+  public static final Integer FAT_PROJECT_ID = 10;
+  public static final Integer THIN_PROJECT_ID = 11;
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File executionsDir;
   private File projectsDir;
   private FlowPreparer instance;
+  private DependencyTransferManager dependencyTransferManager;
 
-  private StorageManager createMockStorageManager() {
+  private ProjectStorageManager createMockStorageManager() throws Exception {
     final ClassLoader classLoader = getClass().getClassLoader();
-    final File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
+    final File zipFAT = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
 
-    final ProjectFileHandler projectFileHandler = mock(ProjectFileHandler.class);
-    when(projectFileHandler.getFileType()).thenReturn("zip");
-    when(projectFileHandler.getLocalFile()).thenReturn(file);
+    final File thinZipFolder = temporaryFolder.newFolder("thinproj");
+    ThinArchiveTestUtils.makeSampleThinProjectDirAB(thinZipFolder);
+    File zipTHIN = temporaryFolder.newFile("thinzipproj.zip");
+    Utils.zipFolderContent(thinZipFolder, zipTHIN);
 
-    final StorageManager storageManager = mock(StorageManager.class);
-    when(storageManager.getProjectFile(anyInt(), anyInt())).thenReturn(projectFileHandler);
-    return storageManager;
+    final ProjectFileHandler projectFileHandlerFAT = mock(ProjectFileHandler.class);
+    when(projectFileHandlerFAT.getFileType()).thenReturn("zip");
+    when(projectFileHandlerFAT.getLocalFile()).thenReturn(zipFAT);
+    when(projectFileHandlerFAT.getStartupDependencies()).thenReturn(Collections.emptySet());
+
+    final ProjectFileHandler projectFileHandlerTHIN = mock(ProjectFileHandler.class);
+    when(projectFileHandlerTHIN.getFileType()).thenReturn("zip");
+    when(projectFileHandlerTHIN.getLocalFile()).thenReturn(zipTHIN);
+    when(projectFileHandlerTHIN.getStartupDependencies()).thenReturn(ThinArchiveTestUtils.getDepSetAB());
+
+    final ProjectStorageManager projectStorageManager = mock(ProjectStorageManager.class);
+    when(projectStorageManager.getProjectFile(eq(FAT_PROJECT_ID), anyInt())).thenReturn(projectFileHandlerFAT);
+    when(projectStorageManager.getProjectFile(eq(THIN_PROJECT_ID), anyInt())).thenReturn(projectFileHandlerTHIN);
+    return projectStorageManager;
   }
 
   private ExecutableFlow mockExecutableFlow(final int execId, final int projectId,
@@ -87,15 +105,17 @@ public class FlowPreparerTest {
     this.executionsDir = this.temporaryFolder.newFolder("executions");
     this.projectsDir = this.temporaryFolder.newFolder("projects");
 
+    this.dependencyTransferManager = mock(DependencyTransferManager.class);
+
     this.instance = spy(
-        new FlowPreparer(createMockStorageManager(), this.executionsDir, this.projectsDir, null,
-            new ProjectCacheHitRatio()));
+        new FlowPreparer(createMockStorageManager(), this.dependencyTransferManager, this.projectsDir, null,
+            new ProjectCacheHitRatio(), this.executionsDir));
     doNothing().when(this.instance).updateLastModifiedTime(any());
   }
 
   @Test
   public void testProjectDirSizeIsSet() throws Exception {
-    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(FAT_PROJECT_ID, 34,
         new File(this.projectsDir, SAMPLE_FLOW_01));
 
     final File tmp = this.instance.downloadProjectIfNotExists(proj, 123);
@@ -110,7 +130,7 @@ public class FlowPreparerTest {
 
   @Test
   public void testDownloadingProjectIfNotExists() throws Exception {
-    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(FAT_PROJECT_ID, 34,
         new File(this.projectsDir, SAMPLE_FLOW_01));
     final File tmp = this.instance.downloadProjectIfNotExists(proj, 124);
 
@@ -124,7 +144,7 @@ public class FlowPreparerTest {
 
   @Test
   public void testNotDownloadingProjectIfExists() throws Exception {
-    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(12, 34,
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(FAT_PROJECT_ID, 34,
         new File(this.projectsDir, SAMPLE_FLOW_01));
     File tmp = this.instance.downloadProjectIfNotExists(proj, 125);
     Files.move(tmp.toPath(), proj.getInstalledDir().toPath());
@@ -144,10 +164,10 @@ public class FlowPreparerTest {
     final int threadNum = 4;
 
     final ExecutableFlow[] executableFlows = new ExecutableFlow[]{
-        mockExecutableFlow(1, 12, 34),
-        mockExecutableFlow(2, 12, 34),
-        mockExecutableFlow(3, 12, 34),
-        mockExecutableFlow(4, 12, 34)
+        mockExecutableFlow(1, FAT_PROJECT_ID, 34),
+        mockExecutableFlow(2, FAT_PROJECT_ID, 34),
+        mockExecutableFlow(3, FAT_PROJECT_ID, 34),
+        mockExecutableFlow(4, FAT_PROJECT_ID, 34)
     };
 
     final ExecutorService service = Executors.newFixedThreadPool(threadNum);
@@ -177,7 +197,7 @@ public class FlowPreparerTest {
   public void testSetupFlow() throws ExecutorManagerException {
     final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
     when(executableFlow.getExecutionId()).thenReturn(12345);
-    when(executableFlow.getProjectId()).thenReturn(12);
+    when(executableFlow.getProjectId()).thenReturn(FAT_PROJECT_ID);
     when(executableFlow.getVersion()).thenReturn(34);
 
     this.instance.setup(executableFlow);
@@ -186,4 +206,24 @@ public class FlowPreparerTest {
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }
 
+  @Test
+  public void testDownloadAndUnzipProjectFAT() throws Exception {
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(FAT_PROJECT_ID, 34,
+        new File(this.projectsDir, SAMPLE_FLOW_01));
+    this.instance.downloadProjectIfNotExists(proj, 124);
+
+    // This is a fat zip, so we should not attempt to download anything! (we try to download an empty set of dependencies)
+    verify(this.dependencyTransferManager).downloadAllDependencies(eq(Collections.emptySet()), eq(FileOrigin.STORAGE));
+  }
+
+  @Test
+  public void testDownloadAndUnzipProjectTHIN() throws Exception {
+    final ProjectDirectoryMetadata proj = new ProjectDirectoryMetadata(THIN_PROJECT_ID, 34,
+        new File(this.projectsDir, SAMPLE_FLOW_01));
+    this.instance.downloadProjectIfNotExists(proj, 124);
+
+    // This is a thin zip, we expect both dependencies to be downloaded
+    Set<Dependency> expectedDownloadedDeps = ThinArchiveTestUtils.getDepSetAB();
+    verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps), eq(FileOrigin.STORAGE));
+  }
 }

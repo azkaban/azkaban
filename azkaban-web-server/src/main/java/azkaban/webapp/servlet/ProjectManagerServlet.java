@@ -1809,7 +1809,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final File tempDir = Utils.createTempDir();
     OutputStream out = null;
     try {
-      logger.info("Uploading file " + name);
+      logger.info("Uploading file to web server " + name);
       final File archiveFile = new File(tempDir, name);
       out = new BufferedOutputStream(new FileOutputStream(archiveFile));
       IOUtils.copy(item.getInputStream(), out);

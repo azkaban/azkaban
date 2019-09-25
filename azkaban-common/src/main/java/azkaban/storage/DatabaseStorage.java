@@ -19,8 +19,12 @@ package azkaban.storage;
 
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
+import azkaban.spi.AzkabanException;
+import azkaban.spi.FileIOStatus;
+import azkaban.spi.Dependency;
+import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
-import azkaban.spi.StorageMetadata;
+import azkaban.spi.ProjectStorageMetadata;
 import javax.inject.Singleton;
 import java.io.File;
 import java.io.InputStream;
@@ -35,7 +39,6 @@ import javax.inject.Inject;
  */
 @Singleton
 public class DatabaseStorage implements Storage {
-
   private final ProjectLoader projectLoader;
 
   @Inject
@@ -44,17 +47,17 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public InputStream get(final String key) {
+  public InputStream getProject(final String key) {
     throw new UnsupportedOperationException(
         "Not implemented yet. Use get(projectId, version) instead");
   }
 
-  public ProjectFileHandler get(final int projectId, final int version) {
+  public ProjectFileHandler getProject(final int projectId, final int version) {
     return this.projectLoader.getUploadedFile(projectId, version);
   }
 
   @Override
-  public String put(final StorageMetadata metadata, final File localFile) {
+  public String putProject(final ProjectStorageMetadata metadata, final File localFile) {
     this.projectLoader.uploadProjectFile(
         metadata.getProjectId(),
         metadata.getVersion(),
@@ -64,7 +67,25 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public boolean delete(final String key) {
+  public FileIOStatus putDependency(final DependencyFile f) throws AzkabanException {
+    throw new UnsupportedOperationException(
+        "Not implemented yet. Must use HdfsStorage or LocalStorage.");
+  }
+
+  @Override
+  public InputStream getDependency(final Dependency dep) {
+    throw new UnsupportedOperationException(
+        "Not implemented yet. Must use HdfsStorage or LocalStorage.");
+  }
+
+  @Override
+  public FileIOStatus dependencyStatus(final Dependency dep) {
+    throw new UnsupportedOperationException(
+        "Not implemented yet. Must use HdfsStorage or LocalStorage.");
+  }
+
+  @Override
+  public boolean deleteProject(final String key) {
     throw new UnsupportedOperationException("Delete is not supported");
   }
 }

@@ -15,9 +15,6 @@
  */
 package azkaban.execapp;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static java.util.Objects.requireNonNull;
-
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.Event;
@@ -44,7 +41,10 @@ import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
-import azkaban.storage.StorageManager;
+import azkaban.spi.Storage;
+import azkaban.storage.HdfsStorage;
+import azkaban.storage.ProjectStorageManager;
+import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
@@ -84,6 +84,10 @@ import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static azkaban.ServiceProvider.*;
+import static azkaban.utils.ThinArchiveUtils.*;
+import static java.util.Objects.*;
 
 
 /**
@@ -145,6 +149,8 @@ public class FlowRunnerManager implements EventListener,
   private final Object executionDirDeletionSync = new Object();
   private final CommonMetrics commonMetrics;
   private final ExecMetrics execMetrics;
+  private final DependencyTransferManager dependencyTransferManager;
+  private final Storage storage;
 
   private final int numThreads;
   private final int numJobThreadPerFlow;
@@ -166,12 +172,14 @@ public class FlowRunnerManager implements EventListener,
   public FlowRunnerManager(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
-      final StorageManager storageManager,
+      final ProjectStorageManager projectStorageManager,
       final TriggerManager triggerManager,
       final FlowRampManager flowRampManager,
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
       final ExecMetrics execMetrics,
+      final DependencyTransferManager dependencyTransferManager,
+      final Storage storage,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -198,6 +206,8 @@ public class FlowRunnerManager implements EventListener,
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.execMetrics = execMetrics;
+    this.dependencyTransferManager = dependencyTransferManager;
+    this.storage = storage;
 
     this.flowRampManager = flowRampManager;
 
@@ -210,6 +220,9 @@ public class FlowRunnerManager implements EventListener,
     if (globalPropsPath != null) {
       this.globalProps = new Props(null, globalPropsPath);
     }
+
+    // Add dependency root path to globalProps
+    addStartupDependencyPathToProps(this.dependencyTransferManager, this.globalProps);
 
     this.jobtypeManager =
         new JobTypeManager(
@@ -226,8 +239,8 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
+    this.flowPreparer = new FlowPreparer(projectStorageManager, this.dependencyTransferManager, this.projectDirectory, cleaner,
+        this.execMetrics.getProjectCacheHitRatio(), this.executionDirectory);
 
     this.execMetrics.addFlowRunnerManagerMetrics(this);
 
@@ -241,6 +254,18 @@ public class FlowRunnerManager implements EventListener,
               Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS),
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
+    }
+  }
+
+  /**
+   * Add the startup dependency path to props if the current storage type is HdfsStorage and
+   * the DependencyTransferManager has the storage origin enabled.
+   *
+   * @param props Props to add the startup dependency path to.
+   */
+  private void addStartupDependencyPathToProps(DependencyTransferManager dtm, Props props) {
+    if (this.storage instanceof HdfsStorage && dtm.storageOriginEnabled()) {
+      props.put(DEPENDENCY_STORAGE_ROOT_PATH_PROP, ((HdfsStorage) this.storage).getDependencyRootPath());
     }
   }
 

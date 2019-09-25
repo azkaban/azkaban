@@ -22,14 +22,14 @@ import static java.util.Objects.requireNonNull;
 import java.util.Objects;
 
 
-public class StorageMetadata {
+public class ProjectStorageMetadata {
 
   private final int projectId;
   private final int version;
   private final String uploader;
   private final byte[] hash;
 
-  public StorageMetadata(final int projectId, final int version, final String uploader,
+  public ProjectStorageMetadata(final int projectId, final int version, final String uploader,
       final byte[] hash) {
     this.projectId = projectId;
     this.version = version;
@@ -68,7 +68,7 @@ public class StorageMetadata {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final StorageMetadata that = (StorageMetadata) o;
+    final ProjectStorageMetadata that = (ProjectStorageMetadata) o;
     return Objects.equals(this.projectId, that.projectId) &&
         Objects.equals(this.version, that.version) &&
         Objects.equals(this.uploader, that.uploader);
