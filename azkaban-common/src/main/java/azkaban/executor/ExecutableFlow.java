@@ -18,13 +18,16 @@ package azkaban.executor;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
+import com.sun.istack.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,6 +63,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
   private boolean isLocked;
+  private ExecutableFlowRampMetadata executableFlowRampMetadata;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -311,4 +315,30 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.setStatus(Status.RUNNING);
   }
 
+  public ExecutableFlowRampMetadata getExecutableFlowRampMetadata() {
+    return executableFlowRampMetadata;
+  }
+
+  public void setExecutableFlowRampMetadata(ExecutableFlowRampMetadata executableFlowRampMetadata) {
+    this.executableFlowRampMetadata = executableFlowRampMetadata;
+  }
+
+  /**
+   * Get the Relative Flow Directory against project directory
+   */
+  public String getDirectory() {
+    return String.valueOf(getProjectId()) + "." + String.valueOf(getVersion());
+  }
+
+  /**
+   * Get Ramp Props For Job
+   * @param jobId job Id
+   * @param jobType jobType aka job plugin type
+   * @return ramp Props
+   */
+  synchronized public Props getRampPropsForJob(@NotNull final String jobId, @NotNull final String jobType) {
+    return Optional.ofNullable(executableFlowRampMetadata)
+        .map(metadata -> metadata.selectRampPropsForJob(jobId, jobType))
+        .orElse(null);
+  }
 }

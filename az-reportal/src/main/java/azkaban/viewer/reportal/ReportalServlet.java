@@ -172,7 +172,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
     try {
       final Method getInstanceMethod =
-          hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
+          hadoopSecurityManagerClass.getMethod("createInstance", Props.class);
       hadoopSecurityManager =
           (HadoopSecurityManager) getInstanceMethod.invoke(
               hadoopSecurityManagerClass, props);

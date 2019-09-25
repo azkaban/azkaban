@@ -26,6 +26,7 @@ import azkaban.sla.SlaType;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
@@ -443,5 +444,39 @@ public class ExecutableFlowTest {
     for (final ExecutableNode node : nodes) {
       Assert.assertNotNull(node);
     }
+  }
+
+  @Test
+  public void testGetDirectory() {
+    final Flow flow = this.project.getFlow("jobe");
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    Assert.assertEquals(exFlow.getDirectory(), "11.123");
+  }
+
+  @Test
+  public void testGetRampPropsForJob() {
+    final Flow flow = this.project.getFlow("jobe");
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    Assert.assertNull(exFlow.getExecutableFlowRampMetadata());
+
+    Assert.assertNull(exFlow.getRampPropsForJob("test", "pigLi"));
+
+    Props props = new Props();
+    props.put("dali-pig", "/export/dali-pig-9.2.jar");
+    props.put("dali-spark", "/export/dali-spark-9.2.jar");
+    props.put("common", "/export/common-1.1.jar");
+
+    ExecutableFlowRampMetadata metadata = ExecutableFlowRampMetadata.createInstance(
+        ExecutableRampDependencyMap.createInstance()
+            .add("dali-pig", "/export/dali-pig-9.1.jar", "pigLi,hive")
+            .add("dali-spark", "/export/dali-spark-9.1.jar", "spark")
+            .add("common", "/export/common", null),
+        ImmutableMap.<String, ExecutableRampExceptionalItems>builder()
+            .build()
+    ).setRampProps("dali", props);
+
+    exFlow.setExecutableFlowRampMetadata(metadata);
+
+    Assert.assertEquals(2, exFlow.getRampPropsForJob("test", "pigLi").size());
   }
 }

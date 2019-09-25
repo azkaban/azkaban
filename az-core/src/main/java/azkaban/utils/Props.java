@@ -75,15 +75,18 @@ public class Props {
    */
   public Props(final Props parent, final File file) throws IOException {
     this(parent);
-    setSource(file.getPath());
 
-    final InputStream input = new BufferedInputStream(new FileInputStream(file));
-    try {
-      loadFrom(input);
-    } catch (final IOException e) {
-      throw e;
-    } finally {
-      input.close();
+    if (file.exists()) {
+      setSource(file.getPath());
+
+      final InputStream input = new BufferedInputStream(new FileInputStream(file));
+      try {
+        loadFrom(input);
+      } catch (final IOException e) {
+        throw e;
+      } finally {
+        input.close();
+      }
     }
   }
 
@@ -174,6 +177,20 @@ public class Props {
     }
 
     return dest;
+  }
+
+  /**
+   * Create a new Props instance
+   *
+   * @param parent parent props
+   * @param current current props
+   * @param source source value
+   * @return new Prop Instance
+   */
+  public static Props getInstance(Props parent, Props current, String source) {
+    Props props = new Props(parent, current);
+    props.setSource(source);
+    return props;
   }
 
   /**
@@ -875,7 +892,8 @@ public class Props {
   /**
    * Set Source information
    */
-  public void setSource(final String source) {
+  public Props setSource(final String source) {
     this.source = source;
+    return this;
   }
 }

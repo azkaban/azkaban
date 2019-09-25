@@ -67,4 +67,50 @@ public class UtilsTest {
         Utils.runProcess("/bin/bash", "-c", "ls");
     Assert.assertNotEquals(result.size(), 0);
   }
+
+
+  @Test
+  public void testMemoryStringConversion() {
+    Assert.assertEquals(Utils.parseMemString("1024"), 1L);
+    Assert.assertEquals(Utils.parseMemString("1K"), 1L);
+    Assert.assertEquals(Utils.parseMemString("1M"), 1024L);
+    Assert.assertEquals(Utils.parseMemString("1G"), 1024L * 1024L);
+
+    Assert.assertEquals(Utils.parseMemString("1k"), 1L);
+    Assert.assertEquals(Utils.parseMemString("1m"), 1024L);
+    Assert.assertEquals(Utils.parseMemString("1g"), 1024L * 1024L);
+
+    Assert.assertEquals(Utils.parseMemString("5000"), 4L);
+    Assert.assertEquals(Utils.parseMemString("1024K"), 1024L);
+    Assert.assertEquals(Utils.parseMemString("512M"), 512 * 1024L);
+    Assert.assertEquals(Utils.parseMemString("2G"), 2L * 1024L * 1024L);
+  }
+
+  @Test
+  public void testBadMemoryStringFormat() {
+    badMemoryStringFormatHelper("1KB");
+    badMemoryStringFormatHelper("1MB");
+    badMemoryStringFormatHelper("1GB");
+
+    badMemoryStringFormatHelper("1kb");
+    badMemoryStringFormatHelper("1mb");
+    badMemoryStringFormatHelper("1gb");
+
+    badMemoryStringFormatHelper("100.5K");
+    badMemoryStringFormatHelper("512.8M");
+    badMemoryStringFormatHelper("0.5G");
+
+    badMemoryStringFormatHelper("100b");
+    badMemoryStringFormatHelper("100f");
+    badMemoryStringFormatHelper("100abcdc");
+  }
+
+  private void badMemoryStringFormatHelper(final String str) {
+    try {
+      Utils.parseMemString(str);
+      Assert.fail("should get a runtime exception");
+    } catch (final Exception e) {
+      Assert.assertTrue(e instanceof NumberFormatException);
+    }
+  }
 }

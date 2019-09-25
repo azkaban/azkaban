@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.flow.ConditionOnJobStatus;
@@ -67,6 +66,7 @@ public class ExecutableNode {
   private Set<String> outNodes = new HashSet<>();
   private Props inputProps;
   private Props outputProps;
+  private Props rampProps = new Props();
   private long delayExecution = 0;
   private ArrayList<ExecutionAttempt> pastAttempts = null;
   private String condition;
@@ -486,5 +486,13 @@ public class ExecutableNode {
 
   public void setConditionOnJobStatus(final ConditionOnJobStatus conditionOnJobStatus) {
     this.conditionOnJobStatus = conditionOnJobStatus;
+  }
+
+  public Props getRampProps() {
+    return rampProps;
+  }
+
+  public void setRampProps(Props rampProps) {
+    this.rampProps = rampProps;
   }
 }

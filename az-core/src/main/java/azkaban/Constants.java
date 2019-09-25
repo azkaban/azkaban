@@ -102,7 +102,24 @@ public class Constants {
   // Executors can use cpu load calculated from this period to take/skip polling turns
   public static final int DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC = 60;
 
+  // Default value to feature enable setting. To be backward compatible, this value === FALSE
+  public static final boolean DEFAULT_AZKABAN_RAMP_ENABLED = false;
+  // Due to multiple AzkabanExec Server instance scenario, it will be required to persistent the ramp result into the DB.
+  // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+  // This setting value controls to push result into DB every N finished ramped workflows
+  public static final int DEFAULT_AZKABAN_RAMP_STATUS_PUSH_INTERVAL_MAX = 20;
+  // Due to multiple AzkabanExec Server instance, it will be required to persistent the ramp result into the DB.
+  // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+  // This setting value controls to pull result from DB every N new ramped workflows
+  public static final int DEFAULT_AZKABAN_RAMP_STATUS_PULL_INTERVAL_MAX = 50;
+  // Use Polling Service to sync the ramp status cross EXEC Server.
+  public static final boolean DEFAULT_AZKABAN_RAMP_STATUS_POOLING_ENABLED = false;
+  // How often executors will poll ramp status in Poll Dispatch model
+  public static final int DEFAULT_AZKABAN_RAMP_STATUS_POLLING_INTERVAL = 10;
+
   public static class ConfigurationKeys {
+
+    public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
 
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
@@ -280,6 +297,23 @@ public class Constants {
     // locked flow error message. Parameters passed in are the flow name and project name.
     public static final String AZKABAN_LOCKED_FLOW_ERROR_MESSAGE =
         "azkaban.locked.flow.error.message";
+
+    // flow ramp related setting keys
+    // Default value to feature enable setting. To be backward compatible, this value === FALSE
+    public static final String AZKABAN_RAMP_ENABLED = "azkaban.ramp.enabled";
+    // Due to multiple AzkabanExec Server instance scenario, it will be required to persistent the ramp result into the DB.
+    // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+    // This setting value controls to push result into DB every N finished ramped workflows
+    public static final String AZKABAN_RAMP_STATUS_PUSH_INTERVAL_MAX = "azkaban.ramp.status.push.interval.max";
+    // Due to multiple AzkabanExec Server instance, it will be required to persistent the ramp result into the DB.
+    // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+    // This setting value controls to pull result from DB every N new ramped workflows
+    public static final String AZKABAN_RAMP_STATUS_PULL_INTERVAL_MAX = "azkaban.ramp.status.pull.interval.max";
+    // A Polling Service can be applied to determine the ramp status synchronization interval.
+    public static final String AZKABAN_RAMP_STATUS_POLLING_ENABLED = "azkaban.ramp.status.polling.enabled";
+    public static final String AZKABAN_RAMP_STATUS_POLLING_INTERVAL = "azkaban.ramp.status.polling.interval";
+    public static final String AZKABAN_RAMP_STATUS_POLLING_CPU_MAX = "azkaban.ramp.status.polling.cpu.max";
+    public static final String AZKABAN_RAMP_STATUS_POLLING_MEMORY_MIN = "azkaban.ramp.status.polling.memory.min";
   }
 
   public static class FlowProperties {
@@ -352,5 +386,20 @@ public class Constants {
     // Flow trigger dependency run time props
     public static final String START_TIME = "startTime";
     public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
+  }
+
+  public static class PluginManager {
+
+    public static final String JOBTYPE_DEFAULTDIR = "plugins/jobtypes";
+    public static final String RAMPPOLICY_DEFAULTDIR = "plugins/ramppolicies";
+
+    // need jars.to.include property, will be loaded with user property
+    public static final String CONFFILE = "plugin.properties";
+    // not exposed to users
+    public static final String SYSCONFFILE = "private.properties";
+    // common properties for multiple plugins
+    public static final String COMMONCONFFILE = "common.properties";
+    // common private properties for multiple plugins
+    public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
 }

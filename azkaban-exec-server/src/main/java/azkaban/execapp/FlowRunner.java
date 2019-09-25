@@ -892,6 +892,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     prepareJobProperties(node);
 
     node.setStatus(Status.QUEUED);
+
+    node.setRampProps(this.flow.getRampPropsForJob(node.getId(), node.getInputProps().getString("type")));
+
     final JobRunner runner = createJobRunner(node);
     this.logger.info("Submitting job '" + node.getNestedId() + "' to run.");
     try {

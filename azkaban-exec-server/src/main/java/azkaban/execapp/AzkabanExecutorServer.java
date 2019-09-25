@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.execapp.event.JobCallbackManager;
+import azkaban.execapp.jmx.JmxFlowRampManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.execapp.metric.NumFailedFlowMetric;
@@ -79,6 +80,7 @@ import org.mortbay.jetty.servlet.Context;
 public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
+  public static final String RAMPPOLICY_PLUGIN_DIR = "azkaban.ramppolicy.plugin.dir";
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
   private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
@@ -89,6 +91,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final ExecutorLoader executionLoader;
   private final FlowRunnerManager runnerManager;
+  private final FlowRampManager rampManager;
   private final MetricsManager metricsManager;
   private final Props props;
   private final Server server;
@@ -98,12 +101,14 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   public AzkabanExecutorServer(final Props props,
       final ExecutorLoader executionLoader,
       final FlowRunnerManager runnerManager,
+      final FlowRampManager rampManager,
       final MetricsManager metricsManager,
       @Named(EXEC_JETTY_SERVER) final Server server,
       @Named(EXEC_ROOT_CONTEXT) final Context root) {
     this.props = props;
     this.executionLoader = executionLoader;
     this.runnerManager = runnerManager;
+    this.rampManager = rampManager;
 
     this.metricsManager = metricsManager;
     this.server = server;
@@ -390,6 +395,10 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     return this.runnerManager;
   }
 
+  public FlowRampManager getFlowRampManager() {
+    return this.rampManager;
+  }
+
   /**
    * Get the hostname
    *
@@ -460,6 +469,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
    * Shutdown the server. (blocking call) - waits for jobs to finish - doesn't accept any new jobs
    */
   private void shutdownInternal() {
+    getFlowRampManager().shutdown();
     getFlowRunnerManager().shutdown();
     // Sleep for an hour to wait for web server updater thread
     // {@link azkaban.executor.RunningExecutionsUpdaterThread#updateExecutions} to finalize updating
@@ -474,6 +484,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   public void shutdownNow() throws Exception {
     this.server.stop();
     this.server.destroy();
+    getFlowRampManager().shutdownNow();
     getFlowRunnerManager().shutdownNow();
     this.mbeanRegistrationManager.closeMBeans();
   }
@@ -483,8 +494,8 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     logger.info("Registering MBeans...");
 
     this.mbeanRegistrationManager.registerMBean("executorJetty", new JmxJettyServer(this.server));
-    this.mbeanRegistrationManager
-        .registerMBean("flowRunnerManager", new JmxFlowRunnerManager(this.runnerManager));
+    this.mbeanRegistrationManager.registerMBean("flowRunnerManager", new JmxFlowRunnerManager(this.runnerManager));
+    this.mbeanRegistrationManager.registerMBean("flowRampManager", new JmxFlowRampManager(this.rampManager));
     this.mbeanRegistrationManager.registerMBean("jobJMXMBean", JmxJobMBeanManager.getInstance());
 
     if (JobCallbackManager.isInitialized()) {

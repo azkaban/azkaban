@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -979,6 +980,12 @@ public class ExecutorManager extends EventHandler implements
       }
       return message;
     }
+  }
+
+  @Override
+  public Map<String, String> doRampActions(List<Map<String, Object>> rampActions)
+      throws ExecutorManagerException {
+    return this.executorLoader.doRampActions(rampActions);
   }
 
   private void cleanOldExecutionLogs(final long millis) {

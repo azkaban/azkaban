@@ -225,4 +225,15 @@ public class TimeUtils {
 
     return periodStr;
   }
+
+  /**
+   * Check the time escaped over n seconds
+   *
+   * @param referenceTime reference time
+   * @param second number of seconds
+   * @return true when the time escaped more than n seconds
+   */
+  public static boolean timeEscapedOver(long referenceTime, int second) {
+    return ((System.currentTimeMillis() - referenceTime) / 1000F) > (second * 1.0);
+  }
 }

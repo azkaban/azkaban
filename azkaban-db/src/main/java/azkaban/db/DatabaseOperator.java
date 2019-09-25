@@ -55,7 +55,7 @@ public class DatabaseOperator {
    * Executes the given Azkaban related SELECT SQL operations. it will call
    * {@link AzkabanDataSource#getConnection()} inside queryrunner.query.
    *
-   * @param sqlQuery The SQL query statement to execute.
+   * @param baseQuery The SQL query statement to execute.
    * @param resultHandler The handler used to create the result object
    * @param params Initialize the PreparedStatement's IN parameters
    * @param <T> The type of object that the qeury handler returns
@@ -122,6 +122,25 @@ public class DatabaseOperator {
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("update failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailUpdate();
+      }
+      throw ex;
+    }
+  }
+
+  /**
+   * Execute a batch operation
+   * @param sqlCommand sqlCommand template
+   * @param params parameters
+   * @return result
+   * @throws SQLException
+   */
+  public int[] batch(final String sqlCommand, final Object[]... params) throws SQLException {
+    try {
+      return this.queryRunner.batch(sqlCommand, params);
+    } catch (final SQLException ex) {
+      logger.error("batch operation failed", ex);
       if (this.dbMetrics != null) {
         this.dbMetrics.markDBFailUpdate();
       }
