@@ -77,7 +77,7 @@ public class JavaProcessJob extends ProcessJob {
           "No classpath defined and no .jar files found in job directory. Can't run java command.");
     }
 
-    return "-cp " + createArguments(classPath, ":") + " ";
+    return "-cp " + createArguments(classPath, File.pathSeparator) + " ";
   }
 
   protected List<String> getClassPaths() {

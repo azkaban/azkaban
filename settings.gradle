@@ -17,7 +17,9 @@
 rootProject.name = 'azkaban'
 
 include 'az-core'
-include 'az-exec-util'
+if (!org.gradle.internal.os.OperatingSystem.current().isWindows()) {
+    include 'az-exec-util'
+}
 include 'azkaban-spi'
 include 'azkaban-db'
 include 'azkaban-common'

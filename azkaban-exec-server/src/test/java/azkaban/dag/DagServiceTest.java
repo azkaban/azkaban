@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import azkaban.utils.ExecutorServiceUtils;
+import azkaban.utils.Pair;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import javafx.util.Pair;
 import org.junit.After;
 import org.junit.Test;
 

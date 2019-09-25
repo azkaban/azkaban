@@ -250,10 +250,14 @@ public class FlowRunnerManager implements EventListener,
    * Note that this should work on most Linux distributions and MacOS, but will not work on
    * Windows.
    */
-  private void setgidPermissionOnExecutionDirectory() throws IOException {
+  private void setgidPermissionOnExecutionDirectory() {
     logger.info("Creating subprocess to run shell command: chmod g+s "
         + this.executionDirectory.toString());
-    Runtime.getRuntime().exec("chmod g+s " + this.executionDirectory.toString());
+    try {
+      Runtime.getRuntime().exec("chmod g+s " + this.executionDirectory.toString());
+    } catch (final IOException e) {
+      logger.warn("Unable to chmod g+s the execution directory", e);
+    }
   }
 
   private TrackingThreadPool createExecutorService(final int nThreads) {

@@ -52,6 +52,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,15 +68,15 @@ public class AzkabanWebServerTest {
 
   private static final Props props = new Props();
 
-  private static String getUserManagerXmlFile() {
+  private static URI getUserManagerXmlFile() throws URISyntaxException {
     final URL resource = AzkabanWebServerTest.class.getClassLoader()
         .getResource("azkaban-users.xml");
-    return requireNonNull(resource).getPath();
+    return requireNonNull(resource).toURI();
   }
 
-  private static String getSqlScriptsDir() throws IOException {
+  private static String getSqlScriptsDir() throws IOException, URISyntaxException {
     // Dummy because any resource file works.
-    final String dummyResourcePath = getUserManagerXmlFile();
+    final URI dummyResourcePath = getUserManagerXmlFile();
     final Path resources = Paths.get(dummyResourcePath).getParent();
     final Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
 
@@ -97,7 +99,7 @@ public class AzkabanWebServerTest {
     props.put("jetty.port", "0");
     props.put("server.useSSL", "true");
     props.put("jetty.use.ssl", "false");
-    props.put("user.manager.xml.file", getUserManagerXmlFile());
+    props.put("user.manager.xml.file", Paths.get(getUserManagerXmlFile()).toString());
 
     // Quartz settings
     props.put("org.quartz.threadPool.class", "org.quartz.simpl.SimpleThreadPool");

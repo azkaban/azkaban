@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
@@ -38,6 +39,8 @@ import org.junit.rules.TemporaryFolder;
 
 
 public class ProcessJobTest {
+
+  private static final String LS_COMMAND = SystemUtils.IS_OS_WINDOWS ? "cmd /c dir" : "ls -al";
 
   private final Logger log = Logger.getLogger(ProcessJob.class);
   @Rule
@@ -71,7 +74,7 @@ public class ProcessJobTest {
   @Test
   public void testOneUnixCommand() throws Exception {
     // Initialize the Props
-    this.props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.put(ProcessJob.COMMAND, LS_COMMAND);
     this.job.run();
 
   }
@@ -85,7 +88,7 @@ public class ProcessJobTest {
     // Initialize the Props
     this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
     this.props.put(JobProperties.USER_TO_PROXY, "test_user");
-    this.props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.put(ProcessJob.COMMAND, LS_COMMAND);
 
     this.job.run();
 
@@ -99,7 +102,7 @@ public class ProcessJobTest {
 
     // Initialize the Props
     this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
-    this.props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.put(ProcessJob.COMMAND, LS_COMMAND);
 
     this.job.run();
 
@@ -115,7 +118,7 @@ public class ProcessJobTest {
     this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
     this.props.put(JobProperties.USER_TO_PROXY, "root");
     this.props.put("execute.as.user", "true");
-    this.props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.put(ProcessJob.COMMAND, LS_COMMAND);
 
     this.job.run();
 
@@ -131,7 +134,7 @@ public class ProcessJobTest {
     this.props.removeLocal(CommonJobProperties.SUBMIT_USER);
     this.props.put(JobProperties.USER_TO_PROXY, "azkaban");
     this.props.put("execute.as.user", "true");
-    this.props.put(ProcessJob.COMMAND, "ls -al");
+    this.props.put(ProcessJob.COMMAND, LS_COMMAND);
 
     this.job.run();
 
@@ -153,9 +156,15 @@ public class ProcessJobTest {
   @Test
   public void testMultipleUnixCommands() throws Exception {
     // Initialize the Props
-    this.props.put(ProcessJob.COMMAND, "pwd");
-    this.props.put("command.1", "date");
-    this.props.put("command.2", "whoami");
+    if (SystemUtils.IS_OS_WINDOWS) {
+      this.props.put(ProcessJob.COMMAND, "cmd /c cd");
+      this.props.put("command.1", "cmd /c 'date /T'");
+      this.props.put("command.2", "whoami");
+    } else {
+      this.props.put(ProcessJob.COMMAND, "pwd");
+      this.props.put("command.1", "date");
+      this.props.put("command.2", "whoami");
+    }
 
     this.job.run();
   }
@@ -205,7 +214,13 @@ public class ProcessJobTest {
 
   @Test
   public void testCancelAfterJobProcessCreation() throws InterruptedException, ExecutionException {
-    this.props.put(ProcessJob.COMMAND, "sleep 5");
+    final String sleepCommand;
+    if (SystemUtils.IS_OS_WINDOWS) {
+      sleepCommand = "ping localhost -n 6";
+    } else {
+      sleepCommand = "sleep 5";
+    }
+    this.props.put(ProcessJob.COMMAND, sleepCommand);
 
     final ExecutorService executorService = Executors.newSingleThreadExecutor();
     final Future future = executorService.submit(() -> {
