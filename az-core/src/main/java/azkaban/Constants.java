@@ -121,6 +121,10 @@ public class Constants {
 
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
 
+    // URL base to download startup dependencies from
+    public static final String AZKABAN_STARTUP_DEPENDENCIES_REMOTE_DOWNLOAD_BASE_URL =
+        "azkaban.startup_dependencies.base_download_url";
+
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";

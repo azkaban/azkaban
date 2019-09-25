@@ -26,7 +26,7 @@ public class ProjectFileHandler {
   private final String fileType;
   private final String fileName;
   private final String uploader;
-  private final byte[] md5Hash;
+  private final byte[] MD5Hash;
   private final int numChunks;
   private final String resourceId;
 
@@ -40,7 +40,7 @@ public class ProjectFileHandler {
       final String fileType,
       final String fileName,
       final int numChunks,
-      final byte[] md5Hash,
+      final byte[] MD5Hash,
       final String resourceId) {
     this.projectId = projectId;
     this.version = version;
@@ -48,7 +48,7 @@ public class ProjectFileHandler {
     this.uploader = uploader;
     this.fileType = fileType;
     this.fileName = fileName;
-    this.md5Hash = md5Hash;
+    this.MD5Hash = MD5Hash;
     this.numChunks = numChunks;
     this.resourceId = resourceId;
   }
@@ -73,8 +73,8 @@ public class ProjectFileHandler {
     return this.fileName;
   }
 
-  public byte[] getMd5Hash() {
-    return this.md5Hash;
+  public byte[] getMD5Hash() {
+    return this.MD5Hash;
   }
 
   public File getLocalFile() {

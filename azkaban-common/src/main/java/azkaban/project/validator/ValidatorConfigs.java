@@ -39,10 +39,6 @@ public class ValidatorConfigs {
    * Key for the config param specifying the link address with detailed information about auto-fix
    **/
   public static final String VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM = "project.validators.fix.link";
-  /**
-   * Key for the confi param indicating path to the project archive file
-   **/
-  public static final String PROJECT_ARCHIVE_FILE_PATH = "project.archive.file.path";
 
   private ValidatorConfigs() {
   } // Prevents instantiation

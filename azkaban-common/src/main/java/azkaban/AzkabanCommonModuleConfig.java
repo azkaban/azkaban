@@ -43,7 +43,7 @@ public class AzkabanCommonModuleConfig {
    * examples: LOCAL, DATABASE, azkaban.storage.MyFavStorage
    */
   private String storageImplementation = DATABASE.name();
-  private String localStorageBaseDirPath = "LOCAL_STORAGE";
+  private String localStorageBaseDirPath = "./local/storage";
 
   @Inject
   public AzkabanCommonModuleConfig(final Props props) {

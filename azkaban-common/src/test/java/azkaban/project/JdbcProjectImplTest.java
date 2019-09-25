@@ -25,7 +25,7 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.Md5Hasher;
+import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
 import com.google.common.io.Files;
@@ -171,9 +171,9 @@ public class JdbcProjectImplTest {
   private byte[] computeHash(final File localFile) {
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(localFile);
+      md5 = HashUtils.MD5.getHashBytes(localFile);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
     return md5;
   }

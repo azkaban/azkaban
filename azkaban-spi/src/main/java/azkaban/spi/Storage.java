@@ -33,23 +33,48 @@ import java.io.InputStream;
  * Note: This is a synchronous interface.
  */
 public interface Storage {
+  public static final String DEPENDENCY_STORAGE_PATH_PREFIX_PROP = "dependency.storage.path.prefix";
 
   /**
-   * Get an InputStream object by providing a key.
+   * Get an InputStream object for a project by providing a key.
    *
    * @param key The key is a string pointing to the blob in Storage.
    * @return InputStream for fetching the blob. null if the key is not found.
    */
-  InputStream get(String key) throws IOException;
+  InputStream getProject(String key) throws IOException;
 
   /**
-   * Put an object and return a key.
+   * Put a project and return a key.
    *
    * @param metadata Metadata related to the input stream
    * @param localFile Read data from a local file
    * @return Key associated with the current object on successful put
    */
-  String put(StorageMetadata metadata, File localFile);
+  String putProject(ProjectStorageMetadata metadata, File localFile);
+
+  /**
+   * Put a dependency and return the resulting FileStatus
+   *
+   * @param file File and dependency details associated with dependency
+   * @return FileStatus resulting file status after writing (or attempting to write)
+   */
+  FileIOStatus putDependency(DependencyFile file) throws IOException;
+
+  /**
+   * Get an InputStream object for a dependency.
+   *
+   * @param dep the dependency to fetch
+   * @return InputStream for fetching the blob.
+   */
+  InputStream getDependency(Dependency dep) throws IOException;
+
+  /**
+   * Get the FileStatus of an dependency.
+   *
+   * @param dep the dependency for which to fetch the FileStatus for
+   * @return current FileStatus of the dependency
+   */
+  FileIOStatus dependencyStatus(Dependency dep) throws IOException;
 
   /**
    * Delete an object from Storage.

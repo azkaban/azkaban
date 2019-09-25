@@ -1,6 +1,8 @@
 package azkaban.project.validator;
 
+import java.io.File;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -13,12 +15,16 @@ import java.util.Set;
 public class ValidationReport {
 
   protected ValidationStatus _status;
+  protected Set<File> _removedFiles;
+  protected Set<File> _modifiedFiles;
   protected Set<String> _infoMsgs;
   protected Set<String> _warningMsgs;
   protected Set<String> _errorMsgs;
 
   public ValidationReport() {
     this._status = ValidationStatus.PASS;
+    this._removedFiles = new HashSet<>();
+    this._modifiedFiles = new HashSet<>();
     this._infoMsgs = new HashSet<>();
     this._warningMsgs = new HashSet<>();
     this._errorMsgs = new HashSet<>();
@@ -93,6 +99,34 @@ public class ValidationReport {
   }
 
   /**
+   * Add a set of modified OR created files
+   */
+  public void addModifiedFiles(final Set<File> files) {
+    this._modifiedFiles.addAll(files);
+  }
+
+  /**
+   * Add one of modified OR created file
+   */
+  public void addModifiedFile(final File file) {
+    this._modifiedFiles.add(file);
+  }
+
+  /**
+   * Add a set of removed files
+   */
+  public void addRemovedFiles(final Set<File> files) {
+    this._removedFiles.addAll(files);
+  }
+
+  /**
+   * Add one removed file
+   */
+  public void addRemovedFile(final File file) {
+    this._removedFiles.add(file);
+  }
+
+  /**
    * Retrieve the status of the report.
    */
   public ValidationStatus getStatus() {
@@ -118,5 +152,34 @@ public class ValidationReport {
    */
   public Set<String> getErrorMsgs() {
     return this._errorMsgs;
+  }
+
+  /**
+   * Get the set of modified OR created files
+   */
+  public Set<File> getModifiedFiles() { return this._modifiedFiles; }
+
+  /**
+   * Get the set of removed files
+   */
+  public Set<File> getRemovedFiles() { return this._removedFiles; }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ValidationReport that = (ValidationReport) o;
+    return _status == that._status && _removedFiles.equals(that._removedFiles) && _modifiedFiles.equals(
+        that._modifiedFiles) && _infoMsgs.equals(that._infoMsgs) && _warningMsgs.equals(that._warningMsgs) && _errorMsgs
+        .equals(that._errorMsgs);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(_status, _removedFiles, _modifiedFiles, _infoMsgs, _warningMsgs, _errorMsgs);
   }
 }
