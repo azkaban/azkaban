@@ -24,7 +24,7 @@
   <script type="text/javascript" src="${context}/js/jquery.twbsPagination.min.js"></script>
 
   <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/model/job-log.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/model/job-log.js?v=1568515440"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/job-details.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
