@@ -558,95 +558,6 @@ var logUpdaterFunction = function () {
   }
 }
 
-var exNodeClickCallback = function (event) {
-  console.log("Node clicked callback");
-  var jobId = event.currentTarget.jobid;
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
-      + flowId + "&job=" + jobId;
-  var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid="
-      + jobId;
-
-  var menu = [
-    {
-      title: "Open Job...", callback: function () {
-      window.location.href = requestURL;
-    }
-    },
-    {
-      title: "Open Job in New Window...", callback: function () {
-      window.open(requestURL);
-    }
-    },
-    {
-      title: "Visualize Job...", callback: function () {
-      window.location.href = visualizerURL;
-    }
-    }
-  ];
-
-  contextMenuView.show(event, menu);
-}
-
-var exJobClickCallback = function (event) {
-  console.log("Node clicked callback");
-  var jobId = event.currentTarget.jobid;
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
-      + flowId + "&job=" + jobId;
-  var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid="
-      + jobId;
-
-  var menu = [
-    {
-      title: "Open Job...", callback: function () {
-      window.location.href = requestURL;
-    }
-    },
-    {
-      title: "Open Job in New Window...", callback: function () {
-      window.open(requestURL);
-    }
-    },
-    {
-      title: "Visualize Job...", callback: function () {
-      window.location.href = visualizerURL;
-    }
-    }
-  ];
-
-  contextMenuView.show(event, menu);
-}
-
-var exEdgeClickCallback = function (event) {
-  console.log("Edge clicked callback");
-}
-
-var exGraphClickCallback = function (event) {
-  console.log("Graph clicked callback");
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
-      + flowId;
-
-  var menu = [
-    {
-      title: "Open Flow...", callback: function () {
-      window.location.href = requestURL;
-    }
-    },
-    {
-      title: "Open Flow in New Window...", callback: function () {
-      window.open(requestURL);
-    }
-    },
-    {break: 1},
-    {
-      title: "Center Graph", callback: function () {
-      graphModel.trigger("resetPanZoom");
-    }
-    }
-  ];
-
-  contextMenuView.show(event, menu);
-}
-
 var flowStatsView;
 var flowStatsModel;
 
@@ -726,7 +637,7 @@ $(function () {
   }
 
   var successHandler = function (data) {
-    console.log("data fetched");
+    console.log("[exflow.js] data fetched");
     graphModel.addFlow(data);
     graphModel.trigger("change:graph");
 
