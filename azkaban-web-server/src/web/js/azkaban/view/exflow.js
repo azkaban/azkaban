@@ -637,7 +637,6 @@ $(function () {
   }
 
   var successHandler = function (data) {
-    console.log("[exflow.js] data fetched");
     graphModel.addFlow(data);
     graphModel.trigger("change:graph");
 

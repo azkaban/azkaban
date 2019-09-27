@@ -261,7 +261,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     };
     var self = this;
     var successHandler = function (data) {
-      console.log("data fetched");
       graphModel.addFlow(data);
 
       if (exgraph) {
@@ -624,9 +623,8 @@ function recurseAllDescendents(node, disable) {
 }
 
 var expanelNodeClickCallback = function (event, model, node) {
-  console.log("Node clicked callback");
   var jobId = node.id;
-  var flowId = executableGraphModel.get("flowId");
+  var flowId = node.parent.flow;
   var type = node.type;
 
   var menu;
@@ -759,13 +757,11 @@ var expanelNodeClickCallback = function (event, model, node) {
   contextMenuView.show(event, menu);
 }
 
-var expanelEdgeClickCallback = function (event) {
-  console.log("Edge clicked callback");
-}
+var expanelEdgeClickCallback = function (event) {}
 
-var expanelGraphClickCallback = function (event) {
-  console.log("Graph clicked callback");
-  var flowId = executableGraphModel.get("flowId");
+var expanelGraphClickCallback = function (event, model) {
+  var data = model.get("data");
+  var flowId = data.flow;
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
       + flowId;
 
