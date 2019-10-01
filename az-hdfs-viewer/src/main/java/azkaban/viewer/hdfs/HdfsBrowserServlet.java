@@ -125,7 +125,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
 
     try {
       Method getInstanceMethod =
-          hadoopSecurityManagerClass.getMethod("createInstance", Props.class);
+          hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
       hadoopSecurityManager =
           (HadoopSecurityManager) getInstanceMethod.invoke(
               hadoopSecurityManagerClass, props);
