@@ -125,7 +125,7 @@ public class HadoopJobUtils {
     HadoopSecurityManager hadoopSecurityManager = null;
 
     try {
-      Method getInstanceMethod = hadoopSecurityManagerClass.getMethod("createInstance", Props.class);
+      Method getInstanceMethod = hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
       hadoopSecurityManager = (HadoopSecurityManager) getInstanceMethod.invoke(
           hadoopSecurityManagerClass, props);
     } catch (InvocationTargetException e) {
