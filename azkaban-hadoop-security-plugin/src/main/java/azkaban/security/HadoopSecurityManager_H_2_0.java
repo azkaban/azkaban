@@ -490,26 +490,26 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
-      getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
+      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          getToken(userToProxyFQN);
+          getToken(userToProxy);
           return null;
         }
 
-        private void getToken(final String userToProxyFQN) throws InterruptedException,
+        private void getToken(final String userToProxy) throws InterruptedException,
             IOException, HadoopSecurityManagerException {
           logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN + ": "
               + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxyFQN, logger);
+            registerCustomCredential(props, cred, userToProxy, logger);
           }
 
-          fetchNameNodeToken(userToProxyFQN, props, logger, cred);
+          fetchNameNodeToken(userToProxy, props, logger, cred);
 
-          fetchJobTrackerToken(userToProxyFQN, props, logger, cred);
+          fetchJobTrackerToken(userToProxy, props, logger, cred);
 
         }
       });
