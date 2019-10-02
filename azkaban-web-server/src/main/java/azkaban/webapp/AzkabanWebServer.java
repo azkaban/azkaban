@@ -401,7 +401,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     final String staticDir =
         this.props.getString("web.resource.dir", DEFAULT_STATIC_DIR);
     logger.info("Setting up web resource dir " + staticDir);
-    final Context root = new Context(this.server, "/", Context.SESSIONS);
+    final Context root = new Context(this.server, this.props.getString("jetty.contextPath","/"), Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
     final String defaultServletPath =
