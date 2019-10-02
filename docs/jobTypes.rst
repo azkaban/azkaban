@@ -1191,4 +1191,57 @@ server. You can reload all jobtype plugins as follows:
 
    curl http://localhost:EXEC_SERVER_PORT/executor?action=reloadJobTypePlugins
 
+--------------
 
+*****
+Examples
+*****
+
+The project az-hadoop-jobtype-plugin provides examples that show how to
+use some of the included jobtypes. Below you can find how to setup a
+solo-server to run some of them.
+
+java-wc
+~~~~~~~
+
+This example uses the pig-0.12.0 job type to upload an input file to HDFS and the
+hadoopJava job type to count the number of instances that each word is found.
+
+We need to install
+`Hadoop <https://archive.apache.org/dist/hadoop/core/hadoop-2.6.1/>`__ and
+`Pig <https://archive.apache.org/dist/pig/pig-0.11.0/>`__ on the solo-server by
+expanding the tar into /export/apps/hadoop/latest and /export/apps/pig/latest
+resepectively. Then set the HADOOP_HOME and PIG_HOME variables with their paths:
+
+.. code-block:: guess
+
+   export HADOOP_HOME=/export/apps/hadoop/latest
+   export PIG_HOME=/export/apps/pig/latest
+
+If you prefer to install Hadoop and Pig under a different path, please update
+common.properties and commonprivate.properties under
+./az-hadoop-jobtype-plugin/src/jobtypes/ to match it.
+
+Follow the `Hadoop Single Cluster instructions
+<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html>`__
+to run HDFS on a single cluster. You will need to modify etc/hadoop/core-site.xml
+and run sbin/start-dfs.sh.
+
+Build the source code and copy the pig-0.12.0 and hadoopJava job type
+directories, along with common.properties and commonprivate.properties, from
+./az-hadoop-jobtype-plugin/src/jobtypes to
+./azkaban-solo-server/build/install/azkaban-solo-server/plugins/jobtypes. Then
+start the solo server by running:
+
+.. code-block:: guess
+
+   ./azkaban-solo-server/build/install/azkaban-solo-server/bin/start-solo.sh
+
+Create a zip file with the contents under
+./az-hadoop-jobtype-plugin/src/examples/java-wc
+
+Launch Azkaban by going to http://localhost:8081 and enter the credentials found
+under /azkaban-solo-server/conf/azkaban-users.xml.
+
+Select Create Project, enter your project details and click Upload. Then select
+the zip created in the step above. Start the job by clicking on Execute Flow.
