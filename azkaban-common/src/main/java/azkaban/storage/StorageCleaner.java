@@ -28,6 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -116,15 +117,22 @@ public class StorageCleaner {
     if (resourceIdOrderedList.size() <= this.maxArtifactsPerProject) {
       return Collections.emptySet();
     }
-
-    final Set<String> resourceIdsToDelete = resourceIdOrderedList.stream()
-        // skip the newest versions
-        .skip(this.maxArtifactsPerProject)
-        // exclude the ones in versionsToExclude
-        .filter(pair -> !versionsToExclude.contains(pair.getSecond()))
-        // select the resourceIds
-        .map(pair -> pair.getFirst())
-        .collect(Collectors.toSet());
+    // Different project versions may have the same resource id, we can only delete those
+    // resource ids that are not used by the versions we must keep.
+    Set<String> resourceIdsToKeep = new HashSet<>();
+    for (int i = 0; i < resourceIdOrderedList.size(); i++) {
+      Pair<String, Integer> pair = resourceIdOrderedList.get(i);
+      if (i < this.maxArtifactsPerProject || versionsToExclude.contains(pair.getSecond())) {
+        resourceIdsToKeep.add(pair.getFirst());
+      }
+    }
+    Set<String> resourceIdsToDelete = new HashSet<>();
+    for (Pair<String, Integer> pair: resourceIdOrderedList) {
+      String id = pair.getFirst();
+      if (!resourceIdsToKeep.contains(id)) {
+        resourceIdsToDelete.add(id);
+      }
+    }
 
     return resourceIdsToDelete;
   }
