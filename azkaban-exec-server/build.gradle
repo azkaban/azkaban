@@ -24,6 +24,9 @@ dependencies {
     compile deps.jsr305
     compile deps.kafkaLog4jAppender
     runtime(project(':azkaban-hadoop-security-plugin'))
+    runtime(project(':az-hadoop-jobtype-plugin')) {
+        transitive = false
+    }
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
