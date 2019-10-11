@@ -1,14 +1,22 @@
 CREATE TABLE execution_logs (
 	exec_id INT NOT NULL,
-	name VARCHAR(128),
-	attempt INT,
+	name VARCHAR(640) NOT NULL COMMENT 'embedded_flow1:embedded_flow_2:embedded_flow_3:job',
+	attempt INT DEFAULT '0',
 	enc_type TINYINT,
-	start_byte INT,
+	start_byte INT NOT NULL DEFAULT '0',
 	end_byte INT,
 	log LONGBLOB,
 	upload_time BIGINT,
 	PRIMARY KEY (exec_id, name, attempt, start_byte)
+)
+PARTITION BY RANGE (exec_id) (
+  PARTITION P004M VALUES LESS THAN (05000000),
+  PARTITION P009M VALUES LESS THAN (10000000),
+  PARTITION P014M VALUES LESS THAN (15000000),
+  PARTITION P019M VALUES LESS THAN (20000000),
+  PARTITION P024M VALUES LESS THAN (25000000),
+  PARTITION P029M VALUES LESS THAN (30000000),
+  PARTITION P999M VALUES LESS THAN (MAXVALUE)
 );
 
-CREATE INDEX ex_log_attempt ON execution_logs(exec_id, name, attempt);
-CREATE INDEX ex_log_index ON execution_logs(exec_id, name);
+CREATE INDEX ex_log_upload_time ON execution_logs(upload_time);

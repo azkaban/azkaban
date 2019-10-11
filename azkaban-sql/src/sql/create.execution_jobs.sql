@@ -2,18 +2,25 @@ CREATE TABLE execution_jobs (
 	exec_id INT NOT NULL,
 	project_id INT NOT NULL,
 	version INT NOT NULL,
-	flow_id VARCHAR(128) NOT NULL,
-	job_id VARCHAR(128) NOT NULL,
-	attempt INT,
-	start_time BIGINT,
+	flow_id VARCHAR(256) NOT NULL,
+	job_id VARCHAR(512) NOT NULL,
+	attempt INT DEFAULT '0',
+	start_time BIGINT DEFAULT '-1',
 	end_time BIGINT,
 	status TINYINT,
 	input_params LONGBLOB,
 	output_params LONGBLOB,
 	attachments LONGBLOB,
 	PRIMARY KEY (exec_id, job_id, attempt)
+)
+PARTITION BY RANGE (exec_id) (
+  PARTITION P004M VALUES LESS THAN (05000000),
+  PARTITION P009M VALUES LESS THAN (10000000),
+  PARTITION P014M VALUES LESS THAN (15000000),
+  PARTITION P019M VALUES LESS THAN (20000000),
+  PARTITION P024M VALUES LESS THAN (25000000),
+  PARTITION P029M VALUES LESS THAN (30000000),
+  PARTITION P999M VALUES LESS THAN (MAXVALUE)
 );
 
-CREATE INDEX exec_job ON execution_jobs(exec_id, job_id);
-CREATE INDEX exec_id ON execution_jobs(exec_id);
 CREATE INDEX ex_job_id ON execution_jobs(project_id, job_id);
