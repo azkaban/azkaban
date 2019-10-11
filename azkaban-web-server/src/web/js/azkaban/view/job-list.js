@@ -198,16 +198,20 @@ azkaban.JobListView = Backbone.View.extend({
         $(expandDiv).addClass("expandarrow glyphicon glyphicon-chevron-down");
         $(a).append(expandDiv);
 
-        // Add the double down expand all
-        var expandAllDiv = document.createElement("div");
-        $(expandAllDiv).addClass("expandallarrow");
-        var firstArrow = document.createElement("span");
-        $(firstArrow).addClass("glyphicon glyphicon-chevron-down");
-        var secondArrow = document.createElement("span");
-        $(secondArrow).addClass("glyphicon glyphicon-chevron-down");
-        $(expandAllDiv).append(firstArrow);
-        $(expandAllDiv).append(secondArrow);
-        $(a).append(expandAllDiv);
+        var atLeastOneChildHasChildren = nodeArray[i].nodes
+            && nodeArray[i].nodes.reduce((acc, x) => acc || (x.nodes && x.nodes.length), false);
+        if (atLeastOneChildHasChildren) {
+          // Add the double down expand all
+          var expandAllDiv = document.createElement("div");
+          $(expandAllDiv).addClass("expandallarrow");
+          var firstArrow = document.createElement("span");
+          $(firstArrow).addClass("glyphicon glyphicon-chevron-down");
+          var secondArrow = document.createElement("span");
+          $(secondArrow).addClass("glyphicon glyphicon-chevron-down");
+          $(expandAllDiv).append(firstArrow);
+          $(expandAllDiv).append(secondArrow);
+          $(a).append(expandAllDiv);
+        }
 
         // Create subtree
         var subul = this.renderTree(li, nodeArray[i], listNodeName + ":");
