@@ -30,7 +30,8 @@
 <script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
 
 <script type="text/javascript" src="${context}/js/azkaban/util/flow-loader.js?v=1569610022"></script>
-<script type="text/javascript" src="${context}/js/azkaban/view/job-list.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/job-list-common.js?v=1570835891"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/job-list.js?v=1570835891"></script>
 <script type="text/javascript" src="${context}/js/azkaban/model/svg-graph.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/model/flow-trigger.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>

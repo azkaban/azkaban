@@ -198,18 +198,9 @@ azkaban.JobListView = Backbone.View.extend({
         $(expandDiv).addClass("expandarrow glyphicon glyphicon-chevron-down");
         $(a).append(expandDiv);
 
-        var atLeastOneChildHasChildren = nodeArray[i].nodes
-            && nodeArray[i].nodes.reduce((acc, x) => acc || (x.nodes && x.nodes.length), false);
-        if (atLeastOneChildHasChildren) {
+        if (atLeastOneChildHasChildren(nodeArray[i])) {
           // Add the double down expand all
-          var expandAllDiv = document.createElement("div");
-          $(expandAllDiv).addClass("expandallarrow");
-          var firstArrow = document.createElement("span");
-          $(firstArrow).addClass("glyphicon glyphicon-chevron-down");
-          var secondArrow = document.createElement("span");
-          $(secondArrow).addClass("glyphicon glyphicon-chevron-down");
-          $(expandAllDiv).append(firstArrow);
-          $(expandAllDiv).append(secondArrow);
+          var expandAllDiv = createExpandAllButton();
           $(a).append(expandAllDiv);
         }
 

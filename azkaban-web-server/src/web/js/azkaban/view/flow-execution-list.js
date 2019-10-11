@@ -390,18 +390,9 @@ azkaban.ExecutionListView = Backbone.View.extend({
         self.setFlowExpansion(parent.node);
       });
 
-      var atLeastOneChildHasChildren = node.nodes
-          && node.nodes.reduce((acc, x) => acc || (x.nodes && x.nodes.length), false);
-      if (atLeastOneChildHasChildren) {
+      if (atLeastOneChildHasChildren(node)) {
         // Add the double down expand all
-        var expandAllDiv = document.createElement("div");
-        $(expandAllDiv).addClass("expandallarrow");
-        var firstArrow = document.createElement("span");
-        $(firstArrow).addClass("glyphicon glyphicon-chevron-down");
-        var secondArrow = document.createElement("span");
-        $(secondArrow).addClass("glyphicon glyphicon-chevron-down");
-        $(expandAllDiv).append(firstArrow);
-        $(expandAllDiv).append(secondArrow);
+        var expandAllDiv = createExpandAllButton();
         $(expandAllDiv).click(function (evt) {
           var parent = $(evt.currentTarget).parents("tr")[0];
           self.propagateExpansionDown(parent.node);
