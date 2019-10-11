@@ -5,7 +5,7 @@ CREATE TABLE execution_jobs (
 	flow_id VARCHAR(256) NOT NULL,
 	job_id VARCHAR(512) NOT NULL,
 	attempt INT DEFAULT '0',
-	start_time BIGINT DEFAULT '-1',
+	start_time BIGINT,
 	end_time BIGINT,
 	status TINYINT,
 	input_params LONGBLOB,
