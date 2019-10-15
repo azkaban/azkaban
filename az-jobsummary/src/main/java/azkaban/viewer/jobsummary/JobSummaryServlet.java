@@ -129,6 +129,8 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
     page.add("flowid", flow.getId());
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
+    page.add("attemptStatus", attempt == node.getAttempt() ?
+        node.getStatus() : node.getPastAttemptList().get(attempt).getStatus());
 
     page.render();
   }
