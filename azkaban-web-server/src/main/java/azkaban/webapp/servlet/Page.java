@@ -78,6 +78,11 @@ public class Page {
     this.context.put(name, value);
   }
 
+  /**
+   * Adds variables to the velocity context, WITHOUT sanitizing the contents
+   * ONLY USE if you are 100% sure the content cannot be manipulated by the user
+   * to stage an XSS attack.
+   */
   public void addUNSAFE(final String name, final Object value) {
     varsToRenderUnsafely.add(name);
     add(name, value);
