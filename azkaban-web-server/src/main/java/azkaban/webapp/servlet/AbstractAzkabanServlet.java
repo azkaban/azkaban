@@ -301,6 +301,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     }
 
     final String errorMsg = getErrorMessageFromCookie(req);
+    final boolean renderErrUnsafely = shouldRenderErrorMessageFromCookieUnsafely(req);
     page.addUNSAFE("error_message", errorMsg == null || errorMsg.isEmpty() ? "null"
         : errorMsg);
     setErrorMessageInCookie(resp, null);
@@ -311,7 +312,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     setWarnMessageInCookie(resp, null);
 
     final String successMsg = getSuccessMessageFromCookie(req);
-    page.addUNSAFE("success_message",
+    page.add("success_message",
         successMsg == null || successMsg.isEmpty() ? "null" : successMsg);
     setSuccessMessageInCookie(resp, null);
 
