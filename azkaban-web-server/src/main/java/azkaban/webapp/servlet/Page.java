@@ -17,6 +17,8 @@
 package azkaban.webapp.servlet;
 
 import azkaban.utils.Utils;
+import java.util.HashSet;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -35,6 +37,7 @@ public class Page {
   private final VelocityEngine engine;
   private final VelocityContext context;
   private final String template;
+  private final Set<String> varsToRenderUnsafely;
   private String mimeType = DEFAULT_MIME_TYPE;
 
   /**
@@ -50,6 +53,7 @@ public class Page {
     this.context.put("esc", new EscapeTool());
     this.context.put("session", request.getSession(true));
     this.context.put("context", request.getContextPath());
+    this.varsToRenderUnsafely = new HashSet<>();
   }
 
   /**
@@ -74,8 +78,17 @@ public class Page {
     this.context.put(name, value);
   }
 
+  public void addUNSAFE(final String name, final Object value) {
+    varsToRenderUnsafely.add(name);
+    add(name, value);
+  }
+
   private void sanitizeContextContents() {
     for(Object key: this.context.getKeys()) {
+      if (varsToRenderUnsafely.contains(key)) {
+        continue;
+      }
+
       Object value = this.context.get((String)key);
       if(key instanceof String && value instanceof String) {
         this.context.put((String)key, StringEscapeUtils.escapeHtml((String)value));

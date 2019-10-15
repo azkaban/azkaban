@@ -301,17 +301,17 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     }
 
     final String errorMsg = getErrorMessageFromCookie(req);
-    page.add("error_message", errorMsg == null || errorMsg.isEmpty() ? "null"
+    page.addUNSAFE("error_message", errorMsg == null || errorMsg.isEmpty() ? "null"
         : errorMsg);
     setErrorMessageInCookie(resp, null);
 
     final String warnMsg = getWarnMessageFromCookie(req);
-    page.add("warn_message", warnMsg == null || warnMsg.isEmpty() ? "null"
+    page.addUNSAFE("warn_message", warnMsg == null || warnMsg.isEmpty() ? "null"
         : warnMsg);
     setWarnMessageInCookie(resp, null);
 
     final String successMsg = getSuccessMessageFromCookie(req);
-    page.add("success_message",
+    page.addUNSAFE("success_message",
         successMsg == null || successMsg.isEmpty() ? "null" : successMsg);
     setSuccessMessageInCookie(resp, null);
 
