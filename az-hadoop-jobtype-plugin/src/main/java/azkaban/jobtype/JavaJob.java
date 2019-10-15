@@ -20,7 +20,6 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.security.commons.SecurityUtils;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
-import azkaban.utils.Utils;
 import java.io.File;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -93,15 +92,7 @@ public class JavaJob extends JavaProcessJob {
       classPath.add(new File(hadoopHome, "conf").getPath());
     }
 
-    List<String> typeClassPath =
-        getSysProps().getStringList("jobtype.classpath", null, ",");
-    Utils.mergeTypeClassPaths(classPath, typeClassPath, getSysProps().get("plugin.dir"));
-
-    List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    Utils.mergeStringList(classPath, typeGlobalClassPath);
-
-    return classPath;
+    return mergeSysTypeClassPaths(classPath);
   }
 
   @Override

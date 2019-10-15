@@ -47,25 +47,7 @@ public class HadoopJavaJob extends AbstractHadoopJavaProcessJob {
   @Override
   protected String getJVMArguments() {
     String args = super.getJVMArguments();
-
-    String typeUserGlobalJVMArgs =
-        getJobProps().getString("jobtype.global.jvm.args", null);
-    if (typeUserGlobalJVMArgs != null) {
-      args += " " + typeUserGlobalJVMArgs;
-    }
-    String typeSysGlobalJVMArgs =
-        getSysProps().getString("jobtype.global.jvm.args", null);
-    if (typeSysGlobalJVMArgs != null) {
-      args += " " + typeSysGlobalJVMArgs;
-    }
-    String typeUserJVMArgs = getJobProps().getString("jobtype.jvm.args", null);
-    if (typeUserJVMArgs != null) {
-      args += " " + typeUserJVMArgs;
-    }
-    String typeSysJVMArgs = getSysProps().getString("jobtype.jvm.args", null);
-    if (typeSysJVMArgs != null) {
-      args += " " + typeSysJVMArgs;
-    }
+    args += getJVMJobTypeParameters();
     return args;
   }
 
@@ -97,18 +79,11 @@ public class HadoopJavaJob extends AbstractHadoopJavaProcessJob {
         getWorkingDirectory()));
 
     // merging classpaths from plugin.properties
-    List<String> jobTypeClassPath = getJobProps().getStringList("jobtype.classpath", null, ",");
-    Utils.mergeTypeClassPaths(classPath, jobTypeClassPath, getSysProps().get("plugin.dir"));
+    Utils.mergeTypeClassPaths(classPath,
+        getJobProps().getStringList("jobtype.classpath", null, ","),
+        getSysProps().get("plugin.dir"));
 
-    // merging classpaths from private.properties
-    List<String> sysTypeClassPath = getSysProps().getStringList("jobtype.classpath", null, ",");
-    Utils.mergeTypeClassPaths(classPath, sysTypeClassPath, getSysProps().get("plugin.dir"));
-
-    List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    Utils.mergeStringList(classPath, typeGlobalClassPath);
-
-    return classPath;
+    return mergeSysTypeClassPaths(classPath);
   }
 
   @Override

@@ -15,17 +15,24 @@
  */
 package azkaban.jobtype;
 
+import azkaban.jobExecutor.JavaProcessJob;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 import org.apache.pig.PigRunner;
 import azkaban.flow.CommonJobProperties;
-import azkaban.jobExecutor.JavaProcessJob;
-import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
@@ -45,15 +52,17 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   private static final String PIG_SCRIPT = "pig.script";
   private static final String UDF_IMPORT = "udf.import.list";
   private static final String PIG_ADDITIONAL_JARS = "pig.additional.jars";
-  private static final String DEFAULT_PIG_ADDITIONAL_JARS =
-      "default.pig.additional.jars";
+  private static final String DEFAULT_PIG_ADDITIONAL_JARS = "default.pig.additional.jars";
   private static final String PIG_PARAM_PREFIX = "param.";
   private static final String PIG_PARAM_FILES = "paramfile";
   private static final String HADOOP_UGI = "hadoop.job.ugi";
   private static final String DEBUG = "debug";
+  private static final String RAMP_SCRIPT_DIR = "ramp";
+  private static final String STATEMENT_TERMINATOR = ";";
+  private static final String REGISTER_STATEMENT_FORMATTER = "REGISTER '%s'; ";
+  private static final String REGISTER_STATEMENT_PATTERN = "(?i)\\s*register\\s+[\"|'](\\S*/)*%s\\W+\\S*.jar[\"|']\\s*;\\s*";
 
-  private static String HADOOP_SECURE_PIG_WRAPPER =
-      "azkaban.jobtype.HadoopSecurePigWrapper";
+  private static String HADOOP_SECURE_PIG_WRAPPER = "azkaban.jobtype.HadoopSecurePigWrapper";
 
   private final boolean userPigJar;
   private File pigLogFile = null;
@@ -83,7 +92,7 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
     String args = super.getJVMArguments();
 
     String typeGlobalJVMArgs =
-        getSysProps().getString("jobtype.global.jvm.args", null);
+        getSysProps().getString(HadoopJobUtils.JOBTYPE_GLOBAL_JVM_ARGS, null);
     if (typeGlobalJVMArgs != null) {
       args += " " + typeGlobalJVMArgs;
     }
@@ -146,9 +155,78 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
       list.add("-logfile " + pigLogFile.getAbsolutePath());
     }
 
-    list.add(getScript());
+    Map<String, String> rampRegisterItems = getRampItems(JavaProcessJob.DEPENDENCY_REG_RAMP_PROP_PREFIX);
+    if (rampRegisterItems.isEmpty()) {
+     list.add(getScript());
+    } else {
+      try {
+        File srcFile = new File(getScriptAbsolutePath());
+        File dstFile = new File(getRunnableScriptAbsolutePath());
+        Path dstPath = Paths.get(getRunnableScriptDir());
+        if (!Files.exists(dstPath)) {
+          Files.createDirectories(dstPath);
+        }
+        dstFile.createNewFile();
+        copyAndModifyScript(srcFile, dstFile, rampRegisterItems);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      list.add(getRunnableScript());
+    }
 
     return StringUtils.join((Collection<String>) list, " ");
+  }
+
+  /**
+   * Copy Pig Script from source to destination and update REGISTER statements based on the map of ramp items
+   */
+  private void copyAndModifyScript(File source, File dest, Map<String, String> items) throws IOException {
+    BufferedReader bufferedReader = null;
+    PrintWriter printWriter = null;
+    bufferedReader = Files.newBufferedReader(source.toPath(), Charset.defaultCharset());
+    printWriter =  new PrintWriter(Files.newBufferedWriter(dest.toPath(), Charset.defaultCharset()));
+    String line;
+    while ((line = bufferedReader.readLine()) != null) {
+      printWriter.println(replaceRegisterStatements(line, items));
+    }
+    bufferedReader.close();
+    printWriter.close();
+  }
+
+  /**
+   * Replace Register statement to a particular ramp value
+   */
+  private String replaceRegisterStatements(String text, Map<String, String> ramp) {
+    Map<Pattern, String> rampItems = ramp.entrySet().stream().collect(Collectors.toMap(
+        entry -> Pattern.compile(String.format(REGISTER_STATEMENT_PATTERN, entry.getKey()), Pattern.CASE_INSENSITIVE),
+        entry -> String.format(REGISTER_STATEMENT_FORMATTER, entry.getValue())
+    ));
+    StringBuilder sb = new StringBuilder();
+    int start = 0;
+    int end = text.length();
+    int idx = 0;
+    String statement = null;
+    while(start < end && idx >= 0) {
+      idx = text.indexOf(STATEMENT_TERMINATOR, start);
+      if (idx > 0) {
+        statement = text.substring(start, idx+1);
+      } else {
+        statement = text.substring(start);
+      }
+      final String value = statement;
+      sb.append(
+          rampItems
+              .entrySet()
+              .stream()
+              .filter(entry -> entry.getKey().matcher(value).matches())
+              .map(Map.Entry::getValue)
+              .findFirst()
+              .orElse(statement)
+      );
+      start = idx + 1;
+    }
+
+    return sb.toString();
   }
 
   @Override
@@ -156,13 +234,7 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
 
     List<String> classPath = super.getClassPaths();
 
-    // To add az-core jar classpath
-    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
-
-    // To add az-common jar classpath
-    classPath.add(FileIOUtils.getSourcePathFromClass(JavaProcessJob.class));
-    classPath.add(FileIOUtils.getSourcePathFromClass(HadoopSecurePigWrapper.class));
-    classPath.add(FileIOUtils.getSourcePathFromClass(HadoopSecurityManager.class));
+    classPath.addAll(getAzkabanCommonClassPaths());
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
@@ -176,14 +248,17 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
     Utils.mergeTypeClassPaths(classPath,
         getJobProps().getStringList("jobtype.classpath", null, ","),
         getSysProps().get("plugin.dir"));
-    // merging classpaths from private.properties
-    Utils.mergeTypeClassPaths(classPath,
-        getSysProps().getStringList("jobtype.classpath", null, ","),
-        getSysProps().get("plugin.dir"));
 
-    List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    Utils.mergeStringList(classPath, typeGlobalClassPath);
+    mergeSysTypeClassPaths(classPath);
+
+    Utils.mergeStringList(
+        classPath,
+        getRampItems(JavaProcessJob.DEPENDENCY_CLS_RAMP_PROP_PREFIX)
+            .entrySet()
+            .stream()
+            .map(Map.Entry::getValue)
+            .collect(Collectors.toList())
+    );
 
     return classPath;
   }
@@ -194,6 +269,21 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
 
   private String getScript() {
     return getJobProps().getString(PIG_SCRIPT);
+  }
+
+  private String getRunnableScript() {
+    return RAMP_SCRIPT_DIR + "/" + getScript();
+  }
+
+  private String getScriptAbsolutePath() {
+    return getWorkingDirectory() + "/" + getScript();
+  }
+
+  private String getRunnableScriptDir() {
+    return getWorkingDirectory() + "/" + RAMP_SCRIPT_DIR;
+  }
+  private String getRunnableScriptAbsolutePath() {
+    return getWorkingDirectory() + "/" + getRunnableScript();
   }
 
   private List<String> getUDFImportList() {

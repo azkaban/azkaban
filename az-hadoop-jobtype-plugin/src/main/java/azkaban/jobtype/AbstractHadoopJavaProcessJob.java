@@ -17,7 +17,11 @@ package azkaban.jobtype;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.log4j.Logger;
 
 
@@ -61,8 +65,39 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
     );
   }
 
+  protected String getJVMJobTypeParameters() {
+    String args = "";
+
+    String jobTypeUserGlobalJVMArgs = getJobProps().getString(HadoopJobUtils.JOBTYPE_GLOBAL_JVM_ARGS, null);
+    if (jobTypeUserGlobalJVMArgs != null) {
+      args += " " + jobTypeUserGlobalJVMArgs;
+    }
+    String jobTypeSysGlobalJVMArgs = getSysProps().getString(HadoopJobUtils.JOBTYPE_GLOBAL_JVM_ARGS, null);
+    if (jobTypeSysGlobalJVMArgs != null) {
+      args += " " + jobTypeSysGlobalJVMArgs;
+    }
+    String jobTypeUserJVMArgs = getJobProps().getString(HadoopJobUtils.JOBTYPE_JVM_ARGS, null);
+    if (jobTypeUserJVMArgs != null) {
+      args += " " + jobTypeUserJVMArgs;
+    }
+    String jobTypeSysJVMArgs = getSysProps().getString(HadoopJobUtils.JOBTYPE_JVM_ARGS, null);
+    if (jobTypeSysJVMArgs != null) {
+      args += " " + jobTypeSysJVMArgs;
+    }
+    return args;
+  }
+
   protected String getJVMProxySecureArgument() {
     return hadoopProxy.getJVMArgument(getSysProps(), getJobProps(), getLog());
+  }
+
+  protected List<String> getAzkabanCommonClassPaths() {
+    return ImmutableList.<String>builder()
+        .add(FileIOUtils.getSourcePathFromClass(Props.class)) // add az-core jar classpath
+        .add(FileIOUtils.getSourcePathFromClass(JavaProcessJob.class)) // add az-common jar classpath
+        .add(FileIOUtils.getSourcePathFromClass(HadoopSecureHiveWrapper.class))
+        .add(FileIOUtils.getSourcePathFromClass(HadoopSecurityManager.class))
+        .build();
   }
 
   @Override

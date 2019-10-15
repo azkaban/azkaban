@@ -159,14 +159,7 @@ public class PigProcessJob extends JavaProcessJob {
       classPath.add(FileIOUtils.getSourcePathFromClass(SecurePigWrapper.class));
     }
 
-    final List<String> typeClassPath =
-        getSysProps().getStringList("jobtype.classpath", null, ",");
-    Utils.mergeTypeClassPaths(classPath, typeClassPath, getSysProps().get("plugin.dir"));
-
-    final List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    Utils.mergeStringList(classPath, typeGlobalClassPath);
-    return classPath;
+    return mergeSysTypeClassPaths(classPath);
   }
 
   private boolean getDebug() {
