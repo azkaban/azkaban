@@ -1272,7 +1272,7 @@ Here's a curl command sample:
 
 .. code-block:: guess
 
-   curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=pauseFlow&execid=303" https://localhost:8443/executor
+   curl -k --get --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=pauseFlow&execid=303" https://localhost:8443/executor
 
 A response sample (if succeeds, or pauseFlow is called multiple times):
 
@@ -1323,7 +1323,7 @@ Here's a curl command sample:
 
 .. code-block:: guess
 
-   curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=resumeFlow&execid=303" https://localhost:8443/executor
+   curl -k --get --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=resumeFlow&execid=303" https://localhost:8443/executor
 
 A response sample (if succeeds, or resumeFlow is called multiple times):
 
@@ -1382,7 +1382,7 @@ Here's a curl command sample:
 
 .. code-block:: guess
 
-   curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=fetchexecflow&execid=304" https://localhost:8443/executor
+   curl -k --get --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=fetchexecflow&execid=304" https://localhost:8443/executor
 
 A response sample:
 
@@ -1508,7 +1508,7 @@ Here's a curl command sample:
 
 .. code-block:: guess
 
-   curl -k --data "session.id=9089beb2-576d-47e3-b040-86dbdc7f523e&ajax=fetchExecJobLogs&execid=297&jobId=test-foobar&offset=0&length=100" https://localhost:8443/executor
+   curl -k --get --data "session.id=9089beb2-576d-47e3-b040-86dbdc7f523e&ajax=fetchExecJobLogs&execid=297&jobId=test-foobar&offset=0&length=100" https://localhost:8443/executor
 
 A response sample:
 
@@ -1690,8 +1690,8 @@ Given a project name, this API call fetches all logs of a project.
 |                                   | **Example values:** [             |
 |                                   | [ "test_user",                    |
 |                                   |   1540885820913,                  |
-|                                   |   "PROPERTY_OVERRIDE",            | 
-|                                   |   "some description" ],           | 
+|                                   |   "PROPERTY_OVERRIDE",            |
+|                                   |   "some description" ],           |
 |                                   | [ ... ], [ ... ],  ]              |
 +-----------------------------------+-----------------------------------+
 
@@ -1707,11 +1707,11 @@ A response sample:
 
 {
   "columns" : [ "user", "time", "type", "message" ],
-  "logData" : [ 
+  "logData" : [
     [ "test_user1", 1543615522936, "PROPERTY_OVERRIDE", "Modified Properties: .... " ],
     [ "test_user2", 1542346639933, "UPLOADED", "Uploaded project files zip " ],
     [ "test_user3", 1519908889338, "CREATED", null ],
-    ... 
+    ...
   ],
   "project" : "azkaban-test-project",
   "projectId" : 1
