@@ -121,7 +121,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
       handleGet(req, resp, session);
     } else {
-      if (hasParam(req, "ajax")) {
+      if (isAjaxCall(req)) {
         final HashMap<String, String> retVal = new HashMap<>();
         retVal.put("error", "session");
         this.writeJSON(resp, retVal);
@@ -481,6 +481,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   }
 
   protected boolean isAjaxCall(final HttpServletRequest req) {
+    if (hasParam(req, "ajax")) {
+      return true;
+    }
+
     final String value = req.getHeader("X-Requested-With");
     if (value != null) {
       logger.info("has X-Requested-With " + value);
