@@ -53,6 +53,7 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.metric.MetricReportManager;
 import azkaban.project.FlowLoaderUtils;
 import azkaban.project.ProjectLoader;
@@ -151,6 +152,9 @@ public class FlowRunner extends EventHandler implements Runnable {
   private volatile boolean flowFinished = false;
   private volatile boolean flowKilled = false;
 
+  // For flow related metrics
+  private final CommonMetrics commonMetrics;
+
   // The following is state that will trigger a retry of all failed jobs
   private volatile boolean retryFailedJobs = false;
 
@@ -160,10 +164,10 @@ public class FlowRunner extends EventHandler implements Runnable {
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
       final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter, final
-  AlerterHolder alerterHolder)
+  AlerterHolder alerterHolder, final CommonMetrics commonMetrics)
       throws ExecutorManagerException {
     this(flow, executorLoader, projectLoader, jobtypeManager, null, azkabanProps,
-        azkabanEventReporter, alerterHolder);
+        azkabanEventReporter, alerterHolder, commonMetrics);
   }
 
   /**
@@ -172,7 +176,8 @@ public class FlowRunner extends EventHandler implements Runnable {
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
       final ExecutorService executorService, final Props azkabanProps,
-      final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder)
+      final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder,
+      final CommonMetrics commonMetrics)
       throws ExecutorManagerException {
     this.execId = flow.getExecutionId();
     this.flow = flow;
@@ -190,6 +195,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.finishedNodes = new SwapQueue<>();
     this.azkabanProps = azkabanProps;
     this.alerterHolder = alerterHolder;
+    this.commonMetrics = commonMetrics;
 
     // Add the flow listener only if a non-null eventReporter is available.
     if (azkabanEventReporter != null) {
@@ -260,6 +266,7 @@ public class FlowRunner extends EventHandler implements Runnable {
                 t);
       }
       this.flow.setStatus(Status.FAILED);
+      this.commonMetrics.markFlowFail();
     } finally {
       try {
         if (this.watcher != null) {
@@ -680,7 +687,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   private void finalizeFlow(final ExecutableFlowBase flow) {
-    final String id = flow == this.flow ? "" : flow.getNestedId();
+    final String id = flow == this.flow ? flow.getNestedId() : "";
 
     // If it's not the starting flow, we'll create set of output props
     // for the finished flow.
@@ -718,6 +725,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.logger.info("Setting flow '" + id + "' status to FAILED in "
             + durationSec + " seconds");
         flow.setStatus(Status.FAILED);
+        this.commonMetrics.markFlowFail();
         break;
       case KILLING:
         this.logger

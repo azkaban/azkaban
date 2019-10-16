@@ -241,10 +241,6 @@ public class RunningExecutionsUpdater {
     flow.applyUpdateObject(updateData);
     final Status newStatus = flow.getStatus();
 
-    if (oldStatus != newStatus && newStatus == Status.FAILED) {
-      this.commonMetrics.markFlowFail();
-    }
-
     if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
       ExecutionControllerUtils.alertUserOnFirstError(flow, this.alerterHolder);
     }
