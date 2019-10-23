@@ -64,25 +64,23 @@
 
   ## Log content.
 
-  <div class="container-full container-fill" id="jobLogView">
-    <div class="row">
-      <div class="col-xs-12 col-content">
-        <div class="log-viewer">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <div class="pull-right">
-                <button type="button" id="updateLogBtn" class="btn btn-xs btn-default">Refresh
-                </button>
-              </div>
-              Job Logs
-            </div>
-            <div class="panel-body">
-              <pre id="logSection"></pre>
-            </div>
+  <div class="container-full" id="jobLogView">
+    <div class="log-viewer">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="pull-right">
+            <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh
+            </button>
           </div>
+          Job Logs
+        </div>
+        <div class="panel-body">
+          <pre id="logSection"></pre>
         </div>
       </div>
     </div>
+  </div>
+  <div class="container-full">
     <ul id="attemptsPagination" class="pagination"></ul>
   </div>
 

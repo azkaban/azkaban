@@ -238,24 +238,20 @@
 
   ## Flow Log View
 
-  <div class="container-full container-fill" id="flowLogView">
-    <div class="row">
-      <div class="col-xs-12 col-content">
-        <div class="log-viewer">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <div class="pull-right">
-                <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
-              </div>
-              Flow log
-            </div>
-            <div class="panel-body">
-              <pre id="logSection"></pre>
-            </div>
-          </div><!-- /.panel -->
-        </div><!-- /.log-viewer -->
-      </div><!-- /.col-xs-12 -->
-    </div><!-- /.row -->
+  <div class="container-full" id="flowLogView">
+    <div class="log-viewer">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="pull-right">
+            <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
+          </div>
+          Flow log
+        </div>
+        <div class="panel-body">
+          <pre id="logSection"></pre>
+        </div>
+      </div><!-- /.panel -->
+    </div><!-- /.log-viewer -->
   </div><!-- /.container-full -->
 
   ## Stats view.
