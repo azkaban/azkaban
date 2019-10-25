@@ -173,7 +173,6 @@ public class HadoopJavaJobRunnerMain {
 
       final String runMethod =
           props.getProperty(RUN_METHOD_PARAM, DEFAULT_RUN_METHOD);
-      _logger.info("Invoking method " + runMethod);
 
       if (shouldProxy(props)) {
         _logger.info("Proxying enabled.");
@@ -243,7 +242,10 @@ public class HadoopJavaJobRunnerMain {
   private void runMethod(Object obj, String runMethod)
       throws IllegalAccessException, InvocationTargetException,
       NoSuchMethodException {
-    obj.getClass().getMethod(runMethod, new Class<?>[]{}).invoke(obj);
+    final Method method = obj.getClass().getMethod(runMethod, new Class<?>[]{});
+    _logger.info("Beginning execution of external code: " + runMethod);
+    method.invoke(obj);
+    _logger.info("Completed execution of external code: " + runMethod);
   }
 
   private void outputGeneratedProperties(Props outputProperties) {
