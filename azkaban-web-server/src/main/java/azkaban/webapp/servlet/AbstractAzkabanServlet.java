@@ -194,9 +194,14 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
    * Sets an error message in azkaban.failure.message in the cookie. This will be used by the web
    * client javascript to somehow display the message
    */
+  protected void setErrorMessageInCookie(final HttpServletResponse response, final String errorMsg) {
+    setErrorMessageInCookie(response, errorMsg, false);
+  }
   protected void setErrorMessageInCookie(final HttpServletResponse response,
-      final String errorMsg) {
-    final Cookie cookie = new Cookie(AZKABAN_FAILURE_MESSAGE, errorMsg);
+      final String errorMsg, final boolean skipSanitization) {
+    // T means sanitize, F means don't sanitize
+    final String sanitizationPrefix = skipSanitization ? "T" : "F";
+    final Cookie cookie = new Cookie(AZKABAN_FAILURE_MESSAGE, errorMsg != null ? sanitizationPrefix + errorMsg : errorMsg);
     cookie.setPath("/");
     response.addCookie(cookie);
   }
@@ -205,9 +210,14 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
    * Sets a warning message in azkaban.warn.message in the cookie. This will be used by the web
    * client javascript to somehow display the message
    */
+  protected void setWarnMessageInCookie(final HttpServletResponse response, final String errorMsg) {
+    setWarnMessageInCookie(response, errorMsg, false);
+  }
   protected void setWarnMessageInCookie(final HttpServletResponse response,
-      final String errorMsg) {
-    final Cookie cookie = new Cookie(AZKABAN_WARN_MESSAGE, errorMsg);
+      final String warnMsg, final boolean skipSanitization) {
+    // T means sanitize, F means don't sanitize
+    final String sanitizationPrefix = skipSanitization ? "F" : "T";
+    final Cookie cookie = new Cookie(AZKABAN_WARN_MESSAGE, warnMsg != null ? sanitizationPrefix + warnMsg : warnMsg);
     cookie.setPath("/");
     response.addCookie(cookie);
   }
@@ -216,9 +226,14 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
    * Sets a message in azkaban.success.message in the cookie. This will be used by the web client
    * javascript to somehow display the message
    */
+  protected void setSuccessMessageInCookie(final HttpServletResponse response, final String errorMsg) {
+    setSuccessMessageInCookie(response, errorMsg, false);
+  }
   protected void setSuccessMessageInCookie(final HttpServletResponse response,
-      final String message) {
-    final Cookie cookie = new Cookie(AZKABAN_SUCCESS_MESSAGE, message);
+      final String message, final boolean skipSanitization) {
+    // T means sanitize, F means don't sanitize
+    final String sanitizationPrefix = skipSanitization ? "F" : "T";
+    final Cookie cookie = new Cookie(AZKABAN_SUCCESS_MESSAGE, message != null ? sanitizationPrefix + message : message);
     cookie.setPath("/");
     response.addCookie(cookie);
   }
@@ -232,7 +247,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     if (cookie == null) {
       return null;
     }
-    return cookie.getValue();
+    // Remove the first character, because it indicates whether or not the string should be sanitized before rendering
+    return cookie.getValue().substring(1);
   }
 
   /**
@@ -244,6 +260,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     if (cookie == null) {
       return null;
     }
+    // Remove the first character, because it indicates whether or not the string should be sanitized before rendering
     return cookie.getValue();
   }
 
@@ -255,8 +272,19 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     if (cookie == null) {
       return null;
     }
-
+    // Remove the first character, because it indicates whether or not the string should be sanitized before rendering
     return cookie.getValue();
+  }
+
+  protected boolean shouldRenderCookieMessageSafely(final HttpServletRequest request, final String cookieName) {
+    final Cookie cookie = getCookieByName(request, cookieName);
+    if (cookie == null) {
+      // Always play it safe if we can't find the cookie
+      return true;
+    }
+    // Remove the first character, because it indicates whether or not the string should be sanitized before rendering
+    // != 'F' is safer than == 'T' because anything other than 'F' we want to render unsafely.
+    return cookie.getValue().charAt(0) != 'F';
   }
 
   /**
@@ -300,20 +328,31 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       page.add("user_id", session.getUser().getUserId());
     }
 
-    final String errorMsg = getErrorMessageFromCookie(req);
-    final boolean renderErrUnsafely = shouldRenderErrorMessageFromCookieUnsafely(req);
-    page.addUNSAFE("error_message", errorMsg == null || errorMsg.isEmpty() ? "null"
-        : errorMsg);
+    String errorMsg = getErrorMessageFromCookie(req);
+    errorMsg = errorMsg == null || errorMsg.isEmpty() ? "null" : errorMsg;
+    if(shouldRenderCookieMessageSafely(req, AZKABAN_FAILURE_MESSAGE)) {
+      page.add("error_message", errorMsg);
+    } else {
+      page.addUNSAFE("error_message", errorMsg);
+    }
     setErrorMessageInCookie(resp, null);
 
-    final String warnMsg = getWarnMessageFromCookie(req);
-    page.addUNSAFE("warn_message", warnMsg == null || warnMsg.isEmpty() ? "null"
-        : warnMsg);
+    String warnMsg = getWarnMessageFromCookie(req);
+    warnMsg = warnMsg == null || warnMsg.isEmpty() ? "null" : warnMsg;
+    if(shouldRenderCookieMessageSafely(req, AZKABAN_WARN_MESSAGE)) {
+      page.add("warn_message", warnMsg);
+    } else {
+      page.addUNSAFE("warn_message", warnMsg);
+    }
     setWarnMessageInCookie(resp, null);
 
-    final String successMsg = getSuccessMessageFromCookie(req);
-    page.add("success_message",
-        successMsg == null || successMsg.isEmpty() ? "null" : successMsg);
+    String successMsg = getSuccessMessageFromCookie(req);
+    successMsg = successMsg == null || successMsg.isEmpty() ? "null" : successMsg;
+    if(shouldRenderCookieMessageSafely(req, AZKABAN_SUCCESS_MESSAGE)) {
+      page.add("success_message", successMsg);
+    } else {
+      page.addUNSAFE("success_message", successMsg);
+    }
     setSuccessMessageInCookie(resp, null);
 
     // @TODO, allow more than one type of viewer. For time sake, I only install
