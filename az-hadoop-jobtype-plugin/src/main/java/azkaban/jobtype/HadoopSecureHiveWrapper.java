@@ -145,8 +145,6 @@ public class HadoopSecureHiveWrapper {
           "Can't process arguments from session state");
     }
 
-    logger.info("Executing query: " + hiveScript);
-
     CliDriver cli = new CliDriver();
     Map<String, String> hiveVarMap = getHiveVarMap(args);
 
@@ -156,7 +154,9 @@ public class HadoopSecureHiveWrapper {
       cli.setHiveVariables(getHiveVarMap(args));
     }
 
+    logger.info("Beginning execution of hive script.");
     int returnCode = cli.processFile(hiveScript);
+    logger.info("Completed execution of hive script.");
     if (returnCode != 0) {
       logger.warn("Got exception " + returnCode + " from line: " + hiveScript);
       throw new HiveQueryExecutionException(returnCode, hiveScript);

@@ -304,7 +304,7 @@ public class ProcessJob extends AbstractProcessJob {
         }
         throw new RuntimeException(e);
       } finally {
-        info("Process completed "
+        info("Process with id " + this.process.getProcessId() + " completed "
             + (this.success ? "successfully" : "unsuccessfully") + " in "
             + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
       }
