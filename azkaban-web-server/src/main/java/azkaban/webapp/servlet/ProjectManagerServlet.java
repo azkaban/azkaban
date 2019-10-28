@@ -1945,18 +1945,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
       if (!report.getErrorMsgs().isEmpty()) {
-        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
+        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors:<br><br>");
         for (final String msg : report.getErrorMsgs()) {
-          errorMsgs.append("<li>" + msg + "</li>");
+          errorMsgs.append(msg + "<br>");
         }
-        errorMsgs.append("</ul>");
       }
       if (!report.getWarningMsgs().isEmpty()) {
-        warnMsgs.append("Validator " + reportEntry.getKey() + " reports warnings:<ul>");
+        warnMsgs.append("Validator " + reportEntry.getKey() + " reports warnings:<br><br>");
         for (final String msg : report.getWarningMsgs()) {
-          warnMsgs.append("<li>" + msg + "</li>");
+          warnMsgs.append(msg + "<br>");
         }
-        warnMsgs.append("</ul>");
       }
     }
     if (errorMsgs.length() > 0) {
