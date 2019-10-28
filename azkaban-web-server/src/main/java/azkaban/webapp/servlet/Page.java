@@ -84,12 +84,12 @@ public class Page {
   }
 
   private static String escapeHtmlExceptLineBreaks(String value) {
-    // Convert line breaks to \n
-    String converted = value.replaceAll("<br/?>", "\n");
+    // Convert line breaks to custom newline marker
+    String converted = value.replaceAll("<br/?>", "!NEWLINE!");
     // Escape the converted string
     String escaped = StringEscapeUtils.escapeHtml(converted);
     // Convert newlines back to <br>
-    return escaped.replaceAll("\n", "<br>");
+    return escaped.replaceAll("!NEWLINE!", "<br>");
   }
 
   public void setMimeType(final String type) {
