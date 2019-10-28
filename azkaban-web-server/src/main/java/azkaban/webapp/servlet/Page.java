@@ -78,9 +78,18 @@ public class Page {
     for(Object key: this.context.getKeys()) {
       Object value = this.context.get((String)key);
       if(key instanceof String && value instanceof String) {
-        this.context.put((String)key, StringEscapeUtils.escapeHtml((String)value));
+        this.context.put((String)key, escapeHtmlExceptLineBreaks((String)value));
       }
     }
+  }
+
+  private static String escapeHtmlExceptLineBreaks(String value) {
+    // Convert line breaks to \n
+    String converted = value.replaceAll("<br/?>", "\n");
+    // Escape the converted string
+    String escaped = StringEscapeUtils.escapeHtml(converted);
+    // Convert newlines back to <br>
+    return escaped.replaceAll("\n", "<br>");
   }
 
   public void setMimeType(final String type) {
