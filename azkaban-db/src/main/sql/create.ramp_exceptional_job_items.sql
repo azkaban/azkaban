@@ -1,4 +1,4 @@
-CREATE TABLE ramp_exceptional_job_Items (
+CREATE TABLE ramp_exceptional_job_items (
     rampId VARCHAR(45) NOT NULL,
     flowId VARCHAR(128) NOT NULL,
     jobId VARCHAR(128) NOT NULL,
@@ -7,5 +7,5 @@ CREATE TABLE ramp_exceptional_job_Items (
     PRIMARY KEY (rampId, flowId, jobId)
 );
 
-CREATE INDEX idx_ramp_exceptional_job_Items
-    ON ramp_exceptional_job_Items (rampId, flowId, jobId);
+CREATE INDEX idx_ramp_exceptional_job_items
+    ON ramp_exceptional_job_items (rampId, flowId, jobId);

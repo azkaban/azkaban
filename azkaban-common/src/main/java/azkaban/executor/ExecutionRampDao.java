@@ -196,8 +196,8 @@ public class ExecutionRampDao {
   private static class FetchExecutableRampExceptionalFlowItems implements ResultSetHandler<ExecutableRampExceptionalFlowItemsMap> {
 
     static String FETCH_EXECUTABLE_RAMP_EXCEPTIONAL_FLOW_ITEMS =
-        "SELECT rampId, flowId, treatment, timeStamp "
-            + "FROM ramp_exceptional_flow_Items ";
+        "SELECT rampId, flowId, treatment, timestamp "
+            + "FROM ramp_exceptional_flow_items ";
 
     @Override
     public ExecutableRampExceptionalFlowItemsMap handle(ResultSet resultSet) throws SQLException {
@@ -240,8 +240,8 @@ public class ExecutionRampDao {
   private static class FetchExecutableRampExceptionalJobItems implements ResultSetHandler<ExecutableRampExceptionalJobItemsMap> {
 
     static String FETCH_EXECUTABLE_RAMP_EXCEPTIONAL_JOB_ITEMS =
-        "SELECT rampId, flowId, jobId, treatment, timeStamp "
-            + "FROM ramp_exceptional_job_Items ";
+        "SELECT rampId, flowId, jobId, treatment, timestamp "
+            + "FROM ramp_exceptional_job_items ";
 
     @Override
     public ExecutableRampExceptionalJobItemsMap handle(ResultSet resultSet) throws SQLException {
