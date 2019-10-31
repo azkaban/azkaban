@@ -67,7 +67,7 @@ public class StorageCleanerTest {
     when(this.storage.delete("14/14-10.zip")).thenReturn(true);
     when(this.storage.delete("14/14-9.zip")).thenReturn(true);
     // This one shouldn't be deleted because it's shared with latest version
-    when(this.storage.delete("14/14-8.zip")).thenThrow(Exception.class);
+    when(this.storage.delete("14/14-8.zip")).thenThrow(RuntimeException.class);
     when(this.storage.delete("14/14-7.zip")).thenReturn(false);
     when(this.databaseOperator.update(any(), anyVararg())).thenReturn(1);
   }
