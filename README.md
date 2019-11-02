@@ -4,7 +4,7 @@
 
 
 ## Build
-Azkaban builds use Gradle and requires Java 8 or higher.
+Azkaban builds use [Gradle](https://gradle.org/install/) and requires Java 8 or higher.
 
 The following set of commands run on *nix platforms like Linux, OS X.
 
