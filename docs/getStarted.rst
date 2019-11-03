@@ -70,7 +70,7 @@ Follow these steps to get started:
 3. Start the solo server:
 ::
   cd azkaban-solo-server/build/install/azkaban-solo-server; bin/start-solo.sh
-Azkaban solo server should be all set, by listening to ``8081`` port at default to accept incoming network request. So, open a web browser and check out ``http://localhost:8081/`` . The default login user and password is ``azkaban`` which configured in ``conf/azkaban-users.xml``
+Azkaban solo server should be all set, by listening to ``8081`` port at default to accept incoming network request. So, open a web browser and check out ``http://localhost:8081/`` . The default login username and password for the solo server are both ``azkaban`` which is configured in ``conf/azkaban-users.xml`` in the ``resources`` folder of the solo server.
 
 4. Stop server:
 ::
