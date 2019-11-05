@@ -22,7 +22,6 @@ import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
-import azkaban.project.ArchiveUnthinner;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
@@ -78,7 +77,7 @@ public class AzkabanCommonModule extends AbstractModule {
   public Class<? extends Storage> resolveStorageClassType() {
     final StorageImplementationType type = StorageImplementationType
         .from(this.config.getStorageImplementation());
-    if (type == StorageImplementationType.HDFS) {
+    if (type == StorageImplementationType.HDFS || type == StorageImplementationType.LOCAL_HADOOP) {
       install(new HadoopModule(this.props));
     }
     if (type != null) {

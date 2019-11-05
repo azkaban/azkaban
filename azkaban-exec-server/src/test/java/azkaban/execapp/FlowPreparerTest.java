@@ -22,7 +22,6 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
 import azkaban.spi.Dependency;
-import azkaban.spi.FileOrigin;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.test.executions.ThinArchiveTestUtils;
 import azkaban.utils.DependencyTransferManager;
@@ -213,7 +212,7 @@ public class FlowPreparerTest {
     this.instance.downloadProjectIfNotExists(proj, 124);
 
     // This is a fat zip, so we should not attempt to download anything! (we try to download an empty set of dependencies)
-    verify(this.dependencyTransferManager).downloadAllDependencies(eq(Collections.emptySet()), eq(FileOrigin.STORAGE));
+    verify(this.dependencyTransferManager).downloadAllDependencies(eq(Collections.emptySet()));
   }
 
   @Test
@@ -224,6 +223,6 @@ public class FlowPreparerTest {
 
     // This is a thin zip, we expect both dependencies to be downloaded
     Set<Dependency> expectedDownloadedDeps = ThinArchiveTestUtils.getDepSetAB();
-    verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps), eq(FileOrigin.STORAGE));
+    verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps));
   }
 }

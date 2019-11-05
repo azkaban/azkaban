@@ -22,14 +22,11 @@ import static azkaban.utils.StorageUtils.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import azkaban.AzkabanCommonModuleConfig;
-import azkaban.spi.FileIOStatus;
 import azkaban.spi.Dependency;
-import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.ProjectStorageMetadata;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.Props;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.File;
@@ -43,15 +40,11 @@ import org.apache.log4j.Logger;
 public class LocalStorage implements Storage {
   private static final Logger log = Logger.getLogger(LocalStorage.class);
 
-  public static final String DEPENDENCY_FOLDER = "startup_dependencies";
-
   final File rootDirectory;
-  final File dependencyDirectory;
 
   @Inject
-  public LocalStorage(final AzkabanCommonModuleConfig config) throws IOException {
+  public LocalStorage(final AzkabanCommonModuleConfig config) {
     this.rootDirectory = validateDirectory(createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
-    this.dependencyDirectory = validateDirectory(createIfDoesNotExist(new File(this.rootDirectory, DEPENDENCY_FOLDER)));
   }
 
   private static File createIfDoesNotExist(final File baseDirectory) {
@@ -112,40 +105,18 @@ public class LocalStorage implements Storage {
   }
 
   @Override
-  public FileIOStatus putDependency(final DependencyFile f) throws IOException {
-    final File targetFile = getDependencyFile(f);
-
-    // Copy file to storage dir
-    try {
-      targetFile.getParentFile().mkdirs();
-      FileUtils.copyFile(f.getFile(), targetFile);
-    } catch (final IOException e) {
-      log.error("LocalStorage error in putDependency(): name: " + f.getFileName());
-      throw new StorageException(e);
-    }
-
-    return FileIOStatus.CLOSED;
-  }
-
-  @Override
   public InputStream getDependency(final Dependency dep) throws IOException {
-    final File targetFile = getDependencyFile(dep);
-    return new FileInputStream(targetFile);
+    throw new UnsupportedOperationException("Dependency fetching is not supported with LocalStorage.");
   }
 
   @Override
-  public FileIOStatus dependencyStatus(final Dependency dep) {
-    // We assume that on a local file system we're only using this for dev so no need to check
-    // to see if the file is actually open. We'll assume that if it exists, it's closed.
-    return getDependencyFile(dep).exists() ? FileIOStatus.CLOSED : FileIOStatus.NON_EXISTANT;
+  public boolean dependencyFetchingEnabled() {
+    return false;
   }
 
-  private File getDependencyFile(final Dependency dep) {
-    return new File(this.dependencyDirectory, getTargetDependencyPath(dep));
-  }
-
-  private String getRelativePath(final File targetFile) {
-    return this.rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
+  @Override
+  public String getDependencyRootPath() {
+    return null;
   }
 
   @Override
@@ -153,10 +124,14 @@ public class LocalStorage implements Storage {
     final File file = getFileInRoot(key);
     final boolean result = file.exists() && file.delete();
     if (result) {
-      log.warn("Deleted file: " + file.getAbsolutePath());
+      log.warn("Deleted project file: " + file.getAbsolutePath());
     } else {
-      log.warn("Unable to delete file: " + file.getAbsolutePath());
+      log.warn("Unable to delete project file: " + file.getAbsolutePath());
     }
     return result;
+  }
+
+  private String getRelativePath(final File targetFile) {
+    return this.rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 }

@@ -22,13 +22,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.project.ArchiveUnthinner;
+import azkaban.project.JdbcDependencyManager;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
 import azkaban.storage.HdfsStorage;
+import azkaban.storage.LocalHadoopStorage;
 import azkaban.storage.LocalStorage;
 import azkaban.storage.ProjectStorageManager;
+import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.Props;
+import azkaban.utils.ValidatorUtils;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -42,8 +47,11 @@ public class ServiceProviderTest {
 
   private static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
   private static final String AZKABAN_TEST_HDFS_STORAGE_TYPE = "HDFS";
-  private static final String AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI= "hdfs://test.com:9000/azkaban/prj/";
-  private static final String AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI= "hdfs://test.com:9000/azkaban/dep/";
+  private static final String AZKABAN_TEST_LOCAL_HADOOP_STORAGE_TYPE = "LOCAL_HADOOP";
+  private static final String AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI = "hdfs://test.com:9000/azkaban/prj/";
+  private static final String AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI = "hdfs://test.com:9000/azkaban/dep/";
+  private static final String AZKABAN_TEST_STORAGE_DEPENDENCY_LOCAL_URI = "file:///some/place/dep/";
+  private static final String AZKABAN_TEST_STORAGE_HTTP_DEPENDENCY_ROOT_URI = "http://www.example.com/dep/";
 
   // Test if one class is singletonly guiced. could be called by
   // AZ Common, Web, or Exec Modules.
@@ -81,20 +89,29 @@ public class ServiceProviderTest {
         () -> injector.getInstance(HdfsStorage.class))
         .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("Guice configuration errors");
+    assertThatThrownBy(
+        () -> injector.getInstance(LocalHadoopStorage.class))
+        .isInstanceOf(ConfigurationException.class)
+        .hasMessageContaining("Guice configuration errors");
 
     assertThat(injector.getInstance(Storage.class)).isNotNull();
     assertThat(injector.getInstance(DatabaseOperator.class)).isNotNull();
+    assertThat(injector.getInstance(ArchiveUnthinner.class)).isNotNull();
+    assertThat(injector.getInstance(DependencyTransferManager.class)).isNotNull();
+    assertThat(injector.getInstance(JdbcDependencyManager.class)).isNotNull();
+    assertThat(injector.getInstance(ValidatorUtils.class)).isNotNull();
   }
 
   @Test
-  public void testHadoopInjection() throws Exception {
+  public void testHDFSStorageInjection() throws Exception {
     final Props props = new Props();
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, AZKABAN_TEST_HDFS_STORAGE_TYPE);
     props.put(Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH, "./");
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI, AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI);
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_HTTP_DEPENDENCY_ROOT_URI);
 
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)
@@ -103,6 +120,25 @@ public class ServiceProviderTest {
     SERVICE_PROVIDER.setInjector(injector);
 
     assertSingleton(HdfsStorage.class, injector);
+    assertThat(injector.getInstance(Storage.class)).isNotNull();
+  }
+
+  @Test
+  public void testLocalHadoopStorageInjection() throws Exception {
+    final Props props = new Props();
+    props.put("database.type", "h2");
+    props.put("h2.path", "h2");
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, AZKABAN_TEST_LOCAL_HADOOP_STORAGE_TYPE);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_LOCAL_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_HTTP_DEPENDENCY_ROOT_URI);
+
+    final Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(props)
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(injector);
+
+    assertSingleton(LocalStorage.class, injector);
     assertThat(injector.getInstance(Storage.class)).isNotNull();
   }
 }

@@ -23,10 +23,11 @@ import azkaban.project.validator.XmlValidatorManager;
 import java.io.File;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+@Singleton
 public class ValidatorUtils {
   private static final Logger logger = LoggerFactory.getLogger(ValidatorUtils.class);
 

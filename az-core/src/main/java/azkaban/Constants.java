@@ -121,10 +121,6 @@ public class Constants {
 
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
 
-    // URL base to download startup dependencies from
-    public static final String AZKABAN_STARTUP_DEPENDENCIES_REMOTE_DOWNLOAD_BASE_URL =
-        "azkaban.startup_dependencies.base_download_url";
-
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
@@ -218,8 +214,9 @@ public class Constants {
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
     public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
     public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";
-    public static final String AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI = "azkaban.storage.hdfs.root.uri"; // This really should be azkaban.storage.hdfs.storage_root.uri
-    public static final String AZKABAN_STORAGE_HDFS_DEPENDENCY_ROOT_URI = "azkaban.storage.hdfs.dependency_root.uri";
+    public static final String AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI = "azkaban.storage.hdfs.root.uri"; // This really should be azkaban.storage.hdfs.project_root.uri
+    public static final String AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI = "azkaban.storage.cache.dependency_root.uri";
+    public static final String AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI = "azkaban.storage.origin.dependency_root.uri";
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";

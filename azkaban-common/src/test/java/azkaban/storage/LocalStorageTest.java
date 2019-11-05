@@ -21,18 +21,12 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import azkaban.AzkabanCommonModuleConfig;
-import azkaban.spi.DependencyFile;
-import azkaban.spi.FileIOStatus;
 import azkaban.spi.ProjectStorageMetadata;
 import azkaban.test.executions.ThinArchiveTestUtils;
 import azkaban.utils.HashUtils;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -46,21 +40,36 @@ public class LocalStorageTest {
   @Rule
   public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
 
-  static final String SAMPLE_FILE = "sample_flow_01.zip";
-  static File BASE_DIRECTORY;
+  private static final String SAMPLE_FILE = "sample_flow_01.zip";
+  private File BASE_DIRECTORY;
 
   private static final Logger log = Logger.getLogger(LocalStorageTest.class);
 
   private LocalStorage localStorage;
+  private AzkabanCommonModuleConfig config;
 
   @Before
   public void setUp() throws Exception {
     BASE_DIRECTORY = TEMP_DIR.newFolder("TEST_LOCAL_STORAGE");
 
-    final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
+    this.config = mock(AzkabanCommonModuleConfig.class);
+    when(this.config.getLocalStorageBaseDirPath()).thenReturn(BASE_DIRECTORY.getCanonicalPath());
 
-    when(config.getLocalStorageBaseDirPath()).thenReturn(BASE_DIRECTORY.getCanonicalPath());
     this.localStorage = new LocalStorage(config);
+  }
+
+  @Test
+  public void testDependencySupportDisabled() throws Exception {
+    // Ensure that LocalStorage reports that dependency support is disabled
+    assertFalse(this.localStorage.dependencyFetchingEnabled());
+
+    boolean hitException = false;
+    try {
+      this.localStorage.getDependency(ThinArchiveTestUtils.getDepA());
+    } catch (UnsupportedOperationException e) {
+      hitException = true;
+    }
+    if (!hitException) fail("Expected UnsupportedOperationException when fetching dependency.");
   }
 
   @Test
@@ -104,31 +113,5 @@ public class LocalStorageTest {
       exceptionThrown = true;
     }
     assertTrue(exceptionThrown);
-  }
-
-  @Test
-  public void testPutGetExistsDependency() throws Exception {
-    final File tmpJar = TEMP_DIR.newFile(ThinArchiveTestUtils.getDepA().getFileName());
-    FileUtils.writeStringToFile(tmpJar, ThinArchiveTestUtils.getDepAContent());
-    DependencyFile depFile = ThinArchiveTestUtils.getDepA().makeDependencyFile(tmpJar);
-
-    assertEquals(FileIOStatus.CLOSED, this.localStorage.putDependency(depFile));
-    final File expectedTargetFile = new File(BASE_DIRECTORY, LocalStorage.DEPENDENCY_FOLDER
-        + File.separator + ThinArchiveTestUtils.getDepAPath());
-
-    assertTrue(expectedTargetFile.exists());
-
-    final InputStream is =
-        this.localStorage.getDependency(ThinArchiveTestUtils.getDepA());
-
-    BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-    String fileContent = br.lines().collect(Collectors.joining(System.lineSeparator()));
-
-    assertEquals(ThinArchiveTestUtils.getDepAContent(), fileContent);
-
-    assertEquals(FileIOStatus.CLOSED, this.localStorage.dependencyStatus(ThinArchiveTestUtils.getDepA()));
-
-    // Test that we get FileStatus.NON_EXISTANT for a non-existant dep
-    assertEquals(FileIOStatus.NON_EXISTANT, this.localStorage.dependencyStatus(ThinArchiveTestUtils.getDepB()));
   }
 }

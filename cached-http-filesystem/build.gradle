@@ -12,13 +12,12 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
-package azkaban.spi;
+dependencies {
+  compileOnly deps.hadoopCommon
 
-// OPEN = file exists, is open and currently being written to
-// CLOSED = file exists, is closed and has been finalized (not being written to).
-// NON_EXISTANT = the file does not exist
-public enum FileIOStatus {
-  OPEN, CLOSED, NON_EXISTANT
+  testCompile deps.hadoopCommon
+  testCompile project(':test')
 }

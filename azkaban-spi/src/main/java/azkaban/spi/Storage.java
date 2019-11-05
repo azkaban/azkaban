@@ -51,14 +51,6 @@ public interface Storage {
   String putProject(ProjectStorageMetadata metadata, File localFile);
 
   /**
-   * Put a dependency and return the resulting FileStatus
-   *
-   * @param file File and dependency details associated with dependency
-   * @return FileStatus resulting file status after writing (or attempting to write)
-   */
-  FileIOStatus putDependency(DependencyFile file) throws IOException;
-
-  /**
    * Get an InputStream object for a dependency.
    *
    * @param dep the dependency to fetch
@@ -67,12 +59,14 @@ public interface Storage {
   InputStream getDependency(Dependency dep) throws IOException;
 
   /**
-   * Get the FileStatus of an dependency.
-   *
-   * @param dep the dependency for which to fetch the FileStatus for
-   * @return current FileStatus of the dependency
+   * Get root path of dependency location (should be http://...) OR if thin archives is not enabled, will be null.
    */
-  FileIOStatus dependencyStatus(Dependency dep) throws IOException;
+  String getDependencyRootPath();
+
+  /**
+   * See if dependency fetching is enabled (required azkaban.properties were set).
+   */
+  boolean dependencyFetchingEnabled();
 
   /**
    * Delete an object from Storage.

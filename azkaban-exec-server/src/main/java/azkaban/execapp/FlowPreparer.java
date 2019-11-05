@@ -22,12 +22,10 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectFileHandler;
 import azkaban.spi.Dependency;
 import azkaban.spi.DependencyFile;
-import azkaban.spi.FileOrigin;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferException;
 import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.InvalidHashException;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -253,24 +251,12 @@ class FlowPreparer {
     Set<DependencyFile> depFiles = dependencies.stream().map(d -> getDependencyFile(folder, d)).collect(Collectors.toSet());
     try {
       final long start = System.currentTimeMillis();
-      this.dependencyTransferManager.downloadAllDependencies(depFiles, FileOrigin.STORAGE);
+      this.dependencyTransferManager.downloadAllDependencies(depFiles);
       LOGGER.info("Downloading {} JAR dependencies for project {} when preparing "
               + "execution [execid {}] completed in {} second(s)", dependencies.size(), proj, execId,
           (System.currentTimeMillis() - start) / 1000);
     } catch (DependencyTransferException e) {
-      // Uh oh, if you get this error you can blame an intern. Projects should only successfully upload
-      // if ALL their necessary dependencies were persisted successfully to storage. Looks like that didn't happen
-      // in this case. If re-uploading the project doesn't solve the issue, wiping all rows from the
-      // validated_dependencies table should resolve things. It's possible that somehow an entry was written to the
-      // DB that indicated a dependency was validated and persisted to storage, but in reality it was deleted from
-      // storage or for whatever reason no longer exists in storage. Future project uploads will see that entry in
-      // the DB and will ASSUME that the file must exist in storage when in reality it doesn't - so by clearing that
-      // table, you reset the cache and force new projects to persist all dependencies. It is IMPERATIVE that
-      // ALL entries in the validated_dependencies table reference a file that exists in storage. The opposite does
-      // not have to be true. Each persisted dependency in storage does not necessarily need any accompanying entries
-      // in the validated_dependencies table. The validated_dependencies table is a cache and thus it is safe to
-      // delete any and all rows at any time and it will rebuild automatically as more projects are uploaded.
-      LOGGER.error("Error downloading one or more dependencies when preparing execId {}. Try re-uploading project {}",
+      LOGGER.error("Unable to download one or more dependencies when preparing execId {}.",
           execId, proj);
       throw e;
     }

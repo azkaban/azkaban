@@ -119,7 +119,7 @@ class AzkabanProjectLoader {
 
       File startupDependencies = getStartupDependenciesFile(folder);
       reports = startupDependencies.exists()
-          ? this.archiveUnthinner.validateProjectAndPersistDependencies(project, folder,
+          ? this.archiveUnthinner.validateThinProject(project, folder,
             startupDependencies, additionalProps)
           : this.validatorUtils.validateProject(project, folder, additionalProps);
 

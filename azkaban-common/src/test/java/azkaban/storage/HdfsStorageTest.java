@@ -19,18 +19,14 @@ package azkaban.storage;
 
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Dependency;
-import azkaban.spi.FileIOStatus;
 import azkaban.spi.ProjectStorageMetadata;
-import azkaban.spi.DependencyFile;
 import azkaban.test.executions.ThinArchiveTestUtils;
 import azkaban.utils.HashUtils;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.net.URI;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,40 +44,44 @@ public class HdfsStorageTest {
   private HdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
   private FileSystem hdfs;
-  private DistributedFileSystem dfs;
+  private FileSystem http;
+  private AzkabanCommonModuleConfig config;
 
-  private Dependency DEP_A;
-  private Path EXPECTED_PATH_DEP_A;
+  private Dependency depA;
+  private Path expectedPathDepA;
 
-  private static final String PRJ_ROOT_URI = "hdfs://localhost:9000/path/to/prj";
-  private static final String DEP_ROOT_URI = "hdfs://localhost:9000/path/to/dep";
+  private static final String PRJ_ROOT_URI = "hdfs://localhost:9000/path/to/prj/";
+  private static final String DEP_ROOT_URI = "http://www.someplace.com/path/to/dep/";
 
   @Before
   public void setUp() throws Exception {
     this.hdfs = mock(FileSystem.class);
-    this.dfs = mock(DistributedFileSystem.class);
+    this.http = mock(FileSystem.class);
     this.hdfsAuth = mock(HdfsAuth.class);
-    final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
+    this.config = mock(AzkabanCommonModuleConfig.class);
     when(config.getHdfsProjectRootUri()).thenReturn(URI.create(PRJ_ROOT_URI));
-    when(config.getHdfsDependencyRootUri()).thenReturn(URI.create(DEP_ROOT_URI));
+    when(config.getOriginDependencyRootUri()).thenReturn(URI.create(DEP_ROOT_URI));
 
-    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, this.dfs, config);
+    this.hdfsStorage = new HdfsStorage(config, this.hdfsAuth, this.hdfs, this.http);
 
-    DEP_A = ThinArchiveTestUtils.getDepA();
-    EXPECTED_PATH_DEP_A = new Path(DEP_ROOT_URI + "/"
-        + ThinArchiveTestUtils.getDepAPath());
+    depA = ThinArchiveTestUtils.getDepA();
+    expectedPathDepA = new Path(DEP_ROOT_URI + ThinArchiveTestUtils.getDepAPath());
   }
 
   @Test
-  public void testSetUpWithoutDEP_ROOT_URI() throws Exception {
-    // Ensure we can still instantiate HdfsStorage without a specified DEP_ROOT_URI.
-    // If this is done in production, thin archive uploads will not be supported (they will fail).
+  public void testSetUpWithoutHttpFileSystem() throws Exception {
+    // Ensure we can still instantiate HdfsStorage with the HTTP FileSystem being null.
+    // Fetching dependencies will not be supported.
+    this.hdfsStorage = new HdfsStorage(this.config, this.hdfsAuth, this.hdfs, null);
+    assertFalse(this.hdfsStorage.dependencyFetchingEnabled());
 
-    final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
-    when(config.getHdfsProjectRootUri()).thenReturn(URI.create(PRJ_ROOT_URI));
-    when(config.getHdfsDependencyRootUri()).thenReturn(null);
-
-    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, this.dfs, config);
+    boolean hitException = false;
+    try {
+      this.hdfsStorage.getDependency(depA);
+    } catch (UnsupportedOperationException e) {
+      hitException = true;
+    }
+    if (!hitException) fail("Expected UnsupportedOperationException when fetching dependency.");
   }
 
   @Test
@@ -115,94 +115,13 @@ public class HdfsStorageTest {
 
   @Test
   public void testGetDependency() throws Exception {
-    this.hdfsStorage.getDependency(DEP_A);
-    verify(this.hdfs).open(EXPECTED_PATH_DEP_A);
+    this.hdfsStorage.getDependency(depA);
+    verify(this.http).open(expectedPathDepA);
   }
 
   @Test
-  public void testDependencyStatus_NON_EXISTANT() throws Exception {
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenThrow(new FileNotFoundException());
-    assertEquals(FileIOStatus.NON_EXISTANT, this.hdfsStorage.dependencyStatus(DEP_A));
-  }
-
-  @Test
-  public void testDependencyStatus_OPEN() throws Exception {
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenReturn(false);
-    assertEquals(FileIOStatus.OPEN, this.hdfsStorage.dependencyStatus(DEP_A));
-  }
-
-  @Test
-  public void testDependencyStatus_CLOSED() throws Exception {
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenReturn(true);
-    assertEquals(FileIOStatus.CLOSED, this.hdfsStorage.dependencyStatus(DEP_A));
-  }
-
-  @Test
-  public void testPutDependencyNotInStorage() throws Exception {
-    final File tmpEmptyJar = TEMP_DIR.newFile(DEP_A.getFileName());
-
-    // Indicate that the file does not exist
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenThrow(new FileNotFoundException());
-
-    DependencyFile depFile = DEP_A.makeDependencyFile(tmpEmptyJar);
-    assertEquals(FileIOStatus.CLOSED, this.hdfsStorage.putDependency(depFile));
-
-    verify(this.hdfs).mkdirs(EXPECTED_PATH_DEP_A.getParent());
-    verify(this.hdfs).copyFromLocalFile(new Path(tmpEmptyJar.getAbsolutePath()), EXPECTED_PATH_DEP_A);
-  }
-
-  @Test
-  public void testPutDependencyAlreadyExists() throws Exception {
-    final File tmpEmptyJar = TEMP_DIR.newFile(DEP_A.getFileName());
-
-    // Indicate that the file exists and is finalized (closed and not being written to)
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenReturn(true);
-
-    DependencyFile depFile = DEP_A.makeDependencyFile(tmpEmptyJar);
-    assertEquals(FileIOStatus.CLOSED, this.hdfsStorage.putDependency(depFile));
-
-    // Because the dependency already exists, NO attempt should be made to persist it OR create its parent directories.
-    verify(this.hdfs, never()).mkdirs(EXPECTED_PATH_DEP_A.getParent());
-    verify(this.hdfs, never()).copyFromLocalFile(new Path(tmpEmptyJar.getAbsolutePath()), EXPECTED_PATH_DEP_A);
-  }
-
-  @Test
-  public void testPutDependencyCurrentlyOpen() throws Exception {
-    final File tmpEmptyJar = TEMP_DIR.newFile(DEP_A.getFileName());
-
-    // Indicate that the file exists but is being currently written to
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenReturn(false);
-
-    DependencyFile depFile = DEP_A.makeDependencyFile(tmpEmptyJar);
-    assertEquals(FileIOStatus.OPEN, this.hdfsStorage.putDependency(depFile));
-
-    // Because the dependency already exists, NO attempt should be made to persist it OR create its parent directories.
-    verify(this.hdfs, never()).mkdirs(EXPECTED_PATH_DEP_A.getParent());
-    verify(this.hdfs, never()).copyFromLocalFile(new Path(tmpEmptyJar.getAbsolutePath()), EXPECTED_PATH_DEP_A);
-  }
-
-  @Test
-  public void testPutDependencyRaceCondition() throws Exception {
-    final File tmpEmptyJar = TEMP_DIR.newFile(DEP_A.getFileName());
-
-    // Indicate that the file does not exist
-    when(this.dfs.isFileClosed(EXPECTED_PATH_DEP_A)).thenThrow(new FileNotFoundException());
-
-    // But uh oh....plot twist! When the method attempts to write the file, we throw an exception
-    // indicating it DOES actually exist. This could happen if another process began writing to the file
-    // AFTER we checked isFileClosed.
-    doThrow(new org.apache.hadoop.fs.FileAlreadyExistsException("Uh oh :("))
-        .when(this.hdfs).copyFromLocalFile(new Path(tmpEmptyJar.getAbsolutePath()), EXPECTED_PATH_DEP_A);
-
-    DependencyFile depFile = DEP_A.makeDependencyFile(tmpEmptyJar);
-
-    // We expect putDependency to return a FileStatus of OPEN because, while it's POSSIBLE that the
-    // other process completed writing to the file and the file status is actually CLOSED, we'll play it safe
-    // and assume it is OPEN to ensure consuming methods know not to rely on the file being persisted to HDFS.
-    assertEquals(FileIOStatus.OPEN, this.hdfsStorage.putDependency(depFile));
-
-    // We expect an attempt to still be made to create the parent directories for the dependency.
-    verify(this.hdfs).mkdirs(EXPECTED_PATH_DEP_A.getParent());
+  public void testDependencyFetchingEnabled() {
+    assertTrue(this.hdfsStorage.dependencyFetchingEnabled());
   }
 
   @Test

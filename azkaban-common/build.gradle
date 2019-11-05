@@ -17,6 +17,7 @@ dependencies {
     compile project(':az-core')
     compile project(':azkaban-spi')
     compile project(':azkaban-db')
+    compile project(':cached-http-filesystem')
 
     compile deps.collections
     compile deps.dbcp2

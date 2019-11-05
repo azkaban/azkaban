@@ -222,7 +222,7 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Add dependency root path to globalProps
-    addStartupDependencyPathToProps(this.dependencyTransferManager, this.globalProps);
+    addStartupDependencyPathToProps(this.globalProps);
 
     this.jobtypeManager =
         new JobTypeManager(
@@ -258,14 +258,14 @@ public class FlowRunnerManager implements EventListener,
   }
 
   /**
-   * Add the startup dependency path to props if the current storage type is HdfsStorage and
-   * the DependencyTransferManager has the storage origin enabled.
+   * Add the startup dependency path to props if the current storage instance returns a non-null
+   * dependencyRootPath.
    *
    * @param props Props to add the startup dependency path to.
    */
-  private void addStartupDependencyPathToProps(DependencyTransferManager dtm, Props props) {
-    if (this.storage instanceof HdfsStorage && dtm.storageOriginEnabled()) {
-      props.put(DEPENDENCY_STORAGE_ROOT_PATH_PROP, ((HdfsStorage) this.storage).getDependencyRootPath());
+  private void addStartupDependencyPathToProps(Props props) {
+    if (this.storage.getDependencyRootPath() != null) {
+      props.put(DEPENDENCY_STORAGE_ROOT_PATH_PROP, this.storage.getDependencyRootPath());
     }
   }
 

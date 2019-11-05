@@ -128,7 +128,7 @@ public class AzkabanProjectLoaderTest {
         Arrays.asList(this.VERSION));
 
     // Verify that the archiveUnthinner was never called
-    verify(this.archiveUnthinner, never()).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    verify(this.archiveUnthinner, never()).validateThinProject(any(), any(), any(), any());
   }
 
   @Test
@@ -152,7 +152,7 @@ public class AzkabanProjectLoaderTest {
       Map<String, ValidationReport> resultingReports = new HashMap();
       resultingReports.put("somevalidator", r);
       return resultingReports;
-    }).when(this.archiveUnthinner).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    }).when(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
 
     // When uploadProject is called, make sure it has the correctly modified zip being passed in and that
     // the startup-dependencies.json file being passed still exists (it wasn't cleaned up too early).
@@ -180,7 +180,7 @@ public class AzkabanProjectLoaderTest {
         .uploadProject(this.project, projectZipFile, "zip", uploader, null);
 
     // Verify that the archiveUnthinner was called
-    verify(this.archiveUnthinner).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    verify(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
   }
 
   @Test
@@ -206,7 +206,7 @@ public class AzkabanProjectLoaderTest {
       Map<String, ValidationReport> resultingReports = new HashMap();
       resultingReports.put("somevalidator", r);
       return resultingReports;
-    }).when(this.archiveUnthinner).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    }).when(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
 
     // When uploadProject is called, make sure it has the correctly modified zip being passed in and that
     // the startup-dependencies.json file being passed still exists (it wasn't cleaned up too early).
@@ -231,7 +231,7 @@ public class AzkabanProjectLoaderTest {
         .uploadProject(this.project, projectZipFile, "zip", uploader, null);
 
     // Verify that the archiveUnthinner was called
-    verify(this.archiveUnthinner).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    verify(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
   }
 
   @Test
@@ -245,7 +245,7 @@ public class AzkabanProjectLoaderTest {
       File startupDependenciesFile = (File) invocation.getArguments()[2];
       assertEquals(ThinArchiveUtils.getStartupDependenciesFile(projectFolder), startupDependenciesFile);
       return new HashMap();
-    }).when(this.archiveUnthinner).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    }).when(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
 
     this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
@@ -257,7 +257,7 @@ public class AzkabanProjectLoaderTest {
         Arrays.asList(this.VERSION));
 
     // Verify that the archiveUnthinner was called
-    verify(this.archiveUnthinner).validateProjectAndPersistDependencies(any(), any(), any(), any());
+    verify(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
   }
 
   @Test
