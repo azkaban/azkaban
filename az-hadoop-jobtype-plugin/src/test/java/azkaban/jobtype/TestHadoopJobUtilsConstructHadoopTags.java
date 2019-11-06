@@ -2,6 +2,7 @@ package azkaban.jobtype;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 
 import org.junit.Before;
@@ -46,5 +47,16 @@ public class TestHadoopJobUtilsConstructHadoopTags {
     String[] tags = new String[] { tag0, tag1, tag2 };
     assertThat(HadoopJobUtils.constructHadoopTags(props, tags))
         .isEqualTo("tag0:val0,tag2:val2");
+  }
+
+  @Test
+  public void testWorkflowIdTag() {
+    String tag0 = "tag0";
+    props.put(tag0, "val0");
+    props.put(CommonJobProperties.PROJECT_NAME, "project-name");
+    props.put(CommonJobProperties.FLOW_ID, "flow-id");
+    String[] tags = new String[] { tag0 };
+    assertThat(HadoopJobUtils.constructHadoopTags(props, tags))
+        .isEqualTo("tag0:val0,workflowid:project-name$flow-id");
   }
 }

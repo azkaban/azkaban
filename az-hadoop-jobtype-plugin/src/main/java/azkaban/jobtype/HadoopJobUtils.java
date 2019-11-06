@@ -15,6 +15,7 @@
  */
 package azkaban.jobtype;
 
+import azkaban.flow.CommonJobProperties;
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.File;
@@ -581,11 +582,18 @@ public class HadoopJobUtils {
    * @return a CSV of tags
    */
   public static String constructHadoopTags(Props props, String[] keys) {
-    String[] keysAndValues = new String[keys.length];
+    String[] keysAndValues = new String[keys.length + 1];
     for (int i = 0; i < keys.length; i++) {
       if (props.containsKey(keys[i])) {
         keysAndValues[i] = keys[i] + ":" + props.get(keys[i]);
       }
+    }
+    if (props.containsKey(CommonJobProperties.PROJECT_NAME)
+        && props.containsKey(CommonJobProperties.FLOW_ID)) {
+      keysAndValues[keys.length] = "workflowid:"
+          + props.get(CommonJobProperties.PROJECT_NAME)
+          + HadoopConfigurationInjector.WORKFLOW_ID_SEPERATOR
+          + props.get(CommonJobProperties.FLOW_ID);
     }
     Joiner joiner = Joiner.on(',').skipNulls();
     return joiner.join(keysAndValues);
