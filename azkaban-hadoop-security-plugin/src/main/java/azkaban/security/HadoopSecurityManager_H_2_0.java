@@ -339,18 +339,16 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
-  String userToProxy, final Logger jobLogger) {
+  String userToProxy, final Logger jobLogger, final String customCredentialProviderName) {
     String credentialClassName = "unknown class";
       try {
-        credentialClassName = props
-            .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+        credentialClassName = props.getString(customCredentialProviderName);
         logger.info("custom credential class name: " + credentialClassName);
         final Class credentialClass = Class.forName(credentialClassName);
 
         // The credential class must have a constructor accepting 3 parameters, Credentials,
         // Props, and Logger in order.
-        final Constructor constructor = credentialClass.getConstructor(new Class[]
-            {Credentials.class, Props.class, Logger.class});
+        final Constructor constructor = credentialClass.getConstructor(Credentials.class, Props.class, Logger.class);
         final CredentialProvider customCredential = (CredentialProvider) constructor
               .newInstance(hadoopCred, props, jobLogger);
         customCredential.register(userToProxy);
@@ -504,7 +502,12 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger);
+            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+          }
+
+          // Register oauth tokens by custom oauth credential provider
+          if (props.getBoolean(JobProperties.ENABLE_OAUTH, false)) {
+            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.OAUTH_CREDENTIAL_NAME);
           }
 
           fetchNameNodeToken(userToProxy, props, logger, cred);
