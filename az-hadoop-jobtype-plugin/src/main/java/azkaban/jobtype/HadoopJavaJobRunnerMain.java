@@ -343,7 +343,7 @@ public class HadoopJavaJobRunnerMain {
           + " was not found. Cannot run job.");
     }
 
-    Class<?> loggerClass = logger.getClass();
+    Class<?> loggerClass = Logger.class;
     Class<?> propsClass = null;
     for (String propClassName : PROPS_CLASSES) {
       try {
