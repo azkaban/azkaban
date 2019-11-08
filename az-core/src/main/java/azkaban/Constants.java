@@ -254,6 +254,8 @@ public class Constants {
 
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
 
+    public static final String OAUTH_CREDENTIAL_NAME = "azkaban.oauth.credential";
+
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
 
@@ -351,6 +353,9 @@ public class Constants {
 
     // If true, AZ will fetches the jobs' certificate from remote Certificate Authority.
     public static final String ENABLE_JOB_SSL = "azkaban.job.enable.ssl";
+
+    // If true, AZ will fetch OAuth token from credential provider
+    public static final String ENABLE_OAUTH = "azkaban.enable.oauth";
 
     // Job properties that indicate maximum memory size
     public static final String JOB_MAX_XMS = "job.max.Xms";
