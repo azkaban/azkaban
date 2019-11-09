@@ -55,6 +55,8 @@ allprojects {
     }
 }
 
+version '3.72.1'
+
 ext.versions = [
         hadoop: '2.6.1',
         hive  : '1.1.0',
