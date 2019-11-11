@@ -39,11 +39,18 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.FetchActiveFlowDao;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.NumExecutionsDao;
+import azkaban.executor.Status;
+import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.JdbcProjectImpl;
+import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
+import azkaban.user.User;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -51,11 +58,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.zip.ZipFile;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
@@ -92,6 +101,11 @@ public class FlowContainer {
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private final boolean validateProxyUser;
 
+  private final Project project;
+
+  // TODO: throw away
+  int execId = -1;
+
   public FlowContainer(final Path projectDirPath,
       final Path jobtypePluginPath, final Path tokenFile) throws IOException {
     this.projectDir = projectDirPath.toFile();
@@ -100,6 +114,12 @@ public class FlowContainer {
     // Create Azkaban Props Map
     final Map<String, String> propsMap = new HashMap<>();
     // Set db stuff.
+    propsMap.put("mysql.host", "makto-db-079.corp.linkedin.com");
+    propsMap.put("mysql.port", "3306");
+    propsMap.put("mysql.database", "azkaban_mlearn_a");
+    propsMap.put("mysql.user", "az_mlearn_alpha");
+    propsMap.put("mysql.password", "j64fg2d");
+    propsMap.put("mysql.numconnections", "200");
     propsMap.put(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
         jobtypePluginPath.toString());
     // Add the token file
@@ -141,6 +161,23 @@ public class FlowContainer {
 
     // project Loader
     this.projectLoader = new JdbcProjectImpl(this.azKabanProps, dbOperator);
+    // load project TODO: use parameterized project name
+    this.project = this.projectLoader.fetchProjectByName("basic_flow");
+    if (this.project == null) {
+      System.out.println("Failed to fetch project basic_flow");
+    }
+    // TODO : throw away work, I guess
+    // Load all the flows
+    try {
+      final List<Flow> flows = this.projectLoader.fetchAllProjectFlows(this.project);
+      final Map<String, Flow> flowMap = new HashMap<>();
+      for (final Flow flow : flows) {
+        flowMap.put(flow.getId(), flow);
+      }
+      this.project.setFlows(flowMap);
+    } catch (final ProjectManagerException e) {
+      throw new IOException("Failed to load flow for project " + project.getName());
+    }
 
     // setup executor service, TODO : revisit
     this.executorService = Executors.newSingleThreadExecutor();
@@ -183,11 +220,19 @@ public class FlowContainer {
     final Path projectDirPath = Paths.get(currentWorkingDir.toString(), PROJECT_DIR);
     final Path jobtypePluginPath = Paths.get(currentWorkingDir.toString(), JOBTYPE_DIR);
     Path tokenFilePath = null;
+    Path projectZipPath = null;
 
     if (mode.equals("remote")) {
       // Move files to respective dirs
-      System.out.println("moving projectDir:" + projectDir + ": to " + projectDirPath);
-      Files.move(Paths.get(projectDir), projectDirPath);
+      // Create project dir
+      System.out.println("Creating project dir");
+      Files.createDirectory(projectDirPath);
+      projectZipPath = Paths.get(projectDirPath.toString(), projectDir);
+      System.out.println("moving projectDir:" + projectDir + ": to " +
+          projectZipPath);
+      Files.move(Paths.get(projectDir), projectZipPath);
+
+
       // Create jobtype dir
       System.out.println("Creating jobtype dir");
       Files.createDirectories(jobtypePluginPath);
@@ -202,6 +247,7 @@ public class FlowContainer {
           + Paths.get(jobtypePluginPath.toString(), commonPrivateProps));
       Files.move(Paths.get(commonPrivateProps),
           Paths.get(jobtypePluginPath.toString(), commonPrivateProps));
+
       // Move jobtype dirs
       if (jobtypeDir != null) {
         System.out.println("Moving jobtypeDir:" + jobtypeDir + ": to " +
@@ -226,14 +272,20 @@ public class FlowContainer {
     final FlowContainer flowContainer =
         new FlowContainer(projectDirPath, jobtypePluginPath, tokenFilePath);
 
+    // TODO : revisit this logic,
+    // Unzip the project zip
+    flowContainer.unzipProject(projectZipPath.toString(), projectDirPath);
+
     // Use some execId to execute the flow
-    flowContainer.submitFlow(30000);
+    flowContainer.submitFlow();
   }
 
 
   // Submit flow
-  public void submitFlow(final int execId) throws ExecutorManagerException {
-    final YARNFlowRunner flowRunner = createFlowRunner(execId);
+  // TODO : Once mimicDispatch is gone, use execId from container params
+  public void submitFlow() throws ExecutorManagerException {
+    mimicDispatch(); // throw it out.
+    final YARNFlowRunner flowRunner = createFlowRunner(this.execId);
     submitFlowRunner(flowRunner);
   }
 
@@ -275,5 +327,45 @@ public class FlowContainer {
     } catch (final ExecutionException ee) {
       ee.printStackTrace();
     }
+  }
+
+  // TODO : throw away code
+  // This code is to mimic dispatch logic.
+  private void mimicDispatch() throws ExecutorManagerException {
+    final User user = new User("azkaban");
+    System.out.println("project name = " + project.getName());
+    Map<String, Flow> flowMap = project.getFlowMap();
+    System.out.println("project num flows = " + flowMap.size());
+    for (Flow curFlow: flowMap.values()) {
+      System.out.println("A flow in project " + project.getName() + " is " + curFlow.getId());
+    }
+    // Fetch Flow
+    final Flow flow = this.project.getFlow("basic_flow");
+    if (flow == null) {
+      System.out.println("Failed to fetch flow basic_flow");
+      return;
+    }
+    System.out.println("Flow = " + flow.getId());
+    ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(this.project, flow);
+    System.out.println("Executable flow = " + executableFlow);
+    executableFlow.setSubmitUser(user.getUserId());
+    executableFlow.setStatus(Status.PREPARING);
+    executableFlow.setSubmitTime(System.currentTimeMillis());
+    // upload the flow to db
+    this.executorLoader.uploadExecutableFlow(executableFlow);
+    // Verify if it is uploaded
+    final int execId = executableFlow.getExecutionId();
+    System.out.println("execID = " + execId);
+    this.execId = execId;
+  }
+
+  private void unzipProject(final String projectZipPath,
+      final Path projectDirPath) throws IOException {
+    final ZipFile zipFile = new ZipFile(projectZipPath);
+    System.out.println("Project dir name = " + projectZipPath);
+    final File unzipped = new File(projectDirPath.toString());
+    System.out.println("unzipped file dir = " + unzipped.toString());
+    Utils.unzip(zipFile, unzipped);
+    zipFile.close();
   }
 }

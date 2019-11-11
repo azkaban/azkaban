@@ -301,9 +301,9 @@ public class JobRunner extends EventHandler implements Runnable {
         .getExternalLogViewer(this.azkabanProps, this.jobId,
             this.props);
     if (!externalViewer.isEmpty()) {
-      this.logger.info("If you want to leverage AZ ELK logging support, you need to follow the "
+      logInfo("If you want to leverage AZ ELK logging support, you need to follow the "
           + "instructions: http://azkaban.github.io/azkaban/docs/latest/#how-to");
-      this.logger.info("If you did the above step, see logs at: " + externalViewer);
+      logInfo("If you did the above step, see logs at: " + externalViewer);
     }
   }
 
@@ -459,18 +459,18 @@ public class JobRunner extends EventHandler implements Runnable {
         }
       }
       if (!blockingStatus.isEmpty()) {
-        this.logger.info("Pipeline job " + this.jobId + " waiting on " + blockedList
+        logInfo("Pipeline job " + this.jobId + " waiting on " + blockedList
             + " in execution " + this.watcher.getExecId());
 
         for (final BlockingStatus bStatus : blockingStatus) {
-          this.logger.info("Waiting on pipelined job " + bStatus.getJobId());
+          logInfo("Waiting on pipelined job " + bStatus.getJobId());
           this.currentBlockStatus = bStatus;
           bStatus.blockOnFinishedStatus();
           if (this.isKilled()) {
-            this.logger.info("Job was killed while waiting on pipeline. Quiting.");
+            logInfo("Job was killed while waiting on pipeline. Quiting.");
             return true;
           } else {
-            this.logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
+            logInfo("Pipelined job " + bStatus.getJobId() + " finished.");
           }
         }
       }
@@ -488,20 +488,20 @@ public class JobRunner extends EventHandler implements Runnable {
 
       final long currentTime = System.currentTimeMillis();
       if (this.delayStartMs > 0) {
-        this.logger.info("Delaying start of execution for " + this.delayStartMs
+        logInfo("Delaying start of execution for " + this.delayStartMs
             + " milliseconds.");
         try {
           this.wait(this.delayStartMs);
-          this.logger.info("Execution has been delayed for " + this.delayStartMs
+          logInfo("Execution has been delayed for " + this.delayStartMs
               + " ms. Continuing with execution.");
         } catch (final InterruptedException e) {
-          this.logger.error("Job " + this.jobId + " was to be delayed for "
+          logError("Job " + this.jobId + " was to be delayed for "
               + this.delayStartMs + ". Interrupted after "
               + (System.currentTimeMillis() - currentTime));
         }
 
         if (this.isKilled()) {
-          this.logger.info("Job was killed while in delay. Quiting.");
+          logInfo("Job was killed while in delay. Quiting.");
           return true;
         }
       }
@@ -571,6 +571,7 @@ public class JobRunner extends EventHandler implements Runnable {
     Thread.currentThread().setName(
         "JobRunner-" + this.jobId + "-" + this.executionId);
 
+    this.flowLogger.info("Deepak : doRun " + this.jobId);
     // If the job is cancelled, disabled, killed. No log is created in this case
     if (handleNonReadyStatus()) {
       return;
@@ -594,15 +595,17 @@ public class JobRunner extends EventHandler implements Runnable {
       fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
       final Status prepareStatus = prepareJob();
+      logInfo("Deepak : prepareStatus = " + prepareStatus);
       if (prepareStatus != null) {
         // Writes status to the db
         writeStatus();
         fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED,
             new EventData(prepareStatus, this.node.getNestedId())));
+        logInfo("Deepak : running job " + this.jobId);
         finalStatus = runJob();
       } else {
         finalStatus = changeStatus(Status.FAILED);
-        logError("Job run failed preparing the job.");
+        logInfo("Job run failed preparing the job.");
       }
     }
     this.node.setEndTime(System.currentTimeMillis());
@@ -616,7 +619,7 @@ public class JobRunner extends EventHandler implements Runnable {
       finalStatus = changeStatus(Status.KILLED);
     }
 
-    logInfo(
+    this.flowLogger.info(
         "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
             + " with status " + this.node.getStatus());
 
@@ -639,7 +642,7 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       this.loader.uploadExecutableNode(this.node, this.props);
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Error writing initial node properties", e);
+      logError("Error writing initial node properties", e);
     }
   }
 
@@ -692,7 +695,7 @@ public class JobRunner extends EventHandler implements Runnable {
         final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
         if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
           final String permissionsPageURL = getProjectPermissionsURL();
-          this.logger.error("User " + jobProxyUser
+          logError("User " + jobProxyUser
               + " has no permission to execute this job " + this.jobId + "!"
               + " If you want to execute this flow as " + jobProxyUser
               + ", please add it to Proxy Users under project permissions page: " +
@@ -702,16 +705,18 @@ public class JobRunner extends EventHandler implements Runnable {
       } else {
         final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
         this.props.put(JobProperties.USER_TO_PROXY, submitUser);
-        this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
+        logInfo("user.to.proxy property was not set, defaulting to submit user " +
             submitUser);
       }
 
-      this.props.putAll(this.node.getRampProps());
+      //this.props.putAll(this.node.getRampProps());
 
       try {
-        this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
+        //this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
+        logInfo("Deepak : job Props = " + this.props);
+        this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.flowLogger);
       } catch (final JobTypeManagerException e) {
-        this.logger.error("Failed to build job type", e);
+        logError("Failed to build job type", e);
         return null;
       }
     }
@@ -729,7 +734,7 @@ public class JobRunner extends EventHandler implements Runnable {
         return false;
       }
     } catch (final IOException e) {
-      this.logger.error("Failed to validate user's " + AbstractProcessJob.WORKING_DIR +
+      logError("Failed to validate user's " + AbstractProcessJob.WORKING_DIR +
           " property.", e);
       return false;
     }
@@ -766,7 +771,7 @@ public class JobRunner extends EventHandler implements Runnable {
     final String previousJVMArgs = this.props.get(JavaProcessJob.JVM_PARAMS);
     jobJVMArgs += (previousJVMArgs == null) ? "" : " " + previousJVMArgs;
 
-    this.logger.info("job JVM args: " + jobJVMArgs);
+    logInfo("job JVM args: " + jobJVMArgs);
     this.props.put(JavaProcessJob.JVM_PARAMS, jobJVMArgs);
   }
 
@@ -795,7 +800,7 @@ public class JobRunner extends EventHandler implements Runnable {
           flowName, this.jobId));
     } else {
       if (this.logger != null) {
-        this.logger.info(AZKABAN_WEBSERVER_URL + " property was not set");
+        logInfo(AZKABAN_WEBSERVER_URL + " property was not set");
       }
     }
     // out nodes
@@ -916,22 +921,17 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.node.getStatus();
   }
 
+  // TODO: Using flow logger. Dont know why job logger is not working.
   private void logError(final String message) {
-    if (this.logger != null) {
-      this.logger.error(message);
-    }
+    this.flowLogger.error("Deepak : Using Flow Logger : " + message);
   }
 
   private void logError(final String message, final Throwable t) {
-    if (this.logger != null) {
-      this.logger.error(message, t);
-    }
+    this.flowLogger.error("Deepak : Using Flow Logger : " + message, t);
   }
 
   private void logInfo(final String message) {
-    if (this.logger != null) {
-      this.logger.info(message);
-    }
+    this.flowLogger.info("Deepak : Using Flow Logger : " + message);
   }
 
   public File getLogFile() {
@@ -939,6 +939,7 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public Logger getLogger() {
-    return this.logger;
+    //return this.logger;
+    return this.flowLogger;
   }
 }

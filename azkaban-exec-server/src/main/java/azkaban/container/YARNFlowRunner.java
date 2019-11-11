@@ -73,6 +73,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
@@ -581,10 +583,12 @@ public class YARNFlowRunner extends EventHandler implements Runnable {
   private boolean runReadyJob(final ExecutableNode node) throws IOException {
     if (Status.isStatusFinished(node.getStatus())
         || Status.isStatusRunning(node.getStatus())) {
+      this.logger.info("Deepak : Either finished or already running node " + node.toString());
       return false;
     }
 
     final Status nextNodeStatus = getImpliedStatus(node);
+    this.logger.info("Deepak : nextNodeStatus for node " + node.toString() + " = " + nextNodeStatus);
     if (nextNodeStatus == null) {
       return false;
     }
@@ -599,6 +603,7 @@ public class YARNFlowRunner extends EventHandler implements Runnable {
       node.skipNode(System.currentTimeMillis());
       finishExecutableNode(node);
     } else if (nextNodeStatus == Status.READY) {
+      this.logger.info("Deepak : Status == READY");
       if (node instanceof ExecutableFlowBase) {
         final ExecutableFlowBase flow = ((ExecutableFlowBase) node);
         this.logger.info("Running flow '" + flow.getNestedId() + "'.");
@@ -829,6 +834,13 @@ public class YARNFlowRunner extends EventHandler implements Runnable {
       }
 
       final File path = new File(this.execDir, source);
+      this.logger.info("Deepak : loadJobProps : source file Path = " + path.toString());
+      this.logger.info("Deepak : loadJobProps : path exists ? " + (path.exists() ? "yes " : "no"));
+      // TODO : Deepak - throw away
+      Path pwd = Paths.get("").toAbsolutePath();
+      this.logger.info("Deepak : PWD = " + pwd.toString());
+      java.nio.file.Files.walk(pwd).filter(java.nio.file.Files::isRegularFile)
+          .forEach(System.out::println);
       if (props == null) {
         // if no override prop, load the original one on disk
         try {
@@ -896,7 +908,8 @@ public class YARNFlowRunner extends EventHandler implements Runnable {
 
     node.setStatus(Status.QUEUED);
 
-    node.setRampProps(this.flow.getRampPropsForJob(node.getId(), node.getInputProps().getString("type")));
+    /*node.setRampProps(this.flow.getRampPropsForJob(node.getId(), node.getInputProps().getString(
+        "type")));*/
 
     final JobRunner runner = createJobRunner(node);
     this.logger.info("Submitting job '" + node.getNestedId() + "' to run.");
@@ -1101,6 +1114,7 @@ public class YARNFlowRunner extends EventHandler implements Runnable {
     }
 
     jobRunner.addListener(JmxJobMBeanManager.getInstance());
+    JmxJobMBeanManager.getInstance().initialize(null);
   }
 
   public void pause(final String user) {
@@ -1511,12 +1525,12 @@ public class YARNFlowRunner extends EventHandler implements Runnable {
           FlowRunner.this.azkabanEventReporter.report(event.getType(), getJobMetadata(jobRunner));
         }*/
         // add job level checker
-        final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
+        /*final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
             .getInstance(TriggerManager.class);
         triggerManager
             .addTrigger(YARNFlowRunner.this.flow.getExecutionId(),
                 SlaOption.getJobLevelSLAOptions(
-                    YARNFlowRunner.this.flow.getExecutionOptions().getSlaOptions()));
+                    YARNFlowRunner.this.flow.getExecutionOptions().getSlaOptions()));*/
       }
     }
   }
