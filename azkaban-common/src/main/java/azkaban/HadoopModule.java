@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * needed.
  */
 public class HadoopModule extends AbstractModule {
-  private static final String HTTP_SCHEME = "http";
+  private static final String CHTTP_SCHEME = "chttp";
   private static final String LOCAL_SCHEME = "file";
   private static final String HDFS_SCHEME = "hdfs";
 
@@ -81,7 +81,7 @@ public class HadoopModule extends AbstractModule {
     if (azConfig.getCacheDependencyRootUri() == null) return null;
 
     final Configuration conf = new Configuration(false);
-    conf.set("fs.http.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
+    conf.set("fs.chttp.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
     conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, azConfig.getCacheDependencyRootUri().toString());
     return conf;
   }
@@ -146,7 +146,7 @@ public class HadoopModule extends AbstractModule {
   private static FileSystem getCachedHttpFileSystem(final Configuration conf, final AzkabanCommonModuleConfig azConfig) {
     // Ensure the necessary props are not specified to enable CachedHttpFileSystem
     if (azConfig.getOriginDependencyRootUri() == null) return null;
-    else validateURI(azConfig.getOriginDependencyRootUri(), HTTP_SCHEME);
+    else validateURI(azConfig.getOriginDependencyRootUri(), CHTTP_SCHEME);
 
     try {
       return FileSystem.get(azConfig.getOriginDependencyRootUri(), conf);

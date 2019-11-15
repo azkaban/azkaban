@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,12 +50,13 @@ public class CachedHttpFileSystemTest {
   private static final String JAR_CONTENT = "blistering barnacles!";
   private static final String RELATIVE_JAR_PATH = "jars/some.jar";
 
-  private URI originRootURI;
+  private URI chttpRootURI;
   private URI cacheRootURI;
   private File localCacheFolder;
   private File expectedLocallyCachedJar;
 
-  private URI absoluteOriginJarURI;
+  private URI originAbsoluteJarURI;
+  private URI chttpAbsoluteJarURI;
 
   public CachedHttpFileSystem cachedHttpFileSystem;
   public FileSystem cacheFS;
@@ -65,10 +67,15 @@ public class CachedHttpFileSystemTest {
     BasicConfigurator.configure();
 
     this.localCacheFolder = TEMP_DIR.newFolder("dependencies");
-    this.originRootURI = URI.create("http://www.example.com:9000/repo/");
+    this.chttpRootURI = URI.create("chttp://www.example.com:9000/repo/");
     this.cacheRootURI = URI.create("file://" + localCacheFolder.getCanonicalPath());
 
-    this.absoluteOriginJarURI = this.originRootURI.resolve(RELATIVE_JAR_PATH);
+    this.chttpAbsoluteJarURI = this.chttpRootURI.resolve(RELATIVE_JAR_PATH);
+    URIBuilder b = new URIBuilder(this.chttpAbsoluteJarURI);
+    b.setScheme("http");
+    // http://www.example.com:9000/repo/jars/some.jar
+    this.originAbsoluteJarURI = b.build();
+
     this.expectedLocallyCachedJar = new File(this.localCacheFolder, RELATIVE_JAR_PATH);
 
     this.cacheFS = mock(FileSystem.class);
@@ -76,12 +83,12 @@ public class CachedHttpFileSystemTest {
     Configuration conf = new Configuration(false);
     // Stop FileSystem.get() from returning cached instances of CachedHttpFileSystem, it messes with our tests.
     // we need to create a new object each time.
-    conf.setBoolean("fs.http.impl.disable.cache", true);
-    conf.set("fs.http.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
+    conf.setBoolean("fs.chttp.impl.disable.cache", true);
+    conf.set("fs.chttp.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
     conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
     conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, this.cacheRootURI.toString());
 
-    this.cachedHttpFileSystem = spy((CachedHttpFileSystem) FileSystem.get(originRootURI, conf));
+    this.cachedHttpFileSystem = spy((CachedHttpFileSystem) FileSystem.get(chttpRootURI, conf));
     configureMockResponseFromHttpOrigin();
   }
 
@@ -89,7 +96,7 @@ public class CachedHttpFileSystemTest {
     // Intercept the internal method call to request a file from a HTTP URL and return our own input stream
     // instead.
     doReturn(stringToFSDataInputStream(JAR_CONTENT))
-        .when(this.cachedHttpFileSystem).downloadFromOrigin(this.absoluteOriginJarURI);
+        .when(this.cachedHttpFileSystem).downloadFromOrigin(this.originAbsoluteJarURI);
   }
 
   private static FSDataInputStream stringToFSDataInputStream(String str) {
@@ -102,14 +109,21 @@ public class CachedHttpFileSystemTest {
   }
 
   @Test(expected = IOException.class)
-  public void testInvalidUri() throws Exception {
-    this.cachedHttpFileSystem.open(new Path("http://www.wrongurl.com/some.jar"), 0);
+  public void testInvalidUriPath() throws Exception {
+    // This URI cannot be relativized against chttp://www.example.com:9000/repo/
+    this.cachedHttpFileSystem.open(new Path("chttp://www.wrongurl.com/some.jar"), 0);
+  }
+
+  @Test(expected = IOException.class)
+  public void testInvalidUriScheme() throws Exception {
+    // This URI cannot be relativized against chttp://www.example.com:9000/repo/ (wrong scheme)
+    this.cachedHttpFileSystem.open(new Path("http://www.wrongurl.com/repo/some.jar"), 0);
   }
 
   @Test
   public void testCacheMissThenHit() throws Exception {
     // This should be a cache miss, and populate the cache
-    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(absoluteOriginJarURI)));
+    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(this.chttpAbsoluteJarURI)));
 
     // Because this was a cache miss, we expect the file queried from origin once.
     verify(this.cachedHttpFileSystem).downloadFromOrigin(any());
@@ -119,7 +133,7 @@ public class CachedHttpFileSystemTest {
 
     // **** SECOND REQUEST TO CACHEDHTTPFILESYSTEM ****
     // This should be a cache hit
-    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(absoluteOriginJarURI)));
+    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(this.chttpAbsoluteJarURI)));
 
     // Because this was a cache hit, we do NOT expect any additional queries to the origin (still only one from
     // the first call)
@@ -142,7 +156,7 @@ public class CachedHttpFileSystemTest {
 
     // This should be a cache miss BUT should still succeed (the error opening a stream to the tmp file should be
     // swallowed)
-    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(absoluteOriginJarURI)));
+    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(this.chttpAbsoluteJarURI)));
 
     // We do NOT expect the jar file to be persisted, because the persist failed!
     assertFalse(this.expectedLocallyCachedJar.exists());
@@ -160,9 +174,9 @@ public class CachedHttpFileSystemTest {
       // failing to rewrite the tmp file to the final file, but it should still return the InputStream just the same.
       FileUtils.writeStringToFile(this.expectedLocallyCachedJar, JAR_CONTENT);
       return stringToFSDataInputStream(JAR_CONTENT);
-    }).when(this.cachedHttpFileSystem).downloadFromOrigin(this.absoluteOriginJarURI);
+    }).when(this.cachedHttpFileSystem).downloadFromOrigin(this.originAbsoluteJarURI);
 
     // This should be a cache miss BUT should still succeed (the error renaming the file should be swallowed)
-    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(absoluteOriginJarURI)));
+    assertInputStreamIsJarContent(this.cachedHttpFileSystem.open(new Path(this.chttpAbsoluteJarURI)));
   }
 }

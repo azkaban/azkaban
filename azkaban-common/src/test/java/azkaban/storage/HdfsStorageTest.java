@@ -51,7 +51,7 @@ public class HdfsStorageTest {
   private Path expectedPathDepA;
 
   private static final String PRJ_ROOT_URI = "hdfs://localhost:9000/path/to/prj/";
-  private static final String DEP_ROOT_URI = "http://www.someplace.com/path/to/dep/";
+  private static final String DEP_ROOT_URI = "chttp://www.someplace.com/path/to/dep/";
 
   @Before
   public void setUp() throws Exception {

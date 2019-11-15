@@ -51,7 +51,7 @@ public class ServiceProviderTest {
   private static final String AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI = "hdfs://test.com:9000/azkaban/prj/";
   private static final String AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI = "hdfs://test.com:9000/azkaban/dep/";
   private static final String AZKABAN_TEST_STORAGE_DEPENDENCY_LOCAL_URI = "file:///some/place/dep/";
-  private static final String AZKABAN_TEST_STORAGE_HTTP_DEPENDENCY_ROOT_URI = "http://www.example.com/dep/";
+  private static final String AZKABAN_TEST_STORAGE_CHTTP_DEPENDENCY_ROOT_URI = "chttp://www.example.com/dep/";
 
   // Test if one class is singletonly guiced. could be called by
   // AZ Common, Web, or Exec Modules.
@@ -111,7 +111,7 @@ public class ServiceProviderTest {
     props.put(Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH, "./");
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI, AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI);
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI);
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_HTTP_DEPENDENCY_ROOT_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_CHTTP_DEPENDENCY_ROOT_URI);
 
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)
@@ -130,7 +130,7 @@ public class ServiceProviderTest {
     props.put("h2.path", "h2");
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, AZKABAN_TEST_LOCAL_HADOOP_STORAGE_TYPE);
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_LOCAL_URI);
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_HTTP_DEPENDENCY_ROOT_URI);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_CHTTP_DEPENDENCY_ROOT_URI);
 
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)

@@ -23,6 +23,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.util.Random;
 import org.apache.commons.io.IOUtils;
@@ -37,6 +38,8 @@ import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.protocol.HTTP;
 import org.apache.log4j.Logger;
 
 import static java.util.Objects.*;
@@ -69,18 +72,20 @@ import static java.util.Objects.*;
  * cache.
  *
  * FOLDER STRUCTURE ON CACHE EXAMPLE:
- * CachedHttpFileSystem was initialized with URI: http://www.example.com/jars/
+ * CachedHttpFileSystem was initialized with URI: chttp://www.example.com/jars/
  * CACHE_ROOT_URI is set to: hdfs://localhost:9000/dependencies/
  *
- * .open() is called on CachedHttpFileSystem with URI: http://www.example.com/jars/some/lib/coollib-1.0.0.jar
+ * .open() is called on CachedHttpFileSystem with URI: chttp://www.example.com/jars/some/lib/coollib-1.0.0.jar
  * the URI for this file on the cache will be: hdfs://localhost:9000/dependencies/some/lib/coollib-1.0.0.jar
  * and the necessary directories will be created in order to put the file there.
  */
 public class CachedHttpFileSystem extends FileSystem {
+  public static final String CACHE_ROOT_URI = "cachedhttpfilesystem.cache_root_uri";
+
   private static final long DEFAULT_BLOCK_SIZE = 4096;
   private static final Path WORKING_DIR = new Path("/");
-  public static final String CACHE_ROOT_URI = "cachedhttpfilesystem.cache_root_uri";
   private static final String CACHE_TMP_FILE_TEMPLATE = "tmp%d.tmp";
+  private static final String HTTP_SCHEME = "http";
   private static final Random RAND = new Random();
 
   private static final Logger log = Logger.getLogger(CachedHttpFileSystem.class);
@@ -88,6 +93,7 @@ public class CachedHttpFileSystem extends FileSystem {
   private URI uri;
   private FileSystem cacheFS;
   private URI rootCachedURI;
+  private URI rootOriginURI;
 
   @Override
   public void initialize(URI name, Configuration conf) throws IOException {
@@ -95,9 +101,19 @@ public class CachedHttpFileSystem extends FileSystem {
     String cacheRootUri = conf.get(CACHE_ROOT_URI);
     requireNonNull(cacheRootUri);
 
+    this.uri = URI.create(addTrailingForwardSlash(name.toString()));
+
     this.rootCachedURI = URI.create(addTrailingForwardSlash(cacheRootUri));
 
-    this.uri = URI.create(addTrailingForwardSlash(name.toString()));
+    URIBuilder rootOriginURIBuilder = new URIBuilder(this.uri);
+    rootOriginURIBuilder.setScheme(HTTP_SCHEME);
+    try {
+      this.rootOriginURI = rootOriginURIBuilder.build();
+    } catch (URISyntaxException e) {
+      // This should never happen - we are only changing the scheme on an already valid URI.
+      throw new RuntimeException(e);
+    }
+
     this.cacheFS = FileSystem.get(rootCachedURI, conf);
   }
 
@@ -108,7 +124,7 @@ public class CachedHttpFileSystem extends FileSystem {
 
   @Override
   public String getScheme() {
-    return "http";
+    return "chttp";
   }
 
   @Override
@@ -123,14 +139,14 @@ public class CachedHttpFileSystem extends FileSystem {
       throw new IOException("Path must be relative or have same prefix as root origin URI.");
     }
 
-    URI resolvedOriginURI = this.uri.resolve(relativeURI);
+    URI resolvedOriginURI = this.rootOriginURI.resolve(relativeURI);
     Path resolvedCachePath = new Path(this.rootCachedURI.resolve(relativeURI));
 
     try {
       // Try to pull from cache
       return this.cacheFS.open(resolvedCachePath, bufferSize);
     } catch (FileNotFoundException e) {
-      log.info("Cache miss for file: " + resolvedOriginURI.toString());
+      log.info("Cache miss, file not found: " + resolvedCachePath.toString());
       // Cache miss, let's download from the origin
       FSDataInputStream originInputStream = downloadFromOrigin(resolvedOriginURI);
 
