@@ -155,7 +155,14 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
       list.add("-logfile " + pigLogFile.getAbsolutePath());
     }
 
-    Map<String, String> rampRegisterItems = getRampItems(JavaProcessJob.DEPENDENCY_REG_RAMP_PROP_PREFIX);
+    Map<Pattern, String> rampRegisterItems = getRampItems(JavaProcessJob.DEPENDENCY_REG_RAMP_PROP_PREFIX)
+        .entrySet()
+        .stream()
+        .collect(Collectors.toMap(
+            entry -> Pattern.compile(String.format(REGISTER_STATEMENT_PATTERN, entry.getKey()), Pattern.CASE_INSENSITIVE),
+            entry -> String.format(REGISTER_STATEMENT_FORMATTER, entry.getValue())
+        ));
+
     if (rampRegisterItems.isEmpty()) {
      list.add(getScript());
     } else {
@@ -167,6 +174,8 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
           Files.createDirectories(dstPath);
         }
         dstFile.createNewFile();
+        getLog().info(String.format("[Ramp Modify Script File] : old = %s, new = %s",
+            srcFile.getAbsolutePath(), dstFile.getAbsolutePath()));
         copyAndModifyScript(srcFile, dstFile, rampRegisterItems);
       } catch (IOException e) {
         e.printStackTrace();
@@ -180,14 +189,14 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   /**
    * Copy Pig Script from source to destination and update REGISTER statements based on the map of ramp items
    */
-  private void copyAndModifyScript(File source, File dest, Map<String, String> items) throws IOException {
+  private void copyAndModifyScript(File source, File dest, Map<Pattern, String> rampRegisterItems) throws IOException {
     BufferedReader bufferedReader = null;
     PrintWriter printWriter = null;
     bufferedReader = Files.newBufferedReader(source.toPath(), Charset.defaultCharset());
     printWriter =  new PrintWriter(Files.newBufferedWriter(dest.toPath(), Charset.defaultCharset()));
     String line;
     while ((line = bufferedReader.readLine()) != null) {
-      printWriter.println(replaceRegisterStatements(line, items));
+      printWriter.println(replaceRegisterStatements(line, rampRegisterItems));
     }
     bufferedReader.close();
     printWriter.close();
@@ -196,11 +205,7 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   /**
    * Replace Register statement to a particular ramp value
    */
-  private String replaceRegisterStatements(String text, Map<String, String> ramp) {
-    Map<Pattern, String> rampItems = ramp.entrySet().stream().collect(Collectors.toMap(
-        entry -> Pattern.compile(String.format(REGISTER_STATEMENT_PATTERN, entry.getKey()), Pattern.CASE_INSENSITIVE),
-        entry -> String.format(REGISTER_STATEMENT_FORMATTER, entry.getValue())
-    ));
+  private String replaceRegisterStatements(String text, Map<Pattern, String> rampRegisterItems) {
     StringBuilder sb = new StringBuilder();
     int start = 0;
     int end = text.length();
@@ -215,7 +220,7 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
       }
       final String value = statement;
       sb.append(
-          rampItems
+          rampRegisterItems
               .entrySet()
               .stream()
               .filter(entry -> entry.getKey().matcher(value).matches())
@@ -226,7 +231,12 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
       start = idx + 1;
     }
 
-    return sb.toString();
+    String modifiedText = sb.toString();
+
+    if (!modifiedText.equals(text)) {
+      getLog().info(String.format("[RAMP Statement] : Original = %s, Modified = %s", text, modifiedText));
+    }
+    return modifiedText;
   }
 
   @Override

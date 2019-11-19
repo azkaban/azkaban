@@ -119,15 +119,18 @@ public class JavaProcessJob extends ProcessJob {
   }
 
   protected Map<String, String> getRampItems(String prefix) {
-    return getJobProps()
+    Map<String, String> rampItems = getJobProps()
         .getKeySet()
         .stream()
         .filter(propKey -> propKey.startsWith(prefix))
-        .map(getJobProps()::get)
         .collect(Collectors.toMap(
             key -> key,
             key -> getJobProps().get(key)
         ));
+    if (!rampItems.isEmpty()) {
+      getLog().info(String.format("[Ramp Items] : %s", rampItems.toString()));
+    }
+    return rampItems;
   }
 
   protected List<String> mergeSysTypeClassPaths(List<String> classPath) {
