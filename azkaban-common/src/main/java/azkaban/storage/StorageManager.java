@@ -34,7 +34,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
@@ -191,8 +190,8 @@ public class StorageManager {
     checkState(Arrays.equals(pfh.getMd5Hash(), hash),
         String.format("MD5 HASH Failed. project ID: %d version: %d Expected: %s Actual: %s",
             pfh.getProjectId(), pfh.getVersion(),
-            new String(pfh.getMd5Hash(), StandardCharsets.UTF_8),
-            new String(hash, StandardCharsets.UTF_8))
+            Arrays.toString(pfh.getMd5Hash()),
+            Arrays.toString(hash))
     );
   }
 
