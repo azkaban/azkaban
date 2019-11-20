@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import azkaban.Constants;
 import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
 import java.io.FileOutputStream;
@@ -33,19 +34,22 @@ import static azkaban.utils.ThinArchiveUtils.*;
 
 /**
  * handles downloading of dependencies. Used during the thin archive upload process, and upon starting the execution
- * of a flow defined in a thin archive (to download necessary dependencies)
+ * of a flow defined in a thin archive (to download necessary dependencies). Provides a thin layer of retry logic,
+ * checksum validation and parallelism on top of the base Storage::getDependency().
  */
 @Singleton
 public class DependencyTransferManager {
-  public static final int MAX_DEPENDENCY_DOWNLOAD_TRIES = 2;
-
   private static final int NUM_THREADS = 8;
+
+  public final int dependencyMaxDownloadTries;
 
   private final Storage storage;
 
   @Inject
-  public DependencyTransferManager(final Storage storage) {
+  public DependencyTransferManager(final Props props, final Storage storage) {
     this.storage = storage;
+
+    this.dependencyMaxDownloadTries = props.getInt(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, 2);
   }
 
   /**
@@ -68,7 +72,7 @@ public class DependencyTransferManager {
    * @param deps set of DependencyFile to download
    */
   public void downloadAllDependencies(final Set<DependencyFile> deps) {
-    if (deps.size() == 0) {
+    if (deps.isEmpty()) {
       // Nothing for us to do!
       return;
     }
@@ -116,8 +120,9 @@ public class DependencyTransferManager {
       FileOutputStream fos = new FileOutputStream(f.getFile());
       IOUtils.copy(this.storage.getDependency(f), fos);
     } catch (IOException e) {
-      if (retries + 1 < MAX_DEPENDENCY_DOWNLOAD_TRIES) {
+      if (retries + 1 < dependencyMaxDownloadTries) {
         // downloadDependency will overwrite our destination file if attempted again
+        exponentialBackoffDelay(retries);
         downloadDependency(f, retries + 1);
         return;
       }
@@ -127,12 +132,22 @@ public class DependencyTransferManager {
     try {
       validateDependencyHash(f);
     } catch (HashNotMatchException e) {
-      if (retries + 1 < MAX_DEPENDENCY_DOWNLOAD_TRIES) {
+      if (retries + 1 < dependencyMaxDownloadTries) {
         // downloadDependency will overwrite our destination file if attempted again
+        exponentialBackoffDelay(retries);
         downloadDependency(f, retries + 1);
         return;
       }
       throw e;
+    }
+  }
+
+  private static void exponentialBackoffDelay(final int retries) {
+    try {
+      // Will wait for 1, 2, 4, 8... seconds
+      Thread.sleep((long) (Math.pow(2, retries) * 1000));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 

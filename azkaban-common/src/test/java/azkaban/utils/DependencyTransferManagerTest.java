@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import azkaban.Constants;
 import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
 import azkaban.test.executions.ThinArchiveTestUtils;
@@ -45,6 +46,8 @@ public class DependencyTransferManagerTest {
   @Rule
   public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
 
+  private static final int DEPENDENCY_DOWNLOAD_MAX_TRIES = 2;
+
   private DependencyTransferManager dependencyTransferManager;
   private Storage storage;
 
@@ -71,7 +74,9 @@ public class DependencyTransferManagerTest {
     depSetA = new HashSet();
     depSetA.add(depA);
 
-    dependencyTransferManager = new DependencyTransferManager(this.storage);
+    Props sampleProps = new Props();
+    sampleProps.put(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, DEPENDENCY_DOWNLOAD_MAX_TRIES);
+    dependencyTransferManager = new DependencyTransferManager(sampleProps, this.storage);
   }
 
   @Test
@@ -163,7 +168,7 @@ public class DependencyTransferManagerTest {
     assertFalse(stillDownloadingDepB.get());
 
     // depA should be attempted to be downloaded the maximum number of times
-    verify(this.storage, times(DependencyTransferManager.MAX_DEPENDENCY_DOWNLOAD_TRIES)).getDependency(depEq(depA));
+    verify(this.storage, times(DEPENDENCY_DOWNLOAD_MAX_TRIES)).getDependency(depEq(depA));
     // depB may or may not have been attempted to be downloaded depending on if the thread pool
     // was shutdown before or after it reached its call to storage.getDependency
   }

@@ -78,8 +78,18 @@ public class HadoopModule extends AbstractModule {
   @Singleton
   @Named("httpConf")
   public Configuration createHTTPConfiguration(final AzkabanCommonModuleConfig azConfig) {
-    if (azConfig.getCacheDependencyRootUri() == null) return null;
+    if (azConfig.getCacheDependencyRootUri() == null) {
+      return null;
+    }
 
+    // NOTE (for the future): If we want to remove the caching layer and simply pull dependencies
+    // directly from the HTTP origin, swap out CachedHttpFileSystem for Hadoop's native HttpFileSystem
+    // by editing this configuration here. In addition it will no longer be necessary to have two
+    // separate createHDFSCachedHttpFileSystem and createLocalCachedHttpFileSystem methods but we can
+    // just have one method createHttpFileSystem that creates one uncached HttpFileSystem. LocalHadoopStorage
+    // and HdfsStorage constructors can be updated to inject the same HttpFileSystem instead of different versions
+    // like we do right now: the locally cached version for LocalHadoopStorage and the hdfs cached version
+    // for HdfsStorage.
     final Configuration conf = new Configuration(false);
     conf.set("fs.chttp.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
     conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, azConfig.getCacheDependencyRootUri().toString());
@@ -116,7 +126,10 @@ public class HadoopModule extends AbstractModule {
   @Named("hdfs_cached_httpFS")
   public FileSystem createHDFSCachedHttpFileSystem(@Named("hdfsConf") final Configuration hdfsConf,
       @Named("httpConf") @Nullable final Configuration httpConf, final HdfsAuth auth, final AzkabanCommonModuleConfig azConfig) {
-    if (httpConf == null) return null;
+    if (httpConf == null) {
+      return null;
+    }
+
     validateURI(azConfig.getCacheDependencyRootUri(), HDFS_SCHEME);
 
     final Configuration finalConf = new Configuration(false);
@@ -133,7 +146,10 @@ public class HadoopModule extends AbstractModule {
   @Named("local_cached_httpFS")
   public FileSystem createLocalCachedHttpFileSystem(@Named("localConf") final Configuration localConf,
       @Named("httpConf") @Nullable final Configuration httpConf, final AzkabanCommonModuleConfig azConfig) {
-    if (httpConf == null) return null;
+    if (httpConf == null) {
+      return null;
+    }
+
     checkArgument(LOCAL_SCHEME.equals(azConfig.getCacheDependencyRootUri().getScheme()));
 
     final Configuration finalConf = new Configuration(false);
@@ -145,8 +161,11 @@ public class HadoopModule extends AbstractModule {
 
   private static FileSystem getCachedHttpFileSystem(final Configuration conf, final AzkabanCommonModuleConfig azConfig) {
     // Ensure the necessary props are not specified to enable CachedHttpFileSystem
-    if (azConfig.getOriginDependencyRootUri() == null) return null;
-    else validateURI(azConfig.getOriginDependencyRootUri(), CHTTP_SCHEME);
+    if (azConfig.getOriginDependencyRootUri() == null) {
+      return null;
+    }
+
+    validateURI(azConfig.getOriginDependencyRootUri(), CHTTP_SCHEME);
 
     try {
       return FileSystem.get(azConfig.getOriginDependencyRootUri(), conf);

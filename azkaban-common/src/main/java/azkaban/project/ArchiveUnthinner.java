@@ -195,7 +195,9 @@ public class ArchiveUnthinner {
     try {
       return parseStartupDependencies(startupDependenciesFile);
     } catch (IOException e) {
-      throw new ProjectManagerException("Unable to open or parse startup-dependencies.json", e);
+      throw new ProjectManagerException("Unable to open or parse startup-dependencies.json. Please ensure "
+                                        + "that the JSON contained is valid and properly conforms to the "
+                                        + "spec format.", e);
     } catch (InvalidHashException e) {
       throw new ProjectManagerException("One or more of the SHA1 hashes in startup-dependencies.json was invalid", e);
     }
@@ -253,7 +255,7 @@ public class ArchiveUnthinner {
         .map(fn)
         .flatMap(Collection::stream)
         .map(f -> pathToDep.get(FileIOUtils.getCanonicalPath(f)))
-        .filter(Objects::nonNull) // Some modified/removed files will not be a dependency (i.e. shapshot jar)
+        .filter(Objects::nonNull) // Some modified/removed files will not be a dependency (i.e. snapshot jar)
         .collect(Collectors.toSet());
   }
 

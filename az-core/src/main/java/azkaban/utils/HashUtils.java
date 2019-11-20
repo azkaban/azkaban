@@ -42,6 +42,10 @@ public enum HashUtils {
 
   private static final int BYTE_BUFFER_SIZE = 1024;
 
+  // Size of a MD5 or SHA1 hash in bytes
+  private static final int MD5_SIZE_BYTES = 32;
+  private static final int SHA1_SIZE_BYTES = 40;
+
   HashUtils(final String type) {
     this.type = type;
   }
@@ -105,12 +109,12 @@ public enum HashUtils {
     if (!raw.matches("^[a-zA-Z0-9]*$")) {
       throw new InvalidHashException(
           String.format("Hash %s has invalid characters. Should be only alphanumeric.", raw));
-    } else if (this.type.equals("MD5") && raw.length() != 32) {
+    } else if (this == HashUtils.MD5 && raw.length() != MD5_SIZE_BYTES) {
       throw new InvalidHashException(
-          String.format("MD5 hash %s has incorrect length %d, expected 32", raw, raw.length()));
-    } else if (this.type.equals("SHA1") && raw.length() != 40) {
+          String.format("MD5 hash %s has incorrect length %d, expected %d", raw, raw.length(), MD5_SIZE_BYTES));
+    } else if (this == HashUtils.SHA1 && raw.length() != SHA1_SIZE_BYTES) {
       throw new InvalidHashException(
-          String.format("SHA1 hash %s has incorrect length %d, expected 40", raw, raw.length()));
+          String.format("SHA1 hash %s has incorrect length %d, expected %d", raw, raw.length(), SHA1_SIZE_BYTES));
     }
     return raw.toLowerCase();
   }

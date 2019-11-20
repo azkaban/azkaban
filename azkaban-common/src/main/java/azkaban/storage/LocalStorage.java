@@ -104,6 +104,8 @@ public class LocalStorage implements Storage {
     return getRelativePath(targetFile);
   }
 
+  // LocalStorage does not support dependency fetching and thus does not support thin archives.
+  // Use LocalHadoopStorage or HdfsStorage instead for thin archive support.
   @Override
   public InputStream getDependency(final Dependency dep) throws IOException {
     throw new UnsupportedOperationException("Dependency fetching is not supported with LocalStorage.");

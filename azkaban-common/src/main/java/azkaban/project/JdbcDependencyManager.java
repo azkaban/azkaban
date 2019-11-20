@@ -51,7 +51,7 @@ public class JdbcDependencyManager {
   public Map<Dependency, FileValidationStatus> getValidationStatuses(final Set<Dependency> deps,
       final String validationKey) throws SQLException {
     Map<Dependency, FileValidationStatus> depValidationStatuses = new HashMap<>();
-    if (deps.size() == 0) {
+    if (deps.isEmpty()) {
       // There's nothing for us to do.
       return depValidationStatuses;
     }
@@ -61,8 +61,8 @@ public class JdbcDependencyManager {
     Map<String, Dependency> hashAndFileNameToDep = new HashMap<>();
 
     PreparedStatement stmnt = this.dbOperator.getDataSource().getConnection().prepareStatement(
-        "select file_name, file_sha1, validation_status from validated_dependencies where validation_key = ? and ("
-            + makeStrWithQuestionMarks(deps.size()) + ")");
+        String.format("select file_name, file_sha1, validation_status from validated_dependencies "
+            + "where validation_key = ? and (%s)", makeStrWithQuestionMarks(deps.size())));
 
     // Set the first param, which is the validation_key
     stmnt.setString(1, validationKey);
@@ -93,7 +93,7 @@ public class JdbcDependencyManager {
 
   public void updateValidationStatuses(final Map<Dependency, FileValidationStatus> depValidationStatuses,
       final String validationKey) throws SQLException {
-    if (depValidationStatuses.size() == 0) {
+    if (depValidationStatuses.isEmpty()) {
       return;
     }
 

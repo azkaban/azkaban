@@ -20,7 +20,9 @@ import azkaban.spi.Dependency;
 import azkaban.spi.DependencyFile;
 import azkaban.test.executions.ThinArchiveTestUtils;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
@@ -86,6 +88,32 @@ public class ThinArchiveUtilsTest {
 
     Set<Dependency> parsedDependencies = ThinArchiveUtils.parseStartupDependencies(inFile);
     assertEquals(ThinArchiveTestUtils.getDepSetAB(), parsedDependencies);
+  }
+
+  @Test
+  public void testReadEmptyStartupDependencies() throws Exception {
+    // An empty startup-dependencies.json should be interpreted as an empty list of startup dependencies
+    File inFile = TEMP_DIR.newFile("startup-dependencies.json");
+    FileUtils.writeStringToFile(inFile, "");
+
+    Set<Dependency> parsedDependencies = ThinArchiveUtils.parseStartupDependencies(inFile);
+    assertEquals(Collections.emptySet(), parsedDependencies);
+  }
+
+  @Test(expected = IOException.class)
+  public void testReadInvalidMissingKeyStartupDependencies() throws Exception {
+    File inFile = TEMP_DIR.newFile("startup-dependencies.json");
+    FileUtils.writeStringToFile(inFile, "{}");
+
+    ThinArchiveUtils.parseStartupDependencies(inFile);
+  }
+
+  @Test(expected = IOException.class)
+  public void testReadInvalidMalformedJsonStartupDependencies() throws Exception {
+    File inFile = TEMP_DIR.newFile("startup-dependencies.json");
+    FileUtils.writeStringToFile(inFile, "{]ugh!thisisn'tjson");
+
+    ThinArchiveUtils.parseStartupDependencies(inFile);
   }
 
   @Test

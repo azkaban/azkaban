@@ -65,6 +65,8 @@ public class DatabaseStorage implements Storage {
     return null;
   }
 
+  // DatabaseStorage does not support dependency fetching and thus does not support thin archives.
+  // Use LocalHadoopStorage or HdfsStorage instead for thin archive support.
   @Override
   public InputStream getDependency(final Dependency dep) {
     throw new UnsupportedOperationException(

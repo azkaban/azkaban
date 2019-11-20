@@ -47,8 +47,16 @@ public class ThinArchiveUtils {
   }
 
   public static Set<Dependency> parseStartupDependencies(final String rawJson) throws IOException, InvalidHashException {
+    if (rawJson.isEmpty()) {
+      return new HashSet<>();
+    }
+
     List<Map<String, String>> rawParseResult =
         ((HashMap<String, List<Map<String, String>>>) JSONUtils.parseJSONFromString(rawJson)).get("dependencies");
+
+    if (rawParseResult == null) {
+      throw new IOException("Could not find 'dependencies' key in startup-dependencies.json file.");
+    }
 
     Set<Dependency> finalDependencies = new HashSet<>();
     for (Map<String, String> rawDependency : rawParseResult) {

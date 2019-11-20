@@ -26,7 +26,7 @@ import java.util.Objects;
  * using Dependency::makeDependencyFile(File f)
  */
 public class DependencyFile extends Dependency {
-  private File file;
+  private final File file;
 
   // NOTE: This should NEVER throw InvalidHashException because the input dependency
   // must have already had its cache validated upon instantiation.
@@ -37,7 +37,6 @@ public class DependencyFile extends Dependency {
   }
 
   public File getFile() { return this.file; }
-  public void setFile(File file) { this.file = file; }
 
   @Override
   public boolean equals(final Object o) {
