@@ -57,8 +57,10 @@ public class DatabaseTransOperator {
     // A default connection: autocommit = true.
     long num = -1;
     try {
+      final String query =
+          ((AzkabanDataSource) this.queryRunner.getDataSource()).getLastInsertIdQuery();
       num = ((Number) this.queryRunner
-          .query(this.conn, "SELECT LAST_INSERT_ID();", new ScalarHandler<>(1)))
+          .query(this.conn, query, new ScalarHandler<>(1)))
           .longValue();
     } catch (final SQLException ex) {
       logger.error("can not get last insertion ID");
@@ -69,12 +71,6 @@ public class DatabaseTransOperator {
 
   /**
    *
-   * @param querySql
-   * @param resultHandler
-   * @param params
-   * @param <T>
-   * @return
-   * @throws SQLException
    */
   public <T> T query(final String querySql, final ResultSetHandler<T> resultHandler,
       final Object... params)
@@ -91,10 +87,6 @@ public class DatabaseTransOperator {
 
   /**
    *
-   * @param updateClause
-   * @param params
-   * @return
-   * @throws SQLException
    */
   public int update(final String updateClause, final Object... params) throws SQLException {
     try {

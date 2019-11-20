@@ -20,6 +20,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
+import azkaban.db.PostgreSQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectImpl;
@@ -98,11 +99,16 @@ public class AzkabanCommonModule extends AbstractModule {
   private Class<? extends AzkabanDataSource> resolveDataSourceType() {
 
     final String databaseType = this.props.getString("database.type");
-    if (databaseType.equals("h2")) {
-      return H2FileDataSource.class;
-    } else {
-      return MySQLDataSource.class;
+    switch (databaseType) {
+      case "h2":
+        return H2FileDataSource.class;
+      case "mysql":
+        return MySQLDataSource.class;
+      case "postgresql":
+        return PostgreSQLDataSource.class;
     }
+    throw new RuntimeException("Invalid value for database.type: " + databaseType + "; must be "
+        + "one of h2, mysql or postgresql");
   }
 
   @Provides

@@ -42,19 +42,49 @@ dependencies {
 }
 
 /**
+ * A filter that can be used while copying SQL files to convert some data types and syntax that 
+ * are different between MySQL and PostgreSQL.
+ */
+def mysqlToPostgresqlFilter = {
+    it.replaceAll(/(?i)\bTINYINT\b/, 'SMALLINT')
+        .replaceAll(/(?i)\bBIGINT\(\d+\)/, 'BIGINT')
+        .replaceAll(/(?i)\bSMALLINT\(\d+\)/, 'SMALLINT')
+        .replaceAll(/(?i)\b(LONG)?BLOB\b/, 'BYTEA')
+        .replaceAll(/(?i)\bBINARY\(\d+\)/, 'BYTEA')
+        .replaceAll(/(?i)\bDATETIME\b/, 'TIMESTAMP')
+        .replaceAll(/(?i)\bAUTO_INCREMENT\b/, 'GENERATED ALWAYS AS IDENTITY')
+}
+
+/**
  * concat task
  * Concatenate all the sql queries / files (except upgrade.*.sql) and collect it into a single
  * SQL file.
  */
 task concat() {
     doLast {
-        ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
-        ant.concat(destfile: destFile, fixlastline: 'yes') {
-            logger.info('Concating create scripts to ' + destFile)
+        ext.destFileMysql = 'build/sql/create-all-mysql-' + version + '.sql';
+        ant.concat(destfile: destFileMysql, fixlastline: 'yes') {
+            logger.info('Concating create scripts to ' + destFileMysql)
             fileset(dir: 'src/main/sql') {
-                exclude(name: 'database.properties')
-                exclude(name: 'upgrade.*.sql')
+                include(name: 'create.*.sql')
+                exclude(name: '*-postresql.sql')
             }
+        }
+        ext.intFilePostgresql = 'build/tmp/sql/create-all-postgresql-intermediate-' + version + '' +
+                '.sql';
+        ant.concat(destfile: intFilePostgresql, fixlastline: 'yes') {
+            logger.info('Concating create scripts to ' + intFilePostgresql)
+            fileset(dir: 'src/main/sql') {
+                include(name: 'create.*.sql')
+                exclude(name: '*-mysql.sql')
+            }
+        }
+        copy {
+            from(intFilePostgresql) {
+                rename 'postgresql-intermediate', 'postgresql'
+                filter mysqlToPostgresqlFilter
+            }
+            into 'build/sql'
         }
     }
 }
@@ -67,6 +97,10 @@ distributions {
     main {
         contents {
             from('src/main/sql')
+            from('src/main/sql') {
+                rename '\\.sql$', '.postgresql.sql'
+                filter mysqlToPostgresqlFilter
+            }
             from("$buildDir/sql")
         }
     }

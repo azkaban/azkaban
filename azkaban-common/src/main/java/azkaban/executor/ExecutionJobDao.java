@@ -180,7 +180,7 @@ public class ExecutionJobDao {
     try {
       final List<ExecutableJobInfo> info =
           this.dbOperator.query(FetchExecutableJobHandler.FETCH_PROJECT_EXECUTABLE_NODE,
-              new FetchExecutableJobHandler(), projectId, jobId, skip, size);
+              new FetchExecutableJobHandler(), projectId, jobId, size, skip);
       if (info == null || info.isEmpty()) {
         return null;
       } else {
@@ -243,7 +243,7 @@ public class ExecutionJobDao {
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt FROM execution_jobs "
             + "WHERE project_id=? AND job_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ? ";
+            + "ORDER BY exec_id DESC LIMIT ? OFFSET ? ";
 
     @Override
     public List<ExecutableJobInfo> handle(final ResultSet rs) throws SQLException {
