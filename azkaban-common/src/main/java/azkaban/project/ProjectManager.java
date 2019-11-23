@@ -132,20 +132,25 @@ public class ProjectManager {
     }
 
     logger.info("Loading flows from active projects.");
-    for (final Project proj : projects) {
-      loadAllProjectFlows(proj);
-    }
+    loadAllFlowsForAllProjects(projects);
   }
 
-  private void loadAllProjectFlows(final Project project) {
+  private void loadAllFlowsForAllProjects(final List<Project> projects) {
     try {
-      final List<Flow> flows = this.projectLoader.fetchAllProjectFlows(project);
-      final Map<String, Flow> flowMap = new HashMap<>();
-      for (final Flow flow : flows) {
-        flowMap.put(flow.getId(), flow);
-      }
+      Map<Project, List<Flow>> projectToFlows = this.projectLoader.fetchAllFlowsForProjects(projects);
 
-      project.setFlows(flowMap);
+      // Load the flows into the project objects
+      for (Map.Entry<Project, List<Flow>> entry : projectToFlows.entrySet()) {
+        Project project = entry.getKey();
+        List<Flow> flows = entry.getValue();
+
+        final Map<String, Flow> flowMap = new HashMap<>();
+        for (final Flow flow : flows) {
+          flowMap.put(flow.getId(), flow);
+        }
+
+        project.setFlows(flowMap);
+      }
     } catch (final ProjectManagerException e) {
       throw new RuntimeException("Could not load projects flows from store.", e);
     }

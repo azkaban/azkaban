@@ -23,13 +23,14 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
-import azkaban.utils.Triple;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.dbutils.ResultSetHandler;
 
 
@@ -40,14 +41,20 @@ class JdbcProjectHandlerSet {
 
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 
-    public static String SELECT_PROJECT_BY_ID =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE id=?";
+    private static final String BASE_QUERY = "SELECT "
+      + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+      + "prm.name, prm.permissions, prm.isGroup "
+      + "FROM projects prj ";
 
-    public static String SELECT_ALL_ACTIVE_PROJECTS =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE active=true";
+    // Still return the project if it has no associated permissions
+    public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
 
-    public static String SELECT_ACTIVE_PROJECT_BY_NAME =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=? AND active=true";
+    // Still return the project if it has no associated permissions
+    public static final String SELECT_ACTIVE_PROJECT_BY_NAME = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.name=? AND prj.active=true";
+
+    // ONLY return projects that have at least one associated permission, this is for performance reasons.
+    // (JOIN is way faster than LEFT JOIN)
+    public static final String SELECT_ALL_ACTIVE_PROJECTS = BASE_QUERY + "JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.active=true";
 
     @Override
     public List<Project> handle(final ResultSet rs) throws SQLException {
@@ -55,82 +62,79 @@ class JdbcProjectHandlerSet {
         return Collections.emptyList();
       }
 
-      final ArrayList<Project> projects = new ArrayList<>();
+      // Project ID -> Project
+      final Map<Integer, Project> projects = new HashMap<>();
       do {
         final int id = rs.getInt(1);
-        final String name = rs.getString(2);
-        final boolean active = rs.getBoolean(3);
-        final long modifiedTime = rs.getLong(4);
-        final long createTime = rs.getLong(5);
-        final int version = rs.getInt(6);
-        final String lastModifiedBy = rs.getString(7);
-        final String description = rs.getString(8);
-        final int encodingType = rs.getInt(9);
-        final byte[] data = rs.getBytes(10);
 
-        final Project project;
-        if (data != null) {
-          final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object blobObj;
-          try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              blobObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              blobObj = JSONUtils.parseJSONFromString(jsonString);
+        // If a project has multiple permissions - the project will be returned multiple times,
+        // one for each permission and we don't need to go through the work of reconstructing the
+        // project object if we've already seen it.
+        if (!projects.containsKey(id)) {
+          // This project is new!
+
+          final String name = rs.getString(2);
+          final boolean active = rs.getBoolean(3);
+          final long modifiedTime = rs.getLong(4);
+          final long createTime = rs.getLong(5);
+          final int version = rs.getInt(6);
+          final String lastModifiedBy = rs.getString(7);
+          final String description = rs.getString(8);
+          final int encodingType = rs.getInt(9);
+          final byte[] data = rs.getBytes(10);
+          final Project project;
+          if (data != null) {
+            final EncodingType encType = EncodingType.fromInteger(encodingType);
+            final Object blobObj;
+            try {
+              // Convoluted way to inflate strings. Should find common package or
+              // helper function.
+              if (encType == EncodingType.GZIP) {
+                // Decompress the sucker.
+                final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+                blobObj = JSONUtils.parseJSONFromString(jsonString);
+              } else {
+                final String jsonString = new String(data, "UTF-8");
+                blobObj = JSONUtils.parseJSONFromString(jsonString);
+              }
+              project = Project.projectFromObject(blobObj);
+            } catch (final IOException e) {
+              throw new SQLException(String.format("Failed to get project with id: %d", id), e);
             }
-            project = Project.projectFromObject(blobObj);
-          } catch (final IOException e) {
-            throw new SQLException("Failed to get project.", e);
+          } else {
+            project = new Project(id, name);
           }
-        } else {
-          project = new Project(id, name);
+
+          // update the fields as they may have changed
+
+          project.setActive(active);
+          project.setLastModifiedTimestamp(modifiedTime);
+          project.setCreateTimestamp(createTime);
+          project.setVersion(version);
+          project.setLastModifiedUser(lastModifiedBy);
+          project.setDescription(description);
+
+          projects.put(id, project);
         }
 
-        // update the fields as they may have changed
-
-        project.setActive(active);
-        project.setLastModifiedTimestamp(modifiedTime);
-        project.setCreateTimestamp(createTime);
-        project.setVersion(version);
-        project.setLastModifiedUser(lastModifiedBy);
-        project.setDescription(description);
-
-        projects.add(project);
+        // Add the permission to the project
+        final String username = rs.getString(11);
+        final int permissionFlag = rs.getInt(12);
+        final boolean isGroup = rs.getBoolean(13);
+        // If username is not null, add the permission to the project
+        // If username is null, we can assume that this row was returned without any associated permission
+        // i.e. this project had no associated permissions.
+        if (username != null) {
+          Permission perm = new Permission(permissionFlag);
+          if (isGroup) {
+            projects.get(id).setGroupPermission(username, perm);
+          } else {
+            projects.get(id).setUserPermission(username, perm);
+          }
+        }
       } while (rs.next());
 
-      return projects;
-    }
-  }
-
-  public static class ProjectPermissionsResultHandler implements
-      ResultSetHandler<List<Triple<String, Boolean, Permission>>> {
-
-    public static String SELECT_PROJECT_PERMISSION =
-        "SELECT project_id, modified_time, name, permissions, isGroup FROM project_permissions WHERE project_id=?";
-
-    @Override
-    public List<Triple<String, Boolean, Permission>> handle(final ResultSet rs)
-        throws SQLException {
-      if (!rs.next()) {
-        return Collections.emptyList();
-      }
-
-      final List<Triple<String, Boolean, Permission>> permissions = new ArrayList<>();
-      do {
-        final String username = rs.getString(3);
-        final int permissionFlag = rs.getInt(4);
-        final boolean val = rs.getBoolean(5);
-
-        final Permission perm = new Permission(permissionFlag);
-        permissions.add(new Triple<>(username, val, perm));
-      } while (rs.next());
-
-      return permissions;
+      return new ArrayList<>(projects.values());
     }
   }
 

@@ -150,9 +150,15 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Fetches all flows.
+   * Fetches all flows for a given project
    */
-  List<Flow> fetchAllProjectFlows(Project project)
+  List<Flow> fetchAllProjectFlows(final Project project)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches all flows for all projects.
+   */
+  Map<Project, List<Flow>> fetchAllFlowsForProjects(List<Project> projects)
       throws ProjectManagerException;
 
   /**
@@ -196,9 +202,6 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   Props fetchProjectProperty(int projectId, int projectVer, String propsName)
-      throws ProjectManagerException;
-
-  List<Triple<String, Boolean, Permission>> getProjectPermissions(Project project)
       throws ProjectManagerException;
 
   void updateProjectSettings(Project project) throws ProjectManagerException;

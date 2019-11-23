@@ -27,7 +27,6 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Md5Hasher;
 import azkaban.utils.Props;
-import azkaban.utils.Triple;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -117,13 +116,6 @@ public class JdbcProjectImplTest {
         .isInstanceOf(ProjectManagerException.class)
         .hasMessageContaining(
             "Active project with name " + projectName2 + " already exists in db.");
-  }
-
-  @Test
-  public void testFetchAllActiveProjects() throws Exception {
-    createThreeProjects();
-    final List<Project> projectList = this.loader.fetchAllActiveProjects();
-    Assert.assertEquals(projectList.size(), 3);
   }
 
   @Test
@@ -218,11 +210,46 @@ public class JdbcProjectImplTest {
     this.loader.updatePermission(project, project.getLastModifiedUser(),
         new Permission(Permission.Type.ADMIN), false);
 
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
-        .getProjectPermissions(project);
-    Assert.assertEquals(permissionsTriple.size(), 1);
-    Assert.assertEquals(permissionsTriple.get(0).getFirst(), "testUser1");
-    Assert.assertEquals(permissionsTriple.get(0).getThird().toString(), "ADMIN");
+    final Project sameProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(sameProject.getUserPermissions().size(), 1);
+    Assert.assertEquals(sameProject.getUserPermissions().get(0).getFirst(), "testUser1");
+    Assert.assertEquals(sameProject.getUserPermissions().get(0).getSecond().toString(), "ADMIN");
+  }
+
+  @Test
+  public void testGetPermissionsOnAllActiveProjects() throws Exception {
+    createThreeProjects();
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    this.loader.updatePermission(project1, "testUser1", new Permission(Permission.Type.ADMIN), false);
+    this.loader.updatePermission(project1, "testUser2", new Permission(Permission.Type.EXECUTE), false);
+    this.loader.updatePermission(project1, "testGroup1", new Permission(Permission.Type.ADMIN), true);
+
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    this.loader.updatePermission(project2, "testGroup2", new Permission(Permission.Type.READ), true);
+
+    final List<Project> projectList = this.loader.fetchAllActiveProjects();
+    final Project returnedProject1 = findProjectWithName(projectList, "mytestProject");
+    final Project returnedProject2 = findProjectWithName(projectList, "mytestProject2");
+    final Project returnedProject3 = findProjectWithName(projectList, "mytestProject3");
+
+    // Check to make sure project 1 and 2 were returned - but project 3 should not be returned (it has no associated
+    // permissions and we are using an INNER join).
+    Assert.assertNotNull(returnedProject1);
+    Assert.assertNotNull(returnedProject2);
+    Assert.assertNull(returnedProject3);
+
+    // Make sure proper permissions were returned for project1
+    Assert.assertTrue(returnedProject1.getUserPermission("testUser1").isPermissionSet(Permission.Type.ADMIN));
+    Assert.assertTrue(returnedProject1.getUserPermission("testUser2").isPermissionSet(Permission.Type.EXECUTE));
+    Assert.assertTrue(returnedProject1.getGroupPermission("testGroup1").isPermissionSet(Permission.Type.ADMIN));
+
+    // Make sure proper permissions were returned for project2
+    Assert.assertEquals(returnedProject2.getUserPermissions().size(), 0);
+    Assert.assertTrue(returnedProject2.getGroupPermission("testGroup2").isPermissionSet(Permission.Type.READ));
+  }
+
+  private Project findProjectWithName(List<Project> projects, String name) {
+    return projects.stream().filter(p -> p.getName().equals(name)).findFirst().orElse(null);
   }
 
   @Test
@@ -243,9 +270,9 @@ public class JdbcProjectImplTest {
     this.loader.updatePermission(project, project.getLastModifiedUser(),
         new Permission(Permission.Type.ADMIN), false);
     this.loader.removePermission(project, project.getLastModifiedUser(), false);
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
-        .getProjectPermissions(project);
-    Assert.assertEquals(permissionsTriple.size(), 0);
+    final Project sameProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(sameProject.getGroupPermissions().size(), 0);
+    Assert.assertEquals(sameProject.getUserPermissions().size(), 0);
   }
 
   @Test
@@ -278,17 +305,31 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void testUploadAndFetchFlow() throws Exception {
+  public void testUploadAndFetchFlowsForMultipleProjects() throws Exception {
     final Flow flow1 = new Flow("flow1");
     final Flow flow2 = new Flow("flow2");
-    final List<Flow> flowList = Arrays.asList(flow1, flow2);
+    final List<Flow> flowList1 = Arrays.asList(flow1, flow2);
+
+    final Flow flow3 = new Flow("flow2");
+    final List<Flow> flowList2 = Arrays.asList(flow3);
 
     createThreeProjects();
-    final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.uploadFlows(project, project.getVersion(), flowList);
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    this.loader.uploadFlows(project1, project1.getVersion(), flowList1);
 
-    final List<Flow> flowList2 = this.loader.fetchAllProjectFlows(project);
-    Assert.assertEquals(flowList2.size(), 2);
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    this.loader.uploadFlows(project2, project2.getVersion(), flowList2);
+
+    // Don't upload any flows for project3
+    final Project project3 = this.loader.fetchProjectByName("mytestProject3");
+
+    List<Project> projectList = Arrays.asList(project1, project2, project3);
+
+    final Map<Project, List<Flow>> projectToFlows = this.loader.fetchAllFlowsForProjects(projectList);
+    Assert.assertEquals(projectToFlows.size(), 3);
+    Assert.assertEquals(projectToFlows.get(project1).size(), 2);
+    Assert.assertEquals(projectToFlows.get(project2).size(), 1);
+    Assert.assertEquals(projectToFlows.get(project3).size(), 0);
   }
 
   @Test
@@ -303,8 +344,9 @@ public class JdbcProjectImplTest {
 
     flow1.setLayedOut(true);
     this.loader.updateFlow(project, project.getVersion(), flow1);
-    final List<Flow> flowList2 = this.loader.fetchAllProjectFlows(project);
-    Assert.assertEquals(flowList2.get(0).isLayedOut(), true);
+
+    final List<Flow> flows = this.loader.fetchAllProjectFlows(project);
+    Assert.assertEquals(flows.get(0).isLayedOut(), true);
   }
 
   @Test

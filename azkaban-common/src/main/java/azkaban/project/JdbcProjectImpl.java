@@ -19,7 +19,6 @@ import static azkaban.project.JdbcProjectHandlerSet.IntHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFileChunkResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFlowsResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectLogsResultHandler;
-import static azkaban.project.JdbcProjectHandlerSet.ProjectPermissionsResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectPropertiesResultsHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectVersionResultHandler;
@@ -49,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -101,25 +101,11 @@ public class JdbcProjectImpl implements ProjectLoader {
 
     try {
       projects = this.dbOperator.query(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS, handler);
-      projects.forEach(project -> {
-        for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
-          setProjectPermission(project, perm);
-        }
-      });
     } catch (final SQLException ex) {
       logger.error(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS + " failed.", ex);
       throw new ProjectManagerException("Error retrieving all active projects", ex);
     }
     return projects;
-  }
-
-  private void setProjectPermission(final Project project,
-      final Triple<String, Boolean, Permission> perm) {
-    if (perm.getSecond()) {
-      project.setGroupPermission(perm.getFirst(), perm.getThird());
-    } else {
-      project.setUserPermission(perm.getFirst(), perm.getThird());
-    }
   }
 
   @Override
@@ -135,14 +121,6 @@ public class JdbcProjectImpl implements ProjectLoader {
         throw new ProjectManagerException("No project with id " + id + " exists in db.");
       }
       project = projects.get(0);
-
-      // Fetch the user permissions
-      for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
-        // TODO kunkun-tang: understand why we need to check permission not equal to 0 here.
-        if (perm.getThird().toFlags() != 0) {
-          setProjectPermission(project, perm);
-        }
-      }
     } catch (final SQLException ex) {
       logger.error(ProjectResultHandler.SELECT_PROJECT_BY_ID + " failed.", ex);
       throw new ProjectManagerException("Query for existing project failed. Project " + id, ex);
@@ -164,36 +142,12 @@ public class JdbcProjectImpl implements ProjectLoader {
         return null;
       }
       project = projects.get(0);
-      for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
-        if (perm.getThird().toFlags() != 0) {
-          setProjectPermission(project, perm);
-        }
-      }
     } catch (final SQLException ex) {
       logger.error(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME + " failed.", ex);
       throw new ProjectManagerException(
           ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME + " failed.", ex);
     }
     return project;
-  }
-
-  private List<Triple<String, Boolean, Permission>> fetchPermissionsForProject(
-      final Project project)
-      throws ProjectManagerException {
-    final ProjectPermissionsResultHandler permHander = new ProjectPermissionsResultHandler();
-
-    List<Triple<String, Boolean, Permission>> permissions = null;
-    try {
-      permissions =
-          this.dbOperator
-              .query(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander,
-                  project.getId());
-    } catch (final SQLException ex) {
-      logger.error(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION + " failed.", ex);
-      throw new ProjectManagerException(
-          "Query for permissions for " + project.getName() + " failed.", ex);
-    }
-    return permissions;
   }
 
   /**
@@ -649,12 +603,6 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
   }
 
-  @Override
-  public List<Triple<String, Boolean, Permission>> getProjectPermissions(final Project project)
-      throws ProjectManagerException {
-    return fetchPermissionsForProject(project);
-  }
-
   /**
    * Todo kunkun-tang: the below implementation doesn't remove a project, but inactivate a project.
    * We should rewrite the code to follow the literal meanings.
@@ -815,18 +763,27 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public List<Flow> fetchAllProjectFlows(final Project project) throws ProjectManagerException {
-    final ProjectFlowsResultHandler handler = new ProjectFlowsResultHandler();
-    List<Flow> flows = null;
+    return fetchAllFlowsForProjects(Arrays.asList(project)).get(project);
+  }
+
+  @Override
+  public Map<Project, List<Flow>> fetchAllFlowsForProjects(final List<Project> projects) throws ProjectManagerException {
+    final SQLTransaction<Map<Project, List<Flow>>> transaction = transOperator -> {
+      Map<Project, List<Flow>> projectToFlows = new HashMap();
+      for (Project p : projects) {
+        projectToFlows.put(p, transOperator
+            .query(ProjectFlowsResultHandler.SELECT_ALL_PROJECT_FLOWS, new ProjectFlowsResultHandler(), p.getId(),
+                p.getVersion()));
+      }
+      return projectToFlows;
+    };
+
     try {
-      flows = this.dbOperator
-          .query(ProjectFlowsResultHandler.SELECT_ALL_PROJECT_FLOWS, handler, project.getId(),
-              project.getVersion());
+      return this.dbOperator.transaction(transaction);
     } catch (final SQLException e) {
       throw new ProjectManagerException(
-          "Error fetching flows from project " + project.getName() + " version " + project
-              .getVersion(), e);
+          "Error fetching flows for " + projects.size() + " project(s).", e);
     }
-    return flows;
   }
 
   @Override
