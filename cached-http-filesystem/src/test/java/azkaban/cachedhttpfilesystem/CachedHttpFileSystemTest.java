@@ -89,14 +89,15 @@ public class CachedHttpFileSystemTest {
     conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, this.cacheRootURI.toString());
 
     this.cachedHttpFileSystem = spy((CachedHttpFileSystem) FileSystem.get(chttpRootURI, conf));
-    configureMockResponseFromHttpOrigin();
+    configureMockResponseFromHttpOrigin(this.cachedHttpFileSystem, this.originAbsoluteJarURI);
   }
 
-  private void configureMockResponseFromHttpOrigin() throws Exception {
+  private static void configureMockResponseFromHttpOrigin(CachedHttpFileSystem fs, URI originAbsoluteJarURI)
+      throws Exception {
     // Intercept the internal method call to request a file from a HTTP URL and return our own input stream
     // instead.
     doReturn(stringToFSDataInputStream(JAR_CONTENT))
-        .when(this.cachedHttpFileSystem).downloadFromOrigin(this.originAbsoluteJarURI);
+        .when(fs).downloadFromOrigin(originAbsoluteJarURI);
   }
 
   private static FSDataInputStream stringToFSDataInputStream(String str) {
@@ -106,6 +107,22 @@ public class CachedHttpFileSystemTest {
   private void assertInputStreamIsJarContent(InputStream inp) throws Exception {
     // Ensure the InputStream resolves to the content of our sample jar.
     assertEquals(JAR_CONTENT, IOUtils.toString(inp));
+  }
+
+  @Test
+  public void testCachingDisabled() throws Exception {
+    Configuration conf = new Configuration(false);
+    // Stop FileSystem.get() from returning cached instances of CachedHttpFileSystem, it messes with our tests.
+    // we need to create a new object each time.
+    conf.setBoolean("fs.chttp.impl.disable.cache", true);
+    conf.set("fs.chttp.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
+    conf.set(CachedHttpFileSystem.CACHE_ENABLED_FLAG, "false");
+
+    CachedHttpFileSystem tmpCachedHttpFileSystem = spy((CachedHttpFileSystem) FileSystem.get(chttpRootURI, conf));
+    configureMockResponseFromHttpOrigin(tmpCachedHttpFileSystem, this.originAbsoluteJarURI);
+
+    // Make sure we get the content back from the origin as expected
+    assertInputStreamIsJarContent(tmpCachedHttpFileSystem.open(new Path(this.chttpAbsoluteJarURI)));
   }
 
   @Test(expected = IOException.class)

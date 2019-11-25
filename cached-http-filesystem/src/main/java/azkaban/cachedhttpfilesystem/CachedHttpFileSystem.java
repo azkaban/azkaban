@@ -49,6 +49,12 @@ import static java.util.Objects.*;
  * CachedHttpFileSystem behaves almost identically to Hadoop's native HttpFileSystem except it adds caching logic to
  * reduce load on the HTTP origin.
  *
+ * In fact, CachedHttpFileSystem can be optionally configured to disable caching, in which case it will act EXACTLY
+ * like HttpFileSystem. This can be done by setting CACHE_ENABLED_FLAG to FALSE. Each .open() call will request the
+ * resource from the origin.
+ *
+ * If CACHE_ENABLED_FLAG is set to TRUE or not specified (defaults to true):
+ *
  * CachedHttpFileSystem expects an additional configuration parameter (value of CACHE_ROOT_URI) to be present
  * which is a full absolute URI that should be resolvable by some other FileSystem (i.e. DistributedFileSystem,
  * LocalFileSystem, etc.). NOTE: This FileSystem must already be configured in the Configuration passed to
@@ -80,7 +86,11 @@ import static java.util.Objects.*;
  * and the necessary directories will be created in order to put the file there.
  */
 public class CachedHttpFileSystem extends FileSystem {
+  // CACHE_ENABLED_FLAG is TRUE by default. When it is true, caching is enabled and the CACHE_ROOT_URI
+  // must be specified. If CACHE_ENABLED_FLAG is set to FALSE, caching is disabled and all reads will
+  // pull directly from the origin. CACHE_ROOT_URI is not used when caching is disabled.
   public static final String CACHE_ROOT_URI = "cachedhttpfilesystem.cache_root_uri";
+  public static final String CACHE_ENABLED_FLAG = "cachedhttpfilesystem.caching_enabled";
 
   private static final long DEFAULT_BLOCK_SIZE = 4096;
   private static final Path WORKING_DIR = new Path("/");
@@ -90,6 +100,7 @@ public class CachedHttpFileSystem extends FileSystem {
 
   private static final Logger log = Logger.getLogger(CachedHttpFileSystem.class);
 
+  private boolean cachingEnabled;
   private URI uri;
   private FileSystem cacheFS;
   private URI rootCachedURI;
@@ -98,13 +109,9 @@ public class CachedHttpFileSystem extends FileSystem {
   @Override
   public void initialize(URI name, Configuration conf) throws IOException {
     super.initialize(name, conf);
-    String cacheRootUri = conf.get(CACHE_ROOT_URI);
-    requireNonNull(cacheRootUri);
+    this.cachingEnabled = conf.getBoolean(CACHE_ENABLED_FLAG, true);
 
     this.uri = URI.create(addTrailingForwardSlash(name.toString()));
-
-    this.rootCachedURI = URI.create(addTrailingForwardSlash(cacheRootUri));
-
     URIBuilder rootOriginURIBuilder = new URIBuilder(this.uri);
     rootOriginURIBuilder.setScheme(HTTP_SCHEME);
     try {
@@ -114,7 +121,13 @@ public class CachedHttpFileSystem extends FileSystem {
       throw new RuntimeException(e);
     }
 
-    this.cacheFS = FileSystem.get(rootCachedURI, conf);
+    if (this.cachingEnabled) {
+      String cacheRootUri = conf.get(CACHE_ROOT_URI);
+      requireNonNull(cacheRootUri);
+
+      this.rootCachedURI = URI.create(addTrailingForwardSlash(cacheRootUri));
+      this.cacheFS = FileSystem.get(rootCachedURI, conf);
+    }
   }
 
   // If the base URIs don't have a trailing forward slash the resolving and relativization can get messed up.
@@ -140,8 +153,12 @@ public class CachedHttpFileSystem extends FileSystem {
     }
 
     URI resolvedOriginURI = this.rootOriginURI.resolve(relativeURI);
-    Path resolvedCachePath = new Path(this.rootCachedURI.resolve(relativeURI));
+    if (!cachingEnabled) {
+      // If caching is disabled, just return from the origin.
+      return downloadFromOrigin(resolvedOriginURI);
+    }
 
+    Path resolvedCachePath = new Path(this.rootCachedURI.resolve(relativeURI));
     try {
       // Try to pull from cache
       return this.cacheFS.open(resolvedCachePath, bufferSize);

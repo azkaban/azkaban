@@ -78,11 +78,7 @@ public class HadoopModule extends AbstractModule {
   @Singleton
   @Named("httpConf")
   public Configuration createHTTPConfiguration(final AzkabanCommonModuleConfig azConfig) {
-    if (azConfig.getCacheDependencyRootUri() == null) {
-      return null;
-    }
-
-    // NOTE (for the future): If we want to remove the caching layer and simply pull dependencies
+    // NOTE (for the future): If we want to permanently remove the caching layer and simply pull dependencies
     // directly from the HTTP origin, swap out CachedHttpFileSystem for Hadoop's native HttpFileSystem
     // by editing this configuration here. In addition it will no longer be necessary to have two
     // separate createHDFSCachedHttpFileSystem and createLocalCachedHttpFileSystem methods but we can
@@ -92,7 +88,20 @@ public class HadoopModule extends AbstractModule {
     // for HdfsStorage.
     final Configuration conf = new Configuration(false);
     conf.set("fs.chttp.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
-    conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, azConfig.getCacheDependencyRootUri().toString());
+    boolean cachingEnabled = azConfig.getDependencyCachingEnabled();
+    if (cachingEnabled) {
+      // If caching is not disabled BUT the cache dependency root URI is not specified, return null
+      // for this configuration (indicating this configuration cannot be generated - thin archives
+      // should be disabled)
+      if (azConfig.getCacheDependencyRootUri() == null) {
+        return null;
+      }
+      // If caching is enabled, tell the CachedHttpFileSystem where to cache its files
+      conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, azConfig.getCacheDependencyRootUri().toString());
+    } else {
+      // If caching is disabled, tell the CachedHttpFileSystem to disable caching
+      conf.set(CachedHttpFileSystem.CACHE_ENABLED_FLAG, "false");
+    }
     return conf;
   }
 
@@ -130,7 +139,11 @@ public class HadoopModule extends AbstractModule {
       return null;
     }
 
-    validateURI(azConfig.getCacheDependencyRootUri(), HDFS_SCHEME);
+    // If caching is enabled, ensure the URI where cached files will be stored has the correct scheme
+    // and has an authority.
+    if (azConfig.getDependencyCachingEnabled()) {
+      validateURI(azConfig.getCacheDependencyRootUri(), HDFS_SCHEME, true);
+    }
 
     final Configuration finalConf = new Configuration(false);
     finalConf.addResource(hdfsConf);
@@ -150,7 +163,10 @@ public class HadoopModule extends AbstractModule {
       return null;
     }
 
-    checkArgument(LOCAL_SCHEME.equals(azConfig.getCacheDependencyRootUri().getScheme()));
+    // If caching is enabled, ensure the URI where cached files will be stored has the correct scheme.
+    if (azConfig.getDependencyCachingEnabled()) {
+      validateURI(azConfig.getCacheDependencyRootUri(), LOCAL_SCHEME, false);
+    }
 
     final Configuration finalConf = new Configuration(false);
     finalConf.addResource(localConf);
@@ -165,7 +181,8 @@ public class HadoopModule extends AbstractModule {
       return null;
     }
 
-    validateURI(azConfig.getOriginDependencyRootUri(), CHTTP_SCHEME);
+    // Ensure the origin URI has the correct scheme and has an authority.
+    validateURI(azConfig.getOriginDependencyRootUri(), CHTTP_SCHEME, true);
 
     try {
       return FileSystem.get(azConfig.getOriginDependencyRootUri(), conf);
@@ -176,10 +193,12 @@ public class HadoopModule extends AbstractModule {
   }
 
   /**
-   * Ensure a URI is valid for a given scheme.
+   * Ensure a URI is valid for a given scheme and contains an authority (if required).
    */
-  private static void validateURI(final URI uri, final String scheme) {
-    requireNonNull(uri.getAuthority(), "URI must have host:port mentioned.");
+  private static void validateURI(final URI uri, final String scheme, final boolean mustHaveAuthority) {
+    if (mustHaveAuthority) {
+      requireNonNull(uri.getAuthority(), "URI must have host:port mentioned.");
+    }
     checkArgument(scheme.equals(uri.getScheme()));
   }
 
