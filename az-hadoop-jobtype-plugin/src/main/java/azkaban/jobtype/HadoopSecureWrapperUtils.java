@@ -15,6 +15,7 @@
  */
 package azkaban.jobtype;
 
+import azkaban.Constants;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -108,6 +109,10 @@ public class HadoopSecureWrapperUtils {
         log.info("security enabled, proxying as user " + userToProxy);
       } else {
         proxyUser = UserGroupInformation.createRemoteUser(userToProxy);
+        if (jobProps.getProperty(Constants.JobProperties.ENABLE_OAUTH, "false").equals("true")) {
+          proxyUser.addCredentials(UserGroupInformation.getLoginUser().getCredentials());
+        }
+
         log.info("security not enabled, proxying as user " + userToProxy);
       }
     } catch (IOException e) {
