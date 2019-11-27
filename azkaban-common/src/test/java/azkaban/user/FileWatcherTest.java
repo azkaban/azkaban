@@ -16,8 +16,7 @@
 
 package azkaban.user;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.io.Resources;
 import com.sun.nio.file.SensitivityWatchEventModifier;
@@ -73,14 +72,33 @@ public class FileWatcherTest {
 
     final WatchKey key = this.fileWatcher.take();
     final List<WatchEvent<?>> events = this.fileWatcher.pollEvents(key);
-    // depending on the OS & file system there may be at least 1 or 2 events even with 1 write()
-    assertThat(events.size()).isGreaterThanOrEqualTo(1);
 
-    for (WatchEvent<?> event : events) {
+    // Since we watch the entire parent dir, *and* run multiple tests in parallel, we catch *other*
+    // files being changed here. This assert checks that at least one of them is "ours"
+    // (*and* that at least one event is fired in the first place):
+    assertTrue(events.stream().anyMatch(event -> {
       @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
       final String resolvedFileName = dir.resolve(name).toString();
-      assertEquals(PATH.toString(), resolvedFileName);
-    }
+      return PATH.toString().equals(resolvedFileName);
+    }));
+
+    // do we really need to convert Paths to Strings in order to compare?
+    assertTrue(events.stream().anyMatch(event -> {
+      @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
+      final Path resolvedFile = dir.resolve(name);
+      return PATH.equals(resolvedFile);
+    }));
+
+    // compact but throws info on compilation. Way to suppress?
+    assertTrue(events.stream()
+        .map(event -> dir.resolve(((WatchEvent<Path>) event).context()))
+        .anyMatch(PATH::equals));
+
+    // any more readable?
+    assertTrue(events.stream()
+        .map(event -> ((WatchEvent<Path>) event).context())
+        .map(dir::resolve)
+        .anyMatch(PATH::equals));
   }
 
   private void write() throws IOException {
