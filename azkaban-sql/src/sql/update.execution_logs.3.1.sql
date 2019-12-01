@@ -25,7 +25,7 @@ PARTITION BY RANGE (exec_id) (
   PARTITION P999M VALUES LESS THAN (MAXVALUE)
 );
 
-INSERT INTO execution_logs__new
+INSERT IGNORE INTO execution_logs__new
 SELECT * FROM execution_logs;
 
 
@@ -55,7 +55,7 @@ PARTITION BY RANGE (exec_id) (
   PARTITION P999M VALUES LESS THAN (MAXVALUE)
 );
 
-INSERT INTO execution_jobs__new
+INSERT IGNORE INTO execution_jobs__new
 SELECT * FROM execution_jobs;
 
 
@@ -88,7 +88,7 @@ PARTITION BY RANGE (exec_id) (
   PARTITION P999M VALUES LESS THAN (MAXVALUE)
 );
 
-INSERT INTO execution_flows__new
+INSERT IGNORE INTO execution_flows__new
 SELECT * FROM execution_flows;
 
 
