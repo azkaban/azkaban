@@ -115,6 +115,13 @@ ANALYZE TABLE execution_flows,
               execution_jobs,
               execution_logs;
 
+ALTER TABLE execution_flows ANALYZE PARTITION P004M, P009M, P014M, P019M, P024M, P029M, P999M;
+ALTER TABLE execution_logs  ANALYZE PARTITION P004M, P009M, P014M, P019M, P024M, P029M, P999M;
+ALTER TABLE execution_jobs  ANALYZE PARTITION P004M, P009M, P014M, P019M, P024M, P029M, P999M;
+
+SELECT TABLE_NAME, PARTITION_ORDINAL_POSITION, PARTITION_NAME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH, DATA_FREE
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_NAME IN ('execution_flows', 'execution_jobs', 'execution_logs');
+
 -- 6. future partition maintenance (examples)
 /*
 ALTER TABLE execution_logs REORGANIZE
