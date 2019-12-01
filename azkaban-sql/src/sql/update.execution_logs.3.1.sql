@@ -73,6 +73,9 @@ CREATE TABLE execution_flows__new (
 	end_time BIGINT,
 	enc_type TINYINT,
 	flow_data LONGBLOB,
+	executor_id INT,
+	use_executor INT,
+	flow_priority TINYINT NOT NULL DEFAULT '5',	
 	PRIMARY KEY (exec_id)
 )
 PARTITION BY RANGE (exec_id) (
