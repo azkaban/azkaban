@@ -39,13 +39,15 @@ import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.protocol.HTTP;
 import org.apache.log4j.Logger;
 
 import static java.util.Objects.*;
 
 
 /**
+ * NOTE: Some of the boilerplate for the unsupported portions of the API was copied from:
+ * https://github.com/apache/hadoop/blob/e346e3638c595a512cd582739ff51fb64c3b4950/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/http/AbstractHttpFileSystem.java
+ *
  * CachedHttpFileSystem behaves almost identically to Hadoop's native HttpFileSystem except it adds caching logic to
  * reduce load on the HTTP origin.
  *
@@ -107,7 +109,7 @@ public class CachedHttpFileSystem extends FileSystem {
   private URI rootOriginURI;
 
   @Override
-  public void initialize(URI name, Configuration conf) throws IOException {
+  public void initialize(final URI name, final Configuration conf) throws IOException {
     super.initialize(name, conf);
     this.cachingEnabled = conf.getBoolean(CACHE_ENABLED_FLAG, true);
 
@@ -131,7 +133,7 @@ public class CachedHttpFileSystem extends FileSystem {
   }
 
   // If the base URIs don't have a trailing forward slash the resolving and relativization can get messed up.
-  private static String addTrailingForwardSlash(String in) {
+  private static String addTrailingForwardSlash(final String in) {
     return in.endsWith("/") ? in : in + "/";
   }
 
@@ -142,28 +144,31 @@ public class CachedHttpFileSystem extends FileSystem {
 
   @Override
   public URI getUri() {
-    return uri;
+    return this.uri;
   }
 
   @Override
-  public FSDataInputStream open(Path path, int bufferSize) throws IOException {
+  public FSDataInputStream open(final Path path, final int bufferSize) throws IOException {
     URI relativeURI = this.uri.relativize(path.toUri());
     if (relativeURI.isAbsolute()) {
       throw new IOException("Path must be relative or have same prefix as root origin URI.");
     }
 
     URI resolvedOriginURI = this.rootOriginURI.resolve(relativeURI);
-    if (!cachingEnabled) {
+    if (!this.cachingEnabled) {
       // If caching is disabled, just return from the origin.
+      this.log.info("CACHE MISS (cache is disabled): " + resolvedOriginURI.toString());
       return downloadFromOrigin(resolvedOriginURI);
     }
 
     Path resolvedCachePath = new Path(this.rootCachedURI.resolve(relativeURI));
     try {
       // Try to pull from cache
-      return this.cacheFS.open(resolvedCachePath, bufferSize);
+      FSDataInputStream cachedInputStream =  this.cacheFS.open(resolvedCachePath, bufferSize);
+      this.log.info("CACHE HIT: " + resolvedCachePath.toString());
+      return cachedInputStream;
     } catch (FileNotFoundException e) {
-      log.info("Cache miss, file not found: " + resolvedCachePath.toString());
+      this.log.info("CACHE MISS: " + resolvedCachePath.toString());
       // Cache miss, let's download from the origin
       FSDataInputStream originInputStream = downloadFromOrigin(resolvedOriginURI);
 
@@ -176,7 +181,7 @@ public class CachedHttpFileSystem extends FileSystem {
         outStreamToTmpFile = this.cacheFS.create(tempCacheFile, false);
       } catch (IOException e2) {
         // We failed to create the output stream, so just return the stream from the origin
-        log.warn("Failed to persist file to cache, returning stream from origin: " +
+        this.log.warn("Failed to persist file to cache, returning stream from origin: " +
             resolvedOriginURI.toString(), e2);
         return originInputStream;
       }
@@ -190,7 +195,7 @@ public class CachedHttpFileSystem extends FileSystem {
         // Rename the temporary file to the final file name
         this.cacheFS.rename(tempCacheFile, resolvedCachePath);
       } catch (FileAlreadyExistsException e2) {
-        log.info("Another process already persisted this file: " + resolvedCachePath.toString());
+        this.log.info("Another process already persisted this file: " + resolvedCachePath.toString());
         // Another process beat us to the race - no problem though, that means the file already exists so we
         // can just swallow this error and return the stream like usual!
       }
@@ -201,36 +206,36 @@ public class CachedHttpFileSystem extends FileSystem {
   }
 
   @Override
-  public FSDataOutputStream create(Path path, FsPermission fsPermission,
-      boolean b, int i, short i1, long l,
-      Progressable progressable)
+  public FSDataOutputStream create(final Path path, final FsPermission fsPermission,
+      final boolean b, final int i, final short i1, final long l,
+      final Progressable progressable)
       throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public FSDataOutputStream append(Path path, int i, Progressable progressable)
+  public FSDataOutputStream append(final Path path, final int i, final Progressable progressable)
       throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean rename(Path path, Path path1) throws IOException {
+  public boolean rename(final Path path, final Path path1) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean delete(Path path, boolean b) throws IOException {
+  public boolean delete(final Path path, final boolean b) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public FileStatus[] listStatus(Path path) throws IOException {
+  public FileStatus[] listStatus(final Path path) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void setWorkingDirectory(Path path) {
+  public void setWorkingDirectory(final Path path) {
   }
 
   @Override
@@ -239,42 +244,42 @@ public class CachedHttpFileSystem extends FileSystem {
   }
 
   @Override
-  public boolean mkdirs(Path path, FsPermission fsPermission)
+  public boolean mkdirs(final Path path, final FsPermission fsPermission)
       throws IOException {
     return false;
   }
 
   @Override
-  public FileStatus getFileStatus(Path path) throws IOException {
+  public FileStatus getFileStatus(final Path path) throws IOException {
     return new FileStatus(-1, false, 1, DEFAULT_BLOCK_SIZE, 0, path);
   }
 
   static class HttpDataInputStream extends FilterInputStream
       implements Seekable, PositionedReadable {
 
-    HttpDataInputStream(InputStream in) {
+    HttpDataInputStream(final InputStream in) {
       super(in);
     }
 
     @Override
-    public int read(long position, byte[] buffer, int offset, int length)
+    public int read(final long position, final byte[] buffer, final int offset, final int length)
         throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public void readFully(long position, byte[] buffer, int offset, int length)
+    public void readFully(final long position, final byte[] buffer, final int offset, final int length)
         throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public void readFully(long position, byte[] buffer) throws IOException {
+    public void readFully(final long position, final byte[] buffer) throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public void seek(long pos) throws IOException {
+    public void seek(final long pos) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -284,12 +289,12 @@ public class CachedHttpFileSystem extends FileSystem {
     }
 
     @Override
-    public boolean seekToNewSource(long targetPos) throws IOException {
+    public boolean seekToNewSource(final long targetPos) throws IOException {
       throw new UnsupportedOperationException();
     }
   }
 
-  FSDataInputStream downloadFromOrigin(URI uri) throws IOException {
+  FSDataInputStream downloadFromOrigin(final URI uri) throws IOException {
     URLConnection conn = uri.toURL().openConnection();
     InputStream in = conn.getInputStream();
     return new FSDataInputStream(new HttpDataInputStream(in));

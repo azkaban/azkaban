@@ -183,7 +183,7 @@ public class ArchiveUnthinner {
     return reports;
   }
 
-  private void rewriteStartupDependencies(File startupDependenciesFile, Set<Dependency> finalDependencies) {
+  private void rewriteStartupDependencies(final File startupDependenciesFile, final Set<Dependency> finalDependencies) {
     // Write this list back to the startup-dependencies.json file
     try {
       writeStartupDependencies(startupDependenciesFile, finalDependencies);
@@ -191,7 +191,7 @@ public class ArchiveUnthinner {
       throw new ProjectManagerException("Error while writing new startup-dependencies.json", e);
     }
   }
-  private Set<Dependency> getDependenciesFromSpec(File startupDependenciesFile) {
+  private Set<Dependency> getDependenciesFromSpec(final File startupDependenciesFile) {
     try {
       return parseStartupDependencies(startupDependenciesFile);
     } catch (IOException e) {
@@ -203,8 +203,8 @@ public class ArchiveUnthinner {
     }
   }
 
-  private Map<Dependency, FileValidationStatus> getValidationStatuses(Set<Dependency> deps,
-      String validationKey) {
+  private Map<Dependency, FileValidationStatus> getValidationStatuses(final Set<Dependency> deps,
+      final String validationKey) {
     try {
       return this.jdbcDependencyManager.getValidationStatuses(deps, validationKey);
     } catch (SQLException e) {
@@ -214,15 +214,15 @@ public class ArchiveUnthinner {
     }
   }
 
-  private void updateValidationStatuses(Set<? extends Dependency> untouchedDeps,
-      Set<? extends Dependency> removedDeps, String validationKey) {
+  private void updateValidationStatuses(final Set<? extends Dependency> untouchedDeps,
+      final Set<? extends Dependency> removedDeps, final String validationKey) {
     // untouchedDeps are new dependencies that we have just validated and found to be VALID.
 
     // removedDeps are new dependencies that we have just validated and found to be REMOVED.
     Map<Dependency, FileValidationStatus> depValidationStatuses = new HashMap<>();
     // NOTE: .map(Dependency::makeCopy) is to ensure our map keys are actually of type Dependency not DependencyFile
-    untouchedDeps.stream().map(Dependency::makeCopy).forEach(d -> depValidationStatuses.put(d, FileValidationStatus.VALID));
-    removedDeps.stream().map(Dependency::makeCopy).forEach(d -> depValidationStatuses.put(d, FileValidationStatus.REMOVED));
+    untouchedDeps.stream().map(Dependency::copy).forEach(d -> depValidationStatuses.put(d, FileValidationStatus.VALID));
+    removedDeps.stream().map(Dependency::copy).forEach(d -> depValidationStatuses.put(d, FileValidationStatus.REMOVED));
     try {
       this.jdbcDependencyManager.updateValidationStatuses(depValidationStatuses, validationKey);
     } catch (SQLException e) {
@@ -232,8 +232,8 @@ public class ArchiveUnthinner {
     }
   }
 
-  private Set<DependencyFile> downloadDependencyFiles(File projectFolder,
-      Set<Dependency> toDownload) {
+  private Set<DependencyFile> downloadDependencyFiles(final File projectFolder,
+      final Set<Dependency> toDownload) {
     final Set<DependencyFile> depFiles = toDownload.stream().map(d -> {
       File downloadedJar = new File(projectFolder, d.getDestination() + File.separator + d.getFileName());
       return d.makeDependencyFile(downloadedJar);
@@ -248,8 +248,8 @@ public class ArchiveUnthinner {
     return depFiles;
   }
 
-  private Set<DependencyFile> getDepsFromReports(Map<String, ValidationReport> reports,
-      Map<String, DependencyFile> pathToDep, Function<ValidationReport, Set<File>> fn) {
+  private Set<DependencyFile> getDepsFromReports(final Map<String, ValidationReport> reports,
+      final Map<String, DependencyFile> pathToDep, final Function<ValidationReport, Set<File>> fn) {
     return reports.values()
         .stream()
         .map(fn)
@@ -259,15 +259,15 @@ public class ArchiveUnthinner {
         .collect(Collectors.toSet());
   }
 
-  private Map<String, DependencyFile> getPathToDepFileMap(Set<DependencyFile> depFiles) {
+  private Map<String, DependencyFile> getPathToDepFileMap(final Set<DependencyFile> depFiles) {
     return depFiles
         .stream()
         .collect(Collectors.toMap(d -> FileIOUtils.getCanonicalPath(d.getFile()), e -> e));
   }
 
 
-  private Set<Dependency> filterValidationStatus(Map<Dependency, FileValidationStatus> validationStatuses,
-      FileValidationStatus status) {
+  private Set<Dependency> filterValidationStatus(final Map<Dependency, FileValidationStatus> validationStatuses,
+      final FileValidationStatus status) {
     return validationStatuses
         .keySet()
         .stream()
@@ -275,7 +275,7 @@ public class ArchiveUnthinner {
         .collect(Collectors.toSet());
   }
 
-  private Set<String> getWarningsFromRemovedDeps(Set<? extends Dependency> removedDeps) {
+  private Set<String> getWarningsFromRemovedDeps(final Set<? extends Dependency> removedDeps) {
     return removedDeps
         .stream()
         .map(d -> String.format("Removed blacklisted file %s", d.getFileName()))

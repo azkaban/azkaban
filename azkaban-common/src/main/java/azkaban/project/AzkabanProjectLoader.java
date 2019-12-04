@@ -62,6 +62,8 @@ class AzkabanProjectLoader {
   private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
   private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
+  private static final String TMP_MODIFIED_ZIP_POSTFIX = ".byte-ray.new";
+
   private final Props props;
 
   private final CommonMetrics commonMetrics;
@@ -117,8 +119,10 @@ class AzkabanProjectLoader {
     try {
       folder = unzipProject(archive, fileType);
 
-      File startupDependencies = getStartupDependenciesFile(folder);
-      reports = startupDependencies.exists()
+      final File startupDependencies = getStartupDependenciesFile(folder);
+      final boolean isThinProject = startupDependencies.exists();
+
+      reports = isThinProject
           ? this.archiveUnthinner.validateThinProject(project, folder,
             startupDependencies, additionalProps)
           : this.validatorUtils.validateProject(project, folder, additionalProps);
@@ -138,10 +142,10 @@ class AzkabanProjectLoader {
       }
 
       // Upload the project to DB and storage.
-      File startupDependenciesOrNull = startupDependencies.exists() ? startupDependencies : null;
+      final File startupDependenciesOrNull = isThinProject ? startupDependencies : null;
       persistProject(project, loader, archive, folder, startupDependenciesOrNull, uploader);
 
-      if (startupDependencies.exists()) {
+      if (isThinProject) {
         // Mark that we uploaded a thin zip in the metrics.
         commonMetrics.markUploadThinProject();
       } else {
@@ -160,7 +164,7 @@ class AzkabanProjectLoader {
 
   private void updateProjectZip(final File zipFile, final File folder) {
     try {
-      File newZipFile = new File(zipFile.getAbsolutePath().concat(".byte-ray.new"));
+      File newZipFile = new File(zipFile.getAbsolutePath().concat(TMP_MODIFIED_ZIP_POSTFIX));
       Utils.zipFolderContent(folder, newZipFile);
       FileUtils.deleteQuietly(zipFile);
       FileUtils.moveFile(newZipFile, zipFile);

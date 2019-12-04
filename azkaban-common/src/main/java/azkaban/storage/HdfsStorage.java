@@ -17,10 +17,10 @@
 
 package azkaban.storage;
 
-import static azkaban.utils.StorageUtils.*;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModuleConfig;
+import azkaban.utils.StorageUtils;
 import azkaban.spi.Dependency;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
@@ -75,7 +75,7 @@ public class HdfsStorage implements Storage {
         log.info("Created project dir: " + projectsPath);
       }
       final Path targetPath = new Path(projectsPath,
-          getTargetProjectFilename(metadata.getProjectId(), metadata.getHash()));
+          StorageUtils.getTargetProjectFilename(metadata.getProjectId(), metadata.getHash()));
       if (this.hdfs.exists(targetPath)) {
         log.info(
             String.format("Duplicate Found: meta: %s path: %s", metadata, targetPath));
@@ -125,7 +125,7 @@ public class HdfsStorage implements Storage {
   }
 
   private Path resolveAbsoluteDependencyURI(Dependency dep) {
-    return new Path(this.dependencyRootUri.toString(), getTargetDependencyPath(dep));
+    return new Path(this.dependencyRootUri.toString(), StorageUtils.getTargetDependencyPath(dep));
   }
 
   @Override

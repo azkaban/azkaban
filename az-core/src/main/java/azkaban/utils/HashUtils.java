@@ -55,11 +55,12 @@ public enum HashUtils {
   }
 
   private MessageDigest getDigest() {
-    MessageDigest digest = null;
+    MessageDigest digest;
     try {
       digest = MessageDigest.getInstance(getName());
     } catch (final NoSuchAlgorithmException e) {
       // Should never get here.
+      throw new RuntimeException(e);
     }
     return digest;
   }
@@ -106,15 +107,15 @@ public enum HashUtils {
    * @throws InvalidHashException if the hash is invalid for any of the reasons described above.
    */
   public String sanitizeHashStr(final String raw) throws InvalidHashException {
-    if (!raw.matches("^[a-zA-Z0-9]*$")) {
-      throw new InvalidHashException(
-          String.format("Hash %s has invalid characters. Should be only alphanumeric.", raw));
-    } else if (this == HashUtils.MD5 && raw.length() != MD5_SIZE_BYTES) {
+    if (this == HashUtils.MD5 && raw.length() != MD5_SIZE_BYTES) {
       throw new InvalidHashException(
           String.format("MD5 hash %s has incorrect length %d, expected %d", raw, raw.length(), MD5_SIZE_BYTES));
     } else if (this == HashUtils.SHA1 && raw.length() != SHA1_SIZE_BYTES) {
       throw new InvalidHashException(
           String.format("SHA1 hash %s has incorrect length %d, expected %d", raw, raw.length(), SHA1_SIZE_BYTES));
+    } else if (!raw.matches("^[a-zA-Z0-9]*$")) {
+      throw new InvalidHashException(
+          String.format("Hash %s has invalid characters. Should be only alphanumeric.", raw));
     }
     return raw.toLowerCase();
   }

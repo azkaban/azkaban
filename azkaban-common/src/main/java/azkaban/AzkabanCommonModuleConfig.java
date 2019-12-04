@@ -74,11 +74,14 @@ public class AzkabanCommonModuleConfig {
     return this.hdfsProjectRootUri;
   }
 
-  public URI getCacheDependencyRootUri() { return this.cacheDependencyRootUri; }
+  public URI getCacheDependencyRootUri() {
+    return this.cacheDependencyRootUri;
+  }
 
   public URI getOriginDependencyRootUri() {
     return this.originDependencyRootUri;
   }
 
-  public boolean getDependencyCachingEnabled() { return this.dependencyCachingEnabled; }
+  public boolean getDependencyCachingEnabled() {
+    return this.dependencyCachingEnabled; }
 }

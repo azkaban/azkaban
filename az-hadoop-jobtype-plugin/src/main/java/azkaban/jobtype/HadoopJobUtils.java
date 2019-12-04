@@ -15,8 +15,6 @@
  */
 package azkaban.jobtype;
 
-import azkaban.spi.Storage;
-import azkaban.storage.HdfsStorage;
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.File;

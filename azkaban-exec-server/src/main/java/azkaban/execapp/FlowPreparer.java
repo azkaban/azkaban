@@ -225,9 +225,10 @@ class FlowPreparer {
       Utils.unzip(zip, dest);
 
       // Download all startup dependencies. If this is a fat archive, it will be an empty set (so we won't download
-      // anything). Note that we are getting our list of startup dependencies from the DB, NOT from the startup-dependencies.json
-      // file contained in the archive. Both should be IDENTICAL, however we chose to get the list from the DB
-      // because this will be consistent with how containerized executions determine the startup dependency list.
+      // anything). Note that we are getting our list of startup dependencies from the DB, NOT from the
+      // startup-dependencies.json file contained in the archive. Both should be IDENTICAL, however we chose to get the
+      // list from the DB because this will be consistent with how containerized executions determine the startup
+      // dependency list.
       downloadAllDependencies(proj, execId, dest, projectFileHandler.getStartupDependencies());
 
       proj.setDirSizeInByte(calculateDirSizeAndSave(dest));
@@ -248,7 +249,11 @@ class FlowPreparer {
       final Set<Dependency> dependencies) {
     // Download all of the dependencies from storage
     LOGGER.info("Downloading {} JAR dependencies... Project: {}, ExecId: {}", dependencies.size(), proj, execId);
-    Set<DependencyFile> depFiles = dependencies.stream().map(d -> getDependencyFile(folder, d)).collect(Collectors.toSet());
+    Set<DependencyFile> depFiles = dependencies
+        .stream()
+        .map(d -> getDependencyFile(folder, d))
+        .collect(Collectors.toSet());
+
     try {
       final long start = System.currentTimeMillis();
       this.dependencyTransferManager.downloadAllDependencies(depFiles);

@@ -17,6 +17,7 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
@@ -42,7 +43,6 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.spi.Storage;
-import azkaban.storage.HdfsStorage;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
@@ -55,6 +55,7 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
+import azkaban.utils.ThinArchiveUtils;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import java.io.File;
@@ -85,10 +86,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static azkaban.ServiceProvider.*;
-import static azkaban.utils.ThinArchiveUtils.*;
 import static java.util.Objects.*;
-
 
 /**
  * Execution manager for the server side execution.
@@ -265,7 +263,7 @@ public class FlowRunnerManager implements EventListener,
    */
   private void addStartupDependencyPathToProps(Props props) {
     if (this.storage.getDependencyRootPath() != null) {
-      props.put(DEPENDENCY_STORAGE_ROOT_PATH_PROP, this.storage.getDependencyRootPath());
+      props.put(ThinArchiveUtils.DEPENDENCY_STORAGE_ROOT_PATH_PROP, this.storage.getDependencyRootPath());
     }
   }
 
@@ -1078,8 +1076,8 @@ public class FlowRunnerManager implements EventListener,
   private class PollingCriteria {
 
     private final Props azkabanProps;
-    private final SystemMemoryInfo memInfo = SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
-    private final OsCpuUtil cpuUtil = SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
+    private final SystemMemoryInfo memInfo = ServiceProvider.SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
+    private final OsCpuUtil cpuUtil = ServiceProvider.SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
 
     private boolean areFlowThreadsAvailable;
     private boolean isFreeMemoryAvailable;

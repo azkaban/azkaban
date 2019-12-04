@@ -18,10 +18,7 @@ package azkaban.project;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.spi.Dependency;
-import azkaban.spi.Storage;
 import azkaban.spi.FileValidationStatus;
-import azkaban.utils.HashUtils;
-import azkaban.utils.InvalidHashException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -61,8 +58,8 @@ public class JdbcDependencyManager {
     Map<String, Dependency> hashAndFileNameToDep = new HashMap<>();
 
     PreparedStatement stmnt = this.dbOperator.getDataSource().getConnection().prepareStatement(
-        String.format("select file_name, file_sha1, validation_status from validated_dependencies "
-            + "where validation_key = ? and (%s)", makeStrWithQuestionMarks(deps.size())));
+        String.format("SELECT file_name, file_sha1, validation_status FROM validated_dependencies "
+            + "WHERE validation_key = ? AND (%s)", makeStrWithQuestionMarks(deps.size())));
 
     // Set the first param, which is the validation_key
     stmnt.setString(1, validationKey);
@@ -108,8 +105,8 @@ public class JdbcDependencyManager {
     // and written the row for a given dependency before we were able to (resulting in a duplicate primary key
     // error when we try to write the row), so this will ignore the error and continue persisting the other
     // dependencies.
-    this.dbOperator.batch("insert ignore into validated_dependencies "
-      + "(file_name, file_sha1, validation_key, validation_status) values (?, ?, ?, ?)", rowsToInsert);
+    this.dbOperator.batch("INSERT IGNORE INTO validated_dependencies "
+      + "(file_name, file_sha1, validation_key, validation_status) VALUES (?, ?, ?, ?)", rowsToInsert);
   }
 
   private static String makeStrWithQuestionMarks(final int num) {

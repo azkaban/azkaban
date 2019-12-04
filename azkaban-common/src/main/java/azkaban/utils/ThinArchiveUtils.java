@@ -146,7 +146,8 @@ public class ThinArchiveUtils {
       return localAndRemoteJarSpec;
     } catch (IOException | InvalidHashException e) {
       // If something goes wrong, swallow the error and just return the original string.
-      log.warn("Error while opening and parsing startup dependencies file " + startupDependenciesFile.getAbsolutePath());
+      log.warn("Error while opening and parsing startup dependencies file "
+          + startupDependenciesFile.getAbsolutePath());
       return localJarSpec;
     }
   }

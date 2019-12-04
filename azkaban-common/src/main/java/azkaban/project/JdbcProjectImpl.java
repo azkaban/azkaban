@@ -310,8 +310,8 @@ public class JdbcProjectImpl implements ProjectLoader {
       final String resourceId) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
-        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id, startup_dependencies) values "
-        + "(?,?,?,?,?,?,?,?,?,?)";
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id, "
+        + "startup_dependencies) values (?,?,?,?,?,?,?,?,?,?)";
 
     try {
       /*

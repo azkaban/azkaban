@@ -44,8 +44,9 @@ public class Dependency {
     this.sha1 = HashUtils.SHA1.sanitizeHashStr(sha1);
   }
 
-  public Dependency(final Map<String, String> m) throws InvalidHashException {
-    this(m.get("file"), m.get("destination"), m.get("type"), m.get("ivyCoordinates"), m.get("sha1"));
+  public Dependency(final Map<String, String> fieldMap) throws InvalidHashException {
+    this(fieldMap.get("file"), fieldMap.get("destination"), fieldMap.get("type"), fieldMap.get("ivyCoordinates"),
+        fieldMap.get("sha1"));
   }
 
   /**
@@ -53,7 +54,7 @@ public class Dependency {
    *
    * @return a copy of this dependency
    */
-  public Dependency makeCopy() {
+  public Dependency copy() {
     try {
       return new Dependency(getFileName(), getDestination(), getType(), getIvyCoordinates(), getSHA1());
     } catch (InvalidHashException e) {
@@ -65,12 +66,12 @@ public class Dependency {
   /**
    * Make a new DependencyFile with the same details as this dependency
    *
-   * @param f file for DependencyFile
+   * @param file for DependencyFile
    * @return the new DependencyFile
    */
-  public DependencyFile makeDependencyFile(final File f) {
+  public DependencyFile makeDependencyFile(final File file) {
     try {
-      return new DependencyFile(f, getFileName(), getDestination(), getType(), getIvyCoordinates(), getSHA1());
+      return new DependencyFile(file, getFileName(), getDestination(), getType(), getIvyCoordinates(), getSHA1());
     } catch (InvalidHashException e) {
       // This should never happen because we already validated the hash when creating this dependency
       throw new RuntimeException("InvalidHashException when copying dependency.");
@@ -81,12 +82,12 @@ public class Dependency {
   // spec we expect the property to be "file" not "fileName" so we have to annotate this to tell the JSON serializer
   // to insert it with "file", instead of assuming the name based on the name of the getter like it usually does.
   @JsonProperty("file")
-  public String getFileName() { return fileName; }
+  public String getFileName() { return this.fileName; }
 
-  public String getDestination() { return destination; }
-  public String getType() { return type; }
-  public String getIvyCoordinates() { return ivyCoordinates; }
-  public String getSHA1() { return sha1; }
+  public String getDestination() { return this.destination; }
+  public String getType() { return this.type; }
+  public String getIvyCoordinates() { return this.ivyCoordinates; }
+  public String getSHA1() { return this.sha1; }
 
   @Override
   public boolean equals(final Object o) {
@@ -97,12 +98,12 @@ public class Dependency {
       return false;
     }
     Dependency that = (Dependency) o;
-    return fileName.equals(that.fileName) && type.equals(that.type) && ivyCoordinates.equals(that.ivyCoordinates)
-        && sha1.equals(that.sha1);
+    return this.fileName.equals(that.fileName) && this.type.equals(that.type) && this.ivyCoordinates.equals(that.ivyCoordinates)
+        && this.sha1.equals(that.sha1);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(sha1);
+    return Objects.hash(this.sha1);
   }
 }

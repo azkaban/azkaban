@@ -33,7 +33,7 @@ import org.apache.commons.io.IOUtils;
 import static azkaban.utils.ThinArchiveUtils.*;
 
 /**
- * handles downloading of dependencies. Used during the thin archive upload process, and upon starting the execution
+ * Handles downloading of dependencies. Used during the thin archive upload process, and upon starting the execution
  * of a flow defined in a thin archive (to download necessary dependencies). Provides a thin layer of retry logic,
  * checksum validation and parallelism on top of the base Storage::getDependency().
  */
@@ -49,7 +49,8 @@ public class DependencyTransferManager {
   public DependencyTransferManager(final Props props, final Storage storage) {
     this.storage = storage;
 
-    this.dependencyMaxDownloadTries = props.getInt(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, 2);
+    this.dependencyMaxDownloadTries =
+        props.getInt(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, 2);
   }
 
   /**

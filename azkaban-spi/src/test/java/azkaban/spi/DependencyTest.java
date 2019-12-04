@@ -42,7 +42,7 @@ public class DependencyTest {
   @Test
   public void testCopyDependency() throws Exception {
     Dependency depA = ThinArchiveTestUtils.getDepA();
-    Dependency newDep = depA.makeCopy();
+    Dependency newDep = depA.copy();
 
     assertEquals(depA, newDep);
   }
@@ -53,7 +53,7 @@ public class DependencyTest {
     File file = TEMP_DIR.newFile(depA.getFileName());
     DependencyFile depFile = depA.makeDependencyFile(file);
 
-    assertEquals(depA, depFile.makeCopy());
+    assertEquals(depA, depFile.copy());
     assertEquals(depFile.getFile(), file);
   }
 
