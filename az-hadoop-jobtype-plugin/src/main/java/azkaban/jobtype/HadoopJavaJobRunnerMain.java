@@ -18,6 +18,7 @@ package azkaban.jobtype;
 import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_BINARY;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
+import azkaban.Constants;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -148,8 +149,13 @@ public class HadoopJavaJobRunnerMain {
           for (Token<?> token : loginUser.getTokens()) {
             proxyUser.addToken(token);
           }
+          proxyUser.addCredentials(loginUser.getCredentials());
         } else {
           proxyUser = UserGroupInformation.createRemoteUser(userToProxy);
+
+          if (props.getProperty(Constants.JobProperties.ENABLE_OAUTH, "false").equals("true")) {
+            proxyUser.addCredentials(UserGroupInformation.getLoginUser().getCredentials());
+          }
         }
         _logger.info("Proxied as user " + userToProxy);
       }
