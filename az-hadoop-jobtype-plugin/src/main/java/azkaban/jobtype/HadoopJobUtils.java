@@ -82,6 +82,8 @@ public class HadoopJobUtils {
   public static final String MAPREDUCE_JOB_OTHER_NAMENODES = "mapreduce.job.hdfs-servers";
   // MapReduce config for mapreduce job tags
   public static final String MAPREDUCE_JOB_TAGS = "mapreduce.job.tags";
+  // Root of folder in storage containing startup dependencies
+  public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
   // Azkaban property for listing additional namenodes for delegation tokens
   private static final String OTHER_NAMENODES_PROPERTY = "other_namenodes";
 

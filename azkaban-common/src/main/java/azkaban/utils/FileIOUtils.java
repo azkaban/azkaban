@@ -199,6 +199,20 @@ public class FileIOUtils {
   }
 
   /**
+   * A thin wrapper for File.getCanonicalPath() that doesn't throw a checked exception
+   *
+   * @param file input file
+   * @return String canonical path of the file
+   */
+  public static String getCanonicalPath(final File f) {
+    try {
+      return f.getCanonicalPath();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
    * Load output file into a Props object
    *
    * @param file output properties file

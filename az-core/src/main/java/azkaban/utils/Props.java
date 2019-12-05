@@ -625,13 +625,22 @@ public class Props {
   }
 
   /**
-   * Returns the uri representation of the value. If the value is null, then the default value is
-   * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
+   * Returns the uri representation of the value. If the value is null, then an
+   * UndefinedPropertyException will be thrown. If the value isn't a uri, then an
+   * IllegalArgumentException will be thrown.
+   *
+   * If addTrailingSlash is true and the value isn't null, a trailing forward slash will be added
+   * to the URI.
    */
-  public URI getUri(final String name) {
+  public URI getUri(final String name) { return getUri(name, false); }
+  public URI getUri(final String name, final Boolean addTrailingSlash) {
     if (containsKey(name)) {
       try {
-        return new URI(get(name));
+        String rawValue = get(name);
+        if (rawValue == null) return null;
+
+        String finalValue = !addTrailingSlash || rawValue.endsWith("/") ? rawValue : rawValue + "/";
+        return new URI(finalValue);
       } catch (final URISyntaxException e) {
         throw new IllegalArgumentException(e.getMessage());
       }
@@ -644,10 +653,14 @@ public class Props {
   /**
    * Returns the double representation of the value. If the value is null, then the default value is
    * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
+   *
+   * If addTrailingSlash is true and the value isn't null, a trailing forward slash will be added
+   * to the URI.
    */
-  public URI getUri(final String name, final URI defaultValue) {
+  public URI getUri(final String name, final URI defaultValue) { return getUri(name, defaultValue, false); }
+  public URI getUri(final String name, final URI defaultValue, final Boolean addTrailingSlash) {
     if (containsKey(name)) {
-      return getUri(name);
+      return getUri(name, addTrailingSlash);
     } else {
       return defaultValue;
     }

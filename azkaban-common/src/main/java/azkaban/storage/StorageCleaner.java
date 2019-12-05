@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
@@ -89,7 +88,7 @@ public class StorageCleaner {
    * Since multiple versions can share the same filename, the algo is to collect all filenames and
    * from them, remove the latest ones. The remaining ones are deleted by the respective storage.
    *
-   * From the storage perspective, cleanup just needs the {@link Storage#delete(String)} API to
+   * From the storage perspective, cleanup just needs the {@link Storage#deleteProject(String)} API to
    * work.
    *
    * Failure cases: - If the storage cleanup fails, the cleanup will be attempted again on the next
@@ -147,7 +146,7 @@ public class StorageCleaner {
    * @return true if deletion was successful. false otherwise
    */
   private boolean delete(final String resourceId) {
-    final boolean isDeleted = this.storage.delete(resourceId) && removeDbEntry(resourceId);
+    final boolean isDeleted = this.storage.deleteProject(resourceId) && removeDbEntry(resourceId);
     if (!isDeleted) {
       log.info("Failed to delete resourceId: " + resourceId);
     }

@@ -15,11 +15,9 @@
  */
 package azkaban.execapp;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static java.util.Objects.requireNonNull;
-
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
@@ -44,7 +42,9 @@ import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
-import azkaban.storage.StorageManager;
+import azkaban.spi.Storage;
+import azkaban.storage.ProjectStorageManager;
+import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
@@ -55,6 +55,7 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
+import azkaban.utils.ThinArchiveUtils;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import java.io.File;
@@ -85,6 +86,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Objects.*;
 
 /**
  * Execution manager for the server side execution.
@@ -145,6 +147,8 @@ public class FlowRunnerManager implements EventListener,
   private final Object executionDirDeletionSync = new Object();
   private final CommonMetrics commonMetrics;
   private final ExecMetrics execMetrics;
+  private final DependencyTransferManager dependencyTransferManager;
+  private final Storage storage;
 
   private final int numThreads;
   private final int numJobThreadPerFlow;
@@ -166,12 +170,14 @@ public class FlowRunnerManager implements EventListener,
   public FlowRunnerManager(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
-      final StorageManager storageManager,
+      final ProjectStorageManager projectStorageManager,
       final TriggerManager triggerManager,
       final FlowRampManager flowRampManager,
       final AlerterHolder alerterHolder,
       final CommonMetrics commonMetrics,
       final ExecMetrics execMetrics,
+      final DependencyTransferManager dependencyTransferManager,
+      final Storage storage,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -198,6 +204,8 @@ public class FlowRunnerManager implements EventListener,
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.execMetrics = execMetrics;
+    this.dependencyTransferManager = dependencyTransferManager;
+    this.storage = storage;
 
     this.flowRampManager = flowRampManager;
 
@@ -210,6 +218,9 @@ public class FlowRunnerManager implements EventListener,
     if (globalPropsPath != null) {
       this.globalProps = new Props(null, globalPropsPath);
     }
+
+    // Add dependency root path to globalProps
+    addStartupDependencyPathToProps(this.globalProps);
 
     this.jobtypeManager =
         new JobTypeManager(
@@ -226,8 +237,8 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(storageManager, this.executionDirectory,
-        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio());
+    this.flowPreparer = new FlowPreparer(projectStorageManager, this.dependencyTransferManager, this.projectDirectory, cleaner,
+        this.execMetrics.getProjectCacheHitRatio(), this.executionDirectory);
 
     this.execMetrics.addFlowRunnerManagerMetrics(this);
 
@@ -241,6 +252,18 @@ public class FlowRunnerManager implements EventListener,
               Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS),
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
+    }
+  }
+
+  /**
+   * Add the startup dependency path to props if the current storage instance returns a non-null
+   * dependencyRootPath.
+   *
+   * @param props Props to add the startup dependency path to.
+   */
+  private void addStartupDependencyPathToProps(Props props) {
+    if (this.storage.getDependencyRootPath() != null) {
+      props.put(ThinArchiveUtils.DEPENDENCY_STORAGE_ROOT_PATH_PROP, this.storage.getDependencyRootPath());
     }
   }
 
@@ -1053,8 +1076,8 @@ public class FlowRunnerManager implements EventListener,
   private class PollingCriteria {
 
     private final Props azkabanProps;
-    private final SystemMemoryInfo memInfo = SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
-    private final OsCpuUtil cpuUtil = SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
+    private final SystemMemoryInfo memInfo = ServiceProvider.SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
+    private final OsCpuUtil cpuUtil = ServiceProvider.SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
 
     private boolean areFlowThreadsAvailable;
     private boolean isFreeMemoryAvailable;

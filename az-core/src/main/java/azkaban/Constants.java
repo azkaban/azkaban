@@ -211,10 +211,17 @@ public class Constants {
     // if not set or <= 0, then there's no restriction on running time.
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
 
+    // Maximum number of tries to download a dependency (no more retry attempts will be made after this many download failures)
+    public static final String AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES = "azkaban.dependency.max.download.tries";
+
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
     public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
     public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";
-    public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
+    // This really should be azkaban.storage.hdfs.project_root.uri
+    public static final String AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI = "azkaban.storage.hdfs.root.uri";
+    public static final String AZKABAN_STORAGE_CACHE_DEPENDENCY_ENABLED = "azkaban.storage.cache.dependency.enabled";
+    public static final String AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI = "azkaban.storage.cache.dependency_root.uri";
+    public static final String AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI = "azkaban.storage.origin.dependency_root.uri";
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";

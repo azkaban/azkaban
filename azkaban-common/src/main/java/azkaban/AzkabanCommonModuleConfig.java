@@ -17,9 +17,7 @@
 
 package azkaban;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_ROOT_URI;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE;
+import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.storage.StorageImplementationType.DATABASE;
 
 import azkaban.storage.StorageImplementationType;
@@ -34,7 +32,10 @@ public class AzkabanCommonModuleConfig {
   private static final Logger log = Logger.getLogger(AzkabanCommonModuleConfig.class);
 
   private final Props props;
-  private final URI hdfsRootUri;
+  private final URI hdfsProjectRootUri;
+  private final URI cacheDependencyRootUri;
+  private final URI originDependencyRootUri;
+  private final boolean dependencyCachingEnabled;
   /**
    * Storage Implementation This can be any of the {@link StorageImplementationType} values in which
    * case {@link StorageFactory} will create the appropriate storage instance. Or one can feed in a
@@ -43,17 +44,18 @@ public class AzkabanCommonModuleConfig {
    * examples: LOCAL, DATABASE, azkaban.storage.MyFavStorage
    */
   private String storageImplementation = DATABASE.name();
-  private String localStorageBaseDirPath = "LOCAL_STORAGE";
+  private String localStorageBaseDirPath = "./local/storage";
 
   @Inject
   public AzkabanCommonModuleConfig(final Props props) {
     this.props = props;
 
     this.storageImplementation = props.getString(AZKABAN_STORAGE_TYPE, this.storageImplementation);
-    this.localStorageBaseDirPath = props
-        .getString(AZKABAN_STORAGE_LOCAL_BASEDIR, this.localStorageBaseDirPath);
-    this.hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props
-        .getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
+    this.localStorageBaseDirPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIR, this.localStorageBaseDirPath);
+    this.hdfsProjectRootUri = props.getUri(AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI, null, true);
+    this.cacheDependencyRootUri = props.getUri(AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI, null, true);
+    this.originDependencyRootUri = props.getUri(AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, null, true);
+    this.dependencyCachingEnabled = props.getBoolean(AZKABAN_STORAGE_CACHE_DEPENDENCY_ENABLED, true);
   }
 
   public Props getProps() {
@@ -68,7 +70,18 @@ public class AzkabanCommonModuleConfig {
     return this.localStorageBaseDirPath;
   }
 
-  public URI getHdfsRootUri() {
-    return this.hdfsRootUri;
+  public URI getHdfsProjectRootUri() {
+    return this.hdfsProjectRootUri;
   }
+
+  public URI getCacheDependencyRootUri() {
+    return this.cacheDependencyRootUri;
+  }
+
+  public URI getOriginDependencyRootUri() {
+    return this.originDependencyRootUri;
+  }
+
+  public boolean getDependencyCachingEnabled() {
+    return this.dependencyCachingEnabled; }
 }

@@ -23,9 +23,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
-import azkaban.project.validator.ValidatorConfigs;
-import azkaban.project.validator.XmlValidatorManager;
-import azkaban.storage.StorageManager;
+import azkaban.storage.ProjectStorageManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -68,7 +66,7 @@ public class ProjectManager {
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
-      final StorageManager storageManager,
+      final ProjectStorageManager projectStorageManager,
       final Props props) {
     this.projectLoader = requireNonNull(loader);
     this.props = requireNonNull(props);
@@ -77,15 +75,6 @@ public class ProjectManager {
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
 
-    // The prop passed to XmlValidatorManager is used to initialize all the
-    // validators
-    // Each validator will take certain key/value pairs from the prop to
-    // initialize itself.
-    final Props prop = new Props(props);
-    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
-    // By instantiating an object of XmlValidatorManager, this will verify the
-    // config files for the validators.
-    new XmlValidatorManager(prop);
     loadAllProjects();
     logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
