@@ -23,7 +23,6 @@ buildscript {
   dependencies {
     classpath 'com.cinnober.gradle:semver-git:2.2.3'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.14'
-    classpath  'com.github.jengelman.gradle.plugins:shadow:4.0.0'
   }
 }
 
@@ -131,7 +130,6 @@ ext.deps = [
 subprojects {
   apply plugin: 'java'
   apply plugin: 'net.ltgt.errorprone'
-  apply plugin: 'maven-publish'
 
   // Set the same version for all sub-projects to root project version
   version = rootProject.version
@@ -201,30 +199,6 @@ subprojects {
    * Terminate compilation if warnings occur.*/
   tasks.withType(JavaCompile) {
     options.compilerArgs += ["-Werror"]
-  }
-
-  /**
-   * Set up for publishing to maven local
-   */
-
-  task sourcesJar(type: Jar) {
-    classifier 'sources'
-    from sourceSets.main.allSource
-  }
-
-  artifacts {
-    archives sourcesJar
-  }
-
-  publishing {
-    publications {
-      mavenJava(MavenPublication) {
-        from components.java
-        artifact sourcesJar
-
-        groupId    "com.linkedin.azkaban"
-      }
-    }
   }
 
 
