@@ -3,9 +3,9 @@
 set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
 
-source "$(dirname $0)/util.sh"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-installdir="$(dirname $0)/../.."
+installdir="$DIR/../.."
 currentpidfile="${installdir}/currentpid"
 
 if [[ -f "$currentpidfile" ]] ; then
@@ -51,7 +51,7 @@ CLASSPATH=${CLASSPATH:-""}  # Needed for set -o nounset above
 echo "CLASSPATH: ${CLASSPATH}";
 
 executorport=$(grep executor.port "${conf}/azkaban.properties" | cut -d = -f 2)
-serverpath=$(pwd)
+serverpath=$DIR
 
 AZKABAN_OPTS=" -Xmx512M -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
     -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
@@ -61,6 +61,8 @@ if [[ -f "${conf}/log4j.properties" ]]; then
   AZKABAN_OPTS="${AZKABAN_OPTS:- } -Dlog4j.configuration=file:${conf}/log4j.properties \
       -Dlog4j.log.dir=${installdir}/logs"
 fi
+
+cd "$installdir"
 
 java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} $@ &
 

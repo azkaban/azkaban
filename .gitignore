@@ -1,4 +1,6 @@
 
+*.db
+*.out
 *.swp
 .classpath
 .gradle/
