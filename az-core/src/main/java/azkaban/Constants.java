@@ -263,6 +263,8 @@ public class Constants {
 
     public static final String OAUTH_CREDENTIAL_NAME = "azkaban.oauth.credential";
 
+    public static final String SECURITY_USER_GROUP = "azkaban.security.user.group";
+
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
 

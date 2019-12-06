@@ -87,14 +87,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   /**
-   * TODO: This should be exposed as a configurable parameter
-   *
-   * The assumption is that an "azkaban" group exists which has access to data created by the
-   * azkaban process. For example, this may include delegation tokens created for other users to run
-   * their jobs.
-   */
-  public static final String GROUP_NAME = "azkaban";
-  /**
    * The Kerberos principal for the job tracker.
    */
   public static final String JT_PRINCIPAL = JTConfig.JT_USER_NAME;
@@ -518,7 +510,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       });
 
       logger.info("Preparing token file " + tokenFile.getAbsolutePath());
-      prepareTokenFile(userToProxy, cred, tokenFile, logger);
+      prepareTokenFile(userToProxy, cred, tokenFile, logger,
+          props.getString(Constants.ConfigurationKeys.SECURITY_USER_GROUP, "azkaban"));
       // stash them to cancel after use.
 
       logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
@@ -700,15 +693,17 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * @param credentials Credentials to be written to file
    * @param tokenFile file to be written
    * @param logger logger to use
+   * @param group user group to own the token file
    * @throws IOException If there are issues in reading / updating the token file
    */
   private void prepareTokenFile(final String user,
       final Credentials credentials,
       final File tokenFile,
-      final Logger logger) throws IOException {
+      final Logger logger,
+      final String group) throws IOException {
     writeCredentialsToFile(credentials, tokenFile, logger);
     try {
-      assignPermissions(user, tokenFile, logger);
+      assignPermissions(user, tokenFile, group);
     } catch (final IOException e) {
       // On any error managing token file. delete the file
       tokenFile.delete();
@@ -748,9 +743,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    *
    * @param user user to be proxied
    * @param tokenFile file to be written
-   * @param logger logger to use
+   * @param group user group to own the token file
    */
-  private void assignPermissions(final String user, final File tokenFile, final Logger logger)
+  private void assignPermissions(final String user, final File tokenFile, final String group)
       throws IOException {
     final List<String> changePermissionsCommand = Arrays.asList(
         CHMOD, TOKEN_FILE_PERMISSIONS, tokenFile.getAbsolutePath()
@@ -762,7 +757,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
 
     final List<String> changeOwnershipCommand = Arrays.asList(
-        CHOWN, user + ":" + GROUP_NAME, tokenFile.getAbsolutePath()
+        CHOWN, user + ":" + group, tokenFile.getAbsolutePath()
     );
     result = this.executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {
