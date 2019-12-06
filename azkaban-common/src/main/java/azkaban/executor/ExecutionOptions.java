@@ -20,6 +20,7 @@ import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
 import com.google.gson.GsonBuilder;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +31,9 @@ import java.util.Map;
 /**
  * Execution options for submitted flows and scheduled flows
  */
-public class ExecutionOptions {
+public class ExecutionOptions implements Serializable {
+
+  private static final long serialVersionUID = 1056904851937895752L;
 
   public static final String CONCURRENT_OPTION_SKIP = "skip";
   public static final String CONCURRENT_OPTION_PIPELINE = "pipeline";
@@ -253,9 +256,13 @@ public class ExecutionOptions {
     this.memoryCheck = memoryCheck;
   }
 
-  public List<SlaOption> getSlaOptions() { return slaOptions; }
+  public List<SlaOption> getSlaOptions() {
+    return this.slaOptions;
+  }
 
-  public void setSlaOptions(final List<SlaOption> slaOptions) { this.slaOptions = slaOptions; }
+  public void setSlaOptions(final List<SlaOption> slaOptions) {
+    this.slaOptions = slaOptions;
+  }
 
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();

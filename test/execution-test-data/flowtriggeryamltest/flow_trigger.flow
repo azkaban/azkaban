@@ -23,6 +23,10 @@ trigger:
         delay: 1
         window: 7
 
+  executionOptions:
+    concurrentOption: pipeline
+    pipelineLevel: 2
+
 # All flow level properties here
 config:
   flow-level-parameter: value

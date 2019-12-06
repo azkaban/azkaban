@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowTriggerProps;
+import azkaban.executor.ExecutionOptions;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import java.io.File;
@@ -202,11 +203,14 @@ public class NodeBeanLoader {
       final Duration duration = flowTriggerBean.getMaxWaitMins() == null ? null : Duration
           .ofMinutes(flowTriggerBean.getMaxWaitMins());
 
+      final ExecutionOptions executionOptions =
+          ExecutionOptions.createFromObject(flowTriggerBean.getExecutionOptions());
+
       return new FlowTrigger(
           new CronSchedule(flowTriggerBean.getSchedule().get(FlowTriggerProps.SCHEDULE_VALUE)),
           flowTriggerBean.getTriggerDependencies().stream()
               .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
-              .collect(Collectors.toList()), duration);
+              .collect(Collectors.toList()), duration, executionOptions);
     }
   }
 

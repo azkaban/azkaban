@@ -20,6 +20,7 @@ package azkaban.project;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import azkaban.executor.ExecutionOptions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,16 +61,22 @@ public class FlowTriggerTest {
     final Duration validDuration = Duration.ofMinutes(10);
     final Duration nullDuration = null;
 
-    assertThatThrownBy(() -> new FlowTrigger(nullSchedule, nonEmptyDependencyList, validDuration))
+    final ExecutionOptions nullExecutionOptions = null;
+
+    assertThatThrownBy(() -> new FlowTrigger(nullSchedule, nonEmptyDependencyList, validDuration,
+        nullExecutionOptions))
         .isInstanceOf(NullPointerException.class);
 
-    assertThatThrownBy(() -> new FlowTrigger(validSchedule, nullDependencyList, validDuration))
+    assertThatThrownBy(() -> new FlowTrigger(validSchedule, nullDependencyList, validDuration,
+        nullExecutionOptions))
         .isInstanceOf(NullPointerException.class);
 
-    assertThatThrownBy(() -> new FlowTrigger(validSchedule, nonEmptyDependencyList, nullDuration))
+    assertThatThrownBy(() -> new FlowTrigger(validSchedule, nonEmptyDependencyList, nullDuration,
+        nullExecutionOptions))
         .isInstanceOf(IllegalArgumentException.class);
 
-    assertThatCode(() -> new FlowTrigger(validSchedule, emptyDependencyList, nullDuration))
+    assertThatCode(() -> new FlowTrigger(validSchedule, emptyDependencyList, nullDuration,
+        nullExecutionOptions))
         .doesNotThrowAnyException();
   }
 
@@ -82,7 +89,8 @@ public class FlowTriggerTest {
     dependencyList.add(dep);
     dependencyList.add(dep);
 
-    assertThatThrownBy(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10)))
+    assertThatThrownBy(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10),
+        null))
         .isInstanceOf
             (IllegalArgumentException
                 .class)
@@ -99,7 +107,8 @@ public class FlowTriggerTest {
     dependencyList.add(dep1);
     dependencyList.add(dep2);
 
-    assertThatThrownBy(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10)))
+    assertThatThrownBy(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10),
+        null))
         .isInstanceOf
             (IllegalArgumentException
                 .class)
