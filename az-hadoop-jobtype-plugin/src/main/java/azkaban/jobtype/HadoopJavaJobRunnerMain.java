@@ -93,7 +93,8 @@ public class HadoopJavaJobRunnerMain {
 
     try {
       _jobName = System.getenv(ProcessJob.JOB_NAME_ENV);
-      String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
+      String jobPropsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
+      String sysPropsFile = System.getenv(ProcessJob.JOB_SYS_PROP_ENV);
 
       _logger = Logger.getRootLogger();
       _logger.removeAllAppenders();
@@ -102,14 +103,20 @@ public class HadoopJavaJobRunnerMain {
       _logger.addAppender(appender);
       _logger.setLevel(Level.INFO); //Explicitly setting level to INFO
 
-      Properties props = new Properties();
-//      props.load(new BufferedReader(new FileReader(propsFile)));
+      Properties jobProps = new Properties(), sysProps = new Properties();
 
       BufferedReader br = new BufferedReader(new InputStreamReader(
-          new FileInputStream(propsFile), StandardCharsets.UTF_8));
-      props.load(br);
+          new FileInputStream(jobPropsFile), StandardCharsets.UTF_8));
+      jobProps.load(br);
 
-      HadoopConfigurationInjector.injectResources(new Props(null, props));
+      HadoopConfigurationInjector.injectResources(new Props(null, jobProps));
+      if (sysPropsFile != null) {
+        br = new BufferedReader(new InputStreamReader(
+            new FileInputStream(sysPropsFile), StandardCharsets.UTF_8));
+        sysProps.load(br);
+
+        HadoopConfigurationInjector.injectResources(new Props(null, sysProps));
+      }
 
       final Configuration conf = new Configuration();
 
@@ -117,7 +124,7 @@ public class HadoopJavaJobRunnerMain {
       securityEnabled = UserGroupInformation.isSecurityEnabled();
 
       _logger.info("Running job " + _jobName);
-      String className = props.getProperty(JOB_CLASS);
+      String className = jobProps.getProperty(JOB_CLASS);
       if (className == null) {
         throw new Exception("Class name is not set.");
       }
@@ -126,8 +133,8 @@ public class HadoopJavaJobRunnerMain {
       UserGroupInformation loginUser = null;
       UserGroupInformation proxyUser = null;
 
-      if (shouldProxy(props)) {
-        String userToProxy = props.getProperty("user.to.proxy");
+      if (shouldProxy(jobProps)) {
+        String userToProxy = jobProps.getProperty("user.to.proxy");
         if (securityEnabled) {
           String filelocation = System.getenv(HADOOP_TOKEN_FILE_LOCATION);
           _logger.info("Found token file " + filelocation);
@@ -153,19 +160,17 @@ public class HadoopJavaJobRunnerMain {
         } else {
           proxyUser = UserGroupInformation.createRemoteUser(userToProxy);
 
-          if (props.getProperty(Constants.JobProperties.ENABLE_OAUTH, "false").equals("true")) {
+          if (jobProps.getProperty(Constants.JobProperties.ENABLE_OAUTH, "false").equals("true")) {
             proxyUser.addCredentials(UserGroupInformation.getLoginUser().getCredentials());
           }
         }
         _logger.info("Proxied as user " + userToProxy);
-      }
-
-      // Create the object using proxy
-      if (shouldProxy(props)) {
+        // Create the object using proxy
         _javaObject =
-            getObjectAsProxyUser(props, _logger, _jobName, className, proxyUser);
+            getObjectAsProxyUser(jobProps, sysProps, _logger, _jobName, className, proxyUser);
       } else {
-        _javaObject = getObject(_jobName, className, props, _logger);
+        // Create the object
+        _javaObject = getObject(_jobName, className, jobProps, sysProps, _logger);
       }
 
       if (_javaObject == null) {
@@ -175,14 +180,14 @@ public class HadoopJavaJobRunnerMain {
       _logger.info("Got object " + _javaObject.toString());
 
       _cancelMethod =
-          props.getProperty(CANCEL_METHOD_PARAM, DEFAULT_CANCEL_METHOD);
+          jobProps.getProperty(CANCEL_METHOD_PARAM, DEFAULT_CANCEL_METHOD);
 
       final String runMethod =
-          props.getProperty(RUN_METHOD_PARAM, DEFAULT_RUN_METHOD);
+          jobProps.getProperty(RUN_METHOD_PARAM, DEFAULT_RUN_METHOD);
 
-      if (shouldProxy(props)) {
+      if (shouldProxy(jobProps)) {
         _logger.info("Proxying enabled.");
-        runMethodAsUser(props, _javaObject, runMethod, proxyUser);
+        runMethodAsUser(_javaObject, runMethod, proxyUser);
       } else {
         _logger.info("Proxy check failed, not proxying run.");
         runMethod(_javaObject, runMethod);
@@ -226,22 +231,19 @@ public class HadoopJavaJobRunnerMain {
     }
   }
 
-  private void runMethodAsUser(Properties props, final Object obj,
-      final String runMethod, final UserGroupInformation ugi)
+  private void runMethodAsUser(final Object obj, final String runMethod,
+      final UserGroupInformation ugi)
       throws IOException, InterruptedException, UndeclaredThrowableException {
-    ugi.doAs(new PrivilegedExceptionAction<Void>() {
-      @Override
-      public Void run() throws Exception {
+    ugi.doAs((PrivilegedExceptionAction<Void>) () -> {
 
-        Configuration conf = new Configuration();
-        if (System.getenv(HADOOP_TOKEN_FILE_LOCATION) != null) {
-          conf.set(MAPREDUCE_JOB_CREDENTIALS_BINARY,
-              System.getenv(HADOOP_TOKEN_FILE_LOCATION));
-        }
-
-        runMethod(obj, runMethod);
-        return null;
+      Configuration conf = new Configuration();
+      if (System.getenv(HADOOP_TOKEN_FILE_LOCATION) != null) {
+        conf.set(MAPREDUCE_JOB_CREDENTIALS_BINARY,
+            System.getenv(HADOOP_TOKEN_FILE_LOCATION));
       }
+
+      runMethod(obj, runMethod);
+      return null;
     });
   }
 
@@ -313,9 +315,7 @@ public class HadoopJavaJobRunnerMain {
         try {
           method.invoke(_javaObject);
         } catch (Exception e) {
-          if (_logger != null) {
-            _logger.error("Cancel method failed! ", e);
-          }
+          _logger.error("Cancel method failed! ", e);
         }
       } else {
         throw new RuntimeException("Job " + _jobName
@@ -324,22 +324,18 @@ public class HadoopJavaJobRunnerMain {
     }
   }
 
-  private static Object getObjectAsProxyUser(final Properties prop,
-      final Logger logger, final String jobName, final String className,
-      final UserGroupInformation ugi) throws Exception {
-
-    Object obj = ugi.doAs(new PrivilegedExceptionAction<Object>() {
-      @Override
-      public Object run() throws Exception {
-        return getObject(jobName, className, prop, logger);
-      }
-    });
-
-    return obj;
+  private static Object getObjectAsProxyUser(final Properties jobProp,
+      final Properties sysProp, final Logger logger, final String jobName,
+      final String className, final UserGroupInformation ugi)
+      throws Exception {
+    return ugi.doAs(
+        (PrivilegedExceptionAction<Object>) () ->
+            getObject(jobName, className, jobProp, sysProp, logger));
   }
 
-  private static Object getObject(String jobName, String className,
-      Properties properties, Logger logger) throws Exception {
+  private static Object getObject(final String jobName,
+      final String className, final Properties jobProperties,
+      final Properties sysProperties, Logger logger) throws Exception {
 
     Class<?> runningClass =
         HadoopJavaJobRunnerMain.class.getClassLoader().loadClass(className);
@@ -369,8 +365,8 @@ public class HadoopJavaJobRunnerMain {
     }
 
     Object obj = null;
-    if (propsClass != null && loggerClass != null &&
-        getConstructor(runningClass, String.class, propsClass, propsClass, loggerClass) != null) {
+    if (propsClass != null && getConstructor(
+        runningClass, String.class, propsClass, propsClass, loggerClass) != null) {
       // Handle cases where jobtype has ctor of format
       // (java.lang.String,azkaban.utils.Props,azkaban.utils.Props,org.apache.log4j.Logger)
       logger.info("Creating object for ctor(java.lang.String,azkaban.utils.Props,azkaban.utils"
@@ -379,12 +375,12 @@ public class HadoopJavaJobRunnerMain {
       Constructor<?> sysPropsCon =
           getConstructor(propsClass, propsClass, Properties[].class);
       Object sysProps =
-          sysPropsCon.newInstance(null, new Properties[]{properties});
+          sysPropsCon.newInstance(null, new Properties[]{sysProperties});
       // Create jobProps class
       Constructor<?> jobPropsCon =
           getConstructor(propsClass, propsClass, Properties[].class);
       Object jobProps =
-          jobPropsCon.newInstance(null, new Properties[]{properties});
+          jobPropsCon.newInstance(null, new Properties[]{jobProperties});
 
       Constructor<?> con =
           getConstructor(runningClass, String.class, propsClass, propsClass, loggerClass);
@@ -396,7 +392,7 @@ public class HadoopJavaJobRunnerMain {
       Constructor<?> propsCon =
           getConstructor(propsClass, propsClass, Properties[].class);
       Object props =
-          propsCon.newInstance(null, new Properties[]{properties});
+          propsCon.newInstance(null, new Properties[]{jobProperties});
 
       Constructor<?> con =
           getConstructor(runningClass, String.class, propsClass);
@@ -407,14 +403,14 @@ public class HadoopJavaJobRunnerMain {
       Constructor<?> con =
           getConstructor(runningClass, String.class, Properties.class);
       logger.info("Constructor found " + con.toGenericString());
-      obj = con.newInstance(jobName, properties);
+      obj = con.newInstance(jobName, jobProperties);
     } else if (getConstructor(runningClass, String.class, Map.class) != null) {
       Constructor<?> con =
           getConstructor(runningClass, String.class, Map.class);
       logger.info("Constructor found " + con.toGenericString());
 
       HashMap<Object, Object> map = new HashMap<Object, Object>();
-      for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+      for (Map.Entry<Object, Object> entry : jobProperties.entrySet()) {
         map.put(entry.getKey(), entry.getValue());
       }
       obj = con.newInstance(jobName, map);
@@ -437,8 +433,7 @@ public class HadoopJavaJobRunnerMain {
 
   private static Constructor<?> getConstructor(Class<?> c, Class<?>... args) {
     try {
-      Constructor<?> cons = c.getConstructor(args);
-      return cons;
+      return c.getConstructor(args);
     } catch (NoSuchMethodException e) {
       return null;
     }
