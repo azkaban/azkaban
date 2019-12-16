@@ -44,6 +44,14 @@ public class HadoopJavaJob extends AbstractHadoopJavaProcessJob {
     noUserClasspath = getSysProps().getBoolean("azkaban.no.user.classpath", false);
   }
 
+  public HadoopJavaJob(String jobid, Props sysProps, Props jobProps,
+      Props privateProps, Logger log)
+      throws RuntimeException {
+    super(jobid, sysProps, jobProps, privateProps, log);
+    getJobProps().put(CommonJobProperties.JOB_ID, jobid);
+    noUserClasspath = getSysProps().getBoolean("azkaban.no.user.classpath", false);
+  }
+
   @Override
   protected String getJVMArguments() {
     String args = super.getJVMArguments();

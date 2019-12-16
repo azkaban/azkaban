@@ -76,6 +76,13 @@ public class ProcessJob extends AbstractProcessJob {
     this.commonMetrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
   }
 
+  public ProcessJob(final String jobId, final Props sysProps,
+      final Props jobProps, final Props privateProps, final Logger log) {
+    super(jobId, sysProps, jobProps, privateProps, log);
+    // TODO: reallocf fully guicify CommonMetrics through ProcessJob dependents
+    this.commonMetrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
+  }
+
   /**
    * Splits the command into a unix like command line structure. Quotes and single quotes are
    * treated as nested strings.
@@ -248,10 +255,10 @@ public class ProcessJob extends AbstractProcessJob {
         assignUserFileOwnership(effectiveUser, getWorkingDirectory());
       }
       // Set property file permissions to <uid>:azkaban so user can write to their prop files
-      // in order to pass properties from one job to another
-      for (final File propFile : propFiles) {
+      // in order to pass properties from one job to another, except the last one
+      for (int i = 0; i < 2; i++) {
         info("Changing properties files ownership");
-        assignUserFileOwnership(effectiveUser, propFile.getAbsolutePath());
+        assignUserFileOwnership(effectiveUser, propFiles[i].getAbsolutePath());
       }
     }
 

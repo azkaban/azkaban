@@ -159,6 +159,7 @@ public class JobTypeManager {
 
     Props pluginJobProps = null;
     Props pluginLoadProps = null;
+    Props pluginPrivateProps = null;
 
     final File pluginJobPropsFile = new File(pluginDir, Constants.PluginManager.CONFFILE);
     final File pluginLoadPropsFile = new File(pluginDir, Constants.PluginManager.SYSCONFFILE);
@@ -177,8 +178,12 @@ public class JobTypeManager {
         pluginJobProps = new Props(commonPluginJobProps);
       }
 
-      pluginLoadProps = new Props(commonPluginLoadProps, pluginLoadPropsFile);
-      pluginLoadProps.put("plugin.dir", pluginDir.getAbsolutePath());
+      // Set the private props.
+      pluginPrivateProps = new Props(null, pluginLoadPropsFile);
+      pluginPrivateProps.put("plugin.dir", pluginDir.getAbsolutePath());
+      plugins.addPluginPrivateProps(jobTypeName, pluginPrivateProps);
+
+      pluginLoadProps = new Props(commonPluginLoadProps, pluginPrivateProps);
 
       // Adding "plugin.dir" to allow plugin.properties file could read this property. Also, user
       // code could leverage this property as well.
@@ -206,6 +211,7 @@ public class JobTypeManager {
     } catch (final ClassNotFoundException e) {
       throw new JobTypeManagerException(e);
     }
+
 
     LOGGER.info("Verifying job plugin " + jobTypeName);
     try {
@@ -345,9 +351,17 @@ public class JobTypeManager {
         }
       }
 
-      job =
-          (Job) Utils.callConstructor(executorClass, jobId, pluginLoadProps,
-              jobProps, logger);
+      try {
+        job =
+            (Job) Utils.callConstructor(executorClass, jobId, pluginLoadProps,
+                jobProps, pluginSet.getPluginPrivateProps(jobType), logger);
+      } catch (final Exception e) {
+        logger.info("Failed with 5 inputs with exception e = "
+            + e.getMessage());
+        job =
+            (Job) Utils.callConstructor(executorClass, jobId, pluginLoadProps,
+                jobProps, logger);
+      }
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());

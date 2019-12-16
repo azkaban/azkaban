@@ -37,6 +37,12 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
     this.hadoopProxy = new HadoopProxy(sysProps, jobProps, logger);
   }
 
+  public AbstractHadoopJavaProcessJob(String jobid, Props sysProps, Props jobProps,
+      Props privateProps, Logger logger) {
+    super(jobid, sysProps, jobProps, privateProps, logger);
+    this.hadoopProxy = new HadoopProxy(sysProps, jobProps, logger);
+  }
+
   @Override
   public void run() throws Exception {
     try {

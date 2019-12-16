@@ -51,6 +51,11 @@ public class JavaProcessJob extends ProcessJob {
     super(jobid, sysProps, jobProps, logger);
   }
 
+  public JavaProcessJob(final String jobid, final Props sysProps, final Props jobProps,
+      final Props privateProps, final Logger logger) {
+    super(jobid, sysProps, jobProps, privateProps, logger);
+  }
+
   @Override
   protected List<String> getCommandList() {
     final ArrayList<String> list = new ArrayList<>();
