@@ -102,7 +102,7 @@ azkaban.ProjectLogView = Backbone.View.extend({
         $(containerType).addClass(type);
         $(containerType).text(typeMapping[type] ? typeMapping[type] : type);
 
-        $(containerMessage).html(message);
+        $(containerMessage).text(message);
 
         $(containerEvent).append(containerTime);
         $(containerEvent).append(containerUser);
