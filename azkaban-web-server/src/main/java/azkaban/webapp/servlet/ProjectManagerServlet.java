@@ -1250,14 +1250,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       page.add("errorMsg", e.getMessage());
     }
 
-    final int numBytes = 1024;
-
-    // Really sucks if we do a lot of these because it'll eat up memory fast.
-    // But it's expected that this won't be a heavily used thing. If it is,
-    // then we'll revisit it to make it more stream friendly.
-    final StringBuffer buffer = new StringBuffer(numBytes);
-    page.add("log", buffer.toString());
-
     page.render();
   }
 
