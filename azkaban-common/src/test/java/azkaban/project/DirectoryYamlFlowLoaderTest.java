@@ -31,9 +31,10 @@ import org.slf4j.LoggerFactory;
 
 public class DirectoryYamlFlowLoaderTest {
 
+  public static final String CONDITION_YAML_DIR = "conditionalflowyamltest";
+  public static final String CONDITIONAL_FLOW = "conditional_flow6";
   private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoaderTest
       .class);
-
   private static final String BASIC_FLOW_YAML_DIR = "basicflowyamltest";
   private static final String MULTIPLE_FLOW_YAML_DIR = "multipleflowyamltest";
   private static final String RECURSIVE_DIRECTORY_FLOW_YAML_DIR = "recursivedirectoryyamltest";
@@ -44,7 +45,6 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String DEPENDENCY_UNDEFINED_YAML_DIR = "dependencyundefinedyamltest";
   private static final String INVALID_JOBPROPS_YAML_DIR = "invalidjobpropsyamltest";
   private static final String NO_FLOW_YAML_DIR = "noflowyamltest";
-  private static final String CONDITION_YAML_DIR = "conditionalflowyamltest";
   private static final String INVALID_CONDITION_YAML_DIR = "invalidconditionalflowyamltest";
   private static final String BASIC_FLOW_1 = "basic_flow";
   private static final String BASIC_FLOW_2 = "basic_flow2";
@@ -60,7 +60,6 @@ public class DirectoryYamlFlowLoaderTest {
   private static final String EMBEDDED_FLOW_B2 =
       "embedded_flow_b" + Constants.PATH_DELIMITER + "embedded_flow1" + Constants.PATH_DELIMITER
           + "embedded_flow2";
-  private static final String CONDITIONAL_FLOW = "conditional_flow6";
   private static final String DUPLICATE_NODENAME_FLOW_FILE = "duplicate_nodename.flow";
   private static final String DEPENDENCY_UNDEFINED_FLOW_FILE = "dependency_undefined.flow";
   private static final String CYCLE_FOUND_FLOW = "cycle_found";
@@ -211,7 +210,7 @@ public class DirectoryYamlFlowLoaderTest {
     assertThat(loader.getEdgeMap().size()).isEqualTo(numEdgeMap);
   }
 
-  private void checkFlowProperties(final DirectoryYamlFlowLoader loader, final String flowName,
+  public void checkFlowProperties(final DirectoryYamlFlowLoader loader, final String flowName,
       final int numError, final int numNode, final int numFlowProps, final int numEdge, final
   String edgeError) {
     assertThat(loader.getFlowMap().containsKey(flowName)).isTrue();

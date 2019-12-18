@@ -16,6 +16,9 @@
 
 package azkaban.project;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import azkaban.flow.Flow;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.io.Files;
@@ -89,6 +92,24 @@ public class DirectoryFlowLoaderTest {
     Assert.assertEquals(2, loader.getFlowMap().size());
     Assert.assertEquals(0, loader.getPropsList().size());
     Assert.assertEquals(9, loader.getJobPropsMap().size());
+  }
+
+  @Test
+  public void testFlowWithValidCondition() {
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
+    loader.loadProjectFlow(this.project, ExecutionsTestUtil.getFlowDir("conditionalflowtest"));
+    String flowName = "jobD";
+    assertThat(loader.getFlowMap().containsKey(flowName)).isTrue();
+    assertThat(loader.getFlowMap().containsKey(flowName)).isTrue();
+    final Flow flow = loader.getFlowMap().get(flowName);
+    assertThat(flow.getNodes().size()).isEqualTo(4);
+    assertThat(flow.getAllFlowProps().size()).isEqualTo(0);
+    assertThat(flow.getEdges().size()).isEqualTo(4);
+    assertThat(flow.getNode("jobA").getCondition()).isNull();
+    assertThat(flow.getNode("jobB").getCondition()).isEqualTo("${jobA:props} == 'foo'");
+    assertThat(flow.getNode("jobC").getCondition()).isEqualTo("${jobA:props} == 'bar'");
+    assertThat(flow.getNode("jobD").getCondition())
+        .isEqualTo("one_success && ${jobA:props} == 'foo'");
   }
 
   @Test

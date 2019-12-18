@@ -1,0 +1,5 @@
+type=test
+fail=false
+seconds=0
+condition=${jobA:key1} == 'value1'
+dependencies=jobA
