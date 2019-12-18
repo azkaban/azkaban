@@ -34,6 +34,7 @@ public class JobTypePluginSet {
   private final Map<String, Class<? extends Job>> jobToClass;
   private final Map<String, Props> pluginJobPropsMap;
   private final Map<String, Props> pluginLoadPropsMap;
+  private final Map<String, Props> pluginPrivatePropsMap;
 
   private Props commonJobProps;
   private Props commonLoadProps;
@@ -45,6 +46,7 @@ public class JobTypePluginSet {
     this.jobToClass = new HashMap<>();
     this.pluginJobPropsMap = new HashMap<>();
     this.pluginLoadPropsMap = new HashMap<>();
+    this.pluginPrivatePropsMap = new HashMap<>();
   }
 
   /**
@@ -54,6 +56,7 @@ public class JobTypePluginSet {
     this.jobToClass = new HashMap<>(clone.jobToClass);
     this.pluginJobPropsMap = new HashMap<>(clone.pluginJobPropsMap);
     this.pluginLoadPropsMap = new HashMap<>(clone.pluginLoadPropsMap);
+    this.pluginPrivatePropsMap = new HashMap<>(clone.pluginPrivatePropsMap);
     this.commonJobProps = clone.commonJobProps;
     this.commonLoadProps = clone.commonLoadProps;
   }
@@ -94,6 +97,12 @@ public class JobTypePluginSet {
   }
 
   /**
+   * Get the plugin private properties for the jobtype
+   */
+  public Props getPluginPrivateProps(final String jobTypeName) {
+    return this.pluginPrivatePropsMap.get(jobTypeName);
+  }
+  /**
    * Get the properties that will be given to the plugin as default job properties.
    */
   public Props getPluginJobProps(final String jobTypeName) {
@@ -127,5 +136,12 @@ public class JobTypePluginSet {
    */
   public void addPluginLoadProps(final String jobTypeName, final Props props) {
     this.pluginLoadPropsMap.put(jobTypeName, props);
+  }
+
+  /**
+   * Adds plugins private properties used by the plugin
+   */
+  public void addPluginPrivateProps(final String jobTypeName, final Props props) {
+    this.pluginPrivatePropsMap.put(jobTypeName, props);
   }
 }

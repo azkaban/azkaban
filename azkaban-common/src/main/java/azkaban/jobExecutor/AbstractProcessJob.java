@@ -39,6 +39,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
   public static final String ENV_PREFIX = "env.";
   public static final String WORKING_DIR = "working.dir";
   public static final String JOB_PROP_ENV = "JOB_PROP_FILE";
+  public static final String JOBTYPE_PRIVATE_PROP_ENV = "JOBTYPE_PRIVATE_PROP_FILE";
   public static final String JOB_NAME_ENV = "JOB_NAME";
   public static final String JOB_OUTPUT_PROP_FILE = "JOB_OUTPUT_PROP_FILE";
   private static final String SENSITIVE_JOB_PROP_NAME_SUFFIX = "_X";
@@ -51,6 +52,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
   protected String _cwd;
   protected volatile Props jobProps;
   protected volatile Props sysProps;
+  protected volatile Props privateProps;
 
   private volatile Props generatedProperties;
 
@@ -60,10 +62,23 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
     this.jobProps = jobProps;
     this.sysProps = sysProps;
+    this.privateProps = null;
     this._cwd = getWorkingDirectory();
     this._jobPath = this._cwd;
   }
 
+  protected AbstractProcessJob(final String jobId, final Props sysProps, final Props jobProps,
+      final Props privateProps, final Logger log) {
+    super(jobId, log);
+
+    this.jobProps = jobProps;
+    this.sysProps = sysProps;
+    this.privateProps = privateProps;
+    this._cwd = getWorkingDirectory();
+    this._jobPath = this._cwd;
+  }
+
+  //protected AbstractProcessJob(final String)
   /**
    * This public function will be deprecated since it tends to be a Utility Function
    * Please use azkaban.utils.FileIOUtils.createOutputPropsFile(String, String, String) instead.
@@ -161,15 +176,21 @@ public abstract class AbstractProcessJob extends AbstractJob {
    * @return {tmpPropFile, outputPropFile}
    */
   public File[] initPropsFiles() {
-    // Create properties file with additionally all input generated properties.
-    final File[] files = new File[2];
-    files[0] = createFlattenedPropsFile(this._cwd);
+    // Create job properties file with additionally all input generated properties.
+    final File[] files = new File[3];
+    files[0] = createFlattenedPropsFile(this.jobProps, this._cwd, "_job_props_");
 
     this.jobProps.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
     this.jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
 
     files[1] = createOutputPropsFile(getId(), this._cwd);
     this.jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
+
+    // Create job's private properties file.
+    if (this.privateProps != null) {
+      files[2] = createFlattenedPropsFile(this.privateProps, this._cwd, "_job_private_props_");
+      this.jobProps.put(ENV_PREFIX + JOBTYPE_PRIVATE_PROP_ENV, files[2].getAbsolutePath());
+    }
     return files;
   }
 
@@ -242,12 +263,13 @@ public abstract class AbstractProcessJob extends AbstractJob {
    * Please use azkaban.utils.FileIOUtils.createOutputPropsFile(String, String, String) instead.
    */
   @Deprecated
-  public File createFlattenedPropsFile(final String workingDir) {
+  private File createFlattenedPropsFile(final Props props, final String workingDir,
+      String propsName) {
     try {
       final File directory = new File(workingDir);
       // The temp file prefix must be at least 3 characters.
-      final File tempFile = File.createTempFile(getId() + "_props_", "_tmp", directory);
-      this.jobProps.storeFlattened(tempFile);
+      final File tempFile = File.createTempFile(getId() + propsName, "_tmp", directory);
+      props.storeFlattened(tempFile);
       return tempFile;
     } catch (final IOException e) {
       throw new RuntimeException("Failed to create temp property file. workingDir = " + workingDir);
