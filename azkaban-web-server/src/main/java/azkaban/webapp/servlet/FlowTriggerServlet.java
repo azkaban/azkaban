@@ -18,6 +18,8 @@ package azkaban.webapp.servlet;
 
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler.ScheduledFlowTrigger;
+import azkaban.project.CronSchedule;
+import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
@@ -71,7 +73,10 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
     if (res != null) {
       final Map<String, Object> jsonObj = new HashMap<>();
-      jsonObj.put("cronExpression", res.getFlowTrigger().getSchedule().getCronExpression());
+      FlowTrigger flowTrigger = res.getFlowTrigger();
+      CronSchedule schedule = flowTrigger.getSchedule();
+      jsonObj.put("timeZone", schedule.getTimeZone());
+      jsonObj.put("cronExpression", schedule.getCronExpression());
       jsonObj.put("submitUser", res.getSubmitUser());
       jsonObj.put("firstSchedTime",
           TimeUtils.formatDateTime(res.getQuartzTrigger().getStartTime().getTime()));
@@ -79,12 +84,12 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
           TimeUtils.formatDateTime(res.getQuartzTrigger().getNextFireTime().getTime()));
 
       Long maxWaitMin = null;
-      if (res.getFlowTrigger().getMaxWaitDuration().isPresent()) {
-        maxWaitMin = res.getFlowTrigger().getMaxWaitDuration().get().toMinutes();
+      if (flowTrigger.getMaxWaitDuration().isPresent()) {
+        maxWaitMin = flowTrigger.getMaxWaitDuration().get().toMinutes();
       }
       jsonObj.put("maxWaitMin", maxWaitMin);
 
-      if (!res.getFlowTrigger().getDependencies().isEmpty()) {
+      if (!flowTrigger.getDependencies().isEmpty()) {
         jsonObj.put("dependencies", res.getDependencyListJson());
       }
       ret.put("flowTrigger", jsonObj);

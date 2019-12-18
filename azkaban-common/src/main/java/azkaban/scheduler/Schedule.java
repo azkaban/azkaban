@@ -99,7 +99,8 @@ public class Schedule {
     if (this.period == null && this.cronExpression == null) {
       return underlying + " non-recurring";
     } else if (this.cronExpression != null) {
-      return underlying + " with CronExpression {" + this.cronExpression + "}";
+      return underlying + " with CronExpression {" + this.cronExpression + "} and timezone "
+          + timezone.getID();
     } else {
       return underlying + " with precurring period of " + TimeUtils.createPeriodString(this.period);
     }

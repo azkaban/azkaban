@@ -50,6 +50,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
+    scheduleData.timezone = $('#cron-tz').val();
 
     // Currently, All cron expression will be based on server timezone.
     // Later we might implement a feature support cron under various timezones, depending on the future use cases.

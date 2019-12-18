@@ -30,6 +30,7 @@ import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
+import java.util.TimeZone;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -91,7 +92,7 @@ public class QuartzSchedulerTest {
 
   @Test
   public void testCreateScheduleAndRun() throws Exception {
-    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    scheduler.scheduleJobIfAbsent("* * * * * ?", TimeZone.getDefault(), createJobDescription());
     assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
     TestUtils.await().untilAsserted(() -> assertThat(SampleQuartzJob.COUNT_EXECUTION)
         .isNotNull().isGreaterThan(1));
@@ -99,21 +100,24 @@ public class QuartzSchedulerTest {
 
   @Test
   public void testSchedulingDuplicateJob() throws Exception {
-    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
-    assertThat(scheduler.scheduleJobIfAbsent("0 5 * * * ?", createJobDescription())).isFalse();
+    scheduler.scheduleJobIfAbsent("* * * * * ?", TimeZone.getDefault(), createJobDescription());
+    assertThat(
+        scheduler.scheduleJobIfAbsent("0 5 * * * ?", TimeZone.getDefault(), createJobDescription()))
+        .isFalse();
   }
 
   @Test
   public void testInvalidCron() {
     assertThatThrownBy(
-        () -> scheduler.scheduleJobIfAbsent("0 5 * * * *", createJobDescription()))
+        () -> scheduler
+            .scheduleJobIfAbsent("0 5 * * * *", TimeZone.getDefault(), createJobDescription()))
         .isInstanceOf(SchedulerException.class)
         .hasMessageContaining("The cron expression string");
   }
 
   @Test
   public void testUnschedule() throws Exception {
-    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    scheduler.scheduleJobIfAbsent("* * * * * ?", TimeZone.getDefault(), createJobDescription());
     assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
     assertThat(scheduler.unscheduleJob("SampleJob", "SampleService")).isTrue();
     assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(false);
@@ -123,7 +127,7 @@ public class QuartzSchedulerTest {
   @Test
   public void testPauseSchedule() throws Exception {
     assertThat(scheduler.pauseJobIfPresent("SampleJob", "SampleService")).isFalse();
-    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    scheduler.scheduleJobIfAbsent("* * * * * ?", TimeZone.getDefault(), createJobDescription());
     assertThat(scheduler.pauseJobIfPresent("SampleJob", "SampleService")).isTrue();
     assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(true);
     assertThat(scheduler.resumeJobIfPresent("SampleJob", "SampleService")).isTrue();
