@@ -108,7 +108,7 @@ public class ServiceProviderTest {
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, AZKABAN_TEST_HDFS_STORAGE_TYPE);
-    props.put(Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH, "./");
+    props.put(Constants.ConfigurationKeys.HADOOP_CONF_DIR_PATH, "./src/test/resources/hdfs_conf/");
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI, AZKABAN_TEST_STORAGE_PROJECT_HDFS_URI);
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_DEPENDENCY_HDFS_URI);
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI, AZKABAN_TEST_STORAGE_CHTTP_DEPENDENCY_ROOT_URI);

@@ -26,7 +26,9 @@ import java.io.File;
 import java.net.URI;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +45,7 @@ public class HdfsStorageTest {
 
   private HdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
-  private FileSystem hdfs;
+  private DistributedFileSystem hdfs;
   private FileSystem http;
   private AzkabanCommonModuleConfig config;
 
@@ -55,7 +57,7 @@ public class HdfsStorageTest {
 
   @Before
   public void setUp() throws Exception {
-    this.hdfs = mock(FileSystem.class);
+    this.hdfs = mock(DistributedFileSystem.class);
     this.http = mock(FileSystem.class);
     this.hdfsAuth = mock(HdfsAuth.class);
     this.config = mock(AzkabanCommonModuleConfig.class);
@@ -110,7 +112,8 @@ public class HdfsStorageTest {
     Assert.assertEquals(expectedName, key);
 
     final String expectedPath = "/path/to/prj/" + expectedName;
-    verify(this.hdfs).copyFromLocalFile(new Path(file.getAbsolutePath()), new Path(expectedPath));
+    verify(this.hdfs).copyFromLocalFile(eq(false), eq(true), any(Path.class), any(Path.class));
+    verify(this.hdfs).rename(any(Path.class), eq(new Path(expectedPath)), eq(Options.Rename.OVERWRITE));
   }
 
   @Test
