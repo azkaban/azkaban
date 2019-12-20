@@ -20,6 +20,7 @@ package azkaban.storage;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModuleConfig;
+import azkaban.utils.HashUtils;
 import azkaban.utils.StorageUtils;
 import azkaban.spi.Dependency;
 import azkaban.spi.Storage;
@@ -34,25 +35,31 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.log4j.Logger;
 
 
 @Singleton
 public class HdfsStorage implements Storage {
+  private static final String TMP_PROJECT_UPLOAD_FILENAME = "upload.tmp";
   private static final Logger log = Logger.getLogger(HdfsStorage.class);
 
   private final HdfsAuth hdfsAuth;
   private final URI projectRootUri;
   private final URI dependencyRootUri;
-  private final FileSystem hdfs;
+  private final DistributedFileSystem hdfs;
   private final FileSystem http;
 
   @Inject
   public HdfsStorage(final AzkabanCommonModuleConfig config, final HdfsAuth hdfsAuth, @Named("hdfsFS") final FileSystem hdfs,
       @Named("hdfs_cached_httpFS") @Nullable final FileSystem http) {
     this.hdfsAuth = requireNonNull(hdfsAuth);
-    this.hdfs = requireNonNull(hdfs);
+    // Usually we can just interact with this object as a FileSystem however putProject() uses
+    // the .rename() method with the OVERRIDE option which is protected in FileSystem but
+    // public in DistributedFileSystem so we need to cast it here.
+    this.hdfs = (DistributedFileSystem) requireNonNull(hdfs);
     this.http = http; // May be null if thin archives is not enabled
 
     this.projectRootUri = config.getHdfsProjectRootUri();
@@ -76,18 +83,19 @@ public class HdfsStorage implements Storage {
       }
       final Path targetPath = new Path(projectsPath,
           StorageUtils.getTargetProjectFilename(metadata.getProjectId(), metadata.getHash()));
-      if (this.hdfs.exists(targetPath)) {
-        log.info(
-            String.format("Duplicate Found: meta: %s path: %s", metadata, targetPath));
-        return getRelativeProjectPath(targetPath);
-      }
+      final Path tmpPath = new Path(projectsPath, TMP_PROJECT_UPLOAD_FILENAME);
 
       // Copy file to HDFS
       log.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
-      this.hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
+      this.hdfs.copyFromLocalFile(false, true, new Path(localFile.getAbsolutePath()), tmpPath);
+
+      // Rename the tmp file to the final file and overwrite the final file if it already exists
+      // (i.e. if the hash is the same).
+      this.hdfs.rename(tmpPath, targetPath, Options.Rename.OVERWRITE);
+
       return getRelativeProjectPath(targetPath);
     } catch (final IOException e) {
-      log.error("error in put(): Metadata: " + metadata);
+      log.error("error in putProject(): Metadata: " + metadata);
       throw new StorageException(e);
     }
   }
