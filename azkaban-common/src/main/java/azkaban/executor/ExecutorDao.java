@@ -107,7 +107,7 @@ public class ExecutorDao {
     }
   }
 
-  Executor addExecutor(final String host, final int port)
+  Executor addExecutor(final String host, final int port, final boolean isActive)
       throws ExecutorManagerException {
     // verify, if executor already exists
     if (fetchExecutor(host, port) != null) {
@@ -115,17 +115,17 @@ public class ExecutorDao {
           "Executor %s:%d already exist", host, port));
     }
     // add new executor
-    addExecutorHelper(host, port);
+    addExecutorHelper(host, port, isActive);
 
     // fetch newly added executor
     return fetchExecutor(host, port);
   }
 
-  private void addExecutorHelper(final String host, final int port)
+  private void addExecutorHelper(final String host, final int port, final boolean isActive)
       throws ExecutorManagerException {
-    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
+    final String INSERT = "INSERT INTO executors (host, port, active) values (?,?,?)";
     try {
-      this.dbOperator.update(INSERT, host, port);
+      this.dbOperator.update(INSERT, host, port, isActive);
     } catch (final SQLException e) {
       throw new ExecutorManagerException(String.format("Error adding %s:%d ",
           host, port), e);

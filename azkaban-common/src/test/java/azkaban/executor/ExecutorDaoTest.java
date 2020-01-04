@@ -97,8 +97,8 @@ public class ExecutorDaoTest {
   public void testDuplicateAddExecutor() throws Exception {
     final String host = "localhost";
     final int port = 12345;
-    this.executorDao.addExecutor(host, port);
-    assertThatThrownBy(() -> this.executorDao.addExecutor(host, port))
+    this.executorDao.addExecutor(host, port, false);
+    assertThatThrownBy(() -> this.executorDao.addExecutor(host, port, false))
         .isInstanceOf(ExecutorManagerException.class)
         .hasMessageContaining("already exist");
   }
@@ -160,16 +160,17 @@ public class ExecutorDaoTest {
   private List<Executor> addTestExecutors()
       throws ExecutorManagerException {
     final List<Executor> executors = new ArrayList<>();
-    executors.add(this.executorDao.addExecutor("localhost1", 12345));
-    executors.add(this.executorDao.addExecutor("localhost2", 12346));
-    executors.add(this.executorDao.addExecutor("localhost1", 12347));
+    executors.add(this.executorDao.addExecutor("localhost1", 12345, false));
+    executors.add(this.executorDao.addExecutor("localhost2", 12346, false));
+    executors.add(this.executorDao.addExecutor("localhost1", 12347, false));
     return executors;
   }
 
   /* Test Removing Executor */
   @Test
   public void testRemovingExecutor() throws Exception {
-    final Executor executor = this.executorDao.addExecutor("localhost1", 12345);
+    final Executor executor = this.executorDao
+        .addExecutor("localhost1", 12345, false);
     assertThat(executor).isNotNull();
     this.executorDao.removeExecutor("localhost1", 12345);
     final Executor fetchedExecutor = this.executorDao.fetchExecutor("localhost1", 12345);
@@ -179,12 +180,26 @@ public class ExecutorDaoTest {
   /* Test Executor reactivation */
   @Test
   public void testExecutorActivation() throws Exception {
-    final Executor executor = this.executorDao.addExecutor("localhost1", 12345);
+    final Executor executor = this.executorDao
+        .addExecutor("localhost1", 12345, false);
     assertThat(executor.isActive()).isFalse();
 
     executor.setActive(true);
     this.executorDao.updateExecutor(executor);
     final Executor fetchedExecutor = this.executorDao.fetchExecutor(executor.getId());
     assertThat(fetchedExecutor.isActive()).isTrue();
+  }
+
+  /* Test Executor initial activation */
+  @Test
+  public void testExecutorInitialActivation() throws Exception {
+    final Executor executor = this.executorDao
+        .addExecutor("localhost1", 12345, true);
+    assertThat(executor.isActive()).isTrue();
+
+    executor.setActive(false);
+    this.executorDao.updateExecutor(executor);
+    final Executor fetchedExecutor = this.executorDao.fetchExecutor(executor.getId());
+    assertThat(fetchedExecutor.isActive()).isFalse();
   }
 }

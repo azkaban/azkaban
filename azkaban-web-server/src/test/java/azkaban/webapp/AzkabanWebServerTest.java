@@ -128,7 +128,7 @@ public class AzkabanWebServerTest {
     final ExecutorLoader executorLoader = injector.getInstance(ExecutorLoader.class);
     assertNotNull(executorLoader);
 
-    final Executor executor = executorLoader.addExecutor("localhost", 60000);
+    final Executor executor = executorLoader.addExecutor("localhost", 60000, false);
     executor.setActive(true);
     executorLoader.updateExecutor(executor);
 
