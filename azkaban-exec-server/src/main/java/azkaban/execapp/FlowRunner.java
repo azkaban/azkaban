@@ -607,7 +607,10 @@ public class FlowRunner extends EventHandler implements Runnable {
         final ExecutableFlowBase flow = ((ExecutableFlowBase) node);
         this.logger.info("Running flow '" + flow.getNestedId() + "'.");
         flow.setStatus(Status.RUNNING);
-        flow.setStartTime(System.currentTimeMillis());
+        // don't overwrite start time of root flows
+        if(flow.getStartTime() <= 0) {
+          flow.setStartTime(System.currentTimeMillis());
+        }
         prepareJobProperties(flow);
 
         for (final String startNodeId : ((ExecutableFlowBase) node).getStartNodes()) {
