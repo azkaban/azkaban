@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.IOException;
@@ -23,7 +22,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JsonUtilsTest {
+
+public class JSONUtilsTest {
 
   private static void checkInAndOut(final Map<String, String> before,
       final Map<String, String> after) {
@@ -68,5 +68,4 @@ public class JsonUtilsTest {
         (Map<String, String>) JSONUtils.parseJSONFromString(jsonStr);
     checkInAndOut(test, result);
   }
-
 }

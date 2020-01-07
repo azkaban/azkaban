@@ -23,6 +23,12 @@ public interface ProjectValidator {
   /**
    * Validate the project inside the given directory. The validator, using its own validation logic,
    * will generate a {@link ValidationReport} representing the result of the validation.
+   *
+   * @param project project to validate
+   * @param projectDir directory of the uncompressed project
+   * @param additionalProps additional project-specific props (some validators may use this, others may not)
+   *
+   * @return The resulting ValidationReport.
    */
-  ValidationReport validateProject(Project project, File projectDir);
+  ValidationReport validateProject(Project project, File projectDir, Props additionalProps);
 }

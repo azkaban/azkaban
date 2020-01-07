@@ -133,9 +133,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
       }
       // Check if project upload runs into any errors, such as the file
       // having blacklisted jars
-      final Props props = new Props();
       final Map<String, ValidationReport> reports = projectManager
-          .uploadProject(project, archiveFile, "zip", user, props);
+          .uploadProject(project, archiveFile, "zip", user, null);
 
       if (enableQuartz) {
         scheduler.schedule(project, user.getUserId());

@@ -39,6 +39,8 @@ public class CommonMetrics {
   public static final String SUBMIT_FLOW_SKIP_METER_NAME = "submit-flow-skip-meter";
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
   public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
+  public static final String UPLOAD_FAT_PROJECT_METER_NAME = "upload-fat-project-meter";
+  public static final String UPLOAD_THIN_PROJECT_METER_NAME = "upload-thin-project-meter";
 
   private Counter OOMWaitingJobCount;
   private final MetricsManager metricsManager;
@@ -50,6 +52,8 @@ public class CommonMetrics {
   private Meter submitFlowSuccessMeter;
   private Meter submitFlowFailMeter;
   private Meter submitFlowSkipMeter;
+  private Meter uploadFatProjectMeter;
+  private Meter uploadThinProjectMeter;
   private Histogram queueWaitMeter;
 
   @Inject
@@ -69,6 +73,8 @@ public class CommonMetrics {
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
     this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
     this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
+    this.uploadFatProjectMeter = this.metricsManager.addMeter(UPLOAD_FAT_PROJECT_METER_NAME);
+    this.uploadThinProjectMeter = this.metricsManager.addMeter(UPLOAD_THIN_PROJECT_METER_NAME);
   }
 
   /**
@@ -127,6 +133,16 @@ public class CommonMetrics {
   public void markSubmitFlowFail() {
     this.submitFlowFailMeter.mark();
   }
+
+  /**
+   * Mark uploadFatProjectMeter when a fat project zip is uploaded to the web server.
+   */
+  public void markUploadFatProject() { this.uploadFatProjectMeter.mark(); }
+
+  /**
+   * Mark uploadThinProjectMeter when a thin project zip is uploaded to the web server.
+   */
+  public void markUploadThinProject() { this.uploadThinProjectMeter.mark(); }
 
   /**
    * Mark the occurrence of an job waiting event due to OOM

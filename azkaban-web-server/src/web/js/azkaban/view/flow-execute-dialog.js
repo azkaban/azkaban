@@ -120,13 +120,13 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var overrideFailureEmails = this.model.get("failureEmailsOverride");
 
     if (overrideSuccessEmails) {
-      $('#override-success-emails').attr('checked', true);
+      $('#override-success-emails').prop('checked', true);
     }
     else {
       $('#success-emails').attr('disabled', 'disabled');
     }
     if (overrideFailureEmails) {
-      $('#override-failure-emails').attr('checked', true);
+      $('#override-failure-emails').prop('checked', true);
     }
     else {
       $('#failure-emails').attr('disabled', 'disabled');
@@ -143,11 +143,11 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     }
 
     if (notifyFailure.first) {
-      $('#notify-failure-first').attr('checked', true);
+      $('#notify-failure-first').prop('checked', true);
       $('#notify-failure-first').parent('.btn').addClass('active');
     }
     if (notifyFailure.last) {
-      $('#notify-failure-last').attr('checked', true);
+      $('#notify-failure-last').prop('checked', true);
       $('#notify-failure-last').parent('.btn').addClass('active');
     }
 
@@ -261,7 +261,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     };
     var self = this;
     var successHandler = function (data) {
-      console.log("data fetched");
       graphModel.addFlow(data);
 
       if (exgraph) {
@@ -624,9 +623,8 @@ function recurseAllDescendents(node, disable) {
 }
 
 var expanelNodeClickCallback = function (event, model, node) {
-  console.log("Node clicked callback");
   var jobId = node.id;
-  var flowId = executableGraphModel.get("flowId");
+  var flowId = node.parent.flow;
   var type = node.type;
 
   var menu;
@@ -759,13 +757,11 @@ var expanelNodeClickCallback = function (event, model, node) {
   contextMenuView.show(event, menu);
 }
 
-var expanelEdgeClickCallback = function (event) {
-  console.log("Edge clicked callback");
-}
+var expanelEdgeClickCallback = function (event) {}
 
-var expanelGraphClickCallback = function (event) {
-  console.log("Graph clicked callback");
-  var flowId = executableGraphModel.get("flowId");
+var expanelGraphClickCallback = function (event, model) {
+  var data = model.get("data");
+  var flowId = data.flow;
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
       + flowId;
 

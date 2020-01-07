@@ -21,7 +21,7 @@
   #parse ("azkaban/webapp/servlet/velocity/style.vm")
   #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js?v=1568065399"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
@@ -357,7 +357,7 @@
             <div class="alert alert-danger" id="change-permission-error-msg"></div>
             <fieldset class="form-horizontal">
               <div class="form-group">
-                <label for="path" class="col-sm-2 control-label">User</label>
+                <label for="path" class="col-sm-2 control-label" id="change-type">User</label>
                 <div class="col-sm-10">
                   <input type="text" name="userid" id="user-box" class="form-control">
                 </div>

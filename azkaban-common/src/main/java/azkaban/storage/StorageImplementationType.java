@@ -22,6 +22,7 @@ import azkaban.spi.Storage;
 
 public enum StorageImplementationType {
   LOCAL(LocalStorage.class),
+  LOCAL_HADOOP(LocalHadoopStorage.class),
   HDFS(HdfsStorage.class),
   DATABASE(DatabaseStorage.class);
 

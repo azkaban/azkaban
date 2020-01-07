@@ -39,7 +39,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,6 +61,7 @@ import org.joda.time.DateTime;
 
 /**
  * Executor manager used to manage the client side job.
+ *
  * @deprecated replaced by {@link ExecutionController}
  */
 @Singleton
@@ -78,7 +82,7 @@ public class ExecutorManager extends EventHandler implements
   private final RunningExecutionsUpdaterThread updaterThread;
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
-  private final Map<Pair<String,String>, Integer> maxConcurrentRunsPerFlowMap;
+  private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
   private final ActiveExecutors activeExecutors;
@@ -693,57 +697,76 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /**
-   * If the resource manager and job history server urls are configured, fetch the application
-   * id from the job log and then construct the job link url.
+   * If the Resource Manager and Job History server urls are configured, find all the
+   * Hadoop/Spark application ids present in the Azkaban job's log and then construct the url to
+   * job logs in the Hadoop/Spark server for each application id found. Application ids are
+   * returned in the order they appear in the Azkaban job log.
    *
    * @param exFlow The executable flow.
    * @param jobId The job id.
    * @param attempt The job execution attempt.
-   * @return the job link url.
+   * @return The map of (application id, job log url)
    */
   @Override
-  public String getJobLinkUrl(final ExecutableFlow exFlow, final String jobId, final int attempt) {
-    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) || !this.azkProps
-        .containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) || !this.azkProps
-        .containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
-      return null;
+  public Map<String, String> getExternalJobLogUrls(final ExecutableFlow exFlow, final String jobId,
+      final int attempt) {
+
+    final Map<String, String> jobLogUrlsByAppId = new LinkedHashMap<>();
+    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) ||
+        !this.azkProps.containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) ||
+        !this.azkProps.containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
+      return jobLogUrlsByAppId;
     }
-    final String applicationId = getApplicationId(exFlow, jobId, attempt);
-    return ExecutionControllerUtils.createJobLinkUrl(exFlow, jobId, applicationId, this.azkProps);
+    final Set<String> applicationIds = getApplicationIds(exFlow, jobId, attempt);
+    for (final String applicationId : applicationIds) {
+      final String jobLogUrl = ExecutionControllerUtils
+          .createJobLinkUrl(exFlow, jobId, applicationId, this.azkProps);
+      if (jobLogUrl != null) {
+        jobLogUrlsByAppId.put(applicationId, jobLogUrl);
+      }
+    }
+
+    return jobLogUrlsByAppId;
   }
 
   /**
-   * Get the Hadoop/Spark application id from the job log.
+   * Find all the Hadoop/Spark application ids present in the Azkaban job log. When iterating
+   * over the set returned by this method the application ids are in the same order they appear
+   * in the log.
    *
    * @param exFlow The executable flow.
    * @param jobId The job id.
    * @param attempt The job execution attempt.
-   * @return the application id.
+   * @return The application ids found.
    */
-  String getApplicationId(final ExecutableFlow exFlow, final String jobId, final int attempt) {
-    String applicationId;
-    boolean finished = false;
+  Set<String> getApplicationIds(final ExecutableFlow exFlow, final String jobId,
+      final int attempt) {
+    final Set<String> applicationIds = new LinkedHashSet<>();
     int offset = 0;
     try {
-      while (!finished) {
-        final LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
-        if (data != null && data.getLength() != 0) {
-          applicationId = ExecutionControllerUtils.findApplicationIdFromLog(data.getData());
-          if (applicationId != null) {
-            return applicationId;
-          }
-          offset = data.getOffset() + data.getLength();
-          this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
-              + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
-        } else {
-          finished = true;
+      LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+      while (data != null && data.getLength() > 0) {
+        this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+            + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
+        String logData = data.getData();
+        final int indexOfLastSpace = logData.lastIndexOf(' ');
+        final int indexOfLastTab = logData.lastIndexOf('\t');
+        final int indexOfLastEoL = logData.lastIndexOf('\n');
+        final int indexOfLastDelim = Math
+            .max(indexOfLastEoL, Math.max(indexOfLastSpace, indexOfLastTab));
+        if (indexOfLastDelim > -1) {
+          // index + 1 to avoid looping forever if indexOfLastDelim is zero
+          logData = logData.substring(0, indexOfLastDelim + 1);
         }
+        applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(logData));
+        offset = data.getOffset() + logData.length();
+        data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
       this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
-    return null;
+    return applicationIds;
   }
 
   /**
@@ -957,6 +980,12 @@ public class ExecutorManager extends EventHandler implements
       }
       return message;
     }
+  }
+
+  @Override
+  public Map<String, String> doRampActions(List<Map<String, Object>> rampActions)
+      throws ExecutorManagerException {
+    return this.executorLoader.doRampActions(rampActions);
   }
 
   private void cleanOldExecutionLogs(final long millis) {

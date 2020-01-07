@@ -21,7 +21,9 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,7 +85,8 @@ public interface ExecutorManagerAdapter {
   public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId,
       int attempt) throws ExecutorManagerException;
 
-  public String getJobLinkUrl(ExecutableFlow exFlow, String jobId, int attempt);
+  public Map<String, String> getExternalJobLogUrls(ExecutableFlow exFlow, String jobId,
+      int attempt);
 
   public void cancelFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException;
@@ -98,6 +101,9 @@ public interface ExecutorManagerAdapter {
       throws ExecutorManagerException;
 
   public String submitExecutableFlow(ExecutableFlow exflow, String userId)
+      throws ExecutorManagerException;
+
+  public Map<String, String> doRampActions(List<Map<String, Object>> rampAction)
       throws ExecutorManagerException;
 
   /**

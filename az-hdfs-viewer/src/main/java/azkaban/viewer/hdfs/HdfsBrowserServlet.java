@@ -13,14 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.viewer.hdfs;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -28,18 +26,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.log4j.Logger;
-
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.user.User;
@@ -48,13 +43,14 @@ import azkaban.server.session.Session;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
 
+
 public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private static final String PROXY_USER_SESSION_KEY =
       "hdfs.browser.proxy.user";
   private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM =
       "hadoop.security.manager.class";
-  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE = 
+  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE =
       "viewer.access_denied_message";
 
   private static final int DEFAULT_FILE_MAX_LINES = 1000;

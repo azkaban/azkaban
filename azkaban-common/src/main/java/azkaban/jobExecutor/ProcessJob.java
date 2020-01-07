@@ -58,7 +58,7 @@ public class ProcessJob extends AbstractProcessJob {
   public static final String KRB5CCNAME = "KRB5CCNAME";
   private static final Duration KILL_TIME = Duration.ofSeconds(30);
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
-  private static final String CHOWN = "chown";
+  private static final String CHOWN = "/bin/chown";
   private static final String CREATE_FILE = "touch";
   private static final int SUCCESSFUL_EXECUTION = 0;
   private static final String TEMP_FILE_NAME = "user_can_write";
@@ -72,6 +72,13 @@ public class ProcessJob extends AbstractProcessJob {
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
     super(jobId, sysProps, jobProps, log);
+    // TODO: reallocf fully guicify CommonMetrics through ProcessJob dependents
+    this.commonMetrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
+  }
+
+  public ProcessJob(final String jobId, final Props sysProps,
+      final Props jobProps, final Props privateProps, final Logger log) {
+    super(jobId, sysProps, jobProps, privateProps, log);
     // TODO: reallocf fully guicify CommonMetrics through ProcessJob dependents
     this.commonMetrics = SERVICE_PROVIDER.getInstance(CommonMetrics.class);
   }
@@ -248,10 +255,10 @@ public class ProcessJob extends AbstractProcessJob {
         assignUserFileOwnership(effectiveUser, getWorkingDirectory());
       }
       // Set property file permissions to <uid>:azkaban so user can write to their prop files
-      // in order to pass properties from one job to another
-      for (final File propFile : propFiles) {
+      // in order to pass properties from one job to another, except the last one
+      for (int i = 0; i < 2; i++) {
         info("Changing properties files ownership");
-        assignUserFileOwnership(effectiveUser, propFile.getAbsolutePath());
+        assignUserFileOwnership(effectiveUser, propFiles[i].getAbsolutePath());
       }
     }
 
@@ -304,7 +311,7 @@ public class ProcessJob extends AbstractProcessJob {
         }
         throw new RuntimeException(e);
       } finally {
-        info("Process completed "
+        info("Process with id " + this.process.getProcessId() + " completed "
             + (this.success ? "successfully" : "unsuccessfully") + " in "
             + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
       }

@@ -677,7 +677,14 @@ public class JobRunner extends EventHandler implements Runnable {
       finalStatus = changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
-      if (!this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+      if (this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+        if (!IsSpecifiedWorkingDirectoryValid()) {
+          logError("Specified " + AbstractProcessJob.WORKING_DIR + " is not valid: " +
+              this.props.get(AbstractProcessJob.WORKING_DIR) + ". Must be a subdirectory of " +
+              this.workingDir.getAbsolutePath());
+          return null;
+        }
+      } else {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
 
@@ -699,6 +706,8 @@ public class JobRunner extends EventHandler implements Runnable {
             submitUser);
       }
 
+      this.props.putAll(this.node.getRampProps());
+
       try {
         this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
       } catch (final JobTypeManagerException e) {
@@ -708,6 +717,23 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return finalStatus;
+  }
+
+  /**
+   * Validates execution directory specified by user.
+   */
+  private boolean IsSpecifiedWorkingDirectoryValid() {
+    final File usersWorkingDir = new File(this.props.get(AbstractProcessJob.WORKING_DIR));
+    try {
+      if (!usersWorkingDir.getCanonicalPath().startsWith(this.workingDir.getCanonicalPath())) {
+        return false;
+      }
+    } catch (final IOException e) {
+      this.logger.error("Failed to validate user's " + AbstractProcessJob.WORKING_DIR +
+          " property.", e);
+      return false;
+    }
+    return true;
   }
 
   /**

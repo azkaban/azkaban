@@ -75,15 +75,18 @@ public class Props {
    */
   public Props(final Props parent, final File file) throws IOException {
     this(parent);
-    setSource(file.getPath());
 
-    final InputStream input = new BufferedInputStream(new FileInputStream(file));
-    try {
-      loadFrom(input);
-    } catch (final IOException e) {
-      throw e;
-    } finally {
-      input.close();
+    if (file.exists()) {
+      setSource(file.getPath());
+
+      final InputStream input = new BufferedInputStream(new FileInputStream(file));
+      try {
+        loadFrom(input);
+      } catch (final IOException e) {
+        throw e;
+      } finally {
+        input.close();
+      }
     }
   }
 
@@ -174,6 +177,20 @@ public class Props {
     }
 
     return dest;
+  }
+
+  /**
+   * Create a new Props instance
+   *
+   * @param parent parent props
+   * @param current current props
+   * @param source source value
+   * @return new Prop Instance
+   */
+  public static Props getInstance(Props parent, Props current, String source) {
+    Props props = new Props(parent, current);
+    props.setSource(source);
+    return props;
   }
 
   /**
@@ -608,13 +625,22 @@ public class Props {
   }
 
   /**
-   * Returns the uri representation of the value. If the value is null, then the default value is
-   * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
+   * Returns the uri representation of the value. If the value is null, then an
+   * UndefinedPropertyException will be thrown. If the value isn't a uri, then an
+   * IllegalArgumentException will be thrown.
+   *
+   * If addTrailingSlash is true and the value isn't null, a trailing forward slash will be added
+   * to the URI.
    */
-  public URI getUri(final String name) {
+  public URI getUri(final String name) { return getUri(name, false); }
+  public URI getUri(final String name, final Boolean addTrailingSlash) {
     if (containsKey(name)) {
       try {
-        return new URI(get(name));
+        String rawValue = get(name);
+        if (rawValue == null) return null;
+
+        String finalValue = !addTrailingSlash || rawValue.endsWith("/") ? rawValue : rawValue + "/";
+        return new URI(finalValue);
       } catch (final URISyntaxException e) {
         throw new IllegalArgumentException(e.getMessage());
       }
@@ -627,10 +653,14 @@ public class Props {
   /**
    * Returns the double representation of the value. If the value is null, then the default value is
    * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
+   *
+   * If addTrailingSlash is true and the value isn't null, a trailing forward slash will be added
+   * to the URI.
    */
-  public URI getUri(final String name, final URI defaultValue) {
+  public URI getUri(final String name, final URI defaultValue) { return getUri(name, defaultValue, false); }
+  public URI getUri(final String name, final URI defaultValue, final Boolean addTrailingSlash) {
     if (containsKey(name)) {
-      return getUri(name);
+      return getUri(name, addTrailingSlash);
     } else {
       return defaultValue;
     }
@@ -875,7 +905,8 @@ public class Props {
   /**
    * Set Source information
    */
-  public void setSource(final String source) {
+  public Props setSource(final String source) {
     this.source = source;
+    return this;
   }
 }

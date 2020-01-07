@@ -66,8 +66,6 @@ var closeAllSubDisplays = function () {
 }
 
 var nodeClickCallback = function (event, model, node) {
-  console.log("Node clicked callback");
-
   var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
@@ -192,7 +190,6 @@ var nodeClickCallback = function (event, model, node) {
 }
 
 var jobClickCallback = function (event, model, node) {
-  console.log("Job clicked callback");
   var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
@@ -262,12 +259,9 @@ var jobClickCallback = function (event, model, node) {
   contextMenuView.show(event, menu);
 }
 
-var edgeClickCallback = function (event, model) {
-  console.log("Edge clicked callback");
-}
+var edgeClickCallback = function (event, model) {}
 
 var graphClickCallback = function (event, model) {
-  console.log("Graph clicked callback");
   var data = model.get("data");
   var flowId = data.flow;
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="

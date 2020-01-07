@@ -18,13 +18,16 @@ package azkaban.executor;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
+import com.sun.istack.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +49,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
+  public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
+
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
@@ -60,6 +65,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
   private boolean isLocked;
+  private ExecutableFlowRampMetadata executableFlowRampMetadata;
+  private String flowLockErrorMessage;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -70,6 +77,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.lastModifiedUser = project.getLastModifiedUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
     setLocked(flow.isLocked());
+    setFlowLockErrorMessage(flow.getFlowLockErrorMessage());
     this.setFlow(project, flow);
   }
 
@@ -218,6 +226,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setLocked(boolean locked) { this.isLocked = locked; }
 
+  public String getFlowLockErrorMessage() {
+    return this.flowLockErrorMessage;
+  }
+
+  public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
+    this.flowLockErrorMessage = flowLockErrorMessage;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -252,6 +268,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+    flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
 
     return flowObj;
   }
@@ -296,6 +313,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
+    this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
   }
 
   @Override
@@ -311,4 +329,30 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.setStatus(Status.RUNNING);
   }
 
+  public ExecutableFlowRampMetadata getExecutableFlowRampMetadata() {
+    return executableFlowRampMetadata;
+  }
+
+  public void setExecutableFlowRampMetadata(ExecutableFlowRampMetadata executableFlowRampMetadata) {
+    this.executableFlowRampMetadata = executableFlowRampMetadata;
+  }
+
+  /**
+   * Get the Relative Flow Directory against project directory
+   */
+  public String getDirectory() {
+    return String.valueOf(getProjectId()) + "." + String.valueOf(getVersion());
+  }
+
+  /**
+   * Get Ramp Props For Job
+   * @param jobId job Id
+   * @param jobType jobType aka job plugin type
+   * @return ramp Props
+   */
+  synchronized public Props getRampPropsForJob(@NotNull final String jobId, @NotNull final String jobType) {
+    return Optional.ofNullable(executableFlowRampMetadata)
+        .map(metadata -> metadata.selectRampPropsForJob(jobId, jobType))
+        .orElse(null);
+  }
 }

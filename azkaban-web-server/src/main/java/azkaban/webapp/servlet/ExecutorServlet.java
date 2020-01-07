@@ -151,6 +151,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
+    } else if (ajaxName.equals("ramp")) {
+      ajaxRampActions(req, resp, ret, session.getUser());
     } else if (ajaxName.equals("fetchscheduledflowgraph")) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
@@ -284,9 +286,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void handleExecutionJobDetailsPage(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
+    final Page page = newPage(req, resp, session,
+        "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
     final User user = session.getUser();
     final int execId = getIntParam(req, "execid");
     final String jobId = getParam(req, "job");
@@ -297,7 +298,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ExecutableFlow flow = null;
     ExecutableNode node = null;
-    final String jobLinkUrl;
     try {
       flow = this.executorManagerAdapter.getExecutableFlow(execId);
       if (flow == null) {
@@ -309,16 +309,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
       node = flow.getExecutableNodePath(jobId);
       if (node == null) {
-        page.add("errorMsg",
-            "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
+        page.add("errorMsg", "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
         return;
       }
 
-      jobLinkUrl = this.executorManagerAdapter.getJobLinkUrl(flow, jobId, attempt);
-
-      final List<ViewerPlugin> jobViewerPlugins =
-          PluginRegistry.getRegistry().getViewerPluginsForJobType(
-              node.getType());
+      final List<ViewerPlugin> jobViewerPlugins = PluginRegistry.getRegistry()
+          .getViewerPluginsForJobType(node.getType());
       page.add("jobViewerPlugins", jobViewerPlugins);
     } catch (final ExecutorManagerException e) {
       page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
@@ -334,11 +330,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    final Map<String, String> jobLogUrlsByAppId = this.executorManagerAdapter
+        .getExternalJobLogUrls(flow, jobId, attempt);
+    page.add("jobLogUrlsByAppId", jobLogUrlsByAppId);
+
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
-    page.add("jobLinkUrl", jobLinkUrl);
     page.add("jobType", node.getType());
     page.add("attemptStatus", attempt == node.getAttempt() ?
         node.getStatus() : node.getPastAttemptList().get(attempt).getStatus());
@@ -467,7 +466,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
     boolean isCurrentFlowLocked = false;
-    if(currentFlow != null) {
+    if (currentFlow != null) {
       isCurrentFlowLocked = currentFlow.isLocked();
     } else {
       logger.info("Flow {} not found in project {}.", flow.getFlowId(), project.getName());
@@ -586,7 +585,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       }
 
       final int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-      final LogData data = this.executorManagerAdapter.getExecutionJobLog(exFlow, jobId, offset, length, attempt);
+      final LogData data = this.executorManagerAdapter
+          .getExecutionJobLog(exFlow, jobId, offset, length, attempt);
       ret.putAll(appendLogData(data, offset));
 
     } catch (final ExecutorManagerException e) {
@@ -595,7 +595,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   }
 
   private Map<String, Object> appendLogData(final LogData data, final int defaultOffset) {
-    Map<String, Object> parameters = new HashMap<>();
+    final Map<String, Object> parameters = new HashMap<>();
 
     if (data == null) {
       parameters.put("length", 0);
@@ -968,5 +968,31 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     ret.put("execid", exflow.getExecutionId());
+  }
+
+  private void ajaxRampActions(final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
+
+    try {
+      Object body = HttpRequestUtils.getJsonBody(req);
+      if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
+        Map<String, String> result = new HashMap<>();
+        if (body instanceof List) { // A list of actions
+          List<Map<String, Object>> rampActions = (List<Map<String, Object>>)body;
+          result = this.executorManagerAdapter.doRampActions(rampActions);
+        } else if (body instanceof Map) {
+          List<Map<String, Object>> rampActions = new ArrayList<>();
+          rampActions.add((Map<String, Object>) body);
+          result = this.executorManagerAdapter.doRampActions(rampActions);
+        } else {
+          result.put("error", "Invalid Body Format");
+        }
+        ret.putAll(result);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+      ret.put("error", "Error on update Ramp. " + e.getMessage());
+    }
   }
 }

@@ -87,14 +87,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   /**
-   * TODO: This should be exposed as a configurable parameter
-   *
-   * The assumption is that an "azkaban" group exists which has access to data created by the
-   * azkaban process. For example, this may include delegation tokens created for other users to run
-   * their jobs.
-   */
-  public static final String GROUP_NAME = "azkaban";
-  /**
    * The Kerberos principal for the job tracker.
    */
   public static final String JT_PRINCIPAL = JTConfig.JT_USER_NAME;
@@ -235,7 +227,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     if (hsmInstance == null) {
       synchronized (HadoopSecurityManager_H_2_0.class) {
         if (hsmInstance == null) {
-          logger.info("getting new instance");
+          logger.info("getting new instance of HadoopSecurityManager");
           hsmInstance = new HadoopSecurityManager_H_2_0(props);
         }
       }
@@ -339,18 +331,16 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
-  String userToProxy, final Logger jobLogger) {
+  String userToProxy, final Logger jobLogger, final String customCredentialProviderName) {
     String credentialClassName = "unknown class";
       try {
-        credentialClassName = props
-            .getString(Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+        credentialClassName = props.getString(customCredentialProviderName);
         logger.info("custom credential class name: " + credentialClassName);
         final Class credentialClass = Class.forName(credentialClassName);
 
         // The credential class must have a constructor accepting 3 parameters, Credentials,
         // Props, and Logger in order.
-        final Constructor constructor = credentialClass.getConstructor(new Class[]
-            {Credentials.class, Props.class, Logger.class});
+        final Constructor constructor = credentialClass.getConstructor(Credentials.class, Props.class, Logger.class);
         final CredentialProvider customCredential = (CredentialProvider) constructor
               .newInstance(hadoopCred, props, jobLogger);
         customCredential.register(userToProxy);
@@ -452,8 +442,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       hcatToken.setService(new Text(tokenSignatureOverwrite.trim()
           .toLowerCase()));
 
-      logger.info(HIVE_TOKEN_SIGNATURE_KEY + ":"
-          + (tokenSignatureOverwrite == null ? "" : tokenSignatureOverwrite));
+      logger.info(HIVE_TOKEN_SIGNATURE_KEY + ":" + tokenSignatureOverwrite);
     }
 
     logger.info("Created hive metastore token.");
@@ -470,15 +459,25 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       throws HadoopSecurityManagerException {
     final String userToProxy = props.getString(JobProperties.USER_TO_PROXY);
 
-    logger.info("Getting hadoop tokens based on props for " + userToProxy);
     doPrefetch(tokenFile, props, logger, userToProxy);
   }
 
   private void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
+    // Create suffix to be added to headless user, the suffix is a valid email ID which conforms
+    // to Kubernetes.
+    final String suffix =
+        props.getBoolean(HadoopSecurityManager.APPEND_SUBMIT_USER, false) &&
+            props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) != null ?
+            "/" + props.getString(Constants.FlowProperties.AZKABAN_FLOW_SUBMIT_USER) +
+                props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) : "";
+
+    final String userToProxyFQN = userToProxy + suffix;
+    logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
+
     final Credentials cred = new Credentials();
-    fetchMetaStoreToken(props, logger, userToProxy, cred);
-    fetchJHSToken(props, logger, userToProxy, cred);
+    fetchMetaStoreToken(props, logger, userToProxyFQN, cred);
+    fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
       getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
@@ -495,7 +494,12 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger);
+            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+          }
+
+          // Register oauth tokens by custom oauth credential provider
+          if (props.getBoolean(JobProperties.ENABLE_OAUTH, false)) {
+            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.OAUTH_CREDENTIAL_NAME);
           }
 
           fetchNameNodeToken(userToProxy, props, logger, cred);
@@ -506,7 +510,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       });
 
       logger.info("Preparing token file " + tokenFile.getAbsolutePath());
-      prepareTokenFile(userToProxy, cred, tokenFile, logger);
+      prepareTokenFile(userToProxy, cred, tokenFile, logger,
+          props.getString(Constants.ConfigurationKeys.SECURITY_USER_GROUP, "azkaban"));
       // stash them to cancel after use.
 
       logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
@@ -688,15 +693,17 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * @param credentials Credentials to be written to file
    * @param tokenFile file to be written
    * @param logger logger to use
+   * @param group user group to own the token file
    * @throws IOException If there are issues in reading / updating the token file
    */
   private void prepareTokenFile(final String user,
       final Credentials credentials,
       final File tokenFile,
-      final Logger logger) throws IOException {
+      final Logger logger,
+      final String group) throws IOException {
     writeCredentialsToFile(credentials, tokenFile, logger);
     try {
-      assignPermissions(user, tokenFile, logger);
+      assignPermissions(user, tokenFile, group);
     } catch (final IOException e) {
       // On any error managing token file. delete the file
       tokenFile.delete();
@@ -736,9 +743,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    *
    * @param user user to be proxied
    * @param tokenFile file to be written
-   * @param logger logger to use
+   * @param group user group to own the token file
    */
-  private void assignPermissions(final String user, final File tokenFile, final Logger logger)
+  private void assignPermissions(final String user, final File tokenFile, final String group)
       throws IOException {
     final List<String> changePermissionsCommand = Arrays.asList(
         CHMOD, TOKEN_FILE_PERMISSIONS, tokenFile.getAbsolutePath()
@@ -750,7 +757,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
 
     final List<String> changeOwnershipCommand = Arrays.asList(
-        CHOWN, user + ":" + GROUP_NAME, tokenFile.getAbsolutePath()
+        CHOWN, user + ":" + group, tokenFile.getAbsolutePath()
     );
     result = this.executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {

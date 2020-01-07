@@ -80,6 +80,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.SchedulerException;
@@ -92,6 +93,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   static final String FLOW_NAME_PARAM = "flowName";
   static final String FLOW_ID_PARAM = "flowId";
   static final String ERROR_PARAM = "error";
+  static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
   private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
@@ -1136,6 +1138,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final boolean isLocked = Boolean.parseBoolean(getParam(req, FLOW_IS_LOCKED_PARAM));
 
+    String flowLockErrorMessage = null;
+    try {
+      flowLockErrorMessage = getParam(req, FLOW_LOCK_ERROR_MESSAGE_PARAM);
+    } catch(final Exception e) {
+      logger.info("Unable to get flow lock error message");
+    }
+
     // if there is a change in the locked value, then check to see if the project has a flow trigger
     // that needs to be paused/resumed.
     if (isLocked != flow.isLocked()) {
@@ -1165,8 +1174,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     flow.setLocked(isLocked);
+    flow.setFlowLockErrorMessage(isLocked ? flowLockErrorMessage : null);
+
     ret.put(FLOW_IS_LOCKED_PARAM, flow.isLocked());
     ret.put(FLOW_ID_PARAM, flow.getId());
+    ret.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, flow.getFlowLockErrorMessage());
     this.projectManager.updateFlow(project, flow);
   }
 
@@ -1237,14 +1249,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());
     }
-
-    final int numBytes = 1024;
-
-    // Really sucks if we do a lot of these because it'll eat up memory fast.
-    // But it's expected that this won't be a heavily used thing. If it is,
-    // then we'll revisit it to make it more stream friendly.
-    final StringBuffer buffer = new StringBuffer(numBytes);
-    page.add("log", buffer.toString());
 
     page.render();
   }
@@ -1620,7 +1624,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("isLocked", flow.isLocked());
         if (flow.isLocked()) {
           final Props props = this.projectManager.getProps();
-          final String lockedFlowMsg = String.format(props.getString(ConfigurationKeys
+          final String flowLockErrorMessage = flow.getFlowLockErrorMessage();
+          final String lockedFlowMsg = flowLockErrorMessage != null ? flowLockErrorMessage :
+              String.format(props.getString(ConfigurationKeys
                   .AZKABAN_LOCKED_FLOW_ERROR_MESSAGE, Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE),
               flow.getId(), projectName);
           page.add("error_message", lockedFlowMsg);
@@ -1762,17 +1768,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     final FileItem item = (FileItem) multipart.get("file");
     final String name = item.getName();
-    String type = null;
+    final String lowercaseExtension = FilenameUtils.getExtension(name).toLowerCase();
 
+    final Boolean hasZipExtension = lowercaseExtension.equals("zip");
     final String contentType = item.getContentType();
-    if (contentType != null && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) ||
-        contentType.startsWith("application/x-zip-compressed") ||
-        contentType.startsWith("application/octet-stream"))) {
-      type = "zip";
-    } else {
+    if (contentType == null || !hasZipExtension ||
+        (!contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) &&
+        !contentType.startsWith("application/x-zip-compressed") &&
+        !contentType.startsWith("application/octet-stream"))) {
       item.delete();
-      registerError(ret, "File type " + contentType + " unrecognized.", resp,
-          HttpServletResponse.SC_BAD_REQUEST);
+      if (!hasZipExtension) {
+        registerError(ret, "File extension '" + lowercaseExtension + "' unrecognized.", resp,
+            HttpServletResponse.SC_BAD_REQUEST);
+      } else {
+        registerError(ret, "Content type '" + contentType + "' does not match extension '" + lowercaseExtension + "'", resp,
+            HttpServletResponse.SC_BAD_REQUEST);
+      }
       return;
     }
 
@@ -1790,7 +1801,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final File tempDir = Utils.createTempDir();
     OutputStream out = null;
     try {
-      logger.info("Uploading file " + name);
+      logger.info("Uploading file to web server " + name);
       final File archiveFile = new File(tempDir, name);
       out = new BufferedOutputStream(new FileOutputStream(archiveFile));
       IOUtils.copy(item.getInputStream(), out);
@@ -1806,7 +1817,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final List<String> lockedFlows = getLockedFlows(project);
 
       final Map<String, ValidationReport> reports = this.projectManager
-          .uploadProject(project, archiveFile, type, user, props);
+          .uploadProject(project, archiveFile, lowercaseExtension, user, props);
 
       if (this.enableQuartz) {
         this.scheduler.schedule(project, user.getUserId());
@@ -1926,18 +1937,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
       if (!report.getErrorMsgs().isEmpty()) {
-        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
+        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors:<br><br>");
         for (final String msg : report.getErrorMsgs()) {
-          errorMsgs.append("<li>" + msg + "</li>");
+          errorMsgs.append(msg + "<br>");
         }
-        errorMsgs.append("</ul>");
       }
       if (!report.getWarningMsgs().isEmpty()) {
-        warnMsgs.append("Validator " + reportEntry.getKey() + " reports warnings:<ul>");
+        warnMsgs.append("Validator " + reportEntry.getKey() + " reports warnings:<br><br>");
         for (final String msg : report.getWarningMsgs()) {
-          warnMsgs.append("<li>" + msg + "</li>");
+          warnMsgs.append(msg + "<br>");
         }
-        warnMsgs.append("</ul>");
       }
     }
     if (errorMsgs.length() > 0) {

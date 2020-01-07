@@ -181,7 +181,7 @@ public class Utils {
       if (files != null) {
         for (final File f : files) {
           final String childPath =
-              path + input.getName() + (f.isDirectory() ? "/" : "");
+              path + input.getName() + (f.isDirectory() ? File.separator : "");
           zipFile(childPath, f, zOut);
         }
       }

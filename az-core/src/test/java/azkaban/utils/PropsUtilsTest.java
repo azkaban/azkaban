@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 LinkedIn Corp.
+ * Copyright 2019 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,13 +13,15 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
+
 
 public class PropsUtilsTest {
 
@@ -249,5 +251,24 @@ public class PropsUtilsTest {
     } catch (final IllegalArgumentException e) {
       e.printStackTrace();
     }
+  }
+
+  @Test
+  public void testNewPropsForFileNotExist() throws IOException {
+    File file = Mockito.mock(File.class);
+    Mockito.when(file.exists()).thenReturn(false);
+    Props parent = new Props().setSource("test");
+    Props props = PropsUtils.newProps(parent, file);
+    Assert.assertNotNull(props);
+    Assert.assertNotNull(props.getParent());
+    Assert.assertEquals("test", props.getParent().getSource());
+  }
+
+  @Test
+  public void testNewPropsForNullParentAndFileNotExist() throws IOException {
+    File file = Mockito.mock(File.class);
+    Mockito.when(file.exists()).thenReturn(false);
+    Props props = PropsUtils.newProps(null, file);
+    Assert.assertNull(props);
   }
 }

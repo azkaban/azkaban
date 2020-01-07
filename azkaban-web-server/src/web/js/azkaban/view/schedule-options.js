@@ -266,10 +266,10 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
               $('#scheduleFailureAction').val(data.failureAction);
             }
             if (data.notifyFailureFirst) {
-              $('#scheduleNotifyFailureFirst').attr('checked', true);
+              $('#scheduleNotifyFailureFirst').prop('checked', true);
             }
             if (data.notifyFailureLast) {
-              $('#scheduleNotifyFailureLast').attr('checked', true);
+              $('#scheduleNotifyFailureLast').prop('checked', true);
             }
             if (data.flowParam) {
               var flowParam = data.flowParam;

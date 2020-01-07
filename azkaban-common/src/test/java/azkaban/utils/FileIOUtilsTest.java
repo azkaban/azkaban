@@ -31,11 +31,14 @@ import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
+
 
 public class FileIOUtilsTest {
 
@@ -271,5 +274,27 @@ public class FileIOUtilsTest {
       e.printStackTrace();
     }
     return textBytes;
+  }
+
+  @Test
+  public void testIsValidDirectory() {
+    File file = Mockito.mock(File.class);
+
+    Mockito.when(file.exists()).thenReturn(false);
+    Assert.assertFalse(FileIOUtils.isValidDirectory(file));
+
+    Mockito.when(file.exists()).thenReturn(true);
+    Mockito.when(file.isDirectory()).thenReturn(false);
+    Assert.assertFalse(FileIOUtils.isValidDirectory(file));
+
+    Mockito.when(file.exists()).thenReturn(true);
+    Mockito.when(file.isDirectory()).thenReturn(true);
+    Mockito.when(file.canRead()).thenReturn(false);
+    Assert.assertFalse(FileIOUtils.isValidDirectory(file));
+
+    Mockito.when(file.exists()).thenReturn(true);
+    Mockito.when(file.isDirectory()).thenReturn(true);
+    Mockito.when(file.canRead()).thenReturn(true);
+    Assert.assertTrue(FileIOUtils.isValidDirectory(file));
   }
 }

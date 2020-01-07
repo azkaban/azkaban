@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.event;
 
 import java.util.ArrayList;
@@ -26,8 +25,16 @@ public class EventHandler {
   public EventHandler() {
   }
 
-  public void addListener(final EventListener listener) {
+  public EventHandler addListener(final EventListener listener) {
     this.listeners.add(listener);
+    return this;
+  }
+
+  public EventHandler addListeners(final EventListener... listeners) {
+    for (int i = listeners.length - 1; i >= 0; i--) {
+      this.listeners.add(listeners[i]);
+    }
+    return this;
   }
 
   public void fireEventListeners(final Event event) {

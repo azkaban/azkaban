@@ -13,13 +13,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
+
 
 /**
  * Test class for azkaban.utils.Props
@@ -45,5 +48,14 @@ public class PropsTest {
     p.put(EXTRA_HCAT_CLUSTERS, s5);
     List<String> s6 = Arrays.asList("thrift://hcat1:port,thrift://hcat2:port");
     Assert.assertTrue(p.getStringListFromCluster(EXTRA_HCAT_CLUSTERS).equals(s6));
+  }
+
+  @Test
+  public void testCreateProps() throws IOException {
+    File file = Mockito.mock(File.class);
+    Mockito.when(file.exists()).thenReturn(false);
+    Props parent = new Props();
+    Props props = new Props(parent, file);
+    Assert.assertNull(props.getSource());
   }
 }

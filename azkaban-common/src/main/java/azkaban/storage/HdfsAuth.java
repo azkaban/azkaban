@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.spi.AzkabanException;
 import azkaban.utils.Props;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
@@ -37,7 +38,6 @@ import org.apache.log4j.Logger;
  */
 @Singleton
 public class HdfsAuth {
-
   private static final Logger log = Logger.getLogger(HdfsAuth.class);
 
   private final boolean isSecurityEnabled;
@@ -47,7 +47,7 @@ public class HdfsAuth {
   private String keytabPrincipal = null;
 
   @Inject
-  public HdfsAuth(final Props props, final Configuration conf) {
+  public HdfsAuth(final Props props, @Named("hdfsConf") final Configuration conf) {
     UserGroupInformation.setConfiguration(conf);
     this.isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
     if (this.isSecurityEnabled) {

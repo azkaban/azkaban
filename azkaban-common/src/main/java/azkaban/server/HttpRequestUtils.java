@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.server;
 
 import azkaban.executor.DisabledJob;
@@ -27,6 +26,8 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -284,4 +285,24 @@ public class HttpRequestUtils {
     return groupParam;
   }
 
+  public static Object getJsonBody(final HttpServletRequest request) throws ServletException {
+    try {
+      return JSONUtils.parseJSONFromString(getBody(request));
+    } catch (IOException e) {
+      throw new ServletException("HTTP Request JSON Body cannot be parsed.", e);
+    }
+  }
+
+  public static String getBody(final HttpServletRequest request) throws ServletException {
+    try {
+      StringBuffer stringBuffer = new StringBuffer();
+      String line = null;
+      BufferedReader reader = request.getReader();
+      while ((line = reader.readLine()) != null)
+        stringBuffer.append(line);
+      return stringBuffer.toString();
+    } catch (Exception e) {
+      throw new ServletException("HTTP Request Body cannot be parsed.", e);
+    }
+  }
 }

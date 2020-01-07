@@ -26,14 +26,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileIOUtils {
 
-  private static final Logger log = LoggerFactory.getLogger(FileIOUtils.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileIOUtils.class);
 
   /**
    * Check if a directory is writable
@@ -80,6 +76,30 @@ public class FileIOUtils {
   }
 
   /**
+   * Check if a directory is a valid directory
+   * @param directory directory file object
+   * @return true if it exists, valid and readable
+   */
+  public static boolean isValidDirectory(File directory) {
+    if (!directory.exists()) {
+      LOGGER.warn("Directory [" + directory.toPath() + "] does not exist.");
+      return false;
+    }
+
+    if (!directory.isDirectory()) {
+      LOGGER.error("Directory [" + directory.toPath() + "] is invalid. No extra plugins will be loaded");
+      return false;
+    }
+
+    if (!directory.canRead()) {
+      LOGGER.error("Directory [" + directory.toPath() + "] is not readable. No extra plugins will be loaded");
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
    * Delete a directory, log the error if deletion fails.
    */
   public static void deleteDirectorySilently(final File dir) {
@@ -87,11 +107,45 @@ public class FileIOUtils {
       try {
         FileUtils.deleteDirectory(dir);
       } catch (final IOException e) {
-        log.error("error when deleting dir {}", dir, e);
+        LOGGER.error("error when deleting dir {}", dir, e);
       }
     }
   }
 
+  /**
+   * Get Directory or Create a Directory if it does not exist
+   * @param parentDirectory parent Directory name
+   * @param folderName sub folder name
+   * @return handle of File
+   */
+  public static File getDirectory(File parentDirectory, String folderName) {
+    File directory = new File(parentDirectory, folderName);
+    if (!directory.exists()) {
+      directory.mkdir();
+    }
+    return directory;
+  }
+
+  /**
+   * Move Files from source directory to destinationDirectory if the file name matches the given pattern
+   * @param sourceDirectory source directory
+   * @param destinationDiretory destination directory
+   * @param fileNamePattern regular expression pattern of file name's
+   * @throws IOException
+   */
+  public static void moveFiles(File sourceDirectory, File destinationDiretory, String fileNamePattern)
+      throws IOException {
+    File[] files = sourceDirectory.listFiles();
+    for (File file : files) {
+      if (!file.isDirectory()) {
+        if (file.getName().matches(fileNamePattern)) {
+          Files.move(
+              Paths.get(file.getAbsolutePath()),
+              Paths.get(String.format("%s/%s", destinationDiretory.getAbsolutePath(), file.getName())));
+        }
+      }
+    }
+  }
 
   /**
    * Dumps a number into a new file.
@@ -105,7 +159,7 @@ public class FileIOUtils {
         .newBufferedWriter(filePath, StandardCharsets.UTF_8)) {
       writer.write(String.valueOf(num));
     } catch (final IOException e) {
-      log.error("Failed to write the number {} to the file {}", num, filePath, e);
+      LOGGER.error("Failed to write the number {} to the file {}", num, filePath, e);
       throw e;
     }
   }
@@ -145,6 +199,20 @@ public class FileIOUtils {
   }
 
   /**
+   * A thin wrapper for File.getCanonicalPath() that doesn't throw a checked exception
+   *
+   * @param file input file
+   * @return String canonical path of the file
+   */
+  public static String getCanonicalPath(final File f) {
+    try {
+      return f.getCanonicalPath();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
    * Load output file into a Props object
    *
    * @param file output properties file
@@ -153,7 +221,7 @@ public class FileIOUtils {
   public static Props loadOutputFileProps(final File file) {
     InputStream reader = null;
     try {
-      log.info("output properties file=" + file.getAbsolutePath());
+      LOGGER.info("output properties file=" + file.getAbsolutePath());
       reader = new BufferedInputStream(new FileInputStream(file));
       final Props outputProps = new Props();
       final String content = Streams.asString(reader).trim();
@@ -168,12 +236,12 @@ public class FileIOUtils {
       }
       return outputProps;
     } catch (final FileNotFoundException e) {
-      log.info(
+      LOGGER.info(
           String.format("File[%s] wasn't found, returning empty props.", file)
       );
       return new Props();
     } catch (final Exception e) {
-      log.error(
+      LOGGER.error(
           "Exception thrown when trying to load output file props.  Returning empty Props instead of failing. Is this really the best thing to do?",
           e);
       return new Props();

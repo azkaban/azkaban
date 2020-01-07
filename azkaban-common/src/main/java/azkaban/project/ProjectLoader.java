@@ -103,8 +103,8 @@ public interface ProjectLoader {
    * Add project and version info to the project_versions table. This current maintains the metadata
    * for each uploaded version of the project
    */
-  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5,
-      String resourceId)
+  void addProjectVersion(int projectId, int version, File localFile, File startupDependencies, String uploader,
+      byte[] md5, String resourceId)
       throws ProjectManagerException;
 
   /**
@@ -150,9 +150,15 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Fetches all flows.
+   * Fetches all flows for a given project
    */
-  List<Flow> fetchAllProjectFlows(Project project)
+  List<Flow> fetchAllProjectFlows(final Project project)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches all flows for all projects.
+   */
+  Map<Project, List<Flow>> fetchAllFlowsForProjects(List<Project> projects)
       throws ProjectManagerException;
 
   /**
@@ -196,9 +202,6 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   Props fetchProjectProperty(int projectId, int projectVer, String propsName)
-      throws ProjectManagerException;
-
-  List<Triple<String, Boolean, Permission>> getProjectPermissions(Project project)
       throws ProjectManagerException;
 
   void updateProjectSettings(Project project) throws ProjectManagerException;

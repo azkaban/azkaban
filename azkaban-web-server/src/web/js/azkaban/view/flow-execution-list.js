@@ -294,6 +294,16 @@ azkaban.ExecutionListView = Backbone.View.extend({
     } // else do nothing
   },
 
+  propagateExpansionDown: function(flow) {
+    var children = $(flow.joblistrow.subflowrow).find("> td > table > tbody > tr.jobListRow");
+    for (var i = 0; i < children.length; i++) {
+      this.propagateExpansionDown(children[i].node);
+    }
+    if (children.length) {
+      this.setFlowExpansion(flow, true);
+    }
+  },
+
   expandRunningFailedOrKilledJobs: function (nodes) {
     var isRunningFailedOrKilled = false;
     for (var i = 0; i < nodes.length; ++i) {
@@ -379,6 +389,16 @@ azkaban.ExecutionListView = Backbone.View.extend({
         var parent = $(evt.currentTarget).parents("tr")[0];
         self.setFlowExpansion(parent.node);
       });
+
+      if (atLeastOneChildHasChildren(node)) {
+        // Add the double down expand all
+        var expandAllDiv = createExpandAllButton();
+        $(expandAllDiv).click(function (evt) {
+          var parent = $(evt.currentTarget).parents("tr")[0];
+          self.propagateExpansionDown(parent.node);
+        });
+        $(tdName).append(expandAllDiv);
+      }
     }
 
     var status = document.createElement("div");

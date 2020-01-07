@@ -20,7 +20,6 @@ import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 

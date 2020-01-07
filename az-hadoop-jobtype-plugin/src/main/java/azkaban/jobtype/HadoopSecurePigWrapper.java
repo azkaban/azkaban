@@ -77,11 +77,13 @@ public class HadoopSecurePigWrapper {
   @SuppressWarnings("deprecation")
   public static void runPigJob(String[] args) throws Exception {
     PigStats stats = null;
+    System.out.println("Beginning execution of pig script.");
     if (props.getBoolean("pig.listener.visualizer", false) == true) {
       stats = PigRunner.run(args, new AzkabanPigListener(props));
     } else {
       stats = PigRunner.run(args, null);
     }
+    System.out.println("Completed execution of pig script.");
 
     dumpHadoopCounters(stats);
 
