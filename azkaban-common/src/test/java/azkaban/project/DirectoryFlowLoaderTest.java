@@ -16,6 +16,9 @@
 
 package azkaban.project;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import azkaban.flow.Flow;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.io.Files;

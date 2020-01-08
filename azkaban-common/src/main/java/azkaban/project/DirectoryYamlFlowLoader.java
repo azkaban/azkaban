@@ -51,12 +51,11 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   // Pattern to match conditionOnJobStatus macros, e.g. one_success, all_done
   public static final Pattern CONDITION_ON_JOB_STATUS_PATTERN =
       Pattern.compile("(?i)\\b(" + StringUtils.join(ConditionOnJobStatus.values(), "|") + ")\\b");
-  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
   // Pattern to match a number or a string, e.g. 1234, "hello", 'foo'
-  private static final Pattern DIGIT_STRING_PATTERN = Pattern.compile("\\d+|'.*'|\".*\"");
+  public static final Pattern DIGIT_STRING_PATTERN = Pattern.compile("\\d+|'.*'|\".*\"");
   // Valid operators in condition expressions: &&, ||, ==, !=, >, >=, <, <=
-  private static final String VALID_CONDITION_OPERATORS = "&&|\\|\\||==|!=|>|>=|<|<=";
-
+  public static final String VALID_CONDITION_OPERATORS = "&&|\\|\\||==|!=|>|>=|<|<=";
+  private static final Logger logger = LoggerFactory.getLogger(DirectoryYamlFlowLoader.class);
   private final Props props;
   private final Set<String> errors = new HashSet<>();
   private final Map<String, Flow> flowMap = new HashMap<>();
