@@ -335,6 +335,10 @@ public class FlowRunnerManager implements EventListener,
     }
   }
 
+  public void setActiveInternal(final boolean isActive) {
+    this.active = isActive;
+  }
+
   /**
    * Wait until ongoing flow preparation work finishes.
    */
