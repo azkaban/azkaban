@@ -43,8 +43,8 @@ import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.metrics.MetricsManager;
-import azkaban.server.IMBeanRegistrable;
 import azkaban.server.AzkabanServer;
+import azkaban.server.IMBeanRegistrable;
 import azkaban.server.MBeanRegistrationManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
@@ -221,12 +221,12 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private static void setupTimeZone(final Props azkabanSettings) {
     if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
-      final String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezone);
-      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
-      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
-
-      logger.info("Setting timezone to " + timezone);
+      final String timezoneId = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
+      System.setProperty("user.timezone", timezoneId);
+      TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      TimeZone.setDefault(timeZone);
+      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
+      logger.info("Setting timezone to " + timezoneId);
     }
   }
 

@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.quartz.JobDataMap;
@@ -97,9 +98,10 @@ public class FlowTriggerScheduler {
                     FlowTriggerQuartzJob.PROJECT_ID, project.getId());
             final boolean scheduleSuccess = this.scheduler
                 .scheduleJobIfAbsent(flowTrigger.getSchedule().getCronExpression(),
+                    TimeZone.getTimeZone(flowTrigger.getSchedule().getTimeZone()),
                     new QuartzJobDescription
-                    (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
-                        generateGroupName(flow), contextMap));
+                        (FlowTriggerQuartzJob.class, FlowTriggerQuartzJob.JOB_NAME,
+                            generateGroupName(flow), contextMap));
             if (scheduleSuccess) {
               logger.info("Successfully registered flow {}.{} to scheduler", project.getName(),
                   flow.getId());

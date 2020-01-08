@@ -202,8 +202,18 @@ public class NodeBeanLoader {
       final Duration duration = flowTriggerBean.getMaxWaitMins() == null ? null : Duration
           .ofMinutes(flowTriggerBean.getMaxWaitMins());
 
-      return new FlowTrigger(
-          new CronSchedule(flowTriggerBean.getSchedule().get(FlowTriggerProps.SCHEDULE_VALUE)),
+      Map<String, String> schedule = flowTriggerBean.getSchedule();
+
+      CronSchedule cron;
+      if (schedule.containsKey(FlowTriggerProps.SCHEDULE_TIMEZONE)) {
+        cron = new CronSchedule(
+            schedule.get(FlowTriggerProps.SCHEDULE_VALUE),
+            schedule.get(FlowTriggerProps.SCHEDULE_TIMEZONE));
+      } else {
+        cron = new CronSchedule(
+            schedule.get(FlowTriggerProps.SCHEDULE_VALUE));
+      }
+      return new FlowTrigger(cron,
           flowTriggerBean.getTriggerDependencies().stream()
               .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
               .collect(Collectors.toList()), duration);

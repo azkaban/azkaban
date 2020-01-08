@@ -18,27 +18,36 @@ package azkaban.project;
 
 import com.google.common.base.Preconditions;
 import java.io.Serializable;
+import java.util.TimeZone;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
- * FlowTriggerSchedule is the logical representation of a cron-based schedule.
- * It couldn't be changed once gets constructed.
- * It will be used to schedule a trigger.
+ * FlowTriggerSchedule is the logical representation of a cron-based schedule. It couldn't be
+ * changed once gets constructed. It will be used to schedule a trigger.
  */
 public class CronSchedule implements Serializable {
 
-  private static final long serialVersionUID = -1330280892166841227L;
+  private static final long serialVersionUID = -1330280892166841228L;
   private final String cronExpression;
+  private final String timeZone;
 
   /**
    * @throws IllegalArgumentException if cronExpression is null or blank
    */
   public CronSchedule(final String cronExpression) {
+    this(cronExpression, TimeZone.getDefault().getID());
+  }
+
+  /**
+   * @throws IllegalArgumentException if cronExpression is null or blank
+   */
+  public CronSchedule(final String cronExpression, String timeZone) {
     Preconditions.checkArgument(StringUtils.isNotBlank(cronExpression));
     this.cronExpression = cronExpression;
     //todo chengren311: check cronExpression is valid: quartz has CronExpression.isValidExpression()
+    this.timeZone = timeZone;
   }
 
   public String getCronExpression() {
@@ -59,6 +68,7 @@ public class CronSchedule implements Serializable {
 
     return new EqualsBuilder()
         .append(this.cronExpression, that.cronExpression)
+        .append(this.timeZone, that.timeZone)
         .isEquals();
   }
 
@@ -68,4 +78,9 @@ public class CronSchedule implements Serializable {
         .append(this.cronExpression)
         .toHashCode();
   }
+
+  public String getTimeZone() {
+    return timeZone;
+  }
+
 }

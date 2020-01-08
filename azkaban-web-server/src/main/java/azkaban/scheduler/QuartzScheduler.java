@@ -23,6 +23,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
+import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.quartz.CronExpression;
@@ -159,6 +160,7 @@ public class QuartzScheduler {
    * concurrently uploading projects, so synchronized is added to ensure thread safety.
    *
    * @param cronExpression the cron schedule for this job
+   * @param timeZone
    * @param jobDescription Regarding QuartzJobDescription#groupName, in order to guarantee no
    * duplicate quartz schedules, we design the naming convention depending on use cases: <ul>
    * <li>User flow schedule: we use {@link JobKey#JobKey} to represent the identity of a
@@ -169,8 +171,8 @@ public class QuartzScheduler {
    *
    * @return true if job has been scheduled, false if the same job exists already.
    */
-  public synchronized boolean scheduleJobIfAbsent(final String cronExpression, final QuartzJobDescription
-      jobDescription) throws SchedulerException {
+  public synchronized boolean scheduleJobIfAbsent(final String cronExpression,
+      TimeZone timeZone, final QuartzJobDescription jobDescription) throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
 
@@ -197,9 +199,8 @@ public class QuartzScheduler {
         .newTrigger()
         .withSchedule(
             CronScheduleBuilder.cronSchedule(cronExpression)
+                .inTimeZone(timeZone)
                 .withMisfireHandlingInstructionFireAndProceed()
-//            .withMisfireHandlingInstructionDoNothing()
-//            .withMisfireHandlingInstructionIgnoreMisfires()
         )
         .build();
 

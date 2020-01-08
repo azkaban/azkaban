@@ -97,4 +97,17 @@ public class AzkabanExecutorServerTest {
     assertSingleton(FlowRunnerManager.class, injector);
     assertSingleton(AzkabanExecutorServer.class, injector);
   }
+
+  @Test
+  public void testLaunch() throws Exception {
+    props
+        .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
+
+    final Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanExecServerModule()
+    );
+
+    AzkabanExecutorServer.launch(injector.getInstance(AzkabanExecutorServer.class));
+  }
 }

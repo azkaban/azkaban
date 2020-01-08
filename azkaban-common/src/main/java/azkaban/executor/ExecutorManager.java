@@ -1045,8 +1045,12 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public void shutdown() {
-    this.queueProcessor.shutdown();
-    this.updaterThread.shutdown();
+    if(null != this.queueProcessor) {
+      this.queueProcessor.shutdown();
+    }
+    if(null != this.updaterThread) {
+      this.updaterThread.shutdown();
+    }
   }
 
   @Override

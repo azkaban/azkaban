@@ -395,6 +395,7 @@ public class Constants {
     public static final String SCHEDULE_TYPE = "type";
     public static final String CRON_SCHEDULE_TYPE = "cron";
     public static final String SCHEDULE_VALUE = "value";
+    public static final String SCHEDULE_TIMEZONE = "timezone";
     public static final String DEP_NAME = "name";
 
     // Flow trigger dependency run time props

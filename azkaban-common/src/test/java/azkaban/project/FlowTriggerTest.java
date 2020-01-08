@@ -17,15 +17,19 @@
 package azkaban.project;
 
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import azkaban.scheduler.Schedule;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.UUID;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 
@@ -87,6 +91,45 @@ public class FlowTriggerTest {
             (IllegalArgumentException
                 .class)
         .hasMessageContaining("dependency.name should be unique");
+  }
+
+  @Test
+  public void testTimeZone() {
+    TimeZone timezone1 = TimeZone.getTimeZone("EST");
+    TimeZone timezone2 = TimeZone.getTimeZone("PST");
+    String cronExpression = "* * * * ? *";
+    final CronSchedule schedule = new CronSchedule(cronExpression, timezone1.getID());
+    final List<FlowTriggerDependency> dependencyList = new ArrayList<>();
+    assertThat(schedule.getTimeZone()).isEqualTo(timezone1.getID());
+    assertThat(
+        schedule.equals(new CronSchedule(cronExpression, timezone1.getID()))
+    ).isEqualTo(true);
+    assertThat(
+        schedule.equals(new CronSchedule(cronExpression, timezone2.getID()))
+    ).isEqualTo(false);
+
+    assertThatCode(() -> new FlowTrigger(schedule, dependencyList, Duration.ofMinutes(10)))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  public void testTimeZoneSchedule() {
+    DateTimeZone timezone1 = DateTimeZone.forTimeZone(TimeZone.getTimeZone("EST"));
+    DateTimeZone timezone2 = DateTimeZone.forTimeZone(TimeZone.getTimeZone("PST"));
+    long time = System.currentTimeMillis() + 30;
+    String cronExpression = "* * * * ? *";
+    final Schedule schedule1 = new Schedule(3, 3, "anotherTestProject", "anotherFlow", "ready",
+        time, time, timezone1, null, time,
+        time, time, "testUser3", null,
+        cronExpression);
+    final Schedule schedule2 = new Schedule(3, 3, "anotherTestProject", "anotherFlow", "ready",
+        time, time, timezone2, null, time,
+        time, time, "testUser3", null,
+        cronExpression);
+    assertThat(schedule1.getTimezone().getID()).isEqualTo(timezone1.getID());
+    assertThat(schedule1.equals(schedule2)).isEqualTo(false);
+    assertThat(schedule1.toString().contains(cronExpression)).isEqualTo(true);
+    assertThat(schedule1.toString().contains(timezone1.getID())).isEqualTo(true);
   }
 
   @Test
