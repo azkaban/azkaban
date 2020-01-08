@@ -265,9 +265,9 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private void initActive() throws ExecutorManagerException {
     final Executor executor;
-    final String host = requireNonNull(getHost());
     final int port = this.props.getInt(ConfigurationKeys.EXECUTOR_PORT, -1);
     if (port != -1) {
+      final String host = requireNonNull(getHost());
       // Check if this executor exists previously in the DB
       try {
         executor = this.executionLoader.fetchExecutor(host, port);
