@@ -20,47 +20,34 @@ import azkaban.executor.ExecutableRamp;
 import azkaban.utils.Props;
 
 
-public class SimpleQuickRampPolicy extends AbstractRampPolicy {
+/**
+ * Simple Auto Ramp Policy will be divided to 4 stages
+ *  stage 1: 5%
+ *  stage 2: 20%
+ *  stage 3: 50%
+ *  stage 4: 100%
+ */
+public class SimpleQuickRampPolicy extends SimpleRampPolicy {
   public SimpleQuickRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
 
   @Override
-  public boolean check(
-      ExecutableFlow flow,
-      ExecutableRamp executableRamp
-  ) {
-    if (executableRamp.getState().isPaused()) {
-      return false;
-    }
-
-    int stage = executableRamp.getState().getRampStage();
-    int flowIdHashCode = flow.getId().hashCode();
-    return isInRange(stage, flowIdHashCode);
+  protected int getMaxRampStage() {
+    return 4;
   }
 
-  /**
-   * Simple Percentage range will be appled
-   * @param stage current ramp stage
-   * @param flowIdHashCode hash code of the flow id
-   * @return If it is qualified to ramp, return TRUE
-   */
-  private boolean isInRange(int stage, int flowIdHashCode) {
-    int percentage = flowIdHashCode % 4;
-    boolean isInRange = false;  // set the safe status
-    switch (stage) {
-      case 0: // stage 0
-        break;
-      case 1: // stage 1 = 25%
-        isInRange = (percentage < 1);
-        break;
-      case 2: // stage 2 = 50%
-        isInRange = (percentage < 2);
-        break;
-      default: // stage 3 = 100%
-        isInRange = true;
-        break;
+  @Override
+  protected int getRampStage(ExecutableFlow flow) {
+    int percentage = Math.abs(flow.getId().hashCode() % 100);
+    if (percentage < 5) {
+      return 1;
+    } else if (percentage < 25) {
+      return 2;
+    } else if (percentage < 50) {
+      return 3;
+    } else {
+      return 4;
     }
-    return isInRange;
   }
 }

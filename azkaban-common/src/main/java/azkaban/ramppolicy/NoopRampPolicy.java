@@ -15,25 +15,15 @@
  */
 package azkaban.ramppolicy;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableRamp;
 import azkaban.utils.Props;
 
 
 /**
  * Noop Ramp Policy is a Dummy Ramp Policy which does not apply any ramp upon the job flow.
  */
-public class NoopRampPolicy extends AbstractRampPolicy {
+public final class NoopRampPolicy extends AbstractRampPolicy {
 
   public NoopRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
-  }
-
-  @Override
-  public boolean check(
-      ExecutableFlow flow,
-      ExecutableRamp executableRamp
-  ) {
-    return false;
   }
 }
