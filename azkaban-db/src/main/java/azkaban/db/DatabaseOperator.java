@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import javax.inject.Inject;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
@@ -117,16 +118,35 @@ public class DatabaseOperator {
    * @return The number of rows updated.
    */
   public int update(final String updateClause, final Object... params) throws SQLException {
-    try {
-      return this.queryRunner.update(updateClause, params);
-    } catch (final SQLException ex) {
-      // todo kunkun-tang: Retry logics should be implemented here.
-      logger.error("update failed", ex);
-      if (this.dbMetrics != null) {
-        this.dbMetrics.markDBFailUpdate();
+    int retry = 0;
+    SQLException exception;
+    String errorMsg = "Update failed: Reached maximum number of retries: " + AzDBUtil.MAX_RETRIES_ON_DEADLOCK;
+    do {
+      try {
+        return this.queryRunner.update(updateClause, params);
+      } catch (final SQLException ex) {
+        exception = ex;
+        if (ex.getErrorCode() == 1213) { // 1213 -> Deadlock error
+          retry++;
+          logger.warn("Deadlock detected when trying to execute: " + updateClause + " with values: "
+              + Arrays.toString(params));
+          try {
+            Thread.sleep(AzDBUtil.RETRY_WAIT_TIME);
+          } catch (InterruptedException e) {
+            logger.info("Sleep interrupted");
+          }
+        } else {
+          errorMsg = "update failed";
+          break;
+        }
       }
-      throw ex;
+    } while (retry < AzDBUtil.MAX_RETRIES_ON_DEADLOCK);
+
+    logger.error(errorMsg, exception);
+    if (this.dbMetrics != null) {
+      this.dbMetrics.markDBFailUpdate();
     }
+    throw exception;
   }
 
   /**
