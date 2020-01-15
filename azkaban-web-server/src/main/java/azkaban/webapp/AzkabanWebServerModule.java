@@ -30,6 +30,12 @@ import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
+import cloudflow.daos.SpaceDao;
+import cloudflow.daos.SpaceDaoImpl;
+import cloudflow.daos.SpaceSuperUserDao;
+import cloudflow.daos.SpaceSuperUserDaoImpl;
+import cloudflow.services.SpaceService;
+import cloudflow.services.SpaceServiceImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import java.lang.reflect.Constructor;
@@ -40,6 +46,7 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.mortbay.jetty.Server;
 
 /**
@@ -79,6 +86,9 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
+    bind(SpaceService.class).to(SpaceServiceImpl.class);
+    bind(SpaceDao.class).to(SpaceDaoImpl.class);
+    bind(SpaceSuperUserDao.class).to(SpaceSuperUserDaoImpl.class);
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
@@ -105,6 +115,13 @@ public class AzkabanWebServerModule extends AbstractModule {
       manager = new XmlUserManager(props);
     }
     return manager;
+  }
+
+  @Inject
+  @Singleton
+  @Provides
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper();
   }
 
   @Inject
