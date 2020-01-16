@@ -118,7 +118,7 @@ public class DatabaseOperator {
    * @return The number of rows updated.
    */
   public int update(final String updateClause, final Object... params) throws SQLException {
-    int retry = 0;
+    int retryCount = 0;
     SQLException exception;
     String errorMsg = "Update failed: Reached maximum number of retries: " + AzDBUtil.MAX_RETRIES_ON_DEADLOCK;
     do {
@@ -126,21 +126,22 @@ public class DatabaseOperator {
         return this.queryRunner.update(updateClause, params);
       } catch (final SQLException ex) {
         exception = ex;
-        if (ex.getErrorCode() == 1213) { // 1213 -> Deadlock error
-          retry++;
+        if (queryRunner.getDataSource() instanceof MySQLDataSource &&
+            ex.getErrorCode() == MySQLDataSource.MYSQL_ER_LOCK_DEADLOCK) {
+          retryCount++;
           logger.warn("Deadlock detected when trying to execute: " + updateClause + " with values: "
               + Arrays.toString(params));
           try {
             Thread.sleep(AzDBUtil.RETRY_WAIT_TIME);
           } catch (InterruptedException e) {
-            logger.info("Sleep interrupted");
+            logger.info("Sleep during DB operation retry interrupted.");
           }
         } else {
           errorMsg = "update failed";
           break;
         }
       }
-    } while (retry < AzDBUtil.MAX_RETRIES_ON_DEADLOCK);
+    } while (retryCount < AzDBUtil.MAX_RETRIES_ON_DEADLOCK);
 
     logger.error(errorMsg, exception);
     if (this.dbMetrics != null) {
