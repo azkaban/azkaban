@@ -155,6 +155,10 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
       return rampStage;
     }
 
+    public boolean isRamping() {
+      return (rampStage >= 0);
+    }
+
     public State setRampStage(int rampStage) {
       this.rampStage = rampStage;
       return this;

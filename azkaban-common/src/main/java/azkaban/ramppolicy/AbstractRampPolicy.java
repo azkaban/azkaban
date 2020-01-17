@@ -15,6 +15,8 @@
  */
 package azkaban.ramppolicy;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableRamp;
 import azkaban.utils.Props;
 
 
@@ -30,5 +32,23 @@ public abstract class AbstractRampPolicy implements RampPolicy {
   protected AbstractRampPolicy(final Props sysProps, final Props privateProps) {
     this.sysProps = sysProps;
     this.privateProps = privateProps;
+  }
+
+  @Override
+  public boolean check(ExecutableFlow flow, ExecutableRamp executableRamp) {
+    preprocess(executableRamp);
+
+    if (!executableRamp.getState().isActive() || executableRamp.getState().isPaused() || !executableRamp.getState().isRamping()) {
+      return false; // filter out inactive or paused executable ramp flow
+    }
+
+    return isRampTestEnabled(flow, executableRamp);
+  }
+
+  protected boolean isRampTestEnabled(ExecutableFlow flow, ExecutableRamp executableRamp) {
+    return false;
+  }
+
+  protected void preprocess(ExecutableRamp executableRamp) {
   }
 }

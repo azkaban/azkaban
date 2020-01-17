@@ -16,51 +16,40 @@
 package azkaban.ramppolicy;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableRamp;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableList;
 
 
-public class SimpleQuickRampPolicy extends AbstractRampPolicy {
+/**
+ * Simple Auto Ramp Policy will be divided to 4 stages
+ *  stage 1: 5%
+ *  stage 2: 20%
+ *  stage 3: 50%
+ *  stage 4: 100%
+ */
+public class SimpleQuickRampPolicy extends SimpleRampPolicy {
+  private static final int MAX_RAMP_STAGE = 4;
+  private static final ImmutableList<Integer> RAMP_STAGE_RESCALE_TABLE = ImmutableList.<Integer>builder()
+      .add(5, 20, 50)
+      .build();
+
   public SimpleQuickRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
 
   @Override
-  public boolean check(
-      ExecutableFlow flow,
-      ExecutableRamp executableRamp
-  ) {
-    if (executableRamp.getState().isPaused()) {
-      return false;
-    }
-
-    int stage = executableRamp.getState().getRampStage();
-    int flowIdHashCode = flow.getId().hashCode();
-    return isInRange(stage, flowIdHashCode);
+  protected int getMaxRampStage() {
+    return MAX_RAMP_STAGE;
   }
 
-  /**
-   * Simple Percentage range will be appled
-   * @param stage current ramp stage
-   * @param flowIdHashCode hash code of the flow id
-   * @return If it is qualified to ramp, return TRUE
-   */
-  private boolean isInRange(int stage, int flowIdHashCode) {
-    int percentage = flowIdHashCode % 4;
-    boolean isInRange = false;  // set the safe status
-    switch (stage) {
-      case 0: // stage 0
-        break;
-      case 1: // stage 1 = 25%
-        isInRange = (percentage < 1);
-        break;
-      case 2: // stage 2 = 50%
-        isInRange = (percentage < 2);
-        break;
-      default: // stage 3 = 100%
-        isInRange = true;
-        break;
+  @Override
+  protected int getRampStage(ExecutableFlow flow) {
+    int percentage = flow.getRampPercentageId();
+    for(int i = 0; i < RAMP_STAGE_RESCALE_TABLE.size(); i++) {
+      if (percentage < RAMP_STAGE_RESCALE_TABLE.get(i)) {
+        return (i + 1);
+      }
     }
-    return isInRange;
+    return MAX_RAMP_STAGE;
   }
 }

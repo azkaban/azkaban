@@ -82,6 +82,7 @@ public class RampPolicyManager {
     plugins.addPluginClass(FullRampPolicy.class.getSimpleName(), FullRampPolicy.class);
     plugins.addPluginClass(SimpleAutoRampPolicy.class.getSimpleName(), SimpleAutoRampPolicy.class);
     plugins.addPluginClass(SimpleQuickRampPolicy.class.getSimpleName(), SimpleQuickRampPolicy.class);
+    plugins.addPluginClass(SimpleRampPolicy.class.getSimpleName(), SimpleRampPolicy.class);
   }
 
   // load ramp policies from ramp policy plugin dir

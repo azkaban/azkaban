@@ -23,17 +23,14 @@ import azkaban.utils.Props;
 /**
  * Full Ramp Policy is a Dummy Ramp Policy which does apply any ramp upon the job flow.
  */
-public class FullRampPolicy extends AbstractRampPolicy {
+public final class FullRampPolicy extends AbstractRampPolicy {
 
   public FullRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
 
   @Override
-  public boolean check(
-      ExecutableFlow flow,
-      ExecutableRamp executableRamp
-  ) {
-    return executableRamp.getState().isPaused();
+  protected boolean isRampTestEnabled(ExecutableFlow flow, ExecutableRamp executableRamp) {
+    return true;
   }
 }

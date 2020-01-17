@@ -118,6 +118,10 @@ public class ExecutableFlowBase extends ExecutableNode {
     return String.format(FLOW_ID_FORMAT_PATTERN, this.getProjectName(), this.flowId);
   }
 
+  public int getRampPercentageId() {
+    return Math.abs(getFlowName().hashCode() % 100);
+  }
+
   protected void setFlow(final Project project, final Flow flow) {
     this.flowId = flow.getId();
     this.flowProps.putAll(flow.getAllFlowProps());
