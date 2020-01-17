@@ -9,6 +9,8 @@ import azkaban.utils.Props;
  * Define a simple ramp policy to ramp by percentage
  */
 public class SimpleRampPolicy extends AbstractRampPolicy {
+  private static final int MAX_RAMP_STAGE = 100;
+
   protected SimpleRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
@@ -25,10 +27,10 @@ public class SimpleRampPolicy extends AbstractRampPolicy {
   }
 
   protected int getMaxRampStage() {
-    return 100;
+    return MAX_RAMP_STAGE;
   }
 
   protected int getRampStage(ExecutableFlow flow) {
-    return Math.abs(flow.getId().hashCode() % 100) + 1;
+    return flow.getRampPercentageId() + 1;
   }
 }

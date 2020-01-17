@@ -19,6 +19,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableRamp;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -31,6 +32,12 @@ import azkaban.utils.TimeUtils;
  */
 public class SimpleAutoRampPolicy extends SimpleRampPolicy {
   private static int ONE_DAY = 86400;
+  private static final int MAX_RAMP_STAGE = 5;
+  private static final ImmutableList<Integer> RAMP_STAGE_RESCALE_TABLE = ImmutableList.<Integer>builder()
+      .add(5, 25, 50, 75)
+      .build();
+
+
   public SimpleAutoRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
@@ -38,23 +45,18 @@ public class SimpleAutoRampPolicy extends SimpleRampPolicy {
 
   @Override
   protected int getMaxRampStage() {
-    return 5;
+    return MAX_RAMP_STAGE;
   }
 
   @Override
   protected int getRampStage(ExecutableFlow flow) {
-    int percentage = Math.abs(flow.getId().hashCode() % 100);
-    if (percentage < 5) {
-      return 1;
-    } else if (percentage < 25) {
-      return 2;
-    } else if (percentage < 50) {
-      return 3;
-    } else if (percentage < 75) {
-      return 4;
-    } else {
-      return 5;
+    int percentage = flow.getRampPercentageId();
+    for(int i = 0; i < RAMP_STAGE_RESCALE_TABLE.size(); i++) {
+      if (percentage < RAMP_STAGE_RESCALE_TABLE.get(i)) {
+        return (i + 1);
+      }
     }
+    return MAX_RAMP_STAGE;
   }
 
   @Override

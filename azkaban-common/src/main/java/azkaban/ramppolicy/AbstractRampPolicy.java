@@ -49,7 +49,6 @@ public abstract class AbstractRampPolicy implements RampPolicy {
     return false;
   }
 
-
   protected void preprocess(ExecutableRamp executableRamp) {
   }
 }

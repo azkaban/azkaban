@@ -16,8 +16,8 @@
 package azkaban.ramppolicy;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableRamp;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -28,26 +28,28 @@ import azkaban.utils.Props;
  *  stage 4: 100%
  */
 public class SimpleQuickRampPolicy extends SimpleRampPolicy {
+  private static final int MAX_RAMP_STAGE = 4;
+  private static final ImmutableList<Integer> RAMP_STAGE_RESCALE_TABLE = ImmutableList.<Integer>builder()
+      .add(5, 20, 50)
+      .build();
+
   public SimpleQuickRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
 
   @Override
   protected int getMaxRampStage() {
-    return 4;
+    return MAX_RAMP_STAGE;
   }
 
   @Override
   protected int getRampStage(ExecutableFlow flow) {
-    int percentage = Math.abs(flow.getId().hashCode() % 100);
-    if (percentage < 5) {
-      return 1;
-    } else if (percentage < 25) {
-      return 2;
-    } else if (percentage < 50) {
-      return 3;
-    } else {
-      return 4;
+    int percentage = flow.getRampPercentageId();
+    for(int i = 0; i < RAMP_STAGE_RESCALE_TABLE.size(); i++) {
+      if (percentage < RAMP_STAGE_RESCALE_TABLE.get(i)) {
+        return (i + 1);
+      }
     }
+    return MAX_RAMP_STAGE;
   }
 }
