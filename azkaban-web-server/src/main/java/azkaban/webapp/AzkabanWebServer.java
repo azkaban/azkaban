@@ -71,6 +71,8 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+import cloudflow.services.SpaceService;
+import cloudflow.servlets.SpaceServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
@@ -92,6 +94,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -134,6 +137,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final VelocityEngine velocityEngine;
   private final StatusService statusService;
+  private final SpaceService spaceService;
   private final Server server;
   private final UserManager userManager;
   private final ProjectManager projectManager;
@@ -146,10 +150,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerScheduler scheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
+  private ObjectMapper objectMapper;
 
   @Inject
   public AzkabanWebServer(final Props props,
       final Server server,
+      final ObjectMapper objectMapper,
       final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
@@ -160,9 +166,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final VelocityEngine velocityEngine,
       final FlowTriggerScheduler scheduler,
       final FlowTriggerService flowTriggerService,
-      final StatusService statusService) {
+      final StatusService statusService,
+      final SpaceService spaceService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
+    this.objectMapper = objectMapper;
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
         "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
@@ -175,7 +183,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.statusService = statusService;
     this.scheduler = requireNonNull(scheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
-
+    this.spaceService = requireNonNull(spaceService, "space service can't be null");
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -432,6 +440,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.addServlet(new ServletHolder(new FlowTriggerInstanceServlet()), "/flowtriggerinstance");
     root.addServlet(new ServletHolder(new FlowTriggerServlet()), "/flowtrigger");
 
+    addCloudFlowRoutes(root);
+
     final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
     root.addServlet(restliHolder, "/restli/*");
@@ -450,6 +460,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     getTriggerManager().start();
 
     root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
+  }
+
+  /* add all the cloudflow api paths here */
+
+  private void addCloudFlowRoutes(Context root) {
+    root.addServlet(new ServletHolder(new SpaceServlet()), "/spaces/*");
   }
 
   private void prepareAndStartServer()
@@ -558,6 +574,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   @Override
   public UserManager getUserManager() {
     return this.userManager;
+  }
+
+  public SpaceService spaceService() {
+    return this.spaceService;
+  }
+
+  public ObjectMapper objectMapper() {
+    return this.objectMapper;
   }
 
   public ProjectManager getProjectManager() {
