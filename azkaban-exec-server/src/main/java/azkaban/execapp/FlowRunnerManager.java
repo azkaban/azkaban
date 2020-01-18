@@ -15,6 +15,8 @@
  */
 package azkaban.execapp;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.ServiceProvider;
@@ -52,10 +54,10 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.OsCpuUtil;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
+import azkaban.utils.ThinArchiveUtils;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
-import azkaban.utils.ThinArchiveUtils;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import java.io.File;
@@ -85,8 +87,6 @@ import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Objects.*;
 
 /**
  * Execution manager for the server side execution.
@@ -223,9 +223,8 @@ public class FlowRunnerManager implements EventListener,
     addStartupDependencyPathToProps(this.globalProps);
 
     this.jobtypeManager =
-        new JobTypeManager(
-            props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, Constants.PluginManager.JOBTYPE_DEFAULTDIR),
-            this.globalProps,
+        new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
+            Constants.PluginManager.JOBTYPE_DEFAULTDIR), this.globalProps,
             getClass().getClassLoader());
 
     ProjectCacheCleaner cleaner = null;
@@ -237,8 +236,9 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(projectStorageManager, this.dependencyTransferManager, this.projectDirectory, cleaner,
-        this.execMetrics.getProjectCacheHitRatio(), this.executionDirectory);
+    this.flowPreparer = new FlowPreparer(projectStorageManager, this.dependencyTransferManager,
+        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio(),
+        this.executionDirectory);
 
     this.execMetrics.addFlowRunnerManagerMetrics(this);
 
@@ -261,9 +261,10 @@ public class FlowRunnerManager implements EventListener,
    *
    * @param props Props to add the startup dependency path to.
    */
-  private void addStartupDependencyPathToProps(Props props) {
+  private void addStartupDependencyPathToProps(final Props props) {
     if (this.storage.getDependencyRootPath() != null) {
-      props.put(ThinArchiveUtils.DEPENDENCY_STORAGE_ROOT_PATH_PROP, this.storage.getDependencyRootPath());
+      props.put(ThinArchiveUtils.DEPENDENCY_STORAGE_ROOT_PATH_PROP,
+          this.storage.getDependencyRootPath());
     }
   }
 
@@ -471,7 +472,8 @@ public class FlowRunnerManager implements EventListener,
     }
 
     //Contact Flow Global Configuration Manager to re-configure Flow Runner if there is any ramp-up configuration
-    this.flowRampManager.configure(flow, FileIOUtils.getDirectory(this.projectDirectory, flow.getDirectory()));
+    this.flowRampManager
+        .configure(flow, FileIOUtils.getDirectory(this.projectDirectory, flow.getDirectory()));
 
     final FlowRunner runner =
         new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
@@ -480,7 +482,7 @@ public class FlowRunnerManager implements EventListener,
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
         .setNumJobThreads(numJobThreads)
-        .addListeners(this, flowRampManager);
+        .addListeners(this, this.flowRampManager);
 
     configureFlowLevelMetrics(runner);
     return runner;
@@ -567,7 +569,11 @@ public class FlowRunnerManager implements EventListener,
           + " is not running.");
     }
 
-    runner.pause(user);
+    try {
+      runner.pause(user);
+    } catch (final IllegalStateException e) {
+      throw new ExecutorManagerException(e.getMessage());
+    }
   }
 
   public void resumeFlow(final int execId, final String user)
@@ -956,7 +962,8 @@ public class FlowRunnerManager implements EventListener,
             if (this.flowMaxRunningTimeInMins > 0
                 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS
                 > this.lastLongRunningFlowCleanTime) {
-              FlowRunnerManager.LOGGER.info(String.format("Killing long jobs running longer than %s mins",
+              FlowRunnerManager.LOGGER
+                  .info(String.format("Killing long jobs running longer than %s mins",
                       this.flowMaxRunningTimeInMins));
               for (final FlowRunner flowRunner : FlowRunnerManager.this.runningFlows.values()) {
                 if (isFlowRunningLongerThan(flowRunner.getExecutableFlow(),

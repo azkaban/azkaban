@@ -231,6 +231,29 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
   }
 
+  @Test(expected = IllegalStateException.class)
+  public void cancelThenPause() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+
+    FlowRunnerTestUtil.startThread(this.runner);
+
+    assertStatus("job1", Status.SUCCEEDED);
+    assertStatus("job2", Status.SUCCEEDED);
+    waitJobsStarted(this.runner, "job3", "job4", "job6");
+
+    InteractiveTestJob.getTestJob("job3").ignoreCancel();
+    this.runner.kill("me");
+    assertStatus("job3", Status.KILLING);
+    assertFlowStatus(this.runner.getExecutableFlow(), Status.KILLING);
+
+    // Cannot pause a flow that has already been killed. This should throw IllegalStateException.
+    this.runner.pause("me");
+
+  }
+
   @Test
   public void execRetries() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
