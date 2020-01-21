@@ -23,6 +23,7 @@ import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -316,6 +317,8 @@ public class ExecutionFlowDao {
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
+      transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
           new SelectFromExecutionFlows(), executorId);
 

@@ -28,6 +28,8 @@ import org.apache.log4j.Logger;
 @Singleton
 public class MySQLDataSource extends AzkabanDataSource {
 
+  public static final int MYSQL_ER_LOCK_DEADLOCK = 1213;
+
   private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
   private final DBMetrics dbMetrics;
 
