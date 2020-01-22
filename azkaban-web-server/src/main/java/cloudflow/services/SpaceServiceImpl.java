@@ -22,11 +22,13 @@ public class SpaceServiceImpl implements SpaceService {
     this.spaceDao = spaceDao;
   }
 
-  public Space create(Space space, User user) {
+  @Override
+  public int createSpace(Space space, User user) {
     int spaceId = spaceDao.create(space, user);
-    return getSpace(spaceId);
+    return spaceId;
   }
 
+  @Override
   public Space getSpace(int spaceId) {
 
     Optional<Space> space = spaceDao.get(spaceId);
@@ -40,6 +42,7 @@ public class SpaceServiceImpl implements SpaceService {
     return space.get();
   }
 
+  @Override
   public List<Space> getAllSpaces() {
     return spaceDao.getAll();
   }

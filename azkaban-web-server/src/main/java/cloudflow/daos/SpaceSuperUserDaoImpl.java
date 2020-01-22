@@ -32,6 +32,7 @@ public class SpaceSuperUserDaoImpl implements SpaceSuperUserDao {
   }
   /*To Explore: Can we avoid this code by using spring-data? */
 
+  @Override
   public List<String> findAdminsBySpaceId(int spaceId) {
     SpaceSuperUserHandler spaceSuperUserHandler = new SpaceSuperUserHandler();
     try {
@@ -45,6 +46,7 @@ public class SpaceSuperUserDaoImpl implements SpaceSuperUserDao {
   }
 
   /* should run in a transaction */
+  @Override
   public void addAdmins(int spaceId, List<String> admins) {
 
     final SQLTransaction<Integer> addAdmins = transOperator -> {
@@ -63,6 +65,7 @@ public class SpaceSuperUserDaoImpl implements SpaceSuperUserDao {
     }
   }
 
+  @Override
   public void addWatchers(int spaceId, List<String> watchers) {
     final SQLTransaction<Integer> addWatchers = transOperator -> {
       /* Not sure if this is the best way to do it */
@@ -80,6 +83,7 @@ public class SpaceSuperUserDaoImpl implements SpaceSuperUserDao {
     }
   }
 
+  @Override
   public List<String> findWatchersBySpaceId(int spaceId) {
     SpaceSuperUserHandler spaceSuperUserHandler = new SpaceSuperUserHandler();
     try {

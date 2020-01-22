@@ -5,7 +5,7 @@ import cloudflow.models.Space;
 import java.util.List;
 
 public interface SpaceService {
-  Space create(Space space, User user);
+  int createSpace(Space space, User user);
   Space getSpace(int spaceId);
   List<Space> getAllSpaces();
 }

@@ -75,7 +75,7 @@ public class SpaceServlet extends LoginAbstractAzkabanServlet {
        *  writing user name directly makes testing easier
        * */
 
-      Space createdSpace = spaceService.create(space, new User("sarumuga"));
+      int spaceId = spaceService.createSpace(space, session.getUser());
       resp.setStatus(HttpStatus.SC_CREATED);
     } catch(Exception e) {
       log.error("Input is likely missing something", e);
