@@ -220,7 +220,6 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     loadExecutableRampDependencies();
     loadExecutableRampExceptionalFlowItems();
     loadExecutableRampExceptionalJobItems();
-    rampDataModel.resetBeginFlowCount();
     latestDataBaseSynchronizationTimeStamp = System.currentTimeMillis();
     LOGGER.info(String.format("Ramp Settings had been successfully loaded at [%d].",
         latestDataBaseSynchronizationTimeStamp));
@@ -321,7 +320,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
         .entrySet()
         .stream()
         .forEach(this::updateExecutedRampFlows);
-    rampDataModel.resetEndFlowCount();
+    rampDataModel.resetFlowCountsAfterSave();
     LOGGER.info("Ramp Settings had been successfully saved.");
   }
 
@@ -401,6 +400,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.BLACKLISTED.name()
                   )
               );
+              LOGGER.info(String.format("Ramp Flow As BlackListed Item. [rampid = %s, flowName = %s]", rampId, flowName));
               break;
 
             case WHITELISTED: // whitelist
@@ -412,6 +412,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.WHITELISTED.name()
                   )
               );
+              LOGGER.info(String.format("Ramp Flow As WhiteListed Item. [rampid = %s, flowName = %s]", rampId, flowName));
               break;
 
             case SELECTED: // selected
@@ -423,6 +424,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.SELECTED.name()
                   )
               );
+              LOGGER.info(String.format("Ramp Flow As Selected Item. [rampid = %s, flowName = %s]", rampId, flowName));
               break;
 
             case UNSELECTED: // selected
@@ -434,6 +436,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.UNSELECTED.name()
                   )
               );
+              LOGGER.info(String.format("Ramp Flow As Unselected Item. [rampid = %s, flowName = %s]", rampId, flowName));
               break;
 
             case EXCLUDED:
@@ -445,6 +448,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.EXCLUDED.name()
                   )
               );
+              LOGGER.info(String.format("Ramp Flow As Excluded Item. [rampid = %s, flowName = %s]", rampId, flowName));
               break;
 
             default:
@@ -459,10 +463,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                         ExecutableRampStatus.SELECTED.name()
                     )
                 );
-                executableRampExceptionalFlowItemsMap.add(
-                    rampId, flowName, ExecutableRampStatus.SELECTED,
-                    System.currentTimeMillis(), true
-                );
+                LOGGER.info(String.format("Undetermined Ramp Flow is selected for Ramping. [rampid = %s, flowName = %s]", rampId, flowName));
               } else {
                 executableFlowRampMetadata.setRampProps(
                     rampId,
@@ -472,6 +473,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                         ExecutableRampStatus.UNSELECTED.name()
                     )
                 );
+                LOGGER.info(String.format("Undetermined Ramp Flow is not selected for Ramping. [rampid = %s, flowName = %s]", rampId, flowName));
               }
               break;
           }
@@ -560,13 +562,15 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
           .map(executableRampMap::get)
           .forEach(executableRamp -> {
 
+            LOGGER.info(String.format("FlowRunner Save Result after Ramp. [rampId = %s, action = %s]", executableRamp.getId(), action.name()));
             executableRamp.cacheResult(action);
 
             if (!Action.SUCCEEDED.equals(action)) {
-              executableRampExceptionalFlowItemsMap.add(
-                  executableRamp.getId(), flowRunner.getExecutableFlow().getFlowName(), ExecutableRampStatus.EXCLUDED,
-                  System.currentTimeMillis(), true
-              );
+              String rampId = executableRamp.getId();
+              String flowName =  flowRunner.getExecutableFlow().getFlowName();
+              LOGGER.warn(String.format("Flow will be excluded from ramping. [rampId = %s, flow = %s, action = %s]", rampId, rampId, action.name()));
+              executableRampExceptionalFlowItemsMap.add(rampId, flowName, ExecutableRampStatus.EXCLUDED,
+                  System.currentTimeMillis(), true);
             }
 
           });
@@ -598,43 +602,39 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     // Host the current processing ramp flows
     // Map.Key = FlowId, Map.Value = Set Of Ramps
     private volatile Map<String, Set<String>> executingFlows = new HashMap<>();
-    private volatile int beginFlowCount; // Incoming Ramp Requests After Latest Database Pull Action;
-    private volatile int endFlowCount; // Incoming Ramp Requests After Latest Database Pull Action;
+    private volatile int[] flowCounts = {0, 0}; // [0] count of started flow [1] count of ended flows
+
 
     public RampDataModel() {
-
     }
 
     public synchronized void beginFlow(final String flowId, Set<String> ramps) {
       executingFlows.put(flowId, ramps);
-      beginFlowCount++;
+      flowCounts[0]++;
     }
 
     public synchronized Set<String> endFlow(final String flowId) {
       Set<String> ramps = executingFlows.get(flowId);
       executingFlows.remove(flowId);
-      endFlowCount++;
+      flowCounts[1]++;
       return ramps;
     }
 
     public int getBeginFlowCount() {
-      return beginFlowCount;
-    }
-
-    public void resetBeginFlowCount() {
-      beginFlowCount = 0;
+      return flowCounts[0];
     }
 
     public int getEndFlowCount() {
-      return endFlowCount;
+      return flowCounts[1];
     }
 
-    public void resetEndFlowCount() {
-      endFlowCount = 0;
+    public void resetFlowCountsAfterSave() {
+      flowCounts[0] = executingFlows.size();
+      flowCounts[1] = 0;
     }
 
-    public boolean isEmpty() {
-      return executingFlows.isEmpty();
+    public boolean hasUnsavedFinishedFlow() {
+      return flowCounts[1] > 0;
     }
   }
 
@@ -665,8 +665,10 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     private void pollExecution() {
       if (this.pollingCriteria.shouldPoll()) {
         if (this.pollingCriteria.satisfiesUnsavedDataAvailableCriteria()) {
+          LOGGER.info("Saving Ramp Setting to Database.");
           FlowRampManager.this.saveSettings();
         }
+        LOGGER.info("Load Ramp Setting from Database.");
         FlowRampManager.this.loadSettings();
       }
     }
@@ -699,7 +701,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     }
 
     private boolean satisfiesUnsavedDataAvailableCriteria() {
-      return this.rampDataModel.isEmpty();
+      return this.rampDataModel.hasUnsavedFinishedFlow();
     }
 
     private boolean satisfiesTimeIntervalCriteria() {
