@@ -121,6 +121,8 @@ public class HadoopJobUtils {
   public static HadoopSecurityManager loadHadoopSecurityManager(Props props, Logger log)
       throws RuntimeException {
 
+    final String securityManagerClass = props.get(HADOOP_SECURITY_MANAGER_CLASS_PARAM);
+    log.info("Security Manager class = " + securityManagerClass);
     Class<?> hadoopSecurityManagerClass = props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
         HadoopJobUtils.class.getClassLoader());
     log.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
@@ -196,6 +198,14 @@ public class HadoopJobUtils {
     hadoopSecurityManager.prefetchToken(tokenFile, props, log);
 
     return tokenFile;
+  }
+
+  /***
+   * Fetching token from token cache
+   */
+  public static File getHadoopTokens(final Props props) throws IOException {
+    // Returns a tempfile for now
+    return File.createTempFile("mr-azkaban", ".token");
   }
 
   /**

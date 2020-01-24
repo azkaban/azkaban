@@ -47,6 +47,7 @@ public class ExecuteAsUser {
       throw new RuntimeException("Unable to execute execute-as-user binary. Invalid Path: "
           + this.binaryExecutable.getAbsolutePath());
     }
+    log.info("Deepak : ExecuteAsUser validated");
   }
 
   /**
@@ -67,9 +68,10 @@ public class ExecuteAsUser {
     try {
       exitCode = process.waitFor();
     } catch (final InterruptedException e) {
-      log.error(e.getMessage(), e);
+      log.info("Deepak " +  e.getMessage(), e);
       exitCode = 1;
     }
+    log.info("Deepak : exit code = " + exitCode);
     return exitCode;
   }
 
@@ -78,6 +80,7 @@ public class ExecuteAsUser {
     commandList.add(this.binaryExecutable.getAbsolutePath());
     commandList.add(user);
     commandList.addAll(command);
+    log.info("Deepak : commandList = " + commandList);
     return commandList;
   }
 }

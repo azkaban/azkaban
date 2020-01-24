@@ -32,7 +32,8 @@ public class AzkabanProcessBuilder {
   private final List<String> cmd = new ArrayList<>();
   private Map<String, String> env = new HashMap<>();
   private String workingDir = System.getProperty("user.dir");
-  private Logger logger = Logger.getLogger(AzkabanProcess.class);
+  private Logger logger;
+  //private Logger logger = Logger.getLogger(AzkabanProcess.class);
   private boolean isExecuteAsUser = false;
   private String executeAsUserBinaryPath = null;
   private String effectiveUser = null;
@@ -41,6 +42,7 @@ public class AzkabanProcessBuilder {
   private int stdOutSnippetSize = 30;
 
   public AzkabanProcessBuilder(final String... command) {
+    this.logger = Logger.getLogger(AzkabanProcess.class);
     addArg(command);
   }
 
