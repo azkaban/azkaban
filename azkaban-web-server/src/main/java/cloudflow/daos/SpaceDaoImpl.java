@@ -36,10 +36,8 @@ public class SpaceDaoImpl implements SpaceDao {
     this.spaceSuperUserDaoImpl = spaceSuperUserDaoImpl;
   }
 
-  /* not the best code possible
-     This is just an initial draft
-     returns the space id
-   */
+
+  @Override
   public int create(Space space, User user) {
     final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
       String currentTime = DateTime.now().toLocalDateTime().toString();
@@ -63,6 +61,7 @@ public class SpaceDaoImpl implements SpaceDao {
     return spaceId;
   }
 
+  @Override
   public Optional<Space> get(int spaceId) {
     List<Space> spaces = new ArrayList<>();
     FetchSpaceHandler fetchSpaceHandler = new FetchSpaceHandler();
@@ -79,6 +78,7 @@ public class SpaceDaoImpl implements SpaceDao {
     return spaces.isEmpty() ? Optional.empty() : Optional.of(spaces.get(0));
   }
 
+  @Override
   public List<Space> getAll() {
     List<Space> spaces = new ArrayList<>();
     FetchSpaceHandler fetchSpaceHandler = new FetchSpaceHandler();

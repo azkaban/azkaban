@@ -42,6 +42,9 @@ public class Space {
             modifiedBy);
   }
 
+  public Space() {
+  }
+
   public Space(int id, String name, String description, List<String> admins,
       List<String> watchers, String createdOn, String createdBy, String modifiedOn,
       String modifiedBy) {
@@ -88,8 +91,7 @@ public class Space {
     this.modifiedBy = modifiedBy;
   }
 
-  public Space() {
-  }
+
 
   public List<String> getAdmins() {
     return admins;
@@ -104,15 +106,6 @@ public class Space {
   }
 
   public void setWatchers(List<String> watchers) {
-    this.watchers = watchers;
-  }
-
-  public Space(int id, String name, String description, List<String> admins,
-      List<String> watchers) {
-    this.id = id;
-    this.name = name;
-    this.description = description;
-    this.admins = admins;
     this.watchers = watchers;
   }
 
