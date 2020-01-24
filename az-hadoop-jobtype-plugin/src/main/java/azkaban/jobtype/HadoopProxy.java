@@ -17,12 +17,11 @@ package azkaban.jobtype;
 
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
-import java.io.File;
-import org.apache.log4j.Logger;
 import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
+import java.io.File;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -30,7 +29,7 @@ import azkaban.utils.Props;
  */
 public class HadoopProxy {
 
-  private HadoopSecurityManager hadoopSecurityManager;
+  //private HadoopSecurityManager hadoopSecurityManager;
   private boolean shouldProxy = false;
   private boolean obtainTokens = false;
   private String userToProxy = null;
@@ -55,7 +54,7 @@ public class HadoopProxy {
     shouldProxy = sysProps.getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
     jobProps.put(HadoopSecurityManager.ENABLE_PROXYING, Boolean.toString(shouldProxy));
     obtainTokens = sysProps.getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN, false);
-    if (shouldProxy) {
+    /*if (shouldProxy) {
       logger.info("Initiating hadoop security manager.");
       try {
         hadoopSecurityManager = HadoopJobUtils.loadHadoopSecurityManager(sysProps, logger);
@@ -64,7 +63,7 @@ public class HadoopProxy {
         throw new RuntimeException("Failed to get hadoop security manager!"
             + e.getCause());
       }
-    }
+    }*/
   }
 
   /**
@@ -80,7 +79,9 @@ public class HadoopProxy {
       userToProxy = jobProps.getString(HadoopSecurityManager.USER_TO_PROXY);
       logger.info("Need to proxy. Getting tokens.");
       // get tokens in to a file, and put the location in props
-      tokenFile = HadoopJobUtils.getHadoopTokens(hadoopSecurityManager, props, logger);
+      //tokenFile = HadoopJobUtils.getHadoopTokens(hadoopSecurityManager, props, logger);
+      // TODO : This will work once delegation token strategy is implemented.
+      tokenFile = HadoopJobUtils.getHadoopTokens(props);
       jobProps.put("env." + HADOOP_TOKEN_FILE_LOCATION, tokenFile.getAbsolutePath());
     }
   }
@@ -118,7 +119,7 @@ public class HadoopProxy {
    *
    * @param logger logger handler
    */
-  public void cancelHadoopTokens(final Logger logger) {
+  /*public void cancelHadoopTokens(final Logger logger) {
     if (tokenFile == null) {
       return;
     }
@@ -132,7 +133,7 @@ public class HadoopProxy {
     if (tokenFile.exists()) {
       tokenFile.delete();
     }
-  }
+  }*/
 
   /**
    * Kill all Spawned Hadoop Jobs

@@ -51,8 +51,8 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
       t.printStackTrace();
       getLog().error("caught error running the job", t);
       throw t;
-    } finally {
-      hadoopProxy.cancelHadoopTokens(getLog());
+    //} finally {
+      //hadoopProxy.cancelHadoopTokens(getLog());
     }
   }
 

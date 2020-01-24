@@ -49,7 +49,7 @@ public class ExecutionLogsDao {
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
 
   @Inject
-  ExecutionLogsDao(final DatabaseOperator dbOperator) {
+  public ExecutionLogsDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 
