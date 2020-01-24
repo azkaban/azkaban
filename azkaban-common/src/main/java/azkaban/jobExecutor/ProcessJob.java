@@ -240,7 +240,11 @@ public class ProcessJob extends AbstractProcessJob {
     // which will change user from Azkaban to effectiveUser
     if (isExecuteAsUser) {
       final String nativeLibFolder = this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER);
-      executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
+      info("Deepak : native lib folder = " + nativeLibFolder);
+      //executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
+      File libFile = new File(nativeLibFolder, "execute-as-user");
+      executeAsUserBinaryPath = libFile.getAbsolutePath();
+
       effectiveUser = getEffectiveUser(this.getJobProps());
       // Throw exception if Azkaban tries to run flow as a prohibited user
       if (blackListedUsers.contains(effectiveUser)) {
@@ -250,16 +254,18 @@ public class ProcessJob extends AbstractProcessJob {
       }
       // Set parent directory permissions to <uid>:azkaban so user can write in their execution directory
       // if the directory is not permissioned correctly already (should happen once per execution)
+      // TODO: Not needed for 1 user flow case, however, keeping for sanity check
       if (!canWriteInCurrentWorkingDirectory(effectiveUser)) {
         info("Changing current working directory ownership");
         assignUserFileOwnership(effectiveUser, getWorkingDirectory());
       }
       // Set property file permissions to <uid>:azkaban so user can write to their prop files
       // in order to pass properties from one job to another, except the last one
-      for (int i = 0; i < 2; i++) {
+      // TODO : Not needed for 1 user flow case
+      /*for (int i = 0; i < 2; i++) {
         info("Changing properties files ownership");
         assignUserFileOwnership(effectiveUser, propFiles[i].getAbsolutePath());
-      }
+      }*/
     }
 
     for (String command : commands) {
@@ -299,11 +305,14 @@ public class ProcessJob extends AbstractProcessJob {
           return;
         }
         this.process = builder.build();
+        info("Deepak : the process is built = " + this.process.toString());
       }
       try {
         this.process.run();
         this.success = true;
+        info("Deepak : process completed successfully");
       } catch (final Throwable e) {
+        info("Deepak : process FAILED");
         for (final File file : propFiles) {
           if (file != null && file.exists()) {
             file.delete();
