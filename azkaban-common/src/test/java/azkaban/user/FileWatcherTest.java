@@ -16,8 +16,7 @@
 
 package azkaban.user;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.io.Resources;
 import com.sun.nio.file.SensitivityWatchEventModifier;
@@ -26,30 +25,42 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class FileWatcherTest {
 
-  private final Path PATH = setPath();
+  @Rule
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  private Path PATH;
   private FileWatcher fileWatcher;
 
-  private Path setPath() {
+  private Path setPath() throws IOException {
     final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String origpath = configURL.getPath();
-    // Generate a path for test file.
-    final String path = origpath.replace("test1", "file_watcher");
-    return Paths.get(path);
+    final String origPathStr = configURL.getPath();
+
+    // Create a new directory and copy the file in it.
+    final Path workDir = temporaryFolder.newFolder().toPath();
+    // Copy the file to keep original file unmodified
+    final String path = workDir.toString() + "/azkaban-users-test1.xml";
+    final Path filePath = Paths.get(path);
+    Files.copy(Paths.get(origPathStr), filePath, StandardCopyOption.REPLACE_EXISTING);
+    return filePath;
   }
 
   @Before
   public void setUp() throws Exception {
     this.fileWatcher = new FileWatcher(SensitivityWatchEventModifier.HIGH);
+    PATH = setPath();
   }
 
   @After
@@ -74,13 +85,10 @@ public class FileWatcherTest {
     final WatchKey key = this.fileWatcher.take();
     final List<WatchEvent<?>> events = this.fileWatcher.pollEvents(key);
     // depending on the OS & file system there may be at least 1 or 2 events even with 1 write()
-    assertThat(events.size()).isGreaterThanOrEqualTo(1);
-
-    for (WatchEvent<?> event : events) {
-      @SuppressWarnings("unchecked") final Path name = ((WatchEvent<Path>) event).context();
-      final String resolvedFileName = dir.resolve(name).toString();
-      assertEquals(PATH.toString(), resolvedFileName);
-    }
+    assertTrue(events.stream()
+        .map(event -> ((WatchEvent<Path>) event).context())
+        .map(dir::resolve)
+        .anyMatch(PATH::equals));
   }
 
   private void write() throws IOException {
