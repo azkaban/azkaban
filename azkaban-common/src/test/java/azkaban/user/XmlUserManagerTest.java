@@ -41,7 +41,9 @@ import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -58,6 +60,9 @@ public class XmlUserManagerTest {
   private WatchKey watchKey;
   @Mock
   private WatchEvent<Path> watchEvent;
+
+  @Rule
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Before
   public void setUp() throws Exception {
@@ -102,19 +107,27 @@ public class XmlUserManagerTest {
     fail("XmlUserManager should throw an exception when the file doesn't exist");
   }
 
+  private Path getFilePath(final String testName) throws IOException {
+    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
+    final String origPathStr = configURL.getPath();
+
+    // Create a new directory and copy the file in it.
+    final Path workDir = temporaryFolder.newFolder().toPath();
+    // Copy the file to keep original file unmodified
+    final String path = workDir.toString() + "/" + testName + ".xml";
+    final Path filePath = Paths.get(path);
+    Files.copy(Paths.get(origPathStr), filePath, StandardCopyOption.REPLACE_EXISTING);
+    return filePath;
+  }
+
   /**
    * Test auto reload of user XML
    */
   @Test
   public void testAutoReload() throws Exception {
     final Props props = new Props(this.baseProps);
-    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String origpath = configURL.getPath();
-    // Copy the file to keep original file unmodified
-    final String path = origpath.replace("test1", "test1_auto_reload");
-    final Path filePath = Paths.get(path);
-    Files.copy(Paths.get(origpath), filePath, StandardCopyOption.REPLACE_EXISTING);
-    props.put(XmlUserManager.XML_FILE_PARAM, path);
+    final Path filePath = getFilePath("testAutoReload");
+    props.put(XmlUserManager.XML_FILE_PARAM, filePath.toString());
 
     final CountDownLatch managerLoaded = setupMocks(filePath);
 
@@ -135,50 +148,40 @@ public class XmlUserManagerTest {
     }
 
     // Make sure the file gets reverted back.
-    try {
-      // Update the file
-      Files.write(filePath, lines);
+    // Update the file
+    Files.write(filePath, lines);
 
-      managerLoaded.countDown();
+    managerLoaded.countDown();
 
-      // Wait until login fails with the old password
-      Awaitility.await().atMost(10L, TimeUnit.SECONDS).
-          pollInterval(10L, TimeUnit.MILLISECONDS).until(
-          () -> {
-            User user;
-            try {
-              user = manager.getUser("user8", "password8");
-            } catch (final UserManagerException e) {
-              user = null;
-            }
-            return user == null;
-          });
+    // Wait until login fails with the old password
+    Awaitility.await().atMost(10L, TimeUnit.SECONDS).
+        pollInterval(10L, TimeUnit.MILLISECONDS).until(
+        () -> {
+          User user;
+          try {
+            user = manager.getUser("user8", "password8");
+          } catch (final UserManagerException e) {
+            user = null;
+          }
+          return user == null;
+        });
 
-      // Assert that login succeeds with the modified password
-      user8 = manager.getUser("user8", "passwordModified");
-      assertEquals("user8", user8.getUserId());
+    // Assert that login succeeds with the modified password
+    user8 = manager.getUser("user8", "passwordModified");
+    assertEquals("user8", user8.getUserId());
 
-      Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
+    Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
 
-    } finally {
-      // Delete the file
-      Files.delete(filePath);
-    }
   }
 
   /**
-   * Test auto reload of user XML
+   * Negative test auto reload of user XML
    */
   @Test
   public void testAutoReloadFail() throws Exception {
     final Props props = new Props(this.baseProps);
-    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
-    final String origpath = configURL.getPath();
-    // Copy the file to keep original file unmodified
-    final String path = origpath.replace("test1", "test1_auto_reload_fail");
-    final Path filePath = Paths.get(path);
-    Files.copy(Paths.get(origpath), filePath, StandardCopyOption.REPLACE_EXISTING);
-    props.put(XmlUserManager.XML_FILE_PARAM, path);
+    final Path filePath = getFilePath("testAutoReloadFail");
+    props.put(XmlUserManager.XML_FILE_PARAM, filePath.toString());
 
     final CountDownLatch managerLoaded = setupMocks(filePath);
 
@@ -199,19 +202,14 @@ public class XmlUserManagerTest {
     managerLoaded.countDown();
 
     // Make sure the file gets reverted back.
-    try {
-      managerLoaded.await(10L, TimeUnit.SECONDS);
-      assertEquals(0, managerLoaded.getCount());
-      // assert that watcher.take() was still called after the failed reload
-      Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
+    managerLoaded.await(10L, TimeUnit.SECONDS);
+    assertEquals(0, managerLoaded.getCount());
+    // assert that watcher.take() was still called after the failed reload
+    Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
 
-      // Nothing should've changed, login should succeed as originally
-      final User user = manager.getUser("user8", "password8");
-      assertEquals("user8", user.getUserId());
-    } finally {
-      // Delete the file
-      Files.delete(filePath);
-    }
+    // Nothing should've changed, login should succeed as originally
+    final User user = manager.getUser("user8", "password8");
+    assertEquals("user8", user.getUserId());
   }
 
   @Ignore
