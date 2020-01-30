@@ -249,7 +249,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job3", Status.KILLING);
     assertFlowStatus(this.runner.getExecutableFlow(), Status.KILLING);
 
-    // Cannot pause a flow that has already been killed. This should throw IllegalStateException.
+    // Cannot pause a flow that is being killed or that has already been killed. This should throw
+    // IllegalStateException.
     this.runner.pause("me");
 
   }

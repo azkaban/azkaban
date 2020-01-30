@@ -1119,13 +1119,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public void pause(final String user) throws IllegalStateException {
     synchronized (this.mainSyncObj) {
-      this.logger.info("Flow paused by " + user);
+      this.logger.info("Execution pause requested by " + user);
       if (!this.isKilled() && !this.flowFinished) {
-        this.logger.info("Execution " + this.execId + " has been paused.");
         this.flowPaused = true;
         this.flow.setStatus(Status.PAUSED);
-
         updateFlow();
+        this.logger.info("Execution " + this.execId + " has been paused.");
       } else {
         final String errorMessage = "Execution " + this.execId + " with status " +
             this.flow.getStatus() + " cannot be paused.";
