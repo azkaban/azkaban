@@ -608,7 +608,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     BEGIN_FLOW_COUNT(0),
     END_FLOW_COUNT(1);
 
-    int value;
+    private final int value;
 
     FlowCount(int value) {
       this.value = value;
@@ -631,31 +631,31 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
     public synchronized void beginFlow(final String flowId, Set<String> ramps) {
       executingFlows.put(flowId, ramps);
-      flowCounts[FlowCount.BEGIN_FLOW_COUNT.value]++;
+      flowCounts[FlowCount.BEGIN_FLOW_COUNT.getValue()]++;
     }
 
     public synchronized Set<String> endFlow(final String flowId) {
       Set<String> ramps = executingFlows.get(flowId);
       executingFlows.remove(flowId);
-      flowCounts[FlowCount.END_FLOW_COUNT.value]++;
+      flowCounts[FlowCount.END_FLOW_COUNT.getValue()]++;
       return ramps;
     }
 
     public int getBeginFlowCount() {
-      return flowCounts[FlowCount.BEGIN_FLOW_COUNT.value];
+      return flowCounts[FlowCount.BEGIN_FLOW_COUNT.getValue()];
     }
 
     public int getEndFlowCount() {
-      return flowCounts[FlowCount.END_FLOW_COUNT.value];
+      return flowCounts[FlowCount.END_FLOW_COUNT.getValue()];
     }
 
     public void resetFlowCountAfterSave() {
-      flowCounts[FlowCount.BEGIN_FLOW_COUNT.value] = executingFlows.size();
-      flowCounts[FlowCount.END_FLOW_COUNT.value] = 0;
+      flowCounts[FlowCount.BEGIN_FLOW_COUNT.getValue()] = executingFlows.size();
+      flowCounts[FlowCount.END_FLOW_COUNT.getValue()] = 0;
     }
 
     public boolean hasUnsavedFinishedFlow() {
-      return flowCounts[FlowCount.END_FLOW_COUNT.value] > 0;
+      return flowCounts[FlowCount.END_FLOW_COUNT.getValue()] > 0;
     }
   }
 
