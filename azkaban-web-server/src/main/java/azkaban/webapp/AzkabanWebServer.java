@@ -71,7 +71,9 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+import cloudflow.services.ExecutionService;
 import cloudflow.services.SpaceService;
+import cloudflow.servlets.ExecutionServlet;
 import cloudflow.servlets.SpaceServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -136,7 +138,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final VelocityEngine velocityEngine;
-  private final StatusService statusService;
   private final SpaceService spaceService;
   private final Server server;
   private final UserManager userManager;
@@ -150,7 +151,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerScheduler scheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
+
+  // added for CloudFlow
   private ObjectMapper objectMapper;
+  private final StatusService statusService;
+  private final ExecutionService executionService;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -167,10 +172,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerScheduler scheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
-      final SpaceService spaceService) {
+      final SpaceService spaceService,
+      final ExecutionService executionService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
-    this.objectMapper = objectMapper;
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
         "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
@@ -183,7 +188,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.statusService = statusService;
     this.scheduler = requireNonNull(scheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
+
+    // added for CloudFlow
+    this.objectMapper = objectMapper;
     this.spaceService = requireNonNull(spaceService, "space service can't be null");
+    this.executionService = requireNonNull(executionService,"execution service can't be null");
+
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -466,6 +476,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   private void addCloudFlowRoutes(Context root) {
     root.addServlet(new ServletHolder(new SpaceServlet()), "/spaces/*");
+    root.addServlet(new ServletHolder(new ExecutionServlet()), "/executions/*");
   }
 
   private void prepareAndStartServer()
@@ -576,13 +587,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return this.userManager;
   }
 
-  public SpaceService spaceService() {
-    return this.spaceService;
-  }
-
   public ObjectMapper objectMapper() {
     return this.objectMapper;
   }
+
+  public SpaceService spaceService() { return this.spaceService; }
+
+  public ExecutionService getExecutionService() { return this.executionService; }
 
   public ProjectManager getProjectManager() {
     return this.projectManager;

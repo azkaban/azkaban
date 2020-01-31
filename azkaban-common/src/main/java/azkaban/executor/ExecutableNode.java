@@ -68,7 +68,7 @@ public class ExecutableNode {
   private Props outputProps;
   private Props rampProps = new Props();
   private long delayExecution = 0;
-  private ArrayList<ExecutionAttempt> pastAttempts = null;
+  private List<ExecutionAttempt> pastAttempts = new ArrayList<>();
   private String condition;
   private ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus.ALL_SUCCESS;
 
@@ -243,10 +243,6 @@ public class ExecutableNode {
     this.attempt.incrementAndGet();
 
     synchronized (this) {
-      if (this.pastAttempts == null) {
-        this.pastAttempts = new ArrayList<>();
-      }
-
       this.pastAttempts.add(pastAttempt);
     }
 
@@ -317,9 +313,8 @@ public class ExecutableNode {
       objMap.put(OUTPUT_PROPS_PARAM, PropsUtils.toStringMap(this.outputProps, true));
     }
 
-    if (this.pastAttempts != null) {
-      final ArrayList<Object> attemptsList =
-          new ArrayList<>(this.pastAttempts.size());
+    if (this.pastAttempts.size() > 0) {
+      final ArrayList<Object> attemptsList = new ArrayList<>(this.pastAttempts.size());
       for (final ExecutionAttempt attempts : this.pastAttempts) {
         attemptsList.add(attempts.toObject());
       }
@@ -445,10 +440,6 @@ public class ExecutableNode {
     }
 
     synchronized (this) {
-      if (this.pastAttempts == null) {
-        this.pastAttempts = new ArrayList<>();
-      }
-
       // We just check size because past attempts don't change
       if (pastAttemptsList.size() <= this.pastAttempts.size()) {
         return;

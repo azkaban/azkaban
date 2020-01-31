@@ -34,6 +34,8 @@ import cloudflow.daos.SpaceDao;
 import cloudflow.daos.SpaceDaoImpl;
 import cloudflow.daos.SpaceSuperUserDao;
 import cloudflow.daos.SpaceSuperUserDaoImpl;
+import cloudflow.services.ExecutionService;
+import cloudflow.services.ExecutionServiceImpl;
 import cloudflow.services.SpaceService;
 import cloudflow.services.SpaceServiceImpl;
 import com.google.inject.AbstractModule;
@@ -86,9 +88,16 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
+
+    addCloudFlowBindings();
+  }
+
+  private void addCloudFlowBindings() {
     bind(SpaceService.class).to(SpaceServiceImpl.class);
     bind(SpaceDao.class).to(SpaceDaoImpl.class);
     bind(SpaceSuperUserDao.class).to(SpaceSuperUserDaoImpl.class);
+
+    bind(ExecutionService.class).to(ExecutionServiceImpl.class);
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
