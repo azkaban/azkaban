@@ -16,12 +16,16 @@
 package azkaban.executor;
 
 import com.sun.istack.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Object of Executable Ramp
  */
 public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExecutableRamp.class);
 
   public enum Action {
     IGNORED, SUCCEEDED, FAILED
@@ -344,7 +348,7 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
   }
 
   synchronized public void cacheResult(Action action) {
-    this.state.numOfTrail++;
+    this.state.cachedNumOfTrail++;
     switch(action) {
       case SUCCEEDED:
         this.state.cachedNumOfSuccess++;
@@ -365,12 +369,27 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
             / ((this.state.numOfTrail + this.state.cachedNumOfTrail) * 1.0))
         : (this.state.numOfFailure + this.state.cachedNumOfFailure);
 
+    LOGGER.info(String.format("Cache Ramp Result : [id = %s, action: %s, %s failure: %d, numOfTrail (%d, %d), numOfSuccess: (%d, %d), numOfFailure: (%d, %d), numOfIgnore: (%d, %d)]"
+        , this.id
+        , action.name()
+        , this.metadata.isPercentageScaleForMaxFailure ? "Percentage" : " "
+        , failure
+        , this.state.numOfTrail
+        , this.state.cachedNumOfTrail
+        , this.state.numOfSuccess
+        , this.state.cachedNumOfSuccess
+        , this.state.numOfFailure
+        , this.state.cachedNumOfFailure
+        , this.state.numOfIgnored
+        , this.state.cachedNumOfIgnored
+    ));
     if (failure > this.metadata.maxFailureToRampDown) {
+      LOGGER.warn(String.format("Failure over the threshold to Ramp Down [id = %s, failure = %d, threshold = %d]", this.id, failure, this.metadata.maxFailureToRampDown));
       if (this.state.rampStage > 0) {
         this.state.rampStage--;
       }
     } else if (failure > this.metadata.maxFailureToPause) {
-      this.getState().setPaused(true);
+      LOGGER.warn(String.format("Failure over the threshold to Pause the Ramp [id = %s, failure = %d, threshold = %d]", this.id, failure, this.metadata.maxFailureToRampDown));
     }
 
     this.getState().markChanged();

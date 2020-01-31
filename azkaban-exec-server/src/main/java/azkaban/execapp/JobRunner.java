@@ -706,7 +706,11 @@ public class JobRunner extends EventHandler implements Runnable {
             submitUser);
       }
 
-      this.props.putAll(this.node.getRampProps());
+      Props props = this.node.getRampProps();
+      if (props != null) {
+        logger.info("Attached Ramp Props : [" + props.toString() + "]");
+        this.props.putAll(props);
+      }
 
       try {
         this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);

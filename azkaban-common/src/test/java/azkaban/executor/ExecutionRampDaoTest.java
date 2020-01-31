@@ -342,7 +342,7 @@ public class ExecutionRampDaoTest {
 
     assertThat(updatedRecord.get("dali").getState().getNumOfFailure()).isEqualTo(1);
     assertThat(updatedRecord.get("dali").getState().getNumOfSuccess()).isEqualTo(3);
-    assertThat(updatedRecord.get("dali").getState().getNumOfTrail()).isEqualTo(0);
+    assertThat(updatedRecord.get("dali").getState().getNumOfTrail()).isEqualTo(5);
     assertThat(updatedRecord.get("dali").getState().getNumOfIgnored()).isEqualTo(1);
     assertThat(updatedRecord.get("dali").getState().getLastUpdatedTime()).isGreaterThan(0);
   }
