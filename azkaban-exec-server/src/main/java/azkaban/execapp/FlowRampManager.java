@@ -53,6 +53,8 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -604,58 +606,51 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     }
   }
 
-  private enum FlowCount {
-    BEGIN_FLOW_COUNT(0),
-    END_FLOW_COUNT(1);
-
-    private final int value;
-
-    FlowCount(int value) {
-      this.value = value;
-    }
-
-    int getValue() {
-      return this.value;
-    }
-  }
-
   private static class RampDataModel {
     // Host the current processing ramp flows
     // Map.Key = FlowId, Map.Value = Set Of Ramps
     private volatile Map<String, Set<String>> executingFlows = new HashMap<>();
-    private volatile int[] flowCounts = {0, 0}; // [0] count of started flow [1] count of ended flows
+    private Lock lock = new ReentrantLock();
+    private volatile int beginFlowCount = 0;
+    private volatile int endFlowCount = 0;
 
 
     public RampDataModel() {
     }
 
     public synchronized void beginFlow(final String flowId, Set<String> ramps) {
+      lock.lock();
       executingFlows.put(flowId, ramps);
-      flowCounts[FlowCount.BEGIN_FLOW_COUNT.getValue()]++;
+      beginFlowCount++;
+      lock.unlock();
     }
 
     public synchronized Set<String> endFlow(final String flowId) {
       Set<String> ramps = executingFlows.get(flowId);
+      lock.lock();
       executingFlows.remove(flowId);
-      flowCounts[FlowCount.END_FLOW_COUNT.getValue()]++;
+      endFlowCount++;
+      lock.unlock();
       return ramps;
     }
 
     public int getBeginFlowCount() {
-      return flowCounts[FlowCount.BEGIN_FLOW_COUNT.getValue()];
+      return beginFlowCount;
     }
 
     public int getEndFlowCount() {
-      return flowCounts[FlowCount.END_FLOW_COUNT.getValue()];
+      return endFlowCount;
     }
 
     public void resetFlowCountAfterSave() {
-      flowCounts[FlowCount.BEGIN_FLOW_COUNT.getValue()] = executingFlows.size();
-      flowCounts[FlowCount.END_FLOW_COUNT.getValue()] = 0;
+      lock.lock();
+      beginFlowCount = executingFlows.size();
+      endFlowCount = 0;
+      lock.unlock();
     }
 
     public boolean hasUnsavedFinishedFlow() {
-      return flowCounts[FlowCount.END_FLOW_COUNT.getValue()] > 0;
+      return endFlowCount > 0;
     }
   }
 
