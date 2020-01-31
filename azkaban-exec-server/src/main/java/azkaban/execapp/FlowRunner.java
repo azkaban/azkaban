@@ -907,8 +907,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     String jobId = node.getId();
     String jobType = node.getInputProps().getString("type");
     Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
-    this.logger.info("Selected Ramp Props in Flow : [" + rampProps + "]");
-    node.setRampProps(rampProps);
+    if (rampProps != null) {
+      this.logger.info("Selected Ramp Props in Flow : [" + rampProps + "]");
+      node.setRampProps(rampProps);
+    }
 
     final JobRunner runner = createJobRunner(node);
     this.logger.info("Submitting job '" + node.getNestedId() + "' to run.");
