@@ -20,7 +20,7 @@
 
 <script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
 
 <script type="text/javascript" src="${context}/js/azkaban/util/svgutils.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>

@@ -14,7 +14,7 @@
  * the License.
  */
 
-function ajaxCall(requestURL, data, callback) {
+function ajaxCall(requestURL, data, successCallback, beforeSendCallback, requestType) {
   var successHandler = function (data) {
     if (data.error == "session") {
       // We need to relogin.
@@ -33,12 +33,24 @@ function ajaxCall(requestURL, data, callback) {
           }
         });
       }
-    }
-    else {
-      callback.call(this, data);
+    } else {
+      successCallback.call(this, data);
     }
   };
-  $.get(requestURL, data, successHandler, "json");
+
+  var options = {
+    url: requestURL,
+    data: data,
+    dataType: "json",
+    success: successHandler
+  };
+
+  options.type = (typeof requestType !== 'undefined') ? requestType : 'GET';
+  if (typeof beforeSendCallback !== 'undefined') {
+    options.beforeSend = beforeSendCallback;
+  }
+
+  $.ajax(options);
 }
 
 function executeFlow(executingData) {
@@ -47,8 +59,7 @@ function executeFlow(executingData) {
     if (data.error) {
       flowExecuteDialogView.hideExecutionOptionPanel();
       messageDialogView.show("Error Executing Flow", data.error);
-    }
-    else {
+    } else {
       flowExecuteDialogView.hideExecutionOptionPanel();
       messageDialogView.show("Flow submitted", data.message,
           function () {
@@ -72,8 +83,7 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
   var successHandler = function (data) {
     if (data.error) {
       alert(data.error);
-    }
-    else {
+    } else {
       model.set({
         "successEmails": data.successEmails,
         "failureEmails": data.failureEmails,
@@ -115,8 +125,7 @@ function fetchFlow(model, projectName, flowId, sync) {
   var successHandler = function (data) {
     if (data.error) {
       alert(data.error);
-    }
-    else {
+    } else {
       var disabled = data.disabled ? data.disabled : {};
       model.set({
         flowId: data.flowId,
@@ -185,8 +194,7 @@ function flowExecutingStatus(projectName, flowId) {
           }
         });
       }
-    }
-    else {
+    } else {
       executionIds = data.execIds;
     }
   };
