@@ -53,8 +53,8 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.metrics.CommonMetrics;
 import azkaban.metric.MetricReportManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.FlowLoaderUtils;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
@@ -608,7 +608,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.logger.info("Running flow '" + flow.getNestedId() + "'.");
         flow.setStatus(Status.RUNNING);
         // don't overwrite start time of root flows
-        if(flow.getStartTime() <= 0) {
+        if (flow.getStartTime() <= 0) {
           flow.setStartTime(System.currentTimeMillis());
         }
         prepareJobProperties(flow);
@@ -903,7 +903,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     prepareJobProperties(node);
 
     node.setStatus(Status.QUEUED);
-
+    
     String jobId = node.getId();
     String jobType = node.getInputProps().getString("type");
     Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
@@ -1117,16 +1117,19 @@ public class FlowRunner extends EventHandler implements Runnable {
     jobRunner.addListener(JmxJobMBeanManager.getInstance());
   }
 
-  public void pause(final String user) {
+  public void pause(final String user) throws IllegalStateException {
     synchronized (this.mainSyncObj) {
-      if (!this.flowFinished) {
-        this.logger.info("Flow paused by " + user);
+      this.logger.info("Execution pause requested by " + user);
+      if (!this.isKilled() && !this.flowFinished) {
         this.flowPaused = true;
         this.flow.setStatus(Status.PAUSED);
-
         updateFlow();
+        this.logger.info("Execution " + this.execId + " has been paused.");
       } else {
-        this.logger.info("Cannot pause finished flow. Called by user " + user);
+        final String errorMessage = "Execution " + this.execId + " with status " +
+            this.flow.getStatus() + " cannot be paused.";
+        this.logger.warn(errorMessage);
+        throw new IllegalStateException(errorMessage);
       }
     }
 
@@ -1165,7 +1168,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       if (this.flowKilled) {
         return;
       }
-      this.logger.info("Kill has been called on flow " + this.execId);
+      this.logger.info("Kill has been called on execution " + this.execId);
       this.flow.setStatus(Status.KILLING);
       // If the flow is paused, then we'll also unpause
       this.flowPaused = false;

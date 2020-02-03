@@ -77,7 +77,7 @@ public class ExecutorApiGateway {
 
       return callForJsonObjectMap(host, port, "/executor", paramList);
     } catch (final IOException e) {
-      throw new ExecutorManagerException(e);
+      throw new ExecutorManagerException(e.getMessage(), e);
     }
   }
 
