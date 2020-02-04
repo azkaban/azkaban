@@ -6,6 +6,7 @@ import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import cloudflow.error.CloudFlowException;
 import cloudflow.models.JobExecution;
 import cloudflow.services.ExecutionService;
+import com.linkedin.jersey.api.uri.UriTemplate;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -26,8 +27,8 @@ import static cloudflow.servlets.Constants.*;
 
 public class ExecutionServlet extends LoginAbstractAzkabanServlet {
 
-    private static final Pattern GET_JOB_EXECUTION_INFO_PATTERN = Pattern.compile(
-        "/executions/([0-9]+)/jobs/([0-9]+)/([a-zA-Z1-9:_-]+)"); // TODO: remove "/[a-zA-Z1-9:_-]+"
+    private static final UriTemplate GET_JOB_EXECUTION_INFO_URI = new UriTemplate(
+        "/executions/{executionId}/jobs/{jobDefinitionId}/{jobPath}"); // TODO: remove jobPath
 
     private static final Logger logger = LoggerFactory.getLogger(ExecutionServlet.class);
     private ExecutionService executorService;
@@ -44,16 +45,26 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
     protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session)
         throws ServletException, IOException {
 
-        Matcher matcher = GET_JOB_EXECUTION_INFO_PATTERN.matcher(req.getRequestURI());
-        if(matcher.matches()) {
-            String executionId = matcher.group(1);
-            String jobDefinitionId = matcher.group(3); // TODO: replace with group 2
+        Map<String, String> templateVariableToValue = new HashMap<>();
+        if (GET_JOB_EXECUTION_INFO_URI.match(req.getRequestURI(), templateVariableToValue)) {
+            final String executionId = templateVariableToValue.get("executionId");
+            final String jobDefinitionId = templateVariableToValue.get("jobDefinitionId");
+            try {
+                Integer.parseInt(executionId);
+                Integer.parseInt(jobDefinitionId);
+            } catch (NumberFormatException e) {
+                sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid execution id"
+                    + " or job definition id.");
+                return;
+            }
+
             logger.info("Getting execution details of job {} in execution {}.", jobDefinitionId,
                 executionId);
             Optional<JobExecution> jobExecution;
             try {
-                jobExecution = executorService.getJobExecution(executionId, jobDefinitionId,
-                    session.getUser().getUserId());
+                // TODO: replace jobPath with jobDefinitionId
+                jobExecution = executorService.getJobExecution(executionId, templateVariableToValue.get(
+                    "jobPath"), session.getUser().getUserId());
             } catch (CloudFlowException e) {
                 sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     DEFAULT_500_ERROR_MESSAGE);
@@ -68,7 +79,6 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
                         executionId, jobDefinitionId));
             }
             return;
-
         }
 
         // TODO: handle unsupported routes

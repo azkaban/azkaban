@@ -591,9 +591,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return this.objectMapper;
   }
 
-  public SpaceService spaceService() { return this.spaceService; }
+  public SpaceService spaceService() {
+    return this.spaceService;
+  }
 
-  public ExecutionService getExecutionService() { return this.executionService; }
+  public ExecutionService getExecutionService() {
+    return this.executionService;
+  }
 
   public ProjectManager getProjectManager() {
     return this.projectManager;

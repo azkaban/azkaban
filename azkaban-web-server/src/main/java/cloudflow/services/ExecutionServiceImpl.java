@@ -55,6 +55,9 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
 
         // TODO: get job and job path given a definition id
+        // Examples of job paths in current Azkaban code:
+        // 1) jobD -> direct child of the root flow
+        // 2) embeddedFlow1:embeddedFlow2:jobE -> deeply nested job
         String jobPath = jobDefinitionId;
         String[] nodesInPath = jobPath.split(":");
         List<ExecutableNode> nodesToScan = executableFlow.getExecutableNodes();
@@ -85,35 +88,39 @@ public class ExecutionServiceImpl implements ExecutionService {
         logger.info("Found job with path {} in execution {}.", jobPath, execId);
 
         JobExecution jobExecution = new JobExecution();
-        Long firstStartTime = node.getStartTime();
-
-        List<JobExecutionAttempt> attempts = new ArrayList<>();
-        for(Object o: node.getAttemptObjects()) {
-            Map<String, Object> attempt = (Map<String, Object>) o;
-            Integer id = (Integer) attempt.get(ExecutionAttempt.ATTEMPT_PARAM);
-            Long startTime = (Long) attempt.get(ExecutionAttempt.STARTTIME_PARAM);
-            Long endTime = (Long) attempt.get(ExecutionAttempt.ENDTIME_PARAM);
-            Status status = Status.valueOf((String) attempt.get(ExecutionAttempt.STATUS_PARAM));
-            attempts.add(new JobExecutionAttempt(id, startTime, endTime, status));
-
-            if(id == 0) {
-                firstStartTime = startTime;
-            }
-        }
-
-        JobExecutionAttempt lastAttempt = new JobExecutionAttempt(attempts.size(), node.getStartTime(),
-        node.getEndTime(), node.getStatus());
-        attempts.add(lastAttempt);
+        List<JobExecutionAttempt> attempts = getJobExecutionAttempts(node);
         jobExecution.setAttempts(attempts);
 
-        jobExecution.setExecutionId(executionId);
+        Optional<JobExecutionAttempt> firstAttempt =
+            attempts.stream().filter(a -> a.getId().equals(0)).findFirst();
+        Long firstStartTime =  firstAttempt.isPresent() ? firstAttempt.get().getStartTime() :
+            node.getStartTime();
         jobExecution.setStartTime(firstStartTime);
+
+        jobExecution.setExecutionId(executionId);
         jobExecution.setEndTime(node.getEndTime());
         jobExecution.setStatus(node.getStatus());
         // TODO: set data from job definition
         // TODO: set job properties
 
         return Optional.of(jobExecution);
+    }
+
+    private List<JobExecutionAttempt> getJobExecutionAttempts(ExecutableNode jobNode) {
+        List<JobExecutionAttempt> attempts = new ArrayList<>();
+        for(Object o: jobNode.getAttemptObjects()) {
+            Map<String, Object> attempt = (Map<String, Object>) o;
+            Integer id = (Integer) attempt.get(ExecutionAttempt.ATTEMPT_PARAM);
+            Long startTime = (Long) attempt.get(ExecutionAttempt.STARTTIME_PARAM);
+            Long endTime = (Long) attempt.get(ExecutionAttempt.ENDTIME_PARAM);
+            Status status = Status.valueOf((String) attempt.get(ExecutionAttempt.STATUS_PARAM));
+            attempts.add(new JobExecutionAttempt(id, startTime, endTime, status));
+        }
+
+        JobExecutionAttempt lastAttempt = new JobExecutionAttempt(attempts.size(),
+            jobNode.getStartTime(), jobNode.getEndTime(), jobNode.getStatus());
+        attempts.add(lastAttempt);
+        return attempts;
     }
 
 }

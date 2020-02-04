@@ -11,6 +11,6 @@ public class Constants {
 
 
 
-  public static final String DEFAULT_500_ERROR_MESSAGE = "Ooops, something went terribly wrong!";
+  public static final String DEFAULT_500_ERROR_MESSAGE = "Unexpected error encountered.";
 
 }

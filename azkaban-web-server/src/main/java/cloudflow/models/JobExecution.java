@@ -12,8 +12,6 @@ public class JobExecution {
     private List<JobExecutionAttempt> attempts;
 
 
-    public JobExecution () { }
-
     public String getExecutionId() {
         return executionId;
     }
