@@ -344,7 +344,12 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
   public boolean isActive() {
     long diff = this.getState().startTime - System.currentTimeMillis();
-    return this.getState().isActive && (!this.getState().isPaused) && (diff < 0);
+    boolean isActive = this.getState().isActive && (!this.getState().isPaused) && (diff < 0);
+    if (!isActive) {
+      LOGGER.info("Ramp Is Isolated. (isActive = {}, isPause = {}, timeDiff = {}",
+          this.getState().isActive, this.getState().isPaused, diff);
+    }
+    return isActive;
   }
 
   synchronized public void cacheResult(Action action) {
@@ -386,7 +391,10 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
     if (failure > this.metadata.maxFailureToRampDown) {
       LOGGER.warn(String.format("Failure over the threshold to Ramp Down [id = %s, failure = %d, threshold = %d]", this.id, failure, this.metadata.maxFailureToRampDown));
       if (this.state.rampStage > 0) {
+        int currentStage = this.state.rampStage;
         this.state.rampStage--;
+        int futureStage = this.state.rampStage;
+        LOGGER.info("[RAMP DOWN] (rampId = {}, from stage {} to stage {}.)", this.getId(), currentStage, futureStage);
       }
     } else if (failure > this.metadata.maxFailureToPause) {
       LOGGER.warn(String.format("Failure over the threshold to Pause the Ramp [id = %s, failure = %d, threshold = %d]", this.id, failure, this.metadata.maxFailureToRampDown));

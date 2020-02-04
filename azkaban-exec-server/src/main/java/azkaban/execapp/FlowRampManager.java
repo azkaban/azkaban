@@ -386,12 +386,20 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
       for (ExecutableRamp executableRamp : executableRampMap.getActivatedAll()) {
         try {
           String rampId = executableRamp.getId();
+          LOGGER.info("[Ramp Check] (rampId = {}, rampStage = {}, executionId = {}, flowName = {}, RampPercentageId = {})",
+              rampId,
+              executableRamp.getState().getRampStage(),
+              executableFlow.getExecutionId(),
+              flowName,
+              executableFlow.getRampPercentageId()
+          );
 
           // get Base Props
           Props baseProps = new Props();
           baseProps.putAll(executableRampDependencyMap.getDefaultValues(executableRampItemsMap.getDependencies(rampId)));
 
           ExecutableRampStatus status = executableRampExceptionalFlowItemsMap.check(rampId, flowName);
+          LOGGER.info("[Ramp Status] (Status = {}, flowName = {})", status.name(), flowName);
           switch (status) {
             case BLACKLISTED: // blacklist
               executableFlowRampMetadata.setRampProps(
@@ -402,7 +410,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.BLACKLISTED.name()
                   )
               );
-              LOGGER.info("Ramp Flow As BlackListed Item. [rampid = {}, flowName = {}]", rampId, flowName);
+              LOGGER.info("[Ramp BlackListed]. [rampId = {}, flowName = {}]", rampId, flowName);
               break;
 
             case WHITELISTED: // whitelist
@@ -414,7 +422,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.WHITELISTED.name()
                   )
               );
-              LOGGER.info("Ramp Flow As WhiteListed Item. [rampid = {}, flowName = {}]", rampId, flowName);
+              LOGGER.info("[Ramp WhiteListed]. [rampId = {}, flowName = {}]", rampId, flowName);
               break;
 
             case SELECTED: // selected
@@ -426,7 +434,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.SELECTED.name()
                   )
               );
-              LOGGER.info("Ramp Flow As Selected Item. [rampid = {}, flowName = {}]", rampId, flowName);
+              LOGGER.info("[Ramp Selected]. [rampId = {}, flowName = {}]", rampId, flowName);
               break;
 
             case UNSELECTED: // selected
@@ -438,8 +446,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.UNSELECTED.name()
                   )
               );
-              LOGGER.info("Ramp Flow As Unselected Item. [rampid = {}, flowName = {}]",
-                  rampId, flowName);
+              LOGGER.info("[Ramp Unselected]. [rampId = {}, flowName = {}]", rampId, flowName);
               break;
 
             case EXCLUDED:
@@ -451,12 +458,18 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.EXCLUDED.name()
                   )
               );
-              LOGGER.info("Ramp Flow As Excluded Item. [rampid = {}, flowName = {}]",
-                  rampId, flowName);
+              LOGGER.info("[Ramp Excluded]. [rampId = {}, flowName = {}]", rampId, flowName);
               break;
 
             default:
               RampPolicy rampPolicy = rampPolicyManager.buildRampPolicyExecutor(executableRamp.getPolicy(), globalProps);
+              LOGGER.info ("[Ramp Policy Selecting]. [policy = {}, rampId = {}, flowName = {}, executionId = {}, RampPercentageId = {}]",
+                  rampPolicy.getClass().getName(),
+                  rampId,
+                  flowName,
+                  executableFlow.getExecutionId(),
+                  executableFlow.getRampPercentageId()
+              );
               if (rampPolicy.check(executableFlow, executableRamp)) {
                 // Ramp Enabled
                 executableFlowRampMetadata.setRampProps(
@@ -467,8 +480,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                         ExecutableRampStatus.SELECTED.name()
                     )
                 );
-                LOGGER.info("Undetermined Ramp Flow is selected for Ramping. [rampid = {}, flowName = {}]",
-                    rampId, flowName);
+                LOGGER.info("[Ramp Policy Selected]. [rampId = {}, flowName = {}]", rampId, flowName);
               } else {
                 executableFlowRampMetadata.setRampProps(
                     rampId,
@@ -478,8 +490,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                         ExecutableRampStatus.UNSELECTED.name()
                     )
                 );
-                LOGGER.info("Undetermined Ramp Flow is not selected for Ramping. [rampid = {}, flowName = {}]",
-                    rampId, flowName);
+                LOGGER.info("[Ramp Policy Unselected]. [rampId = {}, flowName = {}]", rampId, flowName);
               }
               break;
           }
@@ -522,6 +533,10 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
   private void moveFiles(File sourceDir, File destinationDir, String regExpression) {
     try {
       FileIOUtils.moveFiles(sourceDir, destinationDir, regExpression);
+      LOGGER.info("Success to move files from {} to {} with REGEXP {}",
+          sourceDir.getAbsolutePath(),
+          destinationDir.getAbsolutePath(),
+          regExpression);
     } catch (IOException e) {
       LOGGER.error(
           String.format("Fail to move files from %s to %s with REGEXP %s",
@@ -575,8 +590,12 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
             if (!Action.SUCCEEDED.equals(action)) {
               String rampId = executableRamp.getId();
               String flowName =  flowRunner.getExecutableFlow().getFlowName();
-              LOGGER.warn("Flow will be excluded from ramping. [rampId = {}, flow = {}, action = {}]",
-                  rampId, rampId, action.name());
+              LOGGER.warn("[Ramp Exclude Flow]. [executionId = {}, rampId = {}, flowName = {}, action = {}]",
+                  flowRunner.getExecutableFlow().getExecutionId(),
+                  rampId,
+                  flowName,
+                  action.name()
+              );
               executableRampExceptionalFlowItemsMap.add(rampId, flowName, ExecutableRampStatus.EXCLUDED,
                   System.currentTimeMillis(), true);
             }
