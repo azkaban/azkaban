@@ -8,9 +8,8 @@ import azkaban.executor.ExecutionAttempt;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
-import cloudflow.error.CloudFlowError;
 import cloudflow.error.CloudFlowException;
-import cloudflow.error.ErrorCode;
+import cloudflow.error.CloudFlowNotFoundException;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
 import java.util.Map;
@@ -33,25 +32,25 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
 
     @Override
-    public Optional<JobExecution> getJobExecution (String executionId, String jobDefinitionId,
+    public JobExecution getJobExecution (String executionId, String jobDefinitionId,
         String user) throws CloudFlowException {
         // TODO: check user permissions
 
         final Integer execId = Integer.parseInt(executionId); // Azkaban ids are integers
-
+        String errorMsg;
         ExecutableFlow executableFlow = null;
         try {
             executableFlow = this.executorManager.getExecutableFlow(execId);
         } catch (final ExecutorManagerException e) {
-            String errorMsg = String.format("Failed to fetch execution with id %d.", execId);
+            errorMsg = String.format("Failed to fetch execution with id %d.", execId);
             logger.error(errorMsg, e);
-            CloudFlowError error = new CloudFlowError(ErrorCode.UNEXPECTED_ERROR, errorMsg);
-            throw new CloudFlowException(error);
+            throw new CloudFlowException(errorMsg);
         }
 
-        if( executableFlow == null) {
-            logger.info("Execution with id {} wasn't found.", execId);
-            return Optional.empty();
+        if (executableFlow == null) {
+            errorMsg = String.format("Execution with id %d wasn't found.", execId);
+            logger.error(errorMsg);
+            throw new CloudFlowNotFoundException(errorMsg);
         }
 
         // TODO: get job and job path given a definition id
@@ -72,9 +71,10 @@ public class ExecutionServiceImpl implements ExecutionService {
                 }
             }
             if (i >= nodesToScan.size()) {
-                logger.info("Job with id {} and path {} wasn't found in execution {}.",
+                errorMsg = String.format("Job with id %s and path %s wasn't found in execution %d.",
                     jobDefinitionId, jobPath, execId);
-                return Optional.empty();
+                logger.error(errorMsg);
+                throw new CloudFlowNotFoundException(errorMsg);
             }
             if (node instanceof ExecutableFlowBase) {
                 nodesToScan = ((ExecutableFlowBase) node).getExecutableNodes();
@@ -103,7 +103,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         // TODO: set data from job definition
         // TODO: set job properties
 
-        return Optional.of(jobExecution);
+        return jobExecution;
     }
 
     private List<JobExecutionAttempt> getJobExecutionAttempts(ExecutableNode jobNode) {

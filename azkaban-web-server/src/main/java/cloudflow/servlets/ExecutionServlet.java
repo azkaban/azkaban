@@ -4,6 +4,7 @@ import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import cloudflow.error.CloudFlowException;
+import cloudflow.error.CloudFlowNotFoundException;
 import cloudflow.models.JobExecution;
 import cloudflow.services.ExecutionService;
 import com.linkedin.jersey.api.uri.UriTemplate;
@@ -60,24 +61,21 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
 
             logger.info("Getting execution details of job {} in execution {}.", jobDefinitionId,
                 executionId);
-            Optional<JobExecution> jobExecution;
+            JobExecution jobExecution;
             try {
                 // TODO: replace jobPath with jobDefinitionId
                 jobExecution = executorService.getJobExecution(executionId, templateVariableToValue.get(
                     "jobPath"), session.getUser().getUserId());
+            } catch (CloudFlowNotFoundException e) {
+                sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+                return;
             } catch (CloudFlowException e) {
                 sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     DEFAULT_500_ERROR_MESSAGE);
                 return;
             }
 
-            if(jobExecution.isPresent()) {
-                sendResponse(resp, HttpServletResponse.SC_OK, toJsonMap(jobExecution.get()));
-            } else {
-                sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND,
-                    String.format("Execution %s not found or doesn't have job with id %s.",
-                        executionId, jobDefinitionId));
-            }
+            sendResponse(resp, HttpServletResponse.SC_OK, toJsonMap(jobExecution));
             return;
         }
 
