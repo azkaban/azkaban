@@ -215,7 +215,7 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
       this.numOfFailure = source.numOfFailure;
       this.numOfIgnored = source.numOfFailure;
 
-      this.isPaused = source.isPaused ? source.isPaused : this.isPaused;
+      this.isPaused = source.isPaused;
       this.rampStage = (source.rampStage > this.rampStage) ? source.rampStage : this.rampStage;
       this.isActive = source.isActive;
 
@@ -344,7 +344,12 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
   public boolean isActive() {
     long diff = this.getState().startTime - System.currentTimeMillis();
-    return this.getState().isActive && (!this.getState().isPaused) && (diff < 0);
+    boolean isActive = this.getState().isActive && (!this.getState().isPaused) && (diff < 0);
+    if (!isActive) {
+      LOGGER.info("[Ramp Is Isolated] (isActive = {}, isPause = {}, timeDiff = {}",
+          this.getState().isActive, this.getState().isPaused, diff);
+    }
+    return isActive;
   }
 
   synchronized public void cacheResult(Action action) {
@@ -363,13 +368,15 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
     this.state.lastUpdatedTime = System.currentTimeMillis();
 
     // verify the failure threshold
+    int trails = this.state.numOfTrail + this.state.cachedNumOfTrail;
+    int fails = this.state.numOfFailure + this.state.cachedNumOfFailure;
     int failure = this.metadata.isPercentageScaleForMaxFailure
-        ?
-        (int) (((this.state.numOfFailure + this.state.cachedNumOfFailure) * 100.0)
-            / ((this.state.numOfTrail + this.state.cachedNumOfTrail) * 1.0))
-        : (this.state.numOfFailure + this.state.cachedNumOfFailure);
+        ? (trails == 0)
+          ? 100
+          : (int) ((fails * 100.0) / (trails * 1.0))
+        : fails;
 
-    LOGGER.info(String.format("Cache Ramp Result : [id = %s, action: %s, %s failure: %d, numOfTrail (%d, %d), numOfSuccess: (%d, %d), numOfFailure: (%d, %d), numOfIgnore: (%d, %d)]"
+    LOGGER.info("[Ramp Cached Result] (id = {}, action: {}, {} failure: {}, numOfTrail ({}, {}), numOfSuccess: ({}, {}), numOfFailure: ({}, {}), numOfIgnore: ({}, {}))"
         , this.id
         , action.name()
         , this.metadata.isPercentageScaleForMaxFailure ? "Percentage" : " "
@@ -382,14 +389,26 @@ public class ExecutableRamp implements IRefreshable<ExecutableRamp> {
         , this.state.cachedNumOfFailure
         , this.state.numOfIgnored
         , this.state.cachedNumOfIgnored
-    ));
-    if (failure > this.metadata.maxFailureToRampDown) {
-      LOGGER.warn(String.format("Failure over the threshold to Ramp Down [id = %s, failure = %d, threshold = %d]", this.id, failure, this.metadata.maxFailureToRampDown));
-      if (this.state.rampStage > 0) {
-        this.state.rampStage--;
+    );
+
+    if (this.metadata.maxFailureToRampDown != 0) {
+      if (failure > this.metadata.maxFailureToRampDown) {
+        if (this.state.rampStage > 0) {
+          int currentStage = this.state.rampStage;
+          this.state.rampStage--;
+          int futureStage = this.state.rampStage;
+          LOGGER.warn("[RAMP DOWN] (rampId = {}, failure = {}, threshold = {}, from stage {} to stage {}.)",
+              this.getId(), failure, this.metadata.maxFailureToRampDown, currentStage, futureStage);
+        }
       }
-    } else if (failure > this.metadata.maxFailureToPause) {
-      LOGGER.warn(String.format("Failure over the threshold to Pause the Ramp [id = %s, failure = %d, threshold = %d]", this.id, failure, this.metadata.maxFailureToRampDown));
+    }
+
+    if (this.metadata.maxFailureToPause != 0) {
+      if (failure > this.metadata.maxFailureToPause) {
+        this.state.setPaused(true);
+        LOGGER.info("[RAMP STOP] (rampId = {}, failure = {}, threshold = {}, timestamp = {})",
+            this.getId(), failure, this.metadata.maxFailureToPause, System.currentTimeMillis());
+      }
     }
 
     this.getState().markChanged();

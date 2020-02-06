@@ -37,6 +37,7 @@ public class TimeUtils {
 
   private static final String DATE_TIME_ZONE_PATTERN = "yyyy/MM/dd HH:mm:ss z";
   private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+  private static int ONE_DAY = 86400;
 
   /**
    * Formats the given millisecond instant into a string using the pattern "yyyy/MM/dd HH:mm:ss z"
@@ -235,5 +236,14 @@ public class TimeUtils {
    */
   public static boolean timeEscapedOver(long referenceTime, int second) {
     return ((System.currentTimeMillis() - referenceTime) / 1000F) > (second * 1.0);
+  }
+
+  /**
+   * Check how many days escaped over
+   * @param referenceTime reference time
+   * @return number of days
+   */
+  public static int daysEscapedOver(long referenceTime) {
+    return Math.round(((System.currentTimeMillis() - referenceTime) / 1000f) / (ONE_DAY * 1.0f) - 0.5f);
   }
 }
