@@ -56,6 +56,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
+import sun.util.calendar.ZoneInfo;
 
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
@@ -620,10 +621,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       try {
         timezone = DateTimeZone.forID(timezoneParam);
       } catch (final IllegalArgumentException e) {
+        TimeZone zone = ZoneInfo.getTimeZone(timezoneParam);
+        if(null == zone) {
+          ret.put(PARAM_STATUS, STATUS_ERROR);
+          ret.put(PARAM_MESSAGE, "Unknown timezone " + timezoneParam);
+          return;
+        }
         try {
-          timezone = DateTimeZone.forTimeZone(TimeZone.getTimeZone(timezoneParam));
+          timezone = DateTimeZone.forTimeZone(zone);
         } catch (final IllegalArgumentException e1) {
-          ret.put(PARAM_ERROR, "Unknown timezone " + timezoneParam);
+          ret.put(PARAM_STATUS, STATUS_ERROR);
+          ret.put(PARAM_MESSAGE, "Unknown timezone " + timezoneParam);
+          return;
         }
       }
     }
