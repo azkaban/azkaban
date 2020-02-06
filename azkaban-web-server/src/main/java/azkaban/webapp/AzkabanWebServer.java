@@ -72,9 +72,11 @@ import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
 import cloudflow.services.ExecutionService;
+import cloudflow.services.FlowService;
 import cloudflow.services.ProjectService;
 import cloudflow.services.SpaceService;
 import cloudflow.servlets.ExecutionServlet;
+import cloudflow.servlets.FlowServlet;
 import cloudflow.servlets.SpaceServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -158,6 +160,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final StatusService statusService;
   private final ExecutionService executionService;
   private final ProjectService projectService;
+  private final FlowService flowService;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -174,6 +177,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerScheduler scheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
+      final FlowService flowService,
       final SpaceService spaceService,
       final ExecutionService executionService,
       final ProjectService projectService) {
@@ -197,6 +201,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.spaceService = requireNonNull(spaceService, "space service can't be null");
     this.executionService = requireNonNull(executionService,"execution service can't be null");
     this.projectService = requireNonNull(projectService, "project service can't be null");
+    this.flowService = requireNonNull(flowService, "flow service can't be null");
 
     loadBuiltinCheckersAndActions();
 
@@ -482,6 +487,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.addServlet(new ServletHolder(new SpaceServlet()), "/spaces/*");
     root.addServlet(new ServletHolder(new ExecutionServlet()), "/executions/*");
     root.addServlet(new ServletHolder(new cloudflow.servlets.ProjectServlet()), "/projects/*");
+    root.addServlet(new ServletHolder(new FlowServlet()), "/flows/*");
   }
 
   private void prepareAndStartServer()
@@ -594,6 +600,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   public ObjectMapper objectMapper() {
     return this.objectMapper;
+  }
+
+  public FlowService flowService() {
+    return this.flowService;
   }
 
   public SpaceService spaceService() {

@@ -9,4 +9,6 @@ public interface ProjectDao {
   String create(Project project, User user);
   Optional<Project> get(String projectId);
   List<Project> getAll(User user);
+  Optional<Project> getProjectByParams(Optional<String> projectId,
+      Optional<String> projectName, Optional<String> projectVersion);
 }

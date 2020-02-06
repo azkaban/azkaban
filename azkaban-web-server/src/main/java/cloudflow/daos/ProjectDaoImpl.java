@@ -1,9 +1,12 @@
 package cloudflow.daos;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.User;
+import cloudflow.daos.FlowDaoImpl.FetchFlowHandler;
 import cloudflow.models.Project;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -96,6 +99,8 @@ public class ProjectDaoImpl implements ProjectDao {
   @Override
   public Optional<Project> get(String projectId) {
     List<Project> projects = new ArrayList<>();
+
+
     FetchProjectHandler fetchProjectHandler = new FetchProjectHandler();
     try {
       projects = dbOperator.query(FetchProjectHandler.SELECT_PROJECT_WITH_ID, fetchProjectHandler,
@@ -128,8 +133,56 @@ public class ProjectDaoImpl implements ProjectDao {
     return projects;
   }
 
+  @Override
+  public Optional<Project> getProjectByParams(Optional<String> projectId,
+      Optional<String> projectName, Optional<String> projectVersion) {
+    requireNonNull(projectId, "project id is null");
+    requireNonNull(projectName, "project name is null");
+    requireNonNull(projectVersion, "project version is null");
+
+    final List<Object> params = new ArrayList<>();
+    String queryString = FetchProjectHandler.SELECT_PROJECT_NO_WHERE_CLAUSE;
+
+    if (projectId.isPresent() || projectName.isPresent() || projectVersion.isPresent()) {
+      queryString += " WHERE 1 = 1 ";
+    }
+
+    if (projectId.isPresent()) {
+      queryString += " AND id = ? ";
+      params.add(projectId.get());
+    }
+
+    if (projectName.isPresent()) {
+      queryString += " AND name = ? ";
+      params.add(projectName.get());
+    }
+
+    if (projectVersion.isPresent()) {
+      queryString += " AND version = ? ";
+      params.add(projectVersion.get());
+    }
+
+    List<Project> projects = new ArrayList<>();
+    FetchProjectHandler fetchProjectHandler = new FetchProjectHandler();
+
+    try {
+      projects = dbOperator.query(queryString, fetchProjectHandler, params.toArray());
+      for(Project project : projects) {
+        project.setAdmins(projectAdminDaoImpl.findAdminsByProjectId(project.getId()));
+      }
+    } catch (SQLException ex) {
+      log.error("Select for project record with id " + projectId + " failed: ", ex);
+    }
+
+    return projects.isEmpty() ? Optional.empty() : Optional.of(projects.get(0));
+  }
+
 
   public static class FetchProjectHandler implements ResultSetHandler<List<Project>> {
+
+    static String SELECT_PROJECT_NO_WHERE_CLAUSE =
+        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, "
+            + "description, enc_type, settings_blob, space_id, created_by FROM projects";
 
     static String SELECT_PROJECT_WITH_ID =
         "SELECT id, name, active, modified_time, create_time, version, last_modified_by, "

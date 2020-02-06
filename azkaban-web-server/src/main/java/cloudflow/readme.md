@@ -105,3 +105,246 @@ curl -X POST 'http://localhost:8081/executions' \
 }'
 
 Response body is empty
+
+
+** Get all the flows for a project
+curl -X GET http://localhost:8081/flows
+[ {
+  "id" : "1",
+  "name" : "flow1_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "2",
+    "projectVersion" : "1",
+    "flowName" : "flow1_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow1_proj2",
+    "flowId" : "1",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+}, {
+  "id" : "2",
+  "name" : "flow2_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "2",
+    "projectVersion" : "1",
+    "flowName" : "flow2_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow2_proj2",
+    "flowId" : "2",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+}, {
+  "id" : "3",
+  "name" : "flow3_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "2",
+    "projectVersion" : "1",
+    "flowName" : "flow3_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow3_proj2",
+    "flowId" : "3",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+} ]
+
+
+** Get all the flows for a project, filter by project name
+curl http://localhost:8081/flows?project_name=test-project1
+[ {
+  "id" : "1",
+  "name" : "flow1_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "5",
+    "projectVersion" : "2",
+    "flowName" : "flow1_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow1_proj2",
+    "flowId" : "1",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+}, {
+  "id" : "2",
+  "name" : "flow2_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "5",
+    "projectVersion" : "2",
+    "flowName" : "flow2_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow2_proj2",
+    "flowId" : "2",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+}, {
+  "id" : "3",
+  "name" : "flow3_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "5",
+    "projectVersion" : "2",
+    "flowName" : "flow3_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow3_proj2",
+    "flowId" : "3",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+} ]
+
+
+** Get details for a flowId
+curl  http://localhost:8081/flows/1
+{
+  "id" : "1",
+  "name" : "flow1_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "2",
+    "projectVersion" : "1",
+    "flowName" : "flow1_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow1_proj2",
+    "flowId" : "1",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : null,
+  "modifiedByUser" : "gsalia"
+}
+
+** Get details for a flowId along with all the flow versions
+curl  http://localhost:8081/flows/1?expand=versions
+{
+  "id" : "1",
+  "name" : "flow1_proj5",
+  "flowVersionCount" : 2,
+  "projectId" : "5",
+  "projectVersion" : "2",
+  "admins" : null,
+  "createdByUser" : "gsalia",
+  "createdOn" : 1582577888795,
+  "modifiedOn" : 1582577888800,
+  "lastVersion" : {
+    "projectId" : "5",
+    "projectVersion" : "2",
+    "flowName" : "flow1_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow1_proj2",
+    "flowId" : "1",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  },
+  "flowVersions" : [ {
+    "projectId" : "5",
+    "projectVersion" : "1",
+    "flowName" : "flow1_proj2",
+    "flowVersion" : "1",
+    "createTime" : 1582577888795,
+    "flowFileLocation" : "/tmp/flow1_proj2",
+    "flowId" : "1",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  }, {
+    "projectId" : "5",
+    "projectVersion" : "2",
+    "flowName" : "flow1_proj2",
+    "flowVersion" : "2",
+    "createTime" : 1582577888800,
+    "flowFileLocation" : "/tmp2/flow1_proj2",
+    "flowId" : "1",
+    "experimental" : false,
+    "dslVersion" : 2.0,
+    "createdBy" : "gsalia",
+    "locked" : false
+  } ],
+  "modifiedByUser" : "gsalia"
+}
