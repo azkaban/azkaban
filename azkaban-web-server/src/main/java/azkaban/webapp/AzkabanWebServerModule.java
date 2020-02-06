@@ -30,12 +30,18 @@ import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
+import cloudflow.daos.ProjectAdminDao;
+import cloudflow.daos.ProjectAdminDaoImpl;
+import cloudflow.daos.ProjectDao;
+import cloudflow.daos.ProjectDaoImpl;
 import cloudflow.daos.SpaceDao;
 import cloudflow.daos.SpaceDaoImpl;
 import cloudflow.daos.SpaceSuperUserDao;
 import cloudflow.daos.SpaceSuperUserDaoImpl;
 import cloudflow.services.ExecutionService;
 import cloudflow.services.ExecutionServiceImpl;
+import cloudflow.services.ProjectService;
+import cloudflow.services.ProjectServiceImpl;
 import cloudflow.services.SpaceService;
 import cloudflow.services.SpaceServiceImpl;
 import com.google.inject.AbstractModule;
@@ -95,6 +101,9 @@ public class AzkabanWebServerModule extends AbstractModule {
   private void addCloudFlowBindings() {
     bind(SpaceService.class).to(SpaceServiceImpl.class);
     bind(SpaceDao.class).to(SpaceDaoImpl.class);
+    bind(ProjectService.class).to(ProjectServiceImpl.class);
+    bind(ProjectDao.class).to(ProjectDaoImpl.class);
+    bind(ProjectAdminDao.class).to(ProjectAdminDaoImpl.class);
     bind(SpaceSuperUserDao.class).to(SpaceSuperUserDaoImpl.class);
 
     bind(ExecutionService.class).to(ExecutionServiceImpl.class);

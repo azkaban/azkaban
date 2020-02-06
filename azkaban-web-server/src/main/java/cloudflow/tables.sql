@@ -21,3 +21,25 @@ CREATE TABLE IF NOT EXISTS `space_watcher` (
                                                `username` varchar(45) NOT NULL,
                                                PRIMARY KEY (`space_id`,`username`)
 );
+
+CREATE TABLE IF NOT  EXISTS `project` (
+  id                 INT          NOT NULL AUTO_INCREMENT,
+  name               VARCHAR(64)  NOT NULL,
+  description        VARCHAR(300) NOT NULL,
+  space_id           INT          NOT NULL,
+  created_by         VARCHAR(45)  NOT NULL,
+  creation_time      DATETIME     NOT NULL,
+  last_modified_by   VARCHAR(45)  NOT NULL,
+  last_modified_time DATETIME     NOT NULL,
+  version            INT          NOT NULL,
+  active             BOOLEAN,
+  enc_type           TINYINT,
+  settings_blob      LONGBLOB,
+  PRIMARY KEY(`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `project_admin` (
+ project_id   INT(11)      NOT NULL,
+ username     VARCHAR(45)  NOT NULL,
+ PRIMARY KEY (`project_id`,`username`)
+);
