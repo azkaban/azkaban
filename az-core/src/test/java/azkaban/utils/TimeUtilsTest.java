@@ -29,4 +29,14 @@ public class TimeUtilsTest {
     Assert.assertTrue( TimeUtils.timeEscapedOver(baseTime, 1));
     Assert.assertFalse(TimeUtils.timeEscapedOver(baseTime, 2));
   }
+
+  @Test
+  public void testDayEscapedOver() throws InterruptedException {
+    long baseTime = System.currentTimeMillis();
+    long oneDayBefore =  baseTime - 86399000;
+    TimeUnit.SECONDS.sleep(3);
+    Assert.assertEquals( TimeUtils.daysEscapedOver(baseTime), 0);
+    Assert.assertEquals(TimeUtils.daysEscapedOver(oneDayBefore), 1);
+  }
+
 }
