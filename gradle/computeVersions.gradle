@@ -1,0 +1,50 @@
+if (!project.hasProperty('version') || project.version == 'unspecified') {
+  try {
+    exec {
+      commandLine 'git', 'fetch', '-t', 'https://github.com/azkaban/azkaban.git', 'master'
+    }
+    def versionOut = new ByteArrayOutputStream()
+    exec {
+      commandLine 'git', 'rev-list', 'HEAD', '--count'
+      standardOutput versionOut
+    }
+    def minotVersion = (versionOut.toString().trim()
+            .toInteger() - project.property('project.minorVersionOffset').toInteger()).toString()
+    println 'Calculated minor version: ' + minotVersion
+    def finalVer = project.property('project.versionPrefix') + minotVersion
+    println 'Using version: ' + finalVer
+    def gitBranch = getBranch()
+    println 'Git branch is: ' + gitBranch
+    if (gitBranch.startsWith("master")) {
+      project.version = finalVer
+    } else if (gitBranch.startsWith("cf-engine")) {
+      project.version = finalVer + "-e"
+    } else if (gitBranch.startsWith("cf-control-plane")) {
+      project.version = finalVer + "-c"
+    } else {
+      project.version = finalVer + "-" + gitBranch
+    }
+    println 'Project Version is: ' + project.version
+  }
+  catch (Exception e) {
+    logger.warn("Unable to determine version. Is this a git copy? Using 'unknown'.");
+    logger.warn(e.toString())
+    project.version = 'unknown'
+  }
+}
+
+def getBranch() {
+  def branchInfo = new ByteArrayOutputStream()
+  exec {
+    commandLine 'git', 'branch'
+    standardOutput branchInfo
+  }
+  println 'Branch info: ' + branchInfo
+  def lines = branchInfo.toString().split("\n")
+  for (line in lines) {
+    if (line.startsWith("*")) {
+      return line.split("\\s+")[1]
+    }
+  }
+  throw new GradleException("Could not determine git branch.")
+}

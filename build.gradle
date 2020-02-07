@@ -14,6 +14,7 @@
  * the License.
  */
 buildscript {
+  apply from: 'gradle/computeVersions.gradle'
   repositories {
     mavenCentral()
     maven {
@@ -21,7 +22,8 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.3'
+//    classpath 'com.cinnober.gradle:semver-git:2.2.3'
+    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.2'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.14'
   }
 }
@@ -37,8 +39,8 @@ buildScan {
   licenseAgree = 'yes'
 }
 
-apply plugin: 'com.cinnober.gradle.semver-git'
-
+//apply plugin: 'com.cinnober.gradle.semver-git'
+apply plugin: 'java'
 apply plugin: 'compare-gradle-builds'
 
 compareGradleBuilds {
@@ -47,6 +49,7 @@ compareGradleBuilds {
 
 allprojects {
   apply plugin: 'jacoco'
+
 
   repositories {
     mavenCentral()
@@ -130,9 +133,31 @@ ext.deps = [
 subprojects {
   apply plugin: 'java'
   apply plugin: 'net.ltgt.errorprone'
+  apply plugin: 'com.jfrog.bintray'
+
+
+  bintray {
+    user = 'aditya1105'
+    key = project.property('bintray.key')
+    configurations = ['archives']
+    pkg {
+      repo = project.property('bintray.repo')
+      user = 'aditya1105'
+      userOrg = 'linkedin'
+      name = 'azkaban'
+      vcsUrl = 'https://github.com/azkaban/azkaban.git'
+      licenses = ['Apache-2.0']
+      version {
+        name = rootProject.version
+        desc = 'Gradle Bintray Plugin 0.0.1 test'
+        released  = new Date()
+      }
+    }
+  }
 
   // Set the same version for all sub-projects to root project version
-  version = rootProject.version
+  project.version = rootProject.version
+  project.group = rootProject.group
 
   configurations.errorprone {
     dependencies {
@@ -153,15 +178,16 @@ subprojects {
      See: http://stackoverflow.com/questions/16218888/can-gradle-extensions-handle-lazy-evaluation-of-a-property
      See: http://stackoverflow.com/questions/16070567/difference-between-gradles-terms-evaluation-and-execution
      */
-    project.afterEvaluate {
-      // Set the Title and Version fields in the jar
-      jar {
-        manifest {
-          attributes('Implementation-Title': project.name,
-              'Implementation-Version': project.version)
-        }
-      }
-    }
+//    project.afterEvaluate {
+//      // Set the Title and Version fields in the jar
+//
+//      jar {
+//        manifest {
+//          attributes('Implementation-Title': project.name,
+//              'Implementation-Version': project.version)
+//        }
+//      }
+//    }
 
     dependencies {
       compile deps.log4j
