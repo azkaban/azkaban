@@ -687,7 +687,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return DateTimeZone.forID(timezoneParam);
     } catch (final IllegalArgumentException e) {
       TimeZone zone = ZoneInfo.getTimeZone(timezoneParam);
-      if(null == zone) return null;
+      if(null == zone) {
+        return null;
+      }
       try {
         return DateTimeZone.forTimeZone(zone);
       } catch (final IllegalArgumentException e1) {
