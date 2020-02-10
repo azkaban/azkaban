@@ -31,7 +31,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
   private static final String JOB_ID_KEY = "jobDefinitionId";
   private static final String JOB_PATH_KEY = "jobPath";
 
-  private static final UriTemplate GET_ALL_EXECUTION_URI = new UriTemplate("/executions");
+  private static final UriTemplate GET_ALL_EXECUTIONS_URI = new UriTemplate("/executions");
   private static final UriTemplate GET_SINGLE_EXECUTION_URI = new UriTemplate(
       format("/executions/{%s}", EXECUTION_ID_KEY));
   private static final UriTemplate GET_JOB_EXECUTION_INFO_URI =   // TODO remove jobPath
@@ -101,7 +101,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
     Map<String, String> templateVariableMap = new HashMap<>();
     String requestUri = req.getRequestURI();
 
-    if (GET_ALL_EXECUTION_URI.match(requestUri, templateVariableMap)) {
+    if (GET_ALL_EXECUTIONS_URI.match(requestUri, templateVariableMap)) {
       handleAllExecutions(req, resp);
     } else if (GET_SINGLE_EXECUTION_URI.match(requestUri, templateVariableMap)) {
       handleSingleExecution(req, resp);
