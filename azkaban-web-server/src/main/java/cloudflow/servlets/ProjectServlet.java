@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
-  private static final String GET_ALL_PROJECT_URI = "/projects";
+  private static final String ALL_PROJECT_URI = "/projects";
   private static final String PROJECT_ID_KEY = "projectId";
   private static final UriTemplate GET_PROJECT_URI_TEMPLATE = new UriTemplate(
       String.format("/projects/{%s}", PROJECT_ID_KEY));
@@ -45,10 +45,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws IOException, ServletException {
     Map<String, String> templateVariableToValue = new HashMap<>();
-    if (GET_ALL_PROJECT_URI.equals(req.getRequestURI())) {
+    if (ALL_PROJECT_URI.equals(req.getRequestURI())) {
       /* Get all records */
-      String response = objectMapper.writeValueAsString(projectService.getAllProjects(session.getUser()));
-      this.writeResponse(resp, response);
+      sendResponse(resp, HttpServletResponse.SC_OK,
+          projectService.getAllProjects(session.getUser()));
       return;
     } else if (GET_PROJECT_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
       /* Get specific record */
@@ -63,9 +63,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
           sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid project id");
           return;
         }
-
-        String response = objectMapper.writeValueAsString(projectService.getProject(projectId));
-        this.writeResponse(resp, response);
+        sendResponse(resp, HttpServletResponse.SC_OK, projectService.getProject(projectId));
       } catch (Exception e) {
         log.error("Exception while fetching project: " + e);
         sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, "Project id not found");
@@ -74,7 +72,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     } else {
       /* Unsupported route, return an error */
       log.error("Invalid route for projects endpoint: " + req.getRequestURI());
-      sendErrorResponse(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, "Unsupported projects API "
+      sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, "Unsupported projects API "
           + "endpoint");
       return;
     }
@@ -83,16 +81,25 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws ServletException, IOException {
-    try {
-      String body = HttpRequestUtils.getBody(req);
-      Project project = objectMapper.readValue(body, Project.class);
+    if (ALL_PROJECT_URI.equals(req.getRequestURI())) {
+      try {
+        String body = HttpRequestUtils.getBody(req);
+        Project project = objectMapper.readValue(body, Project.class);
 
-      String projectId = projectService.createProject(project, session.getUser());
-      sendResponse(resp, HttpServletResponse.SC_CREATED, projectId);
-      return;
-    } catch(Exception e) {
-      log.error("Error while handling POST request for projects. Got Exception: " + e);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, "BAD request to create project");
+        String projectId = projectService.createProject(project, session.getUser());
+        resp.setHeader("Location", "/projects/" + projectId);
+        sendResponse(resp, HttpServletResponse.SC_CREATED, "");
+        return;
+      } catch (Exception e) {
+        log.error("Error while handling POST request for projects. Got Exception: " + e);
+        sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, "BAD request to create project");
+        return;
+      }
+    } else {
+      /* Unsupported route, return an error */
+      log.error("Invalid route for projects endpoint: " + req.getRequestURI());
+      sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, "Unsupported projects API "
+          + "endpoint");
       return;
     }
   }
