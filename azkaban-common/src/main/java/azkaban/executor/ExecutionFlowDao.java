@@ -29,11 +29,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+
+import static java.util.Objects.*;
+
 
 @Singleton
 public class ExecutionFlowDao {
@@ -232,6 +236,45 @@ public class ExecutionFlowDao {
       query += "  ORDER BY exec_id DESC LIMIT ?, ?";
       params.add(skip);
       params.add(num);
+    }
+
+    try {
+      return this.dbOperator.query(query, new FetchExecutableFlows(), params.toArray());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows", e);
+    }
+  }
+
+  public List<ExecutableFlow> fetchFlowHistory(Optional<String> projectId, Optional<String> flowId,
+      Optional<String> flowVersion, Optional<String> experimentId) throws ExecutorManagerException {
+    requireNonNull(projectId, "project id is null");
+    requireNonNull(flowId, "flow id is null");
+    requireNonNull(flowVersion, "flow version is null");
+    requireNonNull(experimentId, "experiment id is null");
+
+    String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
+    final List<Object> params = new ArrayList<>();
+
+    if (projectId.isPresent() || flowId.isPresent() || flowVersion.isPresent() || experimentId
+        .isPresent()) {
+      query += " WHERE 1 = 1 ";
+    }
+
+    if (projectId.isPresent()) {
+      query += " AND project_id = ? ";
+      params.add(projectId.get());
+    }
+    if (flowId.isPresent()) {
+      query += " AND flow_id = ? ";
+      params.add(flowId.get());
+    }
+    if (flowVersion.isPresent()) {
+      query += " AND flow_version = ? ";
+      params.add(flowVersion.get());
+    }
+    if (experimentId.isPresent()) {
+      query += " AND experiment_id = ? ";
+      params.add(experimentId.get());
     }
 
     try {

@@ -16,7 +16,7 @@ example its body.json and then fire the below call.
 curl -X POST -H "Content-Type: application/json" --data @body.json 
 "http://localhost:8081/spaces?session.id=?"
 
-Sample body:
+Sample response body:
 
 {
   "name": "sample-07",
@@ -28,3 +28,18 @@ Sample body:
     "gsalia"
   ]
 }
+
+Get executions filtered by Project Id and User.
+curl -X GET "http://localhost:8081/executions?flow_id=basic_flow&project_id=1&session.id=<>"
+
+Sample response body:
+[ {
+  "executionId" : 1,
+  "submitUser" : "azkaban",
+  "submitTime" : 1580954330693,
+  "experimentId" : "none",
+  "concurrentOption" : "skip",
+  "failureAction" : "FINISH_CURRENTLY_RUNNING",
+  "notifyFailureFirst" : false,
+  "notifyFailureLast" : false
+} ]
