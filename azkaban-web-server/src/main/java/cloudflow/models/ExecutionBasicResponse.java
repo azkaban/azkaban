@@ -50,4 +50,12 @@ public class ExecutionBasicResponse {
   public String getFailureAction() {
     return failureAction;
   }
+
+  public boolean isNotifyFailureFirst() {
+    return isNotifyFailureFirst;
+  }
+
+  public boolean isNotifyFailureLast() {
+    return isNotifyFailureLast;
+  }
 }

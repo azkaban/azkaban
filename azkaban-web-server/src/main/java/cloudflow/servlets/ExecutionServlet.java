@@ -22,20 +22,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static cloudflow.servlets.Constants.*;
+import static java.lang.String.format;
 
 
 public class ExecutionServlet extends LoginAbstractAzkabanServlet {
 
-  private static final UriTemplate GET_ALL_EXECUTION_URI = new UriTemplate("/executions");
-  private static final UriTemplate GET_SINGLE_EXECUTION_URI = new UriTemplate(
-      "/executions/{executionId}");
-  private static final UriTemplate GET_JOB_EXECUTION_INFO_URI =
-      new UriTemplate(
-          "/executions/{executionId}/jobs/{jobDefinitionId}/{jobPath}"); // TODO: remove jobPath
-
   private static final String EXECUTION_ID_KEY = "executionId";
   private static final String JOB_ID_KEY = "jobDefinitionId";
   private static final String JOB_PATH_KEY = "jobPath";
+
+  private static final UriTemplate GET_ALL_EXECUTION_URI = new UriTemplate("/executions");
+  private static final UriTemplate GET_SINGLE_EXECUTION_URI = new UriTemplate(
+      format("/executions/{%s}", EXECUTION_ID_KEY));
+  private static final UriTemplate GET_JOB_EXECUTION_INFO_URI =   // TODO remove jobPath
+      new UriTemplate(format(
+          "/executions/{%s}/jobs/{%s}/{%s}", EXECUTION_ID_KEY, JOB_ID_KEY, JOB_PATH_KEY));
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutionServlet.class);
   private ExecutionService executorService;

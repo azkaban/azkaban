@@ -39,5 +39,7 @@ Sample response body:
   "submitTime" : 1580954330693,
   "experimentId" : "none",
   "concurrentOption" : "skip",
-  "failureAction" : "FINISH_CURRENTLY_RUNNING"
+  "failureAction" : "FINISH_CURRENTLY_RUNNING",
+  "notifyFailureFirst" : false,
+  "notifyFailureLast" : false
 } ]
