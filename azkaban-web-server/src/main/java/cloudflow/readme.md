@@ -44,6 +44,10 @@ Sample response body:
   "notifyFailureOnExecutionComplete" : false
 } ]
 
+Get execution response with details for a given execution.
+curl -X GET "http://localhost:8081/executions/2?session.id=<>"
+
+Sample response in file: cloudflow/docs/ExecutionDetailSample.md
 
 Get job execution details.
 curl -X GET "http://localhost:8081/executions/21024226/jobs/123"

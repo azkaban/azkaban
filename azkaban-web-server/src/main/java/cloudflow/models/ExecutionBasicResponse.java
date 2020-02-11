@@ -3,31 +3,39 @@ package cloudflow.models;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions.FailureAction;
 
 
 public class ExecutionBasicResponse {
-  private int executionId;
+  private String executionId;
   private String submitUser;
   private long submitTime;
-  private String experimentId;
   private String concurrentOption;
-  private String failureAction;
+  private FailureAction failureAction;
   private boolean notifyOnFirstFailure;
   private boolean notifyFailureOnExecutionComplete;
 
+  private String experimentId;
+  private String description;
+  private String previousFlowExecutionId;
+
   public ExecutionBasicResponse(ExecutableFlow executableFlow) {
     requireNonNull(executableFlow, "executable flow is null");
-    this.executionId = executableFlow.getExecutionId();
+    this.executionId = Integer.toString(executableFlow.getExecutionId());
     this.submitUser = executableFlow.getSubmitUser();
     this.submitTime = executableFlow.getSubmitTime();
     this.concurrentOption = executableFlow.getExecutionOptions().getConcurrentOption();
-    this.failureAction = executableFlow.getExecutionOptions().getFailureAction().toString();
+    this.failureAction = executableFlow.getExecutionOptions().getFailureAction();
     this.notifyOnFirstFailure = executableFlow.getExecutionOptions().getNotifyOnFirstFailure();
     this.notifyFailureOnExecutionComplete = executableFlow.getExecutionOptions().getNotifyOnLastFailure();
-    this.experimentId = "none"; //todo
+
+    //todo (sshardool): add these missing fields once available.
+    this.experimentId = "defaultExperimentId";
+    this.description = "defaultDescription";
+    this.previousFlowExecutionId = "defaultPreviousExecutionId";
   }
 
-  public int getExecutionId() {
+  public String getExecutionId() {
     return executionId;
   }
 
@@ -47,7 +55,7 @@ public class ExecutionBasicResponse {
     return concurrentOption;
   }
 
-  public String getFailureAction() {
+  public FailureAction getFailureAction() {
     return failureAction;
   }
 
@@ -57,5 +65,13 @@ public class ExecutionBasicResponse {
 
   public boolean isNotifyFailureOnExecutionComplete() {
     return notifyFailureOnExecutionComplete;
+  }
+
+ public String getDescription() {
+    return description;
+  }
+
+  public String getPreviousFlowExecutionId() {
+    return previousFlowExecutionId;
   }
 }
