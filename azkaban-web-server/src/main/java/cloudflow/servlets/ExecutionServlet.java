@@ -5,6 +5,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
+import cloudflow.models.ExecutionDetailedResponse;
 import cloudflow.models.JobExecution;
 import cloudflow.services.ExecutionService;
 import com.linkedin.jersey.api.uri.UriTemplate;
@@ -54,10 +55,18 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
         executorService.getAllExecutions(req.getParameterMap()));
   }
 
-  private void handleSingleExecution(HttpServletRequest req, HttpServletResponse resp)
+  private void handleSingleExecution(HttpServletRequest req, HttpServletResponse resp, Map<String
+      , String> templateVariableMap)
       throws IOException {
-    // todo(sshardool): endpoint needs to be implemented
-    sendErrorResponse(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, "not implemented");
+    String executionId = templateVariableMap.get(EXECUTION_ID_KEY);
+    ExecutionDetailedResponse executionResponse;
+    try {
+      executionResponse = executorService.getSingleExecution(executionId);
+    } catch (CloudFlowNotFoundException e) {
+      sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+      return;
+    }
+    sendResponse(resp, HttpServletResponse.SC_OK, executionResponse);
   }
 
   private void handleExecutionWithJobInfo(HttpServletRequest req, HttpServletResponse resp,
@@ -104,7 +113,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
     if (GET_ALL_EXECUTIONS_URI.match(requestUri, templateVariableMap)) {
       handleAllExecutions(req, resp);
     } else if (GET_SINGLE_EXECUTION_URI.match(requestUri, templateVariableMap)) {
-      handleSingleExecution(req, resp);
+      handleSingleExecution(req, resp, templateVariableMap);
     } else if (GET_JOB_EXECUTION_INFO_URI.match(requestUri, templateVariableMap)) {
       handleExecutionWithJobInfo(req, resp, session, templateVariableMap);
     } else {

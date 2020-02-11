@@ -11,6 +11,9 @@ import azkaban.executor.Status;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
 import cloudflow.models.ExecutionBasicResponse;
+import cloudflow.models.ExecutionDetailedResponse;
+import cloudflow.models.ExecutionNodeResponse;
+import cloudflow.models.ExecutionNodeResponse.ExecutionNodeResponseBuilder;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
 import java.util.Map;
@@ -49,7 +52,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     requireNonNull(argName);
     requireNonNull(argValues);
     if (argValues.length != 1) {
-      throw new RuntimeException(format("Argument %s should have exactly one value", argName));
+      throw new CloudFlowException(format("Argument %s should have exactly one value", argName));
     }
     return argValues[0];
   }
@@ -101,6 +104,70 @@ public class ExecutionServiceImpl implements ExecutionService {
         .collect(Collectors.toList());
   }
 
+  // todo(sshardool): this should have a check for run-away recursion on malformed input
+  private static ExecutionNodeResponse nodeResponseFromExecutionNode(
+      ExecutableNode executableNode) {
+    ExecutionNodeResponseBuilder nodeBuilder = ExecutionNodeResponseBuilder.newBuilder();
+    nodeBuilder = nodeBuilder.withNodeId(executableNode.getId())
+        .withStartTime(executableNode.getStartTime())
+        .withEndTime(executableNode.getEndTime())
+        .withUpdateTime(executableNode.getUpdateTime())
+        .withNodeType(executableNode.getType())
+        .withCondition(executableNode.getCondition())
+        .withNestedId(executableNode.getNestedId());
+
+    if (executableNode.getInNodes() != null) {
+      nodeBuilder = nodeBuilder.withInputNodeIds(new ArrayList<>(executableNode.getInNodes()));
+    }
+
+    if (executableNode instanceof ExecutableFlowBase) {
+      ExecutableFlowBase flowBase = (ExecutableFlowBase) executableNode;
+      List<ExecutionNodeResponse> subNodeList = new ArrayList<>();
+
+      for (ExecutableNode subNode : flowBase.getExecutableNodes()) {
+        ExecutionNodeResponse subNodeResponse = nodeResponseFromExecutionNode(subNode);
+        subNodeList.add(subNodeResponse);
+      }
+
+      nodeBuilder = nodeBuilder.withNodeList(subNodeList)
+          .withBaseFlowId(flowBase.getFlowId());
+    }
+
+    return nodeBuilder.build();
+  }
+
+
+  @Override
+  public ExecutionDetailedResponse getSingleExecution(String executionIdString) {
+    requireNonNull(executionIdString, "execution id is null");
+    int executionId;
+    String errorMessage;
+    try {
+      executionId = Integer.parseInt(executionIdString);
+    } catch (NumberFormatException nfe) {
+      errorMessage = "Execution Id must be an integer";
+      logger.error(errorMessage, nfe);
+      throw new CloudFlowException(errorMessage, nfe);
+    }
+
+    ExecutableFlow executableFlow;
+    try {
+      executableFlow = executorManager.getExecutableFlow(executionId);
+    } catch (final ExecutorManagerException e) {
+      errorMessage = format("Failed to fetch execution with id %d.", executionId);
+      logger.error(errorMessage, e);
+      throw new CloudFlowException(errorMessage);
+    }
+    if (executableFlow == null) {
+      throw new CloudFlowNotFoundException(format("Execution id %d does not exist", executionId));
+    }
+
+    ExecutionNodeResponse rootNode = nodeResponseFromExecutionNode(executableFlow);
+    ExecutionDetailedResponse detailedResponse = new ExecutionDetailedResponse(executableFlow,
+        rootNode);
+    return detailedResponse;
+  }
+
   @Override
   public JobExecution getJobExecution(String executionId, String jobDefinitionId, String user)
       throws CloudFlowException {
@@ -115,13 +182,13 @@ public class ExecutionServiceImpl implements ExecutionService {
     try {
       executableFlow = this.executorManager.getExecutableFlow(execId);
     } catch (final ExecutorManagerException e) {
-      errorMessage = String.format("Failed to fetch execution with id %d.", execId);
+      errorMessage = format("Failed to fetch execution with id %d.", execId);
       logger.error(errorMessage, e);
       throw new CloudFlowException(errorMessage);
     }
 
     if (executableFlow == null) {
-      errorMessage = String.format("Execution with id %d wasn't found.", execId);
+      errorMessage = format("Execution with id %d wasn't found.", execId);
       logger.error(errorMessage);
       throw new CloudFlowNotFoundException(errorMessage);
     }
@@ -145,9 +212,8 @@ public class ExecutionServiceImpl implements ExecutionService {
       }
       if (i >= nodesToScan.size()) {
         errorMessage =
-            String
-                .format("Job with id %s and path %s wasn't found in execution %d.", jobDefinitionId,
-                    jobPath, execId);
+            format("Job with id %s and path %s wasn't found in execution %d.", jobDefinitionId,
+                jobPath, execId);
         logger.error(errorMessage);
         throw new CloudFlowNotFoundException(errorMessage);
       }
