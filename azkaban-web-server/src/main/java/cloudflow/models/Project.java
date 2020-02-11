@@ -10,9 +10,9 @@ public class Project {
     private String description;
     private String spaceId;
     private List<String> admins;
-    private String createdOn;
+    private long createdOn;
     private String createdByUser;
-    private String lastModifiedOn;
+    private long lastModifiedOn;
     private String lastModifiedByUser;
     private String latestVersion;
 
@@ -68,11 +68,11 @@ public class Project {
     this.admins = admins;
   }
 
-  public String getCreatedOn() {
+  public long getCreatedOn() {
     return createdOn;
   }
 
-  public void setCreatedOn(String createdOn) {
+  public void setCreatedOn(long createdOn) {
     this.createdOn = createdOn;
   }
 
@@ -84,11 +84,11 @@ public class Project {
     this.createdByUser = createdByUser;
   }
 
-  public String getLastModifiedOn() {
+  public long getLastModifiedOn() {
     return lastModifiedOn;
   }
 
-  public void setLastModifiedOn(String lastModifiedOn) {
+  public void setLastModifiedOn(long lastModifiedOn) {
     this.lastModifiedOn = lastModifiedOn;
   }
 
@@ -108,27 +108,7 @@ public class Project {
     this.latestVersion = latestVersion;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof Project)) {
-      return false;
-    }
 
-    Project project = (Project) o;
-    return getId().equals(project.getId()) &&
-        getName().equals(project.getName()) &&
-        getDescription().equals(project.getDescription()) &&
-        getSpaceId().equals(project.getSpaceId()) &&
-        getAdmins().equals(project.getAdmins()) &&
-        getCreatedOn().equals(project.getCreatedOn()) &&
-        getCreatedByUser().equals(project.getCreatedByUser()) &&
-        getLastModifiedOn().equals(project.getLastModifiedOn()) &&
-        getLastModifiedByUser().equals(project.getLastModifiedByUser()) &&
-        getLatestVersion().equals(project.getLatestVersion());
-  }
 
   @Override
   public int hashCode() {

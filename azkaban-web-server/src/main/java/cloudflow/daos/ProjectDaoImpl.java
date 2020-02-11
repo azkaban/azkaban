@@ -14,7 +14,6 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,17 +24,21 @@ public class ProjectDaoImpl implements ProjectDao {
   private ProjectAdminDaoImpl projectAdminDaoImpl;
   private static final Logger log = LoggerFactory.getLogger(ProjectDaoImpl.class);
 
+  /* Use existing "projects" table and add the new columns to it instead of creating a new table
+  with new columns and changing names of some of the existing columns to esnure non of the
+  existing project queries break */
+
   static String INSERT_PROJECT =
-      "INSERT INTO project (name, description, space_id, created_by, creation_time, "
-          + "last_modified_by, last_modified_time, version,  active, enc_type, settings_blob) "
-          + "values "
-          + "(?,?,?,?,?,?,?,?,?,?,?)";
+      "INSERT INTO projects (name, active, modified_time, create_time, version, last_modified_by, "
+          + "description, enc_type, settings_blob, space_id, created_by) values (?,?,?,?,?,?,?,?,"
+          + "?,?,?)";
 
   @Inject
   public ProjectDaoImpl(DatabaseOperator dbOperator, ProjectAdminDaoImpl projectAdminDaoImpl) {
     this.dbOperator = dbOperator;
     this.projectAdminDaoImpl = projectAdminDaoImpl;
   }
+
 
   @Override
   public String create(Project project, User user) {
@@ -57,10 +60,20 @@ public class ProjectDaoImpl implements ProjectDao {
     }
 
     final SQLTransaction<Long> insertAndGetProjectId = transOperator -> {
-      String currentTime = DateTime.now().toLocalDateTime().toString();
-      transOperator.update(INSERT_PROJECT, project.getName(), project.getDescription(),
-          project.getSpaceId(), user.getUserId(), currentTime, user.getUserId(), currentTime,
-          1, true, 2, null);
+      long timestamp = System.currentTimeMillis();
+      transOperator.update(INSERT_PROJECT,
+          project.getName(), // project name
+          1, // active
+          timestamp, // modified_time
+          timestamp, // create_time
+          1, // version
+          user.getUserId(), // last_modified_by
+          project.getDescription(), // description
+          2, // enc_type
+          null, // settings_blob
+          project.getSpaceId(), // space_id
+          user.getUserId()); // created_by
+
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -100,6 +113,8 @@ public class ProjectDaoImpl implements ProjectDao {
   public List<Project> getAll(User user) {
     List<Project> projects = new ArrayList<>();
     FetchProjectHandler fetchProjectHandler = new FetchProjectHandler();
+
+    /* Get all projects created or modified by user*/
     try {
       projects = dbOperator.query(FetchProjectHandler.SELECT_ALL_PROJECTS_BY_USER,
           fetchProjectHandler, user.getUserId(), user.getUserId());
@@ -109,6 +124,7 @@ public class ProjectDaoImpl implements ProjectDao {
     } catch (SQLException ex) {
       log.error("Get all projects for user '" + user.getUserId() + "'failed: ", ex);
     }
+
     return projects;
   }
 
@@ -116,24 +132,19 @@ public class ProjectDaoImpl implements ProjectDao {
   public static class FetchProjectHandler implements ResultSetHandler<List<Project>> {
 
     static String SELECT_PROJECT_WITH_ID =
-        "SELECT id, name, description, space_id, created_by, creation_time, last_modified_by, "
-            + "last_modified_time, version,  active, enc_type, settings_blob FROM project WHERE id"
-            + " = ?";
+        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, "
+            + "description, enc_type, settings_blob, space_id, created_by FROM projects WHERE id"
+            + " = ? and active = 1";
 
     static String SELECT_PROJECT_WITH_NAME_AND_SPACE_ID =
-        "SELECT id, name, description, space_id, created_by, creation_time, last_modified_by, "
-            + "last_modified_time, version,  active, enc_type, settings_blob FROM project WHERE "
-            + "name = ? and space_id = ?";
-
-    static String SELECT_ALL_PROJECTS =
-        "SELECT id, name, description, space_id, created_by, creation_time, last_modified_by, "
-            + "last_modified_time, version,  active, enc_type, settings_blob FROM project";
+        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, "
+            + "description, enc_type, settings_blob, space_id, created_by FROM projects"
+            + " WHERE name = ? and space_id = ? and active = 1";
 
     static String SELECT_ALL_PROJECTS_BY_USER =
-        "SELECT id, name, description, space_id, created_by, creation_time, last_modified_by, "
-            + "last_modified_time, version,  active, enc_type, settings_blob FROM project where "
-            + "created_by = ? OR last_modified_by = ?";
-
+        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, "
+            + "description, enc_type, settings_blob, space_id, created_by FROM projects WHERE "
+            + "created_by = ? OR last_modified_by = ? and active = 1";
 
     @Override
     public List<Project> handle(ResultSet rs) throws SQLException {
@@ -144,15 +155,15 @@ public class ProjectDaoImpl implements ProjectDao {
       List<Project> projects = new ArrayList<>();
       do {
         Project currentProject = new Project();
-        currentProject.setId(rs.getString(1));
-        currentProject.setName(rs.getString(2));
-        currentProject.setDescription(rs.getString(3));
-        currentProject.setSpaceId(rs.getString(4));
-        currentProject.setCreatedByUser(rs.getString(5));
-        currentProject.setCreatedOn(rs.getString(6));
-        currentProject.setLastModifiedByUser(rs.getString(7));
-        currentProject.setLastModifiedOn(rs.getString(8));
-        currentProject.setLatestVersion(rs.getString(9));
+        currentProject.setId(rs.getString("id"));
+        currentProject.setName(rs.getString("name"));
+        currentProject.setDescription(rs.getString("description"));
+        currentProject.setSpaceId(rs.getString("space_id"));
+        currentProject.setCreatedByUser(rs.getString("created_by"));
+        currentProject.setCreatedOn(rs.getLong("create_time"));
+        currentProject.setLastModifiedByUser(rs.getString("last_modified_by"));
+        currentProject.setLastModifiedOn(rs.getLong("modified_time"));
+        currentProject.setLatestVersion(rs.getString("version"));
 
         projects.add(currentProject);
       } while (rs.next());

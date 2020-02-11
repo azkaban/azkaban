@@ -37,6 +37,18 @@ public class ProjectAdminDaoImpl implements ProjectAdminDao {
     return Collections.emptyList();
   }
 
+  @Override
+  public List<String> findProjectIdsByAdmin(String username) {
+    ProjectAdminHandler projectAdminHandler = new ProjectAdminHandler();
+    try {
+      return dbOperator.query(ProjectAdminHandler.FETCH_PROJECT_IDS_BY_USER,
+          projectAdminHandler, username);
+    } catch (SQLException e) {
+      log.error("Error in fetching projectIds for user '" + username + "':", e);
+    }
+    return Collections.emptyList();
+  }
+
   /* should run in a transaction */
   @Override
   public void addAdmins(String projectId, List<String> admins) {
@@ -61,7 +73,10 @@ public class ProjectAdminDaoImpl implements ProjectAdminDao {
   public static class ProjectAdminHandler implements ResultSetHandler<List<String>> {
 
     static String FETCH_ADMINS_BY_PROJECT_ID =
-        "select username from project_admin where project_id = ?";
+        "SELECT username FROM project_admin WHERE project_id = ?";
+
+    static String FETCH_PROJECT_IDS_BY_USER =
+        "SELECT project_id FROM project_admin WHERE username = ?";
 
     @Override
     public List<String> handle(ResultSet rs) throws SQLException {
