@@ -122,7 +122,11 @@ public class ProjectServiceImpl implements ProjectService {
     for (String projectId : projectIds) {
       try {
         Project project = getProject(projectId);
-        projects.add(project);
+        /* Add project only if user did not create/modify the project, otherwise the project will
+         already be added when we get all projects for a user above. */
+        if (!projects.contains(project)) {
+          projects.add(project);
+        }
       } catch (CloudFlowNotFoundException cfe) {
         // Project was deleted and hence marked as inactive but entry still exists in the
         // project_admin table. Ignore the error.

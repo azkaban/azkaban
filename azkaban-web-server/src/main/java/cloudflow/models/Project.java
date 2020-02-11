@@ -108,7 +108,26 @@ public class Project {
     this.latestVersion = latestVersion;
   }
 
-
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Project)) {
+      return false;
+    }
+    Project project = (Project) o;
+    return getCreatedOn() == project.getCreatedOn() &&
+        getLastModifiedOn() == project.getLastModifiedOn() &&
+        Objects.equals(getId(), project.getId()) &&
+        Objects.equals(getName(), project.getName()) &&
+        Objects.equals(getDescription(), project.getDescription()) &&
+        Objects.equals(getSpaceId(), project.getSpaceId()) &&
+        Objects.equals(getAdmins(), project.getAdmins()) &&
+        Objects.equals(getCreatedByUser(), project.getCreatedByUser()) &&
+        Objects.equals(getLastModifiedByUser(), project.getLastModifiedByUser()) &&
+        Objects.equals(getLatestVersion(), project.getLatestVersion());
+  }
 
   @Override
   public int hashCode() {
@@ -125,9 +144,9 @@ public class Project {
         ", description='" + description + '\'' +
         ", spaceId='" + spaceId + '\'' +
         ", admins=" + admins +
-        ", createdOn='" + createdOn + '\'' +
+        ", createdOn=" + createdOn +
         ", createdByUser='" + createdByUser + '\'' +
-        ", lastModifiedOn='" + lastModifiedOn + '\'' +
+        ", lastModifiedOn=" + lastModifiedOn +
         ", lastModifiedByUser='" + lastModifiedByUser + '\'' +
         ", latestVersion='" + latestVersion + '\'' +
         '}';
