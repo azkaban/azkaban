@@ -71,13 +71,13 @@ public class ExecutionServiceImpl implements ExecutionService {
     for (Map.Entry<String, String[]> entry : queryParamMap.entrySet()) {
       String key = entry.getKey();
       String[] value = entry.getValue();
-      if (key.equalsIgnoreCase(FLOW_ID_PARAM)) {
+      if (key.equals(FLOW_ID_PARAM)) {
         flowId = Optional.of(extractArgumentValue(key, value));
-      } else if (key.equalsIgnoreCase(FLOW_VERSION_PARAM)) {
+      } else if (key.equals(FLOW_VERSION_PARAM)) {
         flowVersion = Optional.of(extractArgumentValue(key, value));
-      } else if (key.equalsIgnoreCase(EXPERIMENT_ID_PARAM)) {
+      } else if (key.equals(EXPERIMENT_ID_PARAM)) {
         experimentId = Optional.of(extractArgumentValue(key, value));
-      } else if (key.equalsIgnoreCase(PROJECT_ID_PARAM)) {
+      } else if (key.equals(PROJECT_ID_PARAM)) {
         projectId = Optional.of(extractArgumentValue(key, value));
       }
     }
