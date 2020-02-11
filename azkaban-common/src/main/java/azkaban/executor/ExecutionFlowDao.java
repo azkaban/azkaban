@@ -64,7 +64,8 @@ public class ExecutionFlowDao {
 
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
-        + "use_executor, flow_priority) values (?,?,?,?,?,?,?,?,?)";
+        + "use_executor, flow_priority, flow_definition_id, flow_version, experiment_id) "
+        + "values (?,?,?,?,?,?,?,?,?,?,?,?)";
     final long submitTime = flow.getSubmitTime();
 
     /**
@@ -76,7 +77,8 @@ public class ExecutionFlowDao {
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), flow.getStatus().getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority);
+          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority,
+          flow.getFlowDefinitionId(), flow.getFlowVersion(), flow.getExperimentId());
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -291,9 +293,8 @@ public class ExecutionFlowDao {
   private void updateExecutableFlow(final ExecutableFlow flow, final EncodingType encType)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTABLE_FLOW_DATA =
-        "UPDATE execution_flows "
-            + "SET status=?,update_time=?,start_time=?,end_time=?,enc_type=?,flow_data=? "
-            + "WHERE exec_id=?";
+        "UPDATE execution_flows SET status=?,update_time=?,start_time=?,end_time=?," +
+                "enc_type=?,flow_data=? WHERE exec_id=?";
 
     final String json = JSONUtils.toJSON(flow.toObject());
     byte[] data = null;
@@ -309,9 +310,9 @@ public class ExecutionFlowDao {
     }
 
     try {
-      this.dbOperator.update(UPDATE_EXECUTABLE_FLOW_DATA, flow.getStatus()
-          .getNumVal(), flow.getUpdateTime(), flow.getStartTime(), flow
-          .getEndTime(), encType.getNumVal(), data, flow.getExecutionId());
+      this.dbOperator.update(UPDATE_EXECUTABLE_FLOW_DATA, flow.getStatus().getNumVal(),
+              flow.getUpdateTime(), flow.getStartTime(), flow.getEndTime(),
+              encType.getNumVal(), data, flow.getExecutionId());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error updating flow.", e);
     }

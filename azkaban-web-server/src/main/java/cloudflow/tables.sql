@@ -34,3 +34,9 @@ CREATE TABLE IF NOT EXISTS `project_admin` (
  username     VARCHAR(64)  NOT NULL,
  PRIMARY KEY (`project_id`,`username`)
 );
+
+
+-- Required modifications of Azkaban's DB schema to support executions endpoints
+-- ALTER TABLE execution_flows ADD COLUMN experiment_id INT DEFAULT NULL;
+-- ALTER TABLE execution_flows ADD COLUMN flow_definition_id INT;
+-- ALTER TABLE execution_flows ADD COLUMN flow_version INT;

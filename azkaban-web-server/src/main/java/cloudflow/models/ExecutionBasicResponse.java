@@ -12,8 +12,8 @@ public class ExecutionBasicResponse {
   private String experimentId;
   private String concurrentOption;
   private String failureAction;
-  private boolean isNotifyFailureFirst;
-  private boolean isNotifyFailureLast;
+  private boolean notifyOnFirstFailure;
+  private boolean notifyFailureOnExecutionComplete;
 
   public ExecutionBasicResponse(ExecutableFlow executableFlow) {
     requireNonNull(executableFlow, "executable flow is null");
@@ -22,8 +22,8 @@ public class ExecutionBasicResponse {
     this.submitTime = executableFlow.getSubmitTime();
     this.concurrentOption = executableFlow.getExecutionOptions().getConcurrentOption();
     this.failureAction = executableFlow.getExecutionOptions().getFailureAction().toString();
-    this.isNotifyFailureFirst = executableFlow.getExecutionOptions().getNotifyOnFirstFailure();
-    this.isNotifyFailureLast = executableFlow.getExecutionOptions().getNotifyOnLastFailure();
+    this.notifyOnFirstFailure = executableFlow.getExecutionOptions().getNotifyOnFirstFailure();
+    this.notifyFailureOnExecutionComplete = executableFlow.getExecutionOptions().getNotifyOnLastFailure();
     this.experimentId = "none"; //todo
   }
 
@@ -51,11 +51,11 @@ public class ExecutionBasicResponse {
     return failureAction;
   }
 
-  public boolean isNotifyFailureFirst() {
-    return isNotifyFailureFirst;
+  public boolean isNotifyOnFirstFailure() {
+    return notifyOnFirstFailure;
   }
 
-  public boolean isNotifyFailureLast() {
-    return isNotifyFailureLast;
+  public boolean isNotifyFailureOnExecutionComplete() {
+    return notifyFailureOnExecutionComplete;
   }
 }

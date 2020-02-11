@@ -5,14 +5,21 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionAttempt;
 import azkaban.executor.ExecutionFlowDao;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
 import cloudflow.models.ExecutionBasicResponse;
+import cloudflow.error.CloudFlowValidationException;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
+import cloudflow.servlets.Constants;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,7 +33,6 @@ import java.util.List;
 import static java.lang.String.*;
 import static java.util.Objects.*;
 
-
 public class ExecutionServiceImpl implements ExecutionService {
 
   private static final String FLOW_ID_PARAM = "flow_id";
@@ -37,12 +43,14 @@ public class ExecutionServiceImpl implements ExecutionService {
   private static final Logger logger = LoggerFactory.getLogger(ExecutionServiceImpl.class);
   private ExecutorManagerAdapter executorManager;
   private ExecutionFlowDao executionFlowDao;
+  private ProjectManager projectManager;
 
   @Inject
   public ExecutionServiceImpl(ExecutorManagerAdapter executorManager,
-      ExecutionFlowDao executionFlowDao) {
+      ExecutionFlowDao executionFlowDao, ProjectManager projectManager) {
     this.executorManager = executorManager;
     this.executionFlowDao = executionFlowDao;
+    this.projectManager = projectManager;
   }
 
   private String extractArgumentValue(String argName, String[] argValues) {
@@ -107,11 +115,11 @@ public class ExecutionServiceImpl implements ExecutionService {
     requireNonNull(executionId, "execution id is null");
     requireNonNull(jobDefinitionId, "job definition id is null");
 
-    // TODO: check user permissions
+    // TODO ypadron: check user permissions
 
     final Integer execId = Integer.parseInt(executionId); // Azkaban ids are integers
     String errorMessage;
-    ExecutableFlow executableFlow = null;
+    ExecutableFlow executableFlow;
     try {
       executableFlow = this.executorManager.getExecutableFlow(execId);
     } catch (final ExecutorManagerException e) {
@@ -126,7 +134,7 @@ public class ExecutionServiceImpl implements ExecutionService {
       throw new CloudFlowNotFoundException(errorMessage);
     }
 
-    // TODO: get job and job path given a definition id
+    // TODO ypadron: get job and job path given a definition id
     // Examples of job paths in current Azkaban code:
     // 1) jobD -> direct child of the root flow
     // 2) embeddedFlow1:embeddedFlow2:jobE -> deeply nested job
@@ -144,10 +152,8 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
       }
       if (i >= nodesToScan.size()) {
-        errorMessage =
-            String
-                .format("Job with id %s and path %s wasn't found in execution %d.", jobDefinitionId,
-                    jobPath, execId);
+        errorMessage = String.format("Job with id %s and path %s wasn't found in execution %d.",
+            jobDefinitionId, jobPath, execId);
         logger.error(errorMessage);
         throw new CloudFlowNotFoundException(errorMessage);
       }
@@ -192,10 +198,74 @@ public class ExecutionServiceImpl implements ExecutionService {
       attempts.add(new JobExecutionAttempt(id, startTime, endTime, status));
     }
 
-    JobExecutionAttempt lastAttempt =
-        new JobExecutionAttempt(attempts.size(), jobNode.getStartTime(), jobNode.getEndTime(),
-            jobNode.getStatus());
+    JobExecutionAttempt lastAttempt = new JobExecutionAttempt(attempts.size(),
+        jobNode.getStartTime(), jobNode.getEndTime(), jobNode.getStatus());
     attempts.add(lastAttempt);
     return attempts;
   }
+
+  @Override
+  public String createExecution(ExecutionParameters executionParameters) throws CloudFlowException {
+    requireNonNull(executionParameters);
+    // TODO ypadron: check user permissions
+
+    // TODO ypadron: obtain flow and project dynamically
+    Project project = this.projectManager.getProject("yb-test");
+    Flow flow = project.getFlow("flowPriority2");
+    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+
+    setAzkabanExecutionOptions(executionParameters, exflow);
+
+    try {
+      this.executorManager.submitExecutableFlow(exflow, executionParameters.getSubmitUser());
+    } catch (ExecutorManagerException e) {
+      if (e.getReason() != null) {
+        throw new CloudFlowValidationException(e.getMessage());
+      } else {
+        final String errorMessage = String.format("Failed to create execution of flow with id %s "
+            + "and version %s.", executionParameters.getFlowId(),
+            executionParameters.getFlowVersion());
+        logger.error(errorMessage, e);
+        throw new CloudFlowException(errorMessage);
+      }
+    }
+    return String.valueOf(exflow.getExecutionId());
+  }
+
+  private void setAzkabanExecutionOptions(ExecutionParameters executionParameters,
+      ExecutableFlow executableFlow) throws CloudFlowException {
+
+    try {
+      executableFlow.setFlowDefinitionId(Integer.parseInt(executionParameters.getFlowId()));
+    } catch (NumberFormatException e) {
+      throw new CloudFlowValidationException(String.format("Parameter '%s' must be an integer.",
+          Constants.FLOW_ID_KEY));
+    }
+
+    // TODO ypadron: validate flow version
+    executableFlow.setFlowVersion(executionParameters.getFlowVersion());
+    executableFlow.setDescription(executionParameters.getDescription());
+    if (!executionParameters.getExperimentId().isEmpty()) {
+      try {
+        executableFlow.setExperimentId(Integer.parseInt(executionParameters.getExperimentId()));
+        // TODO ypadron: validate existence of experiment id
+      } catch (NumberFormatException e) {
+        throw new CloudFlowValidationException(String.format("Parameter '%s' must be an integer.",
+            Constants.EXPERIMENT_ID_KEY));
+      }
+    }
+    executableFlow.setSubmitUser(executionParameters.getSubmitUser());
+
+    ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setFailureAction(ExecutionOptions.FailureAction.valueOf(
+        executionParameters.getFailureAction().toString()));
+
+    executionOptions.setNotifyOnFirstFailure(executionParameters.isNotifyOnFirstFailure());
+    executionOptions.setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
+
+    executionOptions.setConcurrentOption(executionParameters.getConcurrentOption().getName());
+
+    executableFlow.setExecutionOptions(executionOptions);
+  }
+
 }

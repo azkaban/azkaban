@@ -10,4 +10,6 @@ public interface ExecutionService {
   List<ExecutionBasicResponse> getAllExecutions(Map<String, String[]> queryParamMap);
 
   JobExecution getJobExecution(String executionId, String jobDefinitionId, String user);
+
+  String createExecution(ExecutionParameters executionParameters);
 }

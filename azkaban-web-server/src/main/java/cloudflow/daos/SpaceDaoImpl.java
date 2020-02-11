@@ -36,7 +36,6 @@ public class SpaceDaoImpl implements SpaceDao {
     this.spaceSuperUserDaoImpl = spaceSuperUserDaoImpl;
   }
 
-
   @Override
   public int create(Space space, User user) {
     final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {

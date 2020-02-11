@@ -283,6 +283,34 @@ public class ExecutionOptions {
   }
 
   public enum FailureAction {
-    FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
+    FINISH_CURRENTLY_RUNNING("finishCurrent"),
+    CANCEL_ALL("cancelImmediately"),
+    FINISH_ALL_POSSIBLE("finishPossible");
+
+    private final String name;
+    private FailureAction(String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return this.name;
+    }
+
+  }
+
+  public enum ConcurrentOption {
+    CONCURRENT_OPTION_SKIP("skip"),
+    CONCURRENT_OPTION_PIPELINE("pipeline"),
+    CONCURRENT_OPTION_IGNORE("ignore");
+
+    private final String name;
+    private ConcurrentOption(String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return this.name;
+    }
+
   }
 }
