@@ -54,14 +54,14 @@ class JdbcProjectHandlerSet {
       + "FROM projects prj ";
 
     // Still return the project if it has no associated permissions
-    public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
+    public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = CAST (prm.project_id AS INTEGER) WHERE prj.id=?";
 
     // Still return the project if it has no associated permissions
-    public static final String SELECT_ACTIVE_PROJECT_BY_NAME = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.name=? AND prj.active=true";
+    public static final String SELECT_ACTIVE_PROJECT_BY_NAME = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = CAST (prm.project_id AS INTEGER) WHERE prj.name=? AND prj.active=true";
 
     // ONLY return projects that have at least one associated permission, this is for performance reasons.
     // (JOIN is way faster than LEFT JOIN)
-    public static final String SELECT_ALL_ACTIVE_PROJECTS = BASE_QUERY + "JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.active=true";
+    public static final String SELECT_ALL_ACTIVE_PROJECTS = BASE_QUERY + "JOIN project_permissions prm ON prj.id = CAST (prm.project_id AS INTEGER) WHERE prj.active=true";
 
     @Override
     public List<Project> handle(final ResultSet rs) throws SQLException {
