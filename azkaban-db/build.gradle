@@ -49,7 +49,7 @@ def mysqlToPostgresqlFilter = {
     it.replaceAll(/(?i)\bTINYINT\b/, 'SMALLINT')
         .replaceAll(/(?i)\bBIGINT\(\d+\)/, 'BIGINT')
         .replaceAll(/(?i)\bSMALLINT\(\d+\)/, 'SMALLINT')
-        .replaceAll(/(?i)\b(LONG)?BLOB\b/, 'BYTEA')
+        .replaceAll(/(?i)\b(LONG|MEDIUM)?BLOB\b/, 'BYTEA')
         .replaceAll(/(?i)\bBINARY\(\d+\)/, 'BYTEA')
         .replaceAll(/(?i)\bDATETIME\b/, 'TIMESTAMP')
         .replaceAll(/(?i)\bAUTO_INCREMENT\b/, 'GENERATED ALWAYS AS IDENTITY')
