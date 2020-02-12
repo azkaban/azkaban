@@ -21,3 +21,16 @@ CREATE TABLE IF NOT EXISTS `space_watcher` (
                                                `username` varchar(45) NOT NULL,
                                                PRIMARY KEY (`space_id`,`username`)
 );
+
+/*
+Run these statements to add the new columns to existing table
+ALTER TABLE projects
+ADD COLUMN space_id INT,
+ADD COLUMN created_by VARCHAR(64);
+*/
+
+CREATE TABLE IF NOT EXISTS `project_admin` (
+ project_id   INT(11)      NOT NULL,
+ username     VARCHAR(64)  NOT NULL,
+ PRIMARY KEY (`project_id`,`username`)
+);
