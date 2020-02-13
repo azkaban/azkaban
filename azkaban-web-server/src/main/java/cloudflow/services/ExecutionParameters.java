@@ -14,7 +14,7 @@ public class ExecutionParameters {
   private Boolean notifyOnFirstFailure;
   private Boolean notifyFailureOnExecutionComplete;
   private ConcurrentOption concurrentOption;
-  private Map<String, Map<String, Object>> properties;
+  private Map<String, Map<String, String>> properties;
 
   public ExecutionParameters() {
     this.failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
@@ -95,11 +95,11 @@ public class ExecutionParameters {
     this.concurrentOption = concurrentOption;
   }
 
-  public Map<String, Map<String, Object>> getProperties() {
+  public Map<String, Map<String, String>> getProperties() {
     return properties;
   }
 
-  public void setProperties(Map<String, Map<String, Object>> properties) {
+  public void setProperties(Map<String, Map<String, String>> properties) {
     this.properties = properties;
   }
 

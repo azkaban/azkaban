@@ -9,6 +9,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
@@ -20,6 +21,7 @@ import cloudflow.error.CloudFlowValidationException;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
 import cloudflow.servlets.Constants;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -264,8 +266,47 @@ public class ExecutionServiceImpl implements ExecutionService {
     executionOptions.setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
 
     executionOptions.setConcurrentOption(executionParameters.getConcurrentOption().getName());
+    setRuntimeProperties(executionParameters, executionOptions);
 
     executableFlow.setExecutionOptions(executionOptions);
+  }
+
+  private void setRuntimeProperties(ExecutionParameters executionParameters,
+      ExecutionOptions executionOptions) {
+
+    if (executionParameters.getProperties().size() == 0) {
+      return;
+    }
+    // supporting only flow level properties overwrite for the POC
+    if(executionParameters.getProperties().size() > 1 ||
+        !executionParameters.getProperties().containsKey("root")) {
+      logger.error("Attempt to overwrite properties of nodes other than the root flow detected: "
+          + executionParameters.getProperties());
+      throw new CloudFlowException("Overwriting properties of jobs or nested flows is not "
+          + "yet supported.");
+    }
+
+    Map<String, String> runtimeProps = executionParameters.getProperties().get("root");
+    if(runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
+      String rawEmails = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
+      if (!rawEmails.isEmpty()) {
+        String[] emails = rawEmails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+        executionOptions.setFailureEmails(Arrays.asList(emails));
+        executionOptions.setFailureEmailsOverridden(true);
+      }
+      runtimeProps.remove(CommonJobProperties.FAILURE_EMAILS);
+    }
+
+    if(runtimeProps.containsKey(CommonJobProperties.SUCCESS_EMAILS)) {
+      String rawEmails = runtimeProps.get(CommonJobProperties.SUCCESS_EMAILS);
+      if (!rawEmails.isEmpty()) {
+        String[] emails = rawEmails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+        executionOptions.setSuccessEmails((Arrays.asList(emails)));
+        executionOptions.setSuccessEmailsOverridden(true);
+      }
+      runtimeProps.remove(CommonJobProperties.SUCCESS_EMAILS);
+    }
+    executionOptions.addAllFlowParameters(runtimeProps);
   }
 
 }

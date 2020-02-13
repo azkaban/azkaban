@@ -6,6 +6,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
+import cloudflow.error.CloudFlowNotImplementedException;
 import cloudflow.error.CloudFlowValidationException;
 import cloudflow.models.JobExecution;
 import cloudflow.services.ExecutionParameters;
@@ -143,30 +144,40 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws IOException {
 
-    if (GET_ALL_EXECUTIONS_URI.match(req.getRequestURI(), new HashMap<>())) {
-      ExecutionParameters executionParameters = extractExecutionParameters(req, resp, session);
-      if (executionParameters == null) {
-        return;
-      }
-
-      String executionId;
-      try {
-        executionId = executionService.createExecution(executionParameters);
-      } catch (CloudFlowValidationException e) {
-        sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        return;
-      } catch (CloudFlowException e) {
-        sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-            DEFAULT_500_ERROR_MESSAGE);
-        return;
-      }
-      logger.info(String.format("New execution of flow %s was successfully queued with id %s",
-          executionParameters.getFlowId(), executionId));
-      resp.setHeader("Location", GET_SINGLE_EXECUTION_URI.createURI(executionId));
-      sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
+    String requestURI = req.getRequestURI();
+    if (GET_ALL_EXECUTIONS_URI.match(requestURI, new HashMap<>())) {
+      handleCreateExecution(req, resp, session);
     } else {
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, DEFAULT_404_ERROR_MESSAGE);
     }
+  }
+
+  private void handleCreateExecution(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws IOException {
+    ExecutionParameters executionParameters = extractExecutionParameters(req, resp, session);
+    if (executionParameters == null) {
+      return;
+    }
+
+    String executionId;
+    try {
+      executionId = executionService.createExecution(executionParameters);
+    } catch (CloudFlowValidationException e) {
+      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+      return;
+    } catch (CloudFlowNotImplementedException e) {
+      sendErrorResponse(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, e.getMessage());
+      return;
+    } catch (CloudFlowException e) {
+      sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            DEFAULT_500_ERROR_MESSAGE);
+      return;
+
+    }
+    logger.info(String.format("New execution of flow %s was successfully queued with id %s",
+        executionParameters.getFlowId(), executionId));
+    resp.setHeader("Location", GET_SINGLE_EXECUTION_URI.createURI(executionId));
+    sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
   }
 
   private ExecutionParameters extractExecutionParameters(final HttpServletRequest req,
