@@ -214,11 +214,6 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
           String.format("Parameter '%s' is required.", FLOW_VERSION_KEY));
       return null;
-    } else if(executionParameters.getFlowVersion() <= 0) {
-      final String errorMessage = String.format("Parameter '%s' must be a positive number.", FLOW_VERSION_KEY);
-      logger.error(errorMessage);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, errorMessage);
-      return null;
     }
     executionParameters.setSubmitUser(session.getUser().getUserId());
 

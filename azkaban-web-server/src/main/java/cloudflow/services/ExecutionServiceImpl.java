@@ -16,6 +16,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
+import cloudflow.error.CloudFlowNotImplementedException;
 import cloudflow.models.ExecutionBasicResponse;
 import cloudflow.error.CloudFlowValidationException;
 import cloudflow.models.JobExecution;
@@ -32,6 +33,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 
+import static cloudflow.servlets.Constants.FLOW_VERSION_KEY;
 import static java.lang.String.*;
 import static java.util.Objects.*;
 
@@ -244,7 +246,11 @@ public class ExecutionServiceImpl implements ExecutionService {
           Constants.FLOW_ID_KEY));
     }
 
-    // TODO ypadron: validate flow version
+    // TODO ypadron: validate existence of flow version
+    if(executionParameters.getFlowVersion() <= 0) {
+      throw new CloudFlowValidationException(
+          String.format("Parameter '%s' must be a positive number.", FLOW_VERSION_KEY));
+    }
     executableFlow.setFlowVersion(executionParameters.getFlowVersion());
     executableFlow.setDescription(executionParameters.getDescription());
     if (!executionParameters.getExperimentId().isEmpty()) {
@@ -282,7 +288,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         !executionParameters.getProperties().containsKey("root")) {
       logger.error("Attempt to overwrite properties of nodes other than the root flow detected: "
           + executionParameters.getProperties());
-      throw new CloudFlowException("Overwriting properties of jobs or nested flows is not "
+      throw new CloudFlowNotImplementedException("Overwriting properties of jobs or nested flows is not "
           + "yet supported.");
     }
 

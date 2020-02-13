@@ -15,7 +15,7 @@ public class Constants {
 
 
 
-  public static final String DEFAULT_500_ERROR_MESSAGE = "Unexpected error encountered.";
+  public static final String DEFAULT_500_ERROR_MESSAGE = "Unexpected server error encountered.";
   public static final String DEFAULT_404_ERROR_MESSAGE = "The requested resource was not found.";
 
 }

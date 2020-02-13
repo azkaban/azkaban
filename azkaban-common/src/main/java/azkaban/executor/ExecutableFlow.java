@@ -69,10 +69,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String flowLockErrorMessage;
 
   // added for CloudFlow
-  public static final String EXPERIMENTID_PARAM = "experimentId";
+  public static final String EXPERIMENT_ID_PARAM = "experimentId";
   public static final String DESCRIPTION_PARAM = "description";
-  public static final String FLOWDEFINITIONID_PARAM = "flowDefinitionId";
-  public static final String FLOWVERSION_PARAM = "flowVersion";
+  public static final String FLOW_DEFINITION_ID_PARAM = "flowDefinitionId";
+  public static final String FLOW_VERSION_PARAM = "flowVersion";
 
   private int experimentId;
   private String description;
@@ -307,8 +307,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
 
-    // flowObj.put(EXPERIMENTID_PARAM, this.experimentId);
-    flowObj.put(DESCRIPTION_PARAM, this.description);
+    // flowObj.put(EXPERIMENT_ID_PARAM, this.experimentId);
+    // flowObj.put(DESCRIPTION_PARAM, this.description);
 
     return flowObj;
   }
@@ -355,8 +355,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
 
-    //this.experimentId = flowObj.getInt(EXPERIMENTID_PARAM);
-    this.description = flowObj.getString(DESCRIPTION_PARAM);
+    // this.experimentId = flowObj.getInt(EXPERIMENT_ID_PARAM);
+    // this.description = flowObj.getString(DESCRIPTION_PARAM);
   }
 
   @Override
