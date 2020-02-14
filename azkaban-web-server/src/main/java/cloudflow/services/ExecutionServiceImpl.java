@@ -33,7 +33,6 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cloudflow.servlets.Constants.FLOW_VERSION_KEY;
 import static java.lang.String.*;
 import static java.util.Objects.*;
 
@@ -114,8 +113,7 @@ public class ExecutionServiceImpl implements ExecutionService {
   }
 
   @Override
-  public JobExecution getJobExecution(String executionId, String jobDefinitionId, String user)
-      throws CloudFlowException {
+  public JobExecution getJobExecution(String executionId, String jobDefinitionId, String user) {
     requireNonNull(executionId, "execution id is null");
     requireNonNull(jobDefinitionId, "job definition id is null");
 
@@ -127,13 +125,13 @@ public class ExecutionServiceImpl implements ExecutionService {
     try {
       executableFlow = this.executorManager.getExecutableFlow(execId);
     } catch (final ExecutorManagerException e) {
-      errorMessage = String.format("Failed to fetch execution with id %d.", execId);
+      errorMessage = format("Failed to fetch execution with id %d.", execId);
       logger.error(errorMessage, e);
       throw new CloudFlowException(errorMessage);
     }
 
     if (executableFlow == null) {
-      errorMessage = String.format("Execution with id %d wasn't found.", execId);
+      errorMessage = format("Execution with id %d wasn't found.", execId);
       logger.error(errorMessage);
       throw new CloudFlowNotFoundException(errorMessage);
     }
@@ -156,7 +154,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
       }
       if (i >= nodesToScan.size()) {
-        errorMessage = String.format("Job with id %s and path %s wasn't found in execution %d.",
+        errorMessage = format("Job with id %s and path %s wasn't found in execution %d.",
             jobDefinitionId, jobPath, execId);
         logger.error(errorMessage);
         throw new CloudFlowNotFoundException(errorMessage);
@@ -209,7 +207,7 @@ public class ExecutionServiceImpl implements ExecutionService {
   }
 
   @Override
-  public String createExecution(ExecutionParameters executionParameters) throws CloudFlowException {
+  public String createExecution(ExecutionParameters executionParameters) {
     requireNonNull(executionParameters);
     // TODO ypadron: check user permissions
 
@@ -226,7 +224,7 @@ public class ExecutionServiceImpl implements ExecutionService {
       if (e.getReason() != null) {
         throw new CloudFlowValidationException(e.getMessage());
       } else {
-        final String errorMessage = String.format("Failed to create execution of flow with id %s "
+        final String errorMessage = format("Failed to create execution of flow with id %s "
             + "and version %s.", executionParameters.getFlowId(),
             executionParameters.getFlowVersion());
         logger.error(errorMessage, e);
@@ -237,19 +235,17 @@ public class ExecutionServiceImpl implements ExecutionService {
   }
 
   private void setAzkabanExecutionOptions(ExecutionParameters executionParameters,
-      ExecutableFlow executableFlow) throws CloudFlowException {
+      ExecutableFlow executableFlow) {
 
     try {
       executableFlow.setFlowDefinitionId(Integer.parseInt(executionParameters.getFlowId()));
     } catch (NumberFormatException e) {
-      throw new CloudFlowValidationException(String.format("Parameter '%s' must be an integer.",
-          Constants.FLOW_ID_KEY));
+      throw new CloudFlowValidationException("Flow id must be an integer.");
     }
 
     // TODO ypadron: validate existence of flow version
     if(executionParameters.getFlowVersion() <= 0) {
-      throw new CloudFlowValidationException(
-          String.format("Parameter '%s' must be a positive number.", FLOW_VERSION_KEY));
+      throw new CloudFlowValidationException("Flow version must be a positive number.");
     }
     executableFlow.setFlowVersion(executionParameters.getFlowVersion());
     executableFlow.setDescription(executionParameters.getDescription());
@@ -258,8 +254,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         executableFlow.setExperimentId(Integer.parseInt(executionParameters.getExperimentId()));
         // TODO ypadron: validate existence of experiment id
       } catch (NumberFormatException e) {
-        throw new CloudFlowValidationException(String.format("Parameter '%s' must be an integer.",
-            Constants.EXPERIMENT_ID_KEY));
+        throw new CloudFlowValidationException("Experiment id must be an integer.");
       }
     }
     executableFlow.setSubmitUser(executionParameters.getSubmitUser());
@@ -292,27 +287,42 @@ public class ExecutionServiceImpl implements ExecutionService {
           + "yet supported.");
     }
 
-    Map<String, String> runtimeProps = executionParameters.getProperties().get("root");
+    Map<String, Object> runtimeProps = executionParameters.getProperties().get("root");
     if(runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
-      String rawEmails = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
-      if (!rawEmails.isEmpty()) {
-        String[] emails = rawEmails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-        executionOptions.setFailureEmails(Arrays.asList(emails));
-        executionOptions.setFailureEmailsOverridden(true);
-      }
+      Object propValue = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
+      List<String> emails = getNotificationEmails(propValue);
+      executionOptions.setFailureEmails(emails);
+      executionOptions.setFailureEmailsOverridden(true);
       runtimeProps.remove(CommonJobProperties.FAILURE_EMAILS);
     }
 
     if(runtimeProps.containsKey(CommonJobProperties.SUCCESS_EMAILS)) {
-      String rawEmails = runtimeProps.get(CommonJobProperties.SUCCESS_EMAILS);
-      if (!rawEmails.isEmpty()) {
-        String[] emails = rawEmails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-        executionOptions.setSuccessEmails((Arrays.asList(emails)));
-        executionOptions.setSuccessEmailsOverridden(true);
-      }
+      Object propValue = runtimeProps.get(CommonJobProperties.SUCCESS_EMAILS);
+      List<String> emails = getNotificationEmails(propValue);
+      executionOptions.setSuccessEmails(emails);
+      executionOptions.setSuccessEmailsOverridden(true);
       runtimeProps.remove(CommonJobProperties.SUCCESS_EMAILS);
     }
-    executionOptions.addAllFlowParameters(runtimeProps);
+
+    Map<String,String> AzRuntimeProps = runtimeProps.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+    executionOptions.addAllFlowParameters(AzRuntimeProps);
+  }
+
+  private List<String> getNotificationEmails(Object propertyValue) {
+    String errorMessage = format("Invalid notification email list: %s", propertyValue.toString());
+    if (!(propertyValue instanceof List) || ((List) propertyValue).isEmpty()) {
+      logger.error(errorMessage);
+      throw new CloudFlowValidationException(errorMessage);
+    } else {
+      boolean invalid =
+          ((List<Object>) propertyValue).stream().anyMatch( e -> !(e instanceof String));
+      if (invalid) {
+        logger.error(errorMessage);
+        throw new CloudFlowValidationException(errorMessage);
+      }
+    }
+    return (List<String>) propertyValue;
   }
 
 }

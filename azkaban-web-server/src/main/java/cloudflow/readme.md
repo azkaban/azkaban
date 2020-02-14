@@ -98,8 +98,8 @@ curl -X POST 'http://localhost:8081/executions' \
 	"properties": {
 		"root": {
 			"retries": 3,
-			"failure.emails": "a@a.com, b@b.com",
-			"success.emails": "c@c.com, d@d.com"
+			"failure.emails": ["a@a.com", "b@b.com"],
+			"success.emails": ["c@c.com"]
 		}
 	}
 }'

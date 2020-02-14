@@ -11,8 +11,6 @@ public class Constants {
 
   public static final String FLOW_ID_KEY = "flowId";
   public static final String FLOW_VERSION_KEY = "flowVersion";
-  public static final String EXPERIMENT_ID_KEY = "experimentId";
-
 
 
   public static final String DEFAULT_500_ERROR_MESSAGE = "Unexpected server error encountered.";
