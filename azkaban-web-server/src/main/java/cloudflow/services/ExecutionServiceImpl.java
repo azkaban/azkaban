@@ -43,6 +43,8 @@ public class ExecutionServiceImpl implements ExecutionService {
   private static final String PROJECT_ID_PARAM = "project_id";
   private static final String EXPERIMENT_ID_PARAM = "experiment_id";
 
+  private static final String RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD = "root";
+
   private static final Logger logger = LoggerFactory.getLogger(ExecutionServiceImpl.class);
   private ExecutorManagerAdapter executorManager;
   private ExecutionFlowDao executionFlowDao;
@@ -280,14 +282,15 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
     // supporting only flow level properties overwrite for the POC
     if(executionParameters.getProperties().size() > 1 ||
-        !executionParameters.getProperties().containsKey("root")) {
+        !executionParameters.getProperties().containsKey(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD)) {
       logger.error("Attempt to overwrite properties of nodes other than the root flow detected: "
           + executionParameters.getProperties());
       throw new CloudFlowNotImplementedException("Overwriting properties of jobs or nested flows is not "
           + "yet supported.");
     }
 
-    Map<String, Object> runtimeProps = executionParameters.getProperties().get("root");
+    Map<String, Object> runtimeProps = executionParameters.getProperties()
+        .get(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD);
     if(runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
       Object propValue = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
       List<String> emails = getNotificationEmails(propValue);
@@ -304,9 +307,9 @@ public class ExecutionServiceImpl implements ExecutionService {
       runtimeProps.remove(CommonJobProperties.SUCCESS_EMAILS);
     }
 
-    Map<String,String> AzRuntimeProps = runtimeProps.entrySet().stream()
+    Map<String,String> azRuntimeProps = runtimeProps.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
-    executionOptions.addAllFlowParameters(AzRuntimeProps);
+    executionOptions.addAllFlowParameters(azRuntimeProps);
   }
 
   private List<String> getNotificationEmails(Object propertyValue) {

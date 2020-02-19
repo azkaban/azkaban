@@ -156,6 +156,8 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
       Session session) throws IOException {
     ExecutionParameters executionParameters = extractExecutionParameters(req, resp, session);
     if (executionParameters == null) {
+      // this is to stop execution of subsequent code since sendErrorResponse() inside
+      // extractExecutionParameters() doesn't conclude execution of code in handleCreateExecution()
       return;
     }
 
