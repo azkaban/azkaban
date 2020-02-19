@@ -233,7 +233,13 @@ public class Schedule {
   }
 
   public boolean isRecurring() {
-    return this.period != null || this.cronExpression != null;
+    if (this.period != null) {
+      return true;
+    }
+    if (this.cronExpression != null) {
+      return !new CronCalculator(this.cronExpression).isStatic();
+    }
+    return false;
   }
 
   public boolean skipPastOccurrences() {
