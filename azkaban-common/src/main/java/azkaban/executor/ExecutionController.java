@@ -689,8 +689,9 @@ public class ExecutionController extends EventHandler implements ExecutorManager
             this.maxConcurrentRunsPerFlowMap);
         if (running.size() > maxConcurrentRuns) {
           this.commonMetrics.markSubmitFlowSkip();
-          throw new ExecutorManagerException("Flow " + flowId
-              + " has more than " + maxConcurrentRuns + " concurrent runs. Skipping",
+          throw new ExecutorManagerException("Flow with id " +
+              (exflow.getFlowDefinitionId() > 0 ? exflow.getFlowDefinitionId() : flowId)
+              + " has more than " + maxConcurrentRuns + " concurrent runs. Execution not created.",
               ExecutorManagerException.Reason.SkippedExecution);
         } else if (options.getConcurrentOption().equals(
             ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
@@ -705,8 +706,9 @@ public class ExecutionController extends EventHandler implements ExecutorManager
         } else if (options.getConcurrentOption().equals(
             ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
           this.commonMetrics.markSubmitFlowSkip();
-          throw new ExecutorManagerException("Flow " + flowId
-              + " is already running. Skipping execution.",
+          throw new ExecutorManagerException("Flow with id " +
+              (exflow.getFlowDefinitionId() > 0 ? exflow.getFlowDefinitionId() : flowId)
+              + " is already running. Execution not created.",
               ExecutorManagerException.Reason.SkippedExecution);
         } else {
           message =

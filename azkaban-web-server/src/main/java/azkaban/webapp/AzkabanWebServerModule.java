@@ -105,7 +105,6 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ProjectDao.class).to(ProjectDaoImpl.class);
     bind(ProjectAdminDao.class).to(ProjectAdminDaoImpl.class);
     bind(SpaceSuperUserDao.class).to(SpaceSuperUserDaoImpl.class);
-
     bind(ExecutionService.class).to(ExecutionServiceImpl.class);
   }
 

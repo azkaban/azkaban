@@ -181,8 +181,8 @@ public class ExecutionControllerTest {
     submitFlow(this.flow2, this.ref2);
     submitFlow(this.flow3, this.ref3);
     assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
-        ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
-        .flow4.getId() + " has more than 1 concurrent runs. Skipping");
+        ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow with id " + this
+        .flow4.getId() + " has more than 1 concurrent runs. Execution not created.");
   }
 
   @Test
@@ -191,8 +191,8 @@ public class ExecutionControllerTest {
     submitFlow(this.flow2, this.ref2);
     submitFlow(this.flow3, this.ref3);
     assertThatThrownBy(() -> this.controller.submitExecutableFlow(this.flow4, this.user.getUserId
-        ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
-        .flow4.getId() + " has more than 1 concurrent runs. Skipping");
+        ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow with id " +
+        this.flow4.getId() + " has more than 1 concurrent runs. Execution not created.");
   }
 
 
@@ -203,7 +203,7 @@ public class ExecutionControllerTest {
     assertThatThrownBy(
         () -> this.controller.submitExecutableFlow(this.flow3, this.user.getUserId()))
         .isInstanceOf(ExecutorManagerException.class).hasMessageContaining(
-        "Flow " + this.flow3.getId() + " is already running. Skipping execution.");
+        "Flow with id " + this.flow3.getId() + " is already running. Execution not created.");
   }
 
   @Test

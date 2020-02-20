@@ -68,6 +68,17 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
   private String flowLockErrorMessage;
 
+  // added for CloudFlow
+  public static final String EXPERIMENT_ID_PARAM = "experimentId";
+  public static final String DESCRIPTION_PARAM = "description";
+  public static final String FLOW_DEFINITION_ID_PARAM = "flowDefinitionId";
+  public static final String FLOW_VERSION_PARAM = "flowVersion";
+
+  private int experimentId;
+  private String description;
+  private int flowDefinitionId;
+  private int flowVersion;
+
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
     this.projectName = project.getName();
@@ -234,6 +245,32 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.flowLockErrorMessage = flowLockErrorMessage;
   }
 
+  public int getFlowVersion() {
+    return this.flowVersion;
+  }
+
+  public void setFlowVersion(final int flowVersion) {
+    this.flowVersion = flowVersion;
+  }
+
+  public int getFlowDefinitionId() { return flowDefinitionId; }
+
+  public void setFlowDefinitionId(int flowDefinitionId) { this.flowDefinitionId = flowDefinitionId; }
+
+  public int getExperimentId() {
+    return experimentId;
+  }
+
+  public void setExperimentId(int experimentId) { this.experimentId = experimentId; }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -269,6 +306,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
+
+    // flowObj.put(EXPERIMENT_ID_PARAM, this.experimentId);
+    // flowObj.put(DESCRIPTION_PARAM, this.description);
 
     return flowObj;
   }
@@ -314,6 +354,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
+
+    // this.experimentId = flowObj.getInt(EXPERIMENT_ID_PARAM);
+    // this.description = flowObj.getString(DESCRIPTION_PARAM);
   }
 
   @Override

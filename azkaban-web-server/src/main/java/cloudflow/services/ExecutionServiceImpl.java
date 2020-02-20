@@ -5,14 +5,24 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionAttempt;
 import azkaban.executor.ExecutionFlowDao;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.flow.CommonJobProperties;
+import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
+import cloudflow.error.CloudFlowNotImplementedException;
 import cloudflow.models.ExecutionBasicResponse;
+import cloudflow.error.CloudFlowValidationException;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
+import cloudflow.servlets.Constants;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,7 +36,6 @@ import java.util.List;
 import static java.lang.String.*;
 import static java.util.Objects.*;
 
-
 public class ExecutionServiceImpl implements ExecutionService {
 
   private static final String FLOW_ID_PARAM = "flow_id";
@@ -34,15 +43,19 @@ public class ExecutionServiceImpl implements ExecutionService {
   private static final String PROJECT_ID_PARAM = "project_id";
   private static final String EXPERIMENT_ID_PARAM = "experiment_id";
 
+  private static final String RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD = "root";
+
   private static final Logger logger = LoggerFactory.getLogger(ExecutionServiceImpl.class);
   private ExecutorManagerAdapter executorManager;
   private ExecutionFlowDao executionFlowDao;
+  private ProjectManager projectManager;
 
   @Inject
   public ExecutionServiceImpl(ExecutorManagerAdapter executorManager,
-      ExecutionFlowDao executionFlowDao) {
+      ExecutionFlowDao executionFlowDao, ProjectManager projectManager) {
     this.executorManager = executorManager;
     this.executionFlowDao = executionFlowDao;
+    this.projectManager = projectManager;
   }
 
   private String extractArgumentValue(String argName, String[] argValues) {
@@ -102,31 +115,30 @@ public class ExecutionServiceImpl implements ExecutionService {
   }
 
   @Override
-  public JobExecution getJobExecution(String executionId, String jobDefinitionId, String user)
-      throws CloudFlowException {
+  public JobExecution getJobExecution(String executionId, String jobDefinitionId, String user) {
     requireNonNull(executionId, "execution id is null");
     requireNonNull(jobDefinitionId, "job definition id is null");
 
-    // TODO: check user permissions
+    // TODO ypadron: check user permissions
 
     final Integer execId = Integer.parseInt(executionId); // Azkaban ids are integers
     String errorMessage;
-    ExecutableFlow executableFlow = null;
+    ExecutableFlow executableFlow;
     try {
       executableFlow = this.executorManager.getExecutableFlow(execId);
     } catch (final ExecutorManagerException e) {
-      errorMessage = String.format("Failed to fetch execution with id %d.", execId);
+      errorMessage = format("Failed to fetch execution with id %d.", execId);
       logger.error(errorMessage, e);
       throw new CloudFlowException(errorMessage);
     }
 
     if (executableFlow == null) {
-      errorMessage = String.format("Execution with id %d wasn't found.", execId);
+      errorMessage = format("Execution with id %d wasn't found.", execId);
       logger.error(errorMessage);
       throw new CloudFlowNotFoundException(errorMessage);
     }
 
-    // TODO: get job and job path given a definition id
+    // TODO ypadron: get job and job path given a definition id
     // Examples of job paths in current Azkaban code:
     // 1) jobD -> direct child of the root flow
     // 2) embeddedFlow1:embeddedFlow2:jobE -> deeply nested job
@@ -144,10 +156,8 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
       }
       if (i >= nodesToScan.size()) {
-        errorMessage =
-            String
-                .format("Job with id %s and path %s wasn't found in execution %d.", jobDefinitionId,
-                    jobPath, execId);
+        errorMessage = format("Job with id %s and path %s wasn't found in execution %d.",
+            jobDefinitionId, jobPath, execId);
         logger.error(errorMessage);
         throw new CloudFlowNotFoundException(errorMessage);
       }
@@ -192,10 +202,130 @@ public class ExecutionServiceImpl implements ExecutionService {
       attempts.add(new JobExecutionAttempt(id, startTime, endTime, status));
     }
 
-    JobExecutionAttempt lastAttempt =
-        new JobExecutionAttempt(attempts.size(), jobNode.getStartTime(), jobNode.getEndTime(),
-            jobNode.getStatus());
+    JobExecutionAttempt lastAttempt = new JobExecutionAttempt(attempts.size(),
+        jobNode.getStartTime(), jobNode.getEndTime(), jobNode.getStatus());
     attempts.add(lastAttempt);
     return attempts;
   }
+
+  @Override
+  public String createExecution(ExecutionParameters executionParameters) {
+    requireNonNull(executionParameters);
+    // TODO ypadron: check user permissions
+
+    // TODO ypadron: obtain flow and project dynamically
+    Project project = this.projectManager.getProject("yb-test");
+    Flow flow = project.getFlow("flowPriority2");
+    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+
+    setAzkabanExecutionOptions(executionParameters, exflow);
+
+    try {
+      this.executorManager.submitExecutableFlow(exflow, executionParameters.getSubmitUser());
+    } catch (ExecutorManagerException e) {
+      if (e.getReason() != null) {
+        throw new CloudFlowValidationException(e.getMessage());
+      } else {
+        final String errorMessage = format("Failed to create execution of flow with id %s "
+            + "and version %s.", executionParameters.getFlowId(),
+            executionParameters.getFlowVersion());
+        logger.error(errorMessage, e);
+        throw new CloudFlowException(errorMessage);
+      }
+    }
+    return String.valueOf(exflow.getExecutionId());
+  }
+
+  private void setAzkabanExecutionOptions(ExecutionParameters executionParameters,
+      ExecutableFlow executableFlow) {
+
+    try {
+      executableFlow.setFlowDefinitionId(Integer.parseInt(executionParameters.getFlowId()));
+    } catch (NumberFormatException e) {
+      throw new CloudFlowValidationException("Flow id must be an integer.");
+    }
+
+    // TODO ypadron: validate existence of flow version
+    if(executionParameters.getFlowVersion() <= 0) {
+      throw new CloudFlowValidationException("Flow version must be a positive number.");
+    }
+    executableFlow.setFlowVersion(executionParameters.getFlowVersion());
+    executableFlow.setDescription(executionParameters.getDescription());
+    if (!executionParameters.getExperimentId().isEmpty()) {
+      try {
+        executableFlow.setExperimentId(Integer.parseInt(executionParameters.getExperimentId()));
+        // TODO ypadron: validate existence of experiment id
+      } catch (NumberFormatException e) {
+        throw new CloudFlowValidationException("Experiment id must be an integer.");
+      }
+    }
+    executableFlow.setSubmitUser(executionParameters.getSubmitUser());
+
+    ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setFailureAction(ExecutionOptions.FailureAction.valueOf(
+        executionParameters.getFailureAction().toString()));
+
+    executionOptions.setNotifyOnFirstFailure(executionParameters.isNotifyOnFirstFailure());
+    executionOptions.setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
+
+    executionOptions.setConcurrentOption(executionParameters.getConcurrentOption().getName());
+    setRuntimeProperties(executionParameters, executionOptions);
+
+    executableFlow.setExecutionOptions(executionOptions);
+  }
+
+  private void setRuntimeProperties(ExecutionParameters executionParameters,
+      ExecutionOptions executionOptions) {
+
+    if (executionParameters.getProperties().size() == 0) {
+      return;
+    }
+    // supporting only flow level properties overwrite for the POC
+    if(executionParameters.getProperties().size() > 1 ||
+        !executionParameters.getProperties().containsKey(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD)) {
+      logger.error("Attempt to overwrite properties of nodes other than the root flow detected: "
+          + executionParameters.getProperties());
+      throw new CloudFlowNotImplementedException("Overwriting properties of jobs or nested flows is not "
+          + "yet supported.");
+    }
+
+    Map<String, Object> runtimeProps = executionParameters.getProperties()
+        .get(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD);
+    if(runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
+      Object propValue = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
+      List<String> emails = getNotificationEmails(propValue);
+      executionOptions.setFailureEmails(emails);
+      executionOptions.setFailureEmailsOverridden(true);
+      runtimeProps.remove(CommonJobProperties.FAILURE_EMAILS);
+    }
+
+    if(runtimeProps.containsKey(CommonJobProperties.SUCCESS_EMAILS)) {
+      Object propValue = runtimeProps.get(CommonJobProperties.SUCCESS_EMAILS);
+      List<String> emails = getNotificationEmails(propValue);
+      executionOptions.setSuccessEmails(emails);
+      executionOptions.setSuccessEmailsOverridden(true);
+      runtimeProps.remove(CommonJobProperties.SUCCESS_EMAILS);
+    }
+
+    Map<String,String> azRuntimeProps = runtimeProps.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+    executionOptions.addAllFlowParameters(azRuntimeProps);
+  }
+
+  private List<String> getNotificationEmails(Object propertyValue) {
+    String errorMessage = format("Invalid notification email list: %s", propertyValue.toString());
+    if (!(propertyValue instanceof List) || ((List) propertyValue).isEmpty()) {
+      logger.error(errorMessage);
+      throw new CloudFlowValidationException(errorMessage);
+    } else {
+      boolean invalid =
+          ((List<Object>) propertyValue).stream().anyMatch( e -> !(e instanceof String));
+      if (invalid) {
+        logger.error(errorMessage);
+        throw new CloudFlowValidationException(errorMessage);
+      }
+    }
+    return (List<String>) propertyValue;
+  }
+
 }
