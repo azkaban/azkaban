@@ -56,6 +56,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
+import sun.util.calendar.ZoneInfo;
 
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
@@ -617,14 +618,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     DateTimeZone timezone = DateTimeZone.getDefault();
     if (hasParam(req, "timezone")) {
       String timezoneParam = getParam(req, "timezone");
-      try {
-        timezone = DateTimeZone.forID(timezoneParam);
-      } catch (final IllegalArgumentException e) {
-        try {
-          timezone = DateTimeZone.forTimeZone(TimeZone.getTimeZone(timezoneParam));
-        } catch (final IllegalArgumentException e1) {
-          ret.put(PARAM_ERROR, "Unknown timezone " + timezoneParam);
-        }
+      timezone = getTimeZone(timezoneParam);
+      if(null == timezone) {
+        ret.put(PARAM_STATUS, STATUS_ERROR);
+        ret.put(PARAM_MESSAGE, "Unknown timezone " + timezoneParam);
+        return;
       }
     }
     final DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
@@ -682,6 +680,22 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
     ret.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
     ret.put(PARAM_MESSAGE, projectName + "." + flowName + " scheduled.");
+  }
+
+  public static DateTimeZone getTimeZone(String timezoneParam) {
+    try {
+      return DateTimeZone.forID(timezoneParam);
+    } catch (final IllegalArgumentException e) {
+      TimeZone zone = ZoneInfo.getTimeZone(timezoneParam);
+      if(null == zone) {
+        return null;
+      }
+      try {
+        return DateTimeZone.forTimeZone(zone);
+      } catch (final IllegalArgumentException e1) {
+        return null;
+      }
+    }
   }
 
   private DateTime parseDateTime(final String scheduleDate, final String scheduleTime) {
