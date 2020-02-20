@@ -54,6 +54,8 @@ configurations {
 dependencies {
     compile project(':az-core')
     compile(project(':azkaban-common'))
+    compile(project(':azkaban-hadoop-security-plugin'))
+    compileOnly deps.hadoopCommon
     compile(project(':az-flow-trigger-dependency-plugin'))
 
     compile deps.restliServer
