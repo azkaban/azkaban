@@ -105,3 +105,22 @@ curl -X POST 'http://localhost:8081/executions' \
 }'
 
 Response body is empty
+
+
+Rerun a previous execution.
+curl -X POST 'http://localhost:8081/executions/rerun' \
+-H 'Content-Type: application/json' \
+--data-raw '{
+	"previousFlowExecutionId": "123456"
+}'
+
+Response body is empty
+
+Optional parameters:
+- experimentId
+- description
+- failureAction
+- notifyOnFirstFailure
+- notifyFailureOnExecutionComplete
+- concurrentOption
+- properties

@@ -21,8 +21,8 @@ import cloudflow.models.ExecutionBasicResponse;
 import cloudflow.error.CloudFlowValidationException;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
-import cloudflow.servlets.Constants;
-import java.util.Arrays;
+import cloudflow.services.ExecutionParameters.ConcurrentOption;
+import cloudflow.services.ExecutionParameters.FailureAction;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -212,85 +212,218 @@ public class ExecutionServiceImpl implements ExecutionService {
   public String createExecution(ExecutionParameters executionParameters) {
     requireNonNull(executionParameters);
     // TODO ypadron: check user permissions
+    ExecutableFlow execFlow = getExecutableFlow(
+        validateFlowDefinitionId(executionParameters.getFlowId()));
+    setAzkabanExecutionParameters(executionParameters, execFlow);
+    return submitExecutableFlow(execFlow);
+  }
 
-    // TODO ypadron: obtain flow and project dynamically
-    Project project = this.projectManager.getProject("yb-test");
-    Flow flow = project.getFlow("flowPriority2");
-    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+  @Override
+  public String createRerunExecution(ExecutionParameters executionParameters) {
+    requireNonNull(executionParameters);
+    // TODO ypadron: check user permissions
+    ExecutableFlow execFlow = createExecutableFlowFromPreviousExecutionId(
+        validatePreviousExecutionId(executionParameters.getPreviousFlowExecutionId()));
+    updateAzkabanExecutionParameters(executionParameters, execFlow);
+    return submitExecutableFlow(execFlow);
+  }
 
-    setAzkabanExecutionOptions(executionParameters, exflow);
-
+  private String submitExecutableFlow(ExecutableFlow execFlow) {
     try {
-      this.executorManager.submitExecutableFlow(exflow, executionParameters.getSubmitUser());
+      this.executorManager.submitExecutableFlow(execFlow, execFlow.getSubmitUser());
     } catch (ExecutorManagerException e) {
       if (e.getReason() != null) {
         throw new CloudFlowValidationException(e.getMessage());
       } else {
         final String errorMessage = format("Failed to create execution of flow with id %s "
-            + "and version %s.", executionParameters.getFlowId(),
-            executionParameters.getFlowVersion());
+                + "and version %s.", execFlow.getFlowDefinitionId(), execFlow.getFlowVersion());
         logger.error(errorMessage, e);
         throw new CloudFlowException(errorMessage);
       }
     }
-    return String.valueOf(exflow.getExecutionId());
+    return String.valueOf(execFlow.getExecutionId());
   }
 
-  private void setAzkabanExecutionOptions(ExecutionParameters executionParameters,
+  private void updateAzkabanExecutionParameters(ExecutionParameters executionParameters,
       ExecutableFlow executableFlow) {
-
-    try {
-      executableFlow.setFlowDefinitionId(Integer.parseInt(executionParameters.getFlowId()));
-    } catch (NumberFormatException e) {
-      throw new CloudFlowValidationException("Flow id must be an integer.");
+    requireNonNull(executableFlow.getFlowDefinitionId());
+    requireNonNull(executableFlow.getFlowVersion());
+    if (executionParameters.getFlowVersion() != null) {
+      // flow version from params and flow version of previous execution should be compatible
+      executableFlow.setFlowVersion(validateFlowVersion(executionParameters.getFlowVersion()));
     }
 
-    // TODO ypadron: validate existence of flow version
-    if(executionParameters.getFlowVersion() <= 0) {
-      throw new CloudFlowValidationException("Flow version must be a positive number.");
+    if (executionParameters.getDescription() != null) {
+      executableFlow.setDescription(executionParameters.getDescription());
     }
-    executableFlow.setFlowVersion(executionParameters.getFlowVersion());
-    executableFlow.setDescription(executionParameters.getDescription());
-    if (!executionParameters.getExperimentId().isEmpty()) {
-      try {
-        executableFlow.setExperimentId(Integer.parseInt(executionParameters.getExperimentId()));
-        // TODO ypadron: validate existence of experiment id
-      } catch (NumberFormatException e) {
-        throw new CloudFlowValidationException("Experiment id must be an integer.");
-      }
+    if (executionParameters.getExperimentId() != null) {
+      executableFlow.setExperimentId(validateExperimentId(executionParameters.getExperimentId()));
     }
+
     executableFlow.setSubmitUser(executionParameters.getSubmitUser());
 
-    ExecutionOptions executionOptions = new ExecutionOptions();
-    executionOptions.setFailureAction(ExecutionOptions.FailureAction.valueOf(
-        executionParameters.getFailureAction().toString()));
+    ExecutionOptions azExecutionOptions = executableFlow.getExecutionOptions();
+    if (executionParameters.getFailureAction() != null) {
+      azExecutionOptions.setFailureAction(ExecutionOptions.FailureAction.valueOf(
+          executionParameters.getFailureAction().toString()));
+    }
+    if (executionParameters.isNotifyOnFirstFailure() != null) {
+      azExecutionOptions.setNotifyOnFirstFailure(executionParameters.isNotifyOnFirstFailure());
+    }
+    if (executionParameters.isNotifyFailureOnExecutionComplete() != null) {
+      azExecutionOptions.setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
+    }
+    if (executionParameters.getConcurrentOption() != null) {
+      azExecutionOptions.setConcurrentOption(executionParameters.getConcurrentOption().getName());
+    }
 
-    executionOptions.setNotifyOnFirstFailure(executionParameters.isNotifyOnFirstFailure());
-    executionOptions.setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
+    setRuntimeProperties(executionParameters, executableFlow.getExecutionOptions());
+  }
 
-    executionOptions.setConcurrentOption(executionParameters.getConcurrentOption().getName());
-    setRuntimeProperties(executionParameters, executionOptions);
+  private void setAzkabanExecutionParameters(ExecutionParameters executionParameters,
+      ExecutableFlow executableFlow) {
 
-    executableFlow.setExecutionOptions(executionOptions);
+    executableFlow.setFlowVersion(validateFlowVersion(executionParameters.getFlowVersion()));
+
+    String descriptionParam = executionParameters.getDescription();
+    if (descriptionParam != null) {
+      executableFlow.setDescription(descriptionParam);
+    }
+
+    executableFlow.setExperimentId(validateExperimentId(executionParameters.getExperimentId()));
+    executableFlow.setSubmitUser(executionParameters.getSubmitUser());
+
+    ExecutionOptions azExecutionOptions = new ExecutionOptions();
+    FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
+    if (executionParameters.getFailureAction() != null) {
+      failureAction = executionParameters.getFailureAction();
+    }
+    azExecutionOptions.setFailureAction(ExecutionOptions.FailureAction.valueOf(
+        failureAction.toString()));
+
+    boolean notifyOnFirstFailure = true;
+    if (executionParameters.isNotifyOnFirstFailure() != null &&
+        !executionParameters.isNotifyOnFirstFailure()) {
+      notifyOnFirstFailure = false;
+    }
+    azExecutionOptions.setNotifyOnFirstFailure(notifyOnFirstFailure);
+
+    boolean notifyFailureOnExecutionComplete = false;
+    if (executionParameters.isNotifyFailureOnExecutionComplete() != null &&
+        executionParameters.isNotifyFailureOnExecutionComplete()) {
+      notifyFailureOnExecutionComplete = true;
+    }
+    azExecutionOptions.setNotifyOnLastFailure(notifyFailureOnExecutionComplete);
+
+    ConcurrentOption concurrentOption = ConcurrentOption.CONCURRENT_OPTION_SKIP;
+    if (executionParameters.getConcurrentOption() != null) {
+      concurrentOption = executionParameters.getConcurrentOption();
+    }
+    azExecutionOptions.setConcurrentOption(concurrentOption.getName());
+
+    setRuntimeProperties(executionParameters, azExecutionOptions);
+
+    executableFlow.setExecutionOptions(azExecutionOptions);
+  }
+
+  private int validateFlowDefinitionId(String flowDefinitionId) {
+    if (flowDefinitionId == null || flowDefinitionId.isEmpty()) {
+      throw new CloudFlowValidationException("Flow id is required.");
+    }
+
+    try {
+      return Integer.parseInt(flowDefinitionId);
+    } catch (NumberFormatException e) {
+      throw new CloudFlowValidationException(format("Invalid flow id: %s", flowDefinitionId));
+    }
+  }
+
+  private int validateFlowVersion(Integer flowVersion) {
+    if(flowVersion == null) {
+      throw new CloudFlowValidationException("Flow version is required.");
+    }
+    // TODO ypadron: validate existence of flow version
+    return flowVersion;
+  }
+
+  private int validatePreviousExecutionId(String previousExecutionId) {
+    if (previousExecutionId == null || previousExecutionId.isEmpty()) {
+      throw new CloudFlowValidationException("Previous flow execution id is required.");
+    }
+
+    try {
+      return Integer.parseInt(previousExecutionId);
+    } catch (NumberFormatException e) {
+      throw new CloudFlowValidationException(
+          format("Invalid previous flow execution id: %s", previousExecutionId));
+    }
+  }
+
+  private int validateExperimentId(String experimentId) {
+    if (experimentId != null && !experimentId.isEmpty()) {
+      try {
+        // TODO ypadron: validate existence of experiment id
+        return Integer.parseInt(experimentId);
+      } catch (NumberFormatException e) {
+        throw new CloudFlowValidationException(format("Invalid experiment id: %s", experimentId));
+      }
+    }
+    return 0;
+  }
+
+  private ExecutableFlow getExecutableFlow(int azFlowDefinitionId) {
+    // TODO ypadron: obtain flow and project dynamically
+    Project project = this.projectManager.getProject("yb-test");
+    Flow flow = project.getFlow("flowPriority2");
+    ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
+    executableFlow.setFlowDefinitionId(azFlowDefinitionId);
+    return executableFlow;
+  }
+
+  private ExecutableFlow createExecutableFlowFromPreviousExecutionId(int previousExecutionId) {
+    ExecutableFlow previousExecFlow;
+    try {
+      previousExecFlow = this.executorManager.getExecutableFlow(previousExecutionId);
+
+    } catch (ExecutorManagerException e) {
+      String errorMessage = format("Failed to fetch execution with id %d.", previousExecutionId);
+      logger.error(errorMessage, e);
+      throw new CloudFlowException(errorMessage);
+    }
+    if (previousExecFlow == null) {
+      String errorMessage = format("Execution with id %d wasn't found.", previousExecutionId);
+      logger.error(errorMessage);
+      throw new CloudFlowNotFoundException(errorMessage);
+    }
+
+    Project project = this.projectManager.getProject(previousExecFlow.getProjectId());
+    Flow flow = project.getFlow(previousExecFlow.getFlowId());
+    ExecutableFlow newExecFlow = FlowUtils.createExecutableFlow(project, flow);
+    newExecFlow.setFlowDefinitionId(previousExecFlow.getFlowDefinitionId());
+    newExecFlow.setFlowVersion(previousExecFlow.getFlowVersion());
+    newExecFlow.setDescription(previousExecFlow.getDescription());
+    newExecFlow.setExperimentId(previousExecFlow.getExperimentId());
+    previousExecFlow.getExecutionOptions().setPreviousExecutionId(previousExecutionId);
+    newExecFlow.setExecutionOptions(previousExecFlow.getExecutionOptions());
+    return newExecFlow;
   }
 
   private void setRuntimeProperties(ExecutionParameters executionParameters,
       ExecutionOptions executionOptions) {
 
-    if (executionParameters.getProperties().size() == 0) {
+    Map<String, Map<String, Object>> propertiesParam = executionParameters.getProperties();
+    if (propertiesParam == null || propertiesParam.size() == 0) {
       return;
     }
     // supporting only flow level properties overwrite for the POC
-    if(executionParameters.getProperties().size() > 1 ||
-        !executionParameters.getProperties().containsKey(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD)) {
+    if(propertiesParam.size() > 1 || !propertiesParam.containsKey(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD)) {
       logger.error("Attempt to overwrite properties of nodes other than the root flow detected: "
-          + executionParameters.getProperties());
+          + propertiesParam);
       throw new CloudFlowNotImplementedException("Overwriting properties of jobs or nested flows is not "
           + "yet supported.");
     }
 
-    Map<String, Object> runtimeProps = executionParameters.getProperties()
-        .get(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD);
+    Map<String, Object> runtimeProps = propertiesParam.get(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD);
     if(runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
       Object propValue = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
       List<String> emails = getNotificationEmails(propValue);
@@ -314,7 +447,7 @@ public class ExecutionServiceImpl implements ExecutionService {
 
   private List<String> getNotificationEmails(Object propertyValue) {
     String errorMessage = format("Invalid notification email list: %s", propertyValue.toString());
-    if (!(propertyValue instanceof List) || ((List) propertyValue).isEmpty()) {
+    if (!(propertyValue instanceof List)) {
       logger.error(errorMessage);
       throw new CloudFlowValidationException(errorMessage);
     } else {

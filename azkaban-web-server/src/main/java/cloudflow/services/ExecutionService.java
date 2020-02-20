@@ -12,4 +12,6 @@ public interface ExecutionService {
   JobExecution getJobExecution(String executionId, String jobDefinitionId, String user);
 
   String createExecution(ExecutionParameters executionParameters);
+
+  String createRerunExecution(ExecutionParameters executionParameters);
 }

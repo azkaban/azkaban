@@ -307,8 +307,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
 
-    // flowObj.put(EXPERIMENT_ID_PARAM, this.experimentId);
-    // flowObj.put(DESCRIPTION_PARAM, this.description);
+    flowObj.put(FLOW_DEFINITION_ID_PARAM, this.flowDefinitionId);
+    flowObj.put(FLOW_VERSION_PARAM, this.flowVersion);
+    flowObj.put(EXPERIMENT_ID_PARAM, this.experimentId);
+    flowObj.put(DESCRIPTION_PARAM, this.description);
 
     return flowObj;
   }
@@ -355,8 +357,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
 
-    // this.experimentId = flowObj.getInt(EXPERIMENT_ID_PARAM);
-    // this.description = flowObj.getString(DESCRIPTION_PARAM);
+    this.flowDefinitionId = flowObj.getInt(FLOW_DEFINITION_ID_PARAM);
+    this.flowVersion = flowObj.getInt(FLOW_VERSION_PARAM);
+    this.experimentId = flowObj.getInt(EXPERIMENT_ID_PARAM);
+    this.description = flowObj.getString(DESCRIPTION_PARAM);
   }
 
   @Override

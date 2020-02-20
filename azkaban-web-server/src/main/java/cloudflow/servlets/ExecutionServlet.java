@@ -12,6 +12,7 @@ import cloudflow.models.JobExecution;
 import cloudflow.services.ExecutionParameters;
 import cloudflow.services.ExecutionService;
 import com.linkedin.jersey.api.uri.UriTemplate;
+import java.util.function.Function;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.codehaus.jackson.JsonParseException;
@@ -39,12 +40,13 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
   private static final String JOB_ID_KEY = "jobDefinitionId";
   private static final String JOB_PATH_KEY = "jobPath";
 
-  private static final UriTemplate GET_ALL_EXECUTIONS_URI = new UriTemplate("/executions");
+  private static final UriTemplate ALL_EXECUTIONS_URI = new UriTemplate("/executions");
   private static final UriTemplate GET_SINGLE_EXECUTION_URI = new UriTemplate(
       format("/executions/{%s}", EXECUTION_ID_KEY));
   // TODO remove jobPath
   private static final UriTemplate GET_JOB_EXECUTION_INFO_URI = new UriTemplate(
       format("/executions/{%s}/jobs/{%s}/{%s}", EXECUTION_ID_KEY, JOB_ID_KEY, JOB_PATH_KEY));
+  private static final UriTemplate RERUN_EXECUTION_URI = new UriTemplate("/executions/rerun");
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutionServlet.class);
   private ExecutionService executionService;
@@ -129,7 +131,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
     Map<String, String> templateVariableMap = new HashMap<>();
     String requestUri = req.getRequestURI();
 
-    if (GET_ALL_EXECUTIONS_URI.match(requestUri, templateVariableMap)) {
+    if (ALL_EXECUTIONS_URI.match(requestUri, templateVariableMap)) {
       handleAllExecutions(req, resp);
     } else if (GET_SINGLE_EXECUTION_URI.match(requestUri, templateVariableMap)) {
       handleSingleExecution(req, resp);
@@ -143,17 +145,18 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws IOException {
-
     String requestURI = req.getRequestURI();
-    if (GET_ALL_EXECUTIONS_URI.match(requestURI, new HashMap<>())) {
-      handleCreateExecution(req, resp, session);
+    if (ALL_EXECUTIONS_URI.match(requestURI, new HashMap<>())) {
+      handleCreateNewExecution(req, resp, session);
+    } else if (RERUN_EXECUTION_URI.match(requestURI, new HashMap<>())) {
+      handleRerunExecution(req, resp, session);
     } else {
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, DEFAULT_404_ERROR_MESSAGE);
     }
   }
 
-  private void handleCreateExecution(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws IOException {
+  private void createExecution(HttpServletRequest req, HttpServletResponse resp, Session session,
+      Function<ExecutionParameters, String> executionCreator) throws IOException {
     ExecutionParameters executionParameters = extractExecutionParameters(req, resp, session);
     if (executionParameters == null) {
       // this is to stop execution of subsequent code since sendErrorResponse() inside
@@ -163,23 +166,36 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
 
     String executionId;
     try {
-      executionId = executionService.createExecution(executionParameters);
+      executionId = executionCreator.apply(executionParameters);
     } catch (CloudFlowValidationException e) {
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+      return;
+    } catch (CloudFlowNotFoundException e) {
+      sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
       return;
     } catch (CloudFlowNotImplementedException e) {
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, e.getMessage());
       return;
     } catch (CloudFlowException e) {
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-            DEFAULT_500_ERROR_MESSAGE);
+          DEFAULT_500_ERROR_MESSAGE);
       return;
 
     }
-    logger.info(String.format("New execution of flow %s was successfully queued with id %s",
+    logger.info(format("New execution of flow %s was successfully queued with id %s",
         executionParameters.getFlowId(), executionId));
     resp.setHeader("Location", GET_SINGLE_EXECUTION_URI.createURI(executionId));
     sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
+  }
+
+  private void handleCreateNewExecution(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws IOException {
+    createExecution(req, resp, session, executionService::createExecution);
+  }
+
+  private void handleRerunExecution(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws IOException {
+    createExecution(req, resp, session, executionService::createRerunExecution);
   }
 
   private ExecutionParameters extractExecutionParameters(final HttpServletRequest req,
@@ -190,7 +206,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
       executionParameters = this.objectMapper.readValue(body, ExecutionParameters.class);
     } catch (JsonMappingException e) {
       final String errorMessage =
-          String.format("Parameter '%s' isn't valid.", e.getPath().get(0).getFieldName());
+          format("Parameter '%s' isn't valid.", e.getPath().get(0).getFieldName());
       logger.error(errorMessage + " \n" + e.getMessage());
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST, errorMessage);
       return null;
@@ -206,19 +222,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
       return null;
     }
 
-    if(executionParameters.getFlowId() == null || executionParameters.getFlowId().isEmpty()) {
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          String.format("Parameter '%s' is required.", FLOW_ID_KEY));
-      return null;
-    }
-
-    if(executionParameters.getFlowVersion() == null) {
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          String.format("Parameter '%s' is required.", FLOW_VERSION_KEY));
-      return null;
-    }
     executionParameters.setSubmitUser(session.getUser().getUserId());
-
     return executionParameters;
   }
 }

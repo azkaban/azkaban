@@ -16,12 +16,9 @@ public class ExecutionParameters {
   private ConcurrentOption concurrentOption;
   private Map<String, Map<String, Object>> properties;
 
-  public ExecutionParameters() {
-    this.failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
-    this.concurrentOption = ConcurrentOption.CONCURRENT_OPTION_SKIP;
-    this.notifyFailureOnExecutionComplete = false;
-    this.notifyOnFirstFailure = true;
-  }
+  // used when rerunning an execution or executing partial DAGs
+  private String previousFlowExecutionId;
+
 
   public String getFlowId() {
     return flowId;
@@ -103,6 +100,14 @@ public class ExecutionParameters {
     this.properties = properties;
   }
 
+  public String getPreviousFlowExecutionId() {
+    return previousFlowExecutionId;
+  }
+
+  public void setPreviousFlowExecutionId(String previousFlowExecutionId) {
+    this.previousFlowExecutionId = previousFlowExecutionId;
+  }
+
   public enum FailureAction {
     FINISH_CURRENTLY_RUNNING("finishCurrent"),
     CANCEL_ALL("cancelImmediately"),
@@ -130,8 +135,8 @@ public class ExecutionParameters {
 
   public enum ConcurrentOption {
     CONCURRENT_OPTION_SKIP("skip"),
-    CONCURRENT_OPTION_PIPELINE("pipeline"),
     CONCURRENT_OPTION_IGNORE("ignore");
+    // not supported in the POC CONCURRENT_OPTION_PIPELINE("pipeline")
 
     private final String name;
     private ConcurrentOption(String name) {

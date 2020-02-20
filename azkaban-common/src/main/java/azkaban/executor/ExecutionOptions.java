@@ -74,6 +74,9 @@ public class ExecutionOptions {
   private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
   private List<SlaOption> slaOptions = new ArrayList<>();
 
+  // added for CloudFlow
+  private static final String PREVIOUS_EXECUTION_ID = "previousExecutionId";
+  private Integer previousExecutionId = 0;
 
   public static ExecutionOptions createFromObject(final Object obj) {
     if (obj == null || !(obj instanceof Map)) {
@@ -133,6 +136,10 @@ public class ExecutionOptions {
     // Note: slaOptions was originally outside of execution options, so it parsed and set
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
+
+    if (optionsMap.containsKey(PREVIOUS_EXECUTION_ID)) {
+      options.setPreviousExecutionId((Integer) optionsMap.get(PREVIOUS_EXECUTION_ID));
+    }
 
     return options;
   }
@@ -257,6 +264,12 @@ public class ExecutionOptions {
 
   public void setSlaOptions(final List<SlaOption> slaOptions) { this.slaOptions = slaOptions; }
 
+  public Integer getPreviousExecutionId() { return previousExecutionId; }
+
+  public void setPreviousExecutionId(Integer previousExecutionId) {
+    this.previousExecutionId = previousExecutionId;
+  }
+
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -275,6 +288,7 @@ public class ExecutionOptions {
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, this.successEmailsOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
+    flowOptionObj.put(PREVIOUS_EXECUTION_ID, this.previousExecutionId);
     return flowOptionObj;
   }
 
