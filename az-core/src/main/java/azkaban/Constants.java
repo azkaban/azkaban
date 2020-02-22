@@ -417,4 +417,18 @@ public class Constants {
     // common private properties for multiple plugins
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
+
+  // Adding constants for Flow containerization
+  public static class FlowContainerization {
+    public static final String TONY_WORKER_RESOURCES = "tony.worker.resources";
+    public static final String TONY_CONTAINERS_RESOURCES  = "tony.containers.resources";
+    public static final String TONY_PS_INSTANCES = "tony.ps.instances";
+    public static final String TONY_WORKER_MEMORY = "tony.worker.memory";
+    public static final String TONY_PS_WORKER = "tony.ps.worker";
+    public static final String TONY_WORKER_INSTANCES = "tony.worker.instances";
+    public static final String TONY_CONF = "--conf";
+    public static final String TONY_SHELL_ENV = "--shell_env";
+    public static final String TONY_EXECUTES = "--executes";
+
+  }
 }

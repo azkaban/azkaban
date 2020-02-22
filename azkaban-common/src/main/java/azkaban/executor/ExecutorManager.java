@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.FlowContainerization;
 import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
@@ -31,6 +32,8 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.linkedin.tony.TonyClient;
+import com.linkedin.tony.cli.ClusterSubmitter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -39,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -56,6 +58,7 @@ import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -899,6 +902,7 @@ public class ExecutorManager extends EventHandler implements
       logger.info("Submitting execution flow " + flowId + " by " + userId);
 
       String message = "";
+      //TODO: JANKI: Remove queuing for execution containerization
       if (this.queuedFlows.isFull()) {
         message =
             String
@@ -924,7 +928,7 @@ public class ExecutorManager extends EventHandler implements
         if (options.getDisabledJobs() != null) {
           FlowUtils.applyDisabledJobs(options.getDisabledJobs(), exflow);
         }
-
+        //TODO: JANKI: To reduce the possible attack on yarn, it will be good to keep max concurrent runs for a flow check
         if (!running.isEmpty()) {
           final int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
               exflow.getProjectName(), flowId, this.maxConcurrentRunsOneFlow,
@@ -1070,6 +1074,61 @@ public class ExecutorManager extends EventHandler implements
         status);
   }
 
+  /**
+   * Dispatch the flow in a container and update in-memory state of executableFlow.
+   */
+  private void dispatchContainer(final ExecutionReference reference, final ExecutableFlow exflow) throws ExecutorManagerException {
+    exflow.setUpdateTime(System.currentTimeMillis());
+    logger.info("Creating Tonyclient");
+    Configuration conf = new Configuration();
+    //conf.addResource("/export/apps/azkaban/azkaban-web-server/current/conf/tony-default.xml");
+    TonyClient client = new TonyClient(conf);
+    try {
+      ClusterSubmitter submitter = new ClusterSubmitter(client);
+      int tonyPSInstances = this.azkProps.getInt(FlowContainerization.TONY_PS_INSTANCES, 0);
+      String tonyWorkerMemory = this.azkProps.getString(FlowContainerization.TONY_WORKER_MEMORY, "20G");
+      int tonyPSWorker = this.azkProps.getInt(FlowContainerization.TONY_PS_WORKER, 1);
+      int tonyWorkerInstances = this.azkProps.getInt(FlowContainerization.TONY_WORKER_INSTANCES, 1);
+      String tonyWorkerResources = this.azkProps.getString(FlowContainerization.TONY_WORKER_RESOURCES, "/export/home/azkaban/test-dispatch/basic_flow.zip,/export/home/azkaban/test-dispatch/jobtypes.zip,/export/home/azkaban/test-dispatch/lib.zip#archive,/export/home/azkaban/test-dispatch/hive.zip#archive,/export/home/azkaban/test-dispatch/conf.zip#archive");
+      String tonyContainerResources = this.azkProps.getString(FlowContainerization.TONY_CONTAINERS_RESOURCES, "/export/home/azkaban/test-dispatch/tony-core-0.3.23.jar,/export/home/azkaban/test-dispatch/tony-cli-0.3.23.jar,/export/home/azkaban/test-dispatch/tony-mini-0.3.23.jar,/export/home/azkaban/test-dispatch/tony-proxy-0.3.23.jar,/export/home/azkaban/test-dispatch/zip4j-1.3.2.jar,/export/home/azkaban/test-dispatch/jackson-core-2.8.11.jar,/export/home/azkaban/test-dispatch/jackson-databind-2.8.11.jar,/export/home/azkaban/test-dispatch/jackson-annotations-2.8.5.jar,/export/home/azkaban/test-dispatch/lib.zip#archive");
+      int exitCode = submitter.submit(new String[] {FlowContainerization.TONY_CONF,
+          String.join("=", FlowContainerization.TONY_WORKER_RESOURCES, tonyWorkerResources),
+          FlowContainerization.TONY_CONF, String.join("=",FlowContainerization.TONY_CONTAINERS_RESOURCES, tonyContainerResources),
+          FlowContainerization.TONY_EXECUTES, "java -Dlog4j.configuration=file:./conf.zip/log4j.properties -cp ./lib.zip/*:/export/apps/hadoop/site/etc/hadoop:/export/apps/hadoop/latest/share/hadoop/common/lib/*:/export/apps/hadoop/latest/share/hadoop/common/*:/export/apps/hadoop/latest/share/hadoop/hdfs:/export/apps/hadoop/latest/share/hadoop/hdfs/lib/*:/export/apps/hadoop/latest/share/hadoop/hdfs/*:/export/apps/hadoop/latest/share/hadoop/yarn/lib/*:/export/apps/hadoop/latest/share/hadoop/yarn/*:/export/apps/hadoop/latest/share/hadoop/mapreduce/lib/*:/export/apps/hadoop/latest/share/hadoop/mapreduce/*:/export/apps/hadoop/site/lib/amf-sink-1.2.5-all.jar:/export/apps/hadoop/site/lib/grid-topology-1.0.jar:/export/apps/hadoop/site/lib/hadoop-lzo-0.4.20-SNAPSHOT.jar:./hive.zip/conf:./hive.zip/lib/* azkaban.container.FlowContainer basic_flow.zip basic_flow jobTypeDir=jobtypes.zip lib.zip",
+          FlowContainerization.TONY_SHELL_ENV, "CLASSPATH=$(${HADOOP_HDFS_HOME}/bin/hadoop classpath --glob)",
+          FlowContainerization.TONY_SHELL_ENV, "LIBHDFS_OPTS=‘-Xmx 2g’",
+          FlowContainerization.TONY_CONF, String.join("=",FlowContainerization.TONY_PS_INSTANCES, String.valueOf(tonyPSInstances)),
+          FlowContainerization.TONY_CONF, String.join("=", FlowContainerization.TONY_WORKER_MEMORY, tonyWorkerMemory),
+          FlowContainerization.TONY_CONF, String.join("=", FlowContainerization.TONY_PS_WORKER, String.valueOf(tonyPSWorker)),
+          FlowContainerization.TONY_CONF, String.join("=", FlowContainerization.TONY_WORKER_INSTANCES, String.valueOf(tonyWorkerInstances))});
+
+      logger.info("Tonyclient exitcode: " + exitCode);
+      if (exitCode != 0) {
+        logger.error("Could not dispatch the container for execution id:" + exflow.getExecutionId() + " , exit code: "
+            + exitCode);
+        throw new ExecutorManagerException("Could not launch the container. Exit code" + exitCode);
+      }
+    } catch (Exception ex) {
+      logger.error("Could not dispatch the container for execution id:" + exflow.getExecutionId(), ex);
+      throw new ExecutorManagerException("Could not launch the container. ", ex);
+    }
+    // move from flow to running flows
+    this.runningExecutions.get().put(exflow.getExecutionId(), new Pair<>(reference, exflow));
+    synchronized (this.runningExecutions.get()) {
+      // Wake up RunningExecutionsUpdaterThread from wait() so that it will immediately check status
+      // from executor(s). Normally flows will run at least some time and can't be cleaned up
+      // immediately, so there will be another wait round (or many, actually), but for unit tests
+      // this is significant to let them run quickly.
+      this.runningExecutions.get().notifyAll();
+    }
+    synchronized (this) {
+      // wake up all internal waiting threads, too
+      this.notifyAll();
+    }
+
+    logger.info(String.format("Successfully dispatched exec %d with error count %d", exflow.getExecutionId(),
+        reference.getNumErrors()));
+  }
   /**
    * Calls executor to dispatch the flow, update db to assign the executor and in-memory state of
    * executableFlow.
@@ -1247,51 +1306,35 @@ public class ExecutorManager extends EventHandler implements
         final ExecutableFlow exflow = ExecutorManager.this.runningCandidate.getSecond();
         final long currentTime = System.currentTimeMillis();
 
-        // if we have dispatched more than maxContinuousFlowProcessed or
-        // It has been more then activeExecutorsRefreshWindow millisec since we
-        // refreshed
+        // Launch a container for flow execution
+        //TODO: Add flow in a queue in case of failure
+        exflow.setUpdateTime(currentTime);
+        dispatchFlowInContainer(reference, exflow);
+        ExecutorManager.this.runningCandidate = null;
+      }
+    }
 
-        if (currentTime - lastExecutorRefreshTime > activeExecutorsRefreshWindow
-            || currentContinuousFlowProcessed >= maxContinuousFlowProcessed) {
-          // Refresh executorInfo for all activeExecutors
-          refreshExecutors();
-          lastExecutorRefreshTime = currentTime;
-          currentContinuousFlowProcessed = 0;
-        }
-
-        /**
-         * <pre>
-         *  TODO: Work around till we improve Filters to have a notion of GlobalSystemState.
-         *        Currently we try each queued flow once to infer a global busy state
-         * Possible improvements:-
-         *   1. Move system level filters in refreshExecutors and sleep if we have all executors busy after refresh
-         *   2. Implement GlobalSystemState in selector or in a third place to manage system filters. Basically
-         *      taking out all the filters which do not depend on the flow but are still being part of Selector.
-         * Assumptions:-
-         *   1. no one else except QueueProcessor is updating ExecutableFlow update time
-         *   2. re-attempting a flow (which has been tried before) is considered as all executors are busy
-         * </pre>
-         */
-        if (exflow.getUpdateTime() > lastExecutorRefreshTime) {
-          // put back in the queue
-          ExecutorManager.this.queuedFlows.enqueue(exflow, reference);
-          ExecutorManager.this.runningCandidate = null;
-          final long sleepInterval =
-              activeExecutorsRefreshWindow
-                  - (currentTime - lastExecutorRefreshTime);
-          // wait till next executor refresh
-          Thread.sleep(sleepInterval);
-        } else {
-          exflow.setUpdateTime(currentTime);
-          // process flow with current snapshot of activeExecutors
-          selectExecutorAndDispatchFlow(reference, exflow);
-          ExecutorManager.this.runningCandidate = null;
-        }
-
-        // do not count failed flow processsing (flows still in queue)
-        if (ExecutorManager.this.queuedFlows.getFlow(exflow.getExecutionId()) == null) {
-          currentContinuousFlowProcessed++;
-        }
+    private void dispatchFlowInContainer(final ExecutionReference reference, final ExecutableFlow exflow) {
+      Throwable lastError;
+      synchronized (exflow) {
+        do {
+          try {
+            dispatchContainer(reference, exflow);
+            ExecutorManager.this.commonMetrics.markDispatchSuccess();
+            // SUCCESS - exit
+            return;
+          } catch (final ExecutorManagerException e) {
+            lastError = e;
+            //logFailedDispatchAttempt(reference, exflow, selectedExecutor, e);
+            ExecutorManager.this.commonMetrics.markDispatchFail();
+            reference.setNumErrors(reference.getNumErrors() + 1);
+          }
+        } while (reference.getNumErrors() < this.maxDispatchingErrors);
+        // GAVE UP DISPATCHING
+        final String message = "Failed to dispatch queued execution " + exflow.getId() + " because "
+            + "reached " + ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED;
+        ExecutorManager.logger.error(message);
+        ExecutorManager.this.executionFinalizer.finalizeFlow(exflow, message, lastError);
       }
     }
 
