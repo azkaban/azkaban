@@ -1,5 +1,8 @@
 package cloudflow.services;
 
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -17,8 +20,13 @@ import azkaban.project.ProjectManager;
 import cloudflow.error.CloudFlowException;
 import cloudflow.error.CloudFlowNotFoundException;
 import cloudflow.error.CloudFlowNotImplementedException;
-import cloudflow.models.ExecutionBasicResponse;
 import cloudflow.error.CloudFlowValidationException;
+import cloudflow.models.ExecutionBasicResponse;
+import cloudflow.models.ExecutionDetailedResponse;
+import cloudflow.models.ExecutionNodeResponse;
+import cloudflow.models.ExecutionNodeResponse.ExecutionNodeResponseBuilder;
+import cloudflow.models.ExecutionNodeResponse.ExecutionNodeType;
+import cloudflow.models.ExecutionNodeResponse.FlowBasicResponse;
 import cloudflow.models.JobExecution;
 import cloudflow.models.JobExecutionAttempt;
 import cloudflow.servlets.Constants;
@@ -26,6 +34,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +45,7 @@ import java.util.List;
 import static java.lang.String.*;
 import static java.util.Objects.*;
 
+
 public class ExecutionServiceImpl implements ExecutionService {
 
   private static final String FLOW_ID_PARAM = "flow_id";
@@ -43,12 +53,13 @@ public class ExecutionServiceImpl implements ExecutionService {
   private static final String PROJECT_ID_PARAM = "project_id";
   private static final String EXPERIMENT_ID_PARAM = "experiment_id";
 
+  private static final int MAX_FLOW_RECURSION_DEPTH = 10;
   private static final String RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD = "root";
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutionServiceImpl.class);
-  private ExecutorManagerAdapter executorManager;
-  private ExecutionFlowDao executionFlowDao;
-  private ProjectManager projectManager;
+  private final ExecutorManagerAdapter executorManager;
+  private final ExecutionFlowDao executionFlowDao;
+  private final ProjectManager projectManager;
 
   @Inject
   public ExecutionServiceImpl(ExecutorManagerAdapter executorManager,
@@ -62,7 +73,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     requireNonNull(argName);
     requireNonNull(argValues);
     if (argValues.length != 1) {
-      throw new RuntimeException(format("Argument %s should have exactly one value", argName));
+      throw new CloudFlowException(format("Argument %s should have exactly one value", argName));
     }
     return argValues[0];
   }
@@ -112,6 +123,103 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
     return executableFlows.stream().map(this::executionResponseFromFlow)
         .collect(Collectors.toList());
+  }
+
+  private ExecutionNodeResponse.FlowBasicResponse flowBasicResponseFromFlow(Flow flow) {
+    //todo (sshardool): update flow name when available and check the flow version
+    // once the "/flow" endpoint is implemented the current flow.getId() will be the flow name.
+    return new FlowBasicResponse("defaultId", flow.getId(), Integer.toString(flow.getVersion()));
+  }
+
+  //todo(sshardool): this should have a check for run-away recursion on malformed input
+  //todo(sshardool): in addition add a user-settable parameter for recursion depth
+  private Optional<ExecutionNodeResponse> nodeResponseFromExecutionNode(
+      ExecutableNode executableNode,
+      int currentDepth, int truncateAfterDepth) {
+    requireNonNull(executableNode, "executable nodes is null");
+
+    if (currentDepth == truncateAfterDepth) {
+      return Optional.empty();
+    }
+    if (currentDepth == MAX_FLOW_RECURSION_DEPTH) {
+      throw new CloudFlowValidationException(
+          "Embedded flows are not supported beyond a depth of " + currentDepth);
+    }
+    ExecutionNodeResponseBuilder nodeBuilder = ExecutionNodeResponseBuilder.newBuilder();
+    nodeBuilder = nodeBuilder.withNodeId(executableNode.getId())
+        .withStartTime(executableNode.getStartTime())
+        .withEndTime(executableNode.getEndTime())
+        .withStatus(executableNode.getStatus().toString())
+        .withUpdateTime(executableNode.getUpdateTime())
+        .withCondition(executableNode.getCondition())
+        .withNestedId(executableNode.getNestedId());
+
+    if (executableNode.getInNodes() != null) {
+      nodeBuilder = nodeBuilder.withInputNodeIds(new ArrayList<>(executableNode.getInNodes()));
+    }
+
+    if (executableNode instanceof ExecutableFlowBase) {
+      ExecutableFlowBase flowBase = (ExecutableFlowBase) executableNode;
+      List<Optional<ExecutionNodeResponse>> subNodeList = new ArrayList<>();
+
+      for (ExecutableNode subNode : flowBase.getExecutableNodes()) {
+        Optional<ExecutionNodeResponse> subNodeResponse = nodeResponseFromExecutionNode(subNode,
+            currentDepth + 1, truncateAfterDepth);
+        subNodeList.add(subNodeResponse);
+      }
+
+      Project project = projectManager.getProject(flowBase.getProjectId());
+      nodeBuilder =
+          nodeBuilder
+              .withFlowInfo(flowBasicResponseFromFlow(project.getFlow(flowBase.getFlowId())));
+      nodeBuilder = nodeBuilder.withNodeList(subNodeList)
+          .withBaseFlowId(flowBase.getFlowId())
+          .withNodeType(flowBase instanceof ExecutableFlow ? ExecutionNodeType.ROOT_FLOW
+              : ExecutionNodeType.EMBEDDED_FLOW);
+    } else {
+      nodeBuilder = nodeBuilder.withNodeType(ExecutionNodeType.JOB);
+    }
+
+    return Optional.of(nodeBuilder.build());
+  }
+
+
+  @Override
+  public ExecutionDetailedResponse getExecution(String executionIdString) {
+    requireNonNull(executionIdString, "execution id is null");
+    int executionId;
+    String errorMessage;
+    // todo(sshardool): see if we should throw a more specific exception and handle it appropriately in the Servlet.
+    try {
+      executionId = Integer.parseInt(executionIdString);
+    } catch (NumberFormatException nfe) {
+      errorMessage = "Execution Id must be an integer";
+      logger.error(errorMessage, nfe);
+      throw new CloudFlowException(errorMessage, nfe);
+    }
+
+    ExecutableFlow executableFlow;
+    try {
+      executableFlow = executorManager.getExecutableFlow(executionId);
+    } catch (final ExecutorManagerException e) {
+      errorMessage = format("Failed to fetch execution with id %d.", executionId);
+      logger.error(errorMessage, e);
+      throw new CloudFlowException(errorMessage);
+    }
+    if (executableFlow == null) {
+      throw new CloudFlowNotFoundException(format("Execution id %d does not exist", executionId));
+    }
+
+    // todo: make truncation-depth user visible and validate it (replaces MAX_VALUE below)
+    Optional<ExecutionNodeResponse> rootNode = nodeResponseFromExecutionNode(executableFlow, 0,
+        Integer.MAX_VALUE);
+    if (!rootNode.isPresent()) {
+      throw new CloudFlowException(
+          "Execution details not found for root flow " + executableFlow.getId());
+    }
+    ExecutionDetailedResponse detailedResponse = new ExecutionDetailedResponse(
+        executableFlow, rootNode.get());
+    return detailedResponse;
   }
 
   @Override
