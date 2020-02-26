@@ -81,6 +81,6 @@ public class TestHadoopJobUtilsConstructHadoopTags {
     for (int i = prefix.length(); i < HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH; i++) {
       expectedTagBuffer.append("f");
     }
-    assertThat(actualTags[1]).isEqualTo(expectedTagBuffer);
+    assertThat(actualTags[1]).isEqualTo(expectedTagBuffer.toString());
   }
 }
