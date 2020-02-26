@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,5 +59,28 @@ public class TestHadoopJobUtilsConstructHadoopTags {
     String[] tags = new String[] { tag0 };
     assertThat(HadoopJobUtils.constructHadoopTags(props, tags))
         .isEqualTo("tag0:val0,workflowid:project-name$flow-id");
+  }
+
+  @Test
+  public void testLongWorkflowIdTag() {
+    String tag0 = "tag0";
+    props.put(tag0, "val0");
+    StringBuffer flowIdBuffer = new StringBuffer(150);
+    for (int i = 0; i < 150; i++) {
+      flowIdBuffer.append("f");
+    }
+    props.put(CommonJobProperties.PROJECT_NAME, "project-name");
+    props.put(CommonJobProperties.FLOW_ID, flowIdBuffer.toString());
+    String[] tags = new String[] { tag0 };
+    String[] actualTags = HadoopJobUtils.constructHadoopTags(props, tags).split(",");
+    assertThat(actualTags[0]).isEqualTo("tag0:val0");
+    assertThat(actualTags[1].length() <= HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH);
+    String prefix = "workflowid:project-name$";
+    StringBuffer expectedTagBuffer = new StringBuffer();
+    expectedTagBuffer.append(prefix);
+    for (int i = prefix.length(); i < HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH; i++) {
+      expectedTagBuffer.append("f");
+    }
+    assertThat(actualTags[1].equals(expectedTagBuffer));
   }
 }

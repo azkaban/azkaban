@@ -83,6 +83,7 @@ public class HadoopJobUtils {
   public static final String MAPREDUCE_JOB_OTHER_NAMENODES = "mapreduce.job.hdfs-servers";
   // MapReduce config for mapreduce job tags
   public static final String MAPREDUCE_JOB_TAGS = "mapreduce.job.tags";
+  protected static final int APPLICATION_TAG_MAX_LENGTH = 100;
   // Root of folder in storage containing startup dependencies
   public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
   // Azkaban property for listing additional namenodes for delegation tokens
@@ -590,10 +591,13 @@ public class HadoopJobUtils {
     }
     if (props.containsKey(CommonJobProperties.PROJECT_NAME)
         && props.containsKey(CommonJobProperties.FLOW_ID)) {
-      keysAndValues[keys.length] = "workflowid:"
+      String constructedTag = "workflowid:"
           + props.get(CommonJobProperties.PROJECT_NAME)
           + HadoopConfigurationInjector.WORKFLOW_ID_SEPERATOR
           + props.get(CommonJobProperties.FLOW_ID);
+      constructedTag = constructedTag.substring(0,
+          Math.min(constructedTag.length(), APPLICATION_TAG_MAX_LENGTH));
+      keysAndValues[keys.length] = constructedTag;
     }
     Joiner joiner = Joiner.on(',').skipNulls();
     return joiner.join(keysAndValues);
