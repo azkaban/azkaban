@@ -90,17 +90,17 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Execution manager for the server side execution.
- *
+ * <p>
  * When a flow is submitted to FlowRunnerManager, it is the {@link Status#PREPARING} status. When a
  * flow is about to be executed by FlowRunner, its status is updated to {@link Status#RUNNING}
- *
+ * <p>
  * Two main data structures are used in this class to maintain flows.
- *
+ * <p>
  * runningFlows: this is used as a bookkeeping for submitted flows in FlowRunnerManager. It has
  * nothing to do with the executor service that is used to execute the flows. This bookkeeping is
  * used at the time of canceling or killing a flow. The flows in this data structure is removed in
  * the handleEvent method.
- *
+ * <p>
  * submittedFlows: this is used to keep track the execution of the flows, so it has the mapping
  * between a Future<?> and an execution id. This would allow us to find out the execution ids of the
  * flows that are in the Status.PREPARING status. The entries in this map is removed once the flow
@@ -272,11 +272,11 @@ public class FlowRunnerManager implements EventListener,
    * Setting the gid bit on the execution directory forces all files/directories created within the
    * directory to be a part of the group associated with the azkaban process. Then, when users
    * create their own files, the azkaban cleanup thread can properly remove them.
-   *
+   * <p>
    * Java does not provide a standard library api for setting the gid bit because the gid bit is
    * system dependent, so the only way to set this bit is to start a new process and run the shell
    * command "chmod g+s " + execution directory name.
-   *
+   * <p>
    * Note that this should work on most Linux distributions and MacOS, but will not work on
    * Windows.
    */
@@ -612,7 +612,9 @@ public class FlowRunnerManager implements EventListener,
    * delete execution dir pertaining to the given execution id
    */
   private void deleteExecutionDir(final int executionId) {
+    LOGGER.info("Deleting execution directory for " + executionId);
     synchronized (this.executionDirDeletionSync) {
+      LOGGER.info("Starting execution directory deletion for " + executionId);
       final Path flowExecutionDir = Paths.get(this.executionDirectory.toPath().toString(),
           String.valueOf(executionId));
       try {
@@ -625,10 +627,20 @@ public class FlowRunnerManager implements EventListener,
 
   @Override
   public void handleEvent(final Event event) {
-    if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
-      final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-      final ExecutableFlow flow = flowRunner.getExecutableFlow();
+    //TODO: Revert this logging code. It is temporary to debug executions directory related issue.
+    // Adding extra logging for debuggability of execution directory cleanup call
+    final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+    final ExecutableFlow flow = flowRunner.getExecutableFlow();
 
+    if (event.getType() != null && flow != null) {
+      LOGGER.info(
+          "Handling event for Flow execution " + flow.getExecutionId() + " and the event type is "
+              + event.getType());
+    } else {
+      LOGGER.info("Invalid event type or flow.");
+    }
+
+    if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
       if (event.getType() == EventType.FLOW_FINISHED) {
         this.recentlyFinishedFlows.put(flow.getExecutionId(), flow);
 
@@ -1087,7 +1099,8 @@ public class FlowRunnerManager implements EventListener,
   private class PollingCriteria {
 
     private final Props azkabanProps;
-    private final SystemMemoryInfo memInfo = ServiceProvider.SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
+    private final SystemMemoryInfo memInfo = ServiceProvider.SERVICE_PROVIDER
+        .getInstance(SystemMemoryInfo.class);
     private final OsCpuUtil cpuUtil = ServiceProvider.SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
 
     private boolean areFlowThreadsAvailable;

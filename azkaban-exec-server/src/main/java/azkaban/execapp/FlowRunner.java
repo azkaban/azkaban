@@ -284,6 +284,8 @@ public class FlowRunner extends EventHandler implements Runnable {
       } finally {
         this.fireEventListeners(
             Event.create(this, EventType.FLOW_FINISHED, new EventData(this.flow)));
+        this.logger
+            .info("Created " + EventType.FLOW_FINISHED + " event for " + flow.getExecutionId());
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
@@ -903,7 +905,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     prepareJobProperties(node);
 
     node.setStatus(Status.QUEUED);
-    
+
     String jobId = node.getId();
     String jobType = node.getInputProps().getString("type");
     Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
