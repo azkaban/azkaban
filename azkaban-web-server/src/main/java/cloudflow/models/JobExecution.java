@@ -9,7 +9,7 @@ public class JobExecution {
     private Long startTime;
     private Long endTime;
     private Status status;
-    private List<JobExecutionAttempt> attempts;
+    private List<NodeExecutionAttempt> attempts;
 
 
     public String getExecutionId() {
@@ -44,11 +44,11 @@ public class JobExecution {
         this.status = status;
     }
 
-    public List<JobExecutionAttempt> getAttempts() {
+    public List<NodeExecutionAttempt> getAttempts() {
         return attempts;
     }
 
-    public void setAttempts(List<JobExecutionAttempt> attempts) {
+    public void setAttempts(List<NodeExecutionAttempt> attempts) {
         this.attempts = attempts;
     }
 }

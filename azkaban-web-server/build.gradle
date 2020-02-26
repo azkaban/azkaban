@@ -58,6 +58,7 @@ dependencies {
 
     compile deps.restliServer
     compile deps.velocityTools
+    compile deps.findbugs
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile deps.collections

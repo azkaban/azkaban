@@ -125,7 +125,8 @@ ext.deps = [
     jacksonDatabind      : 'com.fasterxml.jackson.core:jackson-databind:2.7.4',
     jasypt               : 'org.jasypt:jasypt:1.9.2',
     jacksonCore          : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
-    jsonassert           : 'org.skyscreamer:jsonassert:1.5.0']
+    jsonassert           : 'org.skyscreamer:jsonassert:1.5.0',
+    findbugs             : 'com.google.code.findbugs:jsr305:2.0.3']
 
 subprojects {
   apply plugin: 'java'

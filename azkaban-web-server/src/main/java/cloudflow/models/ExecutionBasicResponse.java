@@ -7,17 +7,16 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 
 
 public class ExecutionBasicResponse {
-  private String executionId;
-  private String submitUser;
-  private long submitTime;
-  private String concurrentOption;
-  private FailureAction failureAction;
-  private boolean notifyOnFirstFailure;
-  private boolean notifyFailureOnExecutionComplete;
-
-  private String experimentId;
-  private String description;
-  private String previousFlowExecutionId;
+  private final String executionId;
+  private final String submitUser;
+  private final long submitTime;
+  private final String concurrentOption;
+  private final FailureAction failureAction;
+  private final boolean notifyOnFirstFailure;
+  private final boolean notifyFailureOnExecutionComplete;
+  private final String experimentId;
+  private final String description;
+  private final String previousFlowExecutionId;
 
   public ExecutionBasicResponse(ExecutableFlow executableFlow) {
     requireNonNull(executableFlow, "executable flow is null");
@@ -55,8 +54,8 @@ public class ExecutionBasicResponse {
     return concurrentOption;
   }
 
-  public FailureAction getFailureAction() {
-    return failureAction;
+  public String getFailureAction() {
+    return failureAction.getName();
   }
 
   public boolean isNotifyOnFirstFailure() {

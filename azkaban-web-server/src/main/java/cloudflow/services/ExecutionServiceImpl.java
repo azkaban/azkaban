@@ -1,5 +1,6 @@
 package cloudflow.services;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -28,9 +29,7 @@ import cloudflow.models.ExecutionNodeResponse.ExecutionNodeResponseBuilder;
 import cloudflow.models.ExecutionNodeResponse.ExecutionNodeType;
 import cloudflow.models.ExecutionNodeResponse.FlowBasicResponse;
 import cloudflow.models.JobExecution;
-import cloudflow.models.JobExecutionAttempt;
-import cloudflow.servlets.Constants;
-import java.util.Arrays;
+import cloudflow.models.NodeExecutionAttempt;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,12 +37,8 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.lang.String.*;
-import static java.util.Objects.*;
 
 
 public class ExecutionServiceImpl implements ExecutionService {
@@ -131,8 +126,6 @@ public class ExecutionServiceImpl implements ExecutionService {
     return new FlowBasicResponse("defaultId", flow.getId(), Integer.toString(flow.getVersion()));
   }
 
-  //todo(sshardool): this should have a check for run-away recursion on malformed input
-  //todo(sshardool): in addition add a user-settable parameter for recursion depth
   private Optional<ExecutionNodeResponse> nodeResponseFromExecutionNode(
       ExecutableNode executableNode,
       int currentDepth, int truncateAfterDepth) {
@@ -145,14 +138,30 @@ public class ExecutionServiceImpl implements ExecutionService {
       throw new CloudFlowValidationException(
           "Embedded flows are not supported beyond a depth of " + currentDepth);
     }
-    ExecutionNodeResponseBuilder nodeBuilder = ExecutionNodeResponseBuilder.newBuilder();
-    nodeBuilder = nodeBuilder.withNodeId(executableNode.getId())
-        .withStartTime(executableNode.getStartTime())
-        .withEndTime(executableNode.getEndTime())
+
+    List<NodeExecutionAttempt> executionAttempts =
+        requireNonNull(getNodeExecutionAttempts(executableNode));
+    checkState(!executionAttempts.isEmpty(), "execution attempt list was empty");
+
+    // Attempt List is assumed to be sorted by execution attempt number.
+    // The user visible attempt information is slightly different from how it's captured in
+    // ExecutableNode.
+    // Start time for this node will be the start time of the first attempt and end time will
+    // be for the last attempt in the list (same as the current executable node)
+    long nodeStartTime = executionAttempts.get(0).getStartTime();
+    long nodeEndTime = executionAttempts.get(executionAttempts.size() - 1).getEndTime();
+    checkState(executableNode.getEndTime() == nodeEndTime,
+        "attempt list end time was different from current node");
+
+    ExecutionNodeResponseBuilder nodeBuilder = ExecutionNodeResponseBuilder.newBuilder()
+        .withNodeId(executableNode.getId())
+        .withStartTime(nodeStartTime)
+        .withEndTime(nodeEndTime)
         .withStatus(executableNode.getStatus().toString())
         .withUpdateTime(executableNode.getUpdateTime())
         .withCondition(executableNode.getCondition())
-        .withNestedId(executableNode.getNestedId());
+        .withNestedId(executableNode.getNestedId())
+        .withExecutionAttempt(executionAttempts);
 
     if (executableNode.getInNodes() != null) {
       nodeBuilder = nodeBuilder.withInputNodeIds(new ArrayList<>(executableNode.getInNodes()));
@@ -189,13 +198,12 @@ public class ExecutionServiceImpl implements ExecutionService {
     requireNonNull(executionIdString, "execution id is null");
     int executionId;
     String errorMessage;
-    // todo(sshardool): see if we should throw a more specific exception and handle it appropriately in the Servlet.
     try {
       executionId = Integer.parseInt(executionIdString);
     } catch (NumberFormatException nfe) {
       errorMessage = "Execution Id must be an integer";
       logger.error(errorMessage, nfe);
-      throw new CloudFlowException(errorMessage, nfe);
+      throw new CloudFlowValidationException(errorMessage, nfe);
     }
 
     ExecutableFlow executableFlow;
@@ -281,10 +289,10 @@ public class ExecutionServiceImpl implements ExecutionService {
     logger.info("Found job with path {} in execution {}.", jobPath, execId);
 
     JobExecution jobExecution = new JobExecution();
-    List<JobExecutionAttempt> attempts = getJobExecutionAttempts(node);
+    List<NodeExecutionAttempt> attempts = getNodeExecutionAttempts(node);
     jobExecution.setAttempts(attempts);
 
-    Optional<JobExecutionAttempt> firstAttempt = attempts.stream().filter(a -> a.getId().equals(0))
+    Optional<NodeExecutionAttempt> firstAttempt = attempts.stream().filter(a -> a.getId() == 0)
         .findFirst();
     Long firstStartTime =
         firstAttempt.isPresent() ? firstAttempt.get().getStartTime() : node.getStartTime();
@@ -299,19 +307,19 @@ public class ExecutionServiceImpl implements ExecutionService {
     return jobExecution;
   }
 
-  private List<JobExecutionAttempt> getJobExecutionAttempts(ExecutableNode jobNode) {
-    List<JobExecutionAttempt> attempts = new ArrayList<>();
-    for (Object o : jobNode.getAttemptObjects()) {
+  private List<NodeExecutionAttempt> getNodeExecutionAttempts(ExecutableNode executableNode) {
+    List<NodeExecutionAttempt> attempts = new ArrayList<>();
+    for (Object o : executableNode.getAttemptObjects()) {
       Map<String, Object> attempt = (Map<String, Object>) o;
-      Integer id = (Integer) attempt.get(ExecutionAttempt.ATTEMPT_PARAM);
-      Long startTime = (Long) attempt.get(ExecutionAttempt.STARTTIME_PARAM);
-      Long endTime = (Long) attempt.get(ExecutionAttempt.ENDTIME_PARAM);
+      int id = (Integer) attempt.get(ExecutionAttempt.ATTEMPT_PARAM);
+      long startTime = (Long) attempt.get(ExecutionAttempt.STARTTIME_PARAM);
+      long endTime = (Long) attempt.get(ExecutionAttempt.ENDTIME_PARAM);
       Status status = Status.valueOf((String) attempt.get(ExecutionAttempt.STATUS_PARAM));
-      attempts.add(new JobExecutionAttempt(id, startTime, endTime, status));
+      attempts.add(new NodeExecutionAttempt(id, startTime, endTime, status));
     }
 
-    JobExecutionAttempt lastAttempt = new JobExecutionAttempt(attempts.size(),
-        jobNode.getStartTime(), jobNode.getEndTime(), jobNode.getStatus());
+    NodeExecutionAttempt lastAttempt = new NodeExecutionAttempt(attempts.size(),
+        executableNode.getStartTime(), executableNode.getEndTime(), executableNode.getStatus());
     attempts.add(lastAttempt);
     return attempts;
   }
@@ -335,7 +343,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         throw new CloudFlowValidationException(e.getMessage());
       } else {
         final String errorMessage = format("Failed to create execution of flow with id %s "
-            + "and version %s.", executionParameters.getFlowId(),
+                + "and version %s.", executionParameters.getFlowId(),
             executionParameters.getFlowVersion());
         logger.error(errorMessage, e);
         throw new CloudFlowException(errorMessage);
@@ -354,7 +362,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
 
     // TODO ypadron: validate existence of flow version
-    if(executionParameters.getFlowVersion() <= 0) {
+    if (executionParameters.getFlowVersion() <= 0) {
       throw new CloudFlowValidationException("Flow version must be a positive number.");
     }
     executableFlow.setFlowVersion(executionParameters.getFlowVersion());
@@ -374,7 +382,8 @@ public class ExecutionServiceImpl implements ExecutionService {
         executionParameters.getFailureAction().toString()));
 
     executionOptions.setNotifyOnFirstFailure(executionParameters.isNotifyOnFirstFailure());
-    executionOptions.setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
+    executionOptions
+        .setNotifyOnLastFailure(executionParameters.isNotifyFailureOnExecutionComplete());
 
     executionOptions.setConcurrentOption(executionParameters.getConcurrentOption().getName());
     setRuntimeProperties(executionParameters, executionOptions);
@@ -389,17 +398,18 @@ public class ExecutionServiceImpl implements ExecutionService {
       return;
     }
     // supporting only flow level properties overwrite for the POC
-    if(executionParameters.getProperties().size() > 1 ||
+    if (executionParameters.getProperties().size() > 1 ||
         !executionParameters.getProperties().containsKey(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD)) {
       logger.error("Attempt to overwrite properties of nodes other than the root flow detected: "
           + executionParameters.getProperties());
-      throw new CloudFlowNotImplementedException("Overwriting properties of jobs or nested flows is not "
-          + "yet supported.");
+      throw new CloudFlowNotImplementedException(
+          "Overwriting properties of jobs or nested flows is not "
+              + "yet supported.");
     }
 
     Map<String, Object> runtimeProps = executionParameters.getProperties()
         .get(RUNTIME_PROPERTIES_ROOT_FLOW_KEYWORD);
-    if(runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
+    if (runtimeProps.containsKey(CommonJobProperties.FAILURE_EMAILS)) {
       Object propValue = runtimeProps.get(CommonJobProperties.FAILURE_EMAILS);
       List<String> emails = getNotificationEmails(propValue);
       executionOptions.setFailureEmails(emails);
@@ -407,7 +417,7 @@ public class ExecutionServiceImpl implements ExecutionService {
       runtimeProps.remove(CommonJobProperties.FAILURE_EMAILS);
     }
 
-    if(runtimeProps.containsKey(CommonJobProperties.SUCCESS_EMAILS)) {
+    if (runtimeProps.containsKey(CommonJobProperties.SUCCESS_EMAILS)) {
       Object propValue = runtimeProps.get(CommonJobProperties.SUCCESS_EMAILS);
       List<String> emails = getNotificationEmails(propValue);
       executionOptions.setSuccessEmails(emails);
@@ -415,7 +425,7 @@ public class ExecutionServiceImpl implements ExecutionService {
       runtimeProps.remove(CommonJobProperties.SUCCESS_EMAILS);
     }
 
-    Map<String,String> azRuntimeProps = runtimeProps.entrySet().stream()
+    Map<String, String> azRuntimeProps = runtimeProps.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
     executionOptions.addAllFlowParameters(azRuntimeProps);
   }
@@ -427,7 +437,7 @@ public class ExecutionServiceImpl implements ExecutionService {
       throw new CloudFlowValidationException(errorMessage);
     } else {
       boolean invalid =
-          ((List<Object>) propertyValue).stream().anyMatch( e -> !(e instanceof String));
+          ((List<Object>) propertyValue).stream().anyMatch(e -> !(e instanceof String));
       if (invalid) {
         logger.error(errorMessage);
         throw new CloudFlowValidationException(errorMessage);

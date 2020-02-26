@@ -1,13 +1,13 @@
 package cloudflow.models;
 
 import azkaban.executor.ExecutableFlow;
-import com.sun.istack.internal.NotNull;
+import javax.annotation.Nonnull;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class ExecutionDetailedResponse extends ExecutionBasicResponse {
 
   @JsonProperty("rootFlow")
-  @NotNull
+  @Nonnull
   private final ExecutionNodeResponse rootExecutableNode;
 
   public ExecutionDetailedResponse(ExecutableFlow executableFlow,

@@ -75,6 +75,10 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
     } catch (CloudFlowNotFoundException e) {
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
       return;
+    } catch (CloudFlowException e) {
+      sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+          DEFAULT_500_ERROR_MESSAGE);
+      return;
     }
     sendResponse(resp, HttpServletResponse.SC_OK, executionResponse);
   }
