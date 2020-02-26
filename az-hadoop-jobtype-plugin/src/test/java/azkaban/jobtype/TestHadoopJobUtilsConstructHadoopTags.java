@@ -74,13 +74,13 @@ public class TestHadoopJobUtilsConstructHadoopTags {
     String[] tags = new String[] { tag0 };
     String[] actualTags = HadoopJobUtils.constructHadoopTags(props, tags).split(",");
     assertThat(actualTags[0]).isEqualTo("tag0:val0");
-    assertThat(actualTags[1].length() <= HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH);
+    assertThat(actualTags[1].length()).isLessThanOrEqualTo(HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH);
     String prefix = "workflowid:project-name$";
     StringBuffer expectedTagBuffer = new StringBuffer();
     expectedTagBuffer.append(prefix);
     for (int i = prefix.length(); i < HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH; i++) {
       expectedTagBuffer.append("f");
     }
-    assertThat(actualTags[1].equals(expectedTagBuffer));
+    assertThat(actualTags[1]).isEqualTo(expectedTagBuffer);
   }
 }
