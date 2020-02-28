@@ -163,6 +163,10 @@ public class FlowTriggerScheduler {
               flowId, flowTrigger, submitUser, quartzTriggers.isEmpty() ? null
               : quartzTriggers.get(0), isPaused, flow.isLocked());
         } catch (final Exception ex) {
+          if (QuartzScheduler.isSerializationBug(ex) && this.scheduler.enableSerializationHack()) {
+            logger.info("Enable serialization hack");
+            return getScheduledFlowTriggerJobs();
+          }
           logger.error("Unable to get flow trigger by job key {}", jobKey, ex);
           scheduledFlowTrigger = null;
         }
@@ -201,7 +205,7 @@ public class FlowTriggerScheduler {
   }
 
   private String generateGroupName(final int projectId, final String flowId) {
-    return String.valueOf(projectId) + "." + flowId;
+    return projectId + "." + flowId;
   }
 
   public void start() throws SchedulerException {
@@ -269,6 +273,8 @@ public class FlowTriggerScheduler {
       return this.submitUser;
     }
 
-    public boolean isLocked() { return this.isLocked; }
+    public boolean isLocked() {
+      return this.isLocked;
+    }
   }
 }
