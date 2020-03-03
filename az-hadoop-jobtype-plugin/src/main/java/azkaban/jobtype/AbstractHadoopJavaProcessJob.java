@@ -20,6 +20,7 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -63,9 +64,21 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
         CommonJobProperties.FLOW_ID,
         CommonJobProperties.PROJECT_NAME
     };
+    Props jobProps = getJobProps();
+    String tagList = HadoopJobUtils.constructHadoopTags(jobProps, tagKeys);
+    if (jobProps.containsKey(CommonJobProperties.PROJECT_NAME)
+        && jobProps.containsKey(CommonJobProperties.FLOW_ID)) {
+      String workflowTag = "workflowid:"
+          + jobProps.get(CommonJobProperties.PROJECT_NAME)
+          + HadoopConfigurationInjector.WORKFLOW_ID_SEPERATOR
+          + jobProps.get(CommonJobProperties.FLOW_ID);
+      workflowTag = workflowTag.substring(0,
+          Math.min(workflowTag.length(), HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH));
+      tagList = Joiner.on(',').skipNulls().join(tagList, workflowTag);
+    }
     getJobProps().put(
         HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS,
-        HadoopJobUtils.constructHadoopTags(getJobProps(), tagKeys)
+        tagList
     );
   }
 
