@@ -4,7 +4,7 @@ CREATE TABLE project_flows (
   flow_id       VARCHAR(128),
   modified_time BIGINT NOT NULL,
   encoding_type TINYINT,
-  json          BLOB,
+  json          MEDIUMBLOB,
   PRIMARY KEY (project_id, version, flow_id)
 );
 
