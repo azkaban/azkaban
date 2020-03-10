@@ -95,11 +95,14 @@ public class BasicTimeCheckerTest {
   }
 
   /**
-   * Test when PST-->PDT happens in 2020. -8:00 -> -7:00 See details why confusion happens during
+   * Test when PST-->PDT happens in 2021. -8:00 -> -7:00 See details why confusion happens during
    * this change: https://en.wikipedia.org/wiki/Pacific_Time_Zone
    *
    * This test demonstrates that if the cron is under UTC settings, When daylight saving change
    * occurs, 2:30 will be changed to 3:30 at that day.
+   *
+   * NOTE: This test will break after March 14th 2021 daylight saving change and will have to
+   *  changed to use daylight saving date from March 2022.
    */
   @Test
   public void testPSTtoPDTunderUTC() {
@@ -107,7 +110,7 @@ public class BasicTimeCheckerTest {
     final DateTime now = DateTime.now();
 
     // 10:30 UTC == 2:30 PST
-    final String cronExpression = "0 30 10 8 3 ? 2020";
+    final String cronExpression = "0 30 10 14 3 ? 2021";
 
     final BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
@@ -116,27 +119,30 @@ public class BasicTimeCheckerTest {
 
     final Condition cond = getCondition(timeChecker);
 
-    final DateTime spring2020UTC = new DateTime(2020, 3, 8, 10, 30, 0, DateTimeZone.UTC);
-    final DateTime spring2020PDT = new DateTime(2020, 3, 8, 3, 30, 0,
+    final DateTime spring2020UTC = new DateTime(2021, 3, 14, 10, 30, 0, DateTimeZone.UTC);
+    final DateTime spring2020PDT = new DateTime(2021, 3, 14, 3, 30, 0,
         DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == spring2020UTC.getMillis());
     assertTrue(cond.getNextCheckTime() == spring2020PDT.getMillis());
   }
 
   /**
-   * Test when PST-->PDT happens in 2020. -8:00 -> -7:00 See details why confusion happens during
+   * Test when PST-->PDT happens in 2021. -8:00 -> -7:00 See details why confusion happens during
    * this change: https://en.wikipedia.org/wiki/Pacific_Time_Zone
    *
    * This test demonstrates that 2:30 AM will not happen during the daylight saving day on Cron
-   * settings under PDT/PST. Since we let the cron triggered both at March 8th, and 9th, it will
-   * execute at March 9th.
+   * settings under PDT/PST. Since we let the cron triggered both at March 14th, and 15th, it will
+   * execute at March 15th.
+   *
+   * NOTE: This test will break after March 14th 2021 daylight saving change and will have to
+   * changed to use daylight saving dates from March 2022.
    */
   @Test
   public void testPSTtoPDTdst2() {
 
     final DateTime now = DateTime.now();
 
-    final String cronExpression = "0 30 2 8,9 3 ? 2020";
+    final String cronExpression = "0 30 2 14,15 3 ? 2021";
 
     final BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
@@ -145,7 +151,7 @@ public class BasicTimeCheckerTest {
 
     final Condition cond = getCondition(timeChecker);
 
-    final DateTime aTime = new DateTime(2020, 3, 9, 2, 30, 0,
+    final DateTime aTime = new DateTime(2021, 3, 15, 2, 30, 0,
         DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == aTime.getMillis());
   }
