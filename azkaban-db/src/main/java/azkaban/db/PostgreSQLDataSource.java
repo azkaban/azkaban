@@ -27,6 +27,8 @@ import org.apache.log4j.Logger;
 public class PostgreSQLDataSource extends AzkabanDataSource {
 
   private static final Logger logger = Logger.getLogger(PostgreSQLDataSource.class);
+  public static final String POSTGRES_ER_LOCK_DEADLOCK = "40P01";
+
   private final DBMetrics dbMetrics;
 
   @Inject
