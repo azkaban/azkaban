@@ -56,7 +56,7 @@ public class BasicTimeCheckerTest {
 
     DateTimeUtils.setCurrentMillisFixed(baseTimeInMilliSeconds);
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", baseTimeInMilliSeconds,
+        new BasicTimeChecker("BasicTimeChecker_1", baseTimeInMilliSeconds,
             DateTimeZone.UTC, true, true, period, null);
     final Condition cond = getCondition(timeChecker);
     assertFalse(cond.isMet());
@@ -78,12 +78,15 @@ public class BasicTimeCheckerTest {
    */
   @Test
   public void testQuartzCurrentZone() {
-
+    /* Get a date from past once current date > Dec 31 2050, else this test will fail */
     final DateTime now = DateTime.now();
+    if (now.getYear() > 2050) {
+      System.out.println("Set the date before cron expression date, else the test will fail");
+    }
     final String cronExpression = "0 0 0 31 12 ? 2050";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+        new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
             now.getZone(), true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
@@ -104,13 +107,14 @@ public class BasicTimeCheckerTest {
   @Test
   public void testPSTtoPDTunderUTC() {
 
-    final DateTime now = DateTime.now();
+    // Use a Date that is before the date in cron expression (i.e. Before March 8 2020)
+    final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
-    // 10:30 UTC == 2:30 PST
+    // Cron expression for 10:30 am UTC on March 8 2020
     final String cronExpression = "0 30 10 8 3 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
             DateTimeZone.UTC, true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
@@ -134,12 +138,13 @@ public class BasicTimeCheckerTest {
   @Test
   public void testPSTtoPDTdst2() {
 
-    final DateTime now = DateTime.now();
+    // Use a Date that is before the date in cron expression (i.e. Before March 8 2020)
+    final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     final String cronExpression = "0 30 2 8,9 3 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
             DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
@@ -164,13 +169,14 @@ public class BasicTimeCheckerTest {
   @Test
   public void testPDTtoPSTdst1() {
 
-    final DateTime now = DateTime.now();
+    // Use a Date that is before the date in cron expression (i.e. Before Nov 1 2020)
+    final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     // 9:00 UTC == 1:00 PST (difference is 8 hours)
     final String cronExpression = "0 0 1 1,2 11 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
             DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
@@ -206,13 +212,14 @@ public class BasicTimeCheckerTest {
   @Test
   public void testPDTtoPSTdst2() {
 
-    final DateTime now = DateTime.now();
+    // Use a Date that is before the date in cron expression (i.e. Before Nov 1 2020)
+    final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     // 7:59 UTC == 0:59 PDT (difference is 7 hours)
     final String cronExpression = "0 59 0 1,2 11 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
             DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
@@ -242,13 +249,14 @@ public class BasicTimeCheckerTest {
   @Test
   public void testPDTtoPSTdst3() {
 
-    final DateTime now = DateTime.now();
+    // Use a Date that is before the date in cron expression (i.e. Before Nov 1 2020)
+    final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     // 9:30 UTC == 1:30 PST (difference is 8 hours)
     final String cronExpression = "0 30 1 1,2 11 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
             DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
