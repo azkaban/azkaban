@@ -16,13 +16,16 @@
 
 package azkaban.security;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_LOCATION;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowProperties;
 import azkaban.Constants.JobProperties;
+import azkaban.ServiceProvider;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
@@ -462,15 +465,28 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     doPrefetch(tokenFile, props, logger, userToProxy);
   }
 
+  /*
+   * Create a suffix for Kerberos principal, the format is,
+   * az_<host name>_<execution id><DOMAIN_NAME>
+   */
+  private String kerberosSuffix(final Props props) {
+    // AZKABAN_SERVER_HOST_NAME is not set in Props here, get it from another instance of Props.
+    final String host = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class)
+        .getString(AZKABAN_SERVER_HOST_NAME, "unknown");
+    final StringBuilder builder = new StringBuilder("az_");
+    builder.append(host);
+    builder.append("_");
+    builder.append(props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
+    builder.append(props.getString(HadoopSecurityManager.DOMAIN_NAME));
+    return builder.toString();
+  }
   private void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
-    // Create suffix to be added to headless user, the suffix is a valid email ID which conforms
-    // to Kubernetes.
+    // Create suffix to be added to kerberos principal
     final String suffix =
-        props.getBoolean(HadoopSecurityManager.APPEND_SUBMIT_USER, false) &&
-            props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) != null ?
-            "/" + props.getString(Constants.FlowProperties.AZKABAN_FLOW_SUBMIT_USER) +
-                props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) : "";
+        (null != props.getString(HadoopSecurityManager.DOMAIN_NAME, null)) ?
+            "/" + kerberosSuffix(props): "";
+
 
     final String userToProxyFQN = userToProxy + suffix;
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
