@@ -107,7 +107,7 @@ public class ExecutionFlowDao {
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchExecutableFlows.FETCH_ALL_EXECUTABLE_FLOW_HISTORY,
-          new FetchExecutableFlows(), skip, num);
+          new FetchExecutableFlows(), num, skip);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching flow History", e);
     }
@@ -118,7 +118,7 @@ public class ExecutionFlowDao {
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_HISTORY,
-          new FetchExecutableFlows(), projectId, flowId, skip, num);
+          new FetchExecutableFlows(), projectId, flowId, num, skip);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching flow history", e);
     }
@@ -193,7 +193,7 @@ public class ExecutionFlowDao {
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_STATUS,
-          new FetchExecutableFlows(), projectId, flowId, status.getNumVal(), skip, num);
+          new FetchExecutableFlows(), projectId, flowId, status.getNumVal(), num, skip);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
     }
@@ -603,15 +603,15 @@ public class ExecutionFlowDao {
             + "WHERE exec_id=?";
     static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
+            + "ORDER BY exec_id DESC LIMIT ? OFFSET ?";
     static String FETCH_EXECUTABLE_FLOW_HISTORY =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
+            + "ORDER BY exec_id DESC LIMIT ? OFFSET ?";
     static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? AND status=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
+            + "ORDER BY exec_id DESC LIMIT ? OFFSET ?";
     // Fetch flows that are in preparing state for more than a certain duration.
     private static final String FETCH_FLOWS_QUEUED_FOR_LONG_TIME =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
