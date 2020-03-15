@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.db.AzkabanDataSource;
 import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
@@ -174,6 +175,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
+  private final AzkabanDataSource azkabanDataSource;
   private final ObjectMapper objectMapper;
   private final ContainerizationMetrics containerizationMetrics;
   private final Optional<ContainerCleanupManager> containerCleanupManager;
@@ -193,6 +195,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
+      final AzkabanDataSource azkabanDataSource,
       final ObjectMapper objectMapper,
       final ContainerizationMetrics containerizationMetrics,
       @Nullable final ContainerCleanupManager containerCleanupManager,
@@ -211,6 +214,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.statusService = statusService;
     this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
+    this.azkabanDataSource = requireNonNull(azkabanDataSource,"azkaban data source is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     this.objectMapper = objectMapper;
     this.containerizationMetrics = containerizationMetrics;
@@ -778,6 +782,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.executorManagerAdapter.shutdown();
     this.containerCleanupManager.ifPresent(ContainerCleanupManager::shutdown);
     try {
+      this.azkabanDataSource.close();
       this.server.stop();
     } catch (final Exception e) {
       // Catch all while closing server
