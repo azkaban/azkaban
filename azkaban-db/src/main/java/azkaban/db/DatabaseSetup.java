@@ -88,15 +88,12 @@ public class DatabaseSetup {
     }
   }
 
-  private void runTableScripts(final Connection conn, final String table)
+  public static void runTableScript(final Connection conn, final File file)
       throws IOException, SQLException {
-    logger.info("Creating new table " + table);
 
-    final String dbSpecificScript = "create." + table + ".sql";
-    final File script = new File(this.scriptPath, dbSpecificScript);
     BufferedInputStream buff = null;
     try {
-      buff = new BufferedInputStream(new FileInputStream(script));
+      buff = new BufferedInputStream(new FileInputStream(file));
       final String queryStr = IOUtils.toString(buff);
       final String[] splitQuery = queryStr.split(";\\s*\n");
       final QueryRunner runner = new QueryRunner();
@@ -107,6 +104,16 @@ public class DatabaseSetup {
     } finally {
       IOUtils.closeQuietly(buff);
     }
+  }
+
+  private void runTableScripts(final Connection conn, final String table)
+      throws IOException, SQLException {
+    logger.info("Creating new table " + table);
+
+    final String dbSpecificScript = "create." + table + ".sql";
+    final File script = new File(this.scriptPath, dbSpecificScript);
+
+    runTableScript(conn, script);
   }
 
 
