@@ -67,6 +67,7 @@ public class XmlUserManager implements UserManager {
   private HashMap<String, Role> roles;
   private HashMap<String, Set<String>> groupRoles;
   private HashMap<String, Set<String>> proxyUserMap;
+  private FileWatcher fileWatcher;
 
   /**
    * The mandatory UserManager(Props) constructor, which is called via reflection.
@@ -85,10 +86,15 @@ public class XmlUserManager implements UserManager {
     final Map<String, ParseConfigFile> parseConfigFileMap = new HashMap<>();
     parseConfigFileMap.put(this.xmlPath, this::parseXMLFile);
     try {
-      UserUtils.setupWatch(parseConfigFileMap, fileWatcherFactory.get());
+      fileWatcher = fileWatcherFactory.get();
+      UserUtils.setupWatch(parseConfigFileMap, fileWatcher);
     } catch (final IOException e) {
       logger.warn("Failed to create WatchService", e);
     }
+  }
+
+  public void close() throws IOException {
+    fileWatcher.close();
   }
 
   private void parseXMLFile() {
