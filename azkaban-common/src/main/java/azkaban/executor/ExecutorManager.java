@@ -660,6 +660,9 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     if (null != this.updaterThread) {
       this.updaterThread.shutdown();
     }
+    if(null != this.cleanerThread){
+      this.cleanerThread.shutdown();
+    }
   }
 
   /**
