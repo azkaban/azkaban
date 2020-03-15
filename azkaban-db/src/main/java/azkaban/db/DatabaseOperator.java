@@ -137,7 +137,11 @@ public class DatabaseOperator {
         return this.queryRunner.update(updateClause, params);
       } catch (final SQLException ex) {
         exception = ex;
-        DataSource ds = queryRunner.getDataSource();
+        AzkabanDataSource ds = (AzkabanDataSource) queryRunner.getDataSource();
+        if (ds.isClosed()) {
+          errorMsg = "datasource is closed";
+          break;
+        }
         if (isMysqlDeadlock(ds, ex) || isPostgresDeadlock(ds, ex)) {
           retryCount++;
           logger.warn("Deadlock detected when trying to execute: " + updateClause + " with values: "
