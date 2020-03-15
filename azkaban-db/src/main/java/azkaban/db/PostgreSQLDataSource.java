@@ -28,6 +28,7 @@ public class PostgreSQLDataSource extends AzkabanDataSource {
 
   private static final Logger logger = Logger.getLogger(PostgreSQLDataSource.class);
   public static final String POSTGRES_ER_LOCK_DEADLOCK = "40P01";
+  private boolean shutdown;
 
   private final DBMetrics dbMetrics;
 
@@ -55,6 +56,12 @@ public class PostgreSQLDataSource extends AzkabanDataSource {
     setTestOnBorrow(true);
   }
 
+  @Override
+  public synchronized void close() throws SQLException {
+    super.close();
+    this.shutdown = true;
+  }
+
   /**
    * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
    * We don't make the call synchronized in order to guarantee normal cases performance.
@@ -66,7 +73,7 @@ public class PostgreSQLDataSource extends AzkabanDataSource {
     final long startMs = System.currentTimeMillis();
     Connection connection = null;
     int retryAttempt = 1;
-    while (retryAttempt < AzDBUtil.MAX_DB_RETRY_COUNT) {
+    while (!shutdown && retryAttempt < AzDBUtil.MAX_DB_RETRY_COUNT) {
       try {
         /**
          * when DB connection could not be fetched (e.g., network issue), or connection can not be validated,
@@ -117,6 +124,7 @@ public class PostgreSQLDataSource extends AzkabanDataSource {
       Thread.sleep(milliseconds);
     } catch (final InterruptedException e) {
       logger.error("Sleep interrupted", e);
+      Thread.currentThread().interrupt();
     }
   }
 
