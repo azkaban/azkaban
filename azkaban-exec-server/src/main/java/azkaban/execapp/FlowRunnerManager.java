@@ -553,8 +553,14 @@ public class FlowRunnerManager implements EventListener,
     final FlowRunner flowRunner = this.runningFlows.get(execId);
 
     if (flowRunner == null) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is not running.");
+      throw new ExecutorManagerException("Execution " + execId + " is not running.");
+    }
+
+    // account for those unexpected cases where a completed execution remains in the runningFlows
+    //collection due to, for example, the FLOW_FINISHED event not being emitted/handled.
+    if(Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus())) {
+      LOGGER.warn("Found a finished execution in the list of running flows: " + execId);
+      throw new ExecutorManagerException("Execution " + execId + " is already finished.");
     }
 
     flowRunner.kill(user);
