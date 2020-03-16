@@ -78,7 +78,6 @@ public class ExecutorManager extends EventHandler implements
   private final Props azkProps;
   private final CommonMetrics commonMetrics;
   private final ExecutorLoader executorLoader;
-  private final CleanerThread cleanerThread;
   private final RunningExecutionsUpdaterThread updaterThread;
   private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
@@ -117,14 +116,7 @@ public class ExecutorManager extends EventHandler implements
     this.updaterThread = updaterThread;
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
-    this.cleanerThread = createCleanerThread();
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
-  }
-
-  private CleanerThread createCleanerThread() {
-    final long executionLogsRetentionMs = this.azkProps.getLong("execution.logs.retention.ms",
-        DEFAULT_EXECUTION_LOGS_RETENTION_MS);
-    return new CleanerThread(executionLogsRetentionMs);
   }
 
   void initialize() throws ExecutorManagerException {
@@ -148,7 +140,6 @@ public class ExecutorManager extends EventHandler implements
   public void start() throws ExecutorManagerException {
     initialize();
     this.updaterThread.start();
-    this.cleanerThread.start();
     this.queueProcessor.start();
   }
 
@@ -988,19 +979,6 @@ public class ExecutorManager extends EventHandler implements
     return this.executorLoader.doRampActions(rampActions);
   }
 
-  private void cleanOldExecutionLogs(final long millis) {
-    final long beforeDeleteLogsTimestamp = System.currentTimeMillis();
-    try {
-      final int count = this.executorLoader.removeExecutionLogsByTime(millis);
-      logger.info("Cleaned up " + count + " log entries.");
-    } catch (final ExecutorManagerException e) {
-      logger.error("log clean up failed. ", e);
-    }
-    logger.info(
-        "log clean up time: " + (System.currentTimeMillis() - beforeDeleteLogsTimestamp) / 1000
-            + " seconds.");
-  }
-
   /**
    * Manage servlet call for stats servlet in Azkaban execution server {@inheritDoc}
    *
@@ -1113,61 +1091,6 @@ public class ExecutorManager extends EventHandler implements
   @VisibleForTesting
   void setSleepAfterDispatchFailure(final Duration sleepAfterDispatchFailure) {
     this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
-  }
-
-  /*
-   * cleaner thread to clean up execution_logs, etc in DB. Runs every hour.
-   */
-  private class CleanerThread extends Thread {
-    // log file retention is 1 month.
-
-    // check every hour
-    private static final long CLEANER_THREAD_WAIT_INTERVAL_MS = 60 * 60 * 1000;
-
-    private final long executionLogsRetentionMs;
-
-    private boolean shutdown = false;
-    private long lastLogCleanTime = -1;
-
-    public CleanerThread(final long executionLogsRetentionMs) {
-      this.executionLogsRetentionMs = executionLogsRetentionMs;
-      this.setName("AzkabanWebServer-Cleaner-Thread");
-    }
-
-    @SuppressWarnings("unused")
-    public void shutdown() {
-      this.shutdown = true;
-      this.interrupt();
-    }
-
-    @Override
-    public void run() {
-      while (!this.shutdown) {
-        synchronized (this) {
-          try {
-            // Cleanup old stuff.
-            final long currentTime = System.currentTimeMillis();
-            if (currentTime - CLEANER_THREAD_WAIT_INTERVAL_MS > this.lastLogCleanTime) {
-              cleanExecutionLogs();
-              this.lastLogCleanTime = currentTime;
-            }
-
-            wait(CLEANER_THREAD_WAIT_INTERVAL_MS);
-          } catch (final InterruptedException e) {
-            ExecutorManager.logger.info("Interrupted. Probably to shut down.");
-          }
-        }
-      }
-    }
-
-    private void cleanExecutionLogs() {
-      ExecutorManager.logger.info("Cleaning old logs from execution_logs");
-      final long cutoff = System.currentTimeMillis() - this.executionLogsRetentionMs;
-      ExecutorManager.logger.info("Cleaning old log files before "
-          + new DateTime(cutoff).toString());
-      cleanOldExecutionLogs(System.currentTimeMillis()
-          - this.executionLogsRetentionMs);
-    }
   }
 
   /*

@@ -74,6 +74,7 @@ public class Constants {
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
+
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
@@ -325,6 +326,10 @@ public class Constants {
     public static final String AZKABAN_RAMP_STATUS_POLLING_INTERVAL = "azkaban.ramp.status.polling.interval";
     public static final String AZKABAN_RAMP_STATUS_POLLING_CPU_MAX = "azkaban.ramp.status.polling.cpu.max";
     public static final String AZKABAN_RAMP_STATUS_POLLING_MEMORY_MIN = "azkaban.ramp.status.polling.memory.min";
+
+    public static final String EXECUTION_LOGS_RETENTION_MS = "execution.logs.retention.ms";
+    public static final String EXECUTION_LOGS_CLEANUP_INTERVAL_SECONDS =
+        "execution.logs.cleanup.interval.seconds";
   }
 
   public static class FlowProperties {
