@@ -146,6 +146,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerScheduler scheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
+  private final ExecutionLogsCleaner executionLogsCleaner;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -160,7 +161,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final VelocityEngine velocityEngine,
       final FlowTriggerScheduler scheduler,
       final FlowTriggerService flowTriggerService,
-      final StatusService statusService) {
+      final StatusService statusService,
+      final ExecutionLogsCleaner executionLogsCleaner) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -175,7 +177,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.statusService = statusService;
     this.scheduler = requireNonNull(scheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
-
+    this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -230,6 +232,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     app = webServer;
 
     webServer.executorManagerAdapter.start();
+
+    webServer.executionLogsCleaner.start();
 
     // TODO refactor code into ServerProvider
     webServer.prepareAndStartServer();
