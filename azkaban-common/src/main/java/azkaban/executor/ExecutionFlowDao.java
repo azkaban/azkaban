@@ -409,6 +409,9 @@ public class ExecutionFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlowFromObject(
                     GZIPUtils.transformBytesToObject(data, encType));
+
+            // read execution status from the DB column not from the flow data blob to maintain
+            // consistency and have a single source of truth
             Status status = Status.fromInteger(rs.getInt(4));
             exFlow.setStatus(status);
             execFlows.add(exFlow);
@@ -457,6 +460,8 @@ public class ExecutionFlowDao {
                 ExecutableFlow.createExecutableFlowFromObject(
                     GZIPUtils.transformBytesToObject(data, encType));
 
+            // read execution status from the DB column not from the flow data blob to maintain
+            // consistency and have a single source of truth
             Status status = Status.fromInteger(rs.getInt(4));
             exFlow.setStatus(status);
             final ExecutionReference ref = new ExecutionReference(id);
@@ -498,6 +503,9 @@ public class ExecutionFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlowFromObject(
                     GZIPUtils.transformBytesToObject(data, encType));
+
+            // read execution status from the DB column not from the flow data blob to maintain
+            // consistency and have a single source of truth
             Status status = Status.fromInteger(rs.getInt(4));
             exFlow.setStatus(status);
             execFlows.add(exFlow);
