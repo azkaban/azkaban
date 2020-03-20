@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -212,14 +211,14 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFetchEmptyRecentlyFinishedFlows() throws Exception {
-    final ExecutableFlow flow1 = createExecution(System.currentTimeMillis(), Status.SUCCEEDED);
-    flow1.setEndTime(System.currentTimeMillis());
-    this.executionFlowDao.updateExecutableFlow(flow1);
-    //Todo jamiesjc: use java8.java.time api instead of jodatime
-    
-    //Mock flow finished time to be 2 min ago.
-    DateTimeUtils.setCurrentMillisOffset(-FLOW_FINISHED_TIME.toMillis());
-    flow1.setEndTime(DateTimeUtils.currentTimeMillis());
+    final long currentTime = System.currentTimeMillis();
+
+    // approximately 2 minutes ago
+    final long endTime = currentTime - FLOW_FINISHED_TIME.toMillis();
+    final long startTime = currentTime - FLOW_FINISHED_TIME.toMillis() - 10;
+
+    final ExecutableFlow flow1 = createExecution(startTime, Status.SUCCEEDED);
+    flow1.setEndTime(endTime);
     this.executionFlowDao.updateExecutableFlow(flow1);
 
     //Fetch recently finished flows within 1 min. Should be empty.
@@ -735,6 +734,10 @@ public class ExecutionFlowDaoTest {
     assertThat(finishedFlows2.get(0).getStatus()).isEqualTo(Status.FAILED);
   }
 
+  /*
+   * Updates flow execution status in the DB. After this the value of the status column will be
+   * different from the status property in the flow data blob.
+   */
   private void makeFlowStatusInconsistent(int executionId, Status status) {
     final String MODIFY_FLOW_STATUS = "UPDATE execution_flows SET status=? WHERE exec_id=?";
     try {
@@ -776,14 +779,6 @@ public class ExecutionFlowDaoTest {
           .isEqualTo(flow2.getExecutionOptions().getFailureAction());
       assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
     }
-  }
-
-  /**
-   * restores the clock; see {@link #testFetchEmptyRecentlyFinishedFlows()}
-   */
-  @After
-  public void clockReset() {
-    DateTimeUtils.setCurrentMillisOffset(0);
   }
 
 }
