@@ -56,22 +56,21 @@ public class MockExecutorLoader implements ExecutorLoader {
   Map<Integer, ArrayList<ExecutorLogEvent>> executorEvents = new ConcurrentHashMap<>();
 
   @Override
-  public void uploadExecutableFlow(final ExecutableFlow flow)
-      throws ExecutorManagerException {
+  public void uploadExecutableFlow(final ExecutableFlow flow) throws ExecutorManagerException {
     // Clone the flow node to mimick how it would be saved in DB.
     // If we would keep a handle to the original flow node, we would also see any changes made after
     // this method was called. We must only store a snapshot of the current state.
     // Also to avoid modifying statuses of the original job nodes in this.updateExecutableFlow()
-    final ExecutableFlow exFlow = ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
+    final ExecutableFlow exFlow = ExecutableFlow.createExecutableFlow(flow.toObject(),
+        flow.getStatus());
     this.flows.put(flow.getExecutionId(), exFlow);
     this.flowUpdateCount++;
   }
 
   @Override
-  public ExecutableFlow fetchExecutableFlow(final int execId)
-      throws ExecutorManagerException {
+  public ExecutableFlow fetchExecutableFlow(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow = this.flows.get(execId);
-    return ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
+    return ExecutableFlow.createExecutableFlow(flow.toObject(), flow.getStatus());
   }
 
   @Override

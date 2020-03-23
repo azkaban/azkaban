@@ -405,15 +405,11 @@ public class ExecutionFlowDao {
 
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
           try {
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(
-                    GZIPUtils.transformBytesToObject(data, encType));
-
-            // read execution status from the DB column not from the flow data blob to maintain
-            // consistency and have a single source of truth
-            Status status = Status.fromInteger(rs.getInt(4));
-            exFlow.setStatus(status);
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
             execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
@@ -455,15 +451,11 @@ public class ExecutionFlowDao {
           ExecutionFlowDao.logger.error("Found a flow with empty data blob exec_id: " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
           try {
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(
-                    GZIPUtils.transformBytesToObject(data, encType));
-
-            // read execution status from the DB column not from the flow data blob to maintain
-            // consistency and have a single source of truth
-            Status status = Status.fromInteger(rs.getInt(4));
-            exFlow.setStatus(status);
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
             final ExecutionReference ref = new ExecutionReference(id);
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
@@ -499,15 +491,11 @@ public class ExecutionFlowDao {
 
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
           try {
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(
-                    GZIPUtils.transformBytesToObject(data, encType));
-
-            // read execution status from the DB column not from the flow data blob to maintain
-            // consistency and have a single source of truth
-            Status status = Status.fromInteger(rs.getInt(4));
-            exFlow.setStatus(status);
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
             execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);

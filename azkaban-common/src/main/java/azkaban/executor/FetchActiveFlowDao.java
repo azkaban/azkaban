@@ -61,12 +61,8 @@ public class FetchActiveFlowDao {
       final EncodingType encType = EncodingType.fromInteger(encodingType);
       final ExecutableFlow exFlow;
       try {
-        exFlow = ExecutableFlow.createExecutableFlowFromObject(
-            GZIPUtils.transformBytesToObject(data, encType));
-
-        // read execution status from the DB column not from the flow data blob to maintain
-        // consistency and have a single source of truth
-        exFlow.setStatus(Status.fromInteger(status));
+        exFlow = ExecutableFlow.createExecutableFlow(
+            GZIPUtils.transformBytesToObject(data, encType), Status.fromInteger(status));
       } catch (final IOException e) {
         throw new SQLException("Error retrieving flow data " + id, e);
       }
