@@ -84,11 +84,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public ExecutableFlow() {
   }
 
-  public static ExecutableFlow createExecutableFlowFromObject(final Object obj) {
+  public static ExecutableFlow createExecutableFlow(final Object obj, final Status status) {
     final ExecutableFlow exFlow = new ExecutableFlow();
     final HashMap<String, Object> flowObj = (HashMap<String, Object>) obj;
     exFlow.fillExecutableFromMapObject(flowObj);
-
+    // overwrite status from the flow data blob as that one should NOT be used
+    exFlow.setStatus(status);
     return exFlow;
   }
 

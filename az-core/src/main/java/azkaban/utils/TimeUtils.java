@@ -16,7 +16,9 @@
 package azkaban.utils;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import org.joda.time.Days;
@@ -61,6 +63,16 @@ public class TimeUtils {
     final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestampMs),
         ZoneId.systemDefault());
     return formatter.format(zonedDateTime);
+  }
+
+  /**
+   * Takes a date string formatted as "yyyy-MM-dd HH:mm:ss" and converts it into milliseconds
+   * since the Epoch in UTC
+   */
+  public static long convertDateTimeToUTCMillis(final String dateTime) {
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
+    final LocalDateTime parsedDate = LocalDateTime.parse(dateTime, formatter);
+    return parsedDate.atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
   }
 
   /**

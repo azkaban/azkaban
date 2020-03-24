@@ -158,23 +158,22 @@ public class ExecutionFlowDao {
     }
   }
 
-  List<ExecutableFlow> fetchFlowHistory(final String projContain, final String flowContains,
-      final String userNameContains, final int status,
-      final long startTime, final long endTime,
-      final int skip, final int num)
+  List<ExecutableFlow> fetchFlowHistory(final String projectNameContains,
+      final String flowNameContains, final String userNameContains, final int status,
+      final long startTime, final long endTime, final int skip, final int num)
       throws ExecutorManagerException {
     String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
     final List<Object> params = new ArrayList<>();
 
     boolean first = true;
-    if (projContain != null && !projContain.isEmpty()) {
+    if (projectNameContains != null && !projectNameContains.isEmpty()) {
       query += " JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
-      params.add('%' + projContain + '%');
+      params.add('%' + projectNameContains + '%');
       first = false;
     }
 
     // todo kunkun-tang: we don't need the below complicated logics. We should just use a simple way.
-    if (flowContains != null && !flowContains.isEmpty()) {
+    if (flowNameContains != null && !flowNameContains.isEmpty()) {
       if (first) {
         query += " WHERE ";
         first = false;
@@ -183,7 +182,7 @@ public class ExecutionFlowDao {
       }
 
       query += " flow_id LIKE ?";
-      params.add('%' + flowContains + '%');
+      params.add('%' + flowNameContains + '%');
     }
 
     if (userNameContains != null && !userNameContains.isEmpty()) {
@@ -373,22 +372,22 @@ public class ExecutionFlowDao {
       ResultSetHandler<List<ExecutableFlow>> {
 
     static String FETCH_EXECUTABLE_FLOW_BY_START_TIME =
-        "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef WHERE project_id=? "
-            + "AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
+        "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE "
+            + "project_id=? AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
     static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef";
+        "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef";
     static String FETCH_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE exec_id=?";
     static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
     static String FETCH_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
     static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? AND status=? "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
 
@@ -406,10 +405,11 @@ public class ExecutionFlowDao {
 
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
           try {
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(
-                    GZIPUtils.transformBytesToObject(data, encType));
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
             execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
@@ -429,8 +429,8 @@ public class ExecutionFlowDao {
 
     // Select queued unassigned flows
     private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows"
-            + " Where executor_id is NULL AND status = "
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
+            + " WHERE executor_id is NULL AND status = "
             + Status.PREPARING.getNumVal();
 
     @Override
@@ -451,10 +451,11 @@ public class ExecutionFlowDao {
           ExecutionFlowDao.logger.error("Found a flow with empty data blob exec_id: " + id);
         } else {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
           try {
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(
-                    GZIPUtils.transformBytesToObject(data, encType));
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
             final ExecutionReference ref = new ExecutionReference(id);
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
@@ -472,7 +473,7 @@ public class ExecutionFlowDao {
 
     // Execution_flows table is already indexed by end_time
     private static final String FETCH_RECENTLY_FINISHED_FLOW =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE end_time > ? AND status IN (?, ?, ?)";
 
     @Override
@@ -490,10 +491,11 @@ public class ExecutionFlowDao {
 
         if (data != null) {
           final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
           try {
             final ExecutableFlow exFlow =
-                ExecutableFlow.createExecutableFlowFromObject(
-                    GZIPUtils.transformBytesToObject(data, encType));
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
             execFlows.add(exFlow);
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
