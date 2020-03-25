@@ -1002,6 +1002,7 @@ public class FlowRunnerManager implements EventListener,
           } catch (final InterruptedException e) {
             FlowRunnerManager.LOGGER.info("Interrupted. Probably to shut down.");
           } catch (final Throwable t) {
+            t.printStackTrace();
             FlowRunnerManager.LOGGER.warn(
                 "Uncaught throwable, please look into why it is not caught", t);
           }
