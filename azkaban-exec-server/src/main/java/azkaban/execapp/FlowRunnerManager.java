@@ -1000,10 +1000,11 @@ public class FlowRunnerManager implements EventListener,
 
             wait(FlowRunnerManager.RECENTLY_FINISHED_TIME_TO_LIVE);
           } catch (final InterruptedException e) {
-            FlowRunnerManager.LOGGER.info("Interrupted. Probably to shut down.");
+            FlowRunnerManager.LOGGER.info("Interrupted. Probably to shut down.", e.getMessage());
           } catch (final Throwable t) {
+            t.printStackTrace();
             FlowRunnerManager.LOGGER.warn(
-                "Uncaught throwable, please look into why it is not caught", t);
+                "Uncaught throwable, please look into why it is not caught", t.getMessage());
           }
         }
       }
