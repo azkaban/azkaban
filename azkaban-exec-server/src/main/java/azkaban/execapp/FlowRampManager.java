@@ -551,8 +551,9 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
       if (eventType == EventType.FLOW_STARTED) {
         Set<String> activeRamps = flow.getExecutableFlowRampMetadata().getActiveRamps();
-        rampDataModel.beginFlow(flow.getId(), activeRamps);
-        LOGGER.info("Ramp Started: [FlowId = {}, ExecutionId = {}, Ramps = {}]", flow.getId(),
+        rampDataModel.beginFlow(flow.getFlowName(), activeRamps);
+        LOGGER.info("Ramp Started: [FlowName = {}, ExecutionId = {}, Ramps = {}]",
+            flow.getFlowName(),
             flow.getExecutionId(), activeRamps.toString());
         if (isDatabasePullingActionRequired()) {
           LOGGER.info("BEGIN Reload ramp settings from DB ......");
@@ -561,8 +562,9 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
         }
       } else {
         logFlowAction(flowRunner, convertToAction(flow.getStatus()));
-        Set<String> ramps = rampDataModel.endFlow(flow.getId());
-        LOGGER.info("Ramp Finished: [FlowId = {}, ExecutionId = {}, Ramps = {}]", flow.getId(),
+        Set<String> ramps = rampDataModel.endFlow(flow.getFlowName());
+        LOGGER.info("Ramp Finished: [FlowName = {}, ExecutionId = {}, Ramps = {}]",
+            flow.getFlowName(),
             flow.getExecutionId(), ramps.toString());
 
         if (isDatabasePushingActionRequired()) {
@@ -627,7 +629,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
   private static class RampDataModel {
     // Host the current processing ramp flows
-    // Map.Key = FlowId, Map.Value = Set Of Ramps
+    // Map.Key = flowName, Map.Value = Set Of Ramps
     private volatile Map<String, Set<String>> executingFlows = new HashMap<>();
     private Lock lock = new ReentrantLock();
     private volatile int beginFlowCount = 0;
@@ -637,17 +639,17 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     public RampDataModel() {
     }
 
-    public synchronized void beginFlow(final String flowId, Set<String> ramps) {
+    public synchronized void beginFlow(final String flowName, Set<String> ramps) {
       lock.lock();
-      executingFlows.put(flowId, ramps);
+      executingFlows.put(flowName, ramps);
       beginFlowCount++;
       lock.unlock();
     }
 
-    public synchronized Set<String> endFlow(final String flowId) {
-      Set<String> ramps = executingFlows.get(flowId);
+    public synchronized Set<String> endFlow(final String flowName) {
+      Set<String> ramps = executingFlows.get(flowName);
       lock.lock();
-      executingFlows.remove(flowId);
+      executingFlows.remove(flowName);
       endFlowCount++;
       lock.unlock();
       return ramps;
