@@ -633,20 +633,10 @@ public class FlowRunnerManager implements EventListener,
 
   @Override
   public void handleEvent(final Event event) {
-    //TODO: Revert this logging code. It is temporary to debug executions directory related issue.
-    // Adding extra logging for debuggability of execution directory cleanup call
-    final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-    final ExecutableFlow flow = flowRunner.getExecutableFlow();
-
-    if (event.getType() != null && flow != null) {
-      LOGGER.info(
-          "Handling event for Flow execution " + flow.getExecutionId() + " and the event type is "
-              + event.getType());
-    } else {
-      LOGGER.info("Invalid event type or flow.");
-    }
-
     if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
+      final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+      final ExecutableFlow flow = flowRunner.getExecutableFlow();
+
       if (event.getType() == EventType.FLOW_FINISHED) {
         this.recentlyFinishedFlows.put(flow.getExecutionId(), flow);
 
