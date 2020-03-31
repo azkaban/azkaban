@@ -121,7 +121,7 @@ public class AzkabanSingleServer {
       return;
     }
 
-    if (props.getBoolean(Constants.ConfigurationKeys.ENABLE_QUARTZ, true)) {
+    if (props.getBoolean(Constants.ConfigurationKeys.ENABLE_QUARTZ, false)) {
       String dataSource = props.getString("org.quartz.jobStore.dataSource");
       String initScript = props.getString("azkaban.server.schedule.quartz_schema");
       if (dataSource != null) {
