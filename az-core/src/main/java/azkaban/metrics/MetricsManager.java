@@ -60,13 +60,10 @@ public class MetricsManager {
   }
 
   /**
-   * A {@link Meter} measures the rate of events over time (e.g., “requests per second”). Here we
-   * track 1-minute moving averages.
+   * A {@link Meter} measures the rate of events over time (e.g., “requests per second”).
    */
   public Meter addMeter(final String name) {
-    final Meter curr = this.registry.meter(name);
-    this.registry.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
-    return curr;
+    return this.registry.meter(name);
   }
 
   /**

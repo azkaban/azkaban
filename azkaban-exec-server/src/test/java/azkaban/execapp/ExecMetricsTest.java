@@ -55,4 +55,19 @@ public class ExecMetricsTest {
     assertThat(snapshot.getMax()).isGreaterThanOrEqualTo(10);
   }
 
+  @Test
+  public void testQueueWaitMetrics() {
+    final double delta = 0.001;
+
+    this.metrics.addQueueWait(500L);
+    this.metrics.addQueueWait(600L);
+    this.metrics.addQueueWait(1000L);
+    final Snapshot snapshot = this.testUtil
+        .getHistogramSnapshot(ExecMetrics.QUEUE_WAIT_HISTOGRAM_NAME);
+    assertThat(snapshot.getMedian()).isCloseTo(600.0, within(delta));
+    assertThat(snapshot.getMean()).isCloseTo(700.0, within(delta));
+    assertThat(snapshot.getMin()).isEqualTo(500);
+    assertThat( snapshot.getMax()).isEqualTo(1000);
+  }
+
 }

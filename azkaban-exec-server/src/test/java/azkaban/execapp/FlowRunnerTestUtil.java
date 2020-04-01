@@ -255,10 +255,13 @@ public class FlowRunnerTestUtil {
     }
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
     this.executorLoader.uploadExecutableFlow(exFlow);
-    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
+    final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
+    final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics);
+            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics,
+            execMetrics);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }

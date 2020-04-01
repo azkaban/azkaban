@@ -17,10 +17,8 @@
 package azkaban.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Snapshot;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,20 +60,5 @@ public class CommonMetricsTest {
     assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME)).isEqualTo(0);
     this.metrics.markSubmitFlowSuccess();
     assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME)).isEqualTo(1);
-  }
-
-  @Test
-  public void testQueueWaitMetrics() {
-    final double delta = 0.001;
-
-    this.metrics.addQueueWait(500L);
-    this.metrics.addQueueWait(600L);
-    this.metrics.addQueueWait(1000L);
-    final Snapshot snapshot = this.testUtil
-        .getHistogramSnapshot(CommonMetrics.QUEUE_WAIT_HISTOGRAM_NAME);
-    assertThat(snapshot.getMedian()).isCloseTo(600.0, within(delta));
-    assertThat(snapshot.getMean()).isCloseTo(700.0, within(delta));
-    assertThat(snapshot.getMin()).isEqualTo(500);
-    assertThat( snapshot.getMax()).isEqualTo(1000);
   }
 }
