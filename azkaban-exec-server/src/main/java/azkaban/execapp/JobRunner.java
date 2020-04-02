@@ -625,9 +625,15 @@ public class JobRunner extends EventHandler implements Runnable {
       finalizeAttachmentFile();
       writeStatus();
     } finally {
-      // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
-      fireEvent(Event.create(this, EventType.JOB_FINISHED,
-          new EventData(finalStatus, this.node.getNestedId())), false);
+      try {
+        // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
+        fireEvent(Event.create(this, EventType.JOB_FINISHED,
+            new EventData(finalStatus, this.node.getNestedId())), false);
+      } catch (RuntimeException e) {
+        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" +  this.executionId
+            + " jobId: " + this.jobId);
+        serverLogger.warn(e.getMessage(), e);
+      }
     }
   }
 
