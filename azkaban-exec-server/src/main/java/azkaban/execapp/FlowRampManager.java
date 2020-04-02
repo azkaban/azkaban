@@ -629,6 +629,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
   private static class RampDataModel {
     // Host the current processing ramp flows
+    // Map.key = Any ID that uniquely identifies each execution. (we will use executionId). Map.value = Set of ramps
     // Map.Key = executionId, Map.Value = Set Of Ramps
     private volatile Map<Integer, Set<String>> executingFlows = new HashMap<>();
     private Lock lock = new ReentrantLock();
