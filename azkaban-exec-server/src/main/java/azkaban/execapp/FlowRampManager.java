@@ -21,13 +21,13 @@ import azkaban.Constants;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowRampMetadata;
 import azkaban.executor.ExecutableRamp;
 import azkaban.executor.ExecutableRamp.Action;
 import azkaban.executor.ExecutableRampDependencyMap;
 import azkaban.executor.ExecutableRampExceptionalFlowItemsMap;
 import azkaban.executor.ExecutableRampExceptionalItems;
 import azkaban.executor.ExecutableRampExceptionalJobItemsMap;
-import azkaban.executor.ExecutableFlowRampMetadata;
 import azkaban.executor.ExecutableRampItemsMap;
 import azkaban.executor.ExecutableRampMap;
 import azkaban.executor.ExecutableRampStatus;
@@ -551,7 +551,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
       if (eventType == EventType.FLOW_STARTED) {
         Set<String> activeRamps = flow.getExecutableFlowRampMetadata().getActiveRamps();
-        rampDataModel.beginFlow(flow.getFlowName(), activeRamps);
+        rampDataModel.beginFlow(flow.getExecutionId(), activeRamps);
         LOGGER.info("Ramp Started: [FlowName = {}, ExecutionId = {}, Ramps = {}]",
             flow.getFlowName(),
             flow.getExecutionId(), activeRamps.toString());
@@ -562,7 +562,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
         }
       } else {
         logFlowAction(flowRunner, convertToAction(flow.getStatus()));
-        Set<String> ramps = rampDataModel.endFlow(flow.getFlowName());
+        Set<String> ramps = rampDataModel.endFlow(flow.getExecutionId());
         LOGGER.info("Ramp Finished: [FlowName = {}, ExecutionId = {}, Ramps = {}]",
             flow.getFlowName(),
             flow.getExecutionId(), ramps.toString());
@@ -629,8 +629,8 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
   private static class RampDataModel {
     // Host the current processing ramp flows
-    // Map.Key = flowName, Map.Value = Set Of Ramps
-    private volatile Map<String, Set<String>> executingFlows = new HashMap<>();
+    // Map.key = Any ID that uniquely identifies each execution. (we will use executionId). Map.value = Set of ramps
+    private volatile Map<Integer, Set<String>> executingFlows = new HashMap<>();
     private Lock lock = new ReentrantLock();
     private volatile int beginFlowCount = 0;
     private volatile int endFlowCount = 0;
@@ -639,17 +639,17 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     public RampDataModel() {
     }
 
-    public synchronized void beginFlow(final String flowName, Set<String> ramps) {
+    public synchronized void beginFlow(final int executionId, Set<String> ramps) {
       lock.lock();
-      executingFlows.put(flowName, ramps);
+      executingFlows.put(executionId, ramps);
       beginFlowCount++;
       lock.unlock();
     }
 
-    public synchronized Set<String> endFlow(final String flowName) {
-      Set<String> ramps = executingFlows.get(flowName);
+    public synchronized Set<String> endFlow(final int executionId) {
+      Set<String> ramps = executingFlows.get(executionId);
       lock.lock();
-      executingFlows.remove(flowName);
+      executingFlows.remove(executionId);
       endFlowCount++;
       lock.unlock();
       return ramps;
