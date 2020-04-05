@@ -89,16 +89,14 @@ public class ProjectStorageManager {
       final int version,
       final File localFile,
       final File startupDependencies,
-      final User uploader) {
+      final User uploader,
+      final String uploaderIPAddr) {
     byte[] md5 = null;
     if (!(this.storage instanceof DatabaseStorage)) {
       md5 = computeHash(localFile);
     }
     final ProjectStorageMetadata metadata = new ProjectStorageMetadata(
-        project.getId(),
-        version,
-        uploader.getUserId(),
-        md5);
+        project.getId(), version, uploader.getUserId(), md5, uploaderIPAddr);
     log.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
         metadata, localFile.getName(), localFile.length()));
 
@@ -115,7 +113,8 @@ public class ProjectStorageManager {
           startupDependencies,
           uploader.getUserId(),
           requireNonNull(md5),
-          requireNonNull(resourceId)
+          requireNonNull(resourceId),
+          uploaderIPAddr
       );
       log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
           metadata, localFile.getName(), localFile.length(), resourceId));

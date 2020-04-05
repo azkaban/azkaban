@@ -40,8 +40,10 @@ public class DatabaseStorageTest {
     final int projectId = 1234;
     final int version = 1;
     final String uploader = "testuser";
-    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(projectId, version, uploader, null);
+    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(projectId, version,
+        uploader, null, "111.111.111.111");
     this.databaseStorage.putProject(metadata, file);
-    verify(this.projectLoader).uploadProjectFile(projectId, version, file, uploader);
+    verify(this.projectLoader).uploadProjectFile(projectId, version, file,
+        uploader, "111.111.111.111");
   }
 }

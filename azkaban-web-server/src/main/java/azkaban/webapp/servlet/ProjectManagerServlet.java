@@ -1761,6 +1761,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
+
+    // Fetch the uploader's IP
+    String uploaderIPAddr = "";
+    if (req != null) {
+      uploaderIPAddr = req.getHeader("X-FORWARDED-FOR");
+      if (uploaderIPAddr == null || uploaderIPAddr.isEmpty()) {
+        logger.debug("Failed to fetch remote Address using \"X-FORWARDED-FOR\"");
+        uploaderIPAddr = req.getRemoteAddr();
+      }
+      logger.info("uploaderIPAddr = " + uploaderIPAddr);
+    } else {
+      logger.info("HttpServletRequest is NULL");
+    }
+
     final Project project = validateUploadAndGetProject(resp, ret, user, projectName);
     if (project == null) {
       return;
@@ -1817,7 +1831,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final List<String> lockedFlows = getLockedFlows(project);
 
       final Map<String, ValidationReport> reports = this.projectManager
-          .uploadProject(project, archiveFile, lowercaseExtension, user, props);
+          .uploadProject(project, archiveFile, lowercaseExtension, user, props, uploaderIPAddr);
 
       if (this.enableQuartz) {
         this.scheduler.schedule(project, user.getUserId());

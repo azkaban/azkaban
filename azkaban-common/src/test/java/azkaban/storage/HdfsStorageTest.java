@@ -105,7 +105,8 @@ public class HdfsStorageTest {
 
     when(this.hdfs.exists(any(Path.class))).thenReturn(false);
 
-    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(1, 2, "uploader", HashUtils.MD5.getHashBytes(file));
+    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(1, 2,
+        "uploader", HashUtils.MD5.getHashBytes(file), "111.111.111.111");
     final String key = this.hdfsStorage.putProject(metadata, file);
 
     final String expectedName = String.format("1/1-%s.zip", hash);

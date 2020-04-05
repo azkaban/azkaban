@@ -78,7 +78,8 @@ public class LocalStorageTest {
     final File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
     final ProjectStorageMetadata metadata = new ProjectStorageMetadata(
-        1, 1, "testuser", HashUtils.MD5.getHashBytes(testFile));
+        1, 1, "testuser", HashUtils.MD5.getHashBytes(testFile),
+        "111.111.111.111");
     final String key = this.localStorage.putProject(metadata, testFile);
     assertNotNull(key);
     log.info("Key URI: " + key);
