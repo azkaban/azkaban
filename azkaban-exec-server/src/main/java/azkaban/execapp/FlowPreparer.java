@@ -16,6 +16,10 @@
  */
 package azkaban.execapp;
 
+import static azkaban.utils.ThinArchiveUtils.getDependencyFile;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
@@ -42,10 +46,6 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static azkaban.utils.ThinArchiveUtils.*;
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
 
 
 class FlowPreparer {
@@ -117,10 +117,9 @@ class FlowPreparer {
 
       final long flowPrepStartTime = System.currentTimeMillis();
 
-
       tempDir = downloadProjectIfNotExists(project, flow.getExecutionId());
 
-
+      LOGGER.info("Project is setup for execution {}", flow.getExecutionId());
       // With synchronization, only one thread is allowed to proceed to avoid complicated race
       // conditions which could arise when multiple threads are downloading/deleting/hard-linking
       // the same project. But it doesn't prevent multiple executor processes interfering with each
@@ -130,6 +129,7 @@ class FlowPreparer {
       File execDir = null;
 
       synchronized (this) {
+        LOGGER.info("Setting up execution dir for {}", flow.getExecutionId());
         criticalSectionStartTime = System.currentTimeMillis();
         if (!project.getInstalledDir().exists() && tempDir != null) {
           // If new project is downloaded and project dir cache clean-up feature is enabled, then
@@ -158,6 +158,11 @@ class FlowPreparer {
       FileIOUtils.deleteDirectorySilently(tempDir);
       LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
       throw new ExecutorManagerException(ex);
+    } catch (final Throwable t) {
+      FileIOUtils.deleteDirectorySilently(tempDir);
+      LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), t);
+      throw new ExecutorManagerException(
+          "Error in preparing flow execution " + flow.getExecutionId(), t);
     } finally {
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
