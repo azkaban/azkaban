@@ -134,7 +134,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       // Check if project upload runs into any errors, such as the file
       // having blacklisted jars
       final Map<String, ValidationReport> reports = projectManager
-          .uploadProject(project, archiveFile, "zip", user, null);
+          .uploadProject(project, archiveFile, "zip", user, null, null);
 
       if (enableQuartz) {
         scheduler.schedule(project, user.getUserId());

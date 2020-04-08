@@ -1045,7 +1045,19 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
 
     try {
-      report.createZipAndUpload(projectManager, user, this.reportalStorageUser);
+      // Fetch the uploader's IP
+      String uploaderIPAddr = "";
+      if (req != null) {
+        uploaderIPAddr = req.getHeader("X-FORWARDED-FOR");
+        if (uploaderIPAddr == null || uploaderIPAddr.isEmpty()) {
+          logger.debug("Failed to fetch remote Address using \"X-FORWARDED-FOR\"");
+          uploaderIPAddr = req.getRemoteAddr();
+        }
+        logger.info("uploaderIPAddr = " + uploaderIPAddr);
+      } else {
+        logger.info("HttpServletRequest is NULL");
+      }
+      report.createZipAndUpload(projectManager, user, this.reportalStorageUser, uploaderIPAddr);
     } catch (final Exception e) {
       e.printStackTrace();
       errors.add("Error while creating Azkaban jobs. " + e.getMessage());

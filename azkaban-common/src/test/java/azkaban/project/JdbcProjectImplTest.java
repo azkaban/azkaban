@@ -51,6 +51,8 @@ public class JdbcProjectImplTest {
   private static final String LARGE_FLOW_YAML_DIR = "largeflowyamltest";
   private static final String BASIC_FLOW_FILE = "basic_flow.flow";
   private static final String LARGE_FLOW_FILE = "large_file.flow";
+  private static final String IPv4 = "111.111.111.111";
+  private static final String IPv6 = "2607:f0d0:1002:0051:0000:0000:0000:0004";
   private static final int PROJECT_ID = 123;
   private static final int PROJECT_VERSION = 3;
   private static final int FLOW_VERSION = 1;
@@ -143,7 +145,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getFileName(), SAMPLE_FILE);
@@ -156,8 +159,10 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
   }
 
   private byte[] computeHash(final File localFile) {
@@ -176,8 +181,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.addProjectVersion(project.getId(), newVersion, testFile, null, "uploadUser1",
-        computeHash(testFile), "resourceId1");
+    this.loader.addProjectVersion(project.getId(), newVersion, testFile, null,
+        "uploadUser1", computeHash(testFile), "resourceId1", IPv6);
     final int currVersion = this.loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);
   }
@@ -188,7 +193,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv6);
     final ProjectFileHandler pfh = this.loader.fetchProjectMetaData(project.getId(), newVersion);
     Assert.assertEquals(pfh.getVersion(), newVersion);
   }
@@ -400,7 +406,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
@@ -418,9 +425,11 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv6);
     final int newVersion2 = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion2, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion2, testFile, "uploadUser1",
+        IPv6);
     this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
         Arrays.asList(newVersion, newVersion2));
     assertNumChunks(project, newVersion, 1);

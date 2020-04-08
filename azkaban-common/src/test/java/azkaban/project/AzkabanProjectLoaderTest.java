@@ -65,6 +65,8 @@ public class AzkabanProjectLoaderTest {
   private static final String BASIC_FLOW_YAML_DIR = "basicflowyamltest";
   private static final String BASIC_FLOW_FILE = "basic_flow.flow";
   private static final String PROJECT_ZIP = "Archive.zip";
+  private static final String IPv4 = "111.111.111.111";
+  private static final String IPv6 = "2607:f0d0:1002:0051:0000:0000:0000:0004";
 
   @Rule
   public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
@@ -119,11 +121,13 @@ public class AzkabanProjectLoaderTest {
 
     this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
-        .uploadProject(this.project, projectZipFile, "zip", uploader, null));
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv4));
 
     // startupDependencies should be null - because it does not exist!
     verify(this.projectStorageManager)
-        .uploadProject(this.project, this.VERSION + 1, projectZipFile, null, uploader);
+        .uploadProject(this.project, this.VERSION + 1, projectZipFile,
+            null, uploader, IPv4);
     verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
         Arrays.asList(this.VERSION));
 
@@ -173,11 +177,13 @@ public class AzkabanProjectLoaderTest {
       assertTrue(((File) invocation.getArguments()[3]).exists());
       return null;
     }).when(this.projectStorageManager)
-        .uploadProject(any(Project.class), anyInt(), any(File.class), any(File.class), any(User.class));
+        .uploadProject(any(Project.class), anyInt(), any(File.class), any(File.class),
+            any(User.class), anyString());
 
     this.project.setVersion(this.VERSION);
     this.azkabanProjectLoader
-        .uploadProject(this.project, projectZipFile, "zip", uploader, null);
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv6);
 
     // Verify that the archiveUnthinner was called
     verify(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
@@ -224,11 +230,13 @@ public class AzkabanProjectLoaderTest {
       assertTrue(((File) invocation.getArguments()[3]).exists());
       return null;
     }).when(this.projectStorageManager)
-        .uploadProject(any(Project.class), anyInt(), any(File.class), any(File.class), any(User.class));
+        .uploadProject(any(Project.class), anyInt(), any(File.class), any(File.class),
+            any(User.class), anyString());
 
     this.project.setVersion(this.VERSION);
     this.azkabanProjectLoader
-        .uploadProject(this.project, projectZipFile, "zip", uploader, null);
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv6);
 
     // Verify that the archiveUnthinner was called
     verify(this.archiveUnthinner).validateThinProject(any(), any(), any(), any());
@@ -249,10 +257,12 @@ public class AzkabanProjectLoaderTest {
 
     this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
-        .uploadProject(this.project, projectZipFile, "zip", uploader, null));
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv6));
 
     verify(this.projectStorageManager)
-        .uploadProject(eq(this.project), eq(this.VERSION + 1), eq(projectZipFile), any(File.class), eq(uploader));
+        .uploadProject(eq(this.project), eq(this.VERSION + 1), eq(projectZipFile),
+            any(File.class), eq(uploader), anyString());
     verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
         Arrays.asList(this.VERSION));
 
@@ -282,10 +292,12 @@ public class AzkabanProjectLoaderTest {
         .thenReturn(flowVersion);
 
     checkValidationReport(this.azkabanProjectLoader
-        .uploadProject(this.project, projectZipFile, "zip", uploader, null));
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv6));
 
     verify(this.projectStorageManager)
-        .uploadProject(this.project, this.VERSION + 1, projectZipFile, null, uploader);
+        .uploadProject(this.project, this.VERSION + 1, projectZipFile,
+            null, uploader, IPv6);
     verify(this.projectLoader)
         .uploadFlowFile(eq(this.ID), eq(this.VERSION + 1), any(File.class), eq(flowVersion + 1));
 

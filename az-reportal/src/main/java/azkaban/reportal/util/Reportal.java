@@ -352,7 +352,7 @@ public class Reportal {
   }
 
   public void createZipAndUpload(final ProjectManager projectManager, final User user,
-      final String reportalStorageUser) throws Exception {
+      final String reportalStorageUser, final String uploaderIPAddr) throws Exception {
     // Create temp folder to make the zip file for upload
     final File tempDir = Utils.createTempDir();
     final File dataDir = new File(tempDir, "data");
@@ -405,7 +405,8 @@ public class Reportal {
     Utils.zipFolderContent(dataDir, archiveFile);
 
     // Upload zip
-    projectManager.uploadProject(this.project, archiveFile, "zip", user, null);
+    projectManager.uploadProject(this.project, archiveFile, "zip", user, null,
+        uploaderIPAddr);
 
     // Empty temp
     if (tempDir.exists()) {

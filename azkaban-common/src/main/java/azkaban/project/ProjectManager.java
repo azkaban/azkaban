@@ -501,10 +501,11 @@ public class ProjectManager {
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
-      final File archive, final String fileType, final User uploader, final Props additionalProps)
+      final File archive, final String fileType, final User uploader, final Props additionalProps,
+      final String uploaderIPAddr)
       throws ProjectManagerException, ExecutorManagerException {
     return this.azkabanProjectLoader
-        .uploadProject(project, archive, fileType, uploader, additionalProps);
+        .uploadProject(project, archive, fileType, uploader, additionalProps, uploaderIPAddr);
   }
 
   public void updateFlow(final Project project, final Flow flow)
