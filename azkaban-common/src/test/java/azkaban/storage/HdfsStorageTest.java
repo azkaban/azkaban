@@ -54,6 +54,7 @@ public class HdfsStorageTest {
 
   private static final String PRJ_ROOT_URI = "hdfs://localhost:9000/path/to/prj/";
   private static final String DEP_ROOT_URI = "chttp://www.someplace.com/path/to/dep/";
+  private static final String IPv4 = "111.111.111.111";
 
   @Before
   public void setUp() throws Exception {
@@ -106,7 +107,7 @@ public class HdfsStorageTest {
     when(this.hdfs.exists(any(Path.class))).thenReturn(false);
 
     final ProjectStorageMetadata metadata = new ProjectStorageMetadata(1, 2,
-        "uploader", HashUtils.MD5.getHashBytes(file), "111.111.111.111");
+        "uploader", HashUtils.MD5.getHashBytes(file), IPv4);
     final String key = this.hdfsStorage.putProject(metadata, file);
 
     final String expectedName = String.format("1/1-%s.zip", hash);
