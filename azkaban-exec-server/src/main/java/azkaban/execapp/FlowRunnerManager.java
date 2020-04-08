@@ -1055,8 +1055,14 @@ public class FlowRunnerManager implements EventListener,
         }
       } else if (this.pollingCriteria.shouldPoll()) {
         try {
-          final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
+          final int execId;
+          if (FlowRunnerManager.this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
+            execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecutionWithLocking(
+                this.executorId, FlowRunnerManager.this.active);
+          } else {
+            execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecution(this.executorId,
+                FlowRunnerManager.this.active);
+          }
           if (execId != -1) {
             FlowRunnerManager.LOGGER.info("Submitting flow " + execId);
             try {

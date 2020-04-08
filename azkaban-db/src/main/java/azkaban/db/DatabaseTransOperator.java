@@ -91,6 +91,18 @@ public class DatabaseTransOperator {
 
   /**
    *
+   * @param querySql
+   * @param resultHandler
+   * @param <T>
+   * @return
+   * @throws SQLException
+   */
+  public <T> T query(final String querySql, final ResultSetHandler<T> resultHandler) throws SQLException {
+      return query(querySql, resultHandler, (Object[])null);
+  }
+
+  /**
+   *
    * @param updateClause
    * @param params
    * @return
