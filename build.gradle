@@ -69,7 +69,7 @@ ext.deps = [
     commonsLang          : 'commons-lang:commons-lang:2.6',
     commonsCodec         : 'commons-codec:commons-codec:1.13',
     commonsCompress      : 'org.apache.commons:commons-compress:1.16.1',
-    dbcp2                : 'org.apache.commons:commons-dbcp2:2.1.1',
+    dbcp2                : 'org.apache.commons:commons-dbcp2:2.7.0',
     dbutils              : 'commons-dbutils:commons-dbutils:1.5',
     fileupload           : 'commons-fileupload:commons-fileupload:1.2.1',
     gson                 : 'com.google.code.gson:gson:2.8.1',
