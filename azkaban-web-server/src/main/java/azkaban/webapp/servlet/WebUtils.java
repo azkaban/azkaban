@@ -18,7 +18,9 @@ package azkaban.webapp.servlet;
 
 import azkaban.executor.Status;
 import java.text.NumberFormat;
+import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 
 public class WebUtils {
 
@@ -74,7 +76,8 @@ public class WebUtils {
   }
 
   /**
-   * Gets the actual client IP address inspecting the X-Forwarded-For HTTP header or using the
+   * Gets the actual client IP address on a best effort basis as user could be sitting
+   * behind a VPN. Get the IP by inspecting the X-Forwarded-For HTTP header or using the
    * provided 'remote IP address' from the low level TCP connection from the client.
    *
    * If multiple IP addresses are provided in the X-Forwarded-For header then the first one (first
@@ -84,6 +87,7 @@ public class WebUtils {
    * @param remoteAddr The client IP address and port from the current request's TCP connection
    * @return The actual client IP address
    */
+  // TODO djaiswal83: Refactor this code and merge into single API
   public static String getRealClientIpAddr(final Map<String, String> httpHeaders,
       final String remoteAddr) {
 
@@ -108,4 +112,28 @@ public class WebUtils {
     return clientIp;
   }
 
+  /**
+   * Gets the actual client IP address on a best effort basis as user could be sitting
+   * behind a VPN. Get the IP by inspecting the X-Forwarded-For HTTP header or using the
+   * provided 'remote IP address' from the low level TCP connection from the client.
+   *
+   * If multiple IP addresses are provided in the X-Forwarded-For header then the first one (first
+   * hop) is used
+   *
+   * @param req HttpServletRequest
+   * @return The actual client IP address
+   */
+  public static String getRealClientIpAddr(final HttpServletRequest req) {
+
+    // If some upstream device added an X-Forwarded-For header
+    // use it for the client ip
+    // This will support scenarios where load balancers or gateways
+    // front the Azkaban web server and a changing Ip address invalidates
+    // the session
+    final HashMap<String, String> headers = new HashMap<>();
+    headers.put(WebUtils.X_FORWARDED_FOR_HEADER,
+        req.getHeader(WebUtils.X_FORWARDED_FOR_HEADER.toLowerCase()));
+
+    return WebUtils.getRealClientIpAddr(headers, req.getRemoteAddr());
+  }
 }
