@@ -42,10 +42,12 @@ public class ExecutionFlowDao {
 
   private static final Logger logger = Logger.getLogger(ExecutionFlowDao.class);
   private final DatabaseOperator dbOperator;
+  private final MysqlNamedLock mysqlNamedLock;
 
   @Inject
-  public ExecutionFlowDao(final DatabaseOperator dbOperator) {
+  public ExecutionFlowDao(final DatabaseOperator dbOperator, final MysqlNamedLock mysqlNamedLock) {
     this.dbOperator = dbOperator;
+    this.mysqlNamedLock = mysqlNamedLock;
   }
 
   public void uploadExecutableFlow(final ExecutableFlow flow)
@@ -348,8 +350,10 @@ public class ExecutionFlowDao {
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
+      final String POLLING_LOCK_NAME = "execution_flows_polling";
+      final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
       int execId = -1;
-      final boolean hasLocked = transOperator.query(PollingLockResultHandler.GET_POLLING_LOCK, new PollingLockResultHandler());
+      final boolean hasLocked = this.mysqlNamedLock.getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
       logger.info("ExecutionFlow polling lock value: " + hasLocked + " for executorId: " + executorId);
       if (hasLocked) {
         try {
@@ -359,9 +363,11 @@ public class ExecutionFlowDao {
             transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
           }
         } finally {
-          transOperator.query(PollingLockResultHandler.RELEASE_POLLING_LOCK, new PollingLockResultHandler());
+          this.mysqlNamedLock.releaseLock(transOperator, POLLING_LOCK_NAME);
           logger.info("Released polling lock for executorId: " + executorId);
         }
+      } else {
+        logger.info("Could not acquire polling lock for executorId: " + executorId);
       }
       return execId;
     };
@@ -374,21 +380,6 @@ public class ExecutionFlowDao {
     }
   }
 
-  private static class PollingLockResultHandler implements ResultSetHandler<Boolean> {
-    private static final String POLLING_LOCK_NAME = "execution_flows_polling";
-    private static final int GET_LOCK_TIMEOUT = 5;
-    private static final String GET_POLLING_LOCK = "SELECT GET_LOCK('" + POLLING_LOCK_NAME + "', " + GET_LOCK_TIMEOUT + ")";
-    private static final String RELEASE_POLLING_LOCK = "SELECT RELEASE_LOCK('" + POLLING_LOCK_NAME + "')";
-
-    @Override
-    public Boolean handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return false;
-      }
-      return rs.getBoolean(1);
-    }
-  }
-
   public static class SelectFromExecutionFlows implements
       ResultSetHandler<List<Integer>> {
 
@@ -396,7 +387,7 @@ public class ExecutionFlowDao {
         "SELECT exec_id from execution_flows WHERE exec_id = (SELECT exec_id from execution_flows"
             + " WHERE status = " + Status.PREPARING.getNumVal()
             + " and executor_id is NULL and flow_data is NOT NULL and %s"
-            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) FOR UPDATE";
+            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and executor_id is NULL FOR UPDATE";
 
     public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
         String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
