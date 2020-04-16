@@ -273,21 +273,65 @@ public class DefaultMailCreator implements MailCreator {
       message.println("");
       message.println("<h3>Affected executions</h3>");
       message.println("<ul>");
-      for (final ExecutableFlow flow : flows) {
-        final int execId = flow.getExecutionId();
-        final String executionUrl =
-            scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
-                + "executor?" + "execid=" + execId;
-
-        message.println("<li>Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId()
-            + "' of project '" + flow.getProjectName() + "' - " +
-            " <a href=\"" + executionUrl + "\">Execution Link</a></li>");
-      }
-
+      appendFlowLinksToMessage(message, flows, scheme, clientHostname, clientPortNumber);
       message.println("</ul>");
       return true;
     }
 
     return false;
+  }
+
+  @Override
+  public boolean createFailedExecutorHealthCheckMessage(final List<ExecutableFlow> flows,
+      final Executor executor, final ExecutorManagerException failureException,
+      final EmailMessage message, final String azkabanName,
+      final String scheme, final String clientHostname, final String clientPortNumber,
+      final List<String> emailList) {
+
+    if (emailList == null || emailList.isEmpty()) {
+      return false;
+    }
+    message.addAllToAddress(emailList);
+    message.setMimeType("text/html");
+    message.setSubject(
+        "Alert: Executor is unreachable, " + executor.getHost() + " on " + azkabanName);
+
+    message.println(
+        "<h2 style=\"color:#FFA500\"> Executor is unreachable. Executor host - " + executor
+            .getHost() + " on Cluster - " + azkabanName + "</h2>");
+
+    message.println("Remedial action will be attempted on affected executions - <br>");
+    message.println("Following flows were reported as running on the executor and will be "
+        + "finalized.");
+
+    message.println("");
+    message.println("<h3>Affected executions</h3>");
+    message.println("<ul>");
+    appendFlowLinksToMessage(message, flows, scheme, clientHostname, clientPortNumber);
+    message.println("</ul>");
+
+    message.println("");
+    message.println("<h3>Error detail</h3>");
+    message.println(String.format("Following error was reported for executor-id: %s, "
+            + "executor-host: %s, executor-port: %d", executor.getId(), executor.getHost(),
+        executor.getPort()));
+    message.println("<pre>" + ExceptionUtils.getStackTrace(failureException) + "</pre>");
+
+    return true;
+  }
+
+  private void appendFlowLinksToMessage(final EmailMessage message,
+      final List<ExecutableFlow> flows,
+      final String scheme, final String clientHostname, final String clientPortNumber) {
+    for (final ExecutableFlow flow : flows) {
+      final int execId = flow.getExecutionId();
+      final String executionUrl =
+          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
+              + "executor?" + "execid=" + execId;
+
+      message.println("<li>Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId()
+          + "' of project '" + flow.getProjectName() + "' - " +
+          " <a href=\"" + executionUrl + "\">Execution Link</a></li>");
+    }
   }
 }

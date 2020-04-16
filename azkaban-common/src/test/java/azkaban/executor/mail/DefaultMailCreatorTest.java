@@ -173,4 +173,17 @@ public class DefaultMailCreatorTest {
         .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
+  @Test
+  public void createFailedHealthCheckMessage() throws Exception {
+    final ExecutorManagerException exception = createTestStracktrace();
+    assertTrue(this.mailCreator
+        .createFailedExecutorHealthCheckMessage(Arrays.asList(this.executableFlow, this.executableFlow),
+            this.executor, exception, this.message, this.azkabanName, this.scheme,
+            this.clientHostname, this.clientPortNumber, ImmutableList.of("test@example.com")));
+    assertEquals("Alert: Executor is unreachable, executor1-host on unit-tests",
+        this.message.getSubject());
+    assertThat(TestUtils.readResource("failedExecutorHealthCheckMessage.html", this))
+        .isEqualToIgnoringWhitespace(this.message.getBody());
+  }
+
 }

@@ -1,18 +1,18 @@
 /*
-* Copyright 2019 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2019 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +42,7 @@ public class ExecutorHealthCheckerTest {
 
   private static final int EXECUTION_ID_11 = 11;
   private static final String AZ_ADMIN_ALERT_EMAIL = "az_admin1@foo.com,az_admin2@foo.com";
+  private static final String FLOW_ADMIN_EMAIL = "flow_user1@foo.com,flow_user2@bar.com";
   private final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
   private ExecutorHealthChecker executorHealthChecker;
   private Props props;
@@ -64,6 +65,7 @@ public class ExecutorHealthCheckerTest {
     this.executorHealthChecker = new ExecutorHealthChecker(this.props, this.loader, this
         .apiGateway, this.alerterHolder);
     this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    this.flow1.getExecutionOptions().setFailureEmails(Arrays.asList(FLOW_ADMIN_EMAIL.split(",")));
     this.flow1.setExecutionId(EXECUTION_ID_11);
     this.flow1.setStatus(Status.RUNNING);
     this.executor1 = new Executor(1, "localhost", 12345, true);
@@ -104,6 +106,9 @@ public class ExecutorHealthCheckerTest {
    */
   @Test
   public void checkExecutorHealthConsecutiveFailures() throws Exception {
+    // By default mocked methods will return an empty collection.
+    // Therefore underlying call to apiGateway.callWithExecutionId returns an empty Map for all
+    // invocations of executorHealthChecker.checkExecutorHealth() in this test.
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
@@ -126,11 +131,18 @@ public class ExecutorHealthCheckerTest {
     verifyZeroInteractions(this.alerterHolder);
 
     // Failed to ping executor again. Failure count (=2) = MAX_FAILURE_COUNT (=2). Alert AZ admin.
+    when(this.loader.fetchExecutableFlow(flow1.getExecutionId())).thenReturn(flow1);
     this.executorHealthChecker.checkExecutorHealth();
     verify((this.alerterHolder).get("email"))
-        .alertOnFailedUpdate(eq(this.executor1), eq(Arrays.asList(this.flow1)),
-            any(ExecutorManagerException.class));
-    assertThat(this.flow1.getExecutionOptions().getFailureEmails()).isEqualTo
-        (Arrays.asList(AZ_ADMIN_ALERT_EMAIL.split(",")));
+        .alertOnFailedExecutorHealthCheck(eq(this.executor1), eq(Arrays.asList(this.flow1)),
+            any(ExecutorManagerException.class),
+            eq(Arrays.asList(AZ_ADMIN_ALERT_EMAIL.split(","))));
+
+    // Verify remediation tasks are performed for unreachable executors.
+    // Flow should be finalized with alerts sent over email.
+    assertThat(this.flow1.getStatus()).isEqualTo(Status.FAILED);
+    String expectedReason = "Executor was unreachable, executor-id: 1, executor-host: localhost, "
+        + "executor-port: 12345";
+    verify((this.alerterHolder).get("email")).alertOnError(eq(flow1), eq(expectedReason));
   }
 }

@@ -189,6 +189,28 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   /**
+   * Use the default mail creator to send a failed executor healthcheck message to the given list
+   * of addresses. Message includes a list of flows impacted on the executor.
+   */
+  @Override
+  public void alertOnFailedExecutorHealthCheck(Executor executor, List<ExecutableFlow> flows,
+      ExecutorManagerException failureException, List<String> emailList) {
+    if (emailList == null || emailList.isEmpty()) {
+      // We should consider throwing an exception here. For now this follows the model of the rest
+      // of the file and simply returns.
+      logger.error("No email list specified for failed health check alert");
+      return;
+    }
+    MailCreator mailCreator = DefaultMailCreator.getCreator(DefaultMailCreator.DEFAULT_MAIL_CREATOR);
+    final EmailMessage message = this.messageCreator.createMessage();
+    final boolean mailCreated = mailCreator
+        .createFailedExecutorHealthCheckMessage(flows, executor, failureException, message,
+            this.azkabanName, this.scheme, this.clientHostname, this.clientPortNumber, emailList);
+    final List<Integer> executionIds = Lists.transform(flows, ExecutableFlow::getExecutionId);
+    sendEmail(message, mailCreated, "failed health check message for executions " + executionIds);
+  }
+
+  /**
    * Sends a single email about failed updates.
    */
   private void sendFailedUpdateEmail(final Executor executor,
