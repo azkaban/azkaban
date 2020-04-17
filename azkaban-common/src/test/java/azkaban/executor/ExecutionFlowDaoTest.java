@@ -18,8 +18,10 @@ package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.db.DatabaseTransOperator;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
@@ -56,6 +58,7 @@ public class ExecutionFlowDaoTest {
   private FetchActiveFlowDao fetchActiveFlowDao;
   private ExecutionJobDao executionJobDao;
   private ProjectLoader loader;
+  private MysqlNamedLock mysqlNamedLock;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -74,7 +77,8 @@ public class ExecutionFlowDaoTest {
 
   @Before
   public void setup() {
-    this.executionFlowDao = new ExecutionFlowDao(dbOperator);
+    this.mysqlNamedLock = mock(MysqlNamedLock.class);
+    this.executionFlowDao = new ExecutionFlowDao(dbOperator, this.mysqlNamedLock);
     this.executorDao = new ExecutorDao(dbOperator);
     this.assignExecutor = new AssignExecutorDao(dbOperator, this.executorDao);
     this.fetchActiveFlowDao = new FetchActiveFlowDao(dbOperator);
@@ -492,6 +496,30 @@ public class ExecutionFlowDaoTest {
         .isEqualTo(flow.getExecutionId());
     assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo
         (executor);
+  }
+
+  @Test
+  public void testLockSuccessSelectAndUpdateExecutionWithLocking() throws Exception {
+    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(true);
+    when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+    final Executor executor1 = this.executorDao.addExecutor("localhost", 12345);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true))
+        .isEqualTo(flow1.getExecutionId());
+  }
+
+  @Test
+  public void testLockFailureSelectAndUpdateExecutionWithLocking() throws Exception {
+    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(false);
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+    final Executor executor1 = this.executorDao.addExecutor("localhost", 12345);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true)).isEqualTo(-1);
   }
 
   @Test

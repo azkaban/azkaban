@@ -355,6 +355,12 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive);
+  }
+
+  @Override
   public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
     return this.executionRampDao.fetchExecutableRampMap();
   }

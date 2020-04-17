@@ -286,6 +286,9 @@ public interface ExecutorLoader {
   int selectAndUpdateExecution(final int executorId, boolean isActive)
       throws ExecutorManagerException;
 
+  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
+      throws ExecutorManagerException;
+
   ExecutableRampMap fetchExecutableRampMap()
       throws ExecutorManagerException;
 

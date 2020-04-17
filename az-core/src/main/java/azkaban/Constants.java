@@ -125,6 +125,7 @@ public class Constants {
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
+    public static final String AZKABAN_POLLING_LOCK_ENABLED = "azkaban.polling.lock.enabled";
     public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =
         "azkaban.polling_criteria.flow_threads_available";
     public static final String AZKABAN_POLLING_CRITERIA_MIN_FREE_MEMORY_GB =
