@@ -500,19 +500,21 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testLockSuccessSelectAndUpdateExecutionWithLocking() throws Exception {
-    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class))).thenReturn(true);
+    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(true);
     when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
         ExecutionOptions.DEFAULT_FLOW_PRIORITY);
     final Executor executor1 = this.executorDao.addExecutor("localhost", 12345);
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true)).isEqualTo(flow1.getExecutionId());
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true))
+        .isEqualTo(flow1.getExecutionId());
   }
 
   @Test
   public void testLockFailureSelectAndUpdateExecutionWithLocking() throws Exception {
-    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class))).thenReturn(false);
-    when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
+    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(false);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
         ExecutionOptions.DEFAULT_FLOW_PRIORITY);

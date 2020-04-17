@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import azkaban.db.DatabaseTransOperator;
+import azkaban.utils.StringUtils;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.inject.Singleton;
@@ -16,11 +17,17 @@ public class MysqlNamedLock implements ResultSetHandler<Boolean> {
   private String releaseLockTemplate = "SELECT RELEASE_LOCK('%s')";
 
   public boolean getLock(DatabaseTransOperator transOperator, String lockName, int lockTimeoutInSeconds) throws SQLException {
+    if (StringUtils.isEmpty(lockName)) {
+      throw new IllegalArgumentException("Lock name cannot be null or empty");
+    }
     String getLockStatement = String.format(getLockTemplate, lockName, lockTimeoutInSeconds);
     return transOperator.query(getLockStatement, this);
   }
 
   public boolean releaseLock(DatabaseTransOperator transOperator, String lockName) throws SQLException {
+    if (StringUtils.isEmpty(lockName)) {
+      throw new IllegalArgumentException("Lock name cannot be null or empty");
+    }
     String releaseLockStatement = String.format(releaseLockTemplate, lockName);
     return transOperator.query(releaseLockStatement, this);
   }
