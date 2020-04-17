@@ -34,4 +34,8 @@ public interface Alerter {
 
   void alertOnFailedUpdate(Executor executor, List<ExecutableFlow> executions,
       ExecutorManagerException e);
+
+  void alertOnFailedExecutorHealthCheck(Executor executor,
+      List<ExecutableFlow> executions,
+      ExecutorManagerException e, List<String> alertEmails);
 }
