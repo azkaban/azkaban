@@ -18,13 +18,14 @@ package azkaban.executor;
 import azkaban.utils.Pair;
 import com.sun.istack.NotNull;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
 /**
  * Map of Executable Ramp Exceptional Items at Job Level, Map.key = Pair(rampId, flowId)
  */
-public class ExecutableRampExceptionalJobItemsMap
+public final class ExecutableRampExceptionalJobItemsMap
     extends BaseRefreshableMap<Pair<String, String>, ExecutableRampExceptionalItems> {
 
   private ExecutableRampExceptionalJobItemsMap() {
@@ -45,13 +46,26 @@ public class ExecutableRampExceptionalJobItemsMap
     }
   }
 
+  public ExecutableRampExceptionalItems get(@NotNull final String rampId, @NotNull final String flowId) {
+    return this.get(new Pair<>(rampId, flowId));
+  }
+
+  public ExecutableRampExceptionalItems.RampRecord get(@NotNull final String rampId, @NotNull final String flowId, @NotNull final String jobId) {
+    return Optional.ofNullable(this.get(rampId, flowId))
+        .map(items -> items.getItems().get(jobId))
+        .orElse(null);
+  }
+
+  public boolean exists(@NotNull final String rampId, @NotNull final String flowId, @NotNull final String jobId) {
+    return Optional.ofNullable(this.get(rampId, flowId))
+        .map(items -> items.exists(jobId))
+        .orElse(false);
+  }
+
   public ExecutableRampStatus check(@NotNull final String rampId, @NotNull final String flowId, @NotNull final String jobId) {
-    Pair<String, String> key = new Pair<>(rampId, flowId);
-    ExecutableRampExceptionalItems exceptionalTable = this.get(key);
-    if (exceptionalTable == null) {
-      return null;
-    }
-    return exceptionalTable.getStatus(jobId);
+    return Optional.ofNullable(this.get(rampId, flowId))
+        .map(exceptionalItems -> exceptionalItems.getStatus(jobId))
+        .orElse(ExecutableRampStatus.UNDETERMINED);
   }
 
   public Map<String, ExecutableRampExceptionalItems> getExceptionalJobItemsByFlow(@NotNull final String flowId) {

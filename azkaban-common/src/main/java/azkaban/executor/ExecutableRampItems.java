@@ -17,13 +17,14 @@ package azkaban.executor;
 
 import azkaban.utils.Props;
 import com.sun.istack.NotNull;
+import java.util.Optional;
 import java.util.Set;
 
 
 /**
  * Object of Executable Ramp Items
  */
-public class ExecutableRampItems implements IRefreshable<ExecutableRampItems> {
+public final class ExecutableRampItems implements IRefreshable<ExecutableRampItems> {
   public static String RAMP_SOURCE_NAME = "ramp";
 
   private volatile Props rampItems;
@@ -66,5 +67,12 @@ public class ExecutableRampItems implements IRefreshable<ExecutableRampItems> {
     return ExecutableRampItems
         .createInstance()
         .setRampItems(Props.clone(this.rampItems));
+  }
+
+  @Override
+  public int elementCount() {
+    return Optional.ofNullable(this.rampItems)
+        .map(Props::size)
+        .orElse(0);
   }
 }

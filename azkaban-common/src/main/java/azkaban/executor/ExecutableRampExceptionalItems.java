@@ -18,14 +18,17 @@ package azkaban.executor;
 import com.sun.istack.NotNull;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
  * Object of Executable Ramp Exceptional Items
  */
-public class ExecutableRampExceptionalItems implements IRefreshable<ExecutableRampExceptionalItems> {
+public final class ExecutableRampExceptionalItems implements IRefreshable<ExecutableRampExceptionalItems> {
 
   private volatile Hashtable<String, RampRecord> items = new Hashtable<>();
 
@@ -52,6 +55,22 @@ public class ExecutableRampExceptionalItems implements IRefreshable<ExecutableRa
 
   public ExecutableRampStatus getStatus(final String key) {
     return Optional.ofNullable(get(key)).map(RampRecord::getStatus).orElse(ExecutableRampStatus.UNDETERMINED);
+  }
+
+  public boolean exists(final String key) {
+    return get(key) != null;
+  }
+
+  public List<Map.Entry<String, RampRecord>> getCachedItems() {
+    return this.getItems()
+        .entrySet()
+        .stream()
+        .filter(item -> item.getValue().isCachedOnly())
+        .collect(Collectors.toList());
+  }
+
+  public void resetCacheFlag() {
+    this.getCachedItems().forEach(item -> item.getValue().resetCachedOnly());
   }
 
   public ExecutableRampExceptionalItems add(
@@ -93,6 +112,11 @@ public class ExecutableRampExceptionalItems implements IRefreshable<ExecutableRa
     return ExecutableRampExceptionalItems
         .createInstance()
         .setItems(clonedItems);
+  }
+
+  @Override
+  public int elementCount() {
+    return this.items.size();
   }
 
   public static class RampRecord {

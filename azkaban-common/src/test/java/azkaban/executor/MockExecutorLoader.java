@@ -470,23 +470,21 @@ public class MockExecutorLoader implements ExecutorLoader {
         ExecutableRamp.createInstance(
         "dali",
         "RampPolicy",
-        ExecutableRamp.Metadata.createInstance(
-            5,
-            10,
-            false
-        ),
-        ExecutableRamp.State.createInstance(
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            false,
-            0,
-            true)
-    ));
+        5,
+        10,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        false,
+        0,
+        true
+        )
+    );
     return map;
   }
 

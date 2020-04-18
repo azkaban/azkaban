@@ -20,13 +20,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
 
 
 /**
  * Map Object of Executable Ramp Dependency, Map.key = dependencyId
  */
-public class ExecutableRampDependencyMap extends BaseRefreshableMap<String, ExecutableRampDependency> {
+public final class ExecutableRampDependencyMap extends BaseRefreshableMap<String, ExecutableRampDependency> {
 
   private ExecutableRampDependencyMap() {
     super();
@@ -65,7 +64,7 @@ public class ExecutableRampDependencyMap extends BaseRefreshableMap<String, Exec
   public String getDefaultValue(@NotNull final String dependency) {
     return Optional.ofNullable(this.get(dependency))
         .map(ExecutableRampDependency::getDefaultValue)
-        .orElse("");
+        .orElse(null);
   }
 
   /**
@@ -90,10 +89,10 @@ public class ExecutableRampDependencyMap extends BaseRefreshableMap<String, Exec
       @NotNull final String jobType) {
     // If no specified job type associated, it means the ramp is valid for all job types
     return Optional.ofNullable(this.get(dependency))
-        .map(ExecutableRampDependency::getAssociatedJobTypes)
-        .filter(CollectionUtils::isNotEmpty)
-        .map(set -> set.contains(jobType))
-        .orElse(true);
+        .map(dp -> Optional.ofNullable(dp.getAssociatedJobTypes())
+            .map(set -> set.contains(jobType))
+            .orElse(true))
+        .orElse(false);
   }
 
   @Override

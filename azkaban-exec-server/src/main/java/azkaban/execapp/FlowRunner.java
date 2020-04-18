@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
@@ -82,6 +81,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -151,6 +151,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private volatile boolean flowFailed = false;
   private volatile boolean flowFinished = false;
   private volatile boolean flowKilled = false;
+  private volatile boolean flowIsRamping = false;
 
   // For flow related metrics
   private final CommonMetrics commonMetrics;
@@ -912,12 +913,18 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     node.setStatus(Status.QUEUED);
 
+    // Attach Ramp Props if there is any desired properties
     String jobId = node.getId();
-    String jobType = node.getInputProps().getString("type");
-    Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
-    if (rampProps != null) {
-      this.logger.info("Selected Ramp Props in Flow : [" + rampProps + "]");
-      node.setRampProps(rampProps);
+    String jobType = Optional.ofNullable(node.getInputProps()).map(props -> props.getString("type")).orElse(null);
+    if (jobType != null && jobId != null) {
+      Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
+      if (rampProps != null) {
+        this.flowIsRamping = true;
+        logger.info(String.format(
+            "RAMP_FLOW_ATTACH_PROPS_FOR_JOB : (flow.ExecId = %d, flow.Id = %s, flow.flowName = %s, job.id = %s, job.type = %s, props = %s)",
+            this.flow.getExecutionId(), this.flow.getId(), this.flow.getFlowName(), jobId, jobType, rampProps.toString()));
+        node.setRampProps(rampProps);
+      }
     }
 
     final JobRunner runner = createJobRunner(node);
@@ -1314,6 +1321,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public boolean isKilled() {
     return this.flowKilled;
+  }
+
+  public boolean isRamping() {
+    return this.flowIsRamping;
   }
 
   public ExecutableFlow getExecutableFlow() {

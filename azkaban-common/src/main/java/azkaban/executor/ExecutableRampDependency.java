@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Object of Executable Ramp Dependency
  */
-public class ExecutableRampDependency implements IRefreshable<ExecutableRampDependency> {
+public final class ExecutableRampDependency implements IRefreshable<ExecutableRampDependency> {
   private static String DELIMITED = ",";
 
   private volatile String defaultValue = null;
@@ -77,5 +77,10 @@ public class ExecutableRampDependency implements IRefreshable<ExecutableRampDepe
         .createInstance()
         .setDefaultValue(this.getDefaultValue())
         .setAssociatedJobTypes(clonedAssociatedJobTypes);
+  }
+
+  @Override
+  public int elementCount() {
+    return 1;
   }
 }

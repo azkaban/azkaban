@@ -11,13 +11,13 @@ import azkaban.utils.Props;
 public class SimpleRampPolicy extends AbstractRampPolicy {
   private static final int MAX_RAMP_STAGE = 100;
 
-  protected SimpleRampPolicy(Props sysProps, Props privateProps) {
+  public SimpleRampPolicy(Props sysProps, Props privateProps) {
     super(sysProps, privateProps);
   }
 
   @Override
   protected boolean isRampTestEnabled(ExecutableFlow flow, ExecutableRamp executableRamp) {
-    int rampStage = executableRamp.getState().getRampStage(); // scaled from 0 - 100 to represent the ramp percentage
+    int rampStage = executableRamp.getStage(); // scaled from 0 - 100 to represent the ramp percentage
 
     if (rampStage >= getMaxRampStage()) {
       return true;

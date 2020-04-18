@@ -60,4 +60,9 @@ public class BaseRefreshableMap<K, V extends IRefreshable> extends HashMap<K, V>
   public BaseRefreshableMap<K, V> clone() {
     return (BaseRefreshableMap<K, V>) super.clone();
   }
+
+  @Override
+  public int elementCount() {
+    return this.values().stream().mapToInt(elem -> elem.elementCount()).sum();
+  }
 }

@@ -17,13 +17,15 @@ package azkaban.executor;
 
 import azkaban.utils.Props;
 import com.sun.istack.NotNull;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 
 
 /**
  * Map of Executable Ramp Items, Mak.key = rampId
  */
-public class ExecutableRampItemsMap extends BaseRefreshableMap<String, ExecutableRampItems> {
+public final class ExecutableRampItemsMap extends BaseRefreshableMap<String, ExecutableRampItems> {
 
   private ExecutableRampItemsMap() {
     super();
@@ -48,11 +50,15 @@ public class ExecutableRampItemsMap extends BaseRefreshableMap<String, Executabl
   }
 
   public Props getRampItems(@NotNull final String rampId) {
-    return this.get(rampId).getRampItems();
+    return Optional.ofNullable(this.get(rampId))
+        .map(ExecutableRampItems::getRampItems)
+        .orElse(new Props());
   }
 
   public Set<String> getDependencies(@NotNull final String rampId) {
-    return this.get(rampId).getDependencies();
+    return Optional.ofNullable(this.get(rampId))
+        .map(ExecutableRampItems::getDependencies)
+        .orElse(Collections.emptySet());
   }
 
   @Override

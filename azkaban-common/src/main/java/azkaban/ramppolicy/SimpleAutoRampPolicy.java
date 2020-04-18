@@ -67,8 +67,8 @@ public class SimpleAutoRampPolicy extends SimpleRampPolicy {
 
   @Override
   protected void preprocess(ExecutableRamp executableRamp) {
-    int escapedDays = TimeUtils.daysEscapedOver(executableRamp.getState().getStartTime());
-    int rampStage = executableRamp.getState().getRampStage();
+    int escapedDays = TimeUtils.daysEscapedOver(executableRamp.getStartTime());
+    int rampStage = executableRamp.getStage();
     int maxStage = getMaxRampStage();
 
     if (rampStage == 0) {
@@ -80,15 +80,10 @@ public class SimpleAutoRampPolicy extends SimpleRampPolicy {
       if (escapedDays >= AUTO_RAMP_INTERVAL_TABLE.get(rampStage - 1)) {
         if (rampStage < maxStage) {
           // Ramp up
-          int newStage = rampStage + 1;
-          long timeStamp = System.currentTimeMillis();
-          executableRamp.getState().setRampStage(newStage);
-          executableRamp.getState().setLastUpdatedTime(timeStamp);
-          if (newStage == maxStage) {
-            executableRamp.getState().setEndTime(timeStamp);
-          }
+          executableRamp.rampUp(maxStage);
           LOGGER.info("[AUTO RAMP UP] (rampId = {}, current Stage = {}, new Stage = {}, timeStamp = {}",
-              executableRamp.getId(), rampStage, newStage, timeStamp);
+              executableRamp.getId(), rampStage, executableRamp.getStage(),
+              executableRamp.getLastUpdatedTime());
         }
       }
     } catch (Exception e) {

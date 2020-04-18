@@ -44,7 +44,6 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TimeUtils;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -184,6 +183,8 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
    */
   @Override
   public void handleEvent(Event event) {
+    if (!isRampFeatureActivated()) return;
+
     if (event.getType() == EventType.FLOW_STARTED || event.getType() == EventType.FLOW_FINISHED) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       logFlowEvent(flowRunner, event.getType());
@@ -333,7 +334,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     executableRampMap
         .getAll()
         .stream()
-        .filter(ramp -> !ramp.getState().isSynchronized())
+        .filter(ExecutableRamp::isChanged)
         .forEach(this::updateExecutableRamp);
     executableRampExceptionalFlowItemsMap
         .entrySet()
@@ -403,9 +404,9 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     for (ExecutableRamp executableRamp : executableRampMap.getActivatedAll()) {
       try {
         String rampId = executableRamp.getId();
-        LOGGER.info("[Ramp Check] (rampId = {}, rampStage = {}, executionId = {}, flowName = {}, RampPercentageId = {})",
+        LOGGER.info("RAMP_CHECK: (rampId = {}, rampStage = {}, executionId = {}, flowName = {}, RampPercentageId = {})",
             rampId,
-            executableRamp.getState().getRampStage(),
+            executableRamp.getStage(),
             executableFlow.getExecutionId(),
             flowName,
             executableFlow.getRampPercentageId()
@@ -416,7 +417,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
         baseProps.putAll(executableRampDependencyMap.getDefaultValues(executableRampItemsMap.getDependencies(rampId)));
 
         ExecutableRampStatus status = executableRampExceptionalFlowItemsMap.check(rampId, flowName);
-        LOGGER.info("[Ramp Status] (Status = {}, flowName = {})", status.name(), flowName);
+        LOGGER.info("RAMP_STATUS: (Status = {}, flowName = {})", status.name(), flowName);
         switch (status) {
           case BLACKLISTED: // blacklist
             executableFlowRampMetadata.setRampProps(
@@ -427,7 +428,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                     ExecutableRampStatus.BLACKLISTED.name()
                 )
             );
-            LOGGER.info("[Ramp BlackListed]. [rampId = {}, flowName = {}]", rampId, flowName);
+            LOGGER.info("RAMP_BLACKLISTED: (rampId = {}, flowName = {})", rampId, flowName);
             break;
 
           case WHITELISTED: // whitelist
@@ -439,7 +440,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                     ExecutableRampStatus.WHITELISTED.name()
                 )
             );
-            LOGGER.info("[Ramp WhiteListed]. [rampId = {}, flowName = {}]", rampId, flowName);
+            LOGGER.info("RAMP_WHITELISTED: (rampId = {}, flowName = {})", rampId, flowName);
             break;
 
           case SELECTED: // selected
@@ -451,7 +452,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                     ExecutableRampStatus.SELECTED.name()
                 )
             );
-            LOGGER.info("[Ramp Selected]. [rampId = {}, flowName = {}]", rampId, flowName);
+            LOGGER.info("RAMP_SELECTED: (rampId = {}, flowName = {})", rampId, flowName);
             break;
 
           case UNSELECTED: // selected
@@ -463,7 +464,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                     ExecutableRampStatus.UNSELECTED.name()
                 )
             );
-            LOGGER.info("[Ramp Unselected]. [rampId = {}, flowName = {}]", rampId, flowName);
+            LOGGER.info("RAMP_UNSELECTED: (rampId = {}, flowName = {})", rampId, flowName);
             break;
 
           case EXCLUDED:
@@ -475,12 +476,12 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                     ExecutableRampStatus.EXCLUDED.name()
                 )
             );
-            LOGGER.info("[Ramp Excluded]. [rampId = {}, flowName = {}]", rampId, flowName);
+            LOGGER.info("RAMP_EXECLUDED: (rampId = {}, flowName = {})", rampId, flowName);
             break;
 
           default:
             RampPolicy rampPolicy = rampPolicyManager.buildRampPolicyExecutor(executableRamp.getPolicy(), globalProps);
-            LOGGER.info ("[Ramp Policy Selecting]. [policy = {}, rampId = {}, flowName = {}, executionId = {}, RampPercentageId = {}]",
+            LOGGER.info ("RAMP_POLICY_SELECTING: (policy = {}, rampId = {}, flowName = {}, executionId = {}, RampPercentageId = {})",
                 rampPolicy.getClass().getName(),
                 rampId,
                 flowName,
@@ -497,7 +498,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.SELECTED.name()
                   )
               );
-              LOGGER.info("[Ramp Policy Selected]. [rampId = {}, flowName = {}]", rampId, flowName);
+              LOGGER.info("RAMP_POLICY_SELECTED: (rampId = {}, flowName = {})", rampId, flowName);
             } else {
               executableFlowRampMetadata.setRampProps(
                   rampId,
@@ -507,7 +508,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
                       ExecutableRampStatus.UNSELECTED.name()
                   )
               );
-              LOGGER.info("[Ramp Policy Unselected]. [rampId = {}, flowName = {}]", rampId, flowName);
+              LOGGER.info("RAMP_POLICY_UNSELECTED: (rampId = {}, flowName = {})", rampId, flowName);
             }
             break;
         }
@@ -538,7 +539,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
         }
 
       } catch (Exception e) {
-        LOGGER.error(e.getMessage());
+        LOGGER.error("RAMP_EXEC_ERROR: (message = {})", e.getMessage());
       }
     }
 
@@ -562,13 +563,16 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
   }
 
   synchronized private void logFlowEvent(FlowRunner flowRunner, EventType eventType) {
-    if (!isRampFeatureActivated()) return;
-
     final ExecutableFlow flow = flowRunner.getExecutableFlow();
+    LOGGER.info("RAMP_FLOW_EVENT_CAPTURED: (ID = {}, FlowName = {}, ExecutionId = {}, FlowStatus = {})",
+        flow.getId(),
+        flow.getFlowName(),
+        flow.getExecutionId(),
+        flow.getStatus().toString());
     if (eventType == EventType.FLOW_STARTED) {
       Set<String> activeRamps = flow.getExecutableFlowRampMetadata().getActiveRamps();
       rampDataModel.beginFlow(flow.getExecutionId(), activeRamps);
-      LOGGER.info("Ramp Started: [FlowName = {}, ExecutionId = {}, Ramps = {}]",
+      LOGGER.info("RAMP_STARTED: (FlowName = {}, ExecutionId = {}, Ramps = {})",
           flow.getFlowName(),
           flow.getExecutionId(), activeRamps.toString());
       if (isDatabasePullingActionRequired()) {
@@ -576,10 +580,10 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
         loadSettings();
         LOGGER.info("END Reload ramp settings from DB ......");
       }
-    } else {
+    } else { // EventType.FLOW_FINISHED
       logFlowAction(flowRunner, convertToAction(flow.getStatus()));
       Set<String> ramps = rampDataModel.endFlow(flow.getExecutionId());
-      LOGGER.info("Ramp Finished: [FlowName = {}, ExecutionId = {}, Ramps = {}]",
+      LOGGER.info("RAMP_FINISHED: (FlowName = {}, ExecutionId = {}, Ramps = {})",
           flow.getFlowName(),
           flow.getExecutionId(), ramps.toString());
 
@@ -591,9 +595,7 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     }
   }
 
-  synchronized public void logFlowAction(FlowRunner flowRunner, Action action) {
-    if (!isRampFeatureActivated()) return;
-
+  synchronized private void logFlowAction(FlowRunner flowRunner, Action action) {
     flowRunner.getExecutableFlow()
         .getExecutableFlowRampMetadata()
         .getActiveRamps()
@@ -605,14 +607,15 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
               executableRamp.getId(), action.name());
           executableRamp.cacheResult(action);
 
-          if (!Action.SUCCEEDED.equals(action)) {
+          if (Action.FAILED.equals(action)) {
             String rampId = executableRamp.getId();
             String flowName =  flowRunner.getExecutableFlow().getFlowName();
-            LOGGER.warn("[Ramp Exclude Flow]. [executionId = {}, rampId = {}, flowName = {}, action = {}]",
+            LOGGER.warn("RAMP_EXCLUDE_FLOW: [executionId = {}, rampId = {}, flowName = {}, action = {}, ramp = {}]",
                 flowRunner.getExecutableFlow().getExecutionId(),
                 rampId,
                 flowName,
-                action.name()
+                action.name(),
+                flowRunner.isRamping()
             );
             executableRampExceptionalFlowItemsMap.add(rampId, flowName, ExecutableRampStatus.EXCLUDED,
                 System.currentTimeMillis(), true);
@@ -626,23 +629,19 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
     return ((!isRampPollingServiceEnabled) && (statusPushIntervalMax <= rampDataModel.getEndFlowCount()));
   }
 
-  // This check function is only applied on non-polling modeƒ
+  // This check function is only applied on non-polling mode
   synchronized private boolean isDatabasePullingActionRequired() {
     return ((!isRampPollingServiceEnabled) && (statusPullIntervalMax <= rampDataModel.getBeginFlowCount()));
   }
 
   synchronized private Action convertToAction(Status status) {
-    switch (status) {
-      case FAILED:
-        return Action.FAILED;
-      case SUCCEEDED:
-        return Action.SUCCEEDED;
-      default:
-        return Action.IGNORED;
-    }
+    if (Status.FAILED.equals(status)) return Action.FAILED;
+    if (Status.isStatusSucceeded(status)) return Action.SUCCEEDED;
+    return Action.IGNORED;
   }
 
-  private static class RampDataModel {
+  @VisibleForTesting
+  static class RampDataModel {
     // Host the current processing ramp flows
     // Map.key = Any ID that uniquely identifies each execution. (we will use executionId). Map.value = Set of ramps
     private volatile Map<Integer, Set<String>> executingFlows = new HashMap<>();
@@ -668,6 +667,10 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
       endFlowCount++;
       lock.unlock();
       return ramps;
+    }
+
+    public Map<Integer, Set<String>> getExecutingFlows() {
+      return this.executingFlows;
     }
 
     public int getBeginFlowCount() {
