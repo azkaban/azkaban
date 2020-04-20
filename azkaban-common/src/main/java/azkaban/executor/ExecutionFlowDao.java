@@ -35,6 +35,7 @@ import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -270,16 +271,17 @@ public class ExecutionFlowDao {
       updateExecutableFlowStatus(flow);
       throw new ExecutorManagerException("Error encoding the execution flow. Execution Id  = "
           + flow.getExecutionId());
-    } catch (final NullPointerException npe) {
+    } catch (final RuntimeException re) {
       flow.setStatus(Status.FAILED);
       // Likely due to serialization error
-      if ( data == null) {
+      if ( data == null && re instanceof NullPointerException) {
         logger.warn("Failed to serialize executable flow for " + flow.getExecutionId()
         + ". Likely due to SLA missing options. Please re-check the flow SLA");
+        logger.warn("NPE stacktrace" + ExceptionUtils.getStackTrace(re));
       }
       updateExecutableFlowStatus(flow);
       throw new ExecutorManagerException("Error encoding the execution flow due to NPE. "
-          + "Execution Id  = " + flow.getExecutionId());
+          + "Execution Id  = " + flow.getExecutionId(), re);
     }
 
     try {
@@ -293,11 +295,12 @@ public class ExecutionFlowDao {
 
   private void updateExecutableFlowStatus(final ExecutableFlow flow)
     throws ExecutorManagerException {
-    final String UPDATE_FLOW_STATUS = "UPDATE execution_flows SET status = ? where exec_id = ?";
+    final String UPDATE_FLOW_STATUS = "UPDATE execution_flows SET status = ?, update_time = ? "
+        + "where exec_id = ?";
 
     try {
       this.dbOperator.update(UPDATE_FLOW_STATUS, flow.getStatus().getNumVal(),
-          flow.getExecutionId());
+          System.currentTimeMillis(), flow.getExecutionId());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error updating flow.", e);
     }

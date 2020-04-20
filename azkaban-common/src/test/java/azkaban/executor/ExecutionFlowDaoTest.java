@@ -778,11 +778,11 @@ public class ExecutionFlowDaoTest {
     } catch (ExecutorManagerException e) {
        assert e.getMessage().contains("NPE");
     }
-    // Fetch flow again, the status must be FAILED
-    final ExecutableFlow failedFlow =
+    // Fetch flow again, the status must be READY not PREPARING
+    final ExecutableFlow readyFlow =
         this.executionFlowDao.fetchExecutableFlow(fetchFlow.getExecutionId());
 
-    assertThat(failedFlow.getStatus()).isEqualTo(Status.FAILED);
+    assertThat(readyFlow.getStatus()).isEqualTo(Status.READY);
   }
 
   /*
