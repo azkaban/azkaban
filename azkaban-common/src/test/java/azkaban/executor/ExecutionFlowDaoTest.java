@@ -762,6 +762,29 @@ public class ExecutionFlowDaoTest {
     assertThat(finishedFlows2.get(0).getStatus()).isEqualTo(Status.FAILED);
   }
 
+  @Test
+  public void testUpdateExecutableFlowNullSLAOptions() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow);
+
+    final ExecutableFlow fetchFlow =
+        this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
+
+    // set null sla option
+    fetchFlow.getExecutionOptions().setSlaOptions(null);
+    // Try updating flow
+    try {
+      this.executionFlowDao.updateExecutableFlow(fetchFlow);
+    } catch (ExecutorManagerException e) {
+       assert e.getMessage().contains("NPE");
+    }
+    // Fetch flow again, the status must be FAILED
+    final ExecutableFlow failedFlow =
+        this.executionFlowDao.fetchExecutableFlow(fetchFlow.getExecutionId());
+
+    assertThat(failedFlow.getStatus()).isEqualTo(Status.FAILED);
+  }
+
   /*
    * Updates flow execution status in the DB. After this the value of the status column will be
    * different from the status property in the flow data blob.

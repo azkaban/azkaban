@@ -263,7 +263,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SUBMITTIME_PARAM, this.submitTime);
 
     final List<Map<String, Object>> slaOptions = new ArrayList<>();
-    this.executionOptions.getSlaOptions().stream()
+    this.executionOptions.getSlaOptions()
         .forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);

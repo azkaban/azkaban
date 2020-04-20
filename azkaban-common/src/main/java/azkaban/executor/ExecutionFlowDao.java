@@ -255,9 +255,10 @@ public class ExecutionFlowDao {
             + "SET status=?,update_time=?,start_time=?,end_time=?,enc_type=?,flow_data=? "
             + "WHERE exec_id=?";
 
-    final String json = JSONUtils.toJSON(flow.toObject());
     byte[] data = null;
     try {
+      // If this action fails, the execution must be failed.
+      final String json = JSONUtils.toJSON(flow.toObject());
       final byte[] stringData = json.getBytes("UTF-8");
       data = stringData;
       // Todo kunkun-tang: use a common method to transform stringData to data.
@@ -265,13 +266,38 @@ public class ExecutionFlowDao {
         data = GZIPUtils.gzipBytes(stringData);
       }
     } catch (final IOException e) {
-      throw new ExecutorManagerException("Error encoding the execution flow.");
+      flow.setStatus(Status.FAILED);
+      updateExecutableFlowStatus(flow);
+      throw new ExecutorManagerException("Error encoding the execution flow. Execution Id  = "
+          + flow.getExecutionId());
+    } catch (final NullPointerException npe) {
+      flow.setStatus(Status.FAILED);
+      // Likely due to serialization error
+      if ( data == null) {
+        logger.warn("Failed to serialize executable flow for " + flow.getExecutionId()
+        + ". Likely due to SLA missing options. Please re-check the flow SLA");
+      }
+      updateExecutableFlowStatus(flow);
+      throw new ExecutorManagerException("Error encoding the execution flow due to NPE. "
+          + "Execution Id  = " + flow.getExecutionId());
     }
 
     try {
       this.dbOperator.update(UPDATE_EXECUTABLE_FLOW_DATA, flow.getStatus()
           .getNumVal(), flow.getUpdateTime(), flow.getStartTime(), flow
           .getEndTime(), encType.getNumVal(), data, flow.getExecutionId());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error updating flow.", e);
+    }
+  }
+
+  private void updateExecutableFlowStatus(final ExecutableFlow flow)
+    throws ExecutorManagerException {
+    final String UPDATE_FLOW_STATUS = "UPDATE execution_flows SET status = ? where exec_id = ?";
+
+    try {
+      this.dbOperator.update(UPDATE_FLOW_STATUS, flow.getStatus().getNumVal(),
+          flow.getExecutionId());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error updating flow.", e);
     }
