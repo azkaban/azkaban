@@ -16,6 +16,10 @@
  */
 package azkaban.execapp;
 
+import static azkaban.utils.ThinArchiveUtils.getDependencyFile;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
@@ -42,10 +46,6 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static azkaban.utils.ThinArchiveUtils.*;
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
 
 
 class FlowPreparer {

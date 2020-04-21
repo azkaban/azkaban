@@ -25,8 +25,8 @@ public class ExecutionLogsCleaner {
    private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
        * 24 * 60 * 60 * 1000L;
 
-   // 1 minute
-   private static final long DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS = 60;
+   // 1 hour
+   private static final long DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS = 60 * 60;
    private long cleanupIntervalInSeconds;
 
    // 1000 records
