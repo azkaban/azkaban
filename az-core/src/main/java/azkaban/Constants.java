@@ -331,6 +331,8 @@ public class Constants {
     public static final String EXECUTION_LOGS_RETENTION_MS = "execution.logs.retention.ms";
     public static final String EXECUTION_LOGS_CLEANUP_INTERVAL_SECONDS =
         "execution.logs.cleanup.interval.seconds";
+    public static final String EXECUTION_LOGS_CLEANUP_RECORD_LIMIT =
+        "execution.logs.cleanup.record.sie";
   }
 
   public static class FlowProperties {

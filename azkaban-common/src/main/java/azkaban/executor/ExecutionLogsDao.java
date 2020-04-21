@@ -135,12 +135,12 @@ public class ExecutionLogsDao {
     }
   }
 
-  int removeExecutionLogsByTime(final long millis)
+  int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
       throws ExecutorManagerException {
     final String DELETE_BY_TIME =
-        "DELETE FROM execution_logs WHERE upload_time < ?";
+        "DELETE FROM execution_logs WHERE upload_time < ? LIMIT ?";
     try {
-      return this.dbOperator.update(DELETE_BY_TIME, millis);
+      return this.dbOperator.update(DELETE_BY_TIME, millis, recordCleanupLimit);
     } catch (final SQLException e) {
       logger.error("delete execution logs failed", e);
       throw new ExecutorManagerException(

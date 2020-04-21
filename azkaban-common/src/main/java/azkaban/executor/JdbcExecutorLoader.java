@@ -338,9 +338,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int removeExecutionLogsByTime(final long millis)
+  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
       throws ExecutorManagerException {
-    return this.executionLogsDao.removeExecutionLogsByTime(millis);
+    return this.executionLogsDao.removeExecutionLogsByTime(millis, recordCleanupLimit);
   }
 
   @Override

@@ -1,5 +1,6 @@
 package azkaban.webapp;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
@@ -30,6 +31,6 @@ public class ExecutionLogsCleanerTest {
   public void checkIfExecutionCleanerGetsTriggered() throws Exception {
     executionLogsCleaner.start();
     TimeUnit.SECONDS.sleep(5);
-    Mockito.verify(this.loader, atLeast(2)).removeExecutionLogsByTime(anyLong());
+    Mockito.verify(this.loader, atLeast(2)).removeExecutionLogsByTime(anyLong(), anyInt());
   }
 }
