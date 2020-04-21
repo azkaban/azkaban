@@ -1756,6 +1756,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     resp.setStatus(returnCode);
   }
 
+
   private void ajaxHandleUpload(final HttpServletRequest req, final HttpServletResponse resp,
       final Map<String, String> ret, final Map<String, Object> multipart, final Session session)
       throws ServletException, IOException {
@@ -1763,17 +1764,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String projectName = (String) multipart.get("project");
 
     // Fetch the uploader's IP
-    String uploaderIPAddr = "";
-    if (req != null) {
-      uploaderIPAddr = req.getHeader("X-FORWARDED-FOR");
-      if (uploaderIPAddr == null || uploaderIPAddr.isEmpty()) {
-        logger.debug("Failed to fetch remote Address using \"X-FORWARDED-FOR\"");
-        uploaderIPAddr = req.getRemoteAddr();
-      }
-      logger.info("uploaderIPAddr = " + uploaderIPAddr);
-    } else {
-      logger.info("HttpServletRequest is NULL");
-    }
+    String uploaderIPAddr = WebUtils.getRealClientIpAddr(req);
 
     final Project project = validateUploadAndGetProject(resp, ret, user, projectName);
     if (project == null) {
