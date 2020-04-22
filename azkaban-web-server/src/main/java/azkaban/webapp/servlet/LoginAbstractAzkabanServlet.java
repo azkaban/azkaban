@@ -136,7 +136,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
    */
   private void logRequest(final HttpServletRequest req, final Session session) {
     final StringBuilder buf = new StringBuilder();
-    buf.append(getRealClientIpAddr(req)).append(" ");
+    buf.append(WebUtils.getRealClientIpAddr(req)).append(" ");
     if (session != null && session.getUser() != null) {
       buf.append(session.getUser().getUserId()).append(" ");
     } else {
@@ -206,20 +206,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
 
     return false;
-  }
-
-  private String getRealClientIpAddr(final HttpServletRequest req) {
-
-    // If some upstream device added an X-Forwarded-For header
-    // use it for the client ip
-    // This will support scenarios where load balancers or gateways
-    // front the Azkaban web server and a changing Ip address invalidates
-    // the session
-    final HashMap<String, String> headers = new HashMap<>();
-    headers.put(WebUtils.X_FORWARDED_FOR_HEADER,
-        req.getHeader(WebUtils.X_FORWARDED_FOR_HEADER.toLowerCase()));
-
-    return WebUtils.getRealClientIpAddr(headers, req.getRemoteAddr());
   }
 
   private Session getSessionFromRequest(final HttpServletRequest req)
@@ -295,7 +281,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
         final String username = (String) params.get("username");
         final String password = (String) params.get("password");
-        final String ip = getRealClientIpAddr(req);
+        final String ip = WebUtils.getRealClientIpAddr(req);
 
         try {
           session = createSession(username, password, ip);
@@ -361,7 +347,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       throws UserManagerException, ServletException {
     final String username = getParam(req, "username");
     final String password = getParam(req, "password");
-    final String ip = getRealClientIpAddr(req);
+    final String ip = WebUtils.getRealClientIpAddr(req);
 
     return createSession(username, password, ip);
   }
