@@ -154,11 +154,10 @@ class FlowPreparer {
           (flowPrepCompletionTime - flowPrepStartTime) / 1000,
           (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
           flow.getExecutionId(), execDir.getPath());
-    } catch (final Throwable t) {
+    } catch (final Exception ex) {
       FileIOUtils.deleteDirectorySilently(tempDir);
-      LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), t);
-      throw new ExecutorManagerException(
-          "Error in preparing flow execution " + flow.getExecutionId(), t);
+      LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
+      throw new ExecutorManagerException(ex);
     } finally {
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
