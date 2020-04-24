@@ -17,11 +17,9 @@
 package azkaban.executor;
 
 import azkaban.db.DatabaseOperator;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -63,21 +61,4 @@ public class NumExecutionsDao {
     }
   }
 
-  private static class IntHandler implements ResultSetHandler<Integer> {
-
-    private static final String NUM_EXECUTIONS =
-        "SELECT COUNT(1) FROM execution_flows";
-    private static final String NUM_FLOW_EXECUTIONS =
-        "SELECT COUNT(1) FROM execution_flows WHERE project_id=? AND flow_id=?";
-    private static final String NUM_JOB_EXECUTIONS =
-        "SELECT COUNT(1) FROM execution_jobs WHERE project_id=? AND job_id=?";
-
-    @Override
-    public Integer handle(final ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return 0;
-      }
-      return rs.getInt(1);
-    }
-  }
 }
