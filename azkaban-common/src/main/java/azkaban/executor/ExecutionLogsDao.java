@@ -144,6 +144,12 @@ public class ExecutionLogsDao {
       logger.debug("Removed batch of execution logs. Count of records removed in this batch: "
           + removedRecords);
       totalRecordsRemoved = totalRecordsRemoved + removedRecords;
+      // Adding sleep of 1 second
+      try {
+        Thread.sleep(1000L);
+      } catch (InterruptedException e) {
+        logger.error("Execution logs cleanup thread's sleep was interrupted.", e);
+      }
     } while (removedRecords == recordCleanupLimit);
     return totalRecordsRemoved;
   }

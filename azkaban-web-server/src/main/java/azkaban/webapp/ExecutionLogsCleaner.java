@@ -29,7 +29,6 @@ public class ExecutionLogsCleaner {
    private static final long DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS = 60 * 60;
    private long cleanupIntervalInSeconds;
 
-   // 1000 records
    private static final int DEFAULT_LOG_CLEANUP_RECORD_LIMIT = 1000;
    private int executionLogCleanupRecordLimit;
 
