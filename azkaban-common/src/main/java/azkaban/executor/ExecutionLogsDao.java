@@ -16,9 +16,9 @@
 
 package azkaban.executor;
 
-import azkaban.db.EncodingType;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
+import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
@@ -136,6 +136,19 @@ public class ExecutionLogsDao {
   }
 
   int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
+      throws ExecutorManagerException {
+    int totalRecordsRemoved = 0;
+    int removedRecords;
+    do {
+      removedRecords = removeExecutionLogsBatch(millis, recordCleanupLimit);
+      logger.debug("Removed batch of execution logs. Count of records removed in this batch: "
+          + removedRecords);
+      totalRecordsRemoved = totalRecordsRemoved + removedRecords;
+    } while (removedRecords == recordCleanupLimit);
+    return totalRecordsRemoved;
+  }
+
+  int removeExecutionLogsBatch(final long millis, final int recordCleanupLimit)
       throws ExecutorManagerException {
     final String DELETE_BY_TIME =
         "DELETE FROM execution_logs WHERE upload_time < ? LIMIT ?";
