@@ -140,6 +140,7 @@ public class SlaOption {
     if (slaOptions != null) {
       final List<Object> slaOptionsObject = new ArrayList<>();
       for (final SlaOption sla : slaOptions) {
+        if (sla == null) continue;
         slaOptionsObject.add(sla.toObject());
       }
       return slaOptionsObject;

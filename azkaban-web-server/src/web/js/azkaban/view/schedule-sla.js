@@ -189,6 +189,14 @@ azkaban.ChangeSlaView = Backbone.View.extend({
       var duration = rFlowRule.cells[2].firstChild.value;
       var email = rFlowRule.cells[3].firstChild.checked;
       var kill = rFlowRule.cells[4].firstChild.checked;
+      if (email === false && kill === false) {
+        alert("Unable to create SLA Action. Please set either Kill or Email"
+            + " action");
+      }
+      if (email === true && slaEmails === "") {
+        alert("Unable to create SLA Action. Please provide atleast one email"
+            + " address for Email action")
+      }
       settings[row] = id + "," + rule + "," + duration + "," + email + ","
           + kill;
     }
