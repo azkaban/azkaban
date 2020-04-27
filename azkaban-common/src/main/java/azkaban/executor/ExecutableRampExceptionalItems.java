@@ -58,7 +58,7 @@ public final class ExecutableRampExceptionalItems implements IRefreshable<Execut
   }
 
   public boolean exists(final String key) {
-    return get(key) != null;
+    return this.items.containsKey(key);
   }
 
   public List<Map.Entry<String, RampRecord>> getCachedItems() {

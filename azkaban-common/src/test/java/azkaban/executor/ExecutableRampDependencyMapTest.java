@@ -117,7 +117,7 @@ public class ExecutableRampDependencyMapTest {
     executableMap.add(DEPENDENCY_NAME1, DEPENDENCY_VALUE11, JOB_TYPE_SPARK);
     Assert.assertEquals(1, executableMap.size());
     ExecutableRampDependencyMap clonedExecutableMap = executableMap.clone();
-    Assert.assertEquals(clonedExecutableMap, executableMap);
+    Assert.assertEquals(executableMap, clonedExecutableMap);
     Assert.assertEquals(DEPENDENCY_VALUE11, executableMap.getDefaultValue(DEPENDENCY_NAME1));
     Assert.assertEquals(DEPENDENCY_VALUE11, clonedExecutableMap.getDefaultValue(DEPENDENCY_NAME1));
 

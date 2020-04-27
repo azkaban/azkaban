@@ -925,6 +925,10 @@ public class FlowRunner extends EventHandler implements Runnable {
             this.flow.getExecutionId(), this.flow.getId(), this.flow.getFlowName(), jobId, jobType, rampProps.toString()));
         node.setRampProps(rampProps);
       }
+    } else {
+      logger.warn(String.format(
+          "RAMP_FLOW_ATTACH_PROPS_FOR_JOB : (flow.ExecId = %d, flow.Id = %s, flow.flowName = %s) does not have Job Type or Id",
+          this.flow.getExecutionId(), this.flow.getId(), this.flow.getFlowName()));
     }
 
     final JobRunner runner = createJobRunner(node);
