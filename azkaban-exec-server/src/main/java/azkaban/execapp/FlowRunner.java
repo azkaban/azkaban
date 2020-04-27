@@ -598,11 +598,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (nextNodeStatus == Status.CANCELLED) {
       // if node is root flow
       if (node instanceof ExecutableFlow && node.getParentFlow() == null)  {
-        logger.info(String.format("Flow '%s' was cancelled before execution had started.",
+        this.logger.info(String.format("Flow '%s' was cancelled before execution had started.",
             node.getId()));
         finalizeFlow((ExecutableFlow) node);
       } else {
-        this.logger.info("Cancelling '" + node.getNestedId() + "' due to prior errors.");
+        this.logger.info(String.format("Cancelling '%s' due to prior errors.", node.getNestedId()));
         node.cancelNode(System.currentTimeMillis());
         finishExecutableNode(node);
       }
