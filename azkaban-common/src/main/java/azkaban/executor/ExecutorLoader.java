@@ -278,7 +278,7 @@ public interface ExecutorLoader {
   Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
       throws ExecutorManagerException;
 
-  int removeExecutionLogsByTime(long millis)
+  int removeExecutionLogsByTime(long millis, int recordCleanupLimit)
       throws ExecutorManagerException;
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;

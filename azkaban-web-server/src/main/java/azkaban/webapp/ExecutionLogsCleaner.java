@@ -29,6 +29,9 @@ public class ExecutionLogsCleaner {
    private static final long DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS = 60 * 60;
    private long cleanupIntervalInSeconds;
 
+   private static final int DEFAULT_LOG_CLEANUP_RECORD_LIMIT = 1000;
+   private int executionLogCleanupRecordLimit;
+
    @Inject
    public ExecutionLogsCleaner(final Props azkProps, final ExecutorLoader executorLoader) {
       this.azkProps = azkProps;
@@ -40,6 +43,9 @@ public class ExecutionLogsCleaner {
       this.cleanupIntervalInSeconds = this.azkProps.getLong(
           ConfigurationKeys.EXECUTION_LOGS_CLEANUP_INTERVAL_SECONDS,
           DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS);
+      this.executionLogCleanupRecordLimit =
+          this.azkProps.getInt(ConfigurationKeys.EXECUTION_LOGS_CLEANUP_RECORD_LIMIT,
+              DEFAULT_LOG_CLEANUP_RECORD_LIMIT);
    }
 
    public void start() {
@@ -60,7 +66,7 @@ public class ExecutionLogsCleaner {
    private void cleanOldExecutionLogs(final long millis) {
       final long beforeDeleteLogsTimestamp = System.currentTimeMillis();
       try {
-         final int count = this.executorLoader.removeExecutionLogsByTime(millis);
+         final int count = this.executorLoader.removeExecutionLogsByTime(millis, this.executionLogCleanupRecordLimit);
          logger.info("Cleaned up " + count + " log entries.");
       } catch (final Exception e) {
          logger.error("log clean up failed. ", e);
