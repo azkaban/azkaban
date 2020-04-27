@@ -596,10 +596,16 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     if (nextNodeStatus == Status.CANCELLED) {
-      this.logger.info("Cancelling '" + node.getNestedId()
-          + "' due to prior errors.");
-      node.cancelNode(System.currentTimeMillis());
-      finishExecutableNode(node);
+      // if node is root flow
+      if (node instanceof ExecutableFlow && node.getParentFlow() == null)  {
+        this.logger.info(String.format("Flow '%s' was cancelled before execution had started.",
+            node.getId()));
+        finalizeFlow((ExecutableFlow) node);
+      } else {
+        this.logger.info(String.format("Cancelling '%s' due to prior errors.", node.getNestedId()));
+        node.cancelNode(System.currentTimeMillis());
+        finishExecutableNode(node);
+      }
     } else if (nextNodeStatus == Status.SKIPPED) {
       this.logger.info("Skipping disabled job '" + node.getId() + "'.");
       node.skipNode(System.currentTimeMillis());
@@ -1147,7 +1153,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.flowPaused = false;
         if (this.flowFailed) {
           this.flow.setStatus(Status.FAILED_FINISHING);
-        } else if (this.flowKilled) {
+        } else if (isKilled()) {
           this.flow.setStatus(Status.KILLING);
         } else {
           this.flow.setStatus(Status.RUNNING);
@@ -1167,7 +1173,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public void kill() {
     synchronized (this.mainSyncObj) {
-      if (this.flowKilled) {
+      if (isKilled()) {
         return;
       }
       this.logger.info("Kill has been called on execution " + this.execId);
@@ -1301,7 +1307,9 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   private void interrupt() {
-    this.flowRunnerThread.interrupt();
+    if(this.flowRunnerThread != null) {
+      this.flowRunnerThread.interrupt();
+    }
   }
 
   public boolean isKilled() {
