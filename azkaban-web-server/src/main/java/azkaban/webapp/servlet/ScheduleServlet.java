@@ -268,14 +268,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           "Unable to parse duration for a SLA that needs to take actions!", e);
     }
 
-    if (actions.size() > 0) {
-      logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
-          + rule + " Duration:" + duration + " actions:" + actions);
-      return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
-          .setEmails(emails).createSlaOption();
+    if (actions.size() == 0) {
+      throw new ScheduleManagerException("Unable to create SLA as there is no action set");
     }
-    return null;
-
+    logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
+        + rule + " Duration:" + duration + " actions:" + actions);
+    return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
+        .setEmails(emails).createSlaOption();
   }
 
   private Duration parseDuration(final String duration) {
