@@ -762,6 +762,10 @@ public class ExecutionFlowDaoTest {
     assertThat(finishedFlows2.get(0).getStatus()).isEqualTo(Status.FAILED);
   }
 
+  /**
+   * Test the resiliency of ExecutableFlow when Sla Option is set to NULL.
+   * Make sure that the system overcomes it and the flow proceeds to next valid state.
+   */
   @Test
   public void testUpdateExecutableFlowNullSLAOptions() throws Exception {
     final ExecutableFlow flow = createTestFlow();

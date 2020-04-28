@@ -268,20 +268,19 @@ public class ExecutionFlowDao {
       }
     } catch (final IOException e) {
       flow.setStatus(Status.FAILED);
-      updateExecutableFlowStatus(flow);
+      updateExecutableFlowStatusInDB(flow);
       throw new ExecutorManagerException("Error encoding the execution flow. Execution Id  = "
           + flow.getExecutionId());
     } catch (final RuntimeException re) {
       flow.setStatus(Status.FAILED);
       // Likely due to serialization error
       if ( data == null && re instanceof NullPointerException) {
-        logger.warn("Failed to serialize executable flow for " + flow.getExecutionId()
-        + ". Likely due to SLA missing options. Please re-check the flow SLA");
+        logger.warn("Failed to serialize executable flow for " + flow.getExecutionId());
         logger.warn("NPE stacktrace" + ExceptionUtils.getStackTrace(re));
       }
-      updateExecutableFlowStatus(flow);
-      throw new ExecutorManagerException("Error encoding the execution flow due to NPE. "
-          + "Execution Id  = " + flow.getExecutionId(), re);
+      updateExecutableFlowStatusInDB(flow);
+      throw new ExecutorManagerException("Error encoding the execution flow due to "
+          + "RuntimeException. Execution Id  = " + flow.getExecutionId(), re);
     }
 
     try {
@@ -293,7 +292,7 @@ public class ExecutionFlowDao {
     }
   }
 
-  private void updateExecutableFlowStatus(final ExecutableFlow flow)
+  private void updateExecutableFlowStatusInDB(final ExecutableFlow flow)
     throws ExecutorManagerException {
     final String UPDATE_FLOW_STATUS = "UPDATE execution_flows SET status = ?, update_time = ? "
         + "where exec_id = ?";

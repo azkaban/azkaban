@@ -265,7 +265,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     final List<Map<String, Object>> slaOptions = new ArrayList<>();
     List<SlaOption> slaOptionList = this.executionOptions.getSlaOptions();
     if (slaOptionList != null) {
-      for (SlaOption slaOption : this.executionOptions.getSlaOptions()) {
+      for (SlaOption slaOption : slaOptionList) {
         slaOptions.add(slaOption.toObject());
       }
     }
