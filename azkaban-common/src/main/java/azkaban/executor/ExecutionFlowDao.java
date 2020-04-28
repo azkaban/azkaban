@@ -35,6 +35,7 @@ import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -255,9 +256,10 @@ public class ExecutionFlowDao {
             + "SET status=?,update_time=?,start_time=?,end_time=?,enc_type=?,flow_data=? "
             + "WHERE exec_id=?";
 
-    final String json = JSONUtils.toJSON(flow.toObject());
     byte[] data = null;
     try {
+      // If this action fails, the execution must be failed.
+      final String json = JSONUtils.toJSON(flow.toObject());
       final byte[] stringData = json.getBytes("UTF-8");
       data = stringData;
       // Todo kunkun-tang: use a common method to transform stringData to data.
@@ -265,13 +267,39 @@ public class ExecutionFlowDao {
         data = GZIPUtils.gzipBytes(stringData);
       }
     } catch (final IOException e) {
-      throw new ExecutorManagerException("Error encoding the execution flow.");
+      flow.setStatus(Status.FAILED);
+      updateExecutableFlowStatusInDB(flow);
+      throw new ExecutorManagerException("Error encoding the execution flow. Execution Id  = "
+          + flow.getExecutionId());
+    } catch (final RuntimeException re) {
+      flow.setStatus(Status.FAILED);
+      // Likely due to serialization error
+      if ( data == null && re instanceof NullPointerException) {
+        logger.warn("Failed to serialize executable flow for " + flow.getExecutionId());
+        logger.warn("NPE stacktrace" + ExceptionUtils.getStackTrace(re));
+      }
+      updateExecutableFlowStatusInDB(flow);
+      throw new ExecutorManagerException("Error encoding the execution flow due to "
+          + "RuntimeException. Execution Id  = " + flow.getExecutionId(), re);
     }
 
     try {
       this.dbOperator.update(UPDATE_EXECUTABLE_FLOW_DATA, flow.getStatus()
           .getNumVal(), flow.getUpdateTime(), flow.getStartTime(), flow
           .getEndTime(), encType.getNumVal(), data, flow.getExecutionId());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error updating flow.", e);
+    }
+  }
+
+  private void updateExecutableFlowStatusInDB(final ExecutableFlow flow)
+    throws ExecutorManagerException {
+    final String UPDATE_FLOW_STATUS = "UPDATE execution_flows SET status = ?, update_time = ? "
+        + "where exec_id = ?";
+
+    try {
+      this.dbOperator.update(UPDATE_FLOW_STATUS, flow.getStatus().getNumVal(),
+          System.currentTimeMillis(), flow.getExecutionId());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error updating flow.", e);
     }

@@ -762,6 +762,35 @@ public class ExecutionFlowDaoTest {
     assertThat(finishedFlows2.get(0).getStatus()).isEqualTo(Status.FAILED);
   }
 
+  /**
+   * Test the resiliency of ExecutableFlow when Sla Option is set to NULL.
+   * Make sure that the serialization of flow object does not break and the flow proceeds to
+   * next valid state.
+   */
+  @Test
+  public void testUpdateExecutableFlowNullSLAOptions() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow);
+
+    final ExecutableFlow fetchFlow =
+        this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
+
+    // set null sla option
+    fetchFlow.getExecutionOptions().setSlaOptions(null);
+    // Try updating flow
+    try {
+      this.executionFlowDao.updateExecutableFlow(fetchFlow);
+    } catch (ExecutorManagerException e) {
+       assert e.getMessage().contains("NPE");
+    }
+    // Fetch flow again, the status must be READY not PREPARING as NPE is handled properly when
+    //flow object is serialized.
+    final ExecutableFlow readyFlow =
+        this.executionFlowDao.fetchExecutableFlow(fetchFlow.getExecutionId());
+
+    assertThat(readyFlow.getStatus()).isEqualTo(Status.READY);
+  }
+
   /*
    * Updates flow execution status in the DB. After this the value of the status column will be
    * different from the status property in the flow data blob.
