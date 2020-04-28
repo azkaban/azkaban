@@ -1092,11 +1092,12 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
       }
     });
 
-    this.runner.run();
+    FlowRunnerTestUtil.startThread(this.runner).join();
     // children jobs shouldn't start
     assertStatus("joba", Status.READY);
     assertStatus("joba1", Status.READY);
     waitForAndAssertFlowStatus(Status.KILLED);
+    this.runner = null;
   }
 
 }
