@@ -179,7 +179,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
   },
 
   handleSetSla: function (evt) {
-    var slaEmails = $('#slaEmails').val();
+    var slaEmails = $('#slaEmails').val().trim();
     var settings = {};
     var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
     for (var row = 0; row < tFlowRules.rows.length - 1; row++) {

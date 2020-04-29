@@ -268,7 +268,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           "Unable to parse duration for a SLA that needs to take actions!", e);
     }
 
-    if (actions.size() == 0) {
+    if (actions.isEmpty()) {
       throw new ScheduleManagerException("Unable to create SLA as there is no action set");
     }
     logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
