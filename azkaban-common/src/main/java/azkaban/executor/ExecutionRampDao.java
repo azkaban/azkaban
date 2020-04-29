@@ -16,6 +16,7 @@
 package azkaban.executor;
 
 import azkaban.db.DatabaseOperator;
+import com.google.common.collect.ImmutableMap;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -70,23 +71,19 @@ public class ExecutionRampDao {
             ExecutableRamp.createInstance(
                 resultSet.getString(1),
                 resultSet.getString(2),
-                ExecutableRamp.Metadata.createInstance(
-                    resultSet.getInt(3),
-                    resultSet.getInt(4),
-                    resultSet.getBoolean(5)
-                ),
-                ExecutableRamp.State.createInstance(
-                    resultSet.getLong(6),
-                    resultSet.getLong(7),
-                    resultSet.getLong(8),
-                    resultSet.getInt(9),
-                    resultSet.getInt(10),
-                    resultSet.getInt(11),
-                    resultSet.getInt(12),
-                    resultSet.getBoolean(13),
-                    resultSet.getInt(14),
-                    resultSet.getBoolean(15)
-                )
+                resultSet.getInt(3),
+                resultSet.getInt(4),
+                resultSet.getBoolean(5),
+                resultSet.getLong(6),
+                resultSet.getLong(7),
+                resultSet.getLong(8),
+                resultSet.getInt(9),
+                resultSet.getInt(10),
+                resultSet.getInt(11),
+                resultSet.getInt(12),
+                resultSet.getBoolean(13),
+                resultSet.getInt(14),
+                resultSet.getBoolean(15)
             )
         );
       } while (resultSet.next());
@@ -297,8 +294,29 @@ public class ExecutionRampDao {
       );
     }
 
-
     try {
+      if ("ramp".equalsIgnoreCase(tableName)) {
+        actionData = adjustActionData(
+            actionData,
+            ImmutableMap.<String, Object>builder()
+                .put("startTime", System.currentTimeMillis())
+                .build()
+        );
+      } else if ("ramp_exceptional_flow_items".equalsIgnoreCase(tableName)) {
+        actionData = adjustActionData(
+            actionData,
+            ImmutableMap.<String, Object>builder()
+                .put("timestamp", System.currentTimeMillis())
+                .build()
+        );
+      } else if ("ramp_exceptional_job_items".equalsIgnoreCase(tableName)) {
+        actionData = adjustActionData(
+            actionData,
+            ImmutableMap.<String, Object>builder()
+                .put("timestamp", System.currentTimeMillis())
+                .build()
+        );
+      }
 
       String fieldListString = "";
       String positionListString = "";
@@ -393,6 +411,28 @@ public class ExecutionRampDao {
     }
 
     try {
+      if ("ramp".equalsIgnoreCase(tableName)) {
+        actionData = adjustActionData(
+            actionData,
+            ImmutableMap.<String, Object>builder()
+                .put("lastUpdatedTime", System.currentTimeMillis())
+                .build()
+        );
+      } else if ("ramp_exceptional_flow_items".equalsIgnoreCase(tableName)) {
+        actionData = adjustActionData(
+            actionData,
+            ImmutableMap.<String, Object>builder()
+                .put("timestamp", System.currentTimeMillis())
+                .build()
+        );
+      } else if ("ramp_exceptional_job_items".equalsIgnoreCase(tableName)) {
+        actionData = adjustActionData(
+            actionData,
+            ImmutableMap.<String, Object>builder()
+                .put("timestamp", System.currentTimeMillis())
+                .build()
+        );
+      }
 
       ArrayList<Object> parameters = new ArrayList<>();
 
@@ -443,6 +483,17 @@ public class ExecutionRampDao {
     return result;
   }
 
+  private Map<String, Object> adjustActionData(Map<String, Object> actionData, Map<String, Object> defaultValues) {
+    Map<String, Object> modifiedActionData = new HashMap<>();
+    actionData.entrySet().stream().forEach(entry -> modifiedActionData.put(entry.getKey(), entry.getValue()));
+    for (Map.Entry<String, Object> defaultValue : defaultValues.entrySet()) {
+      if (!modifiedActionData.containsKey(defaultValue.getKey())) {
+        modifiedActionData.put(defaultValue.getKey(), defaultValue.getValue());
+      }
+    }
+    return modifiedActionData;
+  }
+
   /**
    * Generic data update action for Ramp DataSets
    * @param actionDataMap ramp action map
@@ -480,14 +531,14 @@ public class ExecutionRampDao {
       // save isPaused, endTime when it is not zero, lastUpdatedTime when it is changed.
       String ramp = executableRamp.getId();
 
-      int cachedNumOfTrail = executableRamp.getState().getCachedNumOfTrail();
-      int cachedNumOfSuccess = executableRamp.getState().getCachedNumOfSuccess();
-      int cachedNumOfFailure = executableRamp.getState().getCachedNumOfFailure();
-      int cachedNumOfIgnored = executableRamp.getState().getCachedNumOfIgnored();
-      int rampStage = executableRamp.getState().getRampStage();
-      long endTime = executableRamp.getState().getEndTime();
-      boolean isPaused = executableRamp.getState().isPaused();
-      long lastUpdatedTime = executableRamp.getState().getLastUpdatedTime();
+      int cachedNumOfTrail = executableRamp.getCachedCount(ExecutableRamp.CountType.TRAIL);
+      int cachedNumOfSuccess = executableRamp.getCachedCount(ExecutableRamp.CountType.SUCCESS);
+      int cachedNumOfFailure = executableRamp.getCachedCount(ExecutableRamp.CountType.FAILURE);
+      int cachedNumOfIgnored = executableRamp.getCachedCount(ExecutableRamp.CountType.IGNORED);
+      int rampStage = executableRamp.getStage();
+      long endTime = executableRamp.getEndTime();
+      boolean isPaused = executableRamp.isPaused();
+      long lastUpdatedTime = executableRamp.getLastUpdatedTime();
 
       StringBuilder sqlCommandStringBuilder = new StringBuilder();
       sqlCommandStringBuilder.append("UPDATE ramp SET ");
@@ -525,11 +576,7 @@ public class ExecutionRampDao {
 
     try {
 
-      Object[][] parameters = executableRampExceptionalItems
-          .getItems()
-          .entrySet()
-          .stream()
-          .filter(item -> item.getValue().isCachedOnly())
+      Object[][] parameters = executableRampExceptionalItems.getCachedItems().stream()
           .map(item -> {
             ArrayList<Object> object = new ArrayList<>();
             object.add(ramp);
@@ -545,11 +592,7 @@ public class ExecutionRampDao {
 
         this.dbOperator.batch(sqlCommand, parameters);
 
-        executableRampExceptionalItems.getItems()
-            .entrySet()
-            .stream()
-            .filter(item -> item.getValue().isCachedOnly())
-            .forEach(item -> item.getValue().resetCachedOnly());
+        executableRampExceptionalItems.resetCacheFlag();
       }
 
     } catch (final SQLException e) {

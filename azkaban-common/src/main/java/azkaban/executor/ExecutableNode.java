@@ -66,7 +66,7 @@ public class ExecutableNode {
   private Set<String> outNodes = new HashSet<>();
   private Props inputProps;
   private Props outputProps;
-  private Props rampProps = new Props();
+  private Props rampProps;
   private long delayExecution = 0;
   private ArrayList<ExecutionAttempt> pastAttempts = null;
   private String condition;
