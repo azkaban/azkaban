@@ -93,12 +93,12 @@ public class FlowRunnerTestUtil {
    * Initialize the project with the flow definitions stored in the given source directory. Also
    * copy the source directory to the working directory.
    *
-   * @param project project to initialize
-   * @param sourceDir the source dir
+   * @param project    project to initialize
+   * @param sourceDir  the source dir
    * @param workingDir the working dir
    * @return the flow name to flow map
    * @throws ProjectManagerException the project manager exception
-   * @throws IOException the io exception
+   * @throws IOException             the io exception
    */
   public static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
       final File workingDir)

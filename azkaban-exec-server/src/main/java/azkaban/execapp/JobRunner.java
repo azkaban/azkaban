@@ -629,8 +629,8 @@ public class JobRunner extends EventHandler implements Runnable {
         // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
         fireEvent(Event.create(this, EventType.JOB_FINISHED,
             new EventData(finalStatus, this.node.getNestedId())), false);
-      } catch (RuntimeException e) {
-        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" +  this.executionId
+      } catch (final RuntimeException e) {
+        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
             + " jobId: " + this.jobId);
         serverLogger.warn(e.getMessage(), e);
       }
@@ -712,9 +712,11 @@ public class JobRunner extends EventHandler implements Runnable {
             submitUser);
       }
 
-      Props props = this.node.getRampProps();
+      final Props props = this.node.getRampProps();
       if (props != null) {
-        logger.info(String.format("RAMP_JOB_ATTACH_PROPS : (id = %s, props = %s)", this.node.getId(), props.toString()));
+        this.logger.info(String
+            .format("RAMP_JOB_ATTACH_PROPS : (id = %s, props = %s)", this.node.getId(),
+                props.toString()));
         this.props.putAll(props);
       }
 
