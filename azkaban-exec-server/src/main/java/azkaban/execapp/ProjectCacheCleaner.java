@@ -19,7 +19,6 @@ package azkaban.execapp;
 import azkaban.utils.ExecutorServiceUtils;
 import azkaban.utils.FileIOUtils;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
@@ -28,11 +27,14 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 class ProjectCacheCleaner {
 
+  // Root directory for project cache
   private final File projectCacheDir;
 
   // cache size in percentage of disk partition where {@link projectCacheDir} belongs to
@@ -49,18 +52,95 @@ class ProjectCacheCleaner {
 
   private static final Logger log = LoggerFactory.getLogger(ProjectCacheCleaner.class);
 
-  ProjectCacheCleaner(final File projectCacheDir, final double percentageOfDisk) {
+  // Number of threads in the cache cleanup service
+  private static final int CLEANING_SERVICE_THREAD_NUM = 8;
+
+  private static final double DEFAULT_THROTTLE_PERCENTAGE = 0.95; // 95%
+
+  // If space in Cache partition goes above this Percentage, incoming request must wait
+  // till the current cache cleanup cycle is done
+  private double throttlePercentage;
+
+  // Currently cached projects
+  private HashMap<Path, ProjectDirectoryMetadata> cachedProjects;
+
+  // A record of projects under deletion
+  private ConcurrentHashMap<Path, File> projectsUnderDeletion;
+
+  // Executor service responsible for cache cleanup
+  ExecutorService deletionService;
+
+  // A read-write lock. This is leveraged as a barrier mechanism to stall an incoming
+  // request until the current cache cleanup cycle is done. This is only necessary if new projects
+  // get added very rapidly driving the free space below throttlePercentage
+  private ReentrantLock barrier;
+  private Condition emptyQCond;
+
+  public static final String STATE_AVAILABLE = "CACHE_AVAILABLE";
+  public static final String STATE_CLEANING = "CACHE_CLEANING";
+
+  public ProjectCacheCleaner(final File projectCacheDir, final double percentageOfDisk) {
+    this(projectCacheDir, percentageOfDisk, DEFAULT_THROTTLE_PERCENTAGE);
+  }
+
+  public ProjectCacheCleaner(final File projectCacheDir, final double percentageOfDisk,
+      final double throttlePercentage) {
     Preconditions.checkNotNull(projectCacheDir);
     Preconditions.checkArgument(projectCacheDir.exists());
     Preconditions.checkArgument(percentageOfDisk > 0 && percentageOfDisk <= 1);
     this.projectCacheDir = projectCacheDir;
     this.percentageOfDisk = percentageOfDisk;
+    this.throttlePercentage = throttlePercentage;
+
+    log.info("ProjectCacheCleaner constructor called. ProjectCacheDir = {}, thresh-hold = {} %, throttle at {} %",
+        projectCacheDir.toPath(), this.percentageOfDisk, this.throttlePercentage);
+    cachedProjects = new HashMap<>();
+    projectsUnderDeletion = new ConcurrentHashMap<>();
+
+    barrier = new ReentrantLock();
+    emptyQCond = barrier.newCondition();
+    deletionService = Executors.newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM);
   }
 
   /**
-   * @return a list of project directories.
+   * Get metadata from the OS for the underlying path
+   * @param project path for the project cache. Project filepath encodes projectID & version
+   *                within the filename
+   * @param metadata Existing metadata associated with the project. If a valid metadata is passed
+   *                 only the lastAccessTime is re-fetched; otherwise everything including the
+   *                 dir size is fetched. This is an optimization as it is expensive to calculate
+   *                 the dir size from a recursive listing. Also there is no reason to re-calculate
+   *                 directory size of an already cached project without a version change.
+   *
+   * @return OS Metadata for the given path
    */
-  private List<Path> loadAllProjectDirs() {
+  private ProjectDirectoryMetadata fetchMetadataUpdate(final Path project, ProjectDirectoryMetadata metadata) {
+    try {
+      final String fileName = project.getFileName().toString();
+      final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
+      final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+
+      if (metadata == null) {
+        metadata = new ProjectDirectoryMetadata(projectId, versionNum, project.toFile());
+        metadata.setDirSizeInByte(
+            FlowPreparer.calculateDirSizeAndSave(metadata.getInstalledDir()));
+      }
+
+      metadata.setLastAccessTime(
+          Files.getLastModifiedTime(Paths.get(metadata.getInstalledDir().toString(),
+              FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
+    } catch (final Exception e) {
+      log.warn("Error while loading project dir metadata for project {}",
+          project.getFileName(), e);
+    }
+    return metadata;
+  }
+
+  /**
+   * Browse Cache root directory to fetch all valid projects and unclean files. If a project
+   * already exists in the cache, don't bother to re-fetch the OS metadata again.
+   */
+  private void loadAllProjects() {
     final List<Path> projects = new ArrayList<>();
     for (final File project : this.projectCacheDir.listFiles(new FilenameFilter() {
 
@@ -72,108 +152,86 @@ class ProjectCacheCleaner {
       }
     })) {
       if (project.exists() && project.isDirectory()) {
-        projects.add(project.toPath());
-      } else {
-        log.debug("Project {} doesn't exist or is non-dir.", project.getName());
+        ProjectDirectoryMetadata projectDirectoryMetadata = cachedProjects.get(project.toPath());
+        if (!projectsUnderDeletion.containsKey(project.toPath())) {
+          projectDirectoryMetadata = fetchMetadataUpdate(project.toPath(), projectDirectoryMetadata);
+          if (projectDirectoryMetadata != null) {
+            cachedProjects.put(project.toPath(), projectDirectoryMetadata);
+          }
+        }
       }
     }
-    return projects;
-  }
-
-  /**
-   * @return a list of {@link ProjectDirectoryMetadata} for all project directories
-   */
-  private List<ProjectDirectoryMetadata> loadAllProjects() {
-    final List<ProjectDirectoryMetadata> allProjects = new ArrayList<>();
-    for (final Path project : this.loadAllProjectDirs()) {
-      try {
-        final String fileName = project.getFileName().toString();
-        final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
-        final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
-
-        final ProjectDirectoryMetadata projectDirMetadata =
-            new ProjectDirectoryMetadata(projectId, versionNum, project.toFile());
-
-        projectDirMetadata.setDirSizeInByte(
-            FlowPreparer.calculateDirSizeAndSave(projectDirMetadata.getInstalledDir()));
-        projectDirMetadata.setLastAccessTime(
-            Files.getLastModifiedTime(Paths.get(projectDirMetadata.getInstalledDir().toString(),
-                FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
-        allProjects.add(projectDirMetadata);
-      } catch (final Exception e) {
-        log.warn("Error while loading project dir metadata for project {}",
-            project.getFileName(), e);
-      }
-    }
-    return allProjects;
   }
 
   /**
    * @return sum of the size of all project dirs
    */
-  private long getProjectDirsTotalSizeInBytes(final List<ProjectDirectoryMetadata> allProjects) {
-    final long totalSizeInBytes = allProjects.stream()
-        .mapToLong(ProjectDirectoryMetadata::getDirSizeInByte).sum();
+  private long getProjectDirsTotalSizeInBytes() {
+    long totalSizeInBytes = 0;
+    for (ProjectDirectoryMetadata metadata : cachedProjects.values()) {
+      totalSizeInBytes += metadata.getDirSizeInByte();
+    }
     return totalSizeInBytes;
   }
 
-  /**
-   * Delete all the files in parallel
-   *
-   * @param projectDirsToDelete a set of project dirs to delete
-   */
-  @SuppressWarnings("FutureReturnValueIgnored")
-  private void deleteProjectDirsInParallel(final ImmutableSet<File> projectDirsToDelete) {
-    final int CLEANING_SERVICE_THREAD_NUM = 8;
-    final ExecutorService deletionService = Executors
-        .newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM);
-
-    for (final File toDelete : projectDirsToDelete) {
-      deletionService.submit(() -> {
-        log.info("Deleting project dir {} from project cache to free up space", toDelete);
-        FileIOUtils.deleteDirectorySilently(toDelete);
-      });
-    }
-
+  private void addToDeletionQueue(final File toDelete) {
     try {
-      new ExecutorServiceUtils().gracefulShutdown(deletionService, Duration.ofDays(1));
-    } catch (final InterruptedException e) {
-      log.warn("Error when deleting files", e);
+      barrier.lock();
+      projectsUnderDeletion.put(toDelete.toPath(), toDelete);
+    } finally {
+      barrier.unlock();
+    }
+  }
+
+  private void removeFromDeletionQueue(final Path toDelete) {
+    try {
+      barrier.lock();
+      projectsUnderDeletion.remove(toDelete);
+      emptyQCond.signal();
+    } finally {
+      barrier.unlock();
     }
   }
 
   /**
+   * Submit a project directory for deletion
+   *
+   * @param toDelete project dir for deletion
+   */
+  @SuppressWarnings("FutureReturnValueIgnored")
+  private void submitProjectForDeletion(final File toDelete) {
+      addToDeletionQueue(toDelete);
+      deletionService.submit(() -> {
+        log.info("Deleting project dir {} from project cache to free up space", toDelete);
+
+        final long start = System.currentTimeMillis();
+        FileIOUtils.deleteDirectorySilently(toDelete);
+        log.info("Deleting project dir {} completed in {} msec(s)", toDelete, System.currentTimeMillis() - start);
+        removeFromDeletionQueue(toDelete.toPath());
+      });
+  }
+
+  /**
+   *
    * Delete least recently used projects to free up space
    *
    * @param sizeToFreeInBytes space to free up
-   * @param projectDirMetadataList a list of candidate files to delete
    */
-  private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes,
-      final List<ProjectDirectoryMetadata> projectDirMetadataList) {
-    // Sort projects by last reference time in ascending order
-    projectDirMetadataList.sort(Comparator.comparing(ProjectDirectoryMetadata::getLastAccessTime));
-    final Set<File> projectDirsToDelete = new HashSet<>();
+  private void deleteLeastRecentlyUsedProjects(long sizeToFreeInBytes) {
 
-    for (final ProjectDirectoryMetadata proj : projectDirMetadataList) {
+    final List<ProjectDirectoryMetadata> lruList = new ArrayList<>(cachedProjects.values());
+    lruList.sort(Comparator.comparing(ProjectDirectoryMetadata::getLastAccessTime));
+    for (ProjectDirectoryMetadata lruEntry : lruList) {
       if (sizeToFreeInBytes > 0) {
-        // Delete the project directory even if flow within is running. It's OK to
-        // delete the directory since execution dir is HARD linked to project dir. Note that even
-        // if project is deleted, disk space will be freed up only when all associated execution
-        // dirs are deleted.
-        if (proj.getInstalledDir() != null) {
-          projectDirsToDelete.add(proj.getInstalledDir());
-          sizeToFreeInBytes -= proj.getDirSizeInByte();
+        if (lruEntry.getInstalledDir() != null) {
+          cachedProjects.remove(lruEntry.getInstalledDir().toPath());
+          submitProjectForDeletion(lruEntry.getInstalledDir());
+          sizeToFreeInBytes -= lruEntry.getDirSizeInByte();
         }
       } else {
         break;
       }
     }
-
-    final long start = System.currentTimeMillis();
-    deleteProjectDirsInParallel(ImmutableSet.copyOf(projectDirsToDelete));
-    final long end = System.currentTimeMillis();
-    log.info("Deleting {} project dir(s) took {} sec(s)", projectDirsToDelete.size(),
-        (end - start) / 1000);
   }
 
   private long bytesToMB(final long bytes) {
@@ -181,32 +239,105 @@ class ProjectCacheCleaner {
   }
 
   /**
-   * Deleting least recently accessed project dirs when there's no room to accommodate new project
+   *
+   * This method will block until all active cleanup threads finish deleting submitted
+   * cleanup jobs.
    */
-  void deleteProjectDirsIfNecessary(final long newProjectSizeInBytes) {
-    final long projectCacheMaxSizeInByte =
-        (long) (this.projectCacheDir.getTotalSpace() * this.percentageOfDisk);
+  public void finishPendingCleanup() {
+    final long start = System.currentTimeMillis();
+    try {
+      try {
+        barrier.lock();
+        while (!projectsUnderDeletion.isEmpty()) {
+          emptyQCond.await(1, TimeUnit.SECONDS);
+        }
+      } finally {
+        barrier.unlock();
+      }
+      log.info("Took {} ms to complete ongoing cache cleanup.", (System.currentTimeMillis() - start));
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Deleting least recently accessed project dirs when there's no room to accommodate new project.
+   *
+   * The logic:
+   * 1. Calculates the total dynamic size available for the project cache.
+   *    This = (Usable space left in the disk partition + Space currently occupied by the project cache).
+   * 2. Calculates high water mark & throttle water marks based on the above number.
+   * 3. If the occupied bytes > high water mark, lazy (Non-blocking) LRU eviction kicks in
+   * 4. If the occupied bytes > throttle water mark, the method will block until LRU eviction is complete.
+   * In each case, LRU eviction attempts to keep the occupied space below high water mark.
+   *
+   * @param newProjectSizeInBytes space in bytes the new project will add to the existing cache
+   */
+  public void deleteProjectDirsIfNecessary(final long newProjectSizeInBytes) {
+    final long cachePartitionSize = this.projectCacheDir.getTotalSpace();
+    final long availablePartitionSize = this.projectCacheDir.getUsableSpace();
 
     final long start = System.currentTimeMillis();
-    final List<ProjectDirectoryMetadata> allProjects = loadAllProjects();
-    log.info("Loading {} project dirs metadata completed in {} sec(s)",
-        allProjects.size(), (System.currentTimeMillis() - start) / 1000);
+    loadAllProjects();
+    log.info("Loading {} project dirs metadata completed in {} msecs",
+        cachedProjects.size(), System.currentTimeMillis() - start);
 
-    final long currentSpaceInBytes = getProjectDirsTotalSizeInBytes(allProjects);
-    final long spaceToUseInBytes = currentSpaceInBytes + newProjectSizeInBytes;
-    if (spaceToUseInBytes >= projectCacheMaxSizeInByte) {
-      log.info(
-          "Project cache usage[{} MB] >= cache limit[{} MB], start cleaning up project dirs",
-          bytesToMB(spaceToUseInBytes),
-          bytesToMB(projectCacheMaxSizeInByte));
+    long currentCacheSize = getProjectDirsTotalSizeInBytes();
+    long projectCacheDirCapacity = currentCacheSize + availablePartitionSize;
+    boolean throttleAfterDeletion = false;
 
-      final long freeCacheSpaceInBytes = projectCacheMaxSizeInByte - currentSpaceInBytes;
-      deleteLeastRecentlyUsedProjects(newProjectSizeInBytes - freeCacheSpaceInBytes, allProjects);
-    } else {
-      log.info(
-          "Project cache usage[{} MB] < cache limit[{} MB], no need to delete any project dir",
-          bytesToMB(spaceToUseInBytes),
-          bytesToMB(projectCacheMaxSizeInByte));
+    final long highWatermark = (long) (projectCacheDirCapacity * this.percentageOfDisk);
+    final long throttleWatermark = (long) (projectCacheDirCapacity * throttlePercentage);
+
+    long projectedCacheSize = currentCacheSize + newProjectSizeInBytes;
+
+    log.info("Partition = {} MB, Total Capacity = {} MB, Cache Size = {} MB, Projected Size = {} MB",
+        bytesToMB(cachePartitionSize),
+        bytesToMB(projectCacheDirCapacity),
+        bytesToMB(currentCacheSize),
+        bytesToMB(projectedCacheSize));
+    log.info("High Watermark = {} MB, Throttle Watermark = {} MB",
+        bytesToMB(highWatermark),
+        bytesToMB(throttleWatermark));
+
+    if (projectedCacheSize >= throttleWatermark) {
+      throttleAfterDeletion = true;
+    }
+
+    if (projectedCacheSize >= highWatermark) {
+      log.info("Projected cache size exceeds High Watermark. LRU Eviction will kick in");
+      deleteLeastRecentlyUsedProjects(projectedCacheSize - highWatermark);
+    }
+
+    if (throttleAfterDeletion) {
+      /*
+       * Block till already submitted cleanup is done.
+       */
+      log.info("Throttle Watermark was hit. Blocking till LRU eviction is complete.");
+      finishPendingCleanup();
+    }
+  }
+
+  /**
+   *
+   * @return Return the current state of the cleaner service
+   */
+  public String queryState() {
+    if (projectsUnderDeletion.isEmpty()) {
+      return STATE_AVAILABLE;
+    }
+    return STATE_CLEANING;
+  }
+
+  /**
+   * Makes sure the Cache deletion process cleanly terminates so the possibility of unclean
+   * cache directories is eliminated.
+   */
+  public void shutdown() {
+    try {
+      new ExecutorServiceUtils().gracefulShutdown(deletionService, Duration.ofDays(1));
+    } catch (final InterruptedException e) {
+      log.warn("Error when deleting files", e);
     }
   }
 }

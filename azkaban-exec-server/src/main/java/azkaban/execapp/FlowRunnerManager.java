@@ -228,11 +228,15 @@ public class FlowRunnerManager implements EventListener,
             getClass().getClassLoader());
 
     ProjectCacheCleaner cleaner = null;
+    this.LOGGER.info("Configuring Project Cache");
     try {
       final double projectCacheSizePercentage =
           props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
+      this.LOGGER.info("Configuring Cache Cleaner with {} % as threshold", projectCacheSizePercentage);
       cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
+      this.LOGGER.info("ProjectCacheCleaner configured.");
     } catch (final UndefinedPropertyException ex) {
+      ex.printStackTrace();
     }
 
     // Create a flow preparer
@@ -892,6 +896,7 @@ public class FlowRunnerManager implements EventListener,
         LOGGER.error(e.getMessage());
       }
     }
+    flowPreparer.shutdown();
     LOGGER.warn("Shutdown FlowRunnerManager complete.");
   }
 

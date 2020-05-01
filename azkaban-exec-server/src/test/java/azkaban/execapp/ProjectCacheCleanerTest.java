@@ -52,6 +52,7 @@ public class ProjectCacheCleanerTest {
 
     final long TEN_MB_IN_BYTE = 10 * 1024 * 1024;
     when(this.cacheDir.getTotalSpace()).thenReturn(TEN_MB_IN_BYTE);
+    when(this.cacheDir.getUsableSpace()).thenReturn((long) (4*1024*1024));
 
     final ClassLoader classLoader = getClass().getClassLoader();
 
@@ -91,6 +92,7 @@ public class ProjectCacheCleanerTest {
   public void testDeletingAll() {
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.3);
     cleaner.deleteProjectDirsIfNecessary(7000000);
+    cleaner.finishPendingCleanup();
 
     assertThat(this.cacheDir.list()).hasSize(0);
   }
@@ -102,6 +104,7 @@ public class ProjectCacheCleanerTest {
   public void testDeletingTwoLRUItems() {
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.7);
     cleaner.deleteProjectDirsIfNecessary(3000000);
+    cleaner.finishPendingCleanup();
     assertThat(this.cacheDir.list()).hasSize(1);
     assertThat(this.cacheDir.list()).contains("3.1");
   }
@@ -113,8 +116,20 @@ public class ProjectCacheCleanerTest {
   public void testDeletingOneLRUItem() {
     final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.7);
     cleaner.deleteProjectDirsIfNecessary(2000000);
+    cleaner.finishPendingCleanup();
     assertThat(this.cacheDir.list()).hasSize(2);
     assertThat(this.cacheDir.list()).contains("3.1");
     assertThat(this.cacheDir.list()).contains("2.1");
+  }
+
+  @Test
+  /**
+   * Put enough items in the cache to invoke throttle condition.
+   */
+  public void testThrottleCondition() {
+    final ProjectCacheCleaner cleaner = new ProjectCacheCleaner(this.cacheDir, 0.65, 0.7);
+    cleaner.deleteProjectDirsIfNecessary(3000000);
+    assertThat(this.cacheDir.list()).hasSize(1);
+    assertThat(this.cacheDir.list()).contains("3.1");
   }
 }
