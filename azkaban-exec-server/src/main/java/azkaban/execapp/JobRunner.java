@@ -236,9 +236,16 @@ public class JobRunner extends EventHandler implements Runnable {
         }
       }
     } else if (this.pipelineLevel == 3) {
-      final ExecutableFlowBase parentFlow = this.node.getParentFlow();
+      final ExecutableFlowBase parentFlow = findRootParentFlow(this.node.getParentFlow());
       findAllEndingNodes(parentFlow, this.pipelineJobs);
     }
+  }
+
+  private ExecutableFlowBase findRootParentFlow(final ExecutableFlowBase node) {
+    if (node.getParentFlow() != null) {
+      return findRootParentFlow(node.getParentFlow());
+    }
+    return node;
   }
 
   private void findAllStartingNodes(final ExecutableFlowBase flow,
