@@ -301,6 +301,9 @@ public class Constants {
     public static final String PROJECT_CACHE_SIZE_PERCENTAGE = "azkaban"
         + ".project_cache_size_percentage_of_disk";
 
+    public static final String PROJECT_CACHE_THROTTLE_PERCENTAGE = "azkaban"
+        + ".project_cache_throttle_percentage";
+
     // how many older versions of project files are kept in DB before deleting them
     public static final String PROJECT_VERSION_RETENTION = "project.version.retention";
 

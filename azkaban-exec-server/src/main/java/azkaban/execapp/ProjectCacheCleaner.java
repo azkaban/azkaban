@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import azkaban.utils.ExecutorServiceUtils;
 import azkaban.utils.FileIOUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -29,11 +30,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,25 +59,25 @@ class ProjectCacheCleaner {
   // Number of threads in the cache cleanup service
   private static final int CLEANING_SERVICE_THREAD_NUM = 8;
 
-  private static final double DEFAULT_THROTTLE_PERCENTAGE = 0.95; // 95%
+  private static final double DEFAULT_THROTTLE_PERCENTAGE = 0.92; // 92%
 
   // If space in Cache partition goes above this Percentage, incoming request must wait
   // till the current cache cleanup cycle is done
   private double throttlePercentage;
 
   // Currently cached projects
-  private HashMap<Path, ProjectDirectoryMetadata> cachedProjects;
+  private final Map<Path, ProjectDirectoryMetadata> cachedProjects = new HashMap<>();
 
   // A record of projects under deletion
-  private ConcurrentHashMap<Path, File> projectsUnderDeletion;
+  private final ConcurrentMap<Path, File> projectsUnderDeletion = new ConcurrentHashMap<>();
 
   // Executor service responsible for cache cleanup
-  ExecutorService deletionService;
+  private ExecutorService deletionService;
 
-  // A read-write lock. This is leveraged as a barrier mechanism to stall an incoming
-  // request until the current cache cleanup cycle is done. This is only necessary if new projects
-  // get added very rapidly driving the free space below throttlePercentage
-  private ReentrantLock barrier;
+  // This is leveraged as a barrier mechanism to stall an incoming
+  // request until ongoing cache cleanup cycle is done. This is only necessary if new projects
+  // get added very rapidly driving cache space above throttlePercentage
+  private final Lock barrier = new ReentrantLock();
   private Condition emptyQCond;
 
   public static final String STATE_AVAILABLE = "CACHE_AVAILABLE";
@@ -94,46 +98,49 @@ class ProjectCacheCleaner {
 
     log.info("ProjectCacheCleaner constructor called. ProjectCacheDir = {}, thresh-hold = {} %, throttle at {} %",
         projectCacheDir.toPath(), this.percentageOfDisk, this.throttlePercentage);
-    cachedProjects = new HashMap<>();
-    projectsUnderDeletion = new ConcurrentHashMap<>();
 
-    barrier = new ReentrantLock();
     emptyQCond = barrier.newCondition();
     deletionService = Executors.newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM);
   }
 
   /**
-   * Get metadata from the OS for the underlying path
+   * Get metadata from the OS for the underlying path, lastAccessTime is fetched from the OS
+   * regardless of whether the given project already exists, but the space calculation for a
+   * project directory is only performed one-time.
+   *
    * @param project path for the project cache. Project filepath encodes projectID & version
    *                within the filename
-   * @param metadata Existing metadata associated with the project. If a valid metadata is passed
-   *                 only the lastAccessTime is re-fetched; otherwise everything including the
-   *                 dir size is fetched. This is an optimization as it is expensive to calculate
-   *                 the dir size from a recursive listing. Also there is no reason to re-calculate
-   *                 directory size of an already cached project without a version change.
    *
    * @return OS Metadata for the given path
    */
-  private ProjectDirectoryMetadata fetchMetadataUpdate(final Path project, ProjectDirectoryMetadata metadata) {
-    try {
-      final String fileName = project.getFileName().toString();
-      final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
-      final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+  private ProjectDirectoryMetadata fetchProjectMetadata(final Path project) {
+    ProjectDirectoryMetadata projectDirectoryMetadata = this.cachedProjects.get(project);
 
-      if (metadata == null) {
-        metadata = new ProjectDirectoryMetadata(projectId, versionNum, project.toFile());
-        metadata.setDirSizeInByte(
-            FlowPreparer.calculateDirSizeAndSave(metadata.getInstalledDir()));
+    try {
+      if (projectDirectoryMetadata == null) {
+        final String fileName = project.getFileName().toString();
+        final int projectId = Integer.parseInt(fileName.split("\\.")[0]);
+        final int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+        projectDirectoryMetadata = new ProjectDirectoryMetadata(projectId, versionNum, project.toFile());
+
+        /*
+         * Calculate used-space (Equivalent of du command) only if the metadata for
+         * this project was never fetched before. This optimization is important as
+         * recursive space calculation is a very expensive operation.
+         */
+        projectDirectoryMetadata.setDirSizeInByte(
+            FlowPreparer.calculateDirSizeAndSave(projectDirectoryMetadata.getInstalledDir()));
       }
 
-      metadata.setLastAccessTime(
-          Files.getLastModifiedTime(Paths.get(metadata.getInstalledDir().toString(),
+      projectDirectoryMetadata.setLastAccessTime(
+          Files.getLastModifiedTime(Paths.get(projectDirectoryMetadata.getInstalledDir().toString(),
               FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
+
     } catch (final Exception e) {
       log.warn("Error while loading project dir metadata for project {}",
           project.getFileName(), e);
     }
-    return metadata;
+    return projectDirectoryMetadata;
   }
 
   /**
@@ -152,9 +159,8 @@ class ProjectCacheCleaner {
       }
     })) {
       if (project.exists() && project.isDirectory()) {
-        ProjectDirectoryMetadata projectDirectoryMetadata = cachedProjects.get(project.toPath());
         if (!projectsUnderDeletion.containsKey(project.toPath())) {
-          projectDirectoryMetadata = fetchMetadataUpdate(project.toPath(), projectDirectoryMetadata);
+          ProjectDirectoryMetadata projectDirectoryMetadata = fetchProjectMetadata(project.toPath());
           if (projectDirectoryMetadata != null) {
             cachedProjects.put(project.toPath(), projectDirectoryMetadata);
           }
@@ -243,16 +249,19 @@ class ProjectCacheCleaner {
    * This method will block until all active cleanup threads finish deleting submitted
    * cleanup jobs.
    */
-  public void finishPendingCleanup() {
+  @VisibleForTesting
+  void finishPendingCleanup() {
     final long start = System.currentTimeMillis();
     try {
       try {
-        barrier.lock();
+        this.barrier.lock();
         while (!projectsUnderDeletion.isEmpty()) {
-          emptyQCond.await(1, TimeUnit.SECONDS);
+          log.info("{} entries left in the cache directory deletion Q. Waiting for the cleanup to finish",
+              this.projectsUnderDeletion.size());
+          this.emptyQCond.await(10, TimeUnit.SECONDS);
         }
       } finally {
-        barrier.unlock();
+        this.barrier.unlock();
       }
       log.info("Took {} ms to complete ongoing cache cleanup.", (System.currentTimeMillis() - start));
     } catch (InterruptedException e) {
@@ -282,8 +291,8 @@ class ProjectCacheCleaner {
     log.info("Loading {} project dirs metadata completed in {} msecs",
         cachedProjects.size(), System.currentTimeMillis() - start);
 
-    long currentCacheSize = getProjectDirsTotalSizeInBytes();
-    long projectCacheDirCapacity = currentCacheSize + availablePartitionSize;
+    final long currentCacheSize = getProjectDirsTotalSizeInBytes();
+    final long projectCacheDirCapacity = currentCacheSize + availablePartitionSize;
     boolean throttleAfterDeletion = false;
 
     final long highWatermark = (long) (projectCacheDirCapacity * this.percentageOfDisk);
