@@ -296,7 +296,7 @@ class ProjectCacheCleaner {
     boolean throttleAfterDeletion = false;
 
     final long highWatermark = (long) (projectCacheDirCapacity * this.percentageOfDisk);
-    final long throttleWatermark = (long) (projectCacheDirCapacity * throttlePercentage);
+    final long throttleWatermark = (long) (projectCacheDirCapacity * this.throttlePercentage);
 
     long projectedCacheSize = currentCacheSize + newProjectSizeInBytes;
 
