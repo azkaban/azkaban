@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -56,7 +55,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
-import sun.util.calendar.ZoneInfo;
 
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
@@ -158,7 +156,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     data.put("flowname", schedule.getFlowName());
     data.put("projectname", schedule.getProjectName());
     data.put("time", schedule.getFirstSchedTime());
-    data.put("timeZone", schedule.getTimezone().getID());
     data.put("cron", schedule.getCronExpression());
 
     final DateTime time = DateTime.now();
@@ -300,7 +297,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("nextExecTime",
             TimeUtils.formatDateTime(schedule.getNextExecTime()));
         jsonObj.put("period", TimeUtils.formatPeriod(schedule.getPeriod()));
-        jsonObj.put("timeZone", schedule.getTimezone().getID());
         jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);
@@ -614,16 +610,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    DateTimeZone timezone = DateTimeZone.getDefault();
-    if (hasParam(req, "timezone")) {
-      String timezoneParam = getParam(req, "timezone");
-      timezone = getTimeZone(timezoneParam);
-      if(null == timezone) {
-        ret.put(PARAM_STATUS, STATUS_ERROR);
-        ret.put(PARAM_MESSAGE, "Unknown timezone " + timezoneParam);
-        return;
-      }
-    }
+    final DateTimeZone timezone = DateTimeZone.getDefault();
     final DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
 
     String cronExpression = null;
@@ -665,7 +652,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     // Because either cronExpression or recurrence exists, we build schedule in the below way.
     final Schedule schedule = this.scheduleManager
         .cronScheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), endSchedTime, timezone,
+            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
             DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             cronExpression);
@@ -679,22 +666,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
     ret.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
     ret.put(PARAM_MESSAGE, projectName + "." + flowName + " scheduled.");
-  }
-
-  public static DateTimeZone getTimeZone(String timezoneParam) {
-    try {
-      return DateTimeZone.forID(timezoneParam);
-    } catch (final IllegalArgumentException e) {
-      TimeZone zone = ZoneInfo.getTimeZone(timezoneParam);
-      if(null == zone) {
-        return null;
-      }
-      try {
-        return DateTimeZone.forTimeZone(zone);
-      } catch (final IllegalArgumentException e1) {
-        return null;
-      }
-    }
   }
 
   private DateTime parseDateTime(final String scheduleDate, final String scheduleTime) {

@@ -15,8 +15,7 @@
 *#
 
 <script type="text/javascript" src="${context}/js/azkaban/util/date.js?version=20161031"></script>
-<script type="text/javascript"
-        src="${context}/js/azkaban/view/schedule-panel.js?version=20161031"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js?v=1588477485"></script>
 <script type="text/javascript" src="${context}/js/moment.min.js"></script>
 <script type="text/javascript" src="${context}/js/later.min.js"></script>
 <script type="text/javascript" src="${context}/js/moment-timezone-with-data.min.js"></script>
@@ -53,6 +52,8 @@
           <div class="form-group">
 
             <div class="col-sm-12" style="height:55px;">
+              <h4 style="color:Coral; font-style:italic;">All schedules are based on the server
+                timezone: <b id="timeZoneID"></b>.</h4>
               <h6 style="color:#0080ff;">Warning: the execution will be skipped if it is scheduled
                 to run during the hour that is lost when DST starts in the Spring.
                 E.g. there is no 2 - 3 AM when PST switches to PDT.</h6>
@@ -97,12 +98,6 @@
                 <div class="col-sm-8">
                   <input type="text" id="year_input" value="" class="form-control"
                          oninput="updateOutput()">
-                </div>
-                <br/> <br/> <br/>
-                <label class="col-sm-4 control-label" id="year_label">TimeZone</label>
-                <div class="col-sm-8">
-                    <input type="text" id="cron-tz" value="UTC" oninput="updateOutput()"
-                                       class="form-control">
                 </div>
               </div>
 
