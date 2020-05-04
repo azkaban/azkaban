@@ -227,11 +227,30 @@ public class FlowRunnerManager implements EventListener,
             getClass().getClassLoader());
 
     ProjectCacheCleaner cleaner = null;
+    this.LOGGER.info("Configuring Project Cache");
+    double projectCacheSizePercentage = 0.0;
+    double projectCacheThrottlePercentage = 0.0;
     try {
-      final double projectCacheSizePercentage =
+      projectCacheSizePercentage =
           props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
-      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
+      projectCacheThrottlePercentage =
+          props.getDouble(ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
+      this.LOGGER.info("Configuring Cache Cleaner with {} % as threshold", projectCacheSizePercentage);
+      cleaner = new ProjectCacheCleaner(this.projectDirectory,
+          projectCacheSizePercentage,
+          projectCacheThrottlePercentage);
+      this.LOGGER.info("ProjectCacheCleaner configured.");
     } catch (final UndefinedPropertyException ex) {
+      if (projectCacheSizePercentage == 0.0) {
+        this.LOGGER.info("Property {} not set. Project Cache directory will not be auto-cleaned as it gets full",
+            ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
+      } else {
+        // Exception must have been fired because Throttle percentage is not set. Initialize the cleaner
+        // with the default throttle value
+        this.LOGGER.info("Property {} not set. Initializing with default value of Throttle Percentage",
+            ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
+        cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
+      }
     }
 
     // Create a flow preparer
@@ -887,6 +906,7 @@ public class FlowRunnerManager implements EventListener,
         LOGGER.error(e.getMessage());
       }
     }
+    flowPreparer.shutdown();
     LOGGER.warn("Shutdown FlowRunnerManager complete.");
   }
 
