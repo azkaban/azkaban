@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -72,7 +73,7 @@ class ProjectCacheCleaner {
   private final ConcurrentMap<Path, File> projectsUnderDeletion = new ConcurrentHashMap<>();
 
   // Executor service responsible for cache cleanup
-  private ExecutorService deletionService;
+  private final ExecutorService deletionService;
 
   // This is leveraged as a barrier mechanism to stall an incoming
   // request until ongoing cache cleanup cycle is done. This is only necessary if new projects
@@ -149,24 +150,22 @@ class ProjectCacheCleaner {
    */
   private void loadAllProjects() {
     final List<Path> projects = new ArrayList<>();
-    for (final File project : this.projectCacheDir.listFiles(new FilenameFilter() {
-
-      String pattern = "[0-9]+\\.[0-9]+";
-
-      @Override
-      public boolean accept(final File dir, final String name) {
-        return name.matches(this.pattern);
-      }
-    })) {
-      if (project.exists() && project.isDirectory()) {
-        if (!projectsUnderDeletion.containsKey(project.toPath())) {
-          ProjectDirectoryMetadata projectDirectoryMetadata = fetchProjectMetadata(project.toPath());
-          if (projectDirectoryMetadata != null) {
-            cachedProjects.put(project.toPath(), projectDirectoryMetadata);
+    for (final File project : Objects
+        .requireNonNull(this.projectCacheDir.listFiles(new FilenameFilter() {
+          String pattern = "[0-9]+\\.[0-9]+";
+          @Override
+          public boolean accept(final File dir, final String name) {
+            return name.matches(this.pattern);
           }
+        }))) {
+      if (project.exists() && project.isDirectory() &&
+          !projectsUnderDeletion.containsKey(project.toPath())) {
+        ProjectDirectoryMetadata projectDirectoryMetadata = fetchProjectMetadata(project.toPath());
+        if (projectDirectoryMetadata != null) {
+            cachedProjects.put(project.toPath(), projectDirectoryMetadata);
         }
       }
-    }
+    } // end of for loop
   }
 
   /**
@@ -253,19 +252,17 @@ class ProjectCacheCleaner {
   void finishPendingCleanup() {
     final long start = System.currentTimeMillis();
     try {
-      try {
-        this.barrier.lock();
-        while (!projectsUnderDeletion.isEmpty()) {
-          log.info("{} entries left in the cache directory deletion Q. Waiting for the cleanup to finish",
-              this.projectsUnderDeletion.size());
-          this.emptyQCond.await(10, TimeUnit.SECONDS);
-        }
-      } finally {
-        this.barrier.unlock();
+      this.barrier.lock();
+      while (!projectsUnderDeletion.isEmpty()) {
+        log.info("{} entries left in the cache directory deletion Q. Waiting for the cleanup to finish",
+            this.projectsUnderDeletion.size());
+        this.emptyQCond.await(10, TimeUnit.SECONDS);
       }
       log.info("Took {} ms to complete ongoing cache cleanup.", (System.currentTimeMillis() - start));
     } catch (InterruptedException e) {
       e.printStackTrace();
+    } finally {
+      this.barrier.unlock();
     }
   }
 

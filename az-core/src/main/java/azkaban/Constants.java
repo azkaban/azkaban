@@ -298,11 +298,11 @@ public class Constants {
         + ".max_number_per_ip_per_user";
 
     // allowed max size of shared project dir (percentage of partition size), e.g 0.8
-    public static final String PROJECT_CACHE_SIZE_PERCENTAGE = "azkaban"
-        + ".project_cache_size_percentage_of_disk";
+    public static final String PROJECT_CACHE_SIZE_PERCENTAGE =
+        "azkaban.project_cache_size_percentage_of_disk";
 
-    public static final String PROJECT_CACHE_THROTTLE_PERCENTAGE = "azkaban"
-        + ".project_cache_throttle_percentage";
+    public static final String PROJECT_CACHE_THROTTLE_PERCENTAGE =
+        "azkaban.project_cache_throttle_percentage";
 
     // how many older versions of project files are kept in DB before deleting them
     public static final String PROJECT_VERSION_RETENTION = "project.version.retention";

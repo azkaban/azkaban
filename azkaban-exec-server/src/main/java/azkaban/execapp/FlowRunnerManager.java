@@ -248,6 +248,8 @@ public class FlowRunnerManager implements EventListener,
       } else {
         // Exception must have been fired because Throttle percentage is not set. Initialize the cleaner
         // with the default throttle value
+        this.LOGGER.info("Property {} not set. Initializing with default value of Throttle Percentage",
+            ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
         cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
       }
     }
