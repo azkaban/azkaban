@@ -246,12 +246,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   @Override
   public void run() {
-    // Record the time between submission and when the flow execution starts.
-    // Note that since submit time is recorded on the web server and flow execution happens on
-    // the executor, there could be some inaccuracies due to clock skew.
-    final long submitTime = flow.getExecutableFlow().getSubmitTime();
-    this.execMetrics
-        .addFlowTimeToStart(submitTime == -1 ? -1 : System.currentTimeMillis() - submitTime);
     try {
       if (this.executorService == null) {
         this.executorService = Executors.newFixedThreadPool(this.numJobThreads);
@@ -273,6 +267,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       if (this.logger != null) {
         this.logger
             .error("An error has occurred during the running of the flow. Quiting.", t);
+      }
+      if (Status.KILLING.equals(this.flow.getStatus())) {
+        this.execMetrics.decrementFlowKillingCount();
       }
       this.flow.setStatus(Status.FAILED);
     } finally {
@@ -318,9 +315,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         break;
       case KILLED:
         this.execMetrics.markFlowKilled();
-        final long now = System.currentTimeMillis();
-        this.execMetrics
-            .addFlowTimeToKill(this.flowKillTime == -1 ? -1 : now - this.flowKillTime);
+        this.execMetrics.addFlowTimeToKill(
+            this.flowKillTime == -1 ? -1 : System.currentTimeMillis() - this.flowKillTime);
         break;
       default:
         break;
@@ -770,6 +766,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.logger
             .info("Setting flow '" + id + "' status to KILLED in " + durationSec + " seconds");
         flow.setStatus(Status.KILLED);
+        this.execMetrics.decrementFlowKillingCount();
         break;
       case FAILED:
       case KILLED:
@@ -1193,6 +1190,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           this.flow.setStatus(Status.FAILED_FINISHING);
         } else if (isKilled()) {
           this.flow.setStatus(Status.KILLING);
+          this.execMetrics.incrementFlowKillingCount();
         } else {
           this.flow.setStatus(Status.RUNNING);
         }
@@ -1216,7 +1214,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
       this.logger.info("Kill has been called on execution " + this.execId);
       this.flow.setStatus(Status.KILLING);
-      this.execMetrics.markFlowKilling();
+      this.execMetrics.incrementFlowKillingCount();
       this.flowKillTime = System.currentTimeMillis();
 
       // If the flow is paused, then we'll also unpause
@@ -1594,7 +1592,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
     }
 
-    private void reportJobFinishedMetrics(ExecutableNode node) {
+    private void reportJobFinishedMetrics(final ExecutableNode node) {
       final Status status = node.getStatus();
       switch (status) {
         case SUCCEEDED:

@@ -141,14 +141,14 @@ public class CommonMetrics {
   public void markUploadThinProject() { this.uploadThinProjectMeter.mark(); }
 
   /**
-   * Mark the occurrence of an job waiting event due to OOM
+   * Mark the occurrence of a job waiting event due to OOM
    */
   public void incrementOOMJobWaitCount() {
     this.OOMWaitingJobCount.inc();
   }
 
   /**
-   * Unmark the occurrence of an job waiting event due to OOM
+   * Unmark the occurrence of a job waiting event due to OOM
    */
   public void decrementOOMJobWaitCount() {
     this.OOMWaitingJobCount.dec();

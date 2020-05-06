@@ -432,11 +432,6 @@ public class FlowRunnerManager implements EventListener,
 
     // Sets up the project files and execution directory.
     this.preparingFlowCount.incrementAndGet();
-    // Record the time between submission and the start of flow execution preparation.
-    // Note that since submit time is recorded on the web server, while flow preparation is on
-    // the executor, there could be some inaccuracies due to clock skew.
-    this.execMetrics.addQueueWait(System.currentTimeMillis() -
-        flow.getExecutableFlow().getSubmitTime());
 
     final Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
 
