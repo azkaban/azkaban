@@ -458,7 +458,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     ExecutionOptions flowOptions = null;
     try {
-      flowOptions = HttpRequestUtils.parseFlowOptions(req);
+      flowOptions = HttpRequestUtils.parseFlowOptions(req, flowName);
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
@@ -569,7 +569,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     ExecutionOptions flowOptions = null;
     try {
-      flowOptions = HttpRequestUtils.parseFlowOptions(req);
+      flowOptions = HttpRequestUtils.parseFlowOptions(req, flowName);
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());

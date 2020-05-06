@@ -21,8 +21,13 @@ public class SlaRequestUtils {
 
   public static List<SlaOption> parseSlaOptions(final String flowName, final String emailStr,
       final Map<String, String> settings) throws ServletException {
-    final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-    final List<String> slaEmails = Arrays.asList(emailSplit);
+    final List<String> slaEmails;
+    if (emailStr == null) {
+      slaEmails = Arrays.asList();
+    } else {
+      final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+      slaEmails = Arrays.asList(emailSplit);
+    }
 
     final List<SlaOption> slaOptions = new ArrayList<>();
     for (final String set : settings.keySet()) {

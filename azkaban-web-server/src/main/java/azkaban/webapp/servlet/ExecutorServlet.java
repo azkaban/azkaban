@@ -946,7 +946,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
 
-    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req);
+    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, flowId);
     exflow.setExecutionOptions(options);
     if (!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());
