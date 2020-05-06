@@ -468,22 +468,22 @@ public class HadoopJobUtils {
     BufferedReader br = null;
     final Set<String> applicationIds = new HashSet<>();
 
-    try {
-      // There can be more than one log file. Go through each one of them.
-      for (final File curLogFile : logFiles) {
-        // Start with sanity checks
-        if (!curLogFile.exists()) {
-          throw new IllegalArgumentException("the logFilePath does not exist: "
-              + curLogFile.getAbsolutePath());
-        }
-        if (!curLogFile.isFile()) {
-          throw new IllegalArgumentException("the logFilePath specified  is not a valid file: "
-              + curLogFile.getAbsolutePath());
-        }
-        if (!curLogFile.canRead()) {
-          throw new IllegalArgumentException(
-              "unable to read the logFilePath specified: " + curLogFile.getAbsolutePath());
-        }
+    // There can be more than one log file. Go through each one of them.
+    for (final File curLogFile : logFiles) {
+      // Start with sanity checks
+      if (!curLogFile.exists()) {
+        throw new IllegalArgumentException("the logFilePath does not exist: "
+            + curLogFile.getAbsolutePath());
+      }
+      if (!curLogFile.isFile()) {
+        throw new IllegalArgumentException("the logFilePath specified  is not a valid file: "
+            + curLogFile.getAbsolutePath());
+      }
+      if (!curLogFile.canRead()) {
+        throw new IllegalArgumentException(
+            "unable to read the logFilePath specified: " + curLogFile.getAbsolutePath());
+      }
+      try {
         br = new BufferedReader(new InputStreamReader(
             new FileInputStream(curLogFile), StandardCharsets.UTF_8));
         String line;
@@ -499,17 +499,17 @@ public class HadoopJobUtils {
             }
           } // end for loop
         }
-        br.close();
-      }
-    } catch (final IOException e) {
-      log.error("Error while trying to find applicationId for log. Some MR jobs may leak.", e);
-    } finally {
-      try {
-        if (br != null) {
-          br.close();
+      } catch (final IOException e) {
+        log.error("Error while trying to find applicationId from " +
+            curLogFile.getAbsolutePath() + ". Some MR jobs may leak.", e);
+      } finally {
+        try {
+          if (br != null) {
+            br.close();
+          }
+        } catch (final IOException e) {
+          // do nothing
         }
-      } catch (final Exception e) {
-        // do nothing
       }
     }
     return applicationIds;
