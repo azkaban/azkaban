@@ -1,4 +1,4 @@
-package azkaban.webapp.servlet;
+package azkaban.server;
 
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.sla.SlaAction;
