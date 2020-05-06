@@ -188,21 +188,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       final String emailStr = getParam(req, PARAM_SLA_EMAILS);
-      final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-      final List<String> slaEmails = Arrays.asList(emailSplit);
-
       final Map<String, String> settings = getParamGroup(req, PARAM_SETTINGS);
-
-      List<SlaOption> slaOptions = new ArrayList<>();
-      for (final String set : settings.keySet()) {
-        final SlaOption slaOption;
-        try {
-          slaOption = parseSlaSetting(settings.get(set), sched.getFlowName(), slaEmails);
-        } catch (final Exception e) {
-          throw new ServletException(e);
-        }
-        slaOptions.add(slaOption);
-      }
+      final List<SlaOption> slaOptions = parseSlaOptions(sched.getFlowName(), emailStr, settings);
 
       if (slaOptions.isEmpty()) {
         throw new ScheduleManagerException(
@@ -224,7 +211,25 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   }
 
-  private SlaOption parseSlaSetting(final String set, String flowName, List<String> emails) throws
+  private List<SlaOption> parseSlaOptions(final String flowName, final String emailStr,
+      final Map<String, String> settings) throws ServletException {
+    final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+    final List<String> slaEmails = Arrays.asList(emailSplit);
+
+    final List<SlaOption> slaOptions = new ArrayList<>();
+    for (final String set : settings.keySet()) {
+      final SlaOption slaOption;
+      try {
+        slaOption = parseSlaSetting(settings.get(set), flowName, slaEmails);
+      } catch (final Exception e) {
+        throw new ServletException(e);
+      }
+      slaOptions.add(slaOption);
+    }
+    return slaOptions;
+  }
+
+  private SlaOption parseSlaSetting(final String set, final String flowName, final List<String> emails) throws
       ScheduleManagerException {
     logger.info("Trying to set sla with the following set: " + set);
 
@@ -235,7 +240,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final String emailAction = parts[3];
     final String killAction = parts[4];
 
-    SlaType type;
+    final SlaType type;
     if (id.length() == 0) {
       if (rule.equals(SLA_STATUS_SUCCESS)) {
         type = SlaType.FLOW_SUCCEED;
@@ -249,7 +254,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         type = SlaType.JOB_FINISH;
       }
     }
-    HashSet<SlaAction> actions = new HashSet<>();
+    final HashSet<SlaAction> actions = new HashSet<>();
     if (emailAction.equals("true")) {
       actions.add(SlaAction.ALERT);
     }
