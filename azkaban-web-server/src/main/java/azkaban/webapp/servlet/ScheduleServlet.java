@@ -27,10 +27,7 @@ import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
-import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
-import azkaban.sla.SlaOption.SlaOptionBuilder;
-import azkaban.sla.SlaType;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -38,11 +35,8 @@ import azkaban.user.UserManager;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletConfig;
@@ -69,7 +63,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   public static final String STATUS_SUCCESS = "success";
   public static final String STATUS_ERROR = "error";
-  public static final String SLA_STATUS_SUCCESS = "SUCCESS";
 
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
@@ -189,7 +182,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
       final String emailStr = getParam(req, PARAM_SLA_EMAILS);
       final Map<String, String> settings = getParamGroup(req, PARAM_SETTINGS);
-      final List<SlaOption> slaOptions = parseSlaOptions(sched.getFlowName(), emailStr, settings);
+      final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(sched.getFlowName(),
+          emailStr, settings);
 
       if (slaOptions.isEmpty()) {
         throw new ScheduleManagerException(
@@ -209,81 +203,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put(PARAM_ERROR, e.getMessage());
     }
 
-  }
-
-  private static List<SlaOption> parseSlaOptions(final String flowName, final String emailStr,
-      final Map<String, String> settings) throws ServletException {
-    final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-    final List<String> slaEmails = Arrays.asList(emailSplit);
-
-    final List<SlaOption> slaOptions = new ArrayList<>();
-    for (final String set : settings.keySet()) {
-      final SlaOption slaOption;
-      try {
-        slaOption = parseSlaSetting(settings.get(set), flowName, slaEmails);
-      } catch (final Exception e) {
-        throw new ServletException(e);
-      }
-      slaOptions.add(slaOption);
-    }
-    return slaOptions;
-  }
-
-  private static SlaOption parseSlaSetting(final String set, final String flowName,
-      final List<String> emails) throws
-      ScheduleManagerException {
-    logger.info("Trying to set sla with the following set: " + set);
-
-    final String[] parts = set.split(",", -1);
-    final String id = parts[0];
-    final String rule = parts[1];
-    final String duration = parts[2];
-    final String emailAction = parts[3];
-    final String killAction = parts[4];
-
-    final SlaType type;
-    if (id.length() == 0) {
-      if (rule.equals(SLA_STATUS_SUCCESS)) {
-        type = SlaType.FLOW_SUCCEED;
-      } else {
-        type = SlaType.FLOW_FINISH;
-      }
-    } else { // JOB
-      if (rule.equals(SLA_STATUS_SUCCESS)) {
-        type = SlaType.JOB_SUCCEED;
-      } else {
-        type = SlaType.JOB_FINISH;
-      }
-    }
-    final HashSet<SlaAction> actions = new HashSet<>();
-    if (emailAction.equals("true")) {
-      actions.add(SlaAction.ALERT);
-    }
-    if (killAction.equals("true")) {
-      actions.add(SlaAction.KILL);
-    }
-
-    final Duration dur;
-    try {
-      dur = parseDuration(duration);
-    } catch (final Exception e) {
-      throw new ScheduleManagerException(
-          "Unable to parse duration for a SLA that needs to take actions!", e);
-    }
-
-    if (actions.isEmpty()) {
-      throw new ScheduleManagerException("Unable to create SLA as there is no action set");
-    }
-    logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
-        + rule + " Duration:" + duration + " actions:" + actions);
-    return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
-        .setEmails(emails).createSlaOption();
-  }
-
-  private static Duration parseDuration(final String duration) {
-    final int hour = Integer.parseInt(duration.split(":")[0]);
-    final int min = Integer.parseInt(duration.split(":")[1]);
-    return Duration.ofMinutes(min + hour * 60);
   }
 
   private void ajaxFetchSchedule(final HttpServletRequest req,
