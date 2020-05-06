@@ -75,7 +75,6 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
       final Map<String, Object> jsonObj = new HashMap<>();
       FlowTrigger flowTrigger = res.getFlowTrigger();
       CronSchedule schedule = flowTrigger.getSchedule();
-      jsonObj.put("timeZone", schedule.getTimeZone());
       jsonObj.put("cronExpression", schedule.getCronExpression());
       jsonObj.put("submitUser", res.getSubmitUser());
       jsonObj.put("firstSchedTime",

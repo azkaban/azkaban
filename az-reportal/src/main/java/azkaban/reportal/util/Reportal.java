@@ -244,12 +244,9 @@ public class Reportal {
           (Integer.parseInt(this.scheduleHour) % 12)
               + (this.scheduleAmPm.equalsIgnoreCase("pm") ? 12 : 0);
       final int minute = Integer.parseInt(this.scheduleMinute) % 60;
-      DateTimeZone timeZone = DateTimeZone.getDefault();
-      try {
-        timeZone = DateTimeZone.forID(this.scheduleTimeZone);
-      } catch (IllegalArgumentException e) {
-        logger.warn("Cannot parse timezone " + this.scheduleTimeZone, e);
-      }
+      final DateTimeZone timeZone =
+          this.scheduleTimeZone.equalsIgnoreCase("UTC") ? DateTimeZone.UTC
+              : DateTimeZone.getDefault();
       DateTime firstSchedTime =
           DateTimeFormat.forPattern("MM/dd/yyyy").withZone(timeZone)
               .parseDateTime(this.scheduleDate);
