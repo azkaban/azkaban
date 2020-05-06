@@ -211,7 +211,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   }
 
-  private List<SlaOption> parseSlaOptions(final String flowName, final String emailStr,
+  private static List<SlaOption> parseSlaOptions(final String flowName, final String emailStr,
       final Map<String, String> settings) throws ServletException {
     final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
     final List<String> slaEmails = Arrays.asList(emailSplit);
@@ -229,7 +229,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     return slaOptions;
   }
 
-  private SlaOption parseSlaSetting(final String set, final String flowName, final List<String> emails) throws
+  private static SlaOption parseSlaSetting(final String set, final String flowName,
+      final List<String> emails) throws
       ScheduleManagerException {
     logger.info("Trying to set sla with the following set: " + set);
 
@@ -279,7 +280,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         .setEmails(emails).createSlaOption();
   }
 
-  private Duration parseDuration(final String duration) {
+  private static Duration parseDuration(final String duration) {
     final int hour = Integer.parseInt(duration.split(":")[0]);
     final int min = Integer.parseInt(duration.split(":")[1]);
     return Duration.ofMinutes(min + hour * 60);
