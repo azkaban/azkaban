@@ -451,10 +451,17 @@ public class HadoopJobUtils {
     }
 
     // Get the directory and file name
+    // The log files have names in this format,
+    // _job<job name specific string>.log
+    // A rolled over log file name appends to above format and adds an index in this format,
+    // _job<job name specific string>.log.<index>
+    // The index starts at 1 upto a configurable number.
     final int lastSlash = logFilePath.lastIndexOf('/');
     final String dirPath = logFilePath.substring(0, lastSlash);
     final String logFileName = logFilePath.substring(lastSlash + 1);
 
+    // Fetch all the log files for this job which start with
+    // _job<job name specific string>.log
     final File[] logFiles =
         new File(dirPath).listFiles((dir, name) -> name.startsWith(logFileName));
 
@@ -492,9 +499,10 @@ public class HadoopJobUtils {
             }
           } // end for loop
         }
+        br.close();
       }
     } catch (final IOException e) {
-      log.error("Error while trying to find applicationId for log", e);
+      log.error("Error while trying to find applicationId for log. Some MR jobs may leak.", e);
     } finally {
       try {
         if (br != null) {
