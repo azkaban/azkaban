@@ -52,6 +52,8 @@ public class ExecMetrics {
   private Meter jobFailMeter;
   private Meter jobSuccessMeter;
   private Meter jobKilledMeter;
+  // TODO ypadron-in: add metrics to measure the time between flow submission and flow execution
+  // preparation/start after clock skew issues in execution times are resolved.
 
   @Inject
   ExecMetrics(final MetricsManager metricsManager) {
