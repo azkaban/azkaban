@@ -152,9 +152,11 @@ public class FlowRunner extends EventHandler implements Runnable {
   private volatile boolean flowFinished = false;
   private volatile boolean flowKilled = false;
   private volatile boolean flowIsRamping = false;
+  private volatile long flowKillTime = -1;
 
   // For flow related metrics
   private final CommonMetrics commonMetrics;
+  private final ExecMetrics execMetrics;
 
   // The following is state that will trigger a retry of all failed jobs
   private volatile boolean retryFailedJobs = false;
@@ -164,11 +166,12 @@ public class FlowRunner extends EventHandler implements Runnable {
    */
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
-      final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter, final
-  AlerterHolder alerterHolder, final CommonMetrics commonMetrics)
+      final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter,
+      final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
+      final ExecMetrics execMetrics)
       throws ExecutorManagerException {
     this(flow, executorLoader, projectLoader, jobtypeManager, null, azkabanProps,
-        azkabanEventReporter, alerterHolder, commonMetrics);
+        azkabanEventReporter, alerterHolder, commonMetrics, execMetrics);
   }
 
   /**
@@ -178,7 +181,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
       final ExecutorService executorService, final Props azkabanProps,
       final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder,
-      final CommonMetrics commonMetrics)
+      final CommonMetrics commonMetrics, final ExecMetrics execMetrics)
       throws ExecutorManagerException {
     this.execId = flow.getExecutionId();
     this.flow = flow;
@@ -197,6 +200,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.azkabanProps = azkabanProps;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
+    this.execMetrics = execMetrics;
 
     // Add the flow listener only if a non-null eventReporter is available.
     if (azkabanEventReporter != null) {
@@ -262,12 +266,12 @@ public class FlowRunner extends EventHandler implements Runnable {
     } catch (final Throwable t) {
       if (this.logger != null) {
         this.logger
-            .error(
-                "An error has occurred during the running of the flow. Quiting.",
-                t);
+            .error("An error has occurred during the running of the flow. Quiting.", t);
+      }
+      if (Status.KILLING.equals(this.flow.getStatus())) {
+        this.execMetrics.decrementFlowKillingCount();
       }
       this.flow.setStatus(Status.FAILED);
-      this.commonMetrics.markFlowFail();
     } finally {
       try {
         if (this.watcher != null) {
@@ -283,6 +287,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         closeLogger();
         updateFlow();
       } finally {
+        reportFlowFinishedMetrics();
+
         this.fireEventListeners(
             Event.create(this, EventType.FLOW_FINISHED, new EventData(this.flow)));
         this.logger
@@ -295,6 +301,25 @@ public class FlowRunner extends EventHandler implements Runnable {
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
       }
+    }
+  }
+
+  private void reportFlowFinishedMetrics() {
+    final Status status = this.flow.getStatus();
+    switch (status) {
+      case SUCCEEDED:
+        this.execMetrics.markFlowSuccess();
+        break;
+      case FAILED:
+        this.commonMetrics.markFlowFail();
+        break;
+      case KILLED:
+        this.execMetrics.markFlowKilled();
+        this.execMetrics.addFlowTimeToKill(
+            this.flowKillTime == -1 ? -1 : System.currentTimeMillis() - this.flowKillTime);
+        break;
+      default:
+        break;
     }
   }
 
@@ -516,7 +541,6 @@ public class FlowRunner extends EventHandler implements Runnable {
         // case, we need to kill all running jobs before finalizing the flow.
         finalizeFlow(parentFlow);
         finishExecutableNode(parentFlow);
-
         // If the parent has a parent, then we process
         if (!(parentFlow instanceof ExecutableFlow)) {
           outNodeIds = parentFlow.getOutNodes();
@@ -737,12 +761,12 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.logger.info("Setting flow '" + id + "' status to FAILED in "
             + durationSec + " seconds");
         flow.setStatus(Status.FAILED);
-        this.commonMetrics.markFlowFail();
         break;
       case KILLING:
         this.logger
             .info("Setting flow '" + id + "' status to KILLED in " + durationSec + " seconds");
         flow.setStatus(Status.KILLED);
+        this.execMetrics.decrementFlowKillingCount();
         break;
       case FAILED:
       case KILLED:
@@ -1166,6 +1190,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           this.flow.setStatus(Status.FAILED_FINISHING);
         } else if (isKilled()) {
           this.flow.setStatus(Status.KILLING);
+          this.execMetrics.incrementFlowKillingCount();
         } else {
           this.flow.setStatus(Status.RUNNING);
         }
@@ -1189,6 +1214,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
       this.logger.info("Kill has been called on execution " + this.execId);
       this.flow.setStatus(Status.KILLING);
+      this.execMetrics.incrementFlowKillingCount();
+      this.flowKillTime = System.currentTimeMillis();
+
       // If the flow is paused, then we'll also unpause
       this.flowPaused = false;
       this.flowKilled = true;
@@ -1519,6 +1547,9 @@ public class FlowRunner extends EventHandler implements Runnable {
         final EventData eventData = event.getData();
         final JobRunner jobRunner = (JobRunner) event.getRunner();
         final ExecutableNode node = jobRunner.getNode();
+
+        reportJobFinishedMetrics(node);
+
         if (FlowRunner.this.azkabanEventReporter != null) {
           final Map<String, String> jobMetadata = getJobMetadata(jobRunner);
           jobMetadata.put("jobStatus", node.getStatus().name());
@@ -1558,6 +1589,23 @@ public class FlowRunner extends EventHandler implements Runnable {
             .addTrigger(FlowRunner.this.flow.getExecutionId(),
                 SlaOption.getJobLevelSLAOptions(
                     FlowRunner.this.flow.getExecutionOptions().getSlaOptions()));
+      }
+    }
+
+    private void reportJobFinishedMetrics(final ExecutableNode node) {
+      final Status status = node.getStatus();
+      switch (status) {
+        case SUCCEEDED:
+          FlowRunner.this.execMetrics.markJobSuccess();
+          break;
+        case FAILED:
+          FlowRunner.this.execMetrics.markJobFail();
+          break;
+        case KILLED:
+          FlowRunner.this.execMetrics.markJobKilled();
+          break;
+        default:
+          break;
       }
     }
   }

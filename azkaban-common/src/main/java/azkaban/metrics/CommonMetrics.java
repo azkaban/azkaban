@@ -17,7 +17,6 @@
 package azkaban.metrics;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -38,7 +37,6 @@ public class CommonMetrics {
   public static final String SUBMIT_FLOW_FAIL_METER_NAME = "submit-flow-fail-meter";
   public static final String SUBMIT_FLOW_SKIP_METER_NAME = "submit-flow-skip-meter";
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
-  public static final String QUEUE_WAIT_HISTOGRAM_NAME = "queue-wait-histogram";
   public static final String UPLOAD_FAT_PROJECT_METER_NAME = "upload-fat-project-meter";
   public static final String UPLOAD_THIN_PROJECT_METER_NAME = "upload-thin-project-meter";
 
@@ -54,7 +52,6 @@ public class CommonMetrics {
   private Meter submitFlowSkipMeter;
   private Meter uploadFatProjectMeter;
   private Meter uploadThinProjectMeter;
-  private Histogram queueWaitMeter;
 
   @Inject
   public CommonMetrics(final MetricsManager metricsManager) {
@@ -72,7 +69,6 @@ public class CommonMetrics {
     this.submitFlowFailMeter = this.metricsManager.addMeter(SUBMIT_FLOW_FAIL_METER_NAME);
     this.submitFlowSkipMeter = this.metricsManager.addMeter(SUBMIT_FLOW_SKIP_METER_NAME);
     this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
-    this.queueWaitMeter = this.metricsManager.addHistogram(QUEUE_WAIT_HISTOGRAM_NAME);
     this.uploadFatProjectMeter = this.metricsManager.addMeter(UPLOAD_FAT_PROJECT_METER_NAME);
     this.uploadThinProjectMeter = this.metricsManager.addMeter(UPLOAD_THIN_PROJECT_METER_NAME);
   }
@@ -145,25 +141,16 @@ public class CommonMetrics {
   public void markUploadThinProject() { this.uploadThinProjectMeter.mark(); }
 
   /**
-   * Mark the occurrence of an job waiting event due to OOM
+   * Mark the occurrence of a job waiting event due to OOM
    */
   public void incrementOOMJobWaitCount() {
     this.OOMWaitingJobCount.inc();
   }
 
   /**
-   * Unmark the occurrence of an job waiting event due to OOM
+   * Unmark the occurrence of a job waiting event due to OOM
    */
   public void decrementOOMJobWaitCount() {
     this.OOMWaitingJobCount.dec();
-  }
-
-  /**
-   * Add the queue wait time for a flow to the metrics.
-   *
-   * @param time queue wait time for a flow.
-   */
-  public void addQueueWait(final long time) {
-    this.queueWaitMeter.update(time);
   }
 }
