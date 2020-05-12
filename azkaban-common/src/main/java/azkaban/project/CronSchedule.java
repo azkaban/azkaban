@@ -29,7 +29,12 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  */
 public class CronSchedule implements Serializable {
 
-  private static final long serialVersionUID = -1330280892166841228L;
+  /**
+   * CAUTION : Please do NOT change this serialVersionUID as it may break
+   * backward compatibility.
+   */
+  private static final long serialVersionUID = -1330280892166841227L;
+  private static final String DEFAULT_TIMEZONE = TimeZone.getDefault().getID();
   private final String cronExpression;
   private final String timeZone;
 
@@ -37,7 +42,7 @@ public class CronSchedule implements Serializable {
    * @throws IllegalArgumentException if cronExpression is null or blank
    */
   public CronSchedule(final String cronExpression) {
-    this(cronExpression, TimeZone.getDefault().getID());
+    this(cronExpression, DEFAULT_TIMEZONE);
   }
 
   /**
@@ -68,7 +73,7 @@ public class CronSchedule implements Serializable {
 
     return new EqualsBuilder()
         .append(this.cronExpression, that.cronExpression)
-        .append(this.timeZone, that.timeZone)
+        .append(this.getTimeZone(), that.getTimeZone())
         .isEquals();
   }
 
@@ -80,6 +85,9 @@ public class CronSchedule implements Serializable {
   }
 
   public String getTimeZone() {
+    if (null == timeZone) {
+      return DEFAULT_TIMEZONE;
+    }
     return timeZone;
   }
 

@@ -942,8 +942,6 @@ All cron schedules follow the timezone defined in azkaban web server
 +-----------------------------------+-----------------------------------+
 | flow                              | The name of the flow.             |
 +-----------------------------------+-----------------------------------+
-| timezone                          | Schedule timezone (optional).     |
-+-----------------------------------+-----------------------------------+
 | cronExpression                    | A CRON expression is a string     |
 |                                   | comprising 6 or 7 fields          |
 |                                   | separated by white space that     |

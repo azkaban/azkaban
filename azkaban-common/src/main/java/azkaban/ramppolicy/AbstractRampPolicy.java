@@ -38,7 +38,7 @@ public abstract class AbstractRampPolicy implements RampPolicy {
   public boolean check(ExecutableFlow flow, ExecutableRamp executableRamp) {
     preprocess(executableRamp);
 
-    if (!executableRamp.getState().isActive() || executableRamp.getState().isPaused() || !executableRamp.getState().isRamping()) {
+    if (executableRamp.isNotTestable()) {
       return false; // filter out inactive or paused executable ramp flow
     }
 

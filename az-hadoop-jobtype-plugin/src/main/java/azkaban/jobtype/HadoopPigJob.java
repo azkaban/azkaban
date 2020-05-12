@@ -170,17 +170,29 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
         File srcFile = new File(getScriptAbsolutePath());
         File dstFile = new File(getRunnableScriptAbsolutePath());
         Path dstPath = Paths.get(getRunnableScriptDir());
+        getLog().info(String.format("[Ramp Modification Start] [srcFile = %s, dstFile = %s, dstPath = %s]",
+            srcFile.toPath().toAbsolutePath().toString(),
+            dstFile.toPath().toAbsolutePath().toString(),
+            dstPath.toString()));
         if (!Files.exists(dstPath)) {
           Files.createDirectories(dstPath);
+          getLog().info(String.format("[Ramp Modification Destination Directory Created. %s]",
+              dstPath.toAbsolutePath().toString()));
         }
         dstFile.createNewFile();
+        getLog().info(String.format("[Ramp Modification Destination File Created. %s]",
+            dstFile.toPath().toAbsolutePath().toString()));
         getLog().info(String.format("[Ramp Modify Script File] : old = %s, new = %s",
             srcFile.getAbsolutePath(), dstFile.getAbsolutePath()));
         copyAndModifyScript(srcFile, dstFile, rampRegisterItems);
+        getLog().info(String.format("[Ramp Modification End] [dstFile = %s]",
+            dstFile.toPath().toAbsolutePath().toString()));
+        list.add(getRunnableScript());
       } catch (IOException e) {
-        e.printStackTrace();
+        getLog().error(e);
+        getLog().info("[Ramp cannot successfully modify the script, Failover to the baseline.]");
+        list.add(getScript());
       }
-      list.add(getRunnableScript());
     }
 
     return StringUtils.join((Collection<String>) list, " ");

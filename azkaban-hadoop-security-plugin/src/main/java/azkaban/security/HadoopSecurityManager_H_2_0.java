@@ -16,13 +16,16 @@
 
 package azkaban.security;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_LOCATION;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowProperties;
 import azkaban.Constants.JobProperties;
+import azkaban.ServiceProvider;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
@@ -462,15 +465,28 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     doPrefetch(tokenFile, props, logger, userToProxy);
   }
 
+  /*
+   * Create a suffix for Kerberos principal, the format is,
+   * az_<host name>_<execution id><DOMAIN_NAME>
+   */
+  private String kerberosSuffix(final Props props) {
+    // AZKABAN_SERVER_HOST_NAME is not set in Props here, get it from another instance of Props.
+    final String host = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class)
+        .getString(AZKABAN_SERVER_HOST_NAME, "unknown");
+    final StringBuilder builder = new StringBuilder("az_");
+    builder.append(host);
+    builder.append("_");
+    builder.append(props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
+    builder.append(props.getString(HadoopSecurityManager.DOMAIN_NAME));
+    return builder.toString();
+  }
   private void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
-    // Create suffix to be added to headless user, the suffix is a valid email ID which conforms
-    // to Kubernetes.
+    // Create suffix to be added to kerberos principal
     final String suffix =
-        props.getBoolean(HadoopSecurityManager.APPEND_SUBMIT_USER, false) &&
-            props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) != null ?
-            "/" + props.getString(Constants.FlowProperties.AZKABAN_FLOW_SUBMIT_USER) +
-                props.getString(HadoopSecurityManager.SUBMIT_USER_SUFFIX) : "";
+        (null != props.getString(HadoopSecurityManager.DOMAIN_NAME, null)) ?
+            "/" + kerberosSuffix(props): "";
+
 
     final String userToProxyFQN = userToProxy + suffix;
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
@@ -480,31 +496,33 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
+      getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          getToken(userToProxy);
+          getToken(userToProxyFQN, userToProxy);
           return null;
         }
 
-        private void getToken(final String userToProxy) throws InterruptedException,
-            IOException, HadoopSecurityManagerException {
-          logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN + ": "
-              + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
+        private void getToken(final String userToProxyFQN, final String userToProxy)
+            throws InterruptedException, IOException, HadoopSecurityManagerException {
+          logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN +
+              ": " + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+            registerCustomCredential(props, cred, userToProxy, logger,
+                Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
           }
 
           // Register oauth tokens by custom oauth credential provider
           if (props.getBoolean(JobProperties.ENABLE_OAUTH, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.OAUTH_CREDENTIAL_NAME);
+            registerCustomCredential(props, cred, userToProxy, logger,
+                Constants.ConfigurationKeys.OAUTH_CREDENTIAL_NAME);
           }
 
-          fetchNameNodeToken(userToProxy, props, logger, cred);
+          fetchNameNodeToken(userToProxyFQN, props, logger, cred);
 
-          fetchJobTrackerToken(userToProxy, props, logger, cred);
+          fetchJobTrackerToken(userToProxyFQN, props, logger, cred);
 
         }
       });

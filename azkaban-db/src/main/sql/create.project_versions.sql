@@ -9,6 +9,7 @@ CREATE TABLE project_versions (
   num_chunks           INT,
   resource_id          VARCHAR(512)  DEFAULT NULL,
   startup_dependencies MEDIUMBLOB    DEFAULT NULL,
+  uploader_ip_addr     VARCHAR(50)   DEFAULT NULL,
   PRIMARY KEY (project_id, version)
 );
 

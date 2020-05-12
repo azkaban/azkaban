@@ -77,6 +77,7 @@ public class ExecutionRampDaoTest {
         .put("rampId", "dali")
         .put("isActive", 1)
         .put("rampPolicy", "SimpleAutoRampPolicy")
+        .put("startTime", 0L)
         .put("maxFailureToPause", 5)
         .put("maxFailureToRampDown", 10)
         .build();
@@ -87,17 +88,17 @@ public class ExecutionRampDaoTest {
 
     assertThat(record.get("dali").isActive()).isTrue();
     assertThat(record.get("dali").getPolicy()).isEqualTo("SimpleAutoRampPolicy");
-    assertThat(record.get("dali").getMetadata().getMaxFailureToRampDown()).isEqualTo(10);
-    assertThat(record.get("dali").getMetadata().getMaxFailureToPause()).isEqualTo(5);
-    assertThat(record.get("dali").getMetadata().isPercentageScaleForMaxFailure()).isFalse();
-    assertThat(record.get("dali").getState().getRampStage()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getStartTime()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getEndTime()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getLastUpdatedTime()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getNumOfFailure()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getNumOfSuccess()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getNumOfTrail()).isEqualTo(0);
-    assertThat(record.get("dali").getState().isPaused()).isFalse();
+    assertThat(record.get("dali").getMaxFailureToRampDown()).isEqualTo(10);
+    assertThat(record.get("dali").getMaxFailureToPause()).isEqualTo(5);
+    assertThat(record.get("dali").isPercentageScaleForMaxFailure()).isFalse();
+    assertThat(record.get("dali").getStage()).isEqualTo(0);
+    assertThat(record.get("dali").getStartTime()).isEqualTo(0);
+    assertThat(record.get("dali").getEndTime()).isEqualTo(0);
+    assertThat(record.get("dali").getLastUpdatedTime()).isEqualTo(0);
+    assertThat(record.get("dali").getCount(ExecutableRamp.CountType.FAILURE)).isEqualTo(0);
+    assertThat(record.get("dali").getCount(ExecutableRamp.CountType.SUCCESS)).isEqualTo(0);
+    assertThat(record.get("dali").getCount(ExecutableRamp.CountType.TRAIL)).isEqualTo(0);
+    assertThat(record.get("dali").isPaused()).isFalse();
 
     Map<String, Object> conditionData = ImmutableMap.<String, Object>builder()
         .put("rampId", "dali")
@@ -176,7 +177,7 @@ public class ExecutionRampDaoTest {
         .put("rampId", "dali")
         .put("flowId", "contact-join.cjn-all2")
         .put("treatment", "w")
-        .put("timeStamp", 1566518763000L)
+        .put("timestamp", 1566518763000L)
         .build();
     this.executionRampDao.insertAction("ramp_exceptional_flow_items", data2);
 
@@ -187,7 +188,7 @@ public class ExecutionRampDaoTest {
     assertThat(record.get("dali").getItems().get("contact-join.cjn-all").getStatus())
         .isEqualByComparingTo(ExecutableRampStatus.BLACKLISTED);
     assertThat(record.get("dali").getItems().get("contact-join.cjn-all").getTimeStamp())
-        .isZero();
+        .isNotZero();
     assertThat(record.get("dali").getItems().get("contact-join.cjn-all2").getStatus())
         .isEqualByComparingTo(ExecutableRampStatus.WHITELISTED);
     assertThat(record.get("dali").getItems().get("contact-join.cjn-all2").getTimeStamp())
@@ -220,7 +221,7 @@ public class ExecutionRampDaoTest {
         .put("flowId", "contact-join.cjn-all")
         .put("jobId", "job2")
         .put("treatment", "w")
-        .put("timeStamp", 1566518763000L)
+        .put("timestamp", 1566518763000L)
         .build();
     this.executionRampDao.insertAction("ramp_exceptional_job_Items", data2);
 
@@ -232,7 +233,7 @@ public class ExecutionRampDaoTest {
     assertThat(record.get(key).getItems().get("job1").getStatus())
         .isEqualByComparingTo(ExecutableRampStatus.BLACKLISTED);
     assertThat(record.get(key).getItems().get("job1").getTimeStamp())
-        .isZero();
+        .isNotZero();
     assertThat(record.get(key).getItems().get("job2").getStatus())
         .isEqualByComparingTo(ExecutableRampStatus.WHITELISTED);
     assertThat(record.get(key).getItems().get("job2").getTimeStamp())
@@ -280,17 +281,17 @@ public class ExecutionRampDaoTest {
 
     assertThat(ramps.get("dali").isActive()).isFalse();
     assertThat(ramps.get("dali").getPolicy()).isEqualTo("SimpleAutoRampPolicy");
-    assertThat(ramps.get("dali").getMetadata().getMaxFailureToRampDown()).isZero();
-    assertThat(ramps.get("dali").getMetadata().getMaxFailureToPause()).isZero();
-    assertThat(ramps.get("dali").getMetadata().isPercentageScaleForMaxFailure()).isFalse();
-    assertThat(ramps.get("dali").getState().getRampStage()).isZero();
-    assertThat(ramps.get("dali").getState().getStartTime()).isZero();
-    assertThat(ramps.get("dali").getState().getEndTime()).isZero();
-    assertThat(ramps.get("dali").getState().getLastUpdatedTime()).isZero();
-    assertThat(ramps.get("dali").getState().getNumOfFailure()).isZero();
-    assertThat(ramps.get("dali").getState().getNumOfSuccess()).isZero();
-    assertThat(ramps.get("dali").getState().getNumOfTrail()).isZero();
-    assertThat(ramps.get("dali").getState().isPaused()).isFalse();
+    assertThat(ramps.get("dali").getMaxFailureToRampDown()).isZero();
+    assertThat(ramps.get("dali").getMaxFailureToPause()).isZero();
+    assertThat(ramps.get("dali").isPercentageScaleForMaxFailure()).isFalse();
+    assertThat(ramps.get("dali").getStage()).isZero();
+    assertThat(ramps.get("dali").getStartTime()).isNotZero();
+    assertThat(ramps.get("dali").getEndTime()).isZero();
+    assertThat(ramps.get("dali").getLastUpdatedTime()).isZero();
+    assertThat(ramps.get("dali").getCount(ExecutableRamp.CountType.FAILURE)).isZero();
+    assertThat(ramps.get("dali").getCount(ExecutableRamp.CountType.SUCCESS)).isZero();
+    assertThat(ramps.get("dali").getCount(ExecutableRamp.CountType.TRAIL)).isZero();
+    assertThat(ramps.get("dali").isPaused()).isFalse();
     assertThat(ramps.size()).isEqualTo(1);
 
     final ExecutableRampItemsMap rampItems = this.executionRampDao.fetchExecutableRampItemsMap();
@@ -307,6 +308,7 @@ public class ExecutionRampDaoTest {
         .put("rampId", "dali")
         .put("isActive", 1)
         .put("rampPolicy", "SimpleAutoRampPolicy")
+        .put("startTime", 0L)
         .put("maxFailureToPause", 5)
         .put("maxFailureToRampDown", 10)
         .build();
@@ -317,17 +319,17 @@ public class ExecutionRampDaoTest {
 
     assertThat(record.get("dali").isActive()).isTrue();
     assertThat(record.get("dali").getPolicy()).isEqualTo("SimpleAutoRampPolicy");
-    assertThat(record.get("dali").getMetadata().getMaxFailureToRampDown()).isEqualTo(10);
-    assertThat(record.get("dali").getMetadata().getMaxFailureToPause()).isEqualTo(5);
-    assertThat(record.get("dali").getMetadata().isPercentageScaleForMaxFailure()).isFalse();
-    assertThat(record.get("dali").getState().getRampStage()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getStartTime()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getEndTime()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getLastUpdatedTime()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getNumOfFailure()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getNumOfSuccess()).isEqualTo(0);
-    assertThat(record.get("dali").getState().getNumOfTrail()).isEqualTo(0);
-    assertThat(record.get("dali").getState().isPaused()).isFalse();
+    assertThat(record.get("dali").getMaxFailureToRampDown()).isEqualTo(10);
+    assertThat(record.get("dali").getMaxFailureToPause()).isEqualTo(5);
+    assertThat(record.get("dali").isPercentageScaleForMaxFailure()).isFalse();
+    assertThat(record.get("dali").getStage()).isEqualTo(0);
+    assertThat(record.get("dali").getStartTime()).isEqualTo(0);
+    assertThat(record.get("dali").getEndTime()).isEqualTo(0);
+    assertThat(record.get("dali").getLastUpdatedTime()).isEqualTo(0);
+    assertThat(record.get("dali").getCount(ExecutableRamp.CountType.FAILURE)).isEqualTo(0);
+    assertThat(record.get("dali").getCount(ExecutableRamp.CountType.SUCCESS)).isEqualTo(0);
+    assertThat(record.get("dali").getCount(ExecutableRamp.CountType.TRAIL)).isEqualTo(0);
+    assertThat(record.get("dali").isPaused()).isFalse();
 
     record.get("dali").cacheResult(ExecutableRamp.Action.FAILED);
     record.get("dali").cacheResult(ExecutableRamp.Action.SUCCEEDED);
@@ -340,11 +342,11 @@ public class ExecutionRampDaoTest {
     final ExecutableRampMap updatedRecord =
         this.executionRampDao.fetchExecutableRampMap();
 
-    assertThat(updatedRecord.get("dali").getState().getNumOfFailure()).isEqualTo(1);
-    assertThat(updatedRecord.get("dali").getState().getNumOfSuccess()).isEqualTo(3);
-    assertThat(updatedRecord.get("dali").getState().getNumOfTrail()).isEqualTo(0);
-    assertThat(updatedRecord.get("dali").getState().getNumOfIgnored()).isEqualTo(1);
-    assertThat(updatedRecord.get("dali").getState().getLastUpdatedTime()).isGreaterThan(0);
+    assertThat(updatedRecord.get("dali").getCount(ExecutableRamp.CountType.FAILURE)).isEqualTo(1);
+    assertThat(updatedRecord.get("dali").getCount(ExecutableRamp.CountType.SUCCESS)).isEqualTo(3);
+    assertThat(updatedRecord.get("dali").getCount(ExecutableRamp.CountType.TRAIL)).isEqualTo(5);
+    assertThat(updatedRecord.get("dali").getCount(ExecutableRamp.CountType.IGNORED)).isEqualTo(1);
+    assertThat(updatedRecord.get("dali").getLastUpdatedTime()).isGreaterThan(0);
   }
 
   @Test

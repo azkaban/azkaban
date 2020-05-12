@@ -30,4 +30,10 @@ public interface IRefreshable<T> {
    * @return new instance
    */
   T clone();
+
+  /**
+   * Number of Elements in Object
+   * @return number of elements
+   */
+  int elementCount();
 }

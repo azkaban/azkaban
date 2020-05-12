@@ -40,4 +40,12 @@ public interface MailCreator {
       ExecutorManagerException updateException, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
       String clientPortNumber);
+
+  default boolean createFailedExecutorHealthCheckMessage(List<ExecutableFlow> flows,
+      Executor executor,
+      ExecutorManagerException failureException, EmailMessage message,
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, List<String> emailList) {
+    return false;
+  }
 }

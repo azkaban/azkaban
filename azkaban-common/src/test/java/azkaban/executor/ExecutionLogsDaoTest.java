@@ -109,4 +109,44 @@ public class ExecutionLogsDaoTest {
     assertThat(logsResult3).isNotNull();
     assertThat(logsResult3.getLength()).isEqualTo(185493);
   }
+
+  @Test
+  public void testLogCleanup() throws ExecutorManagerException {
+    final File logDir = ExecutionsTestUtil.getFlowDir(LOG_TEST_DIR_NAME);
+    // Multiple of 255 for Henry the Eigth
+    final File[] largeLog1 =
+        {new File(logDir, "largeLog1.log")};
+
+    this.executionLogsDao.uploadLogFile(1, "largeFiles", 0, largeLog1);
+
+    final long currentTimeMillis = System.currentTimeMillis() + 1000;
+    int totalRemovedRecords = executionLogsDao.removeExecutionLogsByTime(currentTimeMillis, 2);
+    assertThat(totalRemovedRecords).isEqualTo(3);
+
+    // Multiple of 255 for Henry the Eigth
+    final File[] largeLog2 =
+        {new File(logDir, "largeLog2.log")};
+
+    this.executionLogsDao.uploadLogFile(2, "largeFiles", 0, largeLog2);
+
+    final long currentTimeMillisSecond = System.currentTimeMillis() + 1000;
+    totalRemovedRecords = executionLogsDao.removeExecutionLogsByTime(currentTimeMillisSecond, 3);
+    assertThat(totalRemovedRecords).isEqualTo(1);
+
+    // Multiple of 255 for Henry the Eigth
+    final File[] largeLogMultiple =
+        {new File(logDir, "largeLog2.log")};
+
+    this.executionLogsDao.uploadLogFile(3, "largeFiles", 0, largeLogMultiple);
+
+    // Multiple of 255 for Henry the Eigth
+    final File[] largeLog4 =
+        {new File(logDir, "largeLog1.log")};
+
+    this.executionLogsDao.uploadLogFile(4, "largeFiles", 0, largeLog4);
+
+    final long currentTimeMillis2 = System.currentTimeMillis() + 1000;
+    totalRemovedRecords = executionLogsDao.removeExecutionLogsByTime(currentTimeMillis2, 2);
+    assertThat(totalRemovedRecords).isEqualTo(4);
+  }
 }

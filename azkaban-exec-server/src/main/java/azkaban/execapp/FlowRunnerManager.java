@@ -15,6 +15,8 @@
  */
 package azkaban.execapp;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.ServiceProvider;
@@ -26,7 +28,6 @@ import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableRamp.Action;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
@@ -52,10 +53,10 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.OsCpuUtil;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
+import azkaban.utils.ThinArchiveUtils;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
-import azkaban.utils.ThinArchiveUtils;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import java.io.File;
@@ -86,21 +87,19 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.*;
-
 /**
  * Execution manager for the server side execution.
- *
+ * <p>
  * When a flow is submitted to FlowRunnerManager, it is the {@link Status#PREPARING} status. When a
  * flow is about to be executed by FlowRunner, its status is updated to {@link Status#RUNNING}
- *
+ * <p>
  * Two main data structures are used in this class to maintain flows.
- *
+ * <p>
  * runningFlows: this is used as a bookkeeping for submitted flows in FlowRunnerManager. It has
  * nothing to do with the executor service that is used to execute the flows. This bookkeeping is
  * used at the time of canceling or killing a flow. The flows in this data structure is removed in
  * the handleEvent method.
- *
+ * <p>
  * submittedFlows: this is used to keep track the execution of the flows, so it has the mapping
  * between a Future<?> and an execution id. This would allow us to find out the execution ids of the
  * flows that are in the Status.PREPARING status. The entries in this map is removed once the flow
@@ -223,22 +222,41 @@ public class FlowRunnerManager implements EventListener,
     addStartupDependencyPathToProps(this.globalProps);
 
     this.jobtypeManager =
-        new JobTypeManager(
-            props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, Constants.PluginManager.JOBTYPE_DEFAULTDIR),
-            this.globalProps,
+        new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
+            Constants.PluginManager.JOBTYPE_DEFAULTDIR), this.globalProps,
             getClass().getClassLoader());
 
     ProjectCacheCleaner cleaner = null;
+    this.LOGGER.info("Configuring Project Cache");
+    double projectCacheSizePercentage = 0.0;
+    double projectCacheThrottlePercentage = 0.0;
     try {
-      final double projectCacheSizePercentage =
+      projectCacheSizePercentage =
           props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
-      cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
+      projectCacheThrottlePercentage =
+          props.getDouble(ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
+      this.LOGGER.info("Configuring Cache Cleaner with {} % as threshold", projectCacheSizePercentage);
+      cleaner = new ProjectCacheCleaner(this.projectDirectory,
+          projectCacheSizePercentage,
+          projectCacheThrottlePercentage);
+      this.LOGGER.info("ProjectCacheCleaner configured.");
     } catch (final UndefinedPropertyException ex) {
+      if (projectCacheSizePercentage == 0.0) {
+        this.LOGGER.info("Property {} not set. Project Cache directory will not be auto-cleaned as it gets full",
+            ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
+      } else {
+        // Exception must have been fired because Throttle percentage is not set. Initialize the cleaner
+        // with the default throttle value
+        this.LOGGER.info("Property {} not set. Initializing with default value of Throttle Percentage",
+            ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
+        cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
+      }
     }
 
     // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(projectStorageManager, this.dependencyTransferManager, this.projectDirectory, cleaner,
-        this.execMetrics.getProjectCacheHitRatio(), this.executionDirectory);
+    this.flowPreparer = new FlowPreparer(projectStorageManager, this.dependencyTransferManager,
+        this.projectDirectory, cleaner, this.execMetrics.getProjectCacheHitRatio(),
+        this.executionDirectory);
 
     this.execMetrics.addFlowRunnerManagerMetrics(this);
 
@@ -261,9 +279,10 @@ public class FlowRunnerManager implements EventListener,
    *
    * @param props Props to add the startup dependency path to.
    */
-  private void addStartupDependencyPathToProps(Props props) {
+  private void addStartupDependencyPathToProps(final Props props) {
     if (this.storage.getDependencyRootPath() != null) {
-      props.put(ThinArchiveUtils.DEPENDENCY_STORAGE_ROOT_PATH_PROP, this.storage.getDependencyRootPath());
+      props.put(ThinArchiveUtils.DEPENDENCY_STORAGE_ROOT_PATH_PROP,
+          this.storage.getDependencyRootPath());
     }
   }
 
@@ -271,11 +290,11 @@ public class FlowRunnerManager implements EventListener,
    * Setting the gid bit on the execution directory forces all files/directories created within the
    * directory to be a part of the group associated with the azkaban process. Then, when users
    * create their own files, the azkaban cleanup thread can properly remove them.
-   *
+   * <p>
    * Java does not provide a standard library api for setting the gid bit because the gid bit is
    * system dependent, so the only way to set this bit is to start a new process and run the shell
    * command "chmod g+s " + execution directory name.
-   *
+   * <p>
    * Note that this should work on most Linux distributions and MacOS, but will not work on
    * Windows.
    */
@@ -413,11 +432,6 @@ public class FlowRunnerManager implements EventListener,
 
     // Sets up the project files and execution directory.
     this.preparingFlowCount.incrementAndGet();
-    // Record the time between submission, and when the flow preparation/execution starts.
-    // Note that since submit time is recorded on the web server, while flow preparation is on
-    // the executor, there could be some inaccuracies due to clock skew.
-    this.commonMetrics.addQueueWait(System.currentTimeMillis() -
-        flow.getExecutableFlow().getSubmitTime());
 
     final Timer.Context flowPrepTimerContext = this.execMetrics.getFlowSetupTimerContext();
 
@@ -471,16 +485,18 @@ public class FlowRunnerManager implements EventListener,
     }
 
     //Contact Flow Global Configuration Manager to re-configure Flow Runner if there is any ramp-up configuration
-    this.flowRampManager.configure(flow, FileIOUtils.getDirectory(this.projectDirectory, flow.getDirectory()));
+    this.flowRampManager
+        .configure(flow, FileIOUtils.getDirectory(this.projectDirectory, flow.getDirectory()));
 
     final FlowRunner runner =
         new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
-            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder, this.commonMetrics);
+            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder, this.commonMetrics,
+            this.execMetrics);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
         .setNumJobThreads(numJobThreads)
-        .addListeners(this, flowRampManager);
+        .addListeners(this, this.flowRampManager);
 
     configureFlowLevelMetrics(runner);
     return runner;
@@ -499,10 +515,6 @@ public class FlowRunnerManager implements EventListener,
       // update the last submitted time.
       this.lastFlowSubmittedDate = System.currentTimeMillis();
     } catch (final RejectedExecutionException re) {
-
-      // Contact FlowRamp Manager to mark the flowRunner skipped
-      this.flowRampManager.logFlowAction(runner, Action.IGNORED);
-
       this.runningFlows.remove(runner.getExecutionId());
       final StringBuffer errorMsg = new StringBuffer(
           "Azkaban executor can't execute any more flows. ");
@@ -551,8 +563,14 @@ public class FlowRunnerManager implements EventListener,
     final FlowRunner flowRunner = this.runningFlows.get(execId);
 
     if (flowRunner == null) {
-      throw new ExecutorManagerException("Execution " + execId
-          + " is not running.");
+      throw new ExecutorManagerException("Execution " + execId + " is not running.");
+    }
+
+    // account for those unexpected cases where a completed execution remains in the runningFlows
+    //collection due to, for example, the FLOW_FINISHED event not being emitted/handled.
+    if(Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus())) {
+      LOGGER.warn("Found a finished execution in the list of running flows: " + execId);
+      throw new ExecutorManagerException("Execution " + execId + " is already finished.");
     }
 
     flowRunner.kill(user);
@@ -567,7 +585,11 @@ public class FlowRunnerManager implements EventListener,
           + " is not running.");
     }
 
-    runner.pause(user);
+    try {
+      runner.pause(user);
+    } catch (final IllegalStateException e) {
+      throw new ExecutorManagerException(e.getMessage());
+    }
   }
 
   public void resumeFlow(final int execId, final String user)
@@ -606,7 +628,9 @@ public class FlowRunnerManager implements EventListener,
    * delete execution dir pertaining to the given execution id
    */
   private void deleteExecutionDir(final int executionId) {
+    LOGGER.info("Deleting execution directory for " + executionId);
     synchronized (this.executionDirDeletionSync) {
+      LOGGER.info("Starting execution directory deletion for " + executionId);
       final Path flowExecutionDir = Paths.get(this.executionDirectory.toPath().toString(),
           String.valueOf(executionId));
       try {
@@ -878,6 +902,7 @@ public class FlowRunnerManager implements EventListener,
         LOGGER.error(e.getMessage());
       }
     }
+    flowPreparer.shutdown();
     LOGGER.warn("Shutdown FlowRunnerManager complete.");
   }
 
@@ -956,7 +981,8 @@ public class FlowRunnerManager implements EventListener,
             if (this.flowMaxRunningTimeInMins > 0
                 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS
                 > this.lastLongRunningFlowCleanTime) {
-              FlowRunnerManager.LOGGER.info(String.format("Killing long jobs running longer than %s mins",
+              FlowRunnerManager.LOGGER
+                  .info(String.format("Killing long jobs running longer than %s mins",
                       this.flowMaxRunningTimeInMins));
               for (final FlowRunner flowRunner : FlowRunnerManager.this.runningFlows.values()) {
                 if (isFlowRunningLongerThan(flowRunner.getExecutableFlow(),
@@ -975,10 +1001,11 @@ public class FlowRunnerManager implements EventListener,
 
             wait(FlowRunnerManager.RECENTLY_FINISHED_TIME_TO_LIVE);
           } catch (final InterruptedException e) {
-            FlowRunnerManager.LOGGER.info("Interrupted. Probably to shut down.");
+            FlowRunnerManager.LOGGER.info("Interrupted. Probably to shut down.", e.getMessage());
           } catch (final Throwable t) {
+            t.printStackTrace();
             FlowRunnerManager.LOGGER.warn(
-                "Uncaught throwable, please look into why it is not caught", t);
+                "Uncaught throwable, please look into why it is not caught", t.getMessage());
           }
         }
       }
@@ -1039,8 +1066,14 @@ public class FlowRunnerManager implements EventListener,
         }
       } else if (this.pollingCriteria.shouldPoll()) {
         try {
-          final int execId = FlowRunnerManager.this.executorLoader
-              .selectAndUpdateExecution(this.executorId, FlowRunnerManager.this.active);
+          final int execId;
+          if (FlowRunnerManager.this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
+            execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecutionWithLocking(
+                this.executorId, FlowRunnerManager.this.active);
+          } else {
+            execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecution(this.executorId,
+                FlowRunnerManager.this.active);
+          }
           if (execId != -1) {
             FlowRunnerManager.LOGGER.info("Submitting flow " + execId);
             try {
@@ -1080,7 +1113,8 @@ public class FlowRunnerManager implements EventListener,
   private class PollingCriteria {
 
     private final Props azkabanProps;
-    private final SystemMemoryInfo memInfo = ServiceProvider.SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
+    private final SystemMemoryInfo memInfo = ServiceProvider.SERVICE_PROVIDER
+        .getInstance(SystemMemoryInfo.class);
     private final OsCpuUtil cpuUtil = ServiceProvider.SERVICE_PROVIDER.getInstance(OsCpuUtil.class);
 
     private boolean areFlowThreadsAvailable;

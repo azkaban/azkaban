@@ -97,12 +97,7 @@ public class ExecutorHealthChecker {
       final Optional<Executor> executorOption = entry.getKey();
       if (!executorOption.isPresent()) {
         final String finalizeReason = "Executor id of this execution doesn't exist.";
-        for (final ExecutableFlow flow : entry.getValue()) {
-          logger.warn(
-              String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
-          ExecutionControllerUtils
-              .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
-        }
+        finalizeFlows(entry.getValue(), finalizeReason);
         continue;
       }
 
@@ -124,8 +119,23 @@ public class ExecutorHealthChecker {
           }
         }
       } catch (final ExecutorManagerException e) {
-        handleExecutorNotAliveCase(entry, executor, e);
+        handleExecutorNotAliveCase(executor, entry.getValue(), e);
       }
+    }
+  }
+
+  /**
+   * Finalize given flows with the provided reason.
+   *
+   * @param flows
+   * @param finalizeReason
+   */
+  private void finalizeFlows(List<ExecutableFlow> flows, String finalizeReason) {
+    for (ExecutableFlow flow: flows) {
+      logger.warn(
+          String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
+      ExecutionControllerUtils
+          .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
     }
   }
 
@@ -155,25 +165,47 @@ public class ExecutorHealthChecker {
 
   /**
    * Increments executor failure count. If it reaches max failure count, sends alert emails to AZ
-   * admin.
+   * admin and executes any cleanup actions for flows on that executors.
    *
-   * @param entry executor to list of flows map entry
    * @param executor the executor
+   * @param flows flows assigned to the executor
    * @param e Exception thrown when the executor is not alive
    */
-  private void handleExecutorNotAliveCase(
-      final Entry<Optional<Executor>, List<ExecutableFlow>> entry, final Executor executor,
+  private void handleExecutorNotAliveCase(final Executor executor, final List<ExecutableFlow> flows,
       final ExecutorManagerException e) {
     logger.error("Failed to get update from executor " + executor.getId(), e);
     this.executorFailureCount.put(executor.getId(), this.executorFailureCount.getOrDefault
         (executor.getId(), 0) + 1);
-    if (this.executorFailureCount.get(executor.getId()) % this.executorMaxFailureCount == 0
-        && !this.alertEmails.isEmpty()) {
-      entry.getValue().stream().forEach(flow -> flow
-          .getExecutionOptions().setFailureEmails(this.alertEmails));
-      logger.info(String.format("Executor failure count is %d. Sending alert emails to %s.",
-          this.executorFailureCount.get(executor.getId()), this.alertEmails));
-      this.alerterHolder.get("email").alertOnFailedUpdate(executor, entry.getValue(), e);
+    if (this.executorFailureCount.get(executor.getId()) % this.executorMaxFailureCount == 0) {
+      if (!this.alertEmails.isEmpty()) {
+        logger.info(String.format("Executor failure count is %d. Sending alert emails to %s.",
+            this.executorFailureCount.get(executor.getId()), this.alertEmails));
+        this.alerterHolder.get("email")
+            .alertOnFailedExecutorHealthCheck(executor, flows, e,
+                this.alertEmails);
+      }
+      this.cleanupForMissingExecutor(executor, flows);
     }
+  }
+
+  /**
+   * Perform any cleanup required for an unreachable executor.
+   *
+   * Note that ideally we would like to disable the executor such that not further executions are
+   * 'assigned' to it. However with the pull/polling based model there is currently no direct way
+   * of doing this other than the hitting the corresponding ajax endpoint for the executor.
+   * That endpoint is most likely not reachable (hence the repeated healthcheck failures).
+   * Updating the active status or removing the executor from db will not have an impact on any
+   * executor that is still alive and was unreachable temporarily.
+   * For now we limit the action to finalizing any flows assigned to the the unreachable executor.
+   *
+   * @param executor
+   * @param executions
+   */
+  private void cleanupForMissingExecutor(Executor executor, List<ExecutableFlow> executions) {
+    String finalizeReason =
+        String.format("Executor was unreachable, executor-id: %s, executor-host: %s, "
+                + "executor-port: %d", executor.getId(), executor.getHost(), executor.getPort());
+    finalizeFlows(executions, finalizeReason);
   }
 }

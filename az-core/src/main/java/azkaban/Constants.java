@@ -74,6 +74,7 @@ public class Constants {
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
+
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
@@ -124,6 +125,7 @@ public class Constants {
     // Configures Azkaban to use new polling model for dispatching
     public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
+    public static final String AZKABAN_POLLING_LOCK_ENABLED = "azkaban.polling.lock.enabled";
     public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =
         "azkaban.polling_criteria.flow_threads_available";
     public static final String AZKABAN_POLLING_CRITERIA_MIN_FREE_MEMORY_GB =
@@ -296,8 +298,11 @@ public class Constants {
         + ".max_number_per_ip_per_user";
 
     // allowed max size of shared project dir (percentage of partition size), e.g 0.8
-    public static final String PROJECT_CACHE_SIZE_PERCENTAGE = "azkaban"
-        + ".project_cache_size_percentage_of_disk";
+    public static final String PROJECT_CACHE_SIZE_PERCENTAGE =
+        "azkaban.project_cache_size_percentage_of_disk";
+
+    public static final String PROJECT_CACHE_THROTTLE_PERCENTAGE =
+        "azkaban.project_cache_throttle_percentage";
 
     // how many older versions of project files are kept in DB before deleting them
     public static final String PROJECT_VERSION_RETENTION = "project.version.retention";
@@ -325,6 +330,12 @@ public class Constants {
     public static final String AZKABAN_RAMP_STATUS_POLLING_INTERVAL = "azkaban.ramp.status.polling.interval";
     public static final String AZKABAN_RAMP_STATUS_POLLING_CPU_MAX = "azkaban.ramp.status.polling.cpu.max";
     public static final String AZKABAN_RAMP_STATUS_POLLING_MEMORY_MIN = "azkaban.ramp.status.polling.memory.min";
+
+    public static final String EXECUTION_LOGS_RETENTION_MS = "execution.logs.retention.ms";
+    public static final String EXECUTION_LOGS_CLEANUP_INTERVAL_SECONDS =
+        "execution.logs.cleanup.interval.seconds";
+    public static final String EXECUTION_LOGS_CLEANUP_RECORD_LIMIT =
+        "execution.logs.cleanup.record.limit";
   }
 
   public static class FlowProperties {
@@ -395,7 +406,6 @@ public class Constants {
     public static final String SCHEDULE_TYPE = "type";
     public static final String CRON_SCHEDULE_TYPE = "cron";
     public static final String SCHEDULE_VALUE = "value";
-    public static final String SCHEDULE_TIMEZONE = "timezone";
     public static final String DEP_NAME = "name";
 
     // Flow trigger dependency run time props

@@ -17,10 +17,13 @@ package azkaban.event;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EventHandler {
 
   private final HashSet<EventListener> listeners = new HashSet<>();
+  private static final Logger logger = LoggerFactory.getLogger(EventHandler.class);
 
   public EventHandler() {
   }
@@ -41,7 +44,12 @@ public class EventHandler {
     final ArrayList<EventListener> listeners =
         new ArrayList<>(this.listeners);
     for (final EventListener listener : listeners) {
-      listener.handleEvent(event);
+      try {
+        listener.handleEvent(event);
+      } catch (RuntimeException e) {
+        logger.warn("Error while calling handleEvent for: " + listener.getClass());
+        logger.warn(e.getMessage(), e);
+      }
     }
   }
 

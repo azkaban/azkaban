@@ -1,0 +1,12 @@
+<h2 style="color:#FFA500"> Executor is unreachable. Executor host - executor1-host on Cluster - unit-tests</h2>
+Remedial action will be attempted on affected executions - <br>Following flows were reported as running on the executor and will be finalized.
+<h3>Affected executions</h3>
+<ul>
+	<li>Execution '-1' of flow 'mail-creator-test' of project 'test-project' -  <a href="http://localhost:8081/executor?execid=-1">Execution Link</a></li>
+	<li>Execution '-1' of flow 'mail-creator-test' of project 'test-project' -  <a href="http://localhost:8081/executor?execid=-1">Execution Link</a></li>
+</ul>
+<h3>Error detail</h3>
+Following error was reported for executor-id: 1, executor-host: executor1-host, executor-port: 1234
+<pre>azkaban.executor.ExecutorManagerException: mocked failure
+	at azkaban.executor.mail.DefaultMailCreatorTest.createFailedUpdateMessage(DefaultMailCreatorTest.java:135)
+</pre>

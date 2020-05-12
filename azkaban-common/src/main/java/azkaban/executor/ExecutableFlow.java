@@ -84,11 +84,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public ExecutableFlow() {
   }
 
-  public static ExecutableFlow createExecutableFlowFromObject(final Object obj) {
+  public static ExecutableFlow createExecutableFlow(final Object obj, final Status status) {
     final ExecutableFlow exFlow = new ExecutableFlow();
     final HashMap<String, Object> flowObj = (HashMap<String, Object>) obj;
     exFlow.fillExecutableFromMapObject(flowObj);
-
+    // overwrite status from the flow data blob as that one should NOT be used
+    exFlow.setStatus(status);
     return exFlow;
   }
 
@@ -262,8 +263,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SUBMITTIME_PARAM, this.submitTime);
 
     final List<Map<String, Object>> slaOptions = new ArrayList<>();
-    this.executionOptions.getSlaOptions().stream()
-        .forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
+    List<SlaOption> slaOptionList = this.executionOptions.getSlaOptions();
+    if (slaOptionList != null) {
+      for (SlaOption slaOption : slaOptionList) {
+        slaOptions.add(slaOption.toObject());
+      }
+    }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 

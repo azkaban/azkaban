@@ -288,7 +288,7 @@ public class ExecutableFlowTest {
         (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
 
     final ExecutableFlow parsedExFlow =
-        ExecutableFlow.createExecutableFlowFromObject(flowObjMap);
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
     testEquals(exFlow, parsedExFlow);
   }
 
@@ -337,7 +337,7 @@ public class ExecutableFlowTest {
     final Map<String, Object> flowObjMap =
         (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
     final ExecutableFlow parsedExFlow =
-        ExecutableFlow.createExecutableFlowFromObject(flowObjMap);
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
     testEquals(exFlow, parsedExFlow);
 
     // test backward compatibility: reading in the original JSON format should
@@ -346,7 +346,7 @@ public class ExecutableFlowTest {
         (Map<String, Object>) JSONUtils.parseJSONFromFile(new File
         ("src/test/resources/json/embedded_flow.json"));
     final ExecutableFlow origExFlow =
-        ExecutableFlow.createExecutableFlowFromObject(origObjMap);
+        ExecutableFlow.createExecutableFlow(origObjMap, exFlow.getStatus());
     origExFlow.setUpdateTime(exFlow.getUpdateTime()); // update time changes
     testEquals(exFlow, origExFlow);
   }
@@ -363,7 +363,7 @@ public class ExecutableFlowTest {
     final Map<String, Object> flowObjMap =
         (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
     final ExecutableFlow copyFlow =
-        ExecutableFlow.createExecutableFlowFromObject(flowObjMap);
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
 
     testEquals(exFlow, copyFlow);
 

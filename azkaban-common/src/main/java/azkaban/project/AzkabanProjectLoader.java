@@ -108,7 +108,8 @@ class AzkabanProjectLoader {
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
-      final File archive, final String fileType, final User uploader, final Props additionalProps)
+      final File archive, final String fileType, final User uploader, final Props additionalProps,
+      final String uploaderIPAddr)
       throws ProjectManagerException, ExecutorManagerException {
     log.info("Uploading files to " + project.getName());
     final Map<String, ValidationReport> reports;
@@ -143,7 +144,8 @@ class AzkabanProjectLoader {
 
       // Upload the project to DB and storage.
       final File startupDependenciesOrNull = isThinProject ? startupDependencies : null;
-      persistProject(project, loader, archive, folder, startupDependenciesOrNull, uploader);
+      persistProject(project, loader, archive, folder, startupDependenciesOrNull, uploader,
+          uploaderIPAddr);
 
       if (isThinProject) {
         // Mark that we uploaded a thin zip in the metrics.
@@ -209,7 +211,8 @@ class AzkabanProjectLoader {
   }
 
   private void persistProject(final Project project, final FlowLoader loader, final File archive,
-      final File projectDir, final File startupDependencies, final User uploader) throws ProjectManagerException {
+      final File projectDir, final File startupDependencies, final User uploader,
+      final String uploaderIPAddr) throws ProjectManagerException {
     synchronized (project) {
       final int newProjectVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
       final Map<String, Flow> flows = loader.getFlowMap();
@@ -218,7 +221,8 @@ class AzkabanProjectLoader {
         flow.setVersion(newProjectVersion);
       }
 
-      this.projectStorageManager.uploadProject(project, newProjectVersion, archive, startupDependencies, uploader);
+      this.projectStorageManager.uploadProject(project, newProjectVersion, archive,
+          startupDependencies, uploader, uploaderIPAddr);
 
       log.info("Uploading flow to db for project " + archive.getName());
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());

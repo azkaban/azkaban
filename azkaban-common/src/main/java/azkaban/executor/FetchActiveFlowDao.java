@@ -51,6 +51,7 @@ public class FetchActiveFlowDao {
     final int id = rs.getInt("exec_id");
     final int encodingType = rs.getInt("enc_type");
     final byte[] data = rs.getBytes("flow_data");
+    final int status = rs.getInt("status");
 
     if (data == null) {
       logger.warn("Execution id " + id + " has flow_data = null. To clean up, update status to "
@@ -60,8 +61,8 @@ public class FetchActiveFlowDao {
       final EncodingType encType = EncodingType.fromInteger(encodingType);
       final ExecutableFlow exFlow;
       try {
-        exFlow = ExecutableFlow.createExecutableFlowFromObject(
-            GZIPUtils.transformBytesToObject(data, encType));
+        exFlow = ExecutableFlow.createExecutableFlow(
+            GZIPUtils.transformBytesToObject(data, encType), Status.fromInteger(status));
       } catch (final IOException e) {
         throw new SQLException("Error retrieving flow data " + id, e);
       }
@@ -175,24 +176,24 @@ public class FetchActiveFlowDao {
 
     // Select flows that are not in finished status
     private static final String FETCH_UNFINISHED_EXECUTABLE_FLOWS =
-        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ex.executor_id executorId, et.active executorStatus"
+        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, ex.status status,"
+            + " et.host host, et.port port, ex.executor_id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " Where ex.status NOT IN ("
+            + " WHERE ex.status NOT IN ("
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")";
 
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =
-        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ex.executor_id executorId, et.active executorStatus"
+        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, ex.status status,"
+            + " et.host host, et.port port, ex.executor_id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " Where ex.status NOT IN ("
+            + " WHERE ex.status NOT IN ("
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")"
@@ -266,12 +267,12 @@ public class FetchActiveFlowDao {
 
     // Select the flow that is dispatched and not in finished status by execution id
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXEC_ID =
-        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
-            + "et.port port, ex.executor_id executorId, et.active executorStatus"
+        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, ex.status status,"
+            + " et.host host, et.port port, ex.executor_id executorId, et.active executorStatus"
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " Where ex.exec_id = ? AND ex.status NOT IN ("
+            + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")"

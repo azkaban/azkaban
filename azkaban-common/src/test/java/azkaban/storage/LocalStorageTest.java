@@ -41,6 +41,7 @@ public class LocalStorageTest {
   public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
 
   private static final String SAMPLE_FILE = "sample_flow_01.zip";
+  private static final String IPv4 = "111.111.111.111";
   private File BASE_DIRECTORY;
 
   private static final Logger log = Logger.getLogger(LocalStorageTest.class);
@@ -78,7 +79,8 @@ public class LocalStorageTest {
     final File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
     final ProjectStorageMetadata metadata = new ProjectStorageMetadata(
-        1, 1, "testuser", HashUtils.MD5.getHashBytes(testFile));
+        1, 1, "testuser", HashUtils.MD5.getHashBytes(testFile),
+        IPv4);
     final String key = this.localStorage.putProject(metadata, testFile);
     assertNotNull(key);
     log.info("Key URI: " + key);

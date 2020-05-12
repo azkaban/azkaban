@@ -56,22 +56,21 @@ public class MockExecutorLoader implements ExecutorLoader {
   Map<Integer, ArrayList<ExecutorLogEvent>> executorEvents = new ConcurrentHashMap<>();
 
   @Override
-  public void uploadExecutableFlow(final ExecutableFlow flow)
-      throws ExecutorManagerException {
+  public void uploadExecutableFlow(final ExecutableFlow flow) throws ExecutorManagerException {
     // Clone the flow node to mimick how it would be saved in DB.
     // If we would keep a handle to the original flow node, we would also see any changes made after
     // this method was called. We must only store a snapshot of the current state.
     // Also to avoid modifying statuses of the original job nodes in this.updateExecutableFlow()
-    final ExecutableFlow exFlow = ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
+    final ExecutableFlow exFlow = ExecutableFlow.createExecutableFlow(flow.toObject(),
+        flow.getStatus());
     this.flows.put(flow.getExecutionId(), exFlow);
     this.flowUpdateCount++;
   }
 
   @Override
-  public ExecutableFlow fetchExecutableFlow(final int execId)
-      throws ExecutorManagerException {
+  public ExecutableFlow fetchExecutableFlow(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow = this.flows.get(execId);
-    return ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
+    return ExecutableFlow.createExecutableFlow(flow.toObject(), flow.getStatus());
   }
 
   @Override
@@ -294,7 +293,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int removeExecutionLogsByTime(final long millis)
+  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return 0;
@@ -459,29 +458,33 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+      throws ExecutorManagerException {
+    return 1;
+  }
+
+  @Override
   public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
     ExecutableRampMap map = ExecutableRampMap.createInstance();
     map.add("rampId",
         ExecutableRamp.createInstance(
         "dali",
         "RampPolicy",
-        ExecutableRamp.Metadata.createInstance(
-            5,
-            10,
-            false
-        ),
-        ExecutableRamp.State.createInstance(
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            false,
-            0,
-            true)
-    ));
+        5,
+        10,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        false,
+        0,
+        true
+        )
+    );
     return map;
   }
 

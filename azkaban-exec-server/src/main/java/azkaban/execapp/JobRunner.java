@@ -625,9 +625,15 @@ public class JobRunner extends EventHandler implements Runnable {
       finalizeAttachmentFile();
       writeStatus();
     } finally {
-      // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
-      fireEvent(Event.create(this, EventType.JOB_FINISHED,
-          new EventData(finalStatus, this.node.getNestedId())), false);
+      try {
+        // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
+        fireEvent(Event.create(this, EventType.JOB_FINISHED,
+            new EventData(finalStatus, this.node.getNestedId())), false);
+      } catch (final RuntimeException e) {
+        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
+            + " jobId: " + this.jobId);
+        serverLogger.warn(e.getMessage(), e);
+      }
     }
   }
 
@@ -706,7 +712,13 @@ public class JobRunner extends EventHandler implements Runnable {
             submitUser);
       }
 
-      this.props.putAll(this.node.getRampProps());
+      final Props props = this.node.getRampProps();
+      if (props != null) {
+        this.logger.info(String
+            .format("RAMP_JOB_ATTACH_PROPS : (id = %s, props = %s)", this.node.getId(),
+                props.toString()));
+        this.props.putAll(props);
+      }
 
       try {
         this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);

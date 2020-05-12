@@ -33,6 +33,7 @@ public class DatabaseStorageTest {
 
   private final ProjectLoader projectLoader = mock(ProjectLoader.class);
   private final DatabaseStorage databaseStorage = new DatabaseStorage(this.projectLoader);
+  private static final String IPv4 = "111.111.111.111";
 
   @Test
   public void testPutProject() throws Exception {
@@ -40,8 +41,10 @@ public class DatabaseStorageTest {
     final int projectId = 1234;
     final int version = 1;
     final String uploader = "testuser";
-    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(projectId, version, uploader, null);
+    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(projectId, version,
+        uploader, null, IPv4);
     this.databaseStorage.putProject(metadata, file);
-    verify(this.projectLoader).uploadProjectFile(projectId, version, file, uploader);
+    verify(this.projectLoader).uploadProjectFile(projectId, version, file,
+        uploader, IPv4);
   }
 }

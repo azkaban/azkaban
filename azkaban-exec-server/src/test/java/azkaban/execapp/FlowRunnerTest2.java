@@ -27,6 +27,7 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
@@ -1067,6 +1068,36 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+  }
+
+  /**
+   * Tests the case when an execution is killed before it has started. The final execution
+   * status should "KILLED".
+   */
+  @Test
+  public void testKillBeforeStart() throws Exception {
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_ALL_POSSIBLE);
+    this.runner.addListener((event) -> {
+      if (event.getType().equals(EventType.FLOW_STARTED)) {
+        // kill interrupts the current thread which would cause an exception if called directly,
+        // so do it from another thread.
+        Thread aThread = new Thread( () -> this.runner.kill());
+        aThread.start();
+        try {
+          // give the thread a chance to kill the execution
+          aThread.join();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+
+    FlowRunnerTestUtil.startThread(this.runner).join();
+    // children jobs shouldn't start
+    assertStatus("joba", Status.READY);
+    assertStatus("joba1", Status.READY);
+    waitForAndAssertFlowStatus(Status.KILLED);
+    this.runner = null;
   }
 
 }

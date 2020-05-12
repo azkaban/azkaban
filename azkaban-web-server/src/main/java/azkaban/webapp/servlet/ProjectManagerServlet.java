@@ -1756,11 +1756,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     resp.setStatus(returnCode);
   }
 
+
   private void ajaxHandleUpload(final HttpServletRequest req, final HttpServletResponse resp,
       final Map<String, String> ret, final Map<String, Object> multipart, final Session session)
       throws ServletException, IOException {
     final User user = session.getUser();
     final String projectName = (String) multipart.get("project");
+
+    // Fetch the uploader's IP
+    String uploaderIPAddr = WebUtils.getRealClientIpAddr(req);
+
     final Project project = validateUploadAndGetProject(resp, ret, user, projectName);
     if (project == null) {
       return;
@@ -1817,7 +1822,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       final List<String> lockedFlows = getLockedFlows(project);
 
       final Map<String, ValidationReport> reports = this.projectManager
-          .uploadProject(project, archiveFile, lowercaseExtension, user, props);
+          .uploadProject(project, archiveFile, lowercaseExtension, user, props, uploaderIPAddr);
 
       if (this.enableQuartz) {
         this.scheduler.schedule(project, user.getUserId());

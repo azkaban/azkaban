@@ -16,7 +16,9 @@
 package azkaban.utils;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import org.joda.time.Days;
@@ -37,6 +39,7 @@ public class TimeUtils {
 
   private static final String DATE_TIME_ZONE_PATTERN = "yyyy/MM/dd HH:mm:ss z";
   private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+  private static int ONE_DAY = 86400;
 
   /**
    * Formats the given millisecond instant into a string using the pattern "yyyy/MM/dd HH:mm:ss z"
@@ -60,6 +63,16 @@ public class TimeUtils {
     final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestampMs),
         ZoneId.systemDefault());
     return formatter.format(zonedDateTime);
+  }
+
+  /**
+   * Takes a date string formatted as "yyyy-MM-dd HH:mm:ss" and converts it into milliseconds
+   * since the Epoch in UTC
+   */
+  public static long convertDateTimeToUTCMillis(final String dateTime) {
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
+    final LocalDateTime parsedDate = LocalDateTime.parse(dateTime, formatter);
+    return parsedDate.atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
   }
 
   /**
@@ -235,5 +248,14 @@ public class TimeUtils {
    */
   public static boolean timeEscapedOver(long referenceTime, int second) {
     return ((System.currentTimeMillis() - referenceTime) / 1000F) > (second * 1.0);
+  }
+
+  /**
+   * Check how many days escaped over
+   * @param referenceTime reference time
+   * @return number of days
+   */
+  public static int daysEscapedOver(long referenceTime) {
+    return Math.round(((System.currentTimeMillis() - referenceTime) / 1000f) / (ONE_DAY * 1.0f) - 0.5f);
   }
 }

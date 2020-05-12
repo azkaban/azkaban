@@ -22,7 +22,7 @@ import java.util.Optional;
 /**
  * Map of Executable Ramp Exceptional Items at Flow Level, Map.key = rampId
  */
-public class ExecutableRampExceptionalFlowItemsMap
+public final class ExecutableRampExceptionalFlowItemsMap
     extends BaseRefreshableMap<String, ExecutableRampExceptionalItems> {
 
   private ExecutableRampExceptionalFlowItemsMap() {
@@ -46,6 +46,18 @@ public class ExecutableRampExceptionalFlowItemsMap
       this.put(rampId, ExecutableRampExceptionalItems.createInstance().add(flowId, treatment, timeStamp, isCacheOnly));
     }
     return this;
+  }
+
+  public ExecutableRampExceptionalItems.RampRecord get(@NotNull final String rampId, @NotNull final String flowId) {
+    return Optional.ofNullable(this.get(rampId))
+        .map(items -> items.getItems().get(flowId))
+        .orElse(null);
+  }
+
+  public boolean exists(@NotNull final String rampId, @NotNull final String flowId) {
+    return Optional.ofNullable(this.get(rampId))
+        .map(items -> items.exists(flowId))
+        .orElse(false);
   }
 
   public ExecutableRampStatus check(@NotNull final String rampId, @NotNull final String flowId) {

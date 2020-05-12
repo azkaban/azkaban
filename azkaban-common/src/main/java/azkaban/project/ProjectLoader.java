@@ -96,15 +96,16 @@ public interface ProjectLoader {
   /**
    * Will upload the files and return the version number of the file uploaded.
    */
-  void uploadProjectFile(int projectId, int version, File localFile, String user)
+  void uploadProjectFile(int projectId, int version, File localFile, String user,
+      String uploader_ip_addr)
       throws ProjectManagerException;
 
   /**
    * Add project and version info to the project_versions table. This current maintains the metadata
    * for each uploaded version of the project
    */
-  void addProjectVersion(int projectId, int version, File localFile, File startupDependencies, String uploader,
-      byte[] md5, String resourceId)
+  void addProjectVersion(int projectId, int version, File localFile, File startupDependencies,
+      String uploader, byte[] md5, String resourceId, String uploaderIPAddr)
       throws ProjectManagerException;
 
   /**

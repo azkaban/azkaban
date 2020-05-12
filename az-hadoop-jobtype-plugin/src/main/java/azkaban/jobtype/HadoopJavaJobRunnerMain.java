@@ -91,17 +91,23 @@ public class HadoopJavaJobRunnerMain {
       }
     });
 
+    // Separate try catch for logger
     try {
-      _jobName = System.getenv(ProcessJob.JOB_NAME_ENV);
-      String jobPropsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
-      String privatePropsFile = System.getenv(ProcessJob.JOBTYPE_PRIVATE_PROP_ENV);
-
       _logger = Logger.getRootLogger();
       _logger.removeAllAppenders();
       ConsoleAppender appender = new ConsoleAppender(DEFAULT_LAYOUT);
       appender.activateOptions();
       _logger.addAppender(appender);
       _logger.setLevel(Level.INFO); //Explicitly setting level to INFO
+    } catch (Exception e) {
+      throw e;
+    }
+
+    try {
+      _jobName = System.getenv(ProcessJob.JOB_NAME_ENV);
+      String jobPropsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
+      String privatePropsFile = System.getenv(ProcessJob.JOBTYPE_PRIVATE_PROP_ENV);
+
 
       Properties jobProps = new Properties(), privateProps = new Properties();
 
@@ -225,6 +231,7 @@ public class HadoopJavaJobRunnerMain {
       }
     } catch (Exception e) {
       _isFinished = true;
+      _logger.error("Exception propagated to Azkaban from job code");
       throw e;
     }
   }
