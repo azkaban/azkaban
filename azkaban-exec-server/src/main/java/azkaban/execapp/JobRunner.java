@@ -178,6 +178,11 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.props;
   }
 
+  public String getEffectiveUser() {
+    return this.props.getString(JobProperties.USER_TO_PROXY,
+        this.getNode().getExecutableFlow().getSubmitUser());
+  }
+
   public void setPipeline(final FlowWatcher watcher, final int pipelineLevel) {
     this.watcher = watcher;
     this.pipelineLevel = pipelineLevel;
