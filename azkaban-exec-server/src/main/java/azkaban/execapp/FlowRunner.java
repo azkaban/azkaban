@@ -1516,11 +1516,12 @@ public class FlowRunner extends EventHandler implements Runnable {
     @VisibleForTesting
     synchronized Map<String, String> getJobMetadata(final JobRunner jobRunner) {
       final ExecutableNode node = jobRunner.getNode();
+      final ExecutableFlow executableFlow = node.getExecutableFlow();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
       metaData.put("jobId", node.getId());
-      metaData.put("executionID", String.valueOf(node.getExecutableFlow().getExecutionId()));
-      metaData.put("flowName", node.getExecutableFlow().getId());
+      metaData.put("executionID", String.valueOf(executableFlow.getExecutionId()));
+      metaData.put("flowName", executableFlow.getId());
       metaData.put("startTime", String.valueOf(node.getStartTime()));
       metaData.put("jobType", String.valueOf(node.getType()));
       // Azkaban executor hostname
@@ -1529,8 +1530,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       // or else use jetty.hostname
       metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
           props.getString("jetty.hostname", "localhost")));
-      metaData.put("jobProxyUser",
-          jobRunner.getProps().getString(JobProperties.USER_TO_PROXY, null));
+      metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
