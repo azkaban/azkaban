@@ -1524,7 +1524,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("jobId", node.getId());
       // Flow specific properties
       final ExecutableFlow flow = node.getExecutableFlow();
-      metaData.put("executionID", String.valueOf(flow.getExecutionId()));
+      metaData.put("executionId", String.valueOf(flow.getExecutionId()));
       metaData.put("flowName", flow.getId());
       metaData.put("projectName", flow.getProjectName());
 
@@ -1539,7 +1539,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("jobProxyUser",
           jobRunner.getProps().getString(JobProperties.USER_TO_PROXY, null));
       // attempt id
-      metaData.put("attempt ID", String.valueOf(node.getAttempt()));
+      metaData.put("attemptId", String.valueOf(node.getAttempt()));
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
