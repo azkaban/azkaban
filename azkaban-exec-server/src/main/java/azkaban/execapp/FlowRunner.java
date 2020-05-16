@@ -1461,8 +1461,8 @@ public class FlowRunner extends EventHandler implements Runnable {
       // project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
       if (handler != null) {
-        metaData.put("uploadUser", handler.getUploader());
-        metaData.put("uploaderIpAddr", handler.getUploaderIpAddr());
+        metaData.put("projectFilUploadUser", handler.getUploader());
+        metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
         metaData.put("projectFileName", handler.getFileName());
         metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
       }
@@ -1519,12 +1519,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     @VisibleForTesting
     synchronized Map<String, String> getJobMetadata(final JobRunner jobRunner) {
       final ExecutableNode node = jobRunner.getNode();
-      final ExecutableFlow executableFlow = node.getExecutableFlow();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
       metaData.put("jobId", node.getId());
       // Flow specific properties
-      final ExecutableFlow flow = node.getExecutableFlow();
+      final ExecutableFlow executableFlow = node.getExecutableFlow();
       metaData.put("executionID", String.valueOf(executableFlow.getExecutionId()));
       metaData.put("flowName", executableFlow.getId());
       metaData.put("projectName", flow.getProjectName());
