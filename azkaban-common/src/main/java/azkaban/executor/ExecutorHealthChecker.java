@@ -19,6 +19,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,7 +65,8 @@ public class ExecutorHealthChecker {
     this.executorMaxFailureCount = azkProps.getInt(ConfigurationKeys
         .AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, DEFAULT_EXECUTOR_MAX_FAILURE_COUNT);
     this.alertEmails = azkProps.getStringList(ConfigurationKeys.AZKABAN_ADMIN_ALERT_EMAIL);
-    this.scheduler = Executors.newSingleThreadScheduledExecutor();
+    this.scheduler = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setNameFormat("azk-health-checker").build());
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;

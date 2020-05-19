@@ -19,6 +19,7 @@ package azkaban.utils;
 import azkaban.Constants;
 import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Set;
@@ -80,7 +81,8 @@ public class DependencyTransferManager {
 
     ensureIsEnabled();
 
-    ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
+    ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS,
+        new ThreadFactoryBuilder().setNameFormat("azk-dependency-pool-%d").build());
     CompletableFuture[] taskFutures = deps
         .stream()
         .map(f -> CompletableFuture.runAsync(() -> downloadDependency(f), threadPool))

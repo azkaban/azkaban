@@ -16,6 +16,7 @@
 
 package azkaban.metric;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,7 +56,8 @@ public class MetricReportManager {
 
   private MetricReportManager() {
     logger.debug("Instantiating Metric Manager");
-    this.executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
+    this.executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS,
+        new ThreadFactoryBuilder().setNameFormat("azk-metric-pool-%d").build());
     this.metrics = new ArrayList<>();
     this.metricEmitters = new LinkedList<>();
     enableManager();

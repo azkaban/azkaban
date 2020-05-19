@@ -7,6 +7,7 @@ import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_SOCKET_TIMEOUT
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_THREAD_POOL_SIZE;
 
 import azkaban.utils.Props;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -89,7 +90,8 @@ public class JobCallbackRequestMaker {
     logger.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
 
     final ExecutorService executorService =
-        Executors.newFixedThreadPool(jobCallbackThreadPoolSize);
+        Executors.newFixedThreadPool(jobCallbackThreadPoolSize,
+            new ThreadFactoryBuilder().setNameFormat("azk-callback-pool-%d").build());
     this.futureRequestExecutionService =
         new FutureRequestExecutionService(httpClient, executorService);
   }

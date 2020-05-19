@@ -24,6 +24,7 @@ import azkaban.flowtrigger.DependencyInstanceRuntimeProps;
 import azkaban.flowtrigger.DependencyPluginConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,7 +46,8 @@ public class KafkaDependencyCheck implements DependencyCheck {
   private KafkaEventMonitor dependencyMonitor;
 
   public KafkaDependencyCheck() {
-    this.executorService = Executors.newSingleThreadExecutor();
+    this.executorService = Executors.newSingleThreadExecutor(
+        new ThreadFactoryBuilder().setNameFormat("azk-trigger-dependency").build());
   }
 
   public void remove(final DependencyInstanceContext depContext) {
