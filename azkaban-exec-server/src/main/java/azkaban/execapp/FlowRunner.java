@@ -1460,12 +1460,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 
       // project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
-      if (handler != null) {
-        metaData.put("projectFilUploadUser", handler.getUploader());
-        metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
-        metaData.put("projectFileName", handler.getFileName());
-        metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
-      }
+      metaData.put("projectFilUploadUser", handler.getUploader());
+      metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
+      metaData.put("projectFileName", handler.getFileName());
+      metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
 
       // Propagate flow properties to Event Reporter
       if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
@@ -1536,9 +1534,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       // or else use jetty.hostname
       metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
           props.getString("jetty.hostname", "localhost")));
-      // attempt id
       metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
-      metaData.put("attemptID", String.valueOf(node.getAttempt()));
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),

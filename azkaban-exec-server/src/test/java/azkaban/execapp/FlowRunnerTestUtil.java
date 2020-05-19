@@ -40,6 +40,7 @@ import azkaban.metrics.MetricsManager;
 import azkaban.project.FlowLoader;
 import azkaban.project.FlowLoaderFactory;
 import azkaban.project.Project;
+import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.test.Utils;
@@ -64,6 +65,7 @@ public class FlowRunnerTestUtil {
   private final File projectDir;
   private final ProjectLoader projectLoader;
   private ExecutorLoader executorLoader;
+  private final ProjectFileHandler handler;
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
       throws Exception {
@@ -76,8 +78,12 @@ public class FlowRunnerTestUtil {
         .prepareProject(this.project, this.projectDir, this.workingDir);
 
     this.executorLoader = mock(ExecutorLoader.class);
-    this.projectLoader = mock(ProjectLoader.class);
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+
+    this.projectLoader = mock(ProjectLoader.class);
+    handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
+            1, null, null, null, "111.111.111.111");
+    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
 
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
