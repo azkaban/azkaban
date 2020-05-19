@@ -1524,7 +1524,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       final ExecutableFlow executableFlow = node.getExecutableFlow();
       metaData.put("executionID", String.valueOf(executableFlow.getExecutionId()));
       metaData.put("flowName", executableFlow.getId());
-      metaData.put("projectName", flow.getProjectName());
+      metaData.put("projectName", executableFlow.getProjectName());
 
       metaData.put("startTime", String.valueOf(node.getStartTime()));
       metaData.put("jobType", String.valueOf(node.getType()));
@@ -1535,6 +1535,8 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
           props.getString("jetty.hostname", "localhost")));
       metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
+      // attempt id
+      metaData.put("attemptID", String.valueOf(node.getAttempt()));
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
