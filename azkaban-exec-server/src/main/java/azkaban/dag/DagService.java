@@ -49,7 +49,7 @@ public class DagService {
     // Give the thread a name to make debugging easier.
     this.executorServiceUtils = executorServiceUtils;
     final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-        .setNameFormat("Dag-service").build();
+        .setNameFormat("azk-dag-service").build();
     this.executorService = Executors.newSingleThreadExecutor(namedThreadFactory);
   }
 

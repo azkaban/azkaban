@@ -24,6 +24,7 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,7 +47,8 @@ public class TriggerManager {
 
   @Inject
   public TriggerManager() {
-    this.scheduledService = Executors.newScheduledThreadPool(SCHEDULED_THREAD_POOL_SIZE);
+    this.scheduledService = Executors.newScheduledThreadPool(SCHEDULED_THREAD_POOL_SIZE,
+        new ThreadFactoryBuilder().setNameFormat("azk-trigger-pool-%d").build());
   }
 
   private Condition createCondition(final SlaOption sla, final int execId, final String checkerName,

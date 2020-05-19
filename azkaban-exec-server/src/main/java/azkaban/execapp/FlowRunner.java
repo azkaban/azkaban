@@ -69,6 +69,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.security.AccessControlContext;
@@ -254,7 +255,8 @@ public class FlowRunner extends EventHandler implements Runnable {
   public void run() {
     try {
       if (this.executorService == null) {
-        this.executorService = Executors.newFixedThreadPool(this.numJobThreads);
+        this.executorService = Executors.newFixedThreadPool(this.numJobThreads,
+            new ThreadFactoryBuilder().setNameFormat("azk-job-pool-%d").build());
       }
       setupFlowExecution();
       this.flow.setStartTime(System.currentTimeMillis());

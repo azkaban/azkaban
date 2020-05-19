@@ -44,6 +44,7 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TimeUtils;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -708,7 +709,8 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
     public PollingService(final int statusPollingIntervalMinutes, final FlowRampManager.PollingCriteria pollingCriteria) {
       this.statusPollingIntervalMinutes = statusPollingIntervalMinutes;
-      this.scheduler = Executors.newSingleThreadScheduledExecutor();
+      this.scheduler = Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder().setNameFormat("azk-flowramp-sched").build());
       this.pollingCriteria = pollingCriteria;
     }
 

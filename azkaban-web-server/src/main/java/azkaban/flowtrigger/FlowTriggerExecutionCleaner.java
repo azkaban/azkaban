@@ -17,6 +17,7 @@
 package azkaban.flowtrigger;
 
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +41,8 @@ public class FlowTriggerExecutionCleaner {
   @Inject
   public FlowTriggerExecutionCleaner(final FlowTriggerInstanceLoader loader) {
     this.flowTriggerInstanceLoader = loader;
-    this.scheduler = Executors.newSingleThreadScheduledExecutor();
+    this.scheduler = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setNameFormat("azk-trigger-cleaner").build());
   }
 
   public void start() {

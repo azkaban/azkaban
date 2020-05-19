@@ -59,6 +59,7 @@ import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -1043,7 +1044,8 @@ public class FlowRunnerManager implements EventListener,
 
     public PollingService(final long pollingIntervalMs, final PollingCriteria pollingCriteria) {
       this.pollingIntervalMs = pollingIntervalMs;
-      this.scheduler = Executors.newSingleThreadScheduledExecutor();
+      this.scheduler = Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder().setNameFormat("azk-polling-service").build());
       this.pollingCriteria = pollingCriteria;
     }
 

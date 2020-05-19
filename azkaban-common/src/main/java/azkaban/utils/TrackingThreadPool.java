@@ -15,6 +15,7 @@
  */
 package azkaban.utils;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +51,8 @@ public class TrackingThreadPool extends ThreadPoolExecutor {
   public TrackingThreadPool(final int corePoolSize, final int maximumPoolSize,
       final long keepAliveTime, final TimeUnit unit, final BlockingQueue<Runnable> workQueue,
       final ThreadPoolExecutingListener listener) {
-    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue,
+        new ThreadFactoryBuilder().setNameFormat("azk-tracking-pool-%d").build());
     if (listener != null) {
       this.executingListener = listener;
     }

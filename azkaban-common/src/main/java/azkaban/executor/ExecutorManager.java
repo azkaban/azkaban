@@ -31,6 +31,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -178,7 +179,8 @@ public class ExecutorManager extends EventHandler implements
 
   private ExecutorService createExecutorInfoRefresherService() {
     return Executors.newFixedThreadPool(this.azkProps.getInt(
-        ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5));
+        ConfigurationKeys.EXECUTORINFO_REFRESH_MAX_THREADS, 5),
+        new ThreadFactoryBuilder().setNameFormat("azk-refresher-pool-%d").build());
   }
 
   /**
