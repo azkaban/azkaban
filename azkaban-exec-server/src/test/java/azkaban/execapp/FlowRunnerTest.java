@@ -328,7 +328,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertEquals("Event metadata not created as expected.", "derived-member-data",
             flowMetadata.get("flowName"));
     Assert.assertEquals("Event metadata not created as expected.", "testUser",
-            flowMetadata.get("projectFilUploadUser"));
+            flowMetadata.get("projectFileUploadUser"));
     Assert.assertEquals("Event metadata not created as expected.", "111.111.111.111",
             flowMetadata.get("projectFileUploaderIpAddr"));
     Assert.assertEquals("Event metadata not created as expected.", "test.zip",
