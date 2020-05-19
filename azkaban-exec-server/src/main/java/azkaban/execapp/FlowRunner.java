@@ -1460,7 +1460,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
       // project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
-      metaData.put("projectFilUploadUser", handler.getUploader());
+      metaData.put("projectFileUploadUser", handler.getUploader());
       metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
       metaData.put("projectFileName", handler.getFileName());
       metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
