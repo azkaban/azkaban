@@ -312,10 +312,4 @@ class FlowPreparer {
     execDir.mkdirs();
     return execDir;
   }
-
-  public void shutdown() {
-    if (projectCacheCleaner.isPresent()) {
-      this.projectCacheCleaner.get().shutdown();
-    }
-  }
 }
