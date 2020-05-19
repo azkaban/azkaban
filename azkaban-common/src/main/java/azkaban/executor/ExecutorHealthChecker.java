@@ -78,7 +78,7 @@ public class ExecutorHealthChecker {
   }
 
   public void shutdown() {
-    logger.info("Terminating executor health checker.");
+    logger.info("Shutting down executor health checker.");
     this.scheduler.shutdown();
     try {
       if (!this.scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
@@ -91,17 +91,18 @@ public class ExecutorHealthChecker {
   }
 
   /**
-   * Wrapper for capturing and logging errors and exceptions thrown during healthcheck.
+   * Wrapper for capturing and logging any exceptions thrown during healthcheck.
    * {@code ScheduledExecutorService} stops the scheduled invocations of a given method in
    * case it throws an exception.
-   * Any exceptions are not expected at this stage however in case any errors and unchecked
-   * exceptions do occur, we still don't want subsequent healthchecks to stop.
+   * Any exceptions are not expected at this stage however in case any unchecked exceptions
+   * do occur, we still don't want subsequent healthchecks to stop.
    */
   public void checkExecutorHealthQuietly() {
     try {
       checkExecutorHealth();
-    } catch (Throwable t) {
-      logger.error("Unexepected error during executor healthcheck. Cause: " + ExceptionUtils.getStackTrace(t));
+    } catch (final RuntimeException e) {
+      logger.error("Unexepected error during executor healthcheck. Cause: "
+          + ExceptionUtils.getStackTrace(e));
     }
   }
 

@@ -155,9 +155,9 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null)).thenThrow(new Error("test error"));
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
 
-    // this will throw causing the test to fail in case the error is not caught correctly
+    // this will throw, causing the test to fail in case the error is not caught correctly
     this.executorHealthChecker.checkExecutorHealthQuietly();
     verifyZeroInteractions(this.alerterHolder);
   }
