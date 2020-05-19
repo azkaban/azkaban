@@ -295,8 +295,9 @@ class JdbcProjectHandlerSet {
       ResultSetHandler<List<ProjectFileHandler>> {
 
     public static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id, startup_dependencies "
-            + "FROM project_versions WHERE project_id=? AND version=?";
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks," +
+                " resource_id, startup_dependencies, uploader_ip_addr " +
+                " FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
     public List<ProjectFileHandler> handle(final ResultSet rs) throws SQLException {
@@ -316,6 +317,7 @@ class JdbcProjectHandlerSet {
         final int numChunks = rs.getInt(8);
         final String resourceId = rs.getString(9);
         final Blob startupDependenciesBlob = rs.getBlob(10);
+        final String uploaderIpAddr = rs.getString(11);
 
         Set<Dependency> startupDependencies = Collections.emptySet();
         if (startupDependenciesBlob != null) {
@@ -331,7 +333,7 @@ class JdbcProjectHandlerSet {
 
         final ProjectFileHandler handler =
             new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5,
-                startupDependencies, resourceId);
+                startupDependencies, resourceId, uploaderIpAddr);
 
         handlers.add(handler);
       } while (rs.next());

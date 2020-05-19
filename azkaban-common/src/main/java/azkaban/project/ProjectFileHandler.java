@@ -33,6 +33,7 @@ public class ProjectFileHandler {
   private final int numChunks;
   private final Set<Dependency> startupDependencies;
   private final String resourceId;
+  private final String uploaderIpAddr;
 
   private File localFile = null;
 
@@ -46,7 +47,8 @@ public class ProjectFileHandler {
       final int numChunks,
       final byte[] MD5Hash,
       final Set<Dependency> startupDependencies,
-      final String resourceId) {
+      final String resourceId,
+      final String uploaderIpAddr) {
     this.projectId = projectId;
     this.version = version;
     this.uploadTime = uploadTime;
@@ -57,6 +59,7 @@ public class ProjectFileHandler {
     this.numChunks = numChunks;
     this.startupDependencies = startupDependencies;
     this.resourceId = resourceId;
+    this.uploaderIpAddr = uploaderIpAddr;
   }
 
   public int getProjectId() {
@@ -110,5 +113,9 @@ public class ProjectFileHandler {
 
   public String getResourceId() {
     return this.resourceId;
+  }
+
+  public String getUploaderIpAddr() {
+    return this.uploaderIpAddr;
   }
 }
