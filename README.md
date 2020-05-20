@@ -75,3 +75,5 @@ make html
 welcome to submit a pull request to edit/fix the documentation.
 
 Exploring git commands
+
+Gerit->Github push test
