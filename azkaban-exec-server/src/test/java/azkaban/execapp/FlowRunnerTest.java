@@ -318,11 +318,23 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
     Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
 
-    Assert.assertEquals("Event metadata not created as expected.", "localhost", flowMetadata.get("azkabanWebserver"));
-    Assert.assertEquals("Event metadata not created as expected.", "unknown", flowMetadata.get("azkabanHost"));
+    Assert.assertEquals("Event metadata not created as expected.", "localhost",
+            flowMetadata.get("azkabanWebserver"));
+    Assert.assertEquals("Event metadata not created as expected.", "unknown",
+            flowMetadata.get("azkabanHost"));
     Assert.assertNull("Event metadata not created as expected.", flowMetadata.get("submitUser"));
-    Assert.assertEquals("Event metadata not created as expected.", "test", flowMetadata.get("projectName"));
-    Assert.assertEquals("Event metadata not created as expected.", "derived-member-data", flowMetadata.get("flowName"));
+    Assert.assertEquals("Event metadata not created as expected.", "test",
+            flowMetadata.get("projectName"));
+    Assert.assertEquals("Event metadata not created as expected.", "derived-member-data",
+            flowMetadata.get("flowName"));
+    Assert.assertEquals("Event metadata not created as expected.", "testUser",
+            flowMetadata.get("projectFileUploadUser"));
+    Assert.assertEquals("Event metadata not created as expected.", "111.111.111.111",
+            flowMetadata.get("projectFileUploaderIpAddr"));
+    Assert.assertEquals("Event metadata not created as expected.", "test.zip",
+            flowMetadata.get("projectFileName"));
+    Assert.assertEquals("Event metadata not created as expected.", "1",
+            flowMetadata.get("projectFileUploadTime"));
   }
 
   private void assertAttempts(final String name, final int attempt) {

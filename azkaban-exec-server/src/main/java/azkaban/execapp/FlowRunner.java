@@ -55,6 +55,7 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.FlowLoaderUtils;
+import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.sla.SlaOption;
@@ -161,6 +162,8 @@ public class FlowRunner extends EventHandler implements Runnable {
   // The following is state that will trigger a retry of all failed jobs
   private volatile boolean retryFailedJobs = false;
 
+  // Project upload data for events
+  private final ProjectFileHandler projectFileHandler;
   /**
    * Constructor. This will create its own ExecutorService for thread pools
    */
@@ -211,6 +214,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     // where the uninitialized logger is used in flow preparing state
     createLogger(this.flow.getFlowId());
     this.azkabanEventReporter = azkabanEventReporter;
+
+    projectFileHandler =
+            this.projectLoader.fetchProjectMetaData(this.flow.getProjectId(), this.flow.getVersion());
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -1415,14 +1421,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     return false;
   }
 
-  public boolean isThreadPoolShutdown() {
-    return this.executorService.isShutdown();
-  }
-
-  public int getNumRunningJobs() {
-    return this.activeJobRunners.size();
-  }
-
   public int getExecutionId() {
     return this.execId;
   }
@@ -1433,10 +1431,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public FlowRunnerEventListener getFlowRunnerEventListener() {
     return this.flowListener;
-  }
-
-  public JobRunnerEventListener getJobRunnerEventListener() {
-    return this.listener;
   }
 
   // Class helps report the flow start and stop events.
@@ -1463,6 +1457,13 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("executionId", String.valueOf(flow.getExecutionId()));
       metaData.put("startTime", String.valueOf(flow.getStartTime()));
       metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
+
+      // project upload info
+      final ProjectFileHandler handler = flowRunner.projectFileHandler;
+      metaData.put("projectFileUploadUser", handler.getUploader());
+      metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
+      metaData.put("projectFileName", handler.getFileName());
+      metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
 
       // Propagate flow properties to Event Reporter
       if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
@@ -1516,12 +1517,15 @@ public class FlowRunner extends EventHandler implements Runnable {
     @VisibleForTesting
     synchronized Map<String, String> getJobMetadata(final JobRunner jobRunner) {
       final ExecutableNode node = jobRunner.getNode();
-      final ExecutableFlow executableFlow = node.getExecutableFlow();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
       metaData.put("jobId", node.getId());
+      // Flow specific properties
+      final ExecutableFlow executableFlow = node.getExecutableFlow();
       metaData.put("executionID", String.valueOf(executableFlow.getExecutionId()));
       metaData.put("flowName", executableFlow.getId());
+      metaData.put("projectName", executableFlow.getProjectName());
+
       metaData.put("startTime", String.valueOf(node.getStartTime()));
       metaData.put("jobType", String.valueOf(node.getType()));
       // Azkaban executor hostname
@@ -1531,6 +1535,8 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
           props.getString("jetty.hostname", "localhost")));
       metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
+      // attempt id
+      metaData.put("attemptID", String.valueOf(node.getAttempt()));
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
