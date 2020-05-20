@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
@@ -65,7 +66,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Master;
-import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.mapreduce.v2.api.HSClientProtocol;
@@ -567,40 +567,58 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void fetchNameNodeToken(final String userToProxy, final Props props, final Logger logger,
-      final Credentials cred) throws IOException, HadoopSecurityManagerException {
+                                  final Credentials cred) throws IOException, HadoopSecurityManagerException {
     if (props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN, false)) {
-      final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
-      // check if we get the correct FS, and most importantly, the conf
-      logger.info("Getting DFS token from " + fs.getUri());
-      final Token<?>[] fsTokens =
-          fs.addDelegationTokens(getMRTokenRenewerInternal(new JobConf()).toString(), cred);
-      if (fsTokens.length == 0) {
-        logger.error("Failed to fetch DFS token for ");
-        throw new HadoopSecurityManagerException(
-            "Failed to fetch DFS token for " + userToProxy);
-      }
+      final String renewer = getMRTokenRenewerInternal(new JobConf()).toString();
 
-      for (final Token<?> fsToken : fsTokens) {
-        logger.info(String.format(
-            "DFS token from namenode pre-fetched, token kind: %s, token service: %s",
-            fsToken.getKind(), fsToken.getService()));
-      }
+      // Get the tokens name node
+      fetchNameNodeTokenInternal(renewer, cred, userToProxy, null);
 
       // getting additional name nodes tokens
       final String otherNamenodes = props.get(
-          HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN);
+              HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN);
       if ((otherNamenodes != null) && (otherNamenodes.length() > 0)) {
         logger.info("Fetching token(s) for other namenode(s): " + otherNamenodes);
         final String[] nameNodeArr = otherNamenodes.split(",");
-        final Path[] ps = new Path[nameNodeArr.length];
-        for (int i = 0; i < ps.length; i++) {
-          ps[i] = new Path(nameNodeArr[i].trim());
+        for (String nameNode : nameNodeArr) {
+          fetchNameNodeTokenInternal(renewer, cred, userToProxy, new Path(nameNode.trim()).toUri());
         }
-        TokenCache.obtainTokensForNamenodes(cred, ps, HadoopSecurityManager_H_2_0.this.conf);
-        logger.info("Successfully fetched tokens for: " + otherNamenodes);
+      }
+      logger.info("Successfully fetched tokens for: " + otherNamenodes);
+    } else {
+      logger.info(
+              HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN + " was not configured");
+    }
+  }
+
+  private void fetchNameNodeTokenInternal(final String renewer, final Credentials cred,
+                                          final String userToProxy, final URI uri)
+          throws IOException, HadoopSecurityManagerException {
+    FileSystem fs = null;
+    try {
+      if (uri == null) {
+        fs = FileSystem.newInstance(conf);
       } else {
-        logger.info(
-            HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN + " was not configured");
+        fs = FileSystem.newInstance(uri, conf);
+      }
+      // check if we get the correct FS, and most importantly, the conf
+      logger.info("Getting DFS token from " + fs.getUri());
+      try {
+        final Token<?>[] fsTokens = fs.addDelegationTokens(renewer, cred);
+        for (int i = 0; i < fsTokens.length; i++) {
+          final Token<?> fsToken = fsTokens[i];
+          logger.info(String.format(
+                  "DFS token from namenode pre-fetched, token kind: %s, token service: %s",
+                  fsToken.getKind(), fsToken.getService()));
+        }
+      } catch (Exception e) {
+        logger.error("Failed to fetch DFS token for ");
+        throw new HadoopSecurityManagerException(
+                "Failed to fetch DFS token for " + userToProxy);
+      }
+    } finally {
+      if (fs != null) {
+        fs.close();
       }
     }
   }
