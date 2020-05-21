@@ -567,7 +567,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void fetchNameNodeToken(final String userToProxy, final Props props, final Logger logger,
-                                  final Credentials cred) throws IOException, HadoopSecurityManagerException {
+          final Credentials cred) throws IOException, HadoopSecurityManagerException {
     if (props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN, false)) {
       final String renewer = getMRTokenRenewerInternal(new JobConf()).toString();
 
@@ -576,7 +576,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
       // getting additional name nodes tokens
       final String otherNamenodes = props.get(
-              HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN);
+          HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN);
       if ((otherNamenodes != null) && (otherNamenodes.length() > 0)) {
         logger.info("Fetching token(s) for other namenode(s): " + otherNamenodes);
         final String[] nameNodeArr = otherNamenodes.split(",");
@@ -591,8 +591,24 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     }
   }
 
+  /**
+   * fetchNameNodeInternal - With modified UGI which is of the format,
+   * <userToProxy>/az_<host name>_<exec_id>
+   * Due to this change, the FileSystem cache creates an entry per execution instead of an entry
+   * per proxy user. This could blow up the cache very quickly on a busy Executor and cause OOM.
+   * To make this worse, the entry in Cache is never used as it is specfic to an execution.
+   * To avoid this, always create a new instance of FileSystem locally and close it.
+   *
+   * @param renewer
+   * @param cred
+   * @param userToProxy
+   * @param uri
+   * @throws IOException
+   * @throws HadoopSecurityManagerException
+   */
+
   private void fetchNameNodeTokenInternal(final String renewer, final Credentials cred,
-                                          final String userToProxy, final URI uri)
+          final String userToProxy, final URI uri)
           throws IOException, HadoopSecurityManagerException {
     FileSystem fs = null;
     try {
@@ -612,7 +628,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
                   fsToken.getKind(), fsToken.getService()));
         }
       } catch (Exception e) {
-        logger.error("Failed to fetch DFS token for ");
+        logger.error("Failed to fetch DFS token for " + userToProxy);
         throw new HadoopSecurityManagerException(
                 "Failed to fetch DFS token for " + userToProxy);
       }
