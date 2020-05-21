@@ -18,18 +18,19 @@ package azkaban.executor;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,11 +72,13 @@ public class ExecutorHealthChecker {
 
   public void start() {
     logger.info("Starting executor health checker.");
-    this.scheduler.scheduleAtFixedRate(() -> checkExecutorHealth(), 0L, this.healthCheckIntervalMin,
+    this.scheduler.scheduleAtFixedRate(this::checkExecutorHealthQuietly, 0L,
+        this.healthCheckIntervalMin,
         TimeUnit.MINUTES);
   }
 
   public void shutdown() {
+    logger.info("Shutting down executor health checker.");
     this.scheduler.shutdown();
     try {
       if (!this.scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
@@ -88,10 +91,27 @@ public class ExecutorHealthChecker {
   }
 
   /**
+   * Wrapper for capturing and logging any exceptions thrown during healthcheck.
+   * {@code ScheduledExecutorService} stops the scheduled invocations of a given method in
+   * case it throws an exception.
+   * Any exceptions are not expected at this stage however in case any unchecked exceptions
+   * do occur, we still don't want subsequent healthchecks to stop.
+   */
+  public void checkExecutorHealthQuietly() {
+    try {
+      checkExecutorHealth();
+    } catch (final RuntimeException e) {
+      logger.error("Unexepected error during executor healthcheck. Cause: "
+          + ExceptionUtils.getStackTrace(e));
+    }
+  }
+
+  /**
    * Checks executor health. Finalizes the flow if its executor is already removed from DB or
    * sends alert emails if the executor isn't alive any more.
    */
-  public void checkExecutorHealth() {
+  @VisibleForTesting
+  void checkExecutorHealth() {
     final Map<Optional<Executor>, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
     for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap.entrySet()) {
       final Optional<Executor> executorOption = entry.getKey();
@@ -130,12 +150,18 @@ public class ExecutorHealthChecker {
    * @param flows
    * @param finalizeReason
    */
-  private void finalizeFlows(List<ExecutableFlow> flows, String finalizeReason) {
+  @VisibleForTesting
+  void finalizeFlows(List<ExecutableFlow> flows, String finalizeReason) {
     for (ExecutableFlow flow: flows) {
       logger.warn(
           String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
-      ExecutionControllerUtils
-          .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
+      try {
+        ExecutionControllerUtils
+            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
+      } catch (RuntimeException e) {
+        logger.error(String.format("Unchecked exception while finalizing execution: %d. "
+            + "Exception: %s", flow.getExecutionId(), ExceptionUtils.getStackTrace(e)));
+      }
     }
   }
 
@@ -158,14 +184,15 @@ public class ExecutorHealthChecker {
         flows.add(runningFlow.getSecond());
       }
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get flow to executor map");
+      logger.error("Failed to get flow to executor map. Exception reported: " + ExceptionUtils
+          .getStackTrace(e));
     }
     return exFlowMap;
   }
 
   /**
    * Increments executor failure count. If it reaches max failure count, sends alert emails to AZ
-   * admin and executes any cleanup actions for flows on that executors.
+   * admin and executes any cleanup actions for flows on those executors.
    *
    * @param executor the executor
    * @param flows flows assigned to the executor

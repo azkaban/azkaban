@@ -28,6 +28,7 @@ import azkaban.alert.Alerter;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -144,5 +145,47 @@ public class ExecutorHealthCheckerTest {
     String expectedReason = "Executor was unreachable, executor-id: 1, executor-host: localhost, "
         + "executor-port: 12345";
     verify((this.alerterHolder).get("email")).alertOnError(eq(flow1), eq(expectedReason));
+  }
+
+  /**
+   * Test that the wrapper routine swallows any exceptions reported by underlying health checker.
+   */
+  @Test
+  public void testCheckExecutorHealthWrapperExceptionHandling() throws Exception {
+    this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
+    when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
+
+    // this will throw, causing the test to fail in case the error is not caught correctly
+    this.executorHealthChecker.checkExecutorHealthQuietly();
+    verifyZeroInteractions(this.alerterHolder);
+  }
+
+  /**
+   * Test that exceptions during flow finalization do not block finalization of subsequent flow
+   * for an executor.
+   */
+  @Test
+  public void testFailureDuringFinalization() throws Exception {
+    final int executionId12 = 12;
+    this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
+
+    ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.activeFlows.put(executionId12, new Pair<>(
+        new ExecutionReference(executionId12, this.executor1), flow2));
+    flow2.setExecutionId(executionId12);
+    flow2.setStatus(Status.RUNNING);
+
+    when(this.loader.fetchExecutableFlow(EXECUTION_ID_11)).thenThrow(new RuntimeException(
+        "test runtime exception"));
+    when(this.loader.fetchExecutableFlow(executionId12)).thenThrow(new RuntimeException(
+        "test runtime exception"));
+
+    this.executorHealthChecker.finalizeFlows(ImmutableList.of(this.flow1, flow2),
+        "test finalize reason");
+    verify(this.loader).fetchExecutableFlow(flow1.getExecutionId());
+    verify(this.loader).fetchExecutableFlow(flow2.getExecutionId());
   }
 }
