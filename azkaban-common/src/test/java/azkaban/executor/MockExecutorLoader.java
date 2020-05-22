@@ -441,6 +441,24 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    final List<Pair<ExecutionReference, ExecutableFlow>> agedQueuedFlows =
+        new ArrayList<>();
+
+    long timeThreshoold = System.currentTimeMillis() - minAge.toMillis();
+    for (final int execId : this.refs.keySet()) {
+      if (!this.executionExecutorMapping.containsKey(execId)) {
+        ExecutableFlow agedFlow = this.flows.get(execId);
+        if (agedFlow.getSubmitTime() < timeThreshoold) {
+          agedQueuedFlows.add(new Pair<>(this.refs.get(execId), this.flows.get(execId)));
+        }
+      }
+    }
+    return agedQueuedFlows;
+  }
+
+  @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
     this.executionExecutorMapping.remove(executionId);
   }

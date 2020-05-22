@@ -123,6 +123,16 @@ public class ExecutionFlowDao {
     }
   }
 
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(FetchAgedQueuedExecutableFlows.FETCH_FLOWS_QUEUED_FOR_LONG_TIME,
+          new FetchQueuedExecutableFlows(), System.currentTimeMillis() - minAge.toMillis());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows", e);
+    }
+  }
+
   /**
    * fetch flow execution history with specified {@code projectId}, {@code flowId} and flow start
    * time >= {@code startTime}
@@ -502,6 +512,50 @@ public class ExecutionFlowDao {
     private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
             + " WHERE executor_id is NULL AND status = "
+            + Status.PREPARING.getNumVal();
+
+    @Override
+    public List<Pair<ExecutionReference, ExecutableFlow>> handle(final ResultSet rs)
+        throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      final List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
+          new ArrayList<>();
+      do {
+        final int id = rs.getInt(1);
+        final int encodingType = rs.getInt(2);
+        final byte[] data = rs.getBytes(3);
+
+        if (data == null) {
+          ExecutionFlowDao.logger.error("Found a flow with empty data blob exec_id: " + id);
+        } else {
+          final EncodingType encType = EncodingType.fromInteger(encodingType);
+          final Status status = Status.fromInteger(rs.getInt(4));
+          try {
+            final ExecutableFlow exFlow =
+                ExecutableFlow.createExecutableFlow(
+                    GZIPUtils.transformBytesToObject(data, encType), status);
+            final ExecutionReference ref = new ExecutionReference(id);
+            execFlows.add(new Pair<>(ref, exFlow));
+          } catch (final IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
+
+      return execFlows;
+    }
+  }
+
+  private static class FetchAgedQueuedExecutableFlows implements
+      ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
+
+    // Select queued unassigned flows
+    private static final String FETCH_FLOWS_QUEUED_FOR_LONG_TIME =
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
+            + " WHERE submit_time < ? AND status = "
             + Status.PREPARING.getNumVal();
 
     @Override
