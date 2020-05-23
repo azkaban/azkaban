@@ -15,6 +15,7 @@
  */
 package azkaban.server;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -26,6 +27,7 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Arrays;
@@ -130,19 +132,24 @@ public class HttpRequestUtils {
    * </pre>
    */
   public static void filterAdminOnlyFlowParams(final UserManager userManager,
-      final ExecutionOptions options, final User user) throws ExecutorManagerException {
+      final ExecutionOptions options, final User user, final Props props) throws ExecutorManagerException {
     if (options == null || options.getFlowParameters() == null) {
       return;
     }
 
     final Map<String, String> params = options.getFlowParameters();
+    boolean hasAdminPermission = hasPermission(userManager, user, Type.ADMIN);
     // is azkaban Admin
-    if (!hasPermission(userManager, user, Type.ADMIN)) {
-      params.remove(ExecutionOptions.FLOW_PRIORITY);
+    if (!hasAdminPermission) {
       params.remove(ExecutionOptions.USE_EXECUTOR);
     } else {
-      validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
+    }
+    boolean disableAdminOnlyForFlowPriority = props.getBoolean(ConfigurationKeys.AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY, false);
+    if (!hasAdminPermission && !disableAdminOnlyForFlowPriority ) {
+      params.remove(ExecutionOptions.FLOW_PRIORITY);
+    } else {
+      validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
     }
   }
 

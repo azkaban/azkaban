@@ -336,6 +336,9 @@ public class Constants {
         "execution.logs.cleanup.interval.seconds";
     public static final String EXECUTION_LOGS_CLEANUP_RECORD_LIMIT =
         "execution.logs.cleanup.record.limit";
+
+    public static final String AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY = "azkaban"
+        + ".disable.admin.only.permission.for.flow.priority";
   }
 
   public static class FlowProperties {

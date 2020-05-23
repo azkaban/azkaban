@@ -35,6 +35,7 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -533,7 +534,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
-      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+      final Props props = getApplication().getServerProps();
+      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user, props);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
     }
@@ -644,7 +646,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
-      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+      final Props props = getApplication().getServerProps();
+      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user, props);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
     }
