@@ -27,7 +27,6 @@ import azkaban.storage.ProjectStorageManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
-import azkaban.utils.CaseInsensitiveConcurrentHashMap;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.common.io.Files;
@@ -35,10 +34,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
@@ -55,27 +52,19 @@ public class ProjectManager {
   private final ProjectLoader projectLoader;
   private final Props props;
   private final boolean creatorDefaultPermissions;
-  // Both projectsById and projectsByName cache need to be thread safe since they are accessed
-  // from multiple threads concurrently without external synchronization for performance.
-  private final ConcurrentHashMap<Integer, Project> projectsById =
-      new ConcurrentHashMap<>();
-  private final CaseInsensitiveConcurrentHashMap<Project> projectsByName =
-      new CaseInsensitiveConcurrentHashMap<>();
-
+  private final ProjectCache cache;
 
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
       final ProjectStorageManager projectStorageManager,
-      final Props props) {
+      final Props props, final ProjectCache cache) {
     this.projectLoader = requireNonNull(loader);
     this.props = requireNonNull(props);
     this.azkabanProjectLoader = requireNonNull(azkabanProjectLoader);
-
+    this.cache = requireNonNull(cache);
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
-
-    loadAllProjects();
     logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
     logger.info("ProjectManager instance created.");
@@ -107,51 +96,13 @@ public class ProjectManager {
     }
   }
 
-  private void loadAllProjects() {
-    final List<Project> projects;
-    logger.info("Loading active projects.");
-    try {
-      projects = this.projectLoader.fetchAllActiveProjects();
-    } catch (final ProjectManagerException e) {
-      throw new RuntimeException("Could not load projects from store.", e);
-    }
-    for (final Project proj : projects) {
-      this.projectsByName.put(proj.getName(), proj);
-      this.projectsById.put(proj.getId(), proj);
-    }
-
-    logger.info("Loading flows from active projects.");
-    loadAllFlowsForAllProjects(projects);
-  }
-
-  private void loadAllFlowsForAllProjects(final List<Project> projects) {
-    try {
-      Map<Project, List<Flow>> projectToFlows = this.projectLoader.fetchAllFlowsForProjects(projects);
-
-      // Load the flows into the project objects
-      for (Map.Entry<Project, List<Flow>> entry : projectToFlows.entrySet()) {
-        Project project = entry.getKey();
-        List<Flow> flows = entry.getValue();
-
-        final Map<String, Flow> flowMap = new HashMap<>();
-        for (final Flow flow : flows) {
-          flowMap.put(flow.getId(), flow);
-        }
-
-        project.setFlows(flowMap);
-      }
-    } catch (final ProjectManagerException e) {
-      throw new RuntimeException("Could not load projects flows from store.", e);
-    }
-  }
-
   public Props getProps() {
     return this.props;
   }
 
   public List<Project> getUserProjects(final User user) {
     final ArrayList<Project> array = new ArrayList<>();
-    for (final Project project : this.projectsById.values()) {
+    for (final Project project : getProjects()) {
       final Permission perm = project.getUserPermission(user);
 
       if (perm != null
@@ -165,7 +116,7 @@ public class ProjectManager {
 
   public List<Project> getGroupProjects(final User user) {
     final List<Project> array = new ArrayList<>();
-    for (final Project project : this.projectsById.values()) {
+    for (final Project project : getProjects()) {
       if (project.hasGroupPermission(user, Type.READ)) {
         array.add(project);
       }
@@ -182,8 +133,23 @@ public class ProjectManager {
       logger.error("Bad regex pattern {}", regexPattern);
       return array;
     }
-
-    for (final Project project : this.projectsById.values()) {
+    final List<Integer> ids = new ArrayList<>();
+    final List<String> names = this.cache.getAllProjectNames();
+    for (final String projName : names) {
+      if (pattern.matcher(projName).find()) {
+        ids.add(this.cache.getProjectId(projName));
+      }
+    }
+    List<Project> matches = null;
+    try {
+      matches = this.projectLoader.fetchProjectById(ids);
+    } catch (final ProjectManagerException e) {
+      logger.info("No matching project found");
+    }
+    if (matches == null) {
+      return null;
+    }
+    for (final Project project : matches) {
       final Permission perm = project.getUserPermission(user);
 
       if (perm != null
@@ -198,7 +164,7 @@ public class ProjectManager {
   }
 
   public List<Project> getProjects() {
-    return new ArrayList<>(this.projectsById.values());
+    return new ArrayList<>(this.cache.getAllProjects());
   }
 
   public List<Project> getProjectsByRegex(final String regexPattern) {
@@ -210,8 +176,21 @@ public class ProjectManager {
       logger.error("Bad regex pattern {}", regexPattern);
       return allProjects;
     }
-    for (final Project project : getProjects()) {
-      if (pattern.matcher(project.getName()).find()) {
+    final List<Integer> ids = new ArrayList<>();
+    final List<String> names = this.cache.getAllProjectNames();
+    for (final String projName : names) {
+      if (pattern.matcher(projName).find()) {
+        ids.add(this.cache.getProjectByName(projName).getId());
+      }
+    }
+    List<Project> matches = null;
+    try {
+      matches = this.projectLoader.fetchProjectById(ids);
+    } catch (final ProjectManagerException e) {
+      logger.info("No matching project found");
+    }
+    if (matches != null) {
+      for (final Project project : matches) {
         allProjects.add(project);
       }
     }
@@ -222,26 +201,19 @@ public class ProjectManager {
    * Checks if a project is active using project_id
    */
   public Boolean isActiveProject(final int id) {
-    return this.projectsById.containsKey(id);
+    Project project = getProject(id);
+    if (project == null) {
+      return false;
+    }
+    project = getProject(project.getName());
+    return project != null ? true : false;
   }
 
   /**
    * fetch active project by project name. Queries the cache first then db if not found
    */
   public Project getProject(final String name) {
-    Project fetchedProject = this.projectsByName.get(name);
-    if (fetchedProject == null) {
-      try {
-        fetchedProject = this.projectLoader.fetchProjectByName(name);
-        if (fetchedProject != null) {
-          logger.info("Project {} not found in cache, fetched from DB.", name);
-        } else {
-          logger.info("No active project with name {} exists in cache or DB.", name);
-        }
-      } catch (final ProjectManagerException e) {
-        logger.error("Could not load project from store.", e);
-      }
-    }
+    final Project fetchedProject = this.cache.getProjectByName(name);
     return fetchedProject;
   }
 
@@ -249,14 +221,7 @@ public class ProjectManager {
    * fetch active project from cache and inactive projects from db by project_id
    */
   public Project getProject(final int id) {
-    Project fetchedProject = this.projectsById.get(id);
-    if (fetchedProject == null) {
-      try {
-        fetchedProject = this.projectLoader.fetchProjectById(id);
-      } catch (final ProjectManagerException e) {
-        logger.error("Could not load project from store.", e);
-      }
-    }
+    final Project fetchedProject = this.cache.getProjectById(id);
     return fetchedProject;
   }
 
@@ -275,14 +240,12 @@ public class ProjectManager {
 
     final Project newProject;
     synchronized (this) {
-      if (this.projectsByName.containsKey(projectName)) {
+      if (getProject(projectName) != null) {
         throw new ProjectManagerException("Project already exists.");
       }
-
       logger.info("Trying to create {} by user {}", projectName, creator.getUserId());
       newProject = this.projectLoader.createNewProject(projectName, description, creator);
-      this.projectsByName.put(newProject.getName(), newProject);
-      this.projectsById.put(newProject.getId(), newProject);
+      this.cache.putProject(newProject);
     }
 
     if (this.creatorDefaultPermissions) {
@@ -326,8 +289,7 @@ public class ProjectManager {
     this.projectLoader.postEvent(project, EventType.DELETED, deleter.getUserId(),
         null);
 
-    this.projectsByName.remove(project.getName());
-    this.projectsById.remove(project.getId());
+    this.cache.removeProject(project);
 
     return project;
   }

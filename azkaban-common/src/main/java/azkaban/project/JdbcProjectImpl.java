@@ -39,7 +39,6 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
-import azkaban.utils.Triple;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -49,7 +48,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -60,6 +58,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 
@@ -153,7 +152,7 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   /**
    * Creates a Project in the db.
-   *
+   * <p>
    * It will throw an exception if it finds an active project of the same name, or the SQL fails
    */
   @Override
@@ -278,18 +277,18 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   /**
    * Insert a new version record to TABLE project_versions before uploading files.
-   *
+   * <p>
    * The reason for this operation: When error chunking happens in remote mysql server, incomplete
    * file data remains in DB, and an SQL exception is thrown. If we don't have this operation before
    * uploading file, the SQL exception prevents AZ from creating the new version record in Table
    * project_versions. However, the Table project_files still reserve the incomplete files, which
    * causes troubles when uploading a new file: Since the version in TABLE project_versions is still
    * old, mysql will stop inserting new files to db.
-   *
+   * <p>
    * Why this operation is safe: When AZ uploads a new zip file, it always fetches the latest
    * version proj_v from TABLE project_version, proj_v+1 will be used as the new version for the
    * uploading files.
-   *
+   * <p>
    * Assume error chunking happens on day 1. proj_v is created for this bad file (old file version +
    * 1). When we upload a new project zip in day2, new file in day 2 will use the new version
    * (proj_v + 1). When file uploading completes, AZ will clean all old chunks in DB afterward.
@@ -314,11 +313,13 @@ public class JdbcProjectImpl implements ProjectLoader {
        * As we don't know the num_chunks before uploading the file, we initialize it to 0,
        * and will update it after uploading completes.
        */
-      String lowercaseFileExtension = FilenameUtils.getExtension(localFile.getName()).toLowerCase();
+      final String lowercaseFileExtension = FilenameUtils.getExtension(localFile.getName())
+          .toLowerCase();
 
       // Get the startup dependencies input stream (or null if the file does not exist - indicating this is
       // a fat archive).
-      InputStream startupDependenciesStream = getStartupDependenciesInputStream(startupDependencies);
+      final InputStream startupDependenciesStream = getStartupDependenciesInputStream(
+          startupDependencies);
 
       // Perform the DB update
       transOperator.update(INSERT_PROJECT_VERSION, projectId, version, updateTime,
@@ -332,12 +333,12 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
   }
 
-  private InputStream getStartupDependenciesInputStream(File startupDependencies) {
+  private InputStream getStartupDependenciesInputStream(final File startupDependencies) {
     try {
       // If startupDependencies is null, we assume this is a fat archive and return null. If it is not null,
       // we assume the file exists and return an input stream for the file.
       return startupDependencies != null ? new FileInputStream(startupDependencies) : null;
-    } catch (FileNotFoundException e) {
+    } catch (final FileNotFoundException e) {
       // This shouldn't happen, the file should always exist if it is non-null.
       throw new RuntimeException(e);
     }
@@ -785,12 +786,14 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   @Override
-  public Map<Project, List<Flow>> fetchAllFlowsForProjects(final List<Project> projects) throws ProjectManagerException {
+  public Map<Project, List<Flow>> fetchAllFlowsForProjects(final List<Project> projects)
+      throws ProjectManagerException {
     final SQLTransaction<Map<Project, List<Flow>>> transaction = transOperator -> {
-      Map<Project, List<Flow>> projectToFlows = new HashMap();
-      for (Project p : projects) {
+      final Map<Project, List<Flow>> projectToFlows = new HashMap();
+      for (final Project p : projects) {
         projectToFlows.put(p, transOperator
-            .query(ProjectFlowsResultHandler.SELECT_ALL_PROJECT_FLOWS, new ProjectFlowsResultHandler(), p.getId(),
+            .query(ProjectFlowsResultHandler.SELECT_ALL_PROJECT_FLOWS,
+                new ProjectFlowsResultHandler(), p.getId(),
                 p.getVersion()));
       }
       return projectToFlows;
@@ -1076,5 +1079,39 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
 
     return !data.isEmpty();
+  }
+
+  /**
+   * List of Projects with ids that match with any id specified in the list
+   *
+   * @param ids List of ids of projects to be queried
+   * @throws ProjectManagerException
+   */
+  @Override
+  public List<Project> fetchProjectById(final List<Integer> ids) throws ProjectManagerException {
+    if (ids.size() == 0) {
+      throw new ProjectManagerException("No matching ids to query");
+    }
+    final ProjectResultHandler handler = new ProjectResultHandler();
+    final List<Project> projects;
+    final String name = StringUtils.join(ids, ',').toString();
+    final String SELECT_ACTIVE_PROJECT_BY_IDS = "SELECT "
+        + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+        + "prm.name, prm.permissions, prm.isGroup "
+        + "FROM projects prj "
+        + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id in (" + name
+        + ") and prj.active = true; ";
+    try {
+      projects = this.dbOperator
+          .query(SELECT_ACTIVE_PROJECT_BY_IDS, handler);
+      if (projects.isEmpty()) {
+        return null;
+      }
+    } catch (final SQLException ex) {
+      logger.error(SELECT_ACTIVE_PROJECT_BY_IDS + " failed.", ex);
+      throw new ProjectManagerException(
+          SELECT_ACTIVE_PROJECT_BY_IDS + " failed.", ex);
+    }
+    return projects;
   }
 }

@@ -1,18 +1,18 @@
 /*
-* Copyright 2018 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,6 +27,7 @@ import azkaban.storage.ProjectStorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.ValidatorUtils;
+import com.google.common.cache.Cache;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,6 +47,13 @@ public class ProjectManagerTest {
   private ArchiveUnthinner archiveUnthinner;
   private ValidatorUtils validatorUtils;
   private CommonMetrics commonMetrics;
+  private ProjectCache cache;
+  private Cache<Integer, Project> testcache;
+
+  public void printStat() {
+    System.out.println(this.testcache.asMap().keySet().size());
+    System.out.println(this.testcache.stats());
+  }
 
   @Before
   public void setUp() throws Exception {
@@ -58,12 +66,16 @@ public class ProjectManagerTest {
     this.archiveUnthinner = mock(ArchiveUnthinner.class);
     this.validatorUtils = mock(ValidatorUtils.class);
     this.commonMetrics = mock(CommonMetrics.class);
-
-    this.azkabanProjectLoader = new AzkabanProjectLoader(this.props, this.commonMetrics, this.projectLoader,
-        this.projectStorageManager, mock(FlowLoaderFactory.class), executorLoader, dbOperator, storage, this.archiveUnthinner,
+    this.cache = new ProjectCacheInMem(this.projectLoader);
+    this.azkabanProjectLoader = new AzkabanProjectLoader(this.props, this.commonMetrics,
+        this.projectLoader,
+        this.projectStorageManager, mock(FlowLoaderFactory.class), this.executorLoader,
+        this.dbOperator,
+        this.storage, this.archiveUnthinner,
         this.validatorUtils);
 
-    this.manager = new ProjectManager(this.azkabanProjectLoader, this.projectLoader, this.projectStorageManager, this.props);
+    this.manager = new ProjectManager(this.azkabanProjectLoader, this.projectLoader,
+        this.projectStorageManager, this.props, this.cache);
   }
 
   @Test
@@ -76,6 +88,7 @@ public class ProjectManagerTest {
     this.manager.createProject(projectName, projectDescription, user);
     final String projectName2 = "MYTESTPROJECT";
     final String projectDescription2 = "This is my new project with UPPER CASES.";
+    System.out.println(this.cache.getAllProjects());
     assertThatThrownBy(
         () -> this.manager.createProject(projectName2, projectDescription2, user))
         .isInstanceOf(ProjectManagerException.class)

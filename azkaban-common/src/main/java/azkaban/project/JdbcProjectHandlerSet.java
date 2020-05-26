@@ -49,19 +49,22 @@ class JdbcProjectHandlerSet {
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 
     private static final String BASE_QUERY = "SELECT "
-      + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
-      + "prm.name, prm.permissions, prm.isGroup "
-      + "FROM projects prj ";
+        + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+        + "prm.name, prm.permissions, prm.isGroup "
+        + "FROM projects prj ";
 
     // Still return the project if it has no associated permissions
-    public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
+    public static final String SELECT_PROJECT_BY_ID =
+        BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
 
     // Still return the project if it has no associated permissions
-    public static final String SELECT_ACTIVE_PROJECT_BY_NAME = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.name=? AND prj.active=true";
+    public static final String SELECT_ACTIVE_PROJECT_BY_NAME = BASE_QUERY
+        + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.name=? AND prj.active=true";
 
     // ONLY return projects that have at least one associated permission, this is for performance reasons.
     // (JOIN is way faster than LEFT JOIN)
-    public static final String SELECT_ALL_ACTIVE_PROJECTS = BASE_QUERY + "JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.active=true";
+    public static final String SELECT_ALL_ACTIVE_PROJECTS = BASE_QUERY
+        + "JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.active=true";
 
     @Override
     public List<Project> handle(final ResultSet rs) throws SQLException {
@@ -132,7 +135,7 @@ class JdbcProjectHandlerSet {
         // If username is null, we can assume that this row was returned without any associated permission
         // i.e. this project had no associated permissions.
         if (username != null) {
-          Permission perm = new Permission(permissionFlag);
+          final Permission perm = new Permission(permissionFlag);
           if (isGroup) {
             projects.get(id).setGroupPermission(username, perm);
           } else {
@@ -295,9 +298,10 @@ class JdbcProjectHandlerSet {
       ResultSetHandler<List<ProjectFileHandler>> {
 
     public static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks," +
-                " resource_id, startup_dependencies, uploader_ip_addr " +
-                " FROM project_versions WHERE project_id=? AND version=?";
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks,"
+            +
+            " resource_id, startup_dependencies, uploader_ip_addr " +
+            " FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
     public List<ProjectFileHandler> handle(final ResultSet rs) throws SQLException {
@@ -323,8 +327,9 @@ class JdbcProjectHandlerSet {
         if (startupDependenciesBlob != null) {
           try {
             startupDependencies = ThinArchiveUtils.parseStartupDependencies(
-                IOUtils.toString(startupDependenciesBlob.getBinaryStream(), StandardCharsets.UTF_8));
-          } catch (IOException | InvalidHashException e) {
+                IOUtils
+                    .toString(startupDependenciesBlob.getBinaryStream(), StandardCharsets.UTF_8));
+          } catch (final IOException | InvalidHashException e) {
             // This should never happen unless the file is malformed in the database.
             // The file was already validated when the project was uploaded.
             throw new SQLException(e);
@@ -332,7 +337,8 @@ class JdbcProjectHandlerSet {
         }
 
         final ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5,
+            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName,
+                numChunks, md5,
                 startupDependencies, resourceId, uploaderIpAddr);
 
         handlers.add(handler);
@@ -383,4 +389,5 @@ class JdbcProjectHandlerSet {
       return data;
     }
   }
+  
 }
