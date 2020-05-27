@@ -17,7 +17,9 @@
 package azkaban.executor;
 
 import azkaban.utils.Utils;
+
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Class to represent an AzkabanExecutorServer details for ExecutorManager
@@ -25,7 +27,6 @@ import java.util.Date;
  * @author gaggarwa
  */
 public class Executor implements Comparable<Executor> {
-
   private final int id;
   private final String host;
   private final int port;
@@ -44,7 +45,7 @@ public class Executor implements Comparable<Executor> {
   public Executor(final int id, final String host, final int port, final boolean isActive) {
     if (!Utils.isValidPort(port)) {
       throw new IllegalArgumentException(String.format(
-          "Invalid port number %d for host %s, executor_id %d", port, host, id));
+        "Invalid port number %d for host %s, executor_id %d", port, host, id));
     }
 
     this.id = id;
@@ -54,52 +55,29 @@ public class Executor implements Comparable<Executor> {
   }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + (this.isActive ? 1231 : 1237);
-    result = prime * result + ((this.host == null) ? 0 : this.host.hashCode());
-    result = prime * result + this.id;
-    result = prime * result + this.port;
-    return result;
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Executor)) {
+      return false;
+    }
+    final Executor executor = (Executor) o;
+    return this.id == executor.id &&
+      this.port == executor.port &&
+      Objects.equals(this.host, executor.host);
   }
 
   @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (!(obj instanceof Executor)) {
-      return false;
-    }
-    final Executor other = (Executor) obj;
-    if (this.isActive != other.isActive) {
-      return false;
-    }
-    if (this.host == null) {
-      if (other.host != null) {
-        return false;
-      }
-    } else if (!this.host.equals(other.host)) {
-      return false;
-    }
-    if (this.id != other.id) {
-      return false;
-    }
-    if (this.port != other.port) {
-      return false;
-    }
-    return true;
+  public int hashCode() {
+    return Objects.hash(this.id, this.host, this.port);
   }
 
   @Override
   public String toString() {
     return String.format("%s:%s (id: %s), active=%s",
-        null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
-        this.port, this.id, this.isActive);
+      null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
+      this.port, this.id, this.isActive);
   }
 
   public String getHost() {
