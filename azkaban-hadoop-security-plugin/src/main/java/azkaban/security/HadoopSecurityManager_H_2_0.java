@@ -115,6 +115,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String TOKEN_FILE_PERMISSIONS = "460";
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
+  // Some hadoop clusters have failover name nodes.
   private static final String FS_FAILOVER_IMPL_DISABLE_CACHE =
           "fs.failover.impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
@@ -611,6 +612,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           throws IOException, HadoopSecurityManagerException {
     FileSystem fs = null;
     try {
+      // Use FileSystem.get() instead of newInstance() to ensure cache is not used.
+      // .get() method checks if cache is enabled or not, newInstance() does not.
       if (uri == null) {
         fs = FileSystem.get(conf);
       } else {
