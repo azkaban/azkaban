@@ -138,14 +138,16 @@ public class HttpRequestUtils {
     }
 
     final Map<String, String> params = options.getFlowParameters();
-    boolean hasAdminPermission = hasPermission(userManager, user, Type.ADMIN);
+    final boolean hasAdminPermission = hasPermission(userManager, user, Type.ADMIN);
     // is azkaban Admin
     if (!hasAdminPermission) {
       params.remove(ExecutionOptions.USE_EXECUTOR);
     } else {
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
     }
-    boolean disableAdminOnlyForFlowPriority = props.getBoolean(ConfigurationKeys.AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY, false);
+    final boolean disableAdminOnlyForFlowPriority = props
+        .getBoolean(ConfigurationKeys.AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY,
+            false);
     if (!hasAdminPermission && !disableAdminOnlyForFlowPriority ) {
       params.remove(ExecutionOptions.FLOW_PRIORITY);
     } else {

@@ -57,14 +57,16 @@ public final class HttpRequestUtilsTest {
     return flow;
   }
 
-  /* Test that flow properties are removed for non-admin user */
+  /**
+  * Test that flow properties are removed for non-admin user
+  */
   @Test
   public void TestFilterNonAdminOnlyFlowParams() throws IOException,
       ExecutorManagerException, UserManagerException {
     final ExecutableFlow flow = createExecutableFlow();
     final UserManager manager = TestUtils.createTestXmlUserManager();
     final User user = manager.getUser("testUser", "testUser");
-    Props props = new Props();
+    final Props props = new Props();
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
         flow.getExecutionOptions(), user, props);
 
@@ -74,8 +76,10 @@ public final class HttpRequestUtilsTest {
         .containsKey(ExecutionOptions.USE_EXECUTOR));
   }
 
-  /* Test that flow priority property is not removed for non-admin user when
-  * azkaban.disable.admin.only.permission.for.flow.priority is set to true*/
+  /**
+   * Test that flow priority property is not removed for non-admin user when
+   * azkaban.disable.admin.only.permission.for.flow.priority is set to true
+   */
   @Test
   public void TestFilterDisableAdminOnlyFlowPriorityParams() throws IOException,
       ExecutorManagerException, UserManagerException {
