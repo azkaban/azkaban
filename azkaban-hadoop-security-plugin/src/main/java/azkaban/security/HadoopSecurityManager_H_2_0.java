@@ -612,9 +612,9 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     FileSystem fs = null;
     try {
       if (uri == null) {
-        fs = FileSystem.newInstance(conf);
+        fs = FileSystem.get(conf);
       } else {
-        fs = FileSystem.newInstance(uri, conf);
+        fs = FileSystem.get(uri, conf);
       }
       // check if we get the correct FS, and most importantly, the conf
       logger.info("Getting DFS token from " + fs.getUri());
