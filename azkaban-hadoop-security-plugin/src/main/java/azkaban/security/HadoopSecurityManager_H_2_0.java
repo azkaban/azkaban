@@ -620,7 +620,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * Due to this change, the FileSystem cache creates an entry per execution instead of an entry
    * per proxy user. This could blow up the cache very quickly on a busy Executor and cause OOM.
    * To make this worse, the entry in Cache is never used as it is specfic to an execution.
-   * To avoid this, always create a new instance of FileSystem locally and close it.
+   * To avoid this, the FileSystem Cache should be disabled before calling this method.
    *
    * @param renewer
    * @param cred
