@@ -176,17 +176,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.conf = new Configuration();
     this.conf.setClassLoader(ucl);
 
-    // Disable FileSystem Cache for HadoopSecurityManager
-    this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE, true);
-    this.conf.setBoolean(FS_FAILOVER_IMPL_DISABLE_CACHE, true);
-    // Get the default scheme
-    final String defaultFS = conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY);
-    final String scheme = new Path(defaultFS).toUri().getScheme();
-    // Construct the property name
-    final String FS_DEFAULT_IMPL_DISABLE_CACHE =
-            "fs." + scheme + IMPL_DISABLE_CACHE_SUFFIX;
-    this.conf.setBoolean(FS_DEFAULT_IMPL_DISABLE_CACHE, true);
-    logger.info("Disable cache for scheme " + FS_DEFAULT_IMPL_DISABLE_CACHE);
+    // Disable yyFileSystem Cache for HadoopSecurityManager
+    disableFSCache();
 
     logger.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION + ": "
         + this.conf.get(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION));
@@ -234,6 +225,27 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.userUgiMap = new ConcurrentHashMap<>();
 
     logger.info("Hadoop Security Manager initialized");
+  }
+
+  // Disable yyFileSystem Cache for HadoopSecurityManager
+  private void disableFSCache() {
+    this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE, true);
+    this.conf.setBoolean(FS_FAILOVER_IMPL_DISABLE_CACHE, true);
+    // Get the default scheme
+    final String defaultFS = conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY);
+    if (defaultFS == null) {
+      return;
+    }
+    final String scheme = new Path(defaultFS).toUri().getScheme();
+    if (scheme == null) {
+      return;
+    }
+    // Construct the property name
+    final String FS_DEFAULT_IMPL_DISABLE_CACHE =
+            "fs." + scheme + IMPL_DISABLE_CACHE_SUFFIX;
+    this.conf.setBoolean(FS_DEFAULT_IMPL_DISABLE_CACHE, true);
+    logger.info("Disable cache for scheme " + FS_DEFAULT_IMPL_DISABLE_CACHE);
+
   }
 
   public static HadoopSecurityManager getInstance(final Props props)
