@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
@@ -48,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -65,7 +67,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Master;
-import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.mapreduce.v2.api.HSClientProtocol;
@@ -115,6 +116,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String TOKEN_FILE_PERMISSIONS = "460";
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
+  // Some hadoop clusters have failover name nodes.
+  private static final String FS_FAILOVER_IMPL_DISABLE_CACHE =
+          "fs.failover.impl.disable.cache";
+  private static final String IMPL_DISABLE_CACHE_SUFFIX =
+          ".impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
@@ -170,12 +176,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.conf = new Configuration();
     this.conf.setClassLoader(ucl);
 
-    if (props.containsKey(FS_HDFS_IMPL_DISABLE_CACHE)) {
-      logger.info("Setting " + FS_HDFS_IMPL_DISABLE_CACHE + " to "
-          + props.get(FS_HDFS_IMPL_DISABLE_CACHE));
-      this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE,
-          Boolean.valueOf(props.get(FS_HDFS_IMPL_DISABLE_CACHE)));
-    }
+    // Disable yyFileSystem Cache for HadoopSecurityManager
+    disableFSCache();
 
     logger.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION + ": "
         + this.conf.get(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION));
@@ -223,6 +225,27 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.userUgiMap = new ConcurrentHashMap<>();
 
     logger.info("Hadoop Security Manager initialized");
+  }
+
+  // Disable yyFileSystem Cache for HadoopSecurityManager
+  private void disableFSCache() {
+    this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE, true);
+    this.conf.setBoolean(FS_FAILOVER_IMPL_DISABLE_CACHE, true);
+    // Get the default scheme
+    final String defaultFS = conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY);
+    if (defaultFS == null) {
+      return;
+    }
+    final String scheme = new Path(defaultFS).toUri().getScheme();
+    if (scheme == null) {
+      return;
+    }
+    // Construct the property name
+    final String FS_DEFAULT_IMPL_DISABLE_CACHE =
+            "fs." + scheme + IMPL_DISABLE_CACHE_SUFFIX;
+    this.conf.setBoolean(FS_DEFAULT_IMPL_DISABLE_CACHE, true);
+    logger.info("Disable cache for scheme " + FS_DEFAULT_IMPL_DISABLE_CACHE);
+
   }
 
   public static HadoopSecurityManager getInstance(final Props props)
@@ -496,31 +519,33 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
+      getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          getToken(userToProxy);
+          getToken(userToProxyFQN, userToProxy);
           return null;
         }
 
-        private void getToken(final String userToProxy) throws InterruptedException,
-            IOException, HadoopSecurityManagerException {
-          logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN + ": "
-              + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
+        private void getToken(final String userToProxyFQN, final String userToProxy)
+            throws InterruptedException, IOException, HadoopSecurityManagerException {
+          logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN +
+              ": " + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
 
           // Register user secrets by custom credential Object
           if (props.getBoolean(JobProperties.ENABLE_JOB_SSL, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+            registerCustomCredential(props, cred, userToProxy, logger,
+                Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
           }
 
           // Register oauth tokens by custom oauth credential provider
           if (props.getBoolean(JobProperties.ENABLE_OAUTH, false)) {
-            registerCustomCredential(props, cred, userToProxy, logger, Constants.ConfigurationKeys.OAUTH_CREDENTIAL_NAME);
+            registerCustomCredential(props, cred, userToProxy, logger,
+                Constants.ConfigurationKeys.OAUTH_CREDENTIAL_NAME);
           }
 
-          fetchNameNodeToken(userToProxy, props, logger, cred);
+          fetchNameNodeToken(userToProxyFQN, props, logger, cred);
 
-          fetchJobTrackerToken(userToProxy, props, logger, cred);
+          fetchJobTrackerToken(userToProxyFQN, props, logger, cred);
 
         }
       });
@@ -565,24 +590,12 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   }
 
   private void fetchNameNodeToken(final String userToProxy, final Props props, final Logger logger,
-      final Credentials cred) throws IOException, HadoopSecurityManagerException {
+          final Credentials cred) throws IOException, HadoopSecurityManagerException {
     if (props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN, false)) {
-      final FileSystem fs = FileSystem.get(HadoopSecurityManager_H_2_0.this.conf);
-      // check if we get the correct FS, and most importantly, the conf
-      logger.info("Getting DFS token from " + fs.getUri());
-      final Token<?>[] fsTokens =
-          fs.addDelegationTokens(getMRTokenRenewerInternal(new JobConf()).toString(), cred);
-      if (fsTokens.length == 0) {
-        logger.error("Failed to fetch DFS token for ");
-        throw new HadoopSecurityManagerException(
-            "Failed to fetch DFS token for " + userToProxy);
-      }
+      final String renewer = getMRTokenRenewerInternal(new JobConf()).toString();
 
-      for (final Token<?> fsToken : fsTokens) {
-        logger.info(String.format(
-            "DFS token from namenode pre-fetched, token kind: %s, token service: %s",
-            fsToken.getKind(), fsToken.getService()));
-      }
+      // Get the tokens name node
+      fetchNameNodeTokenInternal(renewer, cred, userToProxy, null);
 
       // getting additional name nodes tokens
       final String otherNamenodes = props.get(
@@ -590,15 +603,63 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       if ((otherNamenodes != null) && (otherNamenodes.length() > 0)) {
         logger.info("Fetching token(s) for other namenode(s): " + otherNamenodes);
         final String[] nameNodeArr = otherNamenodes.split(",");
-        final Path[] ps = new Path[nameNodeArr.length];
-        for (int i = 0; i < ps.length; i++) {
-          ps[i] = new Path(nameNodeArr[i].trim());
+        for (String nameNode : nameNodeArr) {
+          fetchNameNodeTokenInternal(renewer, cred, userToProxy, new Path(nameNode.trim()).toUri());
         }
-        TokenCache.obtainTokensForNamenodes(cred, ps, HadoopSecurityManager_H_2_0.this.conf);
-        logger.info("Successfully fetched tokens for: " + otherNamenodes);
+      }
+      logger.info("Successfully fetched tokens for: " + otherNamenodes);
+    } else {
+      logger.info(
+              HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN + " was not configured");
+    }
+  }
+
+  /**
+   * fetchNameNodeInternal - With modified UGI which is of the format,
+   * <userToProxy>/az_<host name>_<exec_id>
+   * Due to this change, the FileSystem cache creates an entry per execution instead of an entry
+   * per proxy user. This could blow up the cache very quickly on a busy Executor and cause OOM.
+   * To make this worse, the entry in Cache is never used as it is specfic to an execution.
+   * To avoid this, the FileSystem Cache should be disabled before calling this method.
+   *
+   * @param renewer
+   * @param cred
+   * @param userToProxy
+   * @param uri
+   * @throws IOException
+   * @throws HadoopSecurityManagerException
+   */
+
+  private void fetchNameNodeTokenInternal(final String renewer, final Credentials cred,
+          final String userToProxy, final URI uri)
+          throws IOException, HadoopSecurityManagerException {
+    FileSystem fs = null;
+    try {
+      // Use FileSystem.get() instead of newInstance() to ensure cache is not used.
+      // .get() method checks if cache is enabled or not, newInstance() does not.
+      if (uri == null) {
+        fs = FileSystem.get(conf);
       } else {
-        logger.info(
-            HadoopSecurityManager_H_2_0.OTHER_NAMENODES_TO_GET_TOKEN + " was not configured");
+        fs = FileSystem.get(uri, conf);
+      }
+      // check if we get the correct FS, and most importantly, the conf
+      logger.info("Getting DFS token from " + fs.getUri());
+      try {
+        final Token<?>[] fsTokens = fs.addDelegationTokens(renewer, cred);
+        for (int i = 0; i < fsTokens.length; i++) {
+          final Token<?> fsToken = fsTokens[i];
+          logger.info(String.format(
+                  "DFS token from namenode pre-fetched, token kind: %s, token service: %s",
+                  fsToken.getKind(), fsToken.getService()));
+        }
+      } catch (Exception e) {
+        logger.error("Failed to fetch DFS token for " + userToProxy);
+        throw new HadoopSecurityManagerException(
+                "Failed to fetch DFS token for " + userToProxy);
+      }
+    } finally {
+      if (fs != null) {
+        fs.close();
       }
     }
   }
