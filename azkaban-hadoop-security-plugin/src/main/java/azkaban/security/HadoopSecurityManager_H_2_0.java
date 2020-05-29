@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -118,6 +119,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   // Some hadoop clusters have failover name nodes.
   private static final String FS_FAILOVER_IMPL_DISABLE_CACHE =
           "fs.failover.impl.disable.cache";
+  private static final String IMPL_DISABLE_CACHE_SUFFIX =
+          ".impl.disable.cache";
   private static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
   private static final String AZKABAN_KEYTAB_LOCATION = "proxy.keytab.location";
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
@@ -176,6 +179,14 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     // Disable FileSystem Cache for HadoopSecurityManager
     this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE, true);
     this.conf.setBoolean(FS_FAILOVER_IMPL_DISABLE_CACHE, true);
+    // Get the default scheme
+    final String defaultFS = conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY);
+    final String scheme = new Path(defaultFS).toUri().getScheme();
+    // Construct the property name
+    final String FS_DEFAULT_IMPL_DISABLE_CACHE =
+            "fs." + scheme + IMPL_DISABLE_CACHE_SUFFIX;
+    this.conf.setBoolean(FS_DEFAULT_IMPL_DISABLE_CACHE, true);
+    logger.info("Disable cache for scheme " + FS_DEFAULT_IMPL_DISABLE_CACHE);
 
     logger.info(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION + ": "
         + this.conf.get(CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION));
