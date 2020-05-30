@@ -83,6 +83,8 @@ public class Constants {
 
   public static final Duration MIN_FLOW_TRIGGER_WAIT_TIME = Duration.ofMinutes(1);
 
+  public static final int MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = 20;
+
   // The flow exec id for a flow trigger instance which hasn't started a flow yet
   public static final int UNASSIGNED_EXEC_ID = -1;
 
@@ -182,6 +184,8 @@ public class Constants {
     public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
+    public static final String MIN_AGE_FOR_CLASSIFYING_A_JOB_AGED_MINUTES = "azkaban.metrics"
+        + ".min_age_for_classifying_a_job_aged_minutes";
 
     // User facing web server configurations used to construct the user facing server URLs. They are useful when there is a reverse proxy between Azkaban web servers and users.
     // enduser -> myazkabanhost:443 -> proxy -> localhost:8081
@@ -240,6 +244,7 @@ public class Constants {
         "azkaban.event.reporting.kafka.topic";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_SCHEMA_REGISTRY_URL =
         "azkaban.event.reporting.kafka.schema.registry.url";
+
 
     /*
      * The max number of artifacts retained per project.

@@ -93,6 +93,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Duration;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
@@ -510,6 +511,15 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private void startWebMetrics() throws Exception {
     this.metricsManager
         .addGauge("WEB-NumQueuedFlows", this.executorManagerAdapter::getQueuedFlowSize);
+
+    // Metric for flows that have been submitted, but haven't started for more than N minutes
+    // (N is configurable by MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES).
+    // ToDo(anish-mal) Enable this for push based dispatch logic.
+    if (this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      this.metricsManager
+          .addGauge("WEB-NumAgedQueuedFlows", this.executorManagerAdapter::getAgedQueuedFlowSize);
+    }
+
     /*
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
      * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},

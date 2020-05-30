@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
 import azkaban.flow.FlowUtils;
@@ -319,6 +320,21 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {
       this.logger.error("Failed to get queued flow size.", e);
+    }
+    return size;
+  }
+
+  @Override
+  public long getAgedQueuedFlowSize() {
+    long size = 0L;
+    int minimum_age_minutes = this.azkProps.getInt(
+        ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_JOB_AGED_MINUTES,
+        Constants.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+    try {
+      size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
+          .size();
+    } catch (final ExecutorManagerException e) {
+      this.logger.error("Failed to get flows queued for a long time.", e);
     }
     return size;
   }
