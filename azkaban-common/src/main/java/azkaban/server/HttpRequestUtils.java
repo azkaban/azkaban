@@ -132,7 +132,8 @@ public class HttpRequestUtils {
    * </pre>
    */
   public static void filterAdminOnlyFlowParams(final UserManager userManager,
-      final ExecutionOptions options, final User user, final Props props) throws ExecutorManagerException {
+      final ExecutionOptions options, final User user, final Props props)
+      throws ExecutorManagerException {
     if (options == null || options.getFlowParameters() == null) {
       return;
     }
@@ -145,6 +146,10 @@ public class HttpRequestUtils {
     } else {
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
     }
+
+    // AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY is azkaban executor service
+    // property and it's default value is false. Setting this property to true can cause
+    // starvation to low priority flows. It will be good to monitor occurrences of this issue.
     final boolean disableAdminOnlyForFlowPriority = props
         .getBoolean(ConfigurationKeys.AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY,
             false);
