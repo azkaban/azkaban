@@ -149,7 +149,7 @@ public class HttpRequestUtils {
 
     // AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY is azkaban executor service
     // property and it's default value is false. Setting this property to true can cause
-    // starvation to low priority flows. It will be good to monitor occurrences of this issue.
+    // starvation of low priority flows. It is recommended to monitor occurrences of this issue.
     final boolean disableAdminOnlyForFlowPriority = props
         .getBoolean(ConfigurationKeys.AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY,
             false);
