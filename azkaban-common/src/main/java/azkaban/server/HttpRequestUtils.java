@@ -147,7 +147,7 @@ public class HttpRequestUtils {
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
     }
 
-    // AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY is azkaban executor service
+    // Disabling admin only permission for flow priority parameter is azkaban executor service
     // property and it's default value is false. Setting this property to true can cause
     // starvation of low priority flows. It is recommended to monitor occurrences of this issue.
     final boolean disableAdminOnlyForFlowPriority = props
