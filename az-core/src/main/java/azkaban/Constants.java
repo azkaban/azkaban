@@ -83,7 +83,7 @@ public class Constants {
 
   public static final Duration MIN_FLOW_TRIGGER_WAIT_TIME = Duration.ofMinutes(1);
 
-  public static final int MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = 20;
+  public static final int DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = 20;
 
   // The flow exec id for a flow trigger instance which hasn't started a flow yet
   public static final int UNASSIGNED_EXEC_ID = -1;

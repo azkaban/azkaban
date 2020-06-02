@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -329,7 +328,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     long size = 0L;
     int minimum_age_minutes = this.azkProps.getInt(
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_JOB_AGED_MINUTES,
-        Constants.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+        Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     try {
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
           .size();
