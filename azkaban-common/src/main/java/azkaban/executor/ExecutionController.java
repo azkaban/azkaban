@@ -327,7 +327,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   public long getAgedQueuedFlowSize() {
     long size = 0L;
     int minimum_age_minutes = this.azkProps.getInt(
-        ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_JOB_AGED_MINUTES,
+        ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     try {
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))

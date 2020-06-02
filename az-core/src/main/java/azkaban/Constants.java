@@ -184,8 +184,8 @@ public class Constants {
     public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
-    public static final String MIN_AGE_FOR_CLASSIFYING_A_JOB_AGED_MINUTES = "azkaban.metrics"
-        + ".min_age_for_classifying_a_job_aged_minutes";
+    public static final String MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = "azkaban.metrics"
+        + ".min_age_for_classifying_a_flow_aged_minutes";
 
     // User facing web server configurations used to construct the user facing server URLs. They are useful when there is a reverse proxy between Azkaban web servers and users.
     // enduser -> myazkabanhost:443 -> proxy -> localhost:8081
