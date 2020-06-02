@@ -19,6 +19,7 @@ package azkaban.project;
 import azkaban.db.DatabaseOperator;
 import azkaban.spi.Dependency;
 import azkaban.spi.FileValidationStatus;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.dbutils.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,34 +58,54 @@ public class JdbcDependencyManager {
     // Map of (filename + sha1) -> Dependency for resolving the dependencies already cached in the DB
     // after the query completes.
     Map<String, Dependency> hashAndFileNameToDep = new HashMap<>();
+    Connection conn = null;
+    ResultSet rs = null;
+    PreparedStatement stmnt = null;
 
-    PreparedStatement stmnt = this.dbOperator.getDataSource().getConnection().prepareStatement(
-        String.format("SELECT file_name, file_sha1, validation_status FROM validated_dependencies "
-            + "WHERE validation_key = ? AND (%s)", makeStrWithQuestionMarks(deps.size())));
+    // TODO: Use azkaban.db.DatabaseOperator.query() instead of getting the DB connection and
+    // dealing with connection lifecycle.
 
-    // Set the first param, which is the validation_key
-    stmnt.setString(1, validationKey);
+    try {
+      conn = this.dbOperator.getDataSource().getConnection();
+      if (conn == null) {
+        throw new SQLException("Null connection");
+      }
+      stmnt = conn.prepareStatement(
+          String
+              .format("SELECT file_name, file_sha1, validation_status FROM validated_dependencies "
+                  + "WHERE validation_key = ? AND (%s)", makeStrWithQuestionMarks(deps.size())));
 
-    // Start at 2 because the first parameter is at index 1, and that is the validator key that we already set.
-    int index = 2;
-    for (Dependency d : deps) {
-      stmnt.setString(index++, d.getFileName());
-      stmnt.setString(index++, d.getSHA1());
-      hashAndFileNameToDep.put(d.getFileName() + d.getSHA1(), d);
+      // Set the first param, which is the validation_key
+      stmnt.setString(1, validationKey);
+
+      // Start at 2 because the first parameter is at index 1, and that is the validator key that we already set.
+      int index = 2;
+      for (Dependency d : deps) {
+        stmnt.setString(index++, d.getFileName());
+        stmnt.setString(index++, d.getSHA1());
+        hashAndFileNameToDep.put(d.getFileName() + d.getSHA1(), d);
+      }
+
+      rs = stmnt.executeQuery();
+
+      while (rs.next()) {
+        // Columns are (starting at index 1): file_name, file_sha1, validation_status
+        Dependency d = hashAndFileNameToDep.remove(rs.getString(1) + rs.getString(2));
+        FileValidationStatus v = FileValidationStatus.valueOf(rs.getInt(3));
+        depValidationStatuses.put(d, v);
+      }
+
+      // All remaining dependencies in the hashToDep map should be marked as being NEW (because they weren't
+      // associated with any DB entry)
+      hashAndFileNameToDep.values().stream()
+          .forEach(d -> depValidationStatuses.put(d, FileValidationStatus.NEW));
+    } catch (final SQLException ex) {
+      log.error("Transaction failed: ", ex);
+      throw ex;
+    } finally {
+      // Replicate the order of closing in org.apache.commons.dbutils.QueryRunner#query
+      DbUtils.closeQuietly(conn, stmnt, rs);
     }
-
-    ResultSet rs = stmnt.executeQuery();
-
-    while (rs.next()) {
-      // Columns are (starting at index 1): file_name, file_sha1, validation_status
-      Dependency d = hashAndFileNameToDep.remove(rs.getString(1) + rs.getString(2));
-      FileValidationStatus v = FileValidationStatus.valueOf(rs.getInt(3));
-      depValidationStatuses.put(d, v);
-    }
-
-    // All remaining dependencies in the hashToDep map should be marked as being NEW (because they weren't
-    // associated with any DB entry)
-    hashAndFileNameToDep.values().stream().forEach(d -> depValidationStatuses.put(d, FileValidationStatus.NEW));
 
     return depValidationStatuses;
   }
