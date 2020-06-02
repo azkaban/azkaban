@@ -551,8 +551,8 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public long getAgedQueuedFlowSize() {
-    logger.error("Unsupported Function: getQueuedFlowSize() - Retrieving of Aged flows that are "
-        + "waiting in queue");
+    logger.error("Unsupported Function: getAgedQueuedFlowSize() - Retrieving of Aged flows that are"
+        + " waiting in queue");
     return 0;
   }
 
