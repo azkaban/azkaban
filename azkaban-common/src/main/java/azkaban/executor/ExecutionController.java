@@ -315,6 +315,9 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public long getQueuedFlowSize() {
     long size = 0L;
+    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
+    // all we care about is the count. Write a new class that's more performant and can be used for
+    // metrics. this.executorLoader.fetchQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {
@@ -329,6 +332,10 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     int minimum_age_minutes = this.azkProps.getInt(
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+
+    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
+    // all we care about is the count. Write a new class that's more performant and can be used for
+    // metrics. this.executorLoader.fetchAgedQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
           .size();
