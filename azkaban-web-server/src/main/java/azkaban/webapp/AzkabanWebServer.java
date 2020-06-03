@@ -515,8 +515,17 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // (N is configurable by MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES).
     // ToDo(anish-mal) Enable this for push based dispatch logic.
     if (this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-      this.metricsManager
-          .addGauge("WEB-NumAgedQueuedFlows", this.executorManagerAdapter::getAgedQueuedFlowSize);
+      int minAge =
+          this.props.getInt(ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
+              Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+      if (minAge >= 0) {
+        this.metricsManager
+            .addGauge("WEB-NumAgedQueuedFlows", this.executorManagerAdapter::getAgedQueuedFlowSize);
+      } else {
+        logger.error(String.format("Property config file contains a value of %d for %s. "
+                + "Metric NumAgedQueuedFlows is emitted only when this value is non-negative.",
+            minAge, ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES));
+      }
     }
 
     /*
