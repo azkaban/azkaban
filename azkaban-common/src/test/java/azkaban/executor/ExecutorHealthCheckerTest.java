@@ -18,6 +18,7 @@ package azkaban.executor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -42,6 +43,7 @@ import org.junit.Test;
 public class ExecutorHealthCheckerTest {
 
   private static final int EXECUTION_ID_11 = 11;
+  private static final int EXECUTION_ID_12 = 12;
   private static final String AZ_ADMIN_ALERT_EMAIL = "az_admin1@foo.com,az_admin2@foo.com";
   private static final String FLOW_ADMIN_EMAIL = "flow_user1@foo.com,flow_user2@bar.com";
   private final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
@@ -52,7 +54,9 @@ public class ExecutorHealthCheckerTest {
   private Alerter mailAlerter;
   private AlerterHolder alerterHolder;
   private ExecutableFlow flow1;
+  private ExecutableFlow flow2;
   private Executor executor1;
+  private Executor executor2;
 
   @Before
   public void setUp() throws Exception {
@@ -69,7 +73,12 @@ public class ExecutorHealthCheckerTest {
     this.flow1.getExecutionOptions().setFailureEmails(Arrays.asList(FLOW_ADMIN_EMAIL.split(",")));
     this.flow1.setExecutionId(EXECUTION_ID_11);
     this.flow1.setStatus(Status.RUNNING);
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.flow2.setExecutionId(EXECUTION_ID_12);
+    this.flow2.setStatus(Status.RUNNING);
+
     this.executor1 = new Executor(1, "localhost", 12345, true);
+    this.executor2 = new Executor(2, "localhost", 5678, true);
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
     when(this.alerterHolder.get("email")).thenReturn(this.mailAlerter);
   }
@@ -163,24 +172,90 @@ public class ExecutorHealthCheckerTest {
   }
 
   /**
+   * Test that runtime exceptions from the Ping API for one executor don't prevent healthchecks on
+   * other executors.
+   */
+  @Test
+  public void testFailureDuringExecutorPing() throws Exception {
+    this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
+    this.activeFlows.put(EXECUTION_ID_12, new Pair<>(
+        new ExecutionReference(EXECUTION_ID_12, this.executor2), this.flow2));
+
+    // Throw a runtime exception for both executors.
+    when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
+    when(this.apiGateway.callWithExecutionId(this.executor2.getHost(), this.executor2.getPort(),
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
+    this.executorHealthChecker.checkExecutorHealth();
+
+    // Verify ping API is called for both executors. Implying that runtime exception for one of the
+    // executors did not prevent the check on other executor.
+    verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(),
+        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null);
+    verify(this.apiGateway).callWithExecutionId(this.executor2.getHost(),
+        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null);
+    verifyZeroInteractions(this.alerterHolder);
+  }
+
+  /**
+   * Test that any failures while sending alerts for unreachable executors don't prevent the
+   * finalization(cleanup) of flows running on that executor.
+   */
+  @Test
+  public void testFailureDuringAlerting() throws Exception {
+    this.activeFlows.clear();
+    this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
+
+    // Force a failure of the executor ping API
+    ExecutorManagerException healthcheckException = new ExecutorManagerException("test exception");
+    when(this.apiGateway.callWithExecutionId(
+        this.executor1.getHost(),
+        this.executor1.getPort(),
+        ConnectorParams.PING_ACTION, null, null))
+        .thenThrow(healthcheckException);
+
+    // Force an unchecked exception when sending alert emails for the healthcheck failure
+    // Note that we can't use this.alerterHolder.get("email") in the when() as mockito
+    // doesn't like nested mocks.
+    doThrow(new RuntimeException("test runtime exception"))
+        .when(this.mailAlerter)
+        .alertOnFailedExecutorHealthCheck(
+            this.executor1,
+            Arrays.asList(this.flow1),
+            healthcheckException,
+            Arrays.asList(AZ_ADMIN_ALERT_EMAIL.split(",")));
+
+    when(this.loader.fetchExecutableFlow(EXECUTION_ID_11)).thenReturn(this.flow1);
+    for (int failureCount = 0;
+        failureCount < props.getInt(ConfigurationKeys.AZKABAN_EXECUTOR_MAX_FAILURE_COUNT);
+        failureCount++) {
+      this.executorHealthChecker.checkExecutorHealth();
+    }
+
+    // Confirm that cleanup for the executor is attempted despite failure to send emails.
+    // verify() can't be called on executorHealthCheck.cleanUpForMissingExecutor as it's not being
+    // mocked. Directly checking the flow update through the mocked 'loader' is a suitable proxy
+    // for this.
+    verify(this.loader).updateExecutableFlow(this.flow1);
+    assertThat(this.flow1.getStatus()).isEqualTo(Status.FAILED);
+  }
+
+  /**
    * Test that exceptions during flow finalization do not block finalization of subsequent flow
    * for an executor.
    */
   @Test
   public void testFailureDuringFinalization() throws Exception {
-    final int executionId12 = 12;
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
-
-    ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
-    this.activeFlows.put(executionId12, new Pair<>(
-        new ExecutionReference(executionId12, this.executor1), flow2));
-    flow2.setExecutionId(executionId12);
-    flow2.setStatus(Status.RUNNING);
+    this.activeFlows.put(EXECUTION_ID_12, new Pair<>(
+        new ExecutionReference(EXECUTION_ID_12, this.executor1), this.flow2));
 
     when(this.loader.fetchExecutableFlow(EXECUTION_ID_11)).thenThrow(new RuntimeException(
         "test runtime exception"));
-    when(this.loader.fetchExecutableFlow(executionId12)).thenThrow(new RuntimeException(
+    when(this.loader.fetchExecutableFlow(EXECUTION_ID_12)).thenThrow(new RuntimeException(
         "test runtime exception"));
 
     this.executorHealthChecker.finalizeFlows(ImmutableList.of(this.flow1, flow2),
