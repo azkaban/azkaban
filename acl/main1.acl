@@ -1,0 +1,3 @@
+owners: [ abtiwari, areznik, angoel, apruthi ]
+paths: ['.*']
+whitelist: [ areznik ]
