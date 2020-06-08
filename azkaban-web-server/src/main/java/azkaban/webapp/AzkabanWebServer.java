@@ -510,6 +510,24 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private void startWebMetrics() throws Exception {
     this.metricsManager
         .addGauge("WEB-NumQueuedFlows", this.executorManagerAdapter::getQueuedFlowSize);
+
+    // Metric for flows that have been submitted, but haven't started for more than N minutes
+    // (N is configurable by MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES).
+    // ToDo(anish-mal) Enable this for push based dispatch logic.
+    if (this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      int minAge =
+          this.props.getInt(ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
+              Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+      if (minAge >= 0) {
+        this.metricsManager
+            .addGauge("WEB-NumAgedQueuedFlows", this.executorManagerAdapter::getAgedQueuedFlowSize);
+      } else {
+        logger.error(String.format("Property config file contains a value of %d for %s. "
+                + "Metric NumAgedQueuedFlows is emitted only when this value is non-negative.",
+            minAge, ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES));
+      }
+    }
+
     /*
      * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
      * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},

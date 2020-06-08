@@ -549,6 +549,13 @@ public class ExecutorManager extends EventHandler implements
     return this.queuedFlows.size();
   }
 
+  @Override
+  public long getAgedQueuedFlowSize() {
+    logger.error("Unsupported Function: getAgedQueuedFlowSize() - Retrieving of Aged flows that are"
+        + " waiting in queue");
+    return 0;
+  }
+
   /* Helper method to flow ids of all running flows */
   private void getRunningFlowsIdsHelper(final List<Integer> allIds,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
