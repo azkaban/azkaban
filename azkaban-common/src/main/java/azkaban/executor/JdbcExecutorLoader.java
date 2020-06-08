@@ -87,6 +87,12 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     return this.executionFlowDao.fetchQueuedFlows();
   }
 
+  @Override
+  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
+  }
+
   /**
    * maxAge indicates how long finished flows are shown in Recently Finished flow page.
    */

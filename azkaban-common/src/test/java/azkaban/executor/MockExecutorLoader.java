@@ -441,6 +441,26 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  // TODO(anish-mal) To be used in a future unit test, once System calls to obtain
+  // current time have been replaced by Clocks. Clocks are needed in order to write
+  // unit tests for duration based features. Without it, the tests end up being flaky.
+  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    final List<ExecutableFlow> agedQueuedFlows = new ArrayList<>();
+
+    long timeThreshoold = System.currentTimeMillis() - minAge.toMillis();
+    for (final int execId : this.refs.keySet()) {
+      if (!this.executionExecutorMapping.containsKey(execId)) {
+        ExecutableFlow agedFlow = this.flows.get(execId);
+        if (agedFlow.getSubmitTime() < timeThreshoold) {
+          agedQueuedFlows.add(agedFlow);
+        }
+      }
+    }
+    return agedQueuedFlows;
+  }
+
+  @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
     this.executionExecutorMapping.remove(executionId);
   }

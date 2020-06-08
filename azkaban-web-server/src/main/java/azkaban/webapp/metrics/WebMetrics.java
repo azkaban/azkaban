@@ -53,5 +53,7 @@ public interface WebMetrics {
     int getNumberOfRunningFlows();
 
     long getNumberOfCurrentSessions();
+
+    long getNumberOfAgedQueuedFlows();
   }
 }

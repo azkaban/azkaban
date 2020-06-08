@@ -42,6 +42,8 @@ public interface ExecutorManagerAdapter {
 
   public long getQueuedFlowSize();
 
+  public long getAgedQueuedFlowSize();
+
   /**
    * <pre>
    * Returns All running with executors and queued flows
