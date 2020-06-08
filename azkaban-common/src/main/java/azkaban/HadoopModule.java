@@ -35,6 +35,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,15 @@ public class HadoopModule extends AbstractModule {
   private static final String CHTTP_SCHEME = "chttp";
   private static final String LOCAL_SCHEME = "file";
   private static final String HDFS_SCHEME = "hdfs";
+
+  private static final String HDFS_FS_IMPL_CONFIG = "fs.hdfs.impl";
+  private static final String ABSTRACT_FS_IMPL_CONFIG = "fs.AbstractFileSystem.hdfs.impl";
+
+  // These classes will be used in case a value is not already provided the resource files
+  private static final String FALLBACK_HDFS_IMPL_CLASSS =
+      org.apache.hadoop.hdfs.DistributedFileSystem.class.getName();
+  private static final String FALLBACK_ABSTRACT_FS_IMPL_CLASS =
+      org.apache.hadoop.fs.Hdfs.class.getName();
 
   private static final Logger log = LoggerFactory.getLogger(HadoopModule.class);
   private final Props props;
@@ -69,7 +79,17 @@ public class HadoopModule extends AbstractModule {
     final Configuration conf = new Configuration(false);
     conf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "core-site.xml"));
     conf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "hdfs-site.xml"));
-    conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+    if (conf.get(HDFS_FS_IMPL_CONFIG) == null) {
+      conf.set(HDFS_FS_IMPL_CONFIG, FALLBACK_HDFS_IMPL_CLASSS);
+    }
+    if (conf.get(ABSTRACT_FS_IMPL_CONFIG) == null) {
+      conf.set( ABSTRACT_FS_IMPL_CONFIG, FALLBACK_ABSTRACT_FS_IMPL_CLASS);
+    }
+
+    // These won't result in excessive logging as we are in a singleton context
+    log.info("Implementation of {} is {}", HDFS_FS_IMPL_CONFIG, conf.get(HDFS_FS_IMPL_CONFIG));
+    log.info("Implementation of {} is {}", ABSTRACT_FS_IMPL_CONFIG, conf.get(ABSTRACT_FS_IMPL_CONFIG));
+
     return conf;
   }
 
@@ -118,13 +138,13 @@ public class HadoopModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  @Named("hdfsFS")
-  public FileSystem createHDFSFileSystem(@Named("hdfsConf") final Configuration hdfsConf, final HdfsAuth auth) {
+  @Named("hdfsFileContext")
+  public FileContext createHDFSFileContext(@Named("hdfsConf") final Configuration hdfsConf, final HdfsAuth auth) {
     try {
       auth.authorize();
-      return FileSystem.get(hdfsConf);
+      return FileContext.getFileContext(hdfsConf);
     } catch (final IOException e) {
-      log.error("Unable to initialize HDFS FileSystem.", e);
+      log.error("Unable to initialize HDFS FileContext.", e);
       throw new AzkabanException(e);
     }
   }
