@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -58,7 +57,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 /**
  * Executor manager used to manage the client side job.
@@ -551,6 +549,12 @@ public class ExecutorManager extends EventHandler implements
     return this.queuedFlows.size();
   }
 
+  @Override
+  public long getAgedQueuedFlowSize() {
+    // ToDo(anish-mal) Implement this for push based dispatch logic.
+    return 0;
+  }
+
   /* Helper method to flow ids of all running flows */
   private void getRunningFlowsIdsHelper(final List<Integer> allIds,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
@@ -976,7 +980,7 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
-  public Map<String, String> doRampActions(List<Map<String, Object>> rampActions)
+  public Map<String, String> doRampActions(final List<Map<String, Object>> rampActions)
       throws ExecutorManagerException {
     return this.executorLoader.doRampActions(rampActions);
   }
@@ -1025,10 +1029,10 @@ public class ExecutorManager extends EventHandler implements
 
   @Override
   public void shutdown() {
-    if(null != this.queueProcessor) {
+    if (null != this.queueProcessor) {
       this.queueProcessor.shutdown();
     }
-    if(null != this.updaterThread) {
+    if (null != this.updaterThread) {
       this.updaterThread.shutdown();
     }
   }

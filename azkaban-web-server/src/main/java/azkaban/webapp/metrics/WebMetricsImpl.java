@@ -53,6 +53,8 @@ public class WebMetricsImpl implements WebMetrics {
     this.metricsManager.addGauge("JETTY-NumQueueSize", dataProvider::getServerJobsQueueSize);
 
     this.metricsManager.addGauge("WEB-NumQueuedFlows", dataProvider::getNumberOfQueuedFlows);
+    this.metricsManager.addGauge("WEB-NumAgedQueuedFlows",
+        dataProvider::getNumberOfAgedQueuedFlows);
     this.metricsManager.addGauge("WEB-NumRunningFlows", dataProvider::getNumberOfRunningFlows);
 
     this.metricsManager.addGauge("session-count", dataProvider::getNumberOfCurrentSessions);

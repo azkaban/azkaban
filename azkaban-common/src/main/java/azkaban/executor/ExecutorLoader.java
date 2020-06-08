@@ -228,6 +228,9 @@ public interface ExecutorLoader {
   List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException;
 
+  public List<ExecutableFlow> fetchAgedQueuedFlows(
+      final Duration minAge) throws ExecutorManagerException;
+
   boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 

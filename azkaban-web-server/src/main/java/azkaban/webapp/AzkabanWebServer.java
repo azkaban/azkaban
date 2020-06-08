@@ -23,6 +23,8 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
@@ -513,6 +515,17 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     final QueuedThreadPool queuedThreadPool = (QueuedThreadPool) this.server.getThreadPool();
     final ExecutorManagerAdapter executorManagerAdapter = this.executorManagerAdapter;
     final SessionCache sessionCache = this.sessionCache;
+
+    final int minAgeForClassifyingAFlowAged = this.props.getInt(
+        ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
+        Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+    if (minAgeForClassifyingAFlowAged < 0) {
+      logger.error(String.format("Property config file contains a value of %d for %s. "
+              + "Metric NumAgedQueuedFlows is emitted only when this value is non-negative.",
+          minAgeForClassifyingAFlowAged,
+          ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES));
+    }
+
     this.webMetrics.setUp(new WebMetrics.DataProvider() {
 
       @Override
@@ -554,7 +567,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
       @Override
       public long getNumberOfCurrentSessions() {
+        // Metric for flows that have been submitted, but haven't started for more than N minutes
+        // (N is configurable by MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES).
         return sessionCache.getSessionCount();
+      }
+
+      @Override
+      public long getNumberOfAgedQueuedFlows() {
+        return executorManagerAdapter.getAgedQueuedFlowSize();
       }
     });
 
