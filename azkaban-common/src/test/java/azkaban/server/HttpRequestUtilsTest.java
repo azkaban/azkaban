@@ -15,6 +15,9 @@
  */
 package azkaban.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
@@ -22,6 +25,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -36,8 +40,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import static java.nio.charset.StandardCharsets.*;
 
 
 /**
@@ -55,18 +57,41 @@ public final class HttpRequestUtilsTest {
     return flow;
   }
 
-  /* Test that flow properties are removed for non-admin user */
+  /**
+  * Test that flow properties are removed for non-admin user
+  */
   @Test
   public void TestFilterNonAdminOnlyFlowParams() throws IOException,
       ExecutorManagerException, UserManagerException {
     final ExecutableFlow flow = createExecutableFlow();
     final UserManager manager = TestUtils.createTestXmlUserManager();
     final User user = manager.getUser("testUser", "testUser");
-
+    final Props props = new Props();
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
-        flow.getExecutionOptions(), user);
+        flow.getExecutionOptions(), user, props);
 
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
+        .containsKey(ExecutionOptions.FLOW_PRIORITY));
+    Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
+        .containsKey(ExecutionOptions.USE_EXECUTOR));
+  }
+
+  /**
+   * Test that flow priority property is not removed for non-admin user when
+   * azkaban.disable.admin.only.permission.for.flow.priority is set to true
+   */
+  @Test
+  public void TestFilterDisableAdminOnlyFlowPriorityParams() throws IOException,
+      ExecutorManagerException, UserManagerException {
+    final ExecutableFlow flow = createExecutableFlow();
+    final UserManager manager = TestUtils.createTestXmlUserManager();
+    final User user = manager.getUser("testUser", "testUser");
+    Props props = new Props();
+    props.put(ConfigurationKeys.AZKABAN_DISABLE_ADMIN_ONLY_PERMISSION_FOR_FLOW_PRIORITY, "true");
+    HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+        flow.getExecutionOptions(), user, props);
+
+    Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.USE_EXECUTOR));
@@ -79,9 +104,9 @@ public final class HttpRequestUtilsTest {
     final ExecutableFlow flow = createExecutableFlow();
     final UserManager manager = TestUtils.createTestXmlUserManager();
     final User user = manager.getUser("testAdmin", "testAdmin");
-
+    Props props = new Props();
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
-        flow.getExecutionOptions(), user);
+        flow.getExecutionOptions(), user, props);
 
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.FLOW_PRIORITY));

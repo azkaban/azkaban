@@ -957,7 +957,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     options.setMailCreator(flow.getMailCreator());
 
     try {
-      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, options, user);
+      final Props props = getApplication().getServerProps();
+      HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, options, user, props);
       final String message =
           this.executorManagerAdapter.submitExecutableFlow(exflow, user.getUserId());
       ret.put("message", message);
