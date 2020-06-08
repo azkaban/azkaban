@@ -17,6 +17,17 @@
 
 package azkaban.storage;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Dependency;
 import azkaban.spi.ProjectStorageMetadata;
@@ -24,19 +35,21 @@ import azkaban.test.executions.ThinArchiveTestUtils;
 import azkaban.utils.HashUtils;
 import java.io.File;
 import java.net.URI;
+import java.util.EnumSet;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.output.NullOutputStream;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 
 public class HdfsStorageTest {
@@ -45,7 +58,9 @@ public class HdfsStorageTest {
 
   private HdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
-  private DistributedFileSystem hdfs;
+  private FileContext hdfsFileContext;
+  private FileContext.Util hdfsFileContextUtil;
+
   private FileSystem http;
   private AzkabanCommonModuleConfig config;
 
@@ -58,14 +73,16 @@ public class HdfsStorageTest {
 
   @Before
   public void setUp() throws Exception {
-    this.hdfs = mock(DistributedFileSystem.class);
+    this.hdfsFileContext = mock(FileContext.class);
+    this.hdfsFileContextUtil = mock(FileContext.Util.class);
     this.http = mock(FileSystem.class);
     this.hdfsAuth = mock(HdfsAuth.class);
     this.config = mock(AzkabanCommonModuleConfig.class);
+    when(hdfsFileContext.util()).thenReturn(this.hdfsFileContextUtil);
     when(config.getHdfsProjectRootUri()).thenReturn(URI.create(PRJ_ROOT_URI));
     when(config.getOriginDependencyRootUri()).thenReturn(URI.create(DEP_ROOT_URI));
 
-    this.hdfsStorage = new HdfsStorage(config, this.hdfsAuth, this.hdfs, this.http);
+    this.hdfsStorage = new HdfsStorage(config, this.hdfsAuth, this.hdfsFileContext, this.http);
 
     depA = ThinArchiveTestUtils.getDepA();
     expectedPathDepA = new Path(DEP_ROOT_URI + ThinArchiveTestUtils.getDepAPath());
@@ -75,7 +92,7 @@ public class HdfsStorageTest {
   public void testSetUpWithoutHttpFileSystem() throws Exception {
     // Ensure we can still instantiate HdfsStorage with the HTTP FileSystem being null.
     // Fetching dependencies will not be supported.
-    this.hdfsStorage = new HdfsStorage(this.config, this.hdfsAuth, this.hdfs, null);
+    this.hdfsStorage = new HdfsStorage(this.config, this.hdfsAuth, this.hdfsFileContext, null);
     assertFalse(this.hdfsStorage.dependencyFetchingEnabled());
 
     boolean hitException = false;
@@ -85,9 +102,7 @@ public class HdfsStorageTest {
       hitException = true;
     }
     if (!hitException) fail("Expected UnsupportedOperationException when fetching dependency.");
-  }
-
-  @Test
+  }@Test
   public void testGetDependencyRootPath() {
     assertEquals(DEP_ROOT_URI, this.hdfsStorage.getDependencyRootPath());
   }
@@ -95,7 +110,36 @@ public class HdfsStorageTest {
   @Test
   public void testGetProject() throws Exception {
     this.hdfsStorage.getProject("1/1-hash.zip");
-    verify(this.hdfs).open(new Path(PRJ_ROOT_URI + "/1/1-hash.zip"));
+    verify(this.hdfsFileContext).open(new Path(PRJ_ROOT_URI + "/1/1-hash.zip"));
+  }
+
+  @Test
+  public void testUploadFile() throws Exception{
+    final File sourceFile = new File(
+        getClass().getClassLoader().getResource("sample_flow_01.zip").getFile());
+    final String sourceHash = new String(Hex.encodeHex(HashUtils.MD5.getHashBytes(sourceFile)));
+    final File tmpUploadDir = TEMP_DIR.newFolder("upload_test_dir");
+    final File destFile = new File(tmpUploadDir, "tmpfile1");
+    final FileContext destFileContext = FileContext.getLocalFSFileContext();
+
+    // A new destination file should be created after this, with same content as the source file.
+    HdfsStorage.uploadLocalFile(new Path(sourceFile.getPath()), new Path(destFile.getPath()),
+        destFileContext);
+    final String destHash = new String(Hex.encodeHex(HashUtils.MD5.getHashBytes(destFile)));
+    Assert.assertEquals(sourceHash, destHash);
+
+    // Verify that copying over an existing destination file works as well.
+    final byte[] newFileContent = "12345".getBytes(UTF_8);
+    final File newSourceFile = new File(tmpUploadDir, "tmpsource1");
+    FileUtils.writeByteArrayToFile(newSourceFile, newFileContent, false);
+
+    // The destination file already exists from previous invocation of uploadLocalFile.
+    HdfsStorage.uploadLocalFile(new Path(newSourceFile.getPath()), new Path(destFile.getPath()),
+        destFileContext);
+    final byte[] destFileContent = FileUtils.readFileToByteArray(destFile);
+    FileUtils.deleteDirectory(tmpUploadDir);
+
+    Assert.assertArrayEquals(newFileContent, destFileContent);
   }
 
   @Test
@@ -104,7 +148,12 @@ public class HdfsStorageTest {
         getClass().getClassLoader().getResource("sample_flow_01.zip").getFile());
     final String hash = new String(Hex.encodeHex(HashUtils.MD5.getHashBytes(file)));
 
-    when(this.hdfs.exists(any(Path.class))).thenReturn(false);
+    // This requires far too much information about the internals for FileContext.create()
+    // to make the test succeed. That unfortunately seems to be the price of using a mocking
+    // framework. It's worth considering a custom implementation of FileContext for this.
+    FSDataOutputStream nullOutputStream = new FSDataOutputStream(new NullOutputStream());
+    when(this.hdfsFileContext.create(any(Path.class), any(EnumSet.class)))
+        .thenReturn(nullOutputStream);
 
     final ProjectStorageMetadata metadata = new ProjectStorageMetadata(1, 2,
         "uploader", HashUtils.MD5.getHashBytes(file), IPv4);
@@ -114,8 +163,11 @@ public class HdfsStorageTest {
     Assert.assertEquals(expectedName, key);
 
     final String expectedPath = "/path/to/prj/" + expectedName;
-    verify(this.hdfs).copyFromLocalFile(eq(false), eq(true), any(Path.class), any(Path.class));
-    verify(this.hdfs).rename(any(Path.class), eq(new Path(expectedPath)), eq(Options.Rename.OVERWRITE));
+
+    verify(this.hdfsFileContext).create(any(Path.class), eq(EnumSet.of(CreateFlag.CREATE,
+        CreateFlag.OVERWRITE)));
+    verify(this.hdfsFileContext)
+        .rename(any(Path.class), eq(new Path(expectedPath)), eq(Options.Rename.OVERWRITE));
   }
 
   @Test
@@ -132,6 +184,6 @@ public class HdfsStorageTest {
   @Test
   public void testDeleteProject() throws Exception {
     this.hdfsStorage.deleteProject("1/1-hash.zip");
-    verify(this.hdfs).delete(new Path(PRJ_ROOT_URI + "/1/1-hash.zip"), false);
+    verify(this.hdfsFileContext).delete(new Path(PRJ_ROOT_URI + "/1/1-hash.zip"), false);
   }
 }
