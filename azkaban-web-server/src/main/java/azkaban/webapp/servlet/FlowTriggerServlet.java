@@ -47,8 +47,8 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.scheduler = server.getScheduler();
+    final AzkabanWebServer server = getApplication();
+    this.scheduler = server.getFlowTriggerScheduler();
     this.projectManager = server.getProjectManager();
   }
 
@@ -73,8 +73,8 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
     if (res != null) {
       final Map<String, Object> jsonObj = new HashMap<>();
-      FlowTrigger flowTrigger = res.getFlowTrigger();
-      CronSchedule schedule = flowTrigger.getSchedule();
+      final FlowTrigger flowTrigger = res.getFlowTrigger();
+      final CronSchedule schedule = flowTrigger.getSchedule();
       jsonObj.put("cronExpression", schedule.getCronExpression());
       jsonObj.put("submitUser", res.getSubmitUser());
       jsonObj.put("firstSchedTime",

@@ -81,7 +81,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.scheduleManager = server.getScheduleManager();
@@ -193,7 +193,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
       final Map<String, String> settings = getParamGroup(req, PARAM_SETTINGS);
 
-      List<SlaOption> slaOptions = new ArrayList<>();
+      final List<SlaOption> slaOptions = new ArrayList<>();
       for (final String set : settings.keySet()) {
         final SlaOption slaOption;
         try {
@@ -224,7 +224,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   }
 
-  private SlaOption parseSlaSetting(final String set, String flowName, List<String> emails) throws
+  private SlaOption parseSlaSetting(final String set, final String flowName,
+      final List<String> emails) throws
       ScheduleManagerException {
     logger.info("Trying to set sla with the following set: " + set);
 
@@ -235,7 +236,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final String emailAction = parts[3];
     final String killAction = parts[4];
 
-    SlaType type;
+    final SlaType type;
     if (id.length() == 0) {
       if (rule.equals(SLA_STATUS_SUCCESS)) {
         type = SlaType.FLOW_SUCCEED;
@@ -249,7 +250,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         type = SlaType.JOB_FINISH;
       }
     }
-    HashSet<SlaAction> actions = new HashSet<>();
+    final HashSet<SlaAction> actions = new HashSet<>();
     if (emailAction.equals("true")) {
       actions.add(SlaAction.ALERT);
     }

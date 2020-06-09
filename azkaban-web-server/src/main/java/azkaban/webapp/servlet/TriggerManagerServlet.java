@@ -42,7 +42,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.triggerManager = server.getTriggerManager();
   }
 

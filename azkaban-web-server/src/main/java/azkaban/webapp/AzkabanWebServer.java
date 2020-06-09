@@ -31,7 +31,6 @@ import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
-import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanServer;
@@ -54,6 +53,7 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
+import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
@@ -140,10 +140,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final ExecutorManagerAdapter executorManagerAdapter;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private final MetricsManager metricsManager;
+  private final WebMetrics webMetrics;
   private final Props props;
   private final SessionCache sessionCache;
-  private final FlowTriggerScheduler scheduler;
+  private final FlowTriggerScheduler flowTriggerScheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
@@ -154,12 +154,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
-      final MetricsManager metricsManager,
+      final WebMetrics webMetrics,
       final SessionCache sessionCache,
       final UserManager userManager,
       final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
-      final FlowTriggerScheduler scheduler,
+      final FlowTriggerScheduler flowTriggerScheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner) {
@@ -169,13 +169,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
-    this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
+    this.webMetrics = requireNonNull(webMetrics, "webMetrics is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
     this.statusService = statusService;
-    this.scheduler = requireNonNull(scheduler, "scheduler is null.");
+    this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     loadBuiltinCheckersAndActions();
@@ -191,7 +191,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
       final String timezoneId = props.getString(DEFAULT_TIMEZONE_ID);
       System.setProperty("user.timezone", timezoneId);
-      TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
       TimeZone.setDefault(timeZone);
       DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
       logger.info("Setting timezone to " + timezoneId);
@@ -216,14 +216,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       logger.error("Azkaban Properties not loaded. Exiting..");
       System.exit(1);
     }
-
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(props)
     );
     SERVICE_PROVIDER.setInjector(injector);
-
     launch(injector.getInstance(AzkabanWebServer.class));
   }
 
@@ -231,9 +229,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     /* This creates the Web Server instance */
     app = webServer;
 
-    webServer.executorManagerAdapter.start();
-
-    webServer.executionLogsCleaner.start();
+    webServer.validateDatabaseVersion();
 
     // TODO refactor code into ServerProvider
     webServer.prepareAndStartServer();
@@ -245,7 +241,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         try {
           if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
             AzkabanWebServer.logger.info("Shutting down flow trigger scheduler...");
-            webServer.scheduler.shutdown();
+            webServer.flowTriggerScheduler.shutdown();
           }
         } catch (final Exception e) {
           AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
@@ -333,7 +329,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         logger.info("Plugin class " + pluginClass);
       }
 
-      Class<?> viewerClass =
+      final Class<?> viewerClass =
           PluginUtils.getPluginClass(pluginClass, pluginDir, extLibClassPaths, parentLoader);
       if (viewerClass == null) {
         continue;
@@ -381,12 +377,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return this.flowTriggerService;
   }
 
-  public FlowTriggerScheduler getScheduler() {
-    return this.scheduler;
+  public FlowTriggerScheduler getFlowTriggerScheduler() {
+    return this.flowTriggerScheduler;
   }
 
-  private void validateDatabaseVersion()
-      throws IOException, SQLException {
+  private void validateDatabaseVersion() throws IOException, SQLException {
     final boolean checkDB = this.props
         .getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
     if (checkDB) {
@@ -457,23 +452,20 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
   }
 
-  private void prepareAndStartServer()
-      throws Exception {
-    validateDatabaseVersion();
-    createThreadPool();
-    configureRoutes();
+  private void prepareAndStartServer() throws Exception {
+    this.executorManagerAdapter.start();
+    this.executionLogsCleaner.start();
 
-    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
-      startWebMetrics();
-    }
+    configureRoutes();
+    startWebMetrics();
 
     if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
       // existing flow triggers
-      logger.info("starting flow trigger service");
+      logger.info("Starting flow trigger service");
       this.flowTriggerService.start();
-      logger.info("starting flow trigger scheduler");
-      this.scheduler.start();
+      logger.info("Starting flow trigger scheduler");
+      this.flowTriggerScheduler.start();
     }
 
     try {
@@ -485,45 +477,56 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     }
   }
 
-  private void createThreadPool() {
-    final int maxThreads = this.props
-        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
+  private void startWebMetrics() {
+    final QueuedThreadPool queuedThreadPool = (QueuedThreadPool) this.server.getThreadPool();
+    final ExecutorManagerAdapter executorManagerAdapter = this.executorManagerAdapter;
+    final SessionCache sessionCache = this.sessionCache;
+    this.webMetrics.setUp(new WebMetrics.DataProvider() {
 
-    final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
-    this.server.setThreadPool(httpThreadPool);
-    addThreadPoolGauges(httpThreadPool);
-  }
+      @Override
+      public int getNumberOfIdleServerThreads() {
+        // The number of idle threads in Jetty thread pool
+        return queuedThreadPool.getIdleThreads();
+      }
 
-  private void addThreadPoolGauges(final QueuedThreadPool threadPool) {
-    // The number of idle threads in Jetty thread pool
-    this.metricsManager.addGauge("JETTY-NumIdleThreads", threadPool::getIdleThreads);
+      @Override
+      public int getNumberOfServerThreads() {
+        // The number of threads in Jetty thread pool. The formula is:
+        // threads = idleThreads + busyThreads
+        return queuedThreadPool.getThreads();
+      }
 
-    // The number of threads in Jetty thread pool. The formula is:
-    // threads = idleThreads + busyThreads
-    this.metricsManager.addGauge("JETTY-NumTotalThreads", threadPool::getThreads);
+      @Override
+      public int getServerJobsQueueSize() {
+        // The number of requests queued in the Jetty thread pool.
+        return queuedThreadPool.getQueueSize();
+      }
 
-    // The number of requests queued in the Jetty thread pool.
-    this.metricsManager.addGauge("JETTY-NumQueueSize", threadPool::getQueueSize);
-  }
+      @Override
+      public long getNumberOfQueuedFlows() {
+        return executorManagerAdapter.getQueuedFlowSize();
+      }
 
+      @Override
+      public int getNumberOfRunningFlows() {
+        /*
+         * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and
+         * non-dispatched flows. Originally we would like to do a subtraction between
+         * getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()}, in order to have the
+         * correct runnable flows. However, both getRunningFlows and getQueuedFlowSize are not
+         * synchronized, such that we can not make a thread safe subtraction. We need to fix this
+         *  in the future.
+         */
+        return executorManagerAdapter.getRunningFlows().size();
+      }
 
-  private void startWebMetrics() throws Exception {
-    this.metricsManager
-        .addGauge("WEB-NumQueuedFlows", this.executorManagerAdapter::getQueuedFlowSize);
-    /*
-     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
-     * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
-     * in order to have the correct runnable flows.
-     * However, both getRunningFlows and getQueuedFlowSize are not synchronized, such that we can not make
-     * a thread safe subtraction. We need to fix this in the future.
-     */
-    this.metricsManager.addGauge("WEB-NumRunningFlows",
-        () -> (this.executorManagerAdapter.getRunningFlows().size()));
+      @Override
+      public long getNumberOfCurrentSessions() {
+        return sessionCache.getSessionCount();
+      }
+    });
 
-    this.metricsManager.addGauge("session-count", this.sessionCache::getSessionCount);
-
-    logger.info("starting reporting Web Server Metrics");
-    this.metricsManager.startReporting("AZ-WEB", this.props);
+    this.webMetrics.startReporting(this.props);
   }
 
   private void loadBuiltinCheckersAndActions() {
@@ -581,6 +584,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return this.triggerManager;
   }
 
+  public WebMetrics getWebMetrics() {
+    return this.webMetrics;
+  }
+
   /**
    * Returns the global azkaban properties
    */
@@ -607,7 +614,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     logger.info("Registering MBeans...");
 
     this.mbeanRegistrationManager.registerMBean("jetty", new JmxJettyServer(this.server));
-    this.mbeanRegistrationManager.registerMBean("triggerManager", new JmxTriggerManager(this.triggerManager));
+    this.mbeanRegistrationManager
+        .registerMBean("triggerManager", new JmxTriggerManager(this.triggerManager));
 
     if (this.executorManagerAdapter instanceof ExecutorManager) {
       this.mbeanRegistrationManager.registerMBean("executorManager",

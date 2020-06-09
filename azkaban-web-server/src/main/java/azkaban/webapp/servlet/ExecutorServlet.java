@@ -15,8 +15,6 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -48,7 +46,6 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
-import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
@@ -70,7 +67,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
-  private WebMetrics webMetrics;
   private ProjectManager projectManager;
   private FlowTriggerService flowTriggerService;
   private ExecutorManagerAdapter executorManagerAdapter;
@@ -80,14 +76,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.executorManagerAdapter = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.flowTriggerService = server.getFlowTriggerService();
-    // TODO: reallocf fully guicify
-    this.webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   }
 
   @Override
@@ -557,7 +551,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
      * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
      * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
      */
-    this.webMetrics.setFetchLogLatency(System.currentTimeMillis() - startMs);
+    getWebMetrics().setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**
@@ -975,14 +969,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
 
     try {
-      Object body = HttpRequestUtils.getJsonBody(req);
+      final Object body = HttpRequestUtils.getJsonBody(req);
       if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
         Map<String, String> result = new HashMap<>();
         if (body instanceof List) { // A list of actions
-          List<Map<String, Object>> rampActions = (List<Map<String, Object>>)body;
+          final List<Map<String, Object>> rampActions = (List<Map<String, Object>>) body;
           result = this.executorManagerAdapter.doRampActions(rampActions);
         } else if (body instanceof Map) {
-          List<Map<String, Object>> rampActions = new ArrayList<>();
+          final List<Map<String, Object>> rampActions = new ArrayList<>();
           rampActions.add((Map<String, Object>) body);
           result = this.executorManagerAdapter.doRampActions(rampActions);
         } else {

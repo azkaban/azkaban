@@ -50,7 +50,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.triggerService = server.getFlowTriggerService();
     this.projectManager = server.getProjectManager();
   }

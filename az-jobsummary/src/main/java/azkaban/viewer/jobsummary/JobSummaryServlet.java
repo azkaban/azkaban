@@ -42,6 +42,7 @@ import org.apache.log4j.Logger;
 public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
 
   private static final Logger logger = Logger.getLogger(JobSummaryServlet.class);
+  private static final long serialVersionUID = 2057998465288828864L;
 
   private final Props props;
   private final File webResourcesPath;
@@ -66,7 +67,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
   }

@@ -30,8 +30,12 @@ import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
+import azkaban.webapp.metrics.DummyWebMetricsImpl;
+import azkaban.webapp.metrics.WebMetrics;
+import azkaban.webapp.metrics.WebMetricsImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import java.lang.reflect.Constructor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -79,11 +83,17 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
+    bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
     return this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)
         ? ExecutionController.class : ExecutorManager.class;
+  }
+
+  private Class<? extends WebMetrics> resolveWebMetricsClass() {
+    return this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false) ? WebMetricsImpl.class
+        : DummyWebMetricsImpl.class;
   }
 
   @Inject

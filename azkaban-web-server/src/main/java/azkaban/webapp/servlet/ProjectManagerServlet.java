@@ -97,12 +97,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
   private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
-  private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
-      new NodeLevelComparator();
-  private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
-      "lockdown.create.projects";
-  private static final String LOCKDOWN_UPLOAD_PROJECTS_KEY =
-      "lockdown.upload.projects";
+  private static final NodeLevelComparator NODE_LEVEL_COMPARATOR = new NodeLevelComparator();
 
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
       "project.download.buffer.size";
@@ -126,21 +121,21 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
 
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.projectManager = server.getProjectManager();
     this.executorManagerAdapter = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
-    this.scheduler = server.getScheduler();
+    this.scheduler = server.getFlowTriggerScheduler();
     this.lockdownCreateProjects =
-        server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+        server.getServerProps().getBoolean(ConfigurationKeys.LOCKDOWN_CREATE_PROJECTS_KEY, false);
     this.enableQuartz = server.getServerProps().getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false);
     if (this.lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
 
     this.lockdownUploadProjects =
-        server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
+        server.getServerProps().getBoolean(ConfigurationKeys.LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
     if (this.lockdownUploadProjects) {
       logger.info("Uploading of projects is locked down");
     }
@@ -1141,7 +1136,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String flowLockErrorMessage = null;
     try {
       flowLockErrorMessage = getParam(req, FLOW_LOCK_ERROR_MESSAGE_PARAM);
-    } catch(final Exception e) {
+    } catch (final Exception e) {
       logger.info("Unable to get flow lock error message");
     }
 
@@ -1627,8 +1622,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           final String flowLockErrorMessage = flow.getFlowLockErrorMessage();
           final String lockedFlowMsg = flowLockErrorMessage != null ? flowLockErrorMessage :
               String.format(props.getString(ConfigurationKeys
-                  .AZKABAN_LOCKED_FLOW_ERROR_MESSAGE, Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE),
-              flow.getId(), projectName);
+                      .AZKABAN_LOCKED_FLOW_ERROR_MESSAGE, Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE),
+                  flow.getId(), projectName);
           page.add("error_message", lockedFlowMsg);
         }
       }
@@ -1764,7 +1759,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String projectName = (String) multipart.get("project");
 
     // Fetch the uploader's IP
-    String uploaderIPAddr = WebUtils.getRealClientIpAddr(req);
+    final String uploaderIPAddr = WebUtils.getRealClientIpAddr(req);
 
     final Project project = validateUploadAndGetProject(resp, ret, user, projectName);
     if (project == null) {
@@ -1779,15 +1774,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String contentType = item.getContentType();
     if (contentType == null || !hasZipExtension ||
         (!contentType.startsWith(APPLICATION_ZIP_MIME_TYPE) &&
-        !contentType.startsWith("application/x-zip-compressed") &&
-        !contentType.startsWith("application/octet-stream"))) {
+            !contentType.startsWith("application/x-zip-compressed") &&
+            !contentType.startsWith("application/octet-stream"))) {
       item.delete();
       if (!hasZipExtension) {
         registerError(ret, "File extension '" + lowercaseExtension + "' unrecognized.", resp,
             HttpServletResponse.SC_BAD_REQUEST);
       } else {
-        registerError(ret, "Content type '" + contentType + "' does not match extension '" + lowercaseExtension + "'", resp,
-            HttpServletResponse.SC_BAD_REQUEST);
+        registerError(ret, "Content type '" + contentType + "' does not match extension '" +
+            lowercaseExtension + "'", resp, HttpServletResponse.SC_BAD_REQUEST);
       }
       return;
     }
