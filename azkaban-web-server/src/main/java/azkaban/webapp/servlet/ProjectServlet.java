@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
@@ -40,10 +41,8 @@ import org.apache.log4j.Logger;
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(ProjectServlet.class
-      .getName());
-  private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
-      "lockdown.create.projects";
+  private static final Logger logger = Logger.getLogger(ProjectServlet.class.getName());
+
   private static final long serialVersionUID = -1;
 
   private UserManager userManager;
@@ -53,11 +52,11 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
 
     this.userManager = server.getUserManager();
     this.lockdownCreateProjects =
-        server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+        server.getServerProps().getBoolean(ConfigurationKeys.LOCKDOWN_CREATE_PROJECTS_KEY, false);
     if (this.lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
@@ -67,8 +66,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
 
-    final ProjectManager manager =
-        ((AzkabanWebServer) getApplication()).getProjectManager();
+    final ProjectManager manager = getApplication().getProjectManager();
 
     if (hasParam(req, "ajax")) {
       handleAjaxAction(req, resp, session, manager);
@@ -194,8 +192,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   private void handleFilter(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session, final String searchTerm) {
     final User user = session.getUser();
-    final ProjectManager manager =
-        ((AzkabanWebServer) getApplication()).getProjectManager();
+    final ProjectManager manager = getApplication().getProjectManager();
     final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
     if (hasParam(req, "all")) {

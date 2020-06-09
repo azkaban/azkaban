@@ -142,7 +142,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    this.server = (AzkabanWebServer) getApplication();
+    this.server = getApplication();
     ReportalMailCreator.azkaban = this.server;
 
     this.shouldProxy = this.props.getBoolean("azkaban.should.proxy", false);
@@ -1280,17 +1280,17 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     public void run() {
       while (!this.shutdown) {
         synchronized (this) {
-          logger.info("Cleaning old execution output dirs");
+          ReportalServlet.logger.info("Cleaning old execution output dirs");
           cleanOldReportalOutputDirs();
 
-          logger.info("Cleaning Reportal mail temp directory");
+          ReportalServlet.logger.info("Cleaning Reportal mail temp directory");
           cleanReportalMailTempDir();
         }
 
         try {
           Thread.sleep(this.CLEAN_INTERVAL_MS);
         } catch (final InterruptedException e) {
-          logger.error("CleanerThread's sleep was interrupted.", e);
+          ReportalServlet.logger.error("CleanerThread's sleep was interrupted.", e);
         }
       }
     }
@@ -1315,7 +1315,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
             streamProvider.getOldFiles(ReportalMailCreator.outputLocation,
                 pastTimeThreshold);
       } catch (final Exception e) {
-        logger.error("Error getting old files from "
+        ReportalServlet.logger.error("Error getting old files from "
             + ReportalMailCreator.outputLocation + " on "
             + ReportalMailCreator.outputFileSystem + " file system.", e);
       }
@@ -1326,7 +1326,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
           try {
             streamProvider.deleteFile(filePath);
           } catch (final Exception e) {
-            logger.error("Error deleting file " + filePath + " from "
+            ReportalServlet.logger.error("Error deleting file " + filePath + " from "
                 + ReportalMailCreator.outputFileSystem + " file system.", e);
           }
         }
@@ -1352,7 +1352,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         try {
           FileUtils.deleteDirectory(tempDir);
         } catch (final IOException e) {
-          logger.error(
+          ReportalServlet.logger.error(
               "Error cleaning Reportal mail temp dir " + tempDir.getPath(), e);
         }
       }

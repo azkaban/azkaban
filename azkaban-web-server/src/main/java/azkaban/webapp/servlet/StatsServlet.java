@@ -52,7 +52,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.userManager = server.getUserManager();
     this.execManagerAdapter = server.getExecutorManager();
   }
@@ -172,7 +172,6 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * @throws ExecutorManagerException
    *
    */
   private void handleStatePageLoad(final HttpServletRequest req, final HttpServletResponse resp,

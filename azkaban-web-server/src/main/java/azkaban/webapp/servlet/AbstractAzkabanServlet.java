@@ -18,13 +18,13 @@ package azkaban.webapp.servlet;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
@@ -50,16 +50,13 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   public static final String JSON_MIME_TYPE = "application/json";
   public static final String jarVersion = AbstractAzkabanServlet.class.getPackage()
       .getImplementationVersion();
-  private static final String AZKABAN_SUCCESS_MESSAGE =
-      "azkaban.success.message";
-  private static final String AZKABAN_WARN_MESSAGE =
-      "azkaban.warn.message";
-  private static final String AZKABAN_FAILURE_MESSAGE =
-      "azkaban.failure.message";
+  private static final String AZKABAN_SUCCESS_MESSAGE = "azkaban.success.message";
+  private static final String AZKABAN_WARN_MESSAGE = "azkaban.warn.message";
+  private static final String AZKABAN_FAILURE_MESSAGE = "azkaban.failure.message";
   private static final long serialVersionUID = -1;
 
   protected String passwordPlaceholder;
-  private AzkabanServer application;
+  private AzkabanWebServer application;
   private String name;
   private String label;
   private String color;
@@ -89,8 +86,12 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   /**
    * To retrieve the application for the servlet
    */
-  public AzkabanServer getApplication() {
+  public AzkabanWebServer getApplication() {
     return this.application;
+  }
+
+  public WebMetrics getWebMetrics() {
+    return this.application.getWebMetrics();
   }
 
   @Override
@@ -109,12 +110,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
     this.displayExecutionPageSize = props.getInt(ConfigurationKeys.DISPLAY_EXECUTION_PAGE_SIZE, 16);
 
-    if (this.application instanceof AzkabanWebServer) {
-      final AzkabanWebServer server = (AzkabanWebServer) this.application;
-      this.viewerPlugins = PluginRegistry.getRegistry().getViewerPlugins();
-      this.triggerPlugins =
-          new ArrayList<>(server.getTriggerPlugins().values());
-    }
+    this.viewerPlugins = PluginRegistry.getRegistry().getViewerPlugins();
+    this.triggerPlugins = new ArrayList<>(this.application.getTriggerPlugins().values());
   }
 
   /**

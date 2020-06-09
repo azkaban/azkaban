@@ -21,14 +21,15 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.utils.Props;
-import javax.inject.Inject;
 import com.google.inject.Provider;
 import java.util.List;
+import javax.inject.Inject;
 import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
+import org.mortbay.thread.QueuedThreadPool;
 
 
 public class WebServerProvider implements Provider<Server> {
@@ -43,9 +44,6 @@ public class WebServerProvider implements Provider<Server> {
   public Server get() {
     requireNonNull(this.props);
 
-    final int maxThreads = this.props
-        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
-
     final boolean useSsl = this.props.getBoolean("jetty.use.ssl", true);
     final int port;
     final Server server = new Server();
@@ -59,20 +57,18 @@ public class WebServerProvider implements Provider<Server> {
       server.addConnector(getSocketConnector(port));
     }
 
+    // Configure the ThreadPool
+    final int maxThreads = this.props
+        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
+    final QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads);
+    server.setThreadPool(threadPool);
+
     // setting stats configuration for connectors
     setStatsOnConnectors(server);
 
     logger.info(String.format(
         "Starting %sserver on port: %d # Max threads: %d", useSsl ? "SSL " : "", port, maxThreads));
     return server;
-  }
-
-  private void setStatsOnConnectors(final Server server) {
-    final boolean isStatsOn = this.props.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
-    for (final Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);
-    }
   }
 
   private SocketConnector getSocketConnector(final int port) {
@@ -100,5 +96,13 @@ public class WebServerProvider implements Provider<Server> {
       secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
     }
     return secureConnector;
+  }
+
+  private void setStatsOnConnectors(final Server server) {
+    final boolean isStatsOn = this.props.getBoolean("jetty.connector.stats", true);
+    logger.info("Setting up connector with stats on: " + isStatsOn);
+    for (final Connector connector : server.getConnectors()) {
+      connector.setStatsOn(isStatsOn);
+    }
   }
 }

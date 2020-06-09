@@ -15,8 +15,6 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import azkaban.project.Project;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
@@ -25,7 +23,6 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.utils.StringUtils;
-import azkaban.webapp.WebMetrics;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -53,13 +50,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = Logger
-      .getLogger(LoginAbstractAzkabanServlet.class.getName());
+  private static final Logger logger =
+      Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 
-  private static final HashMap<String, String> contextType =
-      new HashMap<>();
+  private static final HashMap<String, String> contextType = new HashMap<>();
 
   static {
     contextType.put(".js", "application/javascript");
@@ -74,7 +70,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     contextType.put(".woff", "application/x-font-woff");
   }
 
-  private final WebMetrics webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
   private File webResourceDirectory = null;
   private MultipartParser multipartParser;
   private boolean shouldLogRawUserAgent = false;
@@ -86,8 +81,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     this.multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
 
     this.shouldLogRawUserAgent =
-        getApplication().getServerProps().getBoolean("accesslog.raw.useragent",
-            false);
+        getApplication().getServerProps().getBoolean("accesslog.raw.useragent", false);
   }
 
   public void setResourceDirectory(final File file) {
@@ -98,7 +92,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
-    this.webMetrics.markWebGetCall();
+    getWebMetrics().markWebGetCall();
     // Set session id
     final Session session = getSessionFromRequest(req);
     logRequest(req, session);
@@ -251,7 +245,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
-    this.webMetrics.markWebPostCall();
+    getWebMetrics().markWebPostCall();
     logRequest(req, session);
     if (isIllegalPostRequest(req)) {
       writeResponse(resp, "Login error. Must pass username and password in request body");

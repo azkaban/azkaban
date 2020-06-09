@@ -20,7 +20,6 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
-import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,12 +37,10 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   public static String type = null;
   public static String message = null;
   public static String url = null;
-  private AzkabanWebServer server;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    this.server = (AzkabanWebServer) getApplication();
   }
 
   @Override
@@ -124,6 +121,6 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private boolean isAdmin(final User user) {
-    return HttpRequestUtils.hasPermission(this.server.getUserManager(), user, Type.ADMIN);
+    return HttpRequestUtils.hasPermission(getApplication().getUserManager(), user, Type.ADMIN);
   }
 }

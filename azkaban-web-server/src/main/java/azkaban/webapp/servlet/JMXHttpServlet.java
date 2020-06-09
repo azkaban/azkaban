@@ -53,7 +53,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
 
-    this.server = (AzkabanWebServer) getApplication();
+    this.server = getApplication();
     this.userManager = this.server.getUserManager();
     this.executorManagerAdapter = this.server.getExecutorManager();
 
@@ -67,19 +67,20 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
       Map<String, Object> ret = new HashMap<>();
 
       final String ajax = getParam(req, "ajax");
-      if (JMX_GET_ALL_EXECUTOR_ATTRIBUTES.equals(ajax)) {
-        if (!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_HOSTPORT)) {
-          ret.put("error", "Parameters '" + JMX_MBEAN + "' and '"
-              + JMX_HOSTPORT + "' must be set");
+      if (ConnectorParams.JMX_GET_ALL_EXECUTOR_ATTRIBUTES.equals(ajax)) {
+        if (!hasParam(req, ConnectorParams.JMX_MBEAN) || !hasParam(req,
+            ConnectorParams.JMX_HOSTPORT)) {
+          ret.put("error", "Parameters '" + ConnectorParams.JMX_MBEAN + "' and '"
+              + ConnectorParams.JMX_HOSTPORT + "' must be set");
           this.writeJSON(resp, ret, true);
           return;
         }
 
-        final String hostPort = getParam(req, JMX_HOSTPORT);
-        final String mbean = getParam(req, JMX_MBEAN);
+        final String hostPort = getParam(req, ConnectorParams.JMX_HOSTPORT);
+        final String mbean = getParam(req, ConnectorParams.JMX_MBEAN);
         final Map<String, Object> result =
             this.executorManagerAdapter.callExecutorJMX(hostPort,
-                JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
+                ConnectorParams.JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
         // order the attribute by name
         for (final Map.Entry<String, Object> entry : result.entrySet()) {
           if (entry.getValue() instanceof Map) {
@@ -88,11 +89,11 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
           }
         }
         ret = result;
-      } else if (JMX_GET_MBEANS.equals(ajax)) {
+      } else if (ConnectorParams.JMX_GET_MBEANS.equals(ajax)) {
         ret.put("mbeans", this.server.getMBeanRegistrationManager().getMBeanNames());
-      } else if (JMX_GET_MBEAN_INFO.equals(ajax)) {
-        if (hasParam(req, JMX_MBEAN)) {
-          final String mbeanName = getParam(req, JMX_MBEAN);
+      } else if (ConnectorParams.JMX_GET_MBEAN_INFO.equals(ajax)) {
+        if (hasParam(req, ConnectorParams.JMX_MBEAN)) {
+          final String mbeanName = getParam(req, ConnectorParams.JMX_MBEAN);
           try {
             final ObjectName name = new ObjectName(mbeanName);
             final MBeanInfo info = this.server.getMBeanRegistrationManager().getMBeanInfo(name);
@@ -105,12 +106,13 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         } else {
           ret.put("error", "No 'mbean' name parameter specified");
         }
-      } else if (JMX_GET_MBEAN_ATTRIBUTE.equals(ajax)) {
-        if (!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_ATTRIBUTE)) {
+      } else if (ConnectorParams.JMX_GET_MBEAN_ATTRIBUTE.equals(ajax)) {
+        if (!hasParam(req, ConnectorParams.JMX_MBEAN) || !hasParam(req,
+            ConnectorParams.JMX_ATTRIBUTE)) {
           ret.put("error", "Parameters 'mbean' and 'attribute' must be set");
         } else {
-          final String mbeanName = getParam(req, JMX_MBEAN);
-          final String attribute = getParam(req, JMX_ATTRIBUTE);
+          final String mbeanName = getParam(req, ConnectorParams.JMX_MBEAN);
+          final String attribute = getParam(req, ConnectorParams.JMX_ATTRIBUTE);
 
           try {
             final ObjectName name = new ObjectName(mbeanName);
@@ -122,19 +124,20 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
             ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
           }
         }
-      } else if (JMX_GET_ALL_MBEAN_ATTRIBUTES.equals(ajax)) {
-        if (!hasParam(req, JMX_MBEAN)) {
+      } else if (ConnectorParams.JMX_GET_ALL_MBEAN_ATTRIBUTES.equals(ajax)) {
+        if (!hasParam(req, ConnectorParams.JMX_MBEAN)) {
           ret.put("error", "Parameters 'mbean' must be set");
         } else {
           ret.putAll(
-              this.server.getMBeanRegistrationManager().getMBeanResult(getParam(req, JMX_MBEAN)));
+              this.server.getMBeanRegistrationManager().getMBeanResult(getParam(req,
+                  ConnectorParams.JMX_MBEAN)));
         }
       } else {
         ret.put("commands", new String[]{
-            JMX_GET_MBEANS,
-            JMX_GET_MBEAN_INFO + "&" + JMX_MBEAN + "=<name>",
-            JMX_GET_MBEAN_ATTRIBUTE + "&" + JMX_MBEAN + "=<name>&"
-                + JMX_ATTRIBUTE + "=<attributename>"});
+            ConnectorParams.JMX_GET_MBEANS,
+            ConnectorParams.JMX_GET_MBEAN_INFO + "&" + ConnectorParams.JMX_MBEAN + "=<name>",
+            ConnectorParams.JMX_GET_MBEAN_ATTRIBUTE + "&" + ConnectorParams.JMX_MBEAN + "=<name>&"
+                + ConnectorParams.JMX_ATTRIBUTE + "=<attributename>"});
       }
       this.writeJSON(resp, ret, true);
     } else {
@@ -154,7 +157,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     for (final String hostPort : this.executorManagerAdapter.getAllActiveExecutorServerHosts()) {
       try {
         final Map<String, Object> mbeans =
-            this.executorManagerAdapter.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
+            this.executorManagerAdapter
+                .callExecutorJMX(hostPort, ConnectorParams.JMX_GET_MBEANS, null);
 
         executorMBeans.put(hostPort, mbeans.get("mbeans"));
       } catch (final IOException e) {

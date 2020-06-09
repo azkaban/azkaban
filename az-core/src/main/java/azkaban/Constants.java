@@ -209,6 +209,14 @@ public class Constants {
     // To set a fixed port for executor-server. Otherwise some available port is used.
     public static final String EXECUTOR_PORT = "executor.port";
 
+    // Boolean config set on the Web server to prevent users from creating projects. When set to
+    // true only admins or users with CREATEPROJECTS permission can create projects.
+    public static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
+
+    // Boolean config set on the Web server to prevent users from uploading projects. When set to
+    // true only admins or users with UPLOADPROJECTS permission can upload projects.
+    public static final String LOCKDOWN_UPLOAD_PROJECTS_KEY = "lockdown.upload.projects";
+
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";

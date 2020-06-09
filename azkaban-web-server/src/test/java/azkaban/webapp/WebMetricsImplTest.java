@@ -20,21 +20,22 @@ import static org.junit.Assert.assertEquals;
 
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsTestUtility;
+import azkaban.webapp.metrics.WebMetricsImpl;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
 
-public class WebMetricsTest {
+public class WebMetricsImplTest {
 
   private MetricsTestUtility testUtil;
-  private WebMetrics metrics;
+  private WebMetricsImpl metrics;
 
   @Before
   public void setUp() {
     final MetricRegistry metricRegistry = new MetricRegistry();
     this.testUtil = new MetricsTestUtility(metricRegistry);
-    this.metrics = new WebMetrics(new MetricsManager(metricRegistry));
+    this.metrics = new WebMetricsImpl(new MetricsManager(metricRegistry));
   }
 
   @Test
