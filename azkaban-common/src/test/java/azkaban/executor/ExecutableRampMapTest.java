@@ -24,27 +24,50 @@ public class ExecutableRampMapTest {
   public void testNoActivatedRamp() throws Exception {
     Assert.assertTrue(executableMap.getActivatedAll().isEmpty());
     executableMap.add(RAMP1,
-        ExecutableRamp.createInstance(
-            RAMP1,
-            RAMP_POLICY1,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, true
-        )
+        ExecutableRamp.builder(RAMP1, RAMP_POLICY1)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(true)
+                .build())
+            .build()
     );
     Assert.assertFalse(executableMap.getActivatedAll().isEmpty());
 
     executableMap.delete(RAMP1);
     executableMap.add(RAMP1,
-        ExecutableRamp.createInstance(
-            RAMP1,
-            RAMP_POLICY1,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, false
-        )
+
+        ExecutableRamp.builder(RAMP1, RAMP_POLICY1)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(false)
+                .build())
+            .build()
     );
     Assert.assertTrue(executableMap.getActivatedAll().isEmpty());
   }
@@ -55,14 +78,25 @@ public class ExecutableRampMapTest {
     Assert.assertTrue(executableMap.getAll().isEmpty());
 
     executableMap.add(RAMP1,
-        ExecutableRamp.createInstance(
-            RAMP1,
-            RAMP_POLICY1,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, true
-        )
+        ExecutableRamp.builder(RAMP1, RAMP_POLICY1)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(true)
+                .build())
+            .build()
     );
     Assert.assertFalse(executableMap.getAll().isEmpty());
   }
@@ -70,26 +104,48 @@ public class ExecutableRampMapTest {
   @Test
   public void testAddItem() {
     executableMap.add(RAMP1,
-        ExecutableRamp.createInstance(
-            RAMP1,
-            RAMP_POLICY1,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, true
-        )
+        ExecutableRamp.builder(RAMP1, RAMP_POLICY1)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(true)
+                .build())
+            .build()
     );
     Assert.assertEquals(1, executableMap.elementCount());
 
     executableMap.add(RAMP2,
-        ExecutableRamp.createInstance(
-            RAMP2,
-            RAMP_POLICY2,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, true
-        )
+        ExecutableRamp.builder(RAMP2, RAMP_POLICY2)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(true)
+                .build())
+            .build()
     );
     Assert.assertEquals(2, executableMap.elementCount());
   }
@@ -97,37 +153,70 @@ public class ExecutableRampMapTest {
   @Test
   public void testRefreshObject() {
     executableMap.add(RAMP1,
-        ExecutableRamp.createInstance(
-            RAMP1,
-            RAMP_POLICY1,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, true
-        )
+        ExecutableRamp.builder(RAMP1, RAMP_POLICY1)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(true)
+                .build())
+            .build()
     );
     executableMap.add(RAMP2,
-        ExecutableRamp.createInstance(
-            RAMP2,
-            RAMP_POLICY2,
-            500, 500, false,
-            0, 0, 0,
-            0, 0, 0, 0,
-            false, 1, true
-        )
+        ExecutableRamp.builder(RAMP2, RAMP_POLICY2)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(500)
+                .setMaxFailureToRampDown(500)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(1)
+                .setActive(true)
+                .build())
+            .build()
     );
     Assert.assertEquals(2, executableMap.elementCount());
 
     ExecutableRampMap novaExecutableMap = ExecutableRampMap.createInstance();
     novaExecutableMap.add(RAMP1,
-        ExecutableRamp.createInstance(
-            RAMP1,
-            RAMP_POLICY2,
-            5000, 50, true,
-            timeStamp, timeStamp + 10, timeStamp + 5,
-            1, 2, 3, 4,
-            true, 2, false
-        )
+        ExecutableRamp.builder(RAMP1, RAMP_POLICY2)
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(5000)
+                .setMaxFailureToRampDown(50)
+                .setPercentageScaleForMaxFailure(true)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(timeStamp)
+                .setEndTime(timeStamp + 10)
+                .setLastUpdatedTime(timeStamp + 5)
+                .setNumOfTrail(1)
+                .setNumOfSuccess(2)
+                .setNumOfFailure(3)
+                .setNumOfIgnored(4)
+                .setPaused(true)
+                .setRampStage(2)
+                .setActive(false)
+                .build())
+            .build()
     );
     executableMap.refresh(novaExecutableMap);
     Assert.assertEquals(1, executableMap.elementCount());

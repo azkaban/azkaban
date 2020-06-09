@@ -45,18 +45,56 @@ public class ExecutionRampDao {
     this.dbOperator = dbOperator;
   }
 
+  private enum RampTableFields {
+    FIELD_RAMP_ID("rampId"),
+    FIELD_RAMP_POLICY("rampPolicy"),
+    FIELD_MAX_FAILURE_TO_PAUSE("maxFailureToPause"),
+    FIELD_MAX_FAILURE_TO_RAMP_DOWN("maxFailureToRampDown"),
+    FIELD_IS_PERCENTAGE_SCALE_FOR_MAX_FAILURE("isPercentageScaleForMaxFailure"),
+    FIELD_START_TIME("startTime"),
+    FIELD_END_TIME("endTime"),
+    FIELD_LAST_UPDATED_TIME("lastUpdatedTime"),
+    FIELD_NUM_OF_TRAIL("numOfTrail"),
+    FIELD_NUM_OF_SUCCESS("numOfSuccess"),
+    FIELD_NUM_OF_FAILURE("numOfFailure"),
+    FIELD_NUM_OF_IGNORED("numOfIgnored"),
+    FIELD_IS_PAUSED("isPaused"),
+    FIELD_RAMP_STAGE("rampStage"),
+    FIELD_IS_ACTIVE("isActive");
+
+    final String value;
+
+    RampTableFields(final String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return this.value;
+    }
+  }
+
   /**
    * Fetch Executable Ramps
    */
   private static class FetchExecutableRamps implements ResultSetHandler<ExecutableRampMap> {
 
-    static String FETCH_EXECUTABLE_RAMPS =
-        "SELECT r.rampId, r.rampPolicy, "
-            + "r.maxFailureToPause, r.maxFailureToRampDown, r.isPercentageScaleForMaxFailure, "
-            + "r.startTime, r.endTime, r.lastUpdatedTime, "
-            + "r.numOfTrail, r.numOfSuccess, r.numOfFailure, r.numOfIgnored, "
-            + "r.isPaused, r.rampStage, r.isActive "
-            + "FROM ramp r ";
+    static String FETCH_EXECUTABLE_RAMPS = "SELECT "
+        + RampTableFields.FIELD_RAMP_ID.getValue() + ", "
+        + RampTableFields.FIELD_RAMP_POLICY.getValue() + ", "
+        + RampTableFields.FIELD_MAX_FAILURE_TO_PAUSE.getValue() + ", "
+        + RampTableFields.FIELD_MAX_FAILURE_TO_RAMP_DOWN.getValue() + ", "
+        + RampTableFields.FIELD_IS_PERCENTAGE_SCALE_FOR_MAX_FAILURE.getValue() + ", "
+        + RampTableFields.FIELD_START_TIME.getValue() + ", "
+        + RampTableFields.FIELD_END_TIME.getValue() + ", "
+        + RampTableFields.FIELD_LAST_UPDATED_TIME.getValue() + ", "
+        + RampTableFields.FIELD_NUM_OF_TRAIL.getValue() + ", "
+        + RampTableFields.FIELD_NUM_OF_SUCCESS.getValue() + ", "
+        + RampTableFields.FIELD_NUM_OF_FAILURE.getValue() + ", "
+        + RampTableFields.FIELD_NUM_OF_IGNORED.getValue() + ", "
+        + RampTableFields.FIELD_IS_PAUSED.getValue() + ", "
+        + RampTableFields.FIELD_RAMP_STAGE.getValue() + ", "
+        + RampTableFields.FIELD_IS_ACTIVE.getValue()
+        + " FROM ramp ";
 
     @Override
     public ExecutableRampMap handle(final ResultSet resultSet) throws SQLException {
@@ -67,24 +105,33 @@ public class ExecutionRampDao {
 
       do {
         executableRampMap.add(
-            resultSet.getString(1),
-            ExecutableRamp.createInstance(
-                resultSet.getString(1),
-                resultSet.getString(2),
-                resultSet.getInt(3),
-                resultSet.getInt(4),
-                resultSet.getBoolean(5),
-                resultSet.getLong(6),
-                resultSet.getLong(7),
-                resultSet.getLong(8),
-                resultSet.getInt(9),
-                resultSet.getInt(10),
-                resultSet.getInt(11),
-                resultSet.getInt(12),
-                resultSet.getBoolean(13),
-                resultSet.getInt(14),
-                resultSet.getBoolean(15)
-            )
+            resultSet.getString(RampTableFields.FIELD_RAMP_ID.getValue()),
+
+            ExecutableRamp.builder(
+                resultSet.getString(RampTableFields.FIELD_RAMP_ID.getValue()),
+                resultSet.getString(RampTableFields.FIELD_RAMP_POLICY.getValue()))
+                .setMetadata(
+                    ExecutableRamp.Metadata.builder()
+                        .setMaxFailureToPause(resultSet.getInt(RampTableFields.FIELD_MAX_FAILURE_TO_PAUSE.getValue()))
+                        .setMaxFailureToRampDown(resultSet.getInt(RampTableFields.FIELD_MAX_FAILURE_TO_RAMP_DOWN.getValue()))
+                        .setPercentageScaleForMaxFailure(resultSet.getBoolean(RampTableFields.FIELD_IS_PERCENTAGE_SCALE_FOR_MAX_FAILURE.getValue()))
+                        .build()
+                )
+                .setState(
+                    ExecutableRamp.State.builder()
+                        .setStartTime(resultSet.getLong(RampTableFields.FIELD_START_TIME.getValue()))
+                        .setEndTime(resultSet.getLong(RampTableFields.FIELD_END_TIME.getValue()))
+                        .setLastUpdatedTime(resultSet.getLong(RampTableFields.FIELD_LAST_UPDATED_TIME.getValue()))
+                        .setNumOfTrail(resultSet.getInt(RampTableFields.FIELD_NUM_OF_TRAIL.getValue()))
+                        .setNumOfSuccess(resultSet.getInt(RampTableFields.FIELD_NUM_OF_SUCCESS.getValue()))
+                        .setNumOfFailure(resultSet.getInt(RampTableFields.FIELD_NUM_OF_FAILURE.getValue()))
+                        .setNumOfIgnored(resultSet.getInt(RampTableFields.FIELD_NUM_OF_IGNORED.getValue()))
+                        .setPaused(resultSet.getBoolean(RampTableFields.FIELD_IS_PAUSED.getValue()))
+                        .setRampStage(resultSet.getInt(RampTableFields.FIELD_RAMP_STAGE.getValue()))
+                        .setActive(resultSet.getBoolean(RampTableFields.FIELD_IS_ACTIVE.getValue()))
+                        .build()
+                )
+                .build()
         );
       } while (resultSet.next());
 
@@ -104,15 +151,32 @@ public class ExecutionRampDao {
     }
   }
 
+  private enum RampItemsTableFields {
+    FIELD_RAMP_ID("rampId"),
+    FIELD_DEPENDENCY("dependency"),
+    FIELD_RAMP_VALUE("rampValue");
+
+    final String value;
+
+    RampItemsTableFields(final String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return this.value;
+    }
+  }
 
   /**
    * Fetch Executable Ramp Items
    */
   private static class FetchExecutableRampItems implements ResultSetHandler<ExecutableRampItemsMap> {
 
-    static String FETCH_EXECUTABLE_RAMP_ITEMS =
-        "SELECT rampId, dependency, rampValue "
-            + "FROM ramp_items ";
+    static String FETCH_EXECUTABLE_RAMP_ITEMS = "SELECT "
+        + RampItemsTableFields.FIELD_RAMP_ID.getValue() + ", "
+        + RampItemsTableFields.FIELD_DEPENDENCY.getValue() + ", "
+        + RampItemsTableFields.FIELD_RAMP_VALUE.getValue()
+        + " FROM ramp_items ";
 
     @Override
     public ExecutableRampItemsMap handle(final ResultSet resultSet) throws SQLException {
@@ -124,9 +188,9 @@ public class ExecutionRampDao {
 
       do {
         executableRampItemsMap.add(
-            resultSet.getString(1),
-            resultSet.getString(2),
-            resultSet.getString(3)
+            resultSet.getString(RampItemsTableFields.FIELD_RAMP_ID.getValue()),
+            resultSet.getString(RampItemsTableFields.FIELD_DEPENDENCY.getValue()),
+            resultSet.getString(RampItemsTableFields.FIELD_RAMP_VALUE.getValue())
         );
       } while (resultSet.next());
 
@@ -145,14 +209,32 @@ public class ExecutionRampDao {
     }
   }
 
+  private enum RampDependenciesTableFields {
+    FIELD_DEPENDENCY("dependency"),
+    FIELD_DEFAULT_VALUE("defaultValue"),
+    FIELD_JOB_TYPES("jobtypes");
+
+    final String value;
+
+    RampDependenciesTableFields(final String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return this.value;
+    }
+  }
+
   /**
    * Fetch Rampable Dependency's default Value
    */
   private static class FetchExecutableRampDependencies implements ResultSetHandler<ExecutableRampDependencyMap> {
 
-    static String FETCH_EXECUTABLE_RAMP_DEPENDENCIES =
-        "SELECT dependency, defaultValue, jobtypes "
-          + "FROM ramp_dependency ";
+    static String FETCH_EXECUTABLE_RAMP_DEPENDENCIES = "SELECT "
+        + RampDependenciesTableFields.FIELD_DEPENDENCY.getValue() + ", "
+        + RampDependenciesTableFields.FIELD_DEFAULT_VALUE.getValue() + ", "
+        + RampDependenciesTableFields.FIELD_JOB_TYPES.getValue()
+        + " FROM ramp_dependency ";
 
     @Override
     public ExecutableRampDependencyMap handle(ResultSet resultSet) throws SQLException {
@@ -165,9 +247,9 @@ public class ExecutionRampDao {
       do {
         executableRampDependencyMap
             .add(
-                resultSet.getString(1),
-                resultSet.getString(2),
-                resultSet.getString(3)
+                resultSet.getString(RampDependenciesTableFields.FIELD_DEPENDENCY.getValue()),
+                resultSet.getString(RampDependenciesTableFields.FIELD_DEFAULT_VALUE.getValue()),
+                resultSet.getString(RampDependenciesTableFields.FIELD_JOB_TYPES.getValue())
             );
       } while (resultSet.next());
 
@@ -187,14 +269,34 @@ public class ExecutionRampDao {
     }
   }
 
+  private enum RampExceptionalFlowItemsTableFields {
+    FIELD_RAMP_ID("rampId"),
+    FIELD_FLOW_ID("flowId"),
+    FIELD_TREATMENT("treatment"),
+    FIELD_TIME_STAMP("timestamp");
+
+    final String value;
+
+    RampExceptionalFlowItemsTableFields(final String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return this.value;
+    }
+  }
+
   /**
    * Fetch Executable Ramp's Exceptional Flow Items
    */
   private static class FetchExecutableRampExceptionalFlowItems implements ResultSetHandler<ExecutableRampExceptionalFlowItemsMap> {
 
-    static String FETCH_EXECUTABLE_RAMP_EXCEPTIONAL_FLOW_ITEMS =
-        "SELECT rampId, flowId, treatment, timestamp "
-            + "FROM ramp_exceptional_flow_items ";
+    static String FETCH_EXECUTABLE_RAMP_EXCEPTIONAL_FLOW_ITEMS = "SELECT "
+        + RampExceptionalFlowItemsTableFields.FIELD_RAMP_ID.getValue() + ", "
+        + RampExceptionalFlowItemsTableFields.FIELD_FLOW_ID.getValue() + ", "
+        + RampExceptionalFlowItemsTableFields.FIELD_TREATMENT.getValue() + ", "
+        + RampExceptionalFlowItemsTableFields.FIELD_TIME_STAMP.getValue()
+        + " FROM ramp_exceptional_flow_items ";
 
     @Override
     public ExecutableRampExceptionalFlowItemsMap handle(ResultSet resultSet) throws SQLException {
@@ -231,14 +333,36 @@ public class ExecutionRampDao {
     }
   }
 
+  private enum RampExceptionalJobItemsTableFields {
+    FIELD_RAMP_ID("rampId"),
+    FIELD_FLOW_ID("flowId"),
+    FIELD_JOB_ID("jobId"),
+    FIELD_TREATMENT("treatment"),
+    FIELD_TIME_STAMP("timestamp");
+
+    final String value;
+
+    RampExceptionalJobItemsTableFields(final String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return this.value;
+    }
+  }
+
   /**
    * Fetch Executable Ramp's Exceptional Job Items
    */
   private static class FetchExecutableRampExceptionalJobItems implements ResultSetHandler<ExecutableRampExceptionalJobItemsMap> {
 
-    static String FETCH_EXECUTABLE_RAMP_EXCEPTIONAL_JOB_ITEMS =
-        "SELECT rampId, flowId, jobId, treatment, timestamp "
-            + "FROM ramp_exceptional_job_items ";
+    static String FETCH_EXECUTABLE_RAMP_EXCEPTIONAL_JOB_ITEMS = "SELECT "
+        + RampExceptionalJobItemsTableFields.FIELD_RAMP_ID.getValue() + ", "
+        + RampExceptionalJobItemsTableFields.FIELD_FLOW_ID.getValue() + ", "
+        + RampExceptionalJobItemsTableFields.FIELD_JOB_ID.getValue() + ", "
+        + RampExceptionalJobItemsTableFields.FIELD_TREATMENT.getValue() + ", "
+        + RampExceptionalJobItemsTableFields.FIELD_TIME_STAMP.getValue()
+        + " FROM ramp_exceptional_job_items ";
 
     @Override
     public ExecutableRampExceptionalJobItemsMap handle(ResultSet resultSet) throws SQLException {
