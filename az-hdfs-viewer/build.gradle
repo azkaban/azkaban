@@ -22,6 +22,7 @@ dependencies {
     compileOnly project(":azkaban-web-server")
     compileOnly project(":azkaban-hadoop-security-plugin")
 
+    compile deps.json
     compile deps.mongoDriver
     compile deps.parquetAvro
     compile deps.parquetBundle

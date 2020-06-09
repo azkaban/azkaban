@@ -22,6 +22,8 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.restli.server.PathKeys;
 import com.linkedin.restli.server.ProjectionMode;
 import com.linkedin.restli.server.ResourceContext;
+import com.linkedin.restli.server.RestLiResponseAttachments;
+import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +88,16 @@ public class MockResourceContext implements ResourceContext {
   }
 
   @Override
+  public MaskTree getMetadataProjectionMask() {
+    return null;
+  }
+
+  @Override
+  public MaskTree getPagingProjectionMask() {
+    return null;
+  }
+
+  @Override
   public boolean hasParameter(final String key) {
     return false;
   }
@@ -121,6 +133,16 @@ public class MockResourceContext implements ResourceContext {
   }
 
   @Override
+  public List<HttpCookie> getRequestCookies() {
+    return null;
+  }
+
+  @Override
+  public void addResponseCookie(HttpCookie cookie) {
+
+  }
+
+  @Override
   public RequestContext getRawRequestContext() {
     return this.requestContext;
   }
@@ -133,6 +155,42 @@ public class MockResourceContext implements ResourceContext {
   @Override
   public void setProjectionMode(final ProjectionMode mode) {
 
+  }
+
+  @Override
+  public ProjectionMode getMetadataProjectionMode() {
+    return null;
+  }
+
+  @Override
+  public void setMetadataProjectionMode(ProjectionMode mode) {
+
+  }
+
+  @Override
+  public boolean responseAttachmentsSupported() {
+    return false;
+  }
+
+  @Override
+  public void setResponseAttachments(RestLiResponseAttachments responseAttachments)
+      throws IllegalStateException {
+
+  }
+
+  @Override
+  public RestLiResponseAttachments getResponseAttachments() {
+    return null;
+  }
+
+  @Override
+  public boolean shouldReturnEntity() {
+    return false;
+  }
+
+  @Override
+  public boolean isReturnEntityRequested() {
+    return false;
   }
 
   public void setLocalAttr(final String name, final String value) {
