@@ -48,7 +48,7 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
   /**
    * Sub data model of ExecutableMap to host all status related data
    */
-  private static class State implements IRefreshable<State> {
+  public static class State implements IRefreshable<State>, Cloneable {
     private volatile boolean isSynchronized = true;
 
     private volatile long startTime = 0;
@@ -71,51 +71,6 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
     private State() {
 
-    }
-
-    private State(long startTime, long endTime, long lastUpdatedTime,
-        int numTrail, int numSuccess, int numFailure, int numIgnored,
-        boolean isPaused, int rampStage, boolean isActive) {
-      this.startTime = startTime;
-      this.endTime = endTime;
-      this.lastUpdatedTime = lastUpdatedTime;
-      this.numOfTrail = numTrail;
-      this.numOfSuccess = numSuccess;
-      this.numOfFailure = numFailure;
-      this.numOfIgnored = numIgnored;
-      this.isPaused = isPaused;
-      this.rampStage = rampStage;
-      this.isActive = isActive;
-    }
-
-    private State(int rampStage, boolean isActive, boolean isPaused, boolean isSynchronized,
-        long startTime, long endTime, long lastUpdatedTime, long lastRampDownTime,
-        int numTrail, int numSuccess, int numFailure, int numIgnored,
-        int cachedNumOfTrail, int cachedNumOfSuccess, int cachedNumOfFailure, int cachedNumOfIgnored) {
-      this.rampStage = rampStage;
-      this.isActive = isActive;
-      this.isPaused = isPaused;
-      this.isSynchronized = isSynchronized;
-      this.startTime = startTime;
-      this.endTime = endTime;
-      this.lastUpdatedTime = lastUpdatedTime;
-      this.lastRampDownTime = lastRampDownTime;
-      this.numOfTrail = numTrail;
-      this.numOfSuccess = numSuccess;
-      this.numOfFailure = numFailure;
-      this.numOfIgnored = numIgnored;
-      this.cachedNumOfTrail = cachedNumOfTrail;
-      this.cachedNumOfSuccess = cachedNumOfSuccess;
-      this.cachedNumOfFailure = cachedNumOfFailure;
-      this.cachedNumOfIgnored = cachedNumOfIgnored;
-    }
-
-    public static final State createInstance(long startTime, long endTime, long lastUpdatedTime,
-        int numTrail, int numSuccess, int numFailure, int numIgnored,
-        boolean isPaused, int rampStage, boolean isActive) {
-      return new State(startTime, endTime, lastUpdatedTime,
-          numTrail, numSuccess, numFailure, numIgnored,
-          isPaused, rampStage, isActive);
     }
 
     @Override
@@ -150,15 +105,154 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
     @Override
     public State clone() {
-      return new State(this.rampStage, this.isActive, this.isPaused, this.isSynchronized,
-          this.startTime, this.endTime, this.lastUpdatedTime, this.lastRampDownTime,
-          this.numOfTrail, this.numOfSuccess, this.numOfFailure, this.numOfIgnored,
-          this.cachedNumOfTrail, this.cachedNumOfSuccess, this.cachedNumOfFailure, this.cachedNumOfIgnored);
+      return State.builder()
+          .setStartTime(startTime)
+          .setEndTime(endTime)
+          .setLastUpdatedTime(lastUpdatedTime)
+          .setLastRampDownTime(lastRampDownTime)
+          .setActive(isActive)
+          .setPaused(isPaused)
+          .setSynchronized(isSynchronized)
+          .setRampStage(rampStage)
+          .setNumOfTrail(numOfTrail)
+          .setNumOfSuccess(numOfSuccess)
+          .setNumOfIgnored(numOfIgnored)
+          .setNumOfFailure(numOfFailure)
+          .setCachedNumOfTrail(cachedNumOfTrail)
+          .setCachedNumOfSuccess(cachedNumOfSuccess)
+          .setCachedNumOfIgnored(cachedNumOfIgnored)
+          .setCachedNumOfFailure(cachedNumOfFailure)
+          .build();
     }
 
     @Override
     public int elementCount() {
       return 1;
+    }
+
+    public State(Builder builder) {
+      this.startTime = builder.startTime;
+      this.endTime = builder.endTime;
+      this.lastUpdatedTime = builder.lastUpdatedTime;
+      this. numOfTrail = builder.numOfTrail;
+      this.numOfIgnored = builder.numOfIgnored;
+      this.numOfFailure = builder.numOfFailure;
+      this.numOfSuccess = builder.numOfSuccess;
+      this.isPaused = builder.isPaused;
+      this.isActive = builder.isActive;
+      this.rampStage = builder.rampStage;
+      this.lastRampDownTime = builder.lastRampDownTime;
+      this.cachedNumOfTrail = builder.cachedNumOfTrail;
+      this.cachedNumOfSuccess = builder.cachedNumOfSuccess;
+      this.cachedNumOfIgnored = builder.cachedNumOfIgnored;
+      this.cachedNumOfFailure = builder.cachedNumOfFailure;
+    }
+
+    public static Builder builder() {
+      return new Builder();
+    }
+
+    public static class Builder {
+      private long startTime = 0;
+      private long endTime = 0;
+      private long lastUpdatedTime = 0;
+      private int numOfTrail = 0;
+      private int numOfSuccess = 0;
+      private int numOfFailure = 0;
+      private int numOfIgnored = 0;
+      private boolean isPaused = false;
+      private boolean isActive = true;
+      private boolean isSynchronized = true;
+      private int rampStage = 0;
+      private long lastRampDownTime = 0;  // The last time to ramp down the Ramping process automatically
+      private int cachedNumOfTrail = 0;
+      private int cachedNumOfSuccess = 0;
+      private int cachedNumOfFailure = 0;
+      private int cachedNumOfIgnored = 0;
+
+      public Builder setStartTime(long startTime) {
+        this.startTime = startTime;
+        return this;
+      }
+
+      public Builder setEndTime(long endTime) {
+        this.endTime = endTime;
+        return this;
+      }
+
+      public Builder setLastUpdatedTime(long lastUpdatedTime) {
+        this.lastUpdatedTime = lastUpdatedTime;
+        return this;
+      }
+
+      public Builder setNumOfTrail(int numOfTrail) {
+        this.numOfTrail = numOfTrail;
+        return this;
+      }
+
+      public Builder setNumOfSuccess(int numOfSuccess) {
+        this.numOfSuccess = numOfSuccess;
+        return this;
+      }
+
+      public Builder setNumOfFailure(int numOfFailure) {
+        this.numOfFailure = numOfFailure;
+        return this;
+      }
+
+      public Builder setNumOfIgnored(int numOfIgnored) {
+        this.numOfIgnored = numOfIgnored;
+        return this;
+      }
+
+      public Builder setPaused(boolean paused) {
+        isPaused = paused;
+        return this;
+      }
+
+      public Builder setActive(boolean active) {
+        isActive = active;
+        return this;
+      }
+
+      public Builder setSynchronized(boolean aSynchronized) {
+        isSynchronized = aSynchronized;
+        return this;
+      }
+
+      public Builder setRampStage(int rampStage) {
+        this.rampStage = rampStage;
+        return this;
+      }
+
+      public Builder setLastRampDownTime(long lastRampDownTime) {
+        this.lastRampDownTime = lastRampDownTime;
+        return this;
+      }
+
+      public Builder setCachedNumOfTrail(int cachedNumOfTrail) {
+        this.cachedNumOfTrail = cachedNumOfTrail;
+        return this;
+      }
+
+      public Builder setCachedNumOfSuccess(int cachedNumOfSuccess) {
+        this.cachedNumOfSuccess = cachedNumOfSuccess;
+        return this;
+      }
+
+      public Builder setCachedNumOfFailure(int cachedNumOfFailure) {
+        this.cachedNumOfFailure = cachedNumOfFailure;
+        return this;
+      }
+
+      public Builder setCachedNumOfIgnored(int cachedNumOfIgnored) {
+        this.cachedNumOfIgnored = cachedNumOfIgnored;
+        return this;
+      }
+
+      public State build() {
+        return new State(this);
+      }
     }
   }
 
@@ -167,7 +261,7 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
    * which are used to determine if the ramp will be paused or automatically ramp down
    * because massive failures are detected durning the run-time.
    */
-  private static class Metadata implements IRefreshable<Metadata> {
+  public static class Metadata implements IRefreshable<Metadata>, Cloneable {
 
     private volatile int maxFailureToPause = 0;
     private volatile int maxFailureToRampDown = 0;
@@ -177,15 +271,10 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
     }
 
-    private Metadata(int maxFailureToRampPause, int maxFailureToRampDown, boolean isPercentageScaleForMaxFailure) {
-      this.maxFailureToPause = maxFailureToRampPause;
-      this.maxFailureToRampDown = maxFailureToRampDown;
-      this.isPercentageScaleForMaxFailure = isPercentageScaleForMaxFailure;
-    }
-
-    public static Metadata createInstance(int maxFailureToRampPause,
-        int maxFailureToRampDown, boolean isPercentageScaleForMaxFailure) {
-      return new Metadata(maxFailureToRampPause, maxFailureToRampDown, isPercentageScaleForMaxFailure);
+    public Metadata(Builder builder) {
+      this.maxFailureToPause = builder.maxFailureToPause;
+      this.maxFailureToRampDown = builder.maxFailureToRampDown;
+      this.isPercentageScaleForMaxFailure = builder.isPercentageScaleForMaxFailure;
     }
 
     @Override
@@ -199,12 +288,45 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
     @Override
     public Metadata clone() {
-      return new Metadata(this.maxFailureToPause, this.maxFailureToRampDown, this.isPercentageScaleForMaxFailure);
+      return Metadata.builder()
+          .setMaxFailureToRampDown(maxFailureToRampDown)
+          .setMaxFailureToPause(maxFailureToPause)
+          .setPercentageScaleForMaxFailure(isPercentageScaleForMaxFailure)
+          .build();
     }
 
     @Override
     public int elementCount() {
       return 1; // Here, it will always return 1 since it is not a list.
+    }
+
+    public static Builder builder() {
+      return new Builder();
+    }
+
+    public static class Builder {
+      private int maxFailureToPause = 0;
+      private int maxFailureToRampDown = 0;
+      private boolean isPercentageScaleForMaxFailure = false;
+
+      public Builder setMaxFailureToPause(int maxFailureToPause) {
+        this.maxFailureToPause = maxFailureToPause;
+        return this;
+      }
+
+      public Builder setMaxFailureToRampDown(int maxFailureToRampDown) {
+        this.maxFailureToRampDown = maxFailureToRampDown;
+        return this;
+      }
+
+      public Builder setPercentageScaleForMaxFailure(boolean percentageScaleForMaxFailure) {
+        isPercentageScaleForMaxFailure = percentageScaleForMaxFailure;
+        return this;
+      }
+
+      public Metadata build() {
+        return new Metadata(this);
+      }
     }
   }
 
@@ -217,27 +339,11 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
   }
 
-  private ExecutableRamp(@NotNull final String id, @NotNull final String policy,
-      @NotNull ExecutableRamp.Metadata metadata, @NotNull ExecutableRamp.State state) {
-    this.id = id;
-    this.policy = policy;
-    this.metadata = metadata;
-    this.state = state;
-  }
-
-  public static ExecutableRamp createInstance(@NotNull final String id, @NotNull final String policy,
-      int maxFailureToRampPause, int maxFailureToRampDown, boolean isPercentageScaleForMaxFailure,
-      long startTime, long endTime, long lastUpdatedTime,
-      int numTrail, int numSuccess, int numFailure, int numIgnored,
-      boolean isPaused, int rampStage, boolean isActive) {
-    return new ExecutableRamp(id, policy,
-        ExecutableRamp.Metadata.createInstance(
-            maxFailureToRampPause, maxFailureToRampDown, isPercentageScaleForMaxFailure),
-        ExecutableRamp.State.createInstance(
-            startTime, endTime, lastUpdatedTime,
-            numTrail, numSuccess, numFailure, numIgnored,
-            isPaused, rampStage, isActive)
-        );
+  public ExecutableRamp(Builder builder) {
+    this.id = builder.id;
+    this.policy = builder.policy;
+    this.state = builder.state;
+    this.metadata = builder.metadata;
   }
 
   public String getId() {
@@ -458,11 +564,44 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
 
   @Override
   public ExecutableRamp clone() {
-    return new ExecutableRamp(this.id, this.policy, this.metadata.clone(), this.state.clone());
+    return ExecutableRamp.builder(this.id, this.policy)
+        .setMetadata(this.metadata.clone())
+        .setState(this.state.clone())
+        .build();
   }
 
   @Override
   public int elementCount() {
     return 1;
+  }
+
+  public static Builder builder(@NotNull final String id, @NotNull final String policy) {
+    return new Builder(id, policy);
+  }
+
+  public static class Builder {
+    private String id;
+    private String policy;
+    private Metadata metadata;
+    private State state;
+
+    public Builder(@NotNull final String id, @NotNull final String policy) {
+      this.id = id;
+      this.policy = policy;
+    }
+
+    public Builder setMetadata(Metadata metadata) {
+      this.metadata = metadata;
+      return this;
+    }
+
+    public Builder setState(State state) {
+      this.state = state;
+      return this;
+    }
+
+    public ExecutableRamp build() {
+      return new ExecutableRamp(this);
+    }
   }
 }

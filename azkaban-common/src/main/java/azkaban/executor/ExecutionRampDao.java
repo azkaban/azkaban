@@ -68,23 +68,30 @@ public class ExecutionRampDao {
       do {
         executableRampMap.add(
             resultSet.getString(1),
-            ExecutableRamp.createInstance(
-                resultSet.getString(1),
-                resultSet.getString(2),
-                resultSet.getInt(3),
-                resultSet.getInt(4),
-                resultSet.getBoolean(5),
-                resultSet.getLong(6),
-                resultSet.getLong(7),
-                resultSet.getLong(8),
-                resultSet.getInt(9),
-                resultSet.getInt(10),
-                resultSet.getInt(11),
-                resultSet.getInt(12),
-                resultSet.getBoolean(13),
-                resultSet.getInt(14),
-                resultSet.getBoolean(15)
-            )
+
+            ExecutableRamp.builder(resultSet.getString(1), resultSet.getString(2))
+                .setMetadata(
+                    ExecutableRamp.Metadata.builder()
+                        .setMaxFailureToPause(resultSet.getInt(3))
+                        .setMaxFailureToRampDown(resultSet.getInt(4))
+                        .setPercentageScaleForMaxFailure(resultSet.getBoolean(5))
+                        .build()
+                )
+                .setState(
+                    ExecutableRamp.State.builder()
+                        .setStartTime(resultSet.getLong(6))
+                        .setEndTime(resultSet.getLong(7))
+                        .setLastUpdatedTime(resultSet.getLong(8))
+                        .setNumOfTrail(resultSet.getInt(9))
+                        .setNumOfSuccess(resultSet.getInt(10))
+                        .setNumOfFailure(resultSet.getInt(11))
+                        .setNumOfIgnored(resultSet.getInt(12))
+                        .setPaused(resultSet.getBoolean(13))
+                        .setRampStage(resultSet.getInt(14))
+                        .setActive(resultSet.getBoolean(15))
+                        .build()
+                )
+                .build()
         );
       } while (resultSet.next());
 

@@ -15,14 +15,25 @@ public class ExecutableRampTest {
   @Before
   public void setup() throws Exception {
     timeStamp = System.currentTimeMillis();
-    executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, timeStamp + 10, timeStamp,
-        6, 2, 0, 4,
-        false, 2, true
-    );
+    executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(timeStamp + 10)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(2)
+            .setActive(true)
+            .build())
+        .build();
   }
 
   @Test
