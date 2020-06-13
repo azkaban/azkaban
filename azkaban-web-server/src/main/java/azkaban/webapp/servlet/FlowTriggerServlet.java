@@ -39,6 +39,10 @@ import org.slf4j.LoggerFactory;
 
 public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH_TRIGGER = "fetchTrigger";
+  private static final String API_PAUSE_TRIGGER = "pauseTrigger";
+  private static final String API_RESUME_TRIGGER = "resumeTrigger";
+
   private static final long serialVersionUID = 1L;
   private FlowTriggerScheduler scheduler;
   private ProjectManager projectManager;
@@ -104,13 +108,13 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
       IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
-    if (ajaxName.equals("fetchTrigger")) {
+    if (API_FETCH_TRIGGER.equals(ajaxName)) {
       if (checkProjectIdAndFlowId(req)) {
         final int projectId = getIntParam(req, "projectId");
         final String flowId = getParam(req, "flowId");
         ajaxFetchTrigger(projectId, flowId, session, ret);
       }
-    } else if (ajaxName.equals("pauseTrigger") || ajaxName.equals("resumeTrigger")) {
+    } else if (API_PAUSE_TRIGGER.equals(ajaxName) || API_RESUME_TRIGGER.equals(ajaxName)) {
       if (checkProjectIdAndFlowId(req)) {
         final int projectId = getIntParam(req, "projectId");
         final String flowId = getParam(req, "flowId");
@@ -122,7 +126,7 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
           ret.put("error", "Permission denied. Need ADMIN access.");
         } else {
           try {
-            if (ajaxName.equals("pauseTrigger")) {
+            if (API_PAUSE_TRIGGER.equals(ajaxName)) {
               if (this.scheduler.pauseFlowTriggerIfPresent(projectId, flowId)) {
                 logger.info("Flow trigger for flow {}.{} is paused", project.getName(), flowId);
               } else {

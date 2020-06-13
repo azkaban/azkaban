@@ -89,6 +89,31 @@ import org.slf4j.LoggerFactory;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_GET_PROJECT_ID = "getProjectId";
+  private static final String API_FETCH_PROJECT_LOGS = "fetchProjectLogs";
+  private static final String API_FETCH_FLOW_JOBS = "fetchflowjobs";
+  private static final String API_FETCH_FLOW_DETAILS = "fetchflowdetails";
+  private static final String API_FETCH_FLOW_GRAPH = "fetchflowgraph";
+  private static final String API_FETCH_FLOW_NODE_DATA = "fetchflownodedata";
+  private static final String API_FETCH_PROJECT_FLOWS = "fetchprojectflows";
+  private static final String API_CHANGE_DESCRIPTION = "changeDescription";
+  private static final String API_GET_PERMISSIONS = "getPermissions";
+  private static final String API_GET_GROUP_PERMISSIONS = "getGroupPermissions";
+  private static final String API_GET_PROXY_USERS = "getProxyUsers";
+  private static final String API_CHANGE_PERMISSION = "changePermission";
+  private static final String API_ADD_PERMISSION = "addPermission";
+  private static final String API_ADD_PROXY_USER = "addProxyUser";
+  private static final String API_REMOVE_PROXY_USER = "removeProxyUser";
+  private static final String API_FETCH_FLOW_EXECUTIONS = "fetchFlowExecutions";
+  private static final String API_FETCH_LAST_SUCCESSFUL_FLOW_EXECUTION =
+      "fetchLastSuccessfulFlowExecution";
+  private static final String API_FETCH_JOB_INFO = "fetchJobInfo";
+  private static final String API_SET_JOB_OVERRIDE_PROPERTY = "setJobOverrideProperty";
+  private static final String API_CHECK_FOR_WRITE_PERMISSION = "checkForWritePermission";
+  private static final String API_SET_FLOW_LOCK = "setFlowLock";
+  private static final String API_IS_FLOW_LOCKED = "isFlowLocked";
+  private static final String API_UPLOAD = "upload";
+
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
   static final String FLOW_NAME_PARAM = "flowName";
   static final String FLOW_ID_PARAM = "flowId";
@@ -196,13 +221,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (params.containsKey("ajax")) {
       final String action = (String) params.get("ajax");
       final HashMap<String, String> ret = new HashMap<>();
-      if (action.equals("upload")) {
+      if (API_UPLOAD.equals(action)) {
         ajaxHandleUpload(req, resp, ret, params, session);
       }
       this.writeJSON(resp, ret);
     } else if (params.containsKey("action")) {
       final String action = (String) params.get("action");
-      if (action.equals("upload")) {
+      if (API_UPLOAD.equals(action)) {
         handleUpload(req, resp, params, session);
       }
     }
@@ -236,87 +261,87 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } else {
       ret.put("projectId", project.getId());
       final String ajaxName = getParam(req, "ajax");
-      if (ajaxName.equals("getProjectId")) {
+      if (API_GET_PROJECT_ID.equals(ajaxName)) {
         // Do nothing, since projectId is added to all AJAX requests.
-      } else if (ajaxName.equals("fetchProjectLogs")) {
+      } else if (API_FETCH_PROJECT_LOGS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchProjectLogEvents(project, req, ret);
         }
-      } else if (ajaxName.equals("fetchflowjobs")) {
+      } else if (API_FETCH_FLOW_JOBS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchFlow(project, ret, req);
         }
-      } else if (ajaxName.equals("fetchflowdetails")) {
+      } else if (API_FETCH_FLOW_DETAILS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchFlowDetails(project, ret, req);
         }
-      } else if (ajaxName.equals("fetchflowgraph")) {
+      } else if (API_FETCH_FLOW_GRAPH.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchFlowGraph(project, ret, req);
         }
-      } else if (ajaxName.equals("fetchflownodedata")) {
+      } else if (API_FETCH_FLOW_NODE_DATA.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchFlowNodeData(project, ret, req);
         }
-      } else if (ajaxName.equals("fetchprojectflows")) {
+      } else if (API_FETCH_PROJECT_FLOWS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchProjectFlows(project, ret, req);
         }
-      } else if (ajaxName.equals("changeDescription")) {
+      } else if (API_CHANGE_DESCRIPTION.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxChangeDescription(project, ret, req, user);
         }
-      } else if (ajaxName.equals("getPermissions")) {
+      } else if (API_GET_PERMISSIONS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxGetPermissions(project, ret);
         }
-      } else if (ajaxName.equals("getGroupPermissions")) {
+      } else if (API_GET_GROUP_PERMISSIONS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxGetGroupPermissions(project, ret);
         }
-      } else if (ajaxName.equals("getProxyUsers")) {
+      } else if (API_GET_PROXY_USERS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxGetProxyUsers(project, ret);
         }
-      } else if (ajaxName.equals("changePermission")) {
+      } else if (API_CHANGE_PERMISSION.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxChangePermissions(project, ret, req, user);
         }
-      } else if (ajaxName.equals("addPermission")) {
+      } else if (API_ADD_PERMISSION.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxAddPermission(project, ret, req, user);
         }
-      } else if (ajaxName.equals("addProxyUser")) {
+      } else if (API_ADD_PROXY_USER.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxAddProxyUser(project, ret, req, user);
         }
-      } else if (ajaxName.equals("removeProxyUser")) {
+      } else if (API_REMOVE_PROXY_USER.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxRemoveProxyUser(project, ret, req, user);
         }
-      } else if (ajaxName.equals("fetchFlowExecutions")) {
+      } else if (API_FETCH_FLOW_EXECUTIONS.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchFlowExecutions(project, ret, req);
         }
-      } else if (ajaxName.equals("fetchLastSuccessfulFlowExecution")) {
+      } else if (API_FETCH_LAST_SUCCESSFUL_FLOW_EXECUTION.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchLastSuccessfulFlowExecution(project, ret, req);
         }
-      } else if (ajaxName.equals("fetchJobInfo")) {
+      } else if (API_FETCH_JOB_INFO.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchJobInfo(project, ret, req);
         }
-      } else if (ajaxName.equals("setJobOverrideProperty")) {
+      } else if (API_SET_JOB_OVERRIDE_PROPERTY.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxSetJobOverrideProperty(project, ret, req, user);
         }
-      } else if (ajaxName.equals("checkForWritePermission")) {
+      } else if (API_CHECK_FOR_WRITE_PERMISSION.equals(ajaxName)) {
         ajaxCheckForWritePermission(project, user, ret);
-      } else if (ajaxName.equals("setFlowLock")) {
+      } else if (API_SET_FLOW_LOCK.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxSetFlowLock(project, ret, req);
         }
-      } else if (ajaxName.equals("isFlowLocked")) {
+      } else if (API_IS_FLOW_LOCKED.equals(ajaxName)) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxIsFlowLocked(project, ret, req);
         }
@@ -465,7 +490,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Download project zip file from DB and send it back client.
-   *
+   * <p>
    * This method requires a project name and an optional project version.
    */
   private void handleDownloadProject(final HttpServletRequest req,
@@ -1117,8 +1142,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * Set if a flow is locked.
    *
    * @param project the project for the flow.
-   * @param ret the return value.
-   * @param req the http request.
+   * @param ret     the return value.
+   * @param req     the http request.
    */
   private void ajaxSetFlowLock(final Project project,
       final HashMap<String, Object> ret, final HttpServletRequest req)
@@ -1181,8 +1206,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * Returns true if the flow is locked, false if it is unlocked.
    *
    * @param project the project containing the flow.
-   * @param ret the return value.
-   * @param req the http request.
+   * @param ret     the return value.
+   * @param req     the http request.
    */
   private void ajaxIsFlowLocked(final Project project,
       final HashMap<String, Object> ret, final HttpServletRequest req)
@@ -1899,8 +1924,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   /**
    * Remove schedule of renamed/deleted flows
    *
-   * @param project project from which old flows will be unscheduled
-   * @param scheduleManager the schedule manager
+   * @param project           project from which old flows will be unscheduled
+   * @param scheduleManager   the schedule manager
    * @param onDeletedSchedule a callback function to execute with every deleted schedule
    */
   static void removeScheduleOfDeletedFlows(final Project project,
@@ -1973,7 +1998,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   /**
    * Lock the specified flows for the project.
    *
-   * @param project the project
+   * @param project     the project
    * @param lockedFlows list of flow IDs of flows to lock
    */
   private void lockFlowsForProject(final Project project, final List<String> lockedFlows) {

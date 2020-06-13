@@ -74,6 +74,8 @@ public class Constants {
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
+  // Configures the form limits for the web application
+  public static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
@@ -205,9 +207,17 @@ public class Constants {
 
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
+    // Jetty server configurations.
+    public static final String JETTY_HEADER_BUFFER_SIZE = "jetty.headerBufferSize";
+    public static final String JETTY_USE_SSL = "jetty.use.ssl";
+    public static final String JETTY_SSL_PORT = "jetty.ssl.port";
+    public static final String JETTY_PORT = "jetty.port";
+
     public static final String EXECUTOR_PORT_FILE = "executor.portfile";
     // To set a fixed port for executor-server. Otherwise some available port is used.
     public static final String EXECUTOR_PORT = "executor.port";
+
+    public static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
 
     // Boolean config set on the Web server to prevent users from creating projects. When set to
     // true only admins or users with CREATEPROJECTS permission can create projects.

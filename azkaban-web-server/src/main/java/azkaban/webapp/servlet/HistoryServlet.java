@@ -33,6 +33,8 @@ import org.joda.time.format.DateTimeFormat;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH = "fetch";
+
   private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManagerAdapter;
@@ -67,7 +69,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
-    if (ajaxName.equals("fetch")) {
+    if (API_FETCH.equals(ajaxName)) {
       fetchHistoryData(req, resp, ret);
     }
 
