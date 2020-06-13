@@ -17,6 +17,10 @@
 
 package azkaban.webapp;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static azkaban.Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS;
+import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.ServiceProviderTest.assertSingleton;
 import static java.util.Objects.requireNonNull;
@@ -24,7 +28,6 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
@@ -93,11 +96,11 @@ public class AzkabanWebServerTest {
     props.put("database.type", "h2");
     props.put("h2.path", "./h2");
 
-    props.put(Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS, "true");
+    props.put(USE_MULTIPLE_EXECUTORS, "true");
     props.put("server.port", "0");
-    props.put("jetty.port", "0");
+    props.put(JETTY_PORT, "0");
     props.put("server.useSSL", "true");
-    props.put("jetty.use.ssl", "false");
+    props.put(JETTY_USE_SSL, "false");
     props.put("user.manager.xml.file", getUserManagerXmlFile());
 
     // Quartz settings
@@ -112,7 +115,7 @@ public class AzkabanWebServerTest {
 
     deleteQuietly(new File("h2.mv.db"));
     deleteQuietly(new File("h2.trace.db"));
-    deleteQuietly(new File(Constants.DEFAULT_EXECUTOR_PORT_FILE));
+    deleteQuietly(new File(DEFAULT_EXECUTOR_PORT_FILE));
     deleteQuietly(new File("executions"));
     deleteQuietly(new File("projects"));
   }

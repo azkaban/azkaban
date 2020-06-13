@@ -15,6 +15,8 @@
  */
 package azkaban.utils;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -80,9 +82,9 @@ public class EmailerTest {
     final Props props = new Props();
     props.put("job.failure.email", receiveAddr);
     props.put("server.port", "114");
-    props.put("jetty.use.ssl", "false");
+    props.put(JETTY_USE_SSL, "false");
     props.put("server.useSSL", "false");
-    props.put("jetty.port", "8786");
+    props.put(JETTY_PORT, "8786");
     return props;
   }
 

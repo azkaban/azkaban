@@ -65,6 +65,24 @@ import org.slf4j.LoggerFactory;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH_EXEC_FLOW = "fetchexecflow";
+  private static final String API_FETCH_EXEC_FLOW_UPDATE = "fetchexecflowupdate";
+  private static final String API_CANCEL_FLOW = "cancelFlow";
+  private static final String API_PAUSE_FLOW = "pauseFlow";
+  private static final String API_RESUME_FLOW = "resumeFlow";
+  private static final String API_FETCH_EXEC_FLOW_LOGS = "fetchExecFlowLogs";
+  private static final String API_FETCH_EXEC_JOB_LOGS = "fetchExecJobLogs";
+  private static final String API_FETCH_EXEC_JOB_STATS = "fetchExecJobStats";
+  private static final String API_RETRY_FAILED_JOBS = "retryFailedJobs";
+  private static final String API_FLOW_INFO = "flowInfo";
+  private static final String API_FETCH_SCHEDULED_FLOW_GRAPH = "fetchscheduledflowgraph";
+  private static final String API_RELOAD_EXECUTORS = "reloadExecutors";
+  private static final String API_ENABLE_QUEUE_PROCESSOR = "enableQueueProcessor";
+  private static final String API_DISABLE_QUEUE_PROCESSOR = "disableQueueProcessor";
+  private static final String API_GET_RUNNING = "getRunning";
+  private static final String API_EXECUTE_FLOW = "executeFlow";
+  private static final String API_RAMP = "ramp";
+
   private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
   private ProjectManager projectManager;
@@ -122,47 +140,47 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       if (exFlow == null) {
         ret.put("error", "Cannot find execution '" + execid + "'");
       } else {
-        if (ajaxName.equals("fetchexecflow")) {
+        if (API_FETCH_EXEC_FLOW.equals(ajaxName)) {
           ajaxFetchExecutableFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchexecflowupdate")) {
+        } else if (API_FETCH_EXEC_FLOW_UPDATE.equals(ajaxName)) {
           ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser(),
               exFlow);
-        } else if (ajaxName.equals("cancelFlow")) {
+        } else if (API_CANCEL_FLOW.equals(ajaxName)) {
           ajaxCancelFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("pauseFlow")) {
+        } else if (API_PAUSE_FLOW.equals(ajaxName)) {
           ajaxPauseFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("resumeFlow")) {
+        } else if (API_RESUME_FLOW.equals(ajaxName)) {
           ajaxResumeFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchExecFlowLogs")) {
+        } else if (API_FETCH_EXEC_FLOW_LOGS.equals(ajaxName)) {
           ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchExecJobLogs")) {
+        } else if (API_FETCH_EXEC_JOB_LOGS.equals(ajaxName)) {
           ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchExecJobStats")) {
+        } else if (API_FETCH_EXEC_JOB_STATS.equals(ajaxName)) {
           ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("retryFailedJobs")) {
+        } else if (API_RETRY_FAILED_JOBS.equals(ajaxName)) {
           ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("flowInfo")) {
+        } else if (API_FLOW_INFO.equals(ajaxName)) {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
-    } else if (ajaxName.equals("ramp")) {
+    } else if (API_RAMP.equals(ajaxName)) {
       ajaxRampActions(req, resp, ret, session.getUser());
-    } else if (ajaxName.equals("fetchscheduledflowgraph")) {
+    } else if (API_FETCH_SCHEDULED_FLOW_GRAPH.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
       ajaxFetchScheduledFlowGraph(projectName, flowName, ret, session.getUser());
-    } else if (ajaxName.equals("reloadExecutors")) {
+    } else if (API_RELOAD_EXECUTORS.equals(ajaxName)) {
       ajaxReloadExecutors(req, resp, ret, session.getUser());
-    } else if (ajaxName.equals("enableQueueProcessor")) {
+    } else if (API_ENABLE_QUEUE_PROCESSOR.equals(ajaxName)) {
       ajaxUpdateQueueProcessor(req, resp, ret, session.getUser(), true);
-    } else if (ajaxName.equals("disableQueueProcessor")) {
+    } else if (API_DISABLE_QUEUE_PROCESSOR.equals(ajaxName)) {
       ajaxUpdateQueueProcessor(req, resp, ret, session.getUser(), false);
-    } else if (ajaxName.equals("getRunning")) {
+    } else if (API_GET_RUNNING.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
       ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName,
           flowName);
-    } else if (ajaxName.equals("flowInfo")) {
+    } else if (API_FLOW_INFO.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
       ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName,
@@ -171,7 +189,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       final String projectName = getParam(req, "project");
 
       ret.put("project", projectName);
-      if (ajaxName.equals("executeFlow")) {
+      if (API_EXECUTE_FLOW.equals(ajaxName)) {
         ajaxExecuteFlow(req, resp, ret, session.getUser());
       }
     }

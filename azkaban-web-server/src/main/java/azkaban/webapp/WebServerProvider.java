@@ -17,9 +17,14 @@
 
 package azkaban.webapp;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_SSL_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static azkaban.Constants.DEFAULT_JETTY_MAX_THREAD_COUNT;
+import static azkaban.Constants.DEFAULT_PORT_NUMBER;
+import static azkaban.Constants.DEFAULT_SSL_PORT_NUMBER;
 import static java.util.Objects.requireNonNull;
 
-import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.inject.Provider;
 import java.util.List;
@@ -35,7 +40,7 @@ import org.mortbay.thread.QueuedThreadPool;
 public class WebServerProvider implements Provider<Server> {
 
   private static final Logger logger = Logger.getLogger(WebServerProvider.class);
-  private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
+  private static final int DEFAULT_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
 
   @Inject
   private Props props;
@@ -44,22 +49,22 @@ public class WebServerProvider implements Provider<Server> {
   public Server get() {
     requireNonNull(this.props);
 
-    final boolean useSsl = this.props.getBoolean("jetty.use.ssl", true);
+    final boolean useSsl = this.props.getBoolean(JETTY_USE_SSL, true);
     final int port;
     final Server server = new Server();
     if (useSsl) {
       final int sslPortNumber = this.props
-          .getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
+          .getInt(JETTY_SSL_PORT, DEFAULT_SSL_PORT_NUMBER);
       port = sslPortNumber;
       server.addConnector(getSslSocketConnector(sslPortNumber));
     } else {
-      port = this.props.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
+      port = this.props.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER);
       server.addConnector(getSocketConnector(port));
     }
 
     // Configure the ThreadPool
     final int maxThreads = this.props
-        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
+        .getInt("jetty.maxThreads", DEFAULT_JETTY_MAX_THREAD_COUNT);
     final QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads);
     server.setThreadPool(threadPool);
 
@@ -74,7 +79,7 @@ public class WebServerProvider implements Provider<Server> {
   private SocketConnector getSocketConnector(final int port) {
     final SocketConnector connector = new SocketConnector();
     connector.setPort(port);
-    connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+    connector.setHeaderBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
     return connector;
   }
 
@@ -86,7 +91,7 @@ public class WebServerProvider implements Provider<Server> {
     secureConnector.setKeyPassword(this.props.getString("jetty.keypassword"));
     secureConnector.setTruststore(this.props.getString("jetty.truststore"));
     secureConnector.setTrustPassword(this.props.getString("jetty.trustpassword"));
-    secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+    secureConnector.setHeaderBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
 
     // set up vulnerable cipher suites to exclude
     final List<String> cipherSuitesToExclude = this.props

@@ -41,6 +41,9 @@ import org.apache.log4j.Logger;
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH_ALL_PROJECTS = "fetchallprojects";
+  private static final String API_FETCH_USER_PROJECTS = "fetchuserprojects";
+
   private static final Logger logger = Logger.getLogger(ProjectServlet.class.getName());
 
   private static final long serialVersionUID = -1;
@@ -90,12 +93,12 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     final String ajaxName = getParam(req, "ajax");
     final HashMap<String, Object> ret = new HashMap<>();
 
-    if (ajaxName.equals("fetchallprojects")) {
+    if (API_FETCH_ALL_PROJECTS.equals(ajaxName)) {
       final List<Project> projects = manager.getProjects();
       final List<SimplifiedProject> simplifiedProjects =
           toSimplifiedProjects(projects);
       ret.put("projects", simplifiedProjects);
-    } else if (ajaxName.equals("fetchuserprojects")) {
+    } else if (API_FETCH_USER_PROJECTS.equals(ajaxName)) {
       handleFetchUserProjects(req, session, manager, ret);
     }
 

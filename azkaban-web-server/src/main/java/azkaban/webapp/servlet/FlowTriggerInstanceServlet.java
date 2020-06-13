@@ -42,6 +42,12 @@ import org.joda.time.DateTimeZone;
 
 public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH_RUNNING_TRIGGERS = "fetchRunningTriggers";
+  private static final String API_KILL_RUNNING_TRIGGER = "killRunningTrigger";
+  private static final String API_SHOW_TRIGGER_PROPERTIES = "showTriggerProperties";
+  private static final String API_FETCH_TRIGGER_STATUS = "fetchTriggerStatus";
+  private static final String API_FETCH_TRIGGER_INSTANCES = "fetchTriggerInstances";
+
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(FlowTriggerInstanceServlet.class);
   private FlowTriggerService triggerService;
@@ -85,23 +91,23 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
     final String ajaxName = getParam(req, "ajax");
 
     //todo chengren311: add permission control
-    if (ajaxName.equals("fetchRunningTriggers")) {
+    if (API_FETCH_RUNNING_TRIGGERS.equals(ajaxName)) {
       ajaxFetchRunningTriggerInstances(ret);
-    } else if (ajaxName.equals("killRunningTrigger")) {
+    } else if (API_KILL_RUNNING_TRIGGER.equals(ajaxName)) {
       if (hasParam(req, "id")) {
         final String triggerInstanceId = getParam(req, "id");
         ajaxKillTriggerInstance(triggerInstanceId, session, ret);
       } else {
         ret.put("error", "please specify a valid running trigger instance id");
       }
-    } else if (ajaxName.equals("showTriggerProperties")) {
+    } else if (API_SHOW_TRIGGER_PROPERTIES.equals(ajaxName)) {
       if (hasParam(req, "id")) {
         final String triggerInstanceId = getParam(req, "id");
         loadTriggerProperties(triggerInstanceId, ret);
       } else {
         ret.put("error", "please specify a valid running trigger instance id");
       }
-    } else if (ajaxName.equals("fetchTriggerStatus")) {
+    } else if (API_FETCH_TRIGGER_STATUS.equals(ajaxName)) {
       if (hasParam(req, "triggerinstid")) {
         final String triggerInstanceId = getParam(req, "triggerinstid");
         ajaxFetchTriggerInstanceByTriggerInstId(triggerInstanceId, session, ret);
@@ -111,7 +117,7 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
       } else {
         ret.put("error", "please specify a valid trigger instance id or flow execution id");
       }
-    } else if (ajaxName.equals("fetchTriggerInstances")) {
+    } else if (API_FETCH_TRIGGER_INSTANCES.equals(ajaxName)) {
       if (hasParam(req, "project") && hasParam(req, "flow")) {
         final String projectName = getParam(req, "project");
         final String flowId = getParam(req, "flow");

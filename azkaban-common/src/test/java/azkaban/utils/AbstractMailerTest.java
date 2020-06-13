@@ -15,6 +15,8 @@
  */
 package azkaban.utils;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -37,9 +39,9 @@ public class AbstractMailerTest {
     this.senderList.add("sender@domain.com");
     this.props = new Props();
     this.props.put("server.port", "114");
-    this.props.put("jetty.use.ssl", "false");
+    this.props.put(JETTY_USE_SSL, "false");
     this.props.put("server.useSSL", "false");
-    this.props.put("jetty.port", "8786");
+    this.props.put(JETTY_PORT, "8786");
   }
 
   @Test

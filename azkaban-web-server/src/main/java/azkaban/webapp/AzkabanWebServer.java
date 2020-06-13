@@ -15,12 +15,14 @@
  */
 package azkaban.webapp;
 
+import static azkaban.Constants.AZKABAN_SERVLET_CONTEXT_KEY;
+import static azkaban.Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID;
+import static azkaban.Constants.ConfigurationKeys.ENABLE_QUARTZ;
+import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.Constants;
-import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
@@ -99,7 +101,6 @@ import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-
 /**
  * The Azkaban Jetty server class
  *
@@ -120,13 +121,9 @@ import org.mortbay.thread.QueuedThreadPool;
 @Singleton
 public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable {
 
-  public static final String DEFAULT_CONF_PATH = "conf";
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
       "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
-  private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
-  private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-  private static final String DEFAULT_STATIC_DIR = "";
 
   @Deprecated
   private static AzkabanWebServer app;
@@ -239,7 +236,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       @Override
       public void run() {
         try {
-          if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
+          if (webServer.props.getBoolean(ENABLE_QUARTZ, false)) {
             AzkabanWebServer.logger.info("Shutting down flow trigger scheduler...");
             webServer.flowTriggerScheduler.shutdown();
           }
@@ -248,7 +245,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         }
 
         try {
-          if (webServer.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
+          if (webServer.props.getBoolean(ENABLE_QUARTZ, false)) {
             AzkabanWebServer.logger.info("Shutting down flow trigger service...");
             webServer.flowTriggerService.shutdown();
           }
@@ -399,7 +396,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   private void configureRoutes() throws TriggerManagerException {
     final String staticDir =
-        this.props.getString("web.resource.dir", DEFAULT_STATIC_DIR);
+        this.props.getString("web.resource.dir", "");
     logger.info("Setting up web resource dir " + staticDir);
     final Context root = new Context(this.server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
@@ -449,7 +446,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // TODO: find something else to do the job
     getTriggerManager().start();
 
-    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
+    root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
   }
 
   private void prepareAndStartServer() throws Exception {
@@ -459,7 +456,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     configureRoutes();
     startWebMetrics();
 
-    if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
+    if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
       // existing flow triggers
       logger.info("Starting flow trigger service");

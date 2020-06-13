@@ -34,6 +34,8 @@ import org.apache.log4j.Logger;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_EXPIRE_TRIGGER = "expireTrigger";
+
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger
       .getLogger(TriggerManagerServlet.class);
@@ -63,7 +65,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
     final String ajaxName = getParam(req, "ajax");
 
     try {
-      if (ajaxName.equals("expireTrigger")) {
+      if (API_EXPIRE_TRIGGER.equals(ajaxName)) {
         ajaxExpireTrigger(req, ret, session.getUser());
       }
     } catch (final Exception e) {

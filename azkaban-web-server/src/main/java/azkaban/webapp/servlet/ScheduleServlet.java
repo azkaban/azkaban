@@ -59,6 +59,15 @@ import org.joda.time.format.DateTimeFormat;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_SLA_INFO = "slaInfo";
+  private static final String API_SET_SLA = "setSla";
+  private static final String API_FETCH_SCHEDULES = "fetchSchedules";
+  private static final String API_FETCH_SCHEDULE = "fetchSchedule";
+  private static final String API_LOAD_FLOW = "loadFlow";
+  private static final String API_SCHEDULE_FLOW = "scheduleFlow";
+  private static final String API_SCHEDULE_CRON_FLOW = "scheduleCronFlow";
+  private static final String API_REMOVE_SCHED = "removeSched";
+
   public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
   public static final String PARAM_SETTINGS = "settings";
@@ -103,18 +112,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
-    if (ajaxName.equals("slaInfo")) {
+    if (API_SLA_INFO.equals(ajaxName)) {
       ajaxSlaInfo(req, ret, session.getUser());
-    } else if (ajaxName.equals("setSla")) {
+    } else if (API_SET_SLA.equals(ajaxName)) {
       ajaxSetSla(req, ret, session.getUser());
       // alias loadFlow is preserved for backward compatibility
-    } else if (ajaxName.equals("fetchSchedules") || ajaxName.equals("loadFlow")) {
+    } else if (API_FETCH_SCHEDULES.equals(ajaxName) || API_LOAD_FLOW.equals(ajaxName)) {
       ajaxFetchSchedules(ret);
-    } else if (ajaxName.equals("scheduleFlow")) {
+    } else if (API_SCHEDULE_FLOW.equals(ajaxName)) {
       ajaxScheduleFlow(req, ret, session.getUser());
-    } else if (ajaxName.equals("scheduleCronFlow")) {
+    } else if (API_SCHEDULE_CRON_FLOW.equals(ajaxName)) {
       ajaxScheduleCronFlow(req, ret, session.getUser());
-    } else if (ajaxName.equals("fetchSchedule")) {
+    } else if (API_FETCH_SCHEDULE.equals(ajaxName)) {
       ajaxFetchSchedule(req, ret, session.getUser());
     }
 
@@ -225,8 +234,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private SlaOption parseSlaSetting(final String set, final String flowName,
-      final List<String> emails) throws
-      ScheduleManagerException {
+      final List<String> emails) throws ScheduleManagerException {
     logger.info("Trying to set sla with the following set: " + set);
 
     final String[] parts = set.split(",", -1);
@@ -410,11 +418,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> ret = new HashMap<>();
       if (hasParam(req, "action")) {
         final String action = getParam(req, "action");
-        if (action.equals("scheduleFlow")) {
+        if (API_SCHEDULE_FLOW.equals(action)) {
           ajaxScheduleFlow(req, ret, session.getUser());
-        } else if (action.equals("scheduleCronFlow")) {
+        } else if (API_SCHEDULE_CRON_FLOW.equals(action)) {
           ajaxScheduleCronFlow(req, ret, session.getUser());
-        } else if (action.equals("removeSched")) {
+        } else if (API_REMOVE_SCHED.equals(action)) {
           ajaxRemoveSched(req, ret, session.getUser());
         }
       }

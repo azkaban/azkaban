@@ -31,6 +31,9 @@ import org.apache.log4j.Logger;
 
 public class NoteServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_ADD_NOTE = "addNote";
+  private static final String API_REMOVE_NOTE = "removeNote";
+
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(NoteServlet.class);
 
@@ -90,9 +93,9 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
     try {
-      if (ajaxName.equals("addNote")) {
+      if (API_ADD_NOTE.equals(ajaxName)) {
         ajaxAddNotes(req, ret);
-      } else if (ajaxName.equals("removeNote")) {
+      } else if (API_REMOVE_NOTE.equals(ajaxName)) {
         ajaxRemoveNotes(ret);
       } else {
         ret.put("error", "Can not find the ajax operation");
