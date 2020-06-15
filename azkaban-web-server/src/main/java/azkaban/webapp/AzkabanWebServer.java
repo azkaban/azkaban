@@ -33,8 +33,10 @@ import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
+import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.AzkabanServer;
 import azkaban.server.IMBeanRegistrable;
 import azkaban.server.MBeanRegistrationManager;
@@ -66,6 +68,7 @@ import azkaban.webapp.servlet.FlowTriggerServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexRedirectServlet;
 import azkaban.webapp.servlet.JMXHttpServlet;
+import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.NoteServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.ProjectServlet;
@@ -84,8 +87,10 @@ import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -95,25 +100,28 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
+import org.mortbay.jetty.servlet.FilterHolder;
+import org.mortbay.jetty.servlet.FilterMapping;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 /**
  * The Azkaban Jetty server class
- *
+ * <p>
  * Global azkaban properties for setup. All of them are optional unless otherwise marked:
  * azkaban.name - The displayed name of this instance. azkaban.label - Short descriptor of this
  * Azkaban instance. azkaban.color - Theme color azkaban.temp.dir - Temp dir used by Azkaban for
  * various file uses. web.resource.dir - The directory that contains the static web files.
  * default.timezone.id - The timezone code. I.E. America/Los Angeles
- *
+ * <p>
  * user.manager.class - The UserManager class used for the user manager. Default is XmlUserManager.
  * project.manager.class - The ProjectManager to load projects project.global.properties - The base
  * properties inherited by all projects and jobs
- *
+ * <p>
  * jetty.maxThreads - # of threads for jetty jetty.ssl.port - The ssl port used for sessionizing.
  * jetty.keystore - Jetty keystore . jetty.keypassword - Jetty keystore password jetty.truststore -
  * Jetty truststore jetty.trustpassword - Jetty truststore password
@@ -228,7 +236,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     webServer.validateDatabaseVersion();
 
-    // TODO refactor code into ServerProvider
     webServer.prepareAndStartServer();
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -395,20 +402,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   private void configureRoutes() throws TriggerManagerException {
-    final String staticDir =
-        this.props.getString("web.resource.dir", "");
-    logger.info("Setting up web resource dir " + staticDir);
     final Context root = new Context(this.server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
+    root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
 
-    final String defaultServletPath =
-        this.props.getString("azkaban.default.servlet.path", "/index");
+    final String staticDir = this.props.getString("web.resource.dir", "");
+    logger.info("Setting up web resource dir " + staticDir);
     root.setResourceBase(staticDir);
-    final ServletHolder indexRedirect =
-        new ServletHolder(new IndexRedirectServlet(defaultServletPath));
-    root.addServlet(indexRedirect, "/");
-    final ServletHolder index = new ServletHolder(new ProjectServlet());
-    root.addServlet(index, "/index");
 
     final ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
     root.addServlet(staticServlet, "/css/*");
@@ -417,17 +417,29 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.addServlet(staticServlet, "/fonts/*");
     root.addServlet(staticServlet, "/favicon.ico");
 
-    root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
-    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
-    root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
-    root.addServlet(new ServletHolder(new ScheduleServlet()), "/schedule");
-    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
-    root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
-    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
-    root.addServlet(new ServletHolder(new StatusServlet(this.statusService)), "/status");
-    root.addServlet(new ServletHolder(new NoteServlet()), "/notes");
-    root.addServlet(new ServletHolder(new FlowTriggerInstanceServlet()), "/flowtriggerinstance");
-    root.addServlet(new ServletHolder(new FlowTriggerServlet()), "/flowtrigger");
+    final String defaultServletPath =
+        this.props.getString("azkaban.default.servlet.path", "/index");
+
+    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
+    routesMap.put("/index", new ProjectServlet());
+    routesMap.put("/manager", new ProjectManagerServlet());
+    routesMap.put("/executor", new ExecutorServlet());
+    routesMap.put("/schedule", new ScheduleServlet());
+    routesMap.put("/triggers", new TriggerManagerServlet());
+    routesMap.put("/flowtrigger", new FlowTriggerServlet());
+    routesMap.put("/flowtriggerinstance", new FlowTriggerInstanceServlet());
+    routesMap.put("/history", new HistoryServlet());
+    routesMap.put("/jmx", new JMXHttpServlet());
+    routesMap.put("/stats", new StatsServlet());
+    routesMap.put("/notes", new NoteServlet());
+    routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
+
+    routesMap.put("/status", new StatusServlet(this.statusService));
+
+    // Configure core routes
+    for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
+      root.addServlet(new ServletHolder(entry.getValue()), entry.getKey());
+    }
 
     final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
@@ -446,7 +458,30 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // TODO: find something else to do the job
     getTriggerManager().start();
 
-    root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
+    // Set up api endpoint metrics
+    // At the moment login action doesn't have a dedicated route, any route can be used to
+    // authenticate when passing the right parameters. The same metrics object is used for login
+    // requests on every route.
+    final AzkabanAPIMetrics loginAPIMetrics = this.webMetrics.setUpAzkabanAPIMetrics(
+        "_action-" + LoginAbstractAzkabanServlet.getLoginAPI().getParameterValue());
+    LoginAbstractAzkabanServlet.getLoginAPI().setMetrics(loginAPIMetrics);
+    for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
+      final List<AzkabanAPI> servletApiEndpoints = entry.getValue().getApiEndpoints();
+      for (final AzkabanAPI api : servletApiEndpoints) {
+        final String uri = entry.getKey().replace("/", "") + "_" + api.getRequestParameter() +
+            (api.getParameterValue().isEmpty() ? "" : "-" + api.getParameterValue());
+        api.setMetrics(this.webMetrics.setUpAzkabanAPIMetrics(uri));
+      }
+    }
+
+    // Configure api metrics filter
+    final FilterHolder metricsFilter = new FilterHolder(new APIMetricsFilter(routesMap));
+    final FilterMapping metricsFilterMapping = new FilterMapping();
+    metricsFilterMapping.setFilterName(metricsFilter.getName());
+    final String[] servletPaths = routesMap.keySet().stream().toArray(String[]::new);
+    metricsFilterMapping.setPathSpecs(servletPaths);
+    metricsFilterMapping.setDispatches(Handler.REQUEST);
+    root.getServletHandler().addFilter(metricsFilter, metricsFilterMapping);
   }
 
   private void prepareAndStartServer() throws Exception {

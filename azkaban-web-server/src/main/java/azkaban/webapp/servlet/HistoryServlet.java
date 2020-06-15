@@ -20,9 +20,11 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import javax.servlet.ServletConfig;
@@ -40,12 +42,22 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManagerAdapter;
   private ProjectManager projectManager;
 
+  public HistoryServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = getApplication();
     this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH));
+    return apiEndpoints;
   }
 
   @Override
