@@ -79,6 +79,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
@@ -265,13 +266,37 @@ public class FlowRunnerManager implements EventListener,
     this.cleanerThread.start();
 
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-      this.LOGGER.info("Starting polling service.");
-      this.pollingService = new PollingService(this.azkabanProps
-          .getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
-              Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS),
+      long pollingIntervalMillis =
+          this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
+          Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
+      this.LOGGER.info("Starting polling service with a time interval of %d milliseconds.",
+          pollingIntervalMillis);
+      this.pollingService = new PollingService(pollingIntervalMillis,
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
     }
+  }
+
+  /**
+   * Change the polling interval to the newly specified value and also update the value that's
+   * specified in the props
+   * @param pollingIntervalMillis The new polling interval.
+   * @param b
+   */
+  public boolean changePollingInterval(long pollingIntervalMillis) {
+    long oldVal = this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
+            Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
+    if (!this.pollingService.restart(pollingIntervalMillis)) {
+      return false;
+    }
+
+    if (this.azkabanProps.containsKey(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS)) {
+      this.azkabanProps.put(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS, pollingIntervalMillis);
+    }
+
+    LOGGER.info(String.format("Changed polling interval from %d to %d milliseconds", oldVal,
+        pollingIntervalMillis));
+    return true;
   }
 
   /**
@@ -1033,14 +1058,14 @@ public class FlowRunnerManager implements EventListener,
   /**
    * Polls new executions from DB periodically and submits the executions to run on the executor.
    */
-  @SuppressWarnings("FutureReturnValueIgnored")
   private class PollingService {
 
     private final ScheduledExecutorService scheduler;
     private final PollingCriteria pollingCriteria;
-    private final long pollingIntervalMs;
+    private long pollingIntervalMs;
     private int executorId = -1;
     private int numRetries = 0;
+    private ScheduledFuture<?> futureTask;
 
     public PollingService(final long pollingIntervalMs, final PollingCriteria pollingCriteria) {
       this.pollingIntervalMs = pollingIntervalMs;
@@ -1050,8 +1075,47 @@ public class FlowRunnerManager implements EventListener,
     }
 
     public void start() {
-      this.scheduler.scheduleAtFixedRate(() -> pollExecution(), 0L, this.pollingIntervalMs,
-          TimeUnit.MILLISECONDS);
+      futureTask = this.scheduler.scheduleAtFixedRate(() -> pollExecution(), 0L,
+          this.pollingIntervalMs, TimeUnit.MILLISECONDS);
+
+      if (futureTask == null) {
+        FlowRunnerManager.LOGGER.error(String.format("Unable to start a polling interval of %d "
+                + "milliseconds", pollingIntervalMs));
+      } else {
+        FlowRunnerManager.LOGGER.info(String.format("Successfully started polling with an interval "
+            + "of %d milliseconds", pollingIntervalMs));
+      }
+    }
+
+    /**
+     * Cancels the existing polling schedule and starts a new one. This can be used to change the
+     * polling interval because a polling interval of an existing schedule can not be changed.
+     *
+     * @param newPollingIntervalMs The desired polling interval.
+     * @return true if a restart has happened with the new polling interval.
+     */
+    public boolean restart(final long newPollingIntervalMs) {
+      if (newPollingIntervalMs <= 0) {
+        FlowRunnerManager.LOGGER.error(String.format("Can not set a negative polling interval: %d "
+                + "milliseconds", newPollingIntervalMs));
+        return false;
+      }
+
+      if (futureTask != null) {
+        FlowRunnerManager.LOGGER.info(String.format("Canceling the existing polling schedule (%d "
+                + "ms)", pollingIntervalMs));
+        if (!futureTask.cancel(false)) {
+          FlowRunnerManager.LOGGER.error(String.format(
+              "Failure in canceling the existing polling schedule (%d ms) prevented us from "
+                  + "setting a new polling schedule (%d ms)",
+              pollingIntervalMs, newPollingIntervalMs));
+          return false;
+        }
+      }
+
+      this.pollingIntervalMs = newPollingIntervalMs;
+      start();
+      return (futureTask != null);
     }
 
     private void pollExecution() {
@@ -1076,8 +1140,10 @@ public class FlowRunnerManager implements EventListener,
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecution(this.executorId,
                 FlowRunnerManager.this.active);
           }
-          if (execId != -1) {
-            FlowRunnerManager.LOGGER.info("Submitting flow " + execId);
+          if (execId == -1) {
+            FlowRunnerManager.LOGGER.info("Polling found no flow in the queue.");
+          } else {
+            FlowRunnerManager.LOGGER.info("Polling found a flow. Submitting flow " + execId);
             try {
               submitFlow(execId);
               FlowRunnerManager.this.commonMetrics.markDispatchSuccess();
