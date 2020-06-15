@@ -16,10 +16,12 @@
 
 package azkaban.webapp.metrics;
 
+import azkaban.metrics.AzkabanAPIMetrics;
+import azkaban.metrics.CounterGauge;
 import azkaban.metrics.MetricsManager;
 import azkaban.utils.Props;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,23 +34,19 @@ public class WebMetricsImpl implements WebMetrics {
 
   private static final Logger logger = LoggerFactory.getLogger(WebMetricsImpl.class);
   private final MetricsManager metricsManager;
-  private final Meter webGetCall;
-  private final Meter webPostCall;
-
-  // How long does user log fetch take when user call fetch-log api.
-  private final AtomicLong logFetchLatency = new AtomicLong(0L);
+  private Meter webGetCall;
+  private Meter webPostCall;
 
   @Inject
   public WebMetricsImpl(final MetricsManager metricsManager) {
     this.metricsManager = metricsManager;
-    this.webGetCall = this.metricsManager.addMeter("Web-Get-Call-Meter");
-    this.webPostCall = this.metricsManager.addMeter("Web-Post-Call-Meter");
-    this.metricsManager.addGauge("fetchLogLatency", this.logFetchLatency::get);
   }
 
   @Override
   public void setUp(final DataProvider dataProvider) {
     logger.info("Setting up Web Server metrics.");
+    this.webGetCall = this.metricsManager.addMeter("Web-Get-Call-Meter");
+    this.webPostCall = this.metricsManager.addMeter("Web-Post-Call-Meter");
     this.metricsManager
         .addGauge("JETTY-NumIdleThreads", dataProvider::getNumberOfIdleServerThreads);
     this.metricsManager.addGauge("JETTY-NumTotalThreads", dataProvider::getNumberOfServerThreads);
@@ -84,8 +82,20 @@ public class WebMetricsImpl implements WebMetrics {
   }
 
   @Override
-  public void setFetchLogLatency(final long milliseconds) {
-    this.logFetchLatency.set(milliseconds);
+  public AzkabanAPIMetrics setUpAzkabanAPIMetrics(final String endpointUri) {
+    final String metricName = "uri-" + endpointUri;
+    final CounterGauge appGetRequestCount =
+        this.metricsManager.addCounterGauge(metricName + "--num-app-get-req");
+    final CounterGauge appPostRequestCount =
+        this.metricsManager.addCounterGauge(metricName + "--num-app-post-req");
+    final CounterGauge nonAppGetRequestCount =
+        this.metricsManager.addCounterGauge(metricName + "--num-nonApp-get-req");
+    final CounterGauge nonAppPostRequestCount =
+        this.metricsManager.addCounterGauge(metricName + "--num-nonApp-post-req");
+    final Histogram responseTimeHistogram =
+        this.metricsManager.addHistogram(metricName + "--resp-time-histogram");
+    return new AzkabanAPIMetrics(appGetRequestCount, appPostRequestCount, nonAppGetRequestCount,
+        nonAppPostRequestCount, responseTimeHistogram);
   }
 
 }

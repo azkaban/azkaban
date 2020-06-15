@@ -35,6 +35,7 @@ import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
@@ -91,6 +92,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ScheduleManager scheduleManager;
   private UserManager userManager;
 
+  public ExecutorServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
@@ -100,6 +105,28 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     this.executorManagerAdapter = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
     this.flowTriggerService = server.getFlowTriggerService();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_FLOW_UPDATE));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_CANCEL_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_PAUSE_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RESUME_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_FLOW_LOGS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_JOB_LOGS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_JOB_STATS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RETRY_FAILED_JOBS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FLOW_INFO));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_SCHEDULED_FLOW_GRAPH));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RELOAD_EXECUTORS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_ENABLE_QUEUE_PROCESSOR));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_DISABLE_QUEUE_PROCESSOR));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_GET_RUNNING));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_EXECUTE_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RAMP));
+    return apiEndpoints;
   }
 
   @Override
@@ -120,9 +147,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+  private void handleAJAXAction(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
@@ -178,13 +204,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } else if (API_GET_RUNNING.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
-      ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName,
-          flowName);
+      ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
     } else if (API_FLOW_INFO.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
-      ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName,
-          flowName);
+      ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
     } else {
       final String projectName = getParam(req, "project");
 
@@ -544,7 +568,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecFlowLogs(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    final long startMs = System.currentTimeMillis();
     final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
       return;
@@ -562,14 +585,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
-
-    /*
-     * We originally consider leverage Drop Wizard's Timer API {@link com.codahale.metrics.Timer}
-     * to measure the duration time.
-     * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
-     * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
-     */
-    getWebMetrics().setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**

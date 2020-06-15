@@ -29,6 +29,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +39,10 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
   private static final long serialVersionUID = 5872898140052356540L;
+
+  public MockLoginAzkabanServlet() {
+    super(new ArrayList<>());
+  }
 
   public static HttpServletRequest getRequestWithNoUpstream(final String clientIp,
       final String sessionId,
