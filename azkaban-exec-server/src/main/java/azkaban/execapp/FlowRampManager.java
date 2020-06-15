@@ -205,15 +205,13 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
    * This shuts down the flow ramp. The call is blocking and awaits execution of all jobs.
    */
   public void shutdown() {
-    LOGGER.warn("Shutting down FlowRampManager...");
     if (isRampPollingServiceEnabled) {
+      LOGGER.warn("Shutting down FlowRampManager...");
       pollingService.shutdown();
+      // Persistent cached data into DB
+      saveSettings();
+      LOGGER.warn("Shutdown FlowRampManager complete.");
     }
-
-    // Persistent cached data into DB
-    saveSettings();
-
-    LOGGER.warn("Shutdown FlowRampManager complete.");
   }
 
   /**
@@ -221,8 +219,8 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
    * finish but interrupts all threads.
    */
   public void shutdownNow() {
-    LOGGER.warn("Shutting down FlowRampManager now...");
     if (isRampPollingServiceEnabled) {
+      LOGGER.warn("Shutting down FlowRampManager now...");
       pollingService.shutdown();
     }
   }
