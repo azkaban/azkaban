@@ -281,7 +281,7 @@ public class FlowRunnerManager implements EventListener,
    * Change the polling interval to the newly specified value and also update the value that's
    * specified in the props
    * @param pollingIntervalMillis The new polling interval.
-   * @param b
+   * @return true if the Polling interval has changed successfully
    */
   public boolean changePollingInterval(long pollingIntervalMillis) {
     long oldVal = this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,

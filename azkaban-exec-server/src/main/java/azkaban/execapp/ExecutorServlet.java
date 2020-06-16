@@ -27,13 +27,13 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
-import com.sun.istack.internal.NotNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -199,7 +199,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
    *                                 integer (milliseconds) in String format.
    * @param respMap The response map.
    */
-  private void modifyPollingInterval(@NotNull final String newPollingIntervalMillis,
+
+  private void modifyPollingInterval(@Nonnull final String newPollingIntervalMillis,
       final HashMap<String, Object> respMap) {
     int pollingIntervalMillis = 0;
     boolean isValidValue = false;
@@ -221,9 +222,14 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       return;
     }
 
-    flowRunnerManager.changePollingInterval(pollingIntervalMillis);
-    respMap.put(ConnectorParams.STATUS_ACTION, String.format("Changed polling interval to %s ms",
-        newPollingIntervalMillis));
+    if (flowRunnerManager.changePollingInterval(pollingIntervalMillis)) {
+      respMap.put(ConnectorParams.STATUS_ACTION, String.format("Changed polling interval to %s ms",
+          newPollingIntervalMillis));
+    } else {
+      respMap.put(ConnectorParams.RESPONSE_ERROR, "Failed to change polling interval. Please check"
+          + " the logs for error messages from underlying functions. Please retry if existing "
+          + "schedule got canceled and new one didn't start.");
+    }
   }
 
   private void handleModifyExecutionRequest(final Map<String, Object> respMap,
