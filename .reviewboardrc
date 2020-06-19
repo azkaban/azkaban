@@ -2,6 +2,6 @@ BRANCH='master'
 REPOSITORY = "os-azkaban"
 REVIEWBOARD_URL='https://rb.corp.linkedin.com'
 TRACKING_BRANCH='origin/master'
-TARGET_GROUPS='superfriends-reviewers'
+TARGET_GROUPS='azkabandev-reviewers'
 TARGET_PEOPLE='areznik,abtiwari,angoel,anath1,anismalh,adsharma,apruthi,djaiswal,gsalia,jakhani,ypadron,ygerchik,sshardoo,sarumuga,soudas,prkhande'
 GUESS_FIELDS='yes'
