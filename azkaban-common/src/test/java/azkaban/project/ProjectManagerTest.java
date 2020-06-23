@@ -1,18 +1,18 @@
 /*
-* Copyright 2018 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,6 +46,7 @@ public class ProjectManagerTest {
   private ArchiveUnthinner archiveUnthinner;
   private ValidatorUtils validatorUtils;
   private CommonMetrics commonMetrics;
+  private ProjectCache cache;
 
   @Before
   public void setUp() throws Exception {
@@ -58,12 +59,16 @@ public class ProjectManagerTest {
     this.archiveUnthinner = mock(ArchiveUnthinner.class);
     this.validatorUtils = mock(ValidatorUtils.class);
     this.commonMetrics = mock(CommonMetrics.class);
-
-    this.azkabanProjectLoader = new AzkabanProjectLoader(this.props, this.commonMetrics, this.projectLoader,
-        this.projectStorageManager, mock(FlowLoaderFactory.class), executorLoader, dbOperator, storage, this.archiveUnthinner,
+    this.cache = new InMemoryProjectCache(this.projectLoader);
+    this.azkabanProjectLoader = new AzkabanProjectLoader(this.props, this.commonMetrics,
+        this.projectLoader,
+        this.projectStorageManager, mock(FlowLoaderFactory.class), this.executorLoader,
+        this.dbOperator,
+        this.storage, this.archiveUnthinner,
         this.validatorUtils);
 
-    this.manager = new ProjectManager(this.azkabanProjectLoader, this.projectLoader, this.projectStorageManager, this.props);
+    this.manager = new ProjectManager(this.azkabanProjectLoader, this.projectLoader,
+        this.projectStorageManager, this.props, this.cache);
   }
 
   @Test

@@ -22,7 +22,9 @@ import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
+import azkaban.project.ProjectCache;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
@@ -63,6 +65,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
+    bind(ProjectCache.class).to(InMemoryProjectCache.class);
     bind(OsCpuUtil.class).toProvider(() -> {
       final int cpuLoadPeriodSec = this.props
           .getInt(ConfigurationKeys.AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC,

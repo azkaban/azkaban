@@ -21,7 +21,6 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
-import azkaban.utils.Triple;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -48,7 +47,7 @@ public interface ProjectLoader {
   /**
    * Should create an empty project with the given name and user and adds it to the data store. It
    * will auto assign a unique id for this project if successful.
-   *
+   * <p>
    * If an active project of the same name exists, it will throw an exception. If the name and
    * description of the project exceeds the store's constraints, it will throw an exception.
    *
@@ -112,7 +111,7 @@ public interface ProjectLoader {
    * Fetch project metadata from project_versions table
    *
    * @param projectId project ID
-   * @param version version
+   * @param version   version
    * @return ProjectFileHandler object containing the metadata
    */
   ProjectFileHandler fetchProjectMetaData(int projectId, int version);
@@ -231,5 +230,10 @@ public interface ProjectLoader {
    */
   boolean isFlowFileUploaded(int projectId, int projectVersion)
       throws ProjectManagerException;
+
+  /**
+   * Retrieve projects corresponding to ids specified in a list.
+   */
+  List<Project> fetchProjectById(List<Integer> ids) throws ProjectManagerException;
 
 }
