@@ -18,6 +18,7 @@ package azkaban.jobExecutor;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.utils.process.ProcessFailureException;
 import azkaban.utils.Props;
 import java.io.File;
@@ -152,6 +153,115 @@ public class JavaProcessJobTest {
         .isInstanceOf(Exception.class)
         .hasMessageContaining("No classpath defined and no .jar files found")
         .hasCauseInstanceOf(IllegalArgumentException.class);
+  }
+
+  /**
+   *  Verify java classpath is constructed correctly for cluster components specified
+   *  in job.dependency.components.
+   */
+  @Test
+  public void jobClusterComponentClassPath() throws Exception {
+    copyJarToJobDirectory();
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("classpath", classPaths);
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+
+    String hadoopClasspath = "HADOOP_CLASSPATH";
+    String component = "hadoop";
+    this.props.put(JavaProcessJob.LIBRARY_PATH_PREFIX + component, hadoopClasspath);
+    this.props.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, component);
+
+    String classpath = this.job.getClassPathParam();
+    Assert.assertTrue(
+        "The classpath to " + component + " is missing.", classpath.contains(hadoopClasspath));
+
+    this.job.run();
+  }
+
+  /**
+   *  Verify native lib is constructed and exposed correctly in JVM OPTs
+   *  for cluster components specified in job.dependency.components.
+   */
+  @Test
+  public void jobClusterComponentClassPathWithNativeLib() throws Exception {
+    copyJarToJobDirectory();
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("classpath", classPaths);
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+
+    final String hadoopClasspath = "HADOOP_CLASSPATH";
+    final String hadoopNativeLib = "HADOOP_NATIVE_LIB";
+    final String component = "hadoop";
+    this.props.put(JavaProcessJob.LIBRARY_PATH_PREFIX + component, hadoopClasspath);
+    this.props.put(JavaProcessJob.NATIVE_LIBRARY_PATH_PREFIX + component, hadoopNativeLib);
+    this.props.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, component);
+
+    final String classpath = this.job.getClassPathParam();
+    Assert.assertTrue(
+        "The classpath to " + component + " is missing.", classpath.contains(hadoopClasspath));
+
+    final String jvmOpts = this.job.getJVMArguments();
+    Assert.assertTrue(
+        "The native libraries of " + component + " is missing.", jvmOpts.contains(hadoopNativeLib));
+
+    this.job.run();
+  }
+
+  /**
+   *  Verify java classpath is constructed correctly for cluster components specified
+   *  in jobtype.dependency.components.
+   */
+  @Test
+  public void jobtypeClusterComponentClassPath() throws Exception {
+    copyJarToJobDirectory();
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("classpath", classPaths);
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+
+    final String hadoopClasspath = "HADOOP_CLASSPATH";
+    final String component = "hadoop";
+    this.props.put(JavaProcessJob.LIBRARY_PATH_PREFIX + component, hadoopClasspath);
+    this.props.put(CommonJobProperties.JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES, component);
+
+    final String classpath = this.job.getClassPathParam();
+    Assert.assertTrue(
+        "The classpath to " + component + " is missing.", classpath.contains(hadoopClasspath));
+
+    this.job.run();
+  }
+
+  /**
+   *  Verify java classpath is constructed correctly for cluster components specified
+   *  in jobtype.dependency.components and job.dependency.components.
+   */
+  @Test
+  public void jobtypeAndJobClusterComponentClassPath() throws Exception {
+    copyJarToJobDirectory();
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("classpath", classPaths);
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+
+    final String hadoopClasspath = "HADOOP_CLASSPATH";
+    final String hadoop = "hadoop";
+    this.props.put(JavaProcessJob.LIBRARY_PATH_PREFIX + hadoop, hadoopClasspath);
+    this.props.put(CommonJobProperties.JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES, hadoop);
+
+    final String hiveClasspath = "HIVE_CLASSPATH";
+    final String hive = "hive";
+    this.props.put(JavaProcessJob.LIBRARY_PATH_PREFIX + hive, hiveClasspath);
+    this.props.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, hive);
+
+    final String classpath = this.job.getClassPathParam();
+    Assert.assertTrue(
+        "The classpath to " + hadoop + " is missing.", classpath.contains(hadoopClasspath));
+    Assert.assertTrue(
+        "The classpath to " + hive + " is missing.", classpath.contains(hiveClasspath));
+
+    this.job.run();
   }
 
   @Test
