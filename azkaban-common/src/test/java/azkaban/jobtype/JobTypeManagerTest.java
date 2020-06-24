@@ -205,6 +205,29 @@ public class JobTypeManagerTest {
   }
 
   /**
+   * Configure a {@link JobPropsProcessor} for a jobtype plugin and verify the JobPropsProcessor
+   * are invoked correctly for jobs of that type.
+   */
+  @Test
+  public void testJobPropsProcessor() throws Exception {
+    final Props jobProps = new Props();
+    jobProps.put("type", "testjobwithpropsprocessor");
+    final Job job = this.manager.buildJobExecutor("testjobwithpropsprocessor", jobProps, this.logger);
+
+    assertTrue(job instanceof FakeJavaJob);
+    final FakeJavaJob fjj = (FakeJavaJob) job;
+
+    final Props props = fjj.getJobProps();
+    assertEquals("commonprop1", props.get("commonprop1"));
+    assertEquals("commonprop2", props.get("commonprop2"));
+    assertEquals("commonprop3", props.get("commonprop3"));
+    assertNull(props.get("commonprivate1"));
+
+    assertEquals(TestJobPropsProcessor.INJECTED_ADDITION_PROP,
+        props.get(TestJobPropsProcessor.INJECTED_ADDITION_PROP));
+  }
+
+  /**
    * Test out reloading properties
    */
   @Test
