@@ -212,6 +212,20 @@ public class JobTypeManager {
       throw new JobTypeManagerException(e);
     }
 
+    // load an instance of JobPropsProcessor configured for this jobtype plugin,
+    // the JobPropsProcessor instance will be called for each job before it starts to run
+    final String jobPropsProcessorClass = pluginLoadProps.get("jobtype.job.props.processor.class");
+    if (jobPropsProcessorClass != null && !jobPropsProcessorClass.isEmpty()) {
+      Class<? extends JobPropsProcessor> processorClazz;
+      try {
+        processorClazz = (Class<? extends JobPropsProcessor>) jobTypeLoader.loadClass(jobPropsProcessorClass);
+        final JobPropsProcessor jobPropsProcessor = (JobPropsProcessor)
+            Utils.callConstructor(processorClazz, pluginLoadProps);
+        plugins.addPluginJobPropsProcessor(jobTypeName, jobPropsProcessor);
+      } catch (final ClassNotFoundException e) {
+        throw new JobTypeManagerException(e);
+      }
+    }
 
     LOGGER.info("Verifying job plugin " + jobTypeName);
     try {
@@ -336,6 +350,12 @@ public class JobTypeManager {
             jobProps.put(k, pluginJobProps.get(k));
           }
         }
+      }
+
+      final JobPropsProcessor propsProcessor = pluginSet.getPluginJobPropsProcessor(jobType);
+      if (propsProcessor != null) {
+        // allow jobtype plugins to process job properties before jobs start to run
+        jobProps = propsProcessor.process(jobProps);
       }
       jobProps = PropsUtils.resolveProps(jobProps);
 

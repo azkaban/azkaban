@@ -35,6 +35,7 @@ public class JobTypePluginSet {
   private final Map<String, Props> pluginJobPropsMap;
   private final Map<String, Props> pluginLoadPropsMap;
   private final Map<String, Props> pluginPrivatePropsMap;
+  private final Map<String, JobPropsProcessor> pluginJobPropsProcessor;
 
   private Props commonJobProps;
   private Props commonLoadProps;
@@ -47,6 +48,7 @@ public class JobTypePluginSet {
     this.pluginJobPropsMap = new HashMap<>();
     this.pluginLoadPropsMap = new HashMap<>();
     this.pluginPrivatePropsMap = new HashMap<>();
+    this.pluginJobPropsProcessor = new HashMap<>();
   }
 
   /**
@@ -59,6 +61,7 @@ public class JobTypePluginSet {
     this.pluginPrivatePropsMap = new HashMap<>(clone.pluginPrivatePropsMap);
     this.commonJobProps = clone.commonJobProps;
     this.commonLoadProps = clone.commonLoadProps;
+    this.pluginJobPropsProcessor = clone.pluginJobPropsProcessor;
   }
 
   /**
@@ -143,5 +146,15 @@ public class JobTypePluginSet {
    */
   public void addPluginPrivateProps(final String jobTypeName, final Props props) {
     this.pluginPrivatePropsMap.put(jobTypeName, props);
+  }
+
+  public JobPropsProcessor getPluginJobPropsProcessor(
+      final String jobTypeName) {
+    return this.pluginJobPropsProcessor.get(jobTypeName);
+  }
+
+  public void addPluginJobPropsProcessor(final String jobTypeName,
+      JobPropsProcessor jobPropsProcessor) {
+    this.pluginJobPropsProcessor.put(jobTypeName, jobPropsProcessor);
   }
 }
