@@ -135,7 +135,7 @@
                         <h4 class="modal-title" id="executionOptionsLabel">Execution Options</h4>
                       </div>
                       <div class="modal-body">
-                      ## Used <pre> to display text with code format
+                        ## Used <pre> to display text with code format
                         <pre>${sched.executionOptions.toJSON()}</pre>
                       </div>
                       <div class="modal-footer">
@@ -145,7 +145,7 @@
                     </div>
                   </div>
                 </div>
-                <td>#if(${sched.slaOptions}) true #else false #end</td>
+                <td>#if(${sched.executionOptions.slaOptions.isEmpty()}) false #else true #end</td>
                 <td>
                   <button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger"
                           onclick="removeSched(${sched.scheduleId})">Remove Schedule
