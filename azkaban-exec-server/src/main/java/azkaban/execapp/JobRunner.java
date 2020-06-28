@@ -97,6 +97,9 @@ public class JobRunner extends EventHandler implements Runnable {
   private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
 
+  private volatile long timeInQueue = -1;
+  private volatile long jobKillTime = -1;
+
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
       final JobTypeManager jobtypeManager, final Props azkabanProps) {
     this.props = node.getInputProps();
@@ -597,6 +600,10 @@ public class JobRunner extends EventHandler implements Runnable {
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
       fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
+      // End of job in queue and start of execution
+      if (this.getTimeInQueue() != -1) {
+        this.setTimeInQueue(System.currentTimeMillis() - this.getTimeInQueue());
+      }
 
       final Status prepareStatus = prepareJob();
       if (prepareStatus != null) {
@@ -619,6 +626,9 @@ public class JobRunner extends EventHandler implements Runnable {
       // rather than
       // it being a legitimate failure.
       finalStatus = changeStatus(Status.KILLED);
+      if (this.getJobKillTime() != -1) {
+        this.setJobKillTime(System.currentTimeMillis() - this.getJobKillTime());
+      }
     }
 
     logInfo(
@@ -845,6 +855,7 @@ public class JobRunner extends EventHandler implements Runnable {
           }
           logError(e.getMessage() + " cause: " + e.getCause());
         }
+        this.getNode().setFailureMessage(e.toString());
       }
     }
 
@@ -886,6 +897,7 @@ public class JobRunner extends EventHandler implements Runnable {
   public void killBySLA() {
     synchronized (this.syncObject) {
       kill();
+      this.getNode().setModifiedBy("SLA");
       this.getNode().setKilledBySLA(true);
     }
   }
@@ -915,6 +927,7 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       try {
+        this.setJobKillTime(System.currentTimeMillis());
         this.job.cancel();
       } catch (final Exception e) {
         logError(e.getMessage());
@@ -958,4 +971,12 @@ public class JobRunner extends EventHandler implements Runnable {
   public Logger getLogger() {
     return this.logger;
   }
+
+  public long getTimeInQueue() { return timeInQueue; }
+
+  public void setTimeInQueue(long timeInQueue) { this.timeInQueue = timeInQueue; }
+
+  public long getJobKillTime() { return jobKillTime; }
+
+  public void setJobKillTime(long jobKillTime) { this.jobKillTime = jobKillTime; }
 }

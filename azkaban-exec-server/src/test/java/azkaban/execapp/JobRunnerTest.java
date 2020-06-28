@@ -107,6 +107,7 @@ public class JobRunnerTest {
         node.getStatus() == Status.SUCCEEDED);
     Assert.assertTrue(node.getStartTime() >= 0 && node.getEndTime() >= 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
+    Assert.assertTrue(runner.getTimeInQueue() >=0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
@@ -176,6 +177,10 @@ public class JobRunnerTest {
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
+    // Check failureMessage and modifiedBy
+    Assert.assertEquals(runner.getNode().getModifiedBy(), "unknown");
+    Assert.assertEquals(runner.getNode().getFailureMessage(), "java.lang.RuntimeException: Forced"
+        + " failure of testJob");
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
@@ -257,6 +262,7 @@ public class JobRunnerTest {
     final Thread thread = startThread(runner);
 
     StatusTestUtils.waitForStatus(node, Status.RUNNING);
+    runner.getNode().setModifiedBy("dementor1");
     runner.kill();
     assertThreadIsNotAlive(thread);
 
@@ -267,6 +273,10 @@ public class JobRunnerTest {
     // Give it some time to fail.
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
+    // Check job kill time, user killed the job, and failure message
+    Assert.assertEquals(runner.getNode().getModifiedBy(), "dementor1");
+    Assert.assertTrue(runner.getJobKillTime() >= 0);
+    Assert.assertEquals(node.getFailureMessage(), "java.lang.RuntimeException: Forced failure of testJob");
 
     // Log file and output files should not exist.
     final File logFile = new File(runner.getLogFilePath());
@@ -409,6 +419,8 @@ public class JobRunnerTest {
     final JobRunner runner = new JobRunner(node, this.workingDir, loader, this.jobtypeManager,
         azkabanProps);
     runner.setLogSettings(this.logger, "5MB", 4);
+    // Job starts to queue
+    runner.setTimeInQueue(System.currentTimeMillis());
 
     runner.addListener(listener);
     return runner;

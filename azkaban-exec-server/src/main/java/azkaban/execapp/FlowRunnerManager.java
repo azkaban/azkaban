@@ -415,9 +415,9 @@ public class FlowRunnerManager implements EventListener,
     if (isAlreadyRunning(execId)) {
       return;
     }
-
+    final long tsBeforeFlowRunnerCreation = System.currentTimeMillis();
     final FlowRunner runner = createFlowRunner(execId);
-
+    runner.setFlowCreateTime(System.currentTimeMillis()-tsBeforeFlowRunnerCreation);
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -574,6 +574,8 @@ public class FlowRunnerManager implements EventListener,
       throw new ExecutorManagerException("Execution " + execId
           + " is not running.");
     }
+
+    flowRunner.getExecutableFlow().setModifiedBy("SLA");
 
     for (final JobRunner jobRunner : flowRunner.getActiveJobRunners()) {
       if (jobRunner.getJobId().equals(jobId)) {
