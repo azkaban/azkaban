@@ -67,6 +67,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private boolean isLocked;
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
   private String flowLockErrorMessage;
+  // For Flow_Status_Changed event
+  private String failedJobId = "unknown";
+  private String modifiedBy = "unknown";
+
+  // For slaOption information
+  private String slaOptionStr = "null";
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -235,6 +241,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.flowLockErrorMessage = flowLockErrorMessage;
   }
 
+  public String getSlaOptionStr() {
+    return slaOptionStr;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -315,6 +325,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
           flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
               .collect(Collectors.toList());
       this.executionOptions.setSlaOptions(slaOptions);
+      // Fill slaOptionStr a comma delimited String of slaOptions
+      StringBuilder slaBuilder = new StringBuilder();
+      for (SlaOption slaOption: slaOptions){
+        slaBuilder.append(slaOption.toString());
+        slaBuilder.append(',');
+      }
+      this.slaOptionStr = slaBuilder.toString();
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
@@ -360,4 +377,18 @@ public class ExecutableFlow extends ExecutableFlowBase {
         .map(metadata -> metadata.selectRampPropsForJob(jobId, jobType))
         .orElse(null);
   }
+
+  public void setFailedJobId(String id) {
+     this.failedJobId = id;
+  }
+
+  public String getFailedJobId() {
+    return failedJobId;
+  }
+
+  @Override
+  public String getModifiedBy() { return modifiedBy; }
+
+  @Override
+  public void setModifiedBy(String id) { this.modifiedBy = id; }
 }

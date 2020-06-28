@@ -55,6 +55,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
     compareFinishedRuntime(this.runner);
 
+    // Check flowVersion
+    assertFlowVersion(this.runner.getExecutableFlow(), 1.0);
+
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2", Status.SUCCEEDED);
     assertStatus("job3", Status.SUCCEEDED);
@@ -120,6 +123,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     Assert.assertTrue(!this.runner.isKilled());
     waitForAndAssertFlowStatus(Status.FAILED);
+    // Check failed job that leads to the failure of flow
+    Assert.assertEquals(this.runner.getExecutableFlow().getFailedJobId(), "job2d");
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2d", Status.FAILED);
@@ -133,7 +138,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,  EventType.FLOW_FINISHED);
   }
 
   @Test
@@ -150,6 +155,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
 
     Assert.assertTrue(this.runner.isKilled());
+    // Check flow kill duration
+    Assert.assertFalse(this.runner.getFlowKillTime() == -1);
 
     waitForAndAssertFlowStatus(Status.KILLED);
 
@@ -164,7 +171,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    // Two FLOW_STATUS_CHANGED events fired, one for FAILED and one for KILLED
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,
+        EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
   @Test
@@ -193,7 +202,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
   @Test
@@ -216,6 +225,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("job3").failJob();
 
     Assert.assertTrue(this.runner.isKilled());
+    // Check flow kill duration and uerId killed the flow
+    Assert.assertFalse(this.runner.getFlowKillTime() == -1);
+    Assert.assertEquals(this.runner.getExecutableFlow().getModifiedBy(), "me");
 
     assertStatus("job5", Status.CANCELLED);
     assertStatus("job7", Status.CANCELLED);
@@ -228,7 +240,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
   @Test(expected = IllegalStateException.class)
@@ -335,6 +347,24 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
             flowMetadata.get("projectFileName"));
     Assert.assertEquals("Event metadata not created as expected.", "1",
             flowMetadata.get("projectFileUploadTime"));
+    Assert.assertEquals("Event metadata not created as expected.", "null",
+        flowMetadata.get("slaOptions"));
+  }
+
+  @Test
+  public void pauseAndResume() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+
+    FlowRunnerTestUtil.startThread(this.runner);
+    this.runner.pause("dementor");
+    this.runner.resume("dementor");
+
+    // Check flow pause duration and uerId killed the flow
+    Assert.assertFalse(this.runner.getFlowPauseTime() == -1);
+    Assert.assertEquals(this.runner.getExecutableFlow().getModifiedBy(), "dementor");
   }
 
   private void assertAttempts(final String name, final int attempt) {

@@ -10,5 +10,7 @@ public enum EventType {
   JOB_FINISHED,
   JOB_STATUS_CHANGED,
   EXTERNAL_FLOW_UPDATED,
-  EXTERNAL_JOB_UPDATED
+  EXTERNAL_JOB_UPDATED,
+  // For Kafka event schema enrichment
+  FLOW_STATUS_CHANGED
 }
