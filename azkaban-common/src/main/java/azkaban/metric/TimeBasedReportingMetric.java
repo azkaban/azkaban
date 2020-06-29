@@ -26,8 +26,8 @@ import java.util.TimerTask;
  */
 public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
 
-  protected long MAX_MILISEC_INTERVAL = 60 * 60 * 1000;
-  protected long MIN_MILISEC_INTERVAL = 3 * 1000;
+  protected long MAX_MILLISEC_INTERVAL = 60 * 60 * 1000;
+  protected long MIN_MILLISEC_INTERVAL = 3 * 1000;
   private Timer timer;
 
   /**
@@ -84,7 +84,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
   }
 
   private boolean isValidInterval(final long interval) {
-    return interval >= this.MIN_MILISEC_INTERVAL && interval <= this.MAX_MILISEC_INTERVAL;
+    return interval >= this.MIN_MILLISEC_INTERVAL && interval <= this.MAX_MILLISEC_INTERVAL;
   }
 
   /**

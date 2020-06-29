@@ -105,10 +105,11 @@ public class JobRunner extends EventHandler implements Runnable {
 
     this.executionId = node.getParentFlow().getExecutionId();
     this.jobId = node.getId();
+
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
-    final String jobLogLayout = props.getString(
+    final String jobLogLayout = this.props.getString(
         JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
@@ -175,6 +176,11 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public Props getProps() {
     return this.props;
+  }
+
+  public String getEffectiveUser() {
+    return this.props.getString(JobProperties.USER_TO_PROXY,
+        this.getNode().getExecutableFlow().getSubmitUser());
   }
 
   public void setPipeline(final FlowWatcher watcher, final int pipelineLevel) {
@@ -321,6 +327,7 @@ public class JobRunner extends EventHandler implements Runnable {
     final String logName = createLogFileName(this.node);
     this.logFile = new File(this.workingDir, logName);
     final String absolutePath = this.logFile.getAbsolutePath();
+    this.flowLogger.info("Log file path for job: " + this.jobId + " is: " + absolutePath);
 
     // Attempt to create FileAppender
     final RollingFileAppender fileAppender =
@@ -623,9 +630,15 @@ public class JobRunner extends EventHandler implements Runnable {
       finalizeAttachmentFile();
       writeStatus();
     } finally {
-      // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
-      fireEvent(Event.create(this, EventType.JOB_FINISHED,
-          new EventData(finalStatus, this.node.getNestedId())), false);
+      try {
+        // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
+        fireEvent(Event.create(this, EventType.JOB_FINISHED,
+            new EventData(finalStatus, this.node.getNestedId())), false);
+      } catch (final RuntimeException e) {
+        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
+            + " jobId: " + this.jobId);
+        serverLogger.warn(e.getMessage(), e);
+      }
     }
   }
 
@@ -671,10 +684,18 @@ public class JobRunner extends EventHandler implements Runnable {
       this.props.put(CommonJobProperties.JOB_METADATA_FILE,
           createMetaDataFileName(this.node));
       this.props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, this.attachmentFileName);
+      this.props.put(CommonJobProperties.JOB_LOG_FILE, this.logFile.getAbsolutePath());
       finalStatus = changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
-      if (!this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+      if (this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+        if (!IsSpecifiedWorkingDirectoryValid()) {
+          logError("Specified " + AbstractProcessJob.WORKING_DIR + " is not valid: " +
+              this.props.get(AbstractProcessJob.WORKING_DIR) + ". Must be a subdirectory of " +
+              this.workingDir.getAbsolutePath());
+          return null;
+        }
+      } else {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
 
@@ -696,6 +717,14 @@ public class JobRunner extends EventHandler implements Runnable {
             submitUser);
       }
 
+      final Props props = this.node.getRampProps();
+      if (props != null) {
+        this.logger.info(String
+            .format("RAMP_JOB_ATTACH_PROPS : (id = %s, props = %s)", this.node.getId(),
+                props.toString()));
+        this.props.putAll(props);
+      }
+
       try {
         this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
       } catch (final JobTypeManagerException e) {
@@ -705,6 +734,23 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return finalStatus;
+  }
+
+  /**
+   * Validates execution directory specified by user.
+   */
+  private boolean IsSpecifiedWorkingDirectoryValid() {
+    final File usersWorkingDir = new File(this.props.get(AbstractProcessJob.WORKING_DIR));
+    try {
+      if (!usersWorkingDir.getCanonicalPath().startsWith(this.workingDir.getCanonicalPath())) {
+        return false;
+      }
+    } catch (final IOException e) {
+      this.logger.error("Failed to validate user's " + AbstractProcessJob.WORKING_DIR +
+          " property.", e);
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -731,7 +777,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
     String jobJVMArgs =
         String.format(
-            "-Dazkaban.flowid=%s -Dazkaban.execid=%s -Dazkaban.jobid=%s",
+            "'-Dazkaban.flowid=%s' '-Dazkaban.execid=%s' '-Dazkaban.jobid=%s'",
             flowName, this.executionId, jobId);
 
     final String previousJVMArgs = this.props.get(JavaProcessJob.JVM_PARAMS);
@@ -755,10 +801,10 @@ public class JobRunner extends EventHandler implements Runnable {
       this.props.put(CommonJobProperties.EXECUTION_LINK,
           String.format("%s/executor?execid=%d", baseURL, this.executionId));
       this.props.put(CommonJobProperties.JOBEXEC_LINK, String.format(
-          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.jobId));
+          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.node.getNestedId()));
       this.props.put(CommonJobProperties.ATTEMPT_LINK, String.format(
           "%s/executor?execid=%d&job=%s&attempt=%d", baseURL, this.executionId,
-          this.jobId, this.node.getAttempt()));
+          this.node.getNestedId(), this.node.getAttempt()));
       this.props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
           "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
       this.props.put(CommonJobProperties.JOB_LINK, String.format(
@@ -838,8 +884,10 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public void killBySLA() {
-    kill();
-    this.getNode().setKilledBySLA(true);
+    synchronized (this.syncObject) {
+      kill();
+      this.getNode().setKilledBySLA(true);
+    }
   }
 
   public void kill() {

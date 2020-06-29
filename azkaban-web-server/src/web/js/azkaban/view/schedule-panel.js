@@ -114,6 +114,7 @@ $(function () {
     $("#dom_input").val("?");
     $("#month_input").val("*");
     $("#dow_input").val("*");
+    $("#year_input").val("");
     $(cron_translate_id).text("")
     $(cron_translate_warning_id).text("")
     $('#nextRecurId').html("");
@@ -121,6 +122,8 @@ $(function () {
     while ($("#instructions tbody tr:last").index() >= 4) {
       $("#instructions tbody tr:last").remove();
     }
+
+    updateOutput();
   });
 
   $("#minute_input").click(function () {
@@ -187,6 +190,18 @@ $(function () {
     $('#instructions tbody tr:last th').html("?");
     $('#instructions tbody tr:last td').html("Blank");
   });
+
+  $("#year_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#year_label").css("color", "red");
+
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("");
+    $('#instructions tbody tr:last td').html("This field is optional");
+  });
 });
 
 function resetLabelColor() {
@@ -195,6 +210,7 @@ function resetLabelColor() {
   $("#dom_label").css("color", "black");
   $("#mon_label").css("color", "black");
   $("#dow_label").css("color", "black");
+  $("#year_label").css("color", "black");
 }
 
 var cron_minutes_id = "#minute_input";
@@ -202,15 +218,15 @@ var cron_hours_id = "#hour_input";
 var cron_dom_id = "#dom_input";
 var cron_months_id = "#month_input";
 var cron_dow_id = "#dow_input";
+var cron_year_id = "#year_input";
 var cron_output_id = "#cron-output";
 var cron_translate_id = "#cronTranslate";
 var cron_translate_warning_id = "#translationWarning";
 
 function updateOutput() {
-  $(cron_output_id).val($(cron_minutes_id).val() + " " + $(cron_hours_id).val()
-      + " " +
-      $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " + $(
-          cron_dow_id).val()
+  $(cron_output_id).val($(cron_minutes_id).val() + " " + $(cron_hours_id).val() + " " +
+      $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " +
+      $(cron_dow_id).val() + " " + $(cron_year_id).val()
   );
   updateExpression();
 }
@@ -239,21 +255,31 @@ function updateExpression() {
   serverTimeInJsDateFormat.setUTCMonth(serverTime.get('month'),
       serverTime.get('date'));
 
-  // Calculate the following 10 occurences based on the current server time.
-  // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
-  // We transform from current browser-timezone-time to Server timezone.
-  // Then we let serverTimeInJsDateFormat is equal to the server time.
-  var occurrences = later.schedule(laterCron).next(10,
-      serverTimeInJsDateFormat);
+  //Calculate the following 10 occurrences based on the current server time.
+  for(var i = 9; i >= 0; i--) {
+    // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
+    // We transform from current browser-timezone-time to Server timezone.
+    // Then we let serverTimeInJsDateFormat is equal to the server time.
+    var occurrence = later.schedule(laterCron).next(1, serverTimeInJsDateFormat);
 
-  //The following component below displays a list of next 10 triggering timestamp.
-  for (var i = 9; i >= 0; i--) {
-    var strTime = JSON.stringify(occurrences[i]);
+    if (occurrence) {
+      var strTime = JSON.stringify(occurrence);
 
-    // Get the time. The original occurance time string is like: "2016-09-09T05:00:00.999",
-    // We trim the string to ignore milliseconds.
-    var nextTime = '<li style="color:DarkGreen">' + strTime.substring(
-        1, strTime.length - 6) + '</li>';
-    $('#nextRecurId').prepend(nextTime);
+      // Get the time. The original occurrence time string is like: "2016-09-09T05:00:00.999",
+      // We trim the string to ignore milliseconds.
+      var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-6) + '</li>';
+      $('#nextRecurId').append(nextTime);
+
+      serverTimeInJsDateFormat = occurrence;
+
+      // Add 10 seconds to exclude startDate from the next occurrences
+      serverTimeInJsDateFormat.setSeconds(serverTimeInJsDateFormat.getSeconds() + 10);
+    } else {
+      console.log("occurrence is null");
+      break;
+    }
   }
+
+  $('#nextRecurLabel').html("Next " + $('#nextRecurId li').length +
+		  " scheduled executions for this cron expression only:");
 }

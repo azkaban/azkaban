@@ -17,29 +17,40 @@
 
 package azkaban.project;
 
+import static azkaban.utils.ThinArchiveUtils.*;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.db.DatabaseOperator;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionReference;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.metrics.CommonMetrics;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
-import azkaban.project.validator.ValidatorConfigs;
-import azkaban.project.validator.ValidatorManager;
-import azkaban.project.validator.XmlValidatorManager;
-import azkaban.storage.StorageManager;
+import azkaban.spi.Storage;
+import azkaban.storage.ProjectStorageManager;
 import azkaban.user.User;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import azkaban.utils.ValidatorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,75 +62,118 @@ class AzkabanProjectLoader {
   private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
   private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
+  private static final String TMP_MODIFIED_ZIP_POSTFIX = ".byte-ray.new";
+
   private final Props props;
 
+  private final CommonMetrics commonMetrics;
   private final ProjectLoader projectLoader;
-  private final StorageManager storageManager;
+  private final ProjectStorageManager projectStorageManager;
   private final FlowLoaderFactory flowLoaderFactory;
+  private final DatabaseOperator dbOperator;
+  private final ArchiveUnthinner archiveUnthinner;
   private final File tempDir;
   private final int projectVersionRetention;
+  private final ExecutorLoader executorLoader;
+  private final Storage storage;
+  private final ValidatorUtils validatorUtils;
 
   @Inject
-  AzkabanProjectLoader(final Props props, final ProjectLoader projectLoader,
-      final StorageManager storageManager, final FlowLoaderFactory flowLoaderFactory) {
+  AzkabanProjectLoader(final Props props, final CommonMetrics commonMetrics, final ProjectLoader projectLoader,
+      final ProjectStorageManager projectStorageManager, final FlowLoaderFactory flowLoaderFactory,
+      final ExecutorLoader executorLoader, final DatabaseOperator databaseOperator,
+      final Storage storage, final ArchiveUnthinner archiveUnthinner,
+      final ValidatorUtils validatorUtils) {
     this.props = requireNonNull(props, "Props is null");
     this.projectLoader = requireNonNull(projectLoader, "project Loader is null");
-    this.storageManager = requireNonNull(storageManager, "Storage Manager is null");
+    this.projectStorageManager = requireNonNull(projectStorageManager, "Storage Manager is null");
     this.flowLoaderFactory = requireNonNull(flowLoaderFactory, "Flow Loader Factory is null");
 
+    this.commonMetrics = commonMetrics;
+    this.dbOperator = databaseOperator;
+    this.storage = storage;
+    this.archiveUnthinner = archiveUnthinner;
+    this.validatorUtils = validatorUtils;
+
     this.tempDir = new File(props.getString(ConfigurationKeys.PROJECT_TEMP_DIR, "temp"));
+    this.executorLoader = executorLoader;
     if (!this.tempDir.exists()) {
       log.info("Creating temp dir: " + this.tempDir.getAbsolutePath());
       this.tempDir.mkdirs();
     } else {
       log.info("Using temp dir: " + this.tempDir.getAbsolutePath());
     }
-    this.projectVersionRetention = props.getInt("project.version.retention", 3);
+    this.projectVersionRetention = props.getInt(ConfigurationKeys.PROJECT_VERSION_RETENTION, 3);
     log.info("Project version retention is set to " + this.projectVersionRetention);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
-      final File archive, final String fileType, final User uploader, final Props additionalProps)
-      throws ProjectManagerException {
+      final File archive, final String fileType, final User uploader, final Props additionalProps,
+      final String uploaderIPAddr)
+      throws ProjectManagerException, ExecutorManagerException {
     log.info("Uploading files to " + project.getName());
     final Map<String, ValidationReport> reports;
 
-    // Since props is an instance variable of ProjectManager, and each
-    // invocation to the uploadProject manager needs to pass a different
-    // value for the PROJECT_ARCHIVE_FILE_PATH key, it is necessary to
-    // create a new instance of Props to make sure these different values
-    // are isolated from each other.
-    final Props prop = new Props(this.props);
-    prop.putAll(additionalProps);
-
-    File file = null;
+    File folder = null;
     final FlowLoader loader;
 
     try {
-      file = unzipProject(archive, fileType);
+      folder = unzipProject(archive, fileType);
 
-      reports = validateProject(project, archive, file, prop);
+      final File startupDependencies = getStartupDependenciesFile(folder);
+      final boolean isThinProject = startupDependencies.exists();
 
-      loader = this.flowLoaderFactory.createFlowLoader(file);
-      reports.put(DIRECTORY_FLOW_REPORT_KEY, loader.loadProjectFlow(project, file));
+      reports = isThinProject
+          ? this.archiveUnthinner.validateThinProject(project, folder,
+            startupDependencies, additionalProps)
+          : this.validatorUtils.validateProject(project, folder, additionalProps);
+
+      // If any files in the project folder have been modified or removed, update the project zip
+      if (reports.values().stream().anyMatch(r -> !r.getModifiedFiles().isEmpty() || !r.getRemovedFiles().isEmpty())) {
+        updateProjectZip(archive, folder);
+      }
+
+      loader = this.flowLoaderFactory.createFlowLoader(folder);
+      reports.put(DIRECTORY_FLOW_REPORT_KEY, loader.loadProjectFlow(project, folder));
 
       // Check the validation report.
       if (!isReportStatusValid(reports, project)) {
-        FlowLoaderUtils.cleanUpDir(file);
+        FlowLoaderUtils.cleanUpDir(folder);
         return reports;
       }
 
       // Upload the project to DB and storage.
-      persistProject(project, loader, archive, file, uploader);
+      final File startupDependenciesOrNull = isThinProject ? startupDependencies : null;
+      persistProject(project, loader, archive, folder, startupDependenciesOrNull, uploader,
+          uploaderIPAddr);
+
+      if (isThinProject) {
+        // Mark that we uploaded a thin zip in the metrics.
+        commonMetrics.markUploadThinProject();
+      } else {
+        commonMetrics.markUploadFatProject();
+      }
 
     } finally {
-      FlowLoaderUtils.cleanUpDir(file);
+      FlowLoaderUtils.cleanUpDir(folder);
     }
 
     // Clean up project old installations after new project is uploaded successfully.
     cleanUpProjectOldInstallations(project);
 
     return reports;
+  }
+
+  private void updateProjectZip(final File zipFile, final File folder) {
+    try {
+      File newZipFile = new File(zipFile.getAbsolutePath().concat(TMP_MODIFIED_ZIP_POSTFIX));
+      Utils.zipFolderContent(folder, newZipFile);
+      FileUtils.deleteQuietly(zipFile);
+      FileUtils.moveFile(newZipFile, zipFile);
+    } catch (IOException e) {
+      folder.deleteOnExit();
+      throw new ProjectManagerException("Error when generating the modified zip.", e);
+    }
   }
 
   private File unzipProject(final File archive, final String fileType)
@@ -141,33 +195,6 @@ class AzkabanProjectLoader {
     return file;
   }
 
-  private Map<String, ValidationReport> validateProject(final Project project,
-      final File archive, final File file, final Props prop) {
-    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH,
-        archive.getAbsolutePath());
-    // Basically, we want to make sure that for different invocations to the
-    // uploadProject method,
-    // the validators are using different values for the
-    // PROJECT_ARCHIVE_FILE_PATH configuration key.
-    // In addition, we want to reload the validator objects for each upload, so
-    // that we can change the validator configuration files without having to
-    // restart Azkaban web server. If the XmlValidatorManager is an instance
-    // variable, 2 consecutive invocations to the uploadProject
-    // method might cause the second one to overwrite the
-    // PROJECT_ARCHIVE_FILE_PATH configuration parameter
-    // of the first, thus causing a wrong archive file path to be passed to the
-    // validators. Creating a separate XmlValidatorManager object for each
-    // upload will prevent this issue without having to add
-    // synchronization between uploads. Since we're already reloading the XML
-    // config file and creating validator objects for each upload, this does
-    // not add too much additional overhead.
-    final ValidatorManager validatorManager = new XmlValidatorManager(prop);
-    log.info("Validating project " + archive.getName()
-        + " using the registered validators "
-        + validatorManager.getValidatorsInfo().toString());
-    return validatorManager.validate(project, file);
-  }
-
   private boolean isReportStatusValid(final Map<String, ValidationReport> reports,
       final Project project) {
     ValidationStatus status = ValidationStatus.PASS;
@@ -184,7 +211,8 @@ class AzkabanProjectLoader {
   }
 
   private void persistProject(final Project project, final FlowLoader loader, final File archive,
-      final File projectDir, final User uploader) throws ProjectManagerException {
+      final File projectDir, final File startupDependencies, final User uploader,
+      final String uploaderIPAddr) throws ProjectManagerException {
     synchronized (project) {
       final int newProjectVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
       final Map<String, Flow> flows = loader.getFlowMap();
@@ -193,7 +221,8 @@ class AzkabanProjectLoader {
         flow.setVersion(newProjectVersion);
       }
 
-      this.storageManager.uploadProject(project, newProjectVersion, archive, uploader);
+      this.projectStorageManager.uploadProject(project, newProjectVersion, archive,
+          startupDependencies, uploader, uploaderIPAddr);
 
       log.info("Uploading flow to db for project " + archive.getName());
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
@@ -211,13 +240,7 @@ class AzkabanProjectLoader {
         this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
 
       } else if (loader instanceof DirectoryYamlFlowLoader) {
-        final File[] flowFiles = projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX));
-        for (final File file : flowFiles) {
-          final int newFlowVersion = this.projectLoader
-              .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
-          this.projectLoader
-              .uploadFlowFile(project.getId(), newProjectVersion, file, newFlowVersion);
-        }
+        uploadFlowFilesRecursively(projectDir, project, newProjectVersion);
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
@@ -227,15 +250,34 @@ class AzkabanProjectLoader {
     }
   }
 
+  private void uploadFlowFilesRecursively(final File projectDir, final Project project, final int
+      newProjectVersion) {
+    for (final File file : projectDir.listFiles(new SuffixFilter(Constants.FLOW_FILE_SUFFIX))) {
+      final int newFlowVersion = this.projectLoader
+          .getLatestFlowVersion(project.getId(), newProjectVersion, file.getName()) + 1;
+      this.projectLoader
+          .uploadFlowFile(project.getId(), newProjectVersion, file, newFlowVersion);
+    }
+    for (final File file : projectDir.listFiles(new DirFilter())) {
+      uploadFlowFilesRecursively(file, project, newProjectVersion);
+    }
+  }
+
   private void cleanUpProjectOldInstallations(final Project project)
-      throws ProjectManagerException{
+      throws ProjectManagerException, ExecutorManagerException {
     log.info("Cleaning up old install files older than "
         + (project.getVersion() - this.projectVersionRetention));
+    final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+        .fetchUnfinishedFlowsMetadata();
+    final List<Integer> versionsWithUnfinishedExecutions = unfinishedFlows.values()
+        .stream().map(pair -> pair.getSecond())
+        .filter(exflow -> exflow.getProjectId() == project.getId())
+        .map(exflow -> exflow.getVersion())
+        .collect(Collectors.toList());
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() - this.projectVersionRetention);
-
+        project.getVersion() - this.projectVersionRetention, versionsWithUnfinishedExecutions);
     // Clean up storage
-    this.storageManager.cleanupProjectArtifacts(project.getId());
+    this.projectStorageManager.cleanupProjectArtifacts(project.getId(), versionsWithUnfinishedExecutions);
   }
 
   private File unzipFile(final File archiveFile) throws IOException {
@@ -252,7 +294,7 @@ class AzkabanProjectLoader {
     if (version == -1) {
       version = this.projectLoader.getLatestProjectVersion(project);
     }
-    return this.storageManager.getProjectFile(project.getId(), version);
+    return this.projectStorageManager.getProjectFile(project.getId(), version);
   }
 
 }

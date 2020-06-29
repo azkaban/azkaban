@@ -1,5 +1,6 @@
 package azkaban.execapp;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -38,7 +39,7 @@ public class ExecJettyServerModule extends AbstractModule {
      * The Jetty server automatically finds an unused port when the port number is set to zero
      * TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
      */
-    final Server server = new Server(props.getInt("executor.port", 0));
+    final Server server = new Server(props.getInt(ConfigurationKeys.EXECUTOR_PORT, 0));
     final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     server.setThreadPool(httpThreadPool);
 

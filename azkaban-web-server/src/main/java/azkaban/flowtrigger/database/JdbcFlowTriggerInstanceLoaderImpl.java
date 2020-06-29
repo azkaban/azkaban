@@ -36,7 +36,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,7 +58,6 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
 
   private static final Logger logger = LoggerFactory
       .getLogger(JdbcFlowTriggerInstanceLoaderImpl.class);
-
   private static final String[] DEPENDENCY_EXECUTIONS_COLUMNS = {"trigger_instance_id", "dep_name",
       "starttime", "endtime", "dep_status", "cancelleation_cause", "project_id", "project_version",
       "flow_id", "flow_version", "flow_exec_id"};
@@ -73,25 +74,28 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
           ("UPDATE %s SET dep_status = ?, endtime = ?, cancelleation_cause  = ? WHERE trigger_instance_id = "
               + "? AND dep_name = ? ;", DEPENDENCY_EXECUTION_TABLE);
 
-
   private static final String SELECT_EXECUTIONS_BY_INSTANCE_ID =
       String.format("SELECT %s FROM %s WHERE trigger_instance_id = ?",
           StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
           DEPENDENCY_EXECUTION_TABLE);
 
+  private static final String SELECT_EXECUTIONS_BY_EXEC_ID =
+      String.format("SELECT %s FROM %s WHERE flow_exec_id = ?",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+          DEPENDENCY_EXECUTION_TABLE);
+
   private static final String SELECT_ALL_PENDING_EXECUTIONS =
-      String
-          .format(
-              "SELECT %s FROM %s WHERE trigger_instance_id in (SELECT trigger_instance_id FROM %s "
-                  + "WHERE "
-                  + "dep_status = %s or dep_status = %s or (dep_status = %s and "
-                  + "flow_exec_id = %s))",
-              StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
-              DEPENDENCY_EXECUTION_TABLE,
-              DEPENDENCY_EXECUTION_TABLE,
-              Status.RUNNING.ordinal(), Status.CANCELLING.ordinal(),
-              Status.SUCCEEDED.ordinal(),
-              Constants.UNASSIGNED_EXEC_ID);
+      String.format(
+          "SELECT %s FROM %s WHERE trigger_instance_id in (SELECT trigger_instance_id FROM %s "
+              + "WHERE "
+              + "dep_status = %s or dep_status = %s or (dep_status = %s and "
+              + "flow_exec_id = %s))",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+          DEPENDENCY_EXECUTION_TABLE,
+          DEPENDENCY_EXECUTION_TABLE,
+          Status.RUNNING.ordinal(), Status.CANCELLING.ordinal(),
+          Status.SUCCEEDED.ordinal(),
+          Constants.UNASSIGNED_EXEC_ID);
 
   private static final String SELECT_ALL_RUNNING_EXECUTIONS =
       String.format(
@@ -116,14 +120,33 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
       Status.RUNNING.ordinal(),
       Status.CANCELLING.ordinal());
 
+  private static final String SELECT_RECENT_WITH_START_AND_LENGTH = String.format("SELECT %s FROM"
+          + " %s WHERE trigger_instance_id IN (\n"
+          + "SELECT trigger_instance_id FROM (\n"
+          + "SELECT trigger_instance_id, min(starttime) AS trigger_start_time FROM %s"
+          + " WHERE project_id = ? AND flow_id = ? GROUP BY "
+          + "trigger_instance_id ORDER BY trigger_start_time DESC\n"
+          + "LIMIT ? OFFSET ?) AS tmp);", StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","),
+      DEPENDENCY_EXECUTION_TABLE, DEPENDENCY_EXECUTION_TABLE);
+
+  private static final String SELECT_EXECUTION_OLDER_THAN =
+      String.format(
+          "SELECT %s FROM %s WHERE trigger_instance_id IN (SELECT "
+              + "DISTINCT(trigger_instance_id) FROM %s WHERE endtime <= ? AND endtime != 0);",
+          StringUtils.join(DEPENDENCY_EXECUTIONS_COLUMNS, ","), DEPENDENCY_EXECUTION_TABLE,
+          DEPENDENCY_EXECUTION_TABLE);
+
+  private static final String DELETE_EXECUTIONS =
+      String.format("DELETE FROM %s WHERE trigger_instance_id IN (?);", DEPENDENCY_EXECUTION_TABLE);
 
   private static final String UPDATE_DEPENDENCY_FLOW_EXEC_ID = String.format("UPDATE %s SET "
       + "flow_exec_id "
       + "= ? WHERE trigger_instance_id = ? AND dep_name = ? ;", DEPENDENCY_EXECUTION_TABLE);
 
-  private final DatabaseOperator dbOperator;
   private final ProjectLoader projectLoader;
+  private final DatabaseOperator dbOperator;
   private final ProjectManager projectManager;
+
 
   @Inject
   public JdbcFlowTriggerInstanceLoaderImpl(final DatabaseOperator databaseOperator,
@@ -137,11 +160,12 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   public Collection<TriggerInstance> getIncompleteTriggerInstances() {
     final Collection<TriggerInstance> unfinished = new ArrayList<>();
     try {
-      final Collection<TriggerInstance> triggerInstances = this.dbOperator
-          .query(SELECT_ALL_PENDING_EXECUTIONS, new TriggerInstanceHandler());
+      final Collection<TriggerInstance> triggerInsts = this.dbOperator
+          .query(SELECT_ALL_PENDING_EXECUTIONS,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC));
 
       // select incomplete trigger instances
-      for (final TriggerInstance triggerInst : triggerInstances) {
+      for (final TriggerInstance triggerInst : triggerInsts) {
         if (!Status.isDone(triggerInst.getStatus()) || (triggerInst.getStatus() == Status.SUCCEEDED
             && triggerInst.getFlowExecId() == Constants.UNASSIGNED_EXEC_ID)) {
           unfinished.add(triggerInst);
@@ -268,7 +292,8 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   public Collection<TriggerInstance> getRecentlyFinished(final int limit) {
     final String query = String.format(SELECT_RECENTLY_FINISHED, limit);
     try {
-      return this.dbOperator.query(query, new TriggerInstanceHandler());
+      return this.dbOperator
+          .query(query, new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC));
     } catch (final SQLException ex) {
       handleSQLException(ex);
     }
@@ -280,28 +305,15 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
     try {
       //todo chengren311:
       // 1. add index for the execution_dependencies table to accelerate selection.
-      // 2. implement purging mechanism to keep reasonable amount of historical executions in db.
-      return this.dbOperator.query(SELECT_ALL_RUNNING_EXECUTIONS, new TriggerInstanceHandler());
+      return this.dbOperator.query(SELECT_ALL_RUNNING_EXECUTIONS, new TriggerInstanceHandler
+          (SORT_MODE.SORT_ON_START_TIME_ASC));
     } catch (final SQLException ex) {
       handleSQLException(ex);
     }
     return Collections.emptyList();
   }
 
-  /**
-   * Retrieve a trigger instance given an instance id. Flow trigger properties will also be
-   * populated into the returned trigger instance.
-   */
-  @Override
-  public TriggerInstance getTriggerInstanceById(final String triggerInstanceId) {
-    TriggerInstance triggerInstance = null;
-    try {
-      final Collection<TriggerInstance> res = this.dbOperator
-          .query(SELECT_EXECUTIONS_BY_INSTANCE_ID, new TriggerInstanceHandler(), triggerInstanceId);
-      triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
-    } catch (final SQLException ex) {
-      handleSQLException(ex);
-    }
+  private void populateFlowTriggerProperties(final TriggerInstance triggerInstance) {
     if (triggerInstance != null) {
       final int projectId = triggerInstance.getProject().getId();
       final int projectVersion = triggerInstance.getProject().getVersion();
@@ -318,7 +330,7 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
             triggerInstance.setFlowTrigger(flowTrigger);
           }
         } else {
-          logger.error("Unable to find flow file for " + triggerInstanceId);
+          logger.error("Unable to find flow file for " + triggerInstance);
         }
       } catch (final Exception ex) {
         logger.error("error in getting flow file", ex);
@@ -326,7 +338,106 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
         FlowLoaderUtils.cleanUpDir(tempDir);
       }
     }
+  }
+
+  /**
+   * Retrieve a trigger instance given a flow execution id. Flow trigger properties will
+   * also be populated into the returned trigger instance. If flow exec id is -1 or -2, then
+   * null will be returned.
+   */
+  @Override
+  public TriggerInstance getTriggerInstanceByFlowExecId(final int flowExecId) {
+    if (flowExecId == Constants.FAILED_EXEC_ID || flowExecId == Constants.UNASSIGNED_EXEC_ID) {
+      return null;
+    }
+    TriggerInstance triggerInstance = null;
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_EXECUTIONS_BY_EXEC_ID,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC), flowExecId);
+      triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+    }
+    populateFlowTriggerProperties(triggerInstance);
     return triggerInstance;
+  }
+
+  @Override
+  /**
+   * Retrieve sorted trigger instances on start time in descending order
+   * given projectId, flowId, start position and length.
+   * @param projectId
+   * @param flowId
+   * @param from starting position of the range of trigger instance to retrieve
+   * @param length number of consecutive trigger instances to retrieve
+   */
+  public Collection<TriggerInstance> getTriggerInstances(
+      final int projectId, final String flowId, final int from,
+      final int length) {
+
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_RECENT_WITH_START_AND_LENGTH, new TriggerInstanceHandler(SORT_MODE
+                  .SORT_ON_START_TIME_DESC), projectId,
+              flowId, length, from);
+      return res;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+    }
+    return Collections.emptyList();
+  }
+
+  @Override
+  public int deleteTriggerExecutionsFinishingOlderThan(final long timestamp) {
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_EXECUTION_OLDER_THAN,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_DESC), timestamp);
+      final Set<String> toBeDeleted = new HashSet<>();
+      for (final TriggerInstance inst : res) {
+        if ((inst.getStatus() == Status.CANCELLED || (inst.getStatus() == Status.SUCCEEDED && inst
+            .getFlowExecId() != -1)) && inst.getEndTime() <= timestamp) {
+          toBeDeleted.add(inst.getId());
+        }
+      }
+      int numDeleted = 0;
+      if (!toBeDeleted.isEmpty()) {
+        final String ids = toBeDeleted.stream().map(s -> "'" + s + "'")
+            .collect(Collectors.joining(", "));
+        numDeleted = this.dbOperator.update(DELETE_EXECUTIONS.replace("?", ids));
+      }
+      logger.info("{} dependency instance record(s) deleted", numDeleted);
+      return numDeleted;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+      return 0;
+    }
+  }
+
+  /**
+   * Retrieve a trigger instance given an instance id. Flow trigger properties will also be
+   * populated into the returned trigger instance.
+   */
+  @Override
+  public TriggerInstance getTriggerInstanceById(final String triggerInstanceId) {
+    TriggerInstance triggerInstance = null;
+    try {
+      final Collection<TriggerInstance> res = this.dbOperator
+          .query(SELECT_EXECUTIONS_BY_INSTANCE_ID,
+              new TriggerInstanceHandler(SORT_MODE.SORT_ON_START_TIME_ASC),
+              triggerInstanceId);
+      triggerInstance = !res.isEmpty() ? res.iterator().next() : null;
+    } catch (final SQLException ex) {
+      handleSQLException(ex);
+    }
+    populateFlowTriggerProperties(triggerInstance);
+    return triggerInstance;
+  }
+
+  private enum SORT_MODE {
+    SORT_ON_START_TIME_DESC,
+    SORT_ON_START_TIME_ASC
   }
 
   public static class FlowConfigID {
@@ -394,7 +505,10 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
   private class TriggerInstanceHandler implements
       ResultSetHandler<Collection<TriggerInstance>> {
 
-    public TriggerInstanceHandler() {
+    private final SORT_MODE mode;
+
+    public TriggerInstanceHandler(final SORT_MODE mode) {
+      this.mode = mode;
     }
 
     @Override
@@ -438,19 +552,14 @@ public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoa
             .submitUser, entry.getValue(), entry.getKey().flowExecId, entry.getKey().project));
       }
 
-      //sort on start time in ascending order
-      Collections.sort(res, (o1, o2) -> {
-        if (o1.getStartTime() < o2.getStartTime()) {
-          return -1;
-        } else if (o1.getStartTime() > o2.getStartTime()) {
-          return 1;
-        } else {
-          return 0;
-        }
-      });
-
+      if (this.mode == SORT_MODE.SORT_ON_START_TIME_ASC) {
+        Collections.sort(res, Comparator.comparing(TriggerInstance::getStartTime));
+      } else if (this.mode == SORT_MODE.SORT_ON_START_TIME_DESC) {
+        Collections.sort(res, Comparator.comparing(TriggerInstance::getStartTime).reversed());
+      }
       return res;
     }
+
 
     private class TriggerInstKey {
 

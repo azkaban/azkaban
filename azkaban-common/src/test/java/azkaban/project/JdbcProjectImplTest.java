@@ -17,6 +17,7 @@ package azkaban.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.flow.Flow;
@@ -24,9 +25,8 @@ import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.Md5Hasher;
+import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
-import azkaban.utils.Triple;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +51,8 @@ public class JdbcProjectImplTest {
   private static final String LARGE_FLOW_YAML_DIR = "largeflowyamltest";
   private static final String BASIC_FLOW_FILE = "basic_flow.flow";
   private static final String LARGE_FLOW_FILE = "large_file.flow";
+  private static final String IPv4 = "111.111.111.111";
+  private static final String IPv6 = "2607:f0d0:1002:0051:0000:0000:0000:0004";
   private static final int PROJECT_ID = 123;
   private static final int PROJECT_VERSION = 3;
   private static final int FLOW_VERSION = 1;
@@ -119,13 +121,6 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void testFetchAllActiveProjects() throws Exception {
-    createThreeProjects();
-    final List<Project> projectList = this.loader.fetchAllActiveProjects();
-    Assert.assertEquals(projectList.size(), 3);
-  }
-
-  @Test
   public void testFetchProjectByName() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
@@ -150,7 +145,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getFileName(), SAMPLE_FILE);
@@ -163,16 +159,18 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
   }
 
   private byte[] computeHash(final File localFile) {
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(localFile);
+      md5 = HashUtils.MD5.getHashBytes(localFile);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
     return md5;
   }
@@ -183,8 +181,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1",
-        computeHash(testFile), "resourceId1");
+    this.loader.addProjectVersion(project.getId(), newVersion, testFile, null,
+        "uploadUser1", computeHash(testFile), "resourceId1", IPv6);
     final int currVersion = this.loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);
   }
@@ -195,7 +193,8 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv6);
     final ProjectFileHandler pfh = this.loader.fetchProjectMetaData(project.getId(), newVersion);
     Assert.assertEquals(pfh.getVersion(), newVersion);
   }
@@ -217,11 +216,46 @@ public class JdbcProjectImplTest {
     this.loader.updatePermission(project, project.getLastModifiedUser(),
         new Permission(Permission.Type.ADMIN), false);
 
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
-        .getProjectPermissions(project);
-    Assert.assertEquals(permissionsTriple.size(), 1);
-    Assert.assertEquals(permissionsTriple.get(0).getFirst(), "testUser1");
-    Assert.assertEquals(permissionsTriple.get(0).getThird().toString(), "ADMIN");
+    final Project sameProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(sameProject.getUserPermissions().size(), 1);
+    Assert.assertEquals(sameProject.getUserPermissions().get(0).getFirst(), "testUser1");
+    Assert.assertEquals(sameProject.getUserPermissions().get(0).getSecond().toString(), "ADMIN");
+  }
+
+  @Test
+  public void testGetPermissionsOnAllActiveProjects() throws Exception {
+    createThreeProjects();
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    this.loader.updatePermission(project1, "testUser1", new Permission(Permission.Type.ADMIN), false);
+    this.loader.updatePermission(project1, "testUser2", new Permission(Permission.Type.EXECUTE), false);
+    this.loader.updatePermission(project1, "testGroup1", new Permission(Permission.Type.ADMIN), true);
+
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    this.loader.updatePermission(project2, "testGroup2", new Permission(Permission.Type.READ), true);
+
+    final List<Project> projectList = this.loader.fetchAllActiveProjects();
+    final Project returnedProject1 = findProjectWithName(projectList, "mytestProject");
+    final Project returnedProject2 = findProjectWithName(projectList, "mytestProject2");
+    final Project returnedProject3 = findProjectWithName(projectList, "mytestProject3");
+
+    // Check to make sure project 1 and 2 were returned - but project 3 should not be returned (it has no associated
+    // permissions and we are using an INNER join).
+    Assert.assertNotNull(returnedProject1);
+    Assert.assertNotNull(returnedProject2);
+    Assert.assertNull(returnedProject3);
+
+    // Make sure proper permissions were returned for project1
+    Assert.assertTrue(returnedProject1.getUserPermission("testUser1").isPermissionSet(Permission.Type.ADMIN));
+    Assert.assertTrue(returnedProject1.getUserPermission("testUser2").isPermissionSet(Permission.Type.EXECUTE));
+    Assert.assertTrue(returnedProject1.getGroupPermission("testGroup1").isPermissionSet(Permission.Type.ADMIN));
+
+    // Make sure proper permissions were returned for project2
+    Assert.assertEquals(returnedProject2.getUserPermissions().size(), 0);
+    Assert.assertTrue(returnedProject2.getGroupPermission("testGroup2").isPermissionSet(Permission.Type.READ));
+  }
+
+  private Project findProjectWithName(List<Project> projects, String name) {
+    return projects.stream().filter(p -> p.getName().equals(name)).findFirst().orElse(null);
   }
 
   @Test
@@ -242,9 +276,9 @@ public class JdbcProjectImplTest {
     this.loader.updatePermission(project, project.getLastModifiedUser(),
         new Permission(Permission.Type.ADMIN), false);
     this.loader.removePermission(project, project.getLastModifiedUser(), false);
-    final List<Triple<String, Boolean, Permission>> permissionsTriple = this.loader
-        .getProjectPermissions(project);
-    Assert.assertEquals(permissionsTriple.size(), 0);
+    final Project sameProject = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(sameProject.getGroupPermissions().size(), 0);
+    Assert.assertEquals(sameProject.getUserPermissions().size(), 0);
   }
 
   @Test
@@ -253,8 +287,7 @@ public class JdbcProjectImplTest {
     final Project project = this.loader.fetchProjectByName("mytestProject");
     Assert.assertEquals(project.isActive(), true);
     this.loader.removeProject(project, "testUser1");
-    final Project removedProject = this.loader.fetchProjectByName("mytestProject");
-    Assert.assertEquals(removedProject.isActive(), false);
+    Assert.assertNull(this.loader.fetchProjectByName("mytestProject"));
   }
 
   @Test
@@ -278,17 +311,31 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void testUploadAndFetchFlow() throws Exception {
+  public void testUploadAndFetchFlowsForMultipleProjects() throws Exception {
     final Flow flow1 = new Flow("flow1");
     final Flow flow2 = new Flow("flow2");
-    final List<Flow> flowList = Arrays.asList(flow1, flow2);
+    final List<Flow> flowList1 = Arrays.asList(flow1, flow2);
+
+    final Flow flow3 = new Flow("flow2");
+    final List<Flow> flowList2 = Arrays.asList(flow3);
 
     createThreeProjects();
-    final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.uploadFlows(project, project.getVersion(), flowList);
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    this.loader.uploadFlows(project1, project1.getVersion(), flowList1);
 
-    final List<Flow> flowList2 = this.loader.fetchAllProjectFlows(project);
-    Assert.assertEquals(flowList2.size(), 2);
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    this.loader.uploadFlows(project2, project2.getVersion(), flowList2);
+
+    // Don't upload any flows for project3
+    final Project project3 = this.loader.fetchProjectByName("mytestProject3");
+
+    List<Project> projectList = Arrays.asList(project1, project2, project3);
+
+    final Map<Project, List<Flow>> projectToFlows = this.loader.fetchAllFlowsForProjects(projectList);
+    Assert.assertEquals(projectToFlows.size(), 3);
+    Assert.assertEquals(projectToFlows.get(project1).size(), 2);
+    Assert.assertEquals(projectToFlows.get(project2).size(), 1);
+    Assert.assertEquals(projectToFlows.get(project3).size(), 0);
   }
 
   @Test
@@ -303,8 +350,9 @@ public class JdbcProjectImplTest {
 
     flow1.setLayedOut(true);
     this.loader.updateFlow(project, project.getVersion(), flow1);
-    final List<Flow> flowList2 = this.loader.fetchAllProjectFlows(project);
-    Assert.assertEquals(flowList2.get(0).isLayedOut(), true);
+
+    final List<Flow> flows = this.loader.fetchAllProjectFlows(project);
+    Assert.assertEquals(flows.get(0).isLayedOut(), true);
   }
 
   @Test
@@ -353,21 +401,56 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void cleanOlderProjectVersion() throws Exception {
+  public void cleanOlderProjectVersion() {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
     final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
-    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv4);
 
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getNumChunks(), 1);
+    assertNumChunks(project, newVersion, 1);
 
-    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion + 1, Collections.emptyList());
 
-    final ProjectFileHandler fileHandler2 = this.loader
-        .fetchProjectMetaData(project.getId(), newVersion);
-    Assert.assertEquals(fileHandler2.getNumChunks(), 0);
+    assertNumChunks(project, newVersion, 0);
+    assertGetUploadedFileOfCleanedVersion(project.getId(), newVersion);
+  }
+
+  @Test
+  public void cleanOlderProjectVersionExcludedVersion() {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    final File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
+    final int newVersion = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1",
+        IPv6);
+    final int newVersion2 = this.loader.getLatestProjectVersion(project) + 1;
+    this.loader.uploadProjectFile(project.getId(), newVersion2, testFile, "uploadUser1",
+        IPv6);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
+        Arrays.asList(newVersion, newVersion2));
+    assertNumChunks(project, newVersion, 1);
+    assertNumChunks(project, newVersion2, 1);
+    this.loader.cleanOlderProjectVersion(project.getId(), newVersion2 + 1,
+        Arrays.asList(newVersion));
+    assertNumChunks(project, newVersion, 1);
+    assertNumChunks(project, newVersion2, 0);
+  }
+
+  private void assertNumChunks(final Project project, final int version, final int expectedChunks) {
+    final ProjectFileHandler fileHandler = this.loader
+        .fetchProjectMetaData(project.getId(), version);
+    Assert.assertEquals(expectedChunks, fileHandler.getNumChunks());
+  }
+
+  private void assertGetUploadedFileOfCleanedVersion(final int project, final int version) {
+    final Throwable thrown = catchThrowable(() -> this.loader.getUploadedFile(project, version));
+    assertThat(thrown).isInstanceOf(ProjectManagerException.class);
+    assertThat(thrown).hasMessageStartingWith(String.format("Got numChunks=0 for version %s of "
+        + "project %s - seems like this version has been cleaned up", version, project));
   }
 
   @Test

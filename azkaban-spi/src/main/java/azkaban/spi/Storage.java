@@ -33,23 +33,40 @@ import java.io.InputStream;
  * Note: This is a synchronous interface.
  */
 public interface Storage {
-
   /**
-   * Get an InputStream object by providing a key.
+   * Get an InputStream object for a project by providing a key.
    *
    * @param key The key is a string pointing to the blob in Storage.
    * @return InputStream for fetching the blob. null if the key is not found.
    */
-  InputStream get(String key) throws IOException;
+  InputStream getProject(String key) throws IOException;
 
   /**
-   * Put an object and return a key.
+   * Put a project and return a key.
    *
    * @param metadata Metadata related to the input stream
    * @param localFile Read data from a local file
    * @return Key associated with the current object on successful put
    */
-  String put(StorageMetadata metadata, File localFile);
+  String putProject(ProjectStorageMetadata metadata, File localFile);
+
+  /**
+   * Get an InputStream object for a dependency.
+   *
+   * @param dep the dependency to fetch
+   * @return InputStream for fetching the blob.
+   */
+  InputStream getDependency(Dependency dep) throws IOException;
+
+  /**
+   * Get root path of dependency location (should be http://...) OR if thin archives is not enabled, will be null.
+   */
+  String getDependencyRootPath();
+
+  /**
+   * See if dependency fetching is enabled (required azkaban.properties were set).
+   */
+  boolean dependencyFetchingEnabled();
 
   /**
    * Delete an object from Storage.
@@ -57,5 +74,5 @@ public interface Storage {
    * @param key The key is a string pointing to the blob in Storage.
    * @return true if delete was successful. false if there was nothing to delete.
    */
-  boolean delete(String key);
+  boolean deleteProject(String key);
 }

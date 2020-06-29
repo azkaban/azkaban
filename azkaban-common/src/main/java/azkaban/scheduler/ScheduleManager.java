@@ -17,7 +17,6 @@
 package azkaban.scheduler;
 
 import azkaban.executor.ExecutionOptions;
-import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
@@ -156,11 +155,10 @@ public class ScheduleManager implements TriggerAgent {
       final long nextExecTime,
       final long submitTime,
       final String submitUser,
-      final ExecutionOptions execOptions,
-      final List<SlaOption> slaOptions) {
+      final ExecutionOptions execOptions) {
     final Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
         firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
-        submitTime, submitUser, execOptions, slaOptions, null);
+        submitTime, submitUser, execOptions, null);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null
@@ -184,12 +182,11 @@ public class ScheduleManager implements TriggerAgent {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions execOptions,
-      final List<SlaOption> slaOptions,
       final String cronExpression) {
     final Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
             firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
-            submitTime, submitUser, execOptions, slaOptions, cronExpression);
+            submitTime, submitUser, execOptions, cronExpression);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);

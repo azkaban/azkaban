@@ -37,9 +37,10 @@ public class AzkabanFlow extends AzkabanNode {
   private final Map<String, AzkabanNode> nodes;
   private final FlowTrigger flowTrigger;
 
-  private AzkabanFlow(final String name, final Props props, final Map<String, AzkabanNode> nodes,
-      final List<String> dependsOn, final FlowTrigger flowTrigger) {
-    super(name, Constants.FLOW_NODE_TYPE, props, dependsOn);
+  private AzkabanFlow(final String name, final Props props, final String condition,
+      final Map<String, AzkabanNode> nodes, final List<String> dependsOn,
+      final FlowTrigger flowTrigger) {
+    super(name, Constants.FLOW_NODE_TYPE, props, condition, dependsOn);
     this.nodes = nodes;
     this.flowTrigger = flowTrigger;
   }
@@ -60,6 +61,7 @@ public class AzkabanFlow extends AzkabanNode {
 
     private String name;
     private Props props;
+    private String condition;
     private List<String> dependsOn;
     private Map<String, AzkabanNode> nodes;
     private FlowTrigger flowTrigger;
@@ -71,6 +73,11 @@ public class AzkabanFlow extends AzkabanNode {
 
     public AzkabanFlowBuilder props(final Props props) {
       this.props = props;
+      return this;
+    }
+
+    public AzkabanFlowBuilder condition(final String condition) {
+      this.condition = condition;
       return this;
     }
 
@@ -96,7 +103,8 @@ public class AzkabanFlow extends AzkabanNode {
     }
 
     public AzkabanFlow build() {
-      return new AzkabanFlow(this.name, this.props, this.nodes, this.dependsOn, this.flowTrigger);
+      return new AzkabanFlow(this.name, this.props, this.condition, this.nodes, this.dependsOn, this
+          .flowTrigger);
     }
   }
 }

@@ -47,10 +47,12 @@ public class ReportalPigRunner extends ReportalAbstractRunner {
   public static final String PIG_SCRIPT = "reportal.pig.script";
   public static final String UDF_IMPORT_LIST = "udf.import.list";
   public static final String PIG_ADDITIONAL_JARS = "pig.additional.jars";
+  private final String jobName;
   Props prop;
 
   public ReportalPigRunner(final String jobName, final Properties props) {
     super(props);
+    this.jobName = jobName;
     this.prop = new Props();
     this.prop.put(props);
   }
@@ -218,7 +220,11 @@ public class ReportalPigRunner extends ReportalAbstractRunner {
     // Inject variables into the script
     System.out.println("Reportal Pig: Replacing variables");
     final File inputFile = new File(file);
-    final File outputFile = new File(file + ".bak");
+
+    // Creating a bak file under the root working directory, in order to copy the original pig
+    // script to here with injected variables.
+    final File outputFile = new File(this.jobName + ".bak");
+
     final InputStream scriptInputStream =
         new BufferedInputStream(new FileInputStream(inputFile));
     final Scanner rowScanner = new Scanner(scriptInputStream, StandardCharsets.UTF_8.toString());

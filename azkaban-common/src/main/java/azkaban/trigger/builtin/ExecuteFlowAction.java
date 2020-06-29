@@ -13,13 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger.builtin;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.project.Project;
@@ -33,13 +31,14 @@ import java.util.List;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
+
 public class ExecuteFlowAction implements TriggerAction {
 
   public static final String type = "ExecuteFlowAction";
 
   public static final String EXEC_ID = "ExecuteFlowAction.execid";
 
-  private static ExecutorManagerAdapter executorManager;
+  private static ExecutorManagerAdapter executorManagerAdapter;
   private static TriggerManager triggerManager;
   private static ProjectManager projectManager;
   private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
@@ -49,18 +48,15 @@ public class ExecuteFlowAction implements TriggerAction {
   private String flowName;
   private String submitUser;
   private ExecutionOptions executionOptions = new ExecutionOptions();
-  private List<SlaOption> slaOptions;
 
   public ExecuteFlowAction(final String actionId, final int projectId, final String projectName,
-      final String flowName, final String submitUser, final ExecutionOptions executionOptions,
-      final List<SlaOption> slaOptions) {
+      final String flowName, final String submitUser, final ExecutionOptions executionOptions) {
     this.actionId = actionId;
     this.projectId = projectId;
     this.projectName = projectName;
     this.flowName = flowName;
     this.submitUser = submitUser;
     this.executionOptions = executionOptions;
-    this.slaOptions = slaOptions;
   }
 
   public static void setLogger(final Logger logger) {
@@ -68,11 +64,12 @@ public class ExecuteFlowAction implements TriggerAction {
   }
 
   public static ExecutorManagerAdapter getExecutorManager() {
-    return executorManager;
+    return executorManagerAdapter;
   }
 
-  public static void setExecutorManager(final ExecutorManagerAdapter executorManager) {
-    ExecuteFlowAction.executorManager = executorManager;
+  public static void setExecutorManager(
+      final ExecutorManagerAdapter executorManagerAdapter) {
+    ExecuteFlowAction.executorManagerAdapter = executorManagerAdapter;
   }
 
   public static TriggerManager getTriggerManager() {
@@ -108,16 +105,16 @@ public class ExecuteFlowAction implements TriggerAction {
       executionOptions =
           ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
     }
-    List<SlaOption> slaOptions = null;
     if (jsonObj.containsKey("slaOptions")) {
-      slaOptions = new ArrayList<>();
+      ArrayList<SlaOption> slaOptions = new ArrayList<>();
       final List<Object> slaOptionsObj = (List<Object>) jsonObj.get("slaOptions");
       for (final Object slaObj : slaOptionsObj) {
         slaOptions.add(SlaOption.fromObject(slaObj));
       }
+      executionOptions.setSlaOptions(slaOptions);
     }
     return new ExecuteFlowAction(actionId, projectId, projectName, flowName,
-        submitUser, executionOptions, slaOptions);
+        submitUser, executionOptions);
   }
 
   public String getProjectName() {
@@ -156,14 +153,6 @@ public class ExecuteFlowAction implements TriggerAction {
     this.executionOptions = executionOptions;
   }
 
-  public List<SlaOption> getSlaOptions() {
-    return this.slaOptions;
-  }
-
-  protected void setSlaOptions(final List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
-  }
-
   @Override
   public String getType() {
     return type;
@@ -186,11 +175,8 @@ public class ExecuteFlowAction implements TriggerAction {
     if (this.executionOptions != null) {
       jsonObj.put("executionOptions", this.executionOptions.toObject());
     }
-    if (this.slaOptions != null) {
-      final List<Object> slaOptionsObj = new ArrayList<>();
-      for (final SlaOption sla : this.slaOptions) {
-        slaOptionsObj.add(sla.toObject());
-      }
+    List<Object> slaOptionsObj = SlaOption.convertToObjects(this.executionOptions.getSlaOptions());
+    if (slaOptionsObj != null) {
       jsonObj.put("slaOptions", slaOptionsObj);
     }
     return jsonObj;
@@ -198,7 +184,7 @@ public class ExecuteFlowAction implements TriggerAction {
 
   @Override
   public void doAction() throws Exception {
-    if (projectManager == null || executorManager == null) {
+    if (projectManager == null || executorManagerAdapter == null) {
       throw new Exception("ExecuteFlowAction not properly initialized!");
     }
 
@@ -218,19 +204,12 @@ public class ExecuteFlowAction implements TriggerAction {
     if (!this.executionOptions.isSuccessEmailsOverridden()) {
       this.executionOptions.setSuccessEmails(flow.getSuccessEmails());
     }
+
     exflow.setExecutionOptions(this.executionOptions);
 
-    if (this.slaOptions != null && this.slaOptions.size() > 0) {
-      exflow.setSlaOptions(this.slaOptions);
-    }
-
-    try {
-      logger.info("Invoking flow " + project.getName() + "." + this.flowName);
-      executorManager.submitExecutableFlow(exflow, this.submitUser);
-      logger.info("Invoked flow " + project.getName() + "." + this.flowName);
-    } catch (final ExecutorManagerException e) {
-      throw new RuntimeException(e);
-    }
+    logger.info("Invoking flow " + project.getName() + "." + this.flowName);
+    executorManagerAdapter.submitExecutableFlow(exflow, this.submitUser);
+    logger.info("Invoked flow " + project.getName() + "." + this.flowName);
   }
 
   @Override
@@ -247,5 +226,4 @@ public class ExecuteFlowAction implements TriggerAction {
   public String getId() {
     return this.actionId;
   }
-
 }

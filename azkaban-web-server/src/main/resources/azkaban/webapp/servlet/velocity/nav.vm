@@ -32,13 +32,33 @@
     color: red;
     cursor: pointer;
   }
+
+  #close {
+    float: right;
+    display: inline-block;
+    padding: 2px 5px;
+    background: #ccc;
+    color: #fff;
+  }
 </style>
 <script type="text/javascript">
   function navMenuClick(url) {
     window.location.href = url;
   }
 
+  function dismissBanner() {
+    var dismissBanner = localStorage.getItem("dismissBanner");
+    if (dismissBanner != "true") {
+      localStorage.setItem("dismissBanner", "true");
+    }
+    $("#banner").slideUp();
+  }
+
   $(function () {
+    var dismissBanner = localStorage.getItem("dismissBanner");
+    if (dismissBanner == "true") {
+      return;
+    }
 
     if ($("#banner").data("id").indexOf('$') == -1 && $('#banner').is(':empty') == false) {
       $('#banner').attr('Target', '_blank');
@@ -60,6 +80,8 @@
           $('#bannerText').append('<span style="font-size: 150%;" >' + $("#banner").data("message")
               + '</span>');
         }
+
+        $('#close').append('dismiss');
         // The banner will side up after 30 seconds
         setTimeout(function () {
           $("#banner").slideUp();
@@ -70,6 +92,7 @@
 </script>
 
 <div id='banner' data-id="$note_type" data-message="$note_message" data-url="$note_url">
+  <span id='close' onclick="dismissBanner()"></span>
   <div id="bannerText">
   </div>
 </div>
@@ -105,6 +128,11 @@
           <li#if($current_page == 'history') class="active"#end
                                              onClick="navMenuClick('$!context/history')"><a
               href="$!context/history">History</a></li>
+          <li#if($current_page == 'flowtrigger') class="active"#end
+                                                 onClick="navMenuClick('$!context/flowtrigger')">
+            <a
+                href="$!context/flowtrigger">Flow Trigger Schedule</a></li>
+
           #foreach ($viewer in $viewers)
             #if (!$viewer.hidden)
               <li#if($current_page == $viewer.pluginName) class="active"#end
@@ -120,7 +148,12 @@
                 <a href="$!context/$trigger.pluginPath">$trigger.pluginName</a></li>
             #end
           #end
+
+          <li#if($current_page == 'doc') class="active"#end
+                                         onClick="navMenuClick('https://azkaban.readthedocs.io/en/latest/')">
+            <a href="https://azkaban.readthedocs.io/en/latest/">Documentation</a></li>
         </ul>
+
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">${user_id} <b

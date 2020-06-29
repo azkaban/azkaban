@@ -50,6 +50,13 @@ public class DatabaseOperatorTest {
   private QueryRunner queryRunner;
   private Connection conn;
 
+  private static String BATCH_COMMAND = "INSERT INTO tb (rampId, flowId, treatment, timestamp) VALUES(?,?,?,?)";
+  private static Object[][] BATCH_PARAMETERS = {
+      {"rampId1", "flowId1", "S", 1566494649000L},
+      {"rampId2", "flowId2", "U", 1566494650000L}
+  };
+  private static int[] BATCH_COMMAND_RESULT = {1, 1};
+
   @Before
   public void setUp() throws Exception {
     this.queryRunner = mock(QueryRunner.class);
@@ -73,6 +80,9 @@ public class DatabaseOperatorTest {
     when(this.queryRunner.query("select * from blah where ? = ?", this.handler, "id", 3))
         .thenReturn(0);
 
+
+    when(this.queryRunner.batch(BATCH_COMMAND, BATCH_PARAMETERS)).thenReturn(BATCH_COMMAND_RESULT);
+
     //If typos, throw Exceptions.
     doThrow(SQLException.class).when(this.queryRunner)
         .query("sele * from blah where ? = ?", this.handler, "id", 2);
@@ -81,6 +91,7 @@ public class DatabaseOperatorTest {
       index_1 = 26;
       return 1;
     }).when(this.queryRunner).update("update blah set ? = ?", "1", 26);
+
   }
 
   @Test
@@ -133,5 +144,11 @@ public class DatabaseOperatorTest {
 
     // 0 row is affected
     Assert.assertEquals(0, res);
+  }
+
+  @Test
+  public void testBatch() throws SQLException {
+    int[] res = this.dbOperator.batch(BATCH_COMMAND, BATCH_PARAMETERS);
+    Assert.assertEquals(BATCH_COMMAND_RESULT, res);
   }
 }

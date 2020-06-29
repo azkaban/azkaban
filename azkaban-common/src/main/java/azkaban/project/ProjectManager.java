@@ -19,12 +19,11 @@ package azkaban.project;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
-import azkaban.project.validator.ValidatorConfigs;
-import azkaban.project.validator.XmlValidatorManager;
-import azkaban.storage.StorageManager;
+import azkaban.storage.ProjectStorageManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -35,6 +34,7 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,13 +43,14 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class ProjectManager {
 
-  private static final Logger logger = Logger.getLogger(ProjectManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProjectManager.class);
   private final AzkabanProjectLoader azkabanProjectLoader;
   private final ProjectLoader projectLoader;
   private final Props props;
@@ -65,7 +66,7 @@ public class ProjectManager {
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
-      final StorageManager storageManager,
+      final ProjectStorageManager projectStorageManager,
       final Props props) {
     this.projectLoader = requireNonNull(loader);
     this.props = requireNonNull(props);
@@ -74,17 +75,10 @@ public class ProjectManager {
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
 
-    // The prop passed to XmlValidatorManager is used to initialize all the
-    // validators
-    // Each validator will take certain key/value pairs from the prop to
-    // initialize itself.
-    final Props prop = new Props(props);
-    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
-    // By instantiating an object of XmlValidatorManager, this will verify the
-    // config files for the validators.
-    new XmlValidatorManager(prop);
     loadAllProjects();
+    logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
+    logger.info("ProjectManager instance created.");
   }
 
   public boolean hasFlowTrigger(final Project project, final Flow flow)
@@ -115,6 +109,7 @@ public class ProjectManager {
 
   private void loadAllProjects() {
     final List<Project> projects;
+    logger.info("Loading active projects.");
     try {
       projects = this.projectLoader.fetchAllActiveProjects();
     } catch (final ProjectManagerException e) {
@@ -125,20 +120,26 @@ public class ProjectManager {
       this.projectsById.put(proj.getId(), proj);
     }
 
-    for (final Project proj : projects) {
-      loadAllProjectFlows(proj);
-    }
+    logger.info("Loading flows from active projects.");
+    loadAllFlowsForAllProjects(projects);
   }
 
-  private void loadAllProjectFlows(final Project project) {
+  private void loadAllFlowsForAllProjects(final List<Project> projects) {
     try {
-      final List<Flow> flows = this.projectLoader.fetchAllProjectFlows(project);
-      final Map<String, Flow> flowMap = new HashMap<>();
-      for (final Flow flow : flows) {
-        flowMap.put(flow.getId(), flow);
-      }
+      Map<Project, List<Flow>> projectToFlows = this.projectLoader.fetchAllFlowsForProjects(projects);
 
-      project.setFlows(flowMap);
+      // Load the flows into the project objects
+      for (Map.Entry<Project, List<Flow>> entry : projectToFlows.entrySet()) {
+        Project project = entry.getKey();
+        List<Flow> flows = entry.getValue();
+
+        final Map<String, Flow> flowMap = new HashMap<>();
+        for (final Flow flow : flows) {
+          flowMap.put(flow.getId(), flow);
+        }
+
+        project.setFlows(flowMap);
+      }
     } catch (final ProjectManagerException e) {
       throw new RuntimeException("Could not load projects flows from store.", e);
     }
@@ -178,7 +179,7 @@ public class ProjectManager {
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
-      logger.error("Bad regex pattern " + regexPattern);
+      logger.error("Bad regex pattern {}", regexPattern);
       return array;
     }
 
@@ -206,7 +207,7 @@ public class ProjectManager {
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
-      logger.error("Bad regex pattern " + regexPattern);
+      logger.error("Bad regex pattern {}", regexPattern);
       return allProjects;
     }
     for (final Project project : getProjects()) {
@@ -225,14 +226,18 @@ public class ProjectManager {
   }
 
   /**
-   * fetch active project from cache and inactive projects from db by project_name
+   * fetch active project by project name. Queries the cache first then db if not found
    */
   public Project getProject(final String name) {
     Project fetchedProject = this.projectsByName.get(name);
     if (fetchedProject == null) {
       try {
-        logger.info("Project " + name + " doesn't exist in cache, fetching from DB now.");
         fetchedProject = this.projectLoader.fetchProjectByName(name);
+        if (fetchedProject != null) {
+          logger.info("Project {} not found in cache, fetched from DB.", name);
+        } else {
+          logger.info("No active project with name {} exists in cache or DB.", name);
+        }
       } catch (final ProjectManagerException e) {
         logger.error("Could not load project from store.", e);
       }
@@ -274,8 +279,7 @@ public class ProjectManager {
         throw new ProjectManagerException("Project already exists.");
       }
 
-      logger.info("Trying to create " + projectName + " by user "
-          + creator.getUserId());
+      logger.info("Trying to create {} by user {}", projectName, creator.getUserId());
       newProject = this.projectLoader.createNewProject(projectName, description, creator);
       this.projectsByName.put(newProject.getName(), newProject);
       this.projectsById.put(newProject.getId(), newProject);
@@ -309,7 +313,7 @@ public class ProjectManager {
   public synchronized Project purgeProject(final Project project, final User deleter)
       throws ProjectManagerException {
     this.projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() + 1);
+        project.getVersion() + 1, Collections.emptyList());
     this.projectLoader
         .postEvent(project, EventType.PURGE, deleter.getUserId(), String
             .format("Purged versions before %d", project.getVersion() + 1));
@@ -429,20 +433,19 @@ public class ProjectManager {
 
   public void addProjectProxyUser(final Project project, final String proxyName,
       final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId() + " adding proxy user "
-        + proxyName + " to project " + project.getName());
+    logger.info("User {} adding proxy user {} to project {}", modifier.getUserId(), proxyName,
+        project.getName());
     project.addProxyUser(proxyName);
 
     this.projectLoader.postEvent(project, EventType.PROXY_USER,
-        modifier.getUserId(), "Proxy user " + proxyName
-            + " is added to project.");
+        modifier.getUserId(), "Proxy user " + proxyName + " is added to project.");
     updateProjectSetting(project);
   }
 
   public void removeProjectProxyUser(final Project project, final String proxyName,
       final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId() + " removing proxy user "
-        + proxyName + " from project " + project.getName());
+    logger.info("User {} removing proxy user {} from project {}", modifier.getUserId(),
+        proxyName, project.getName());
     project.removeProxyUser(proxyName);
 
     this.projectLoader.postEvent(project, EventType.PROXY_USER,
@@ -454,9 +457,8 @@ public class ProjectManager {
   public void updateProjectPermission(final Project project, final String name,
       final Permission perm, final boolean group, final User modifier)
       throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId()
-        + " updating permissions for project " + project.getName() + " for "
-        + name + " " + perm.toString());
+    logger.info("User {} updating permissions for project {} for {} {}", modifier.getUserId(),
+        project.getName(), name, perm.toString());
     this.projectLoader.updatePermission(project, name, perm, group);
     if (group) {
       this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
@@ -471,9 +473,8 @@ public class ProjectManager {
 
   public void removeProjectPermission(final Project project, final String name,
       final boolean group, final User modifier) throws ProjectManagerException {
-    logger.info("User " + modifier.getUserId()
-        + " removing permissions for project " + project.getName() + " for "
-        + name);
+    logger.info("User {} removing permissions for project {} for {}", modifier.getUserId(),
+        project.getName(), name);
     this.projectLoader.removePermission(project, name, group);
     if (group) {
       this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
@@ -500,10 +501,11 @@ public class ProjectManager {
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
-      final File archive, final String fileType, final User uploader, final Props additionalProps)
-      throws ProjectManagerException {
+      final File archive, final String fileType, final User uploader, final Props additionalProps,
+      final String uploaderIPAddr)
+      throws ProjectManagerException, ExecutorManagerException {
     return this.azkabanProjectLoader
-        .uploadProject(project, archive, fileType, uploader, additionalProps);
+        .uploadProject(project, archive, fileType, uploader, additionalProps, uploaderIPAddr);
   }
 
   public void updateFlow(final Project project, final Flow flow)

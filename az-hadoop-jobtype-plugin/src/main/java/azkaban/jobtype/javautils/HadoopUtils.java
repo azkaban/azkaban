@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype.javautils;
 
 import java.io.ByteArrayOutputStream;
@@ -22,7 +21,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -30,9 +28,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Logger;
-
 import azkaban.utils.Props;
 
+
+/**
+ * Utilities of Hadoop Related Operations
+ */
 public class HadoopUtils {
 
   private static final Logger logger = Logger.getLogger(HadoopUtils.class);
@@ -50,7 +51,7 @@ public class HadoopUtils {
   public static String findContainingJar(String fileName, ClassLoader loader) {
     try {
       for (Enumeration<?> itr = loader.getResources(fileName); itr
-          .hasMoreElements();) {
+          .hasMoreElements(); ) {
         URL url = (URL) itr.nextElement();
         logger.info("findContainingJar finds url:" + url);
         if ("jar".equals(url.getProtocol())) {
@@ -73,7 +74,7 @@ public class HadoopUtils {
     return findContainingJar(class_file, loader);
   }
 
-  public static boolean shouldPathBeIgnored(Path path) throws IOException {
+  public static boolean shouldPathBeIgnored(Path path) {
     return path.getName().startsWith("_");
   }
 
@@ -112,10 +113,7 @@ public class HadoopUtils {
 
   public static void saveProps(Props props, String file) throws IOException {
     Path path = new Path(file);
-
-    FileSystem fs = null;
-    fs = path.getFileSystem(new Configuration());
-
+    FileSystem fs = path.getFileSystem(new Configuration());
     saveProps(fs, props, file);
   }
 
@@ -125,8 +123,9 @@ public class HadoopUtils {
 
     // create directory if it does not exist.
     Path parent = path.getParent();
-    if (!fs.exists(parent))
+    if (!fs.exists(parent)) {
       fs.mkdirs(parent);
+    }
 
     // write out properties
     OutputStream output = fs.create(path);

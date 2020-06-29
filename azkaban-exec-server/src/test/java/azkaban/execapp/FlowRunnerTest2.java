@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -25,6 +26,8 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
+import azkaban.flow.CommonJobProperties;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,7 +102,10 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     final ExecutionOptions options = new ExecutionOptions();
     options.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
 
-    this.runner = this.testUtil.createFromFlowMap("jobf", options, flowParams, new Props());
+    Props props = new Props();
+    props.put(JobRunner.AZKABAN_WEBSERVER_URL, "http://localhost:8443");
+
+    this.runner = this.testUtil.createFromFlowMap("jobf", options, flowParams, props);
 
     // 1. START FLOW
     FlowRunnerTestUtil.startThread(this.runner);
@@ -118,6 +124,18 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertEquals("test2.6", joba.get("param6"));
     assertEquals("test2.7", joba.get("param7"));
     assertEquals("test2.8", joba.get("param8"));
+    assertThat(joba.get(CommonJobProperties.JOB_ID)).isEqualTo("joba");
+    assertThat(joba.get(CommonJobProperties.JOB_ATTEMPT)).isEqualTo("0");
+    assertThat(joba.get(CommonJobProperties.EXECUTION_LINK))
+        .matches("http://localhost:8443/executor\\?execid=\\d\\d\\d");
+    assertThat(joba.get(CommonJobProperties.WORKFLOW_LINK))
+        .matches("http://localhost:8443/manager\\?project=testProject&flow=jobf");
+    assertThat(joba.get(CommonJobProperties.JOBEXEC_LINK))
+        .matches("http://localhost:8443/executor\\?execid=\\d\\d\\d&job=joba");
+    assertThat(joba.get(CommonJobProperties.JOB_LINK))
+        .matches("http://localhost:8443/manager\\?project=testProject&flow=jobf&job=joba");
+    assertThat(joba.get(CommonJobProperties.ATTEMPT_LINK))
+        .matches("http://localhost:8443/executor\\?execid=\\d\\d\\d&job=joba&attempt=0");
 
     final Props joba1 = this.runner.getExecutableFlow().getExecutableNodePath("joba1")
         .getInputProps();
@@ -162,6 +180,19 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertEquals("test2.7", jobbInnerJobA.get("param7"));
     assertEquals("test2.8", jobbInnerJobA.get("param8"));
     assertEquals("joba", jobbInnerJobA.get("output.joba"));
+    assertThat(jobbInnerJobA.get(CommonJobProperties.JOB_ID)).isEqualTo("innerJobA");
+    assertThat(jobbInnerJobA.get(CommonJobProperties.JOB_ATTEMPT)).isEqualTo("0");
+    assertThat(jobbInnerJobA.get(CommonJobProperties.EXECUTION_LINK))
+        .matches("http://localhost:8443/executor\\?execid=\\d\\d\\d");
+    assertThat(jobbInnerJobA.get(CommonJobProperties.WORKFLOW_LINK))
+        .matches("http://localhost:8443/manager\\?project=testProject&flow=innerFlow");
+    assertThat(jobbInnerJobA.get(CommonJobProperties.JOBEXEC_LINK))
+        .matches("http://localhost:8443/executor\\?execid=\\d\\d\\d&job=jobb:innerJobA");
+    assertThat(jobbInnerJobA.get(CommonJobProperties.JOB_LINK))
+        .matches("http://localhost:8443/manager\\?project=testProject&flow=innerFlow&job=innerJobA");
+    assertThat(jobbInnerJobA.get(CommonJobProperties.ATTEMPT_LINK))
+        .matches("http://localhost:8443/executor\\?execid=\\d\\d\\d&job=jobb:innerJobA&attempt=0");
+
 
     // 3. jobb:Inner completes
     /// innerJobA completes
@@ -1037,6 +1068,36 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+  }
+
+  /**
+   * Tests the case when an execution is killed before it has started. The final execution
+   * status should "KILLED".
+   */
+  @Test
+  public void testKillBeforeStart() throws Exception {
+    this.runner = this.testUtil.createFromFlowMap("jobf", FailureAction.FINISH_ALL_POSSIBLE);
+    this.runner.addListener((event) -> {
+      if (event.getType().equals(EventType.FLOW_STARTED)) {
+        // kill interrupts the current thread which would cause an exception if called directly,
+        // so do it from another thread.
+        Thread aThread = new Thread( () -> this.runner.kill());
+        aThread.start();
+        try {
+          // give the thread a chance to kill the execution
+          aThread.join();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+
+    FlowRunnerTestUtil.startThread(this.runner).join();
+    // children jobs shouldn't start
+    assertStatus("joba", Status.READY);
+    assertStatus("joba1", Status.READY);
+    waitForAndAssertFlowStatus(Status.KILLED);
+    this.runner = null;
   }
 
 }

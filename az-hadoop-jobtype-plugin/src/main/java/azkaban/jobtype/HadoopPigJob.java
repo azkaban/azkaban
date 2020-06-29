@@ -13,30 +13,31 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
-import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
-
+import azkaban.jobExecutor.JavaProcessJob;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.StringTokenizer;
-
-import org.apache.hadoop.security.UserGroupInformation;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 import org.apache.pig.PigRunner;
-
 import azkaban.flow.CommonJobProperties;
-import azkaban.jobExecutor.JavaProcessJob;
-import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
+import azkaban.utils.Utils;
+
 
 /*
  * need lib:
@@ -46,94 +47,39 @@ import azkaban.utils.StringUtils;
  * HadoopSecurityManager(corresponding version with hadoop)
  * abandon support for pig 0.8 and prior versions. don't see a use case here.
  */
+public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
 
-public class HadoopPigJob extends JavaProcessJob {
+  private static final String PIG_SCRIPT = "pig.script";
+  private static final String UDF_IMPORT = "udf.import.list";
+  private static final String PIG_ADDITIONAL_JARS = "pig.additional.jars";
+  private static final String DEFAULT_PIG_ADDITIONAL_JARS = "default.pig.additional.jars";
+  private static final String PIG_PARAM_PREFIX = "param.";
+  private static final String PIG_PARAM_FILES = "paramfile";
+  private static final String HADOOP_UGI = "hadoop.job.ugi";
+  private static final String DEBUG = "debug";
+  private static final String RAMP_SCRIPT_DIR = "ramp";
+  private static final String STATEMENT_TERMINATOR = ";";
+  private static final String REGISTER_STATEMENT_FORMATTER = "REGISTER '%s'; ";
+  private static final String REGISTER_STATEMENT_PATTERN = "(?i)\\s*register\\s+[\"|'](\\S*/)*%s\\W+\\S*.jar[\"|']\\s*;\\s*";
 
-  public static final String PIG_SCRIPT = "pig.script";
-  public static final String UDF_IMPORT = "udf.import.list";
-  public static final String PIG_ADDITIONAL_JARS = "pig.additional.jars";
-  public static final String DEFAULT_PIG_ADDITIONAL_JARS =
-      "default.pig.additional.jars";
-  public static final String PIG_PARAM_PREFIX = "param.";
-  public static final String PIG_PARAM_FILES = "paramfile";
-  public static final String HADOOP_UGI = "hadoop.job.ugi";
-  public static final String DEBUG = "debug";
-
-  public static String HADOOP_SECURE_PIG_WRAPPER =
-      "azkaban.jobtype.HadoopSecurePigWrapper";
-
-  private String userToProxy = null;
-  private boolean shouldProxy = false;
-  private boolean obtainTokens = false;
-  File tokenFile = null;
+  private static String HADOOP_SECURE_PIG_WRAPPER = "azkaban.jobtype.HadoopSecurePigWrapper";
 
   private final boolean userPigJar;
-
-  private HadoopSecurityManager hadoopSecurityManager;
-
   private File pigLogFile = null;
 
-  public HadoopPigJob(String jobid, Props sysProps, Props jobProps, Logger log)
-      throws IOException {
+  public HadoopPigJob(String jobid, Props sysProps, Props jobProps, Logger log) {
     super(jobid, sysProps, jobProps, log);
-
-    HADOOP_SECURE_PIG_WRAPPER = HadoopSecurePigWrapper.class.getName();
-
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
-    shouldProxy =
-        getSysProps().getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
-    getJobProps().put(HadoopSecurityManager.ENABLE_PROXYING,
-        Boolean.toString(shouldProxy));
-    obtainTokens =
-        getSysProps().getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN,
-            false);
+    HADOOP_SECURE_PIG_WRAPPER = HadoopSecurePigWrapper.class.getName();
     userPigJar = getJobProps().getBoolean("use.user.pig.jar", false);
-
-    if (shouldProxy) {
-      getLog().info("Initiating hadoop security manager.");
-      try {
-        hadoopSecurityManager =
-            HadoopJobUtils.loadHadoopSecurityManager(getSysProps(), log);
-      } catch (RuntimeException e) {
-        throw new RuntimeException("Failed to get hadoop security manager!" + e);
-      }
-    }
   }
 
   @Override
   public void run() throws Exception {
-    HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(),
-        getWorkingDirectory());
-
-    if (shouldProxy && obtainTokens) {
-      userToProxy = getJobProps().getString("user.to.proxy");
-      getLog().info("Need to proxy. Getting tokens.");
-      // get tokens in to a file, and put the location in props
-      Props props = new Props();
-      props.putAll(getJobProps());
-      props.putAll(getSysProps());
-      HadoopJobUtils.addAdditionalNamenodesToPropsFromMRJob(props, getLog());
-      tokenFile =
-          HadoopJobUtils
-              .getHadoopTokens(hadoopSecurityManager, props, getLog());
-      getJobProps().put("env." + HADOOP_TOKEN_FILE_LOCATION,
-          tokenFile.getAbsolutePath());
-    }
-    try {
-      super.run();
-    } catch (Throwable t) {
-      t.printStackTrace();
-      getLog().error("caught error running the job", t);
-      throw new Exception(t);
-    } finally {
-      if (tokenFile != null) {
-        HadoopJobUtils.cancelHadoopTokens(hadoopSecurityManager, userToProxy,
-            tokenFile, getLog());
-        if (tokenFile.exists()) {
-          tokenFile.delete();
-        }
-      }
-    }
+    setupHadoopJobProperties();
+    HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(), getWorkingDirectory());
+    getHadoopProxy().setupPropsForProxy(getAllProps(), getJobProps(), getLog());
+    super.run();
   }
 
   @Override
@@ -146,7 +92,7 @@ public class HadoopPigJob extends JavaProcessJob {
     String args = super.getJVMArguments();
 
     String typeGlobalJVMArgs =
-        getSysProps().getString("jobtype.global.jvm.args", null);
+        getSysProps().getString(HadoopJobUtils.JOBTYPE_GLOBAL_JVM_ARGS, null);
     if (typeGlobalJVMArgs != null) {
       args += " " + typeGlobalJVMArgs;
     }
@@ -168,38 +114,20 @@ public class HadoopPigJob extends JavaProcessJob {
       args += " -Dhadoop.job.ugi=" + hadoopUGI;
     }
 
-    if (shouldProxy) {
-      info("Setting up secure proxy info for child process");
-      String secure;
-      secure =
-          " -D" + HadoopSecurityManager.USER_TO_PROXY + "="
-              + getJobProps().getString(HadoopSecurityManager.USER_TO_PROXY);
-      String extraToken =
-          getSysProps().getString(HadoopSecurityManager.OBTAIN_BINARY_TOKEN,
-              "false");
-      if (extraToken != null) {
-        secure +=
-            " -D" + HadoopSecurityManager.OBTAIN_BINARY_TOKEN + "="
-                + extraToken;
-      }
-      info("Secure settings = " + secure);
-      args += secure;
-    } else {
-      info("Not setting up secure proxy info for child process");
-    }
+    args += getJVMProxySecureArgument();
 
     return args;
   }
 
   @Override
   protected String getMainArguments() {
-    ArrayList<String> list = new ArrayList<String>();
+    List<String> list = new ArrayList<>();
     Map<String, String> map = getPigParams();
     if (map != null) {
       for (Map.Entry<String, String> entry : map.entrySet()) {
         list.add("-param "
             + StringUtils.shellQuote(entry.getKey() + "=" + entry.getValue(),
-                StringUtils.SINGLE_QUOTE));
+            StringUtils.SINGLE_QUOTE));
       }
     }
 
@@ -218,7 +146,7 @@ public class HadoopPigJob extends JavaProcessJob {
       pigLogFile =
           File.createTempFile("piglogfile", ".log", new File(
               getWorkingDirectory()));
-      jobProps.put("env." + "PIG_LOG_FILE", pigLogFile.getAbsolutePath());
+      getJobProps().put("env." + "PIG_LOG_FILE", pigLogFile.getAbsolutePath());
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -227,9 +155,100 @@ public class HadoopPigJob extends JavaProcessJob {
       list.add("-logfile " + pigLogFile.getAbsolutePath());
     }
 
-    list.add(getScript());
+    Map<Pattern, String> rampRegisterItems = getRampItems(JavaProcessJob.DEPENDENCY_REG_RAMP_PROP_PREFIX)
+        .entrySet()
+        .stream()
+        .collect(Collectors.toMap(
+            entry -> Pattern.compile(String.format(REGISTER_STATEMENT_PATTERN, entry.getKey()), Pattern.CASE_INSENSITIVE),
+            entry -> String.format(REGISTER_STATEMENT_FORMATTER, entry.getValue())
+        ));
+
+    if (rampRegisterItems.isEmpty()) {
+     list.add(getScript());
+    } else {
+      try {
+        File srcFile = new File(getScriptAbsolutePath());
+        File dstFile = new File(getRunnableScriptAbsolutePath());
+        Path dstPath = Paths.get(getRunnableScriptDir());
+        getLog().info(String.format("[Ramp Modification Start] [srcFile = %s, dstFile = %s, dstPath = %s]",
+            srcFile.toPath().toAbsolutePath().toString(),
+            dstFile.toPath().toAbsolutePath().toString(),
+            dstPath.toString()));
+        if (!Files.exists(dstPath)) {
+          Files.createDirectories(dstPath);
+          getLog().info(String.format("[Ramp Modification Destination Directory Created. %s]",
+              dstPath.toAbsolutePath().toString()));
+        }
+        dstFile.createNewFile();
+        getLog().info(String.format("[Ramp Modification Destination File Created. %s]",
+            dstFile.toPath().toAbsolutePath().toString()));
+        getLog().info(String.format("[Ramp Modify Script File] : old = %s, new = %s",
+            srcFile.getAbsolutePath(), dstFile.getAbsolutePath()));
+        copyAndModifyScript(srcFile, dstFile, rampRegisterItems);
+        getLog().info(String.format("[Ramp Modification End] [dstFile = %s]",
+            dstFile.toPath().toAbsolutePath().toString()));
+        list.add(getRunnableScript());
+      } catch (IOException e) {
+        getLog().error(e);
+        getLog().info("[Ramp cannot successfully modify the script, Failover to the baseline.]");
+        list.add(getScript());
+      }
+    }
 
     return StringUtils.join((Collection<String>) list, " ");
+  }
+
+  /**
+   * Copy Pig Script from source to destination and update REGISTER statements based on the map of ramp items
+   */
+  private void copyAndModifyScript(File source, File dest, Map<Pattern, String> rampRegisterItems) throws IOException {
+    BufferedReader bufferedReader = null;
+    PrintWriter printWriter = null;
+    bufferedReader = Files.newBufferedReader(source.toPath(), Charset.defaultCharset());
+    printWriter =  new PrintWriter(Files.newBufferedWriter(dest.toPath(), Charset.defaultCharset()));
+    String line;
+    while ((line = bufferedReader.readLine()) != null) {
+      printWriter.println(replaceRegisterStatements(line, rampRegisterItems));
+    }
+    bufferedReader.close();
+    printWriter.close();
+  }
+
+  /**
+   * Replace Register statement to a particular ramp value
+   */
+  private String replaceRegisterStatements(String text, Map<Pattern, String> rampRegisterItems) {
+    StringBuilder sb = new StringBuilder();
+    int start = 0;
+    int end = text.length();
+    int idx = 0;
+    String statement = null;
+    while(start < end && idx >= 0) {
+      idx = text.indexOf(STATEMENT_TERMINATOR, start);
+      if (idx > 0) {
+        statement = text.substring(start, idx+1);
+      } else {
+        statement = text.substring(start);
+      }
+      final String value = statement;
+      sb.append(
+          rampRegisterItems
+              .entrySet()
+              .stream()
+              .filter(entry -> entry.getKey().matcher(value).matches())
+              .map(Map.Entry::getValue)
+              .findFirst()
+              .orElse(statement)
+      );
+      start = idx + 1;
+    }
+
+    String modifiedText = sb.toString();
+
+    if (!modifiedText.equals(text)) {
+      getLog().info(String.format("[RAMP Statement] : Original = %s, Modified = %s", text, modifiedText));
+    }
+    return modifiedText;
   }
 
   @Override
@@ -237,138 +256,112 @@ public class HadoopPigJob extends JavaProcessJob {
 
     List<String> classPath = super.getClassPaths();
 
-    // To add az-core jar classpath
-    classPath.add(getSourcePathFromClass(Props.class));
-
-    // To add az-common jar classpath
-    classPath.add(getSourcePathFromClass(JavaProcessJob.class));
-    classPath.add(getSourcePathFromClass(HadoopSecurePigWrapper.class));
-    classPath.add(getSourcePathFromClass(HadoopSecurityManager.class));
+    classPath.addAll(getAzkabanCommonClassPaths());
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
 
     // assuming pig 0.8 and up
     if (!userPigJar) {
-      classPath.add(getSourcePathFromClass(PigRunner.class));
+      classPath.add(FileIOUtils.getSourcePathFromClass(PigRunner.class));
     }
 
     // merging classpaths from plugin.properties
-    mergeClassPaths(classPath,
-        getJobProps().getStringList("jobtype.classpath", null, ","));
-    // merging classpaths from private.properties
-    mergeClassPaths(classPath,
-        getSysProps().getStringList("jobtype.classpath", null, ","));
+    Utils.mergeTypeClassPaths(classPath,
+        getJobProps().getStringList("jobtype.classpath", null, ","),
+        getSysProps().get("plugin.dir"));
 
-    List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    if (typeGlobalClassPath != null) {
-      for (String jar : typeGlobalClassPath) {
-        if (!classPath.contains(jar)) {
-          classPath.add(jar);
-        }
-      }
-    }
+    mergeSysTypeClassPaths(classPath);
+
+    Utils.mergeStringList(
+        classPath,
+        getRampItems(JavaProcessJob.DEPENDENCY_CLS_RAMP_PROP_PREFIX)
+            .entrySet()
+            .stream()
+            .map(Map.Entry::getValue)
+            .collect(Collectors.toList())
+    );
 
     return classPath;
   }
 
-  private void mergeClassPaths(List<String> classPath,
-      List<String> typeClassPath) {
-    if (typeClassPath != null) {
-      // fill in this when load this jobtype
-      String pluginDir = getSysProps().get("plugin.dir");
-      for (String jar : typeClassPath) {
-        File jarFile = new File(jar);
-        if (!jarFile.isAbsolute()) {
-          jarFile = new File(pluginDir + File.separatorChar + jar);
-        }
-
-        if (!classPath.contains(jarFile.getAbsolutePath())) {
-          classPath.add(jarFile.getAbsolutePath());
-        }
-      }
-    }
-  }
-
-  protected boolean getDebug() {
+  private boolean getDebug() {
     return getJobProps().getBoolean(DEBUG, false);
   }
 
-  protected String getScript() {
+  private String getScript() {
     return getJobProps().getString(PIG_SCRIPT);
   }
 
-  protected List<String> getUDFImportList() {
-    List<String> udfImports = new ArrayList<String>();
-    List<String> typeImports =
-        getSysProps().getStringList(UDF_IMPORT, null, ",");
-    List<String> jobImports =
-        getJobProps().getStringList(UDF_IMPORT, null, ",");
-    if (typeImports != null) {
-      udfImports.addAll(typeImports);
-    }
-    if (jobImports != null) {
-      udfImports.addAll(jobImports);
-    }
+  private String getRunnableScript() {
+    return RAMP_SCRIPT_DIR + "/" + getScript();
+  }
+
+  private String getScriptAbsolutePath() {
+    return getWorkingDirectory() + "/" + getScript();
+  }
+
+  private String getRunnableScriptDir() {
+    return getWorkingDirectory() + "/" + RAMP_SCRIPT_DIR;
+  }
+  private String getRunnableScriptAbsolutePath() {
+    return getWorkingDirectory() + "/" + getRunnableScript();
+  }
+
+  private List<String> getUDFImportList() {
+    List<String> udfImports = new ArrayList<>();
+    //append typeImports
+    Utils.mergeStringList(udfImports, getSysProps().getStringList(UDF_IMPORT, null, ","));
+    //append jobImports
+    Utils.mergeStringList(udfImports, getJobProps().getStringList(UDF_IMPORT, null, ","));
     return udfImports;
   }
 
-  protected List<String> getAdditionalJarsList() {
-    List<String> additionalJars = new ArrayList<String>();
-    mergeAdditionalJars(additionalJars, PIG_ADDITIONAL_JARS);
-    mergeAdditionalJars(additionalJars, DEFAULT_PIG_ADDITIONAL_JARS);
-    return additionalJars;
-  }
-
   /**
-   * Merging all additional jars first from user specified/plugin.properties
-   * then private.properties for additionalJarProperty property
+   * Merging all additional jars first from user specified property
+   * and private.properties (in the jobtype property) for additionalJarProperty
+   * TODO kunkun-tang: A refactor is necessary here. Recommend using Java Optional to better handle
+   * parsing exceptions.
    */
-  private void mergeAdditionalJars(List<String> additionalJars,
-      String additionalJarProperty) {
-    List<String> jobJars =
-        getJobProps().getStringList(additionalJarProperty, null, ",");
-    List<String> typeJars =
-        getSysProps().getStringList(additionalJarProperty, null, ",");
-    if (jobJars != null) {
-      additionalJars.addAll(jobJars);
+  private List<String> getAdditionalJarsList() {
+
+    List<String> wholeAdditionalJarsList = new ArrayList<>();
+
+    List<String> jobAdditionalJars =
+        getJobProps().getStringList(PIG_ADDITIONAL_JARS, null, ",");
+
+    List<String> jobDefinedDefaultJars =
+        getJobProps().getStringList(DEFAULT_PIG_ADDITIONAL_JARS, null, ",");
+    List<String> systemDefinedDefaultJars =
+        getSysProps().getStringList(DEFAULT_PIG_ADDITIONAL_JARS, null, ",");
+
+    /*
+      if user defines the custom default pig Jar, we only incorporate the user
+      settings; otherwise, only when system configurations have it, we add the system
+      additional jar settings. We don't accept both at the same time.
+     */
+    if (jobAdditionalJars != null) {
+      wholeAdditionalJarsList.addAll(jobAdditionalJars);
     }
-    if (typeJars != null) {
-      additionalJars.addAll(typeJars);
+
+    if (jobDefinedDefaultJars != null) {
+      wholeAdditionalJarsList.addAll(jobDefinedDefaultJars);
+    } else if (systemDefinedDefaultJars != null) {
+      wholeAdditionalJarsList.addAll(systemDefinedDefaultJars);
     }
+    return wholeAdditionalJarsList;
   }
 
-  protected String getHadoopUGI() {
+  private String getHadoopUGI() {
     return getJobProps().getString(HADOOP_UGI, null);
   }
 
-  protected Map<String, String> getPigParams() {
+  private Map<String, String> getPigParams() {
     return getJobProps().getMapByPrefix(PIG_PARAM_PREFIX);
   }
 
-  protected List<String> getPigParamFiles() {
+  private List<String> getPigParamFiles() {
     return getJobProps().getStringList(PIG_PARAM_FILES, null, ",");
-  }
-
-  private static String getSourcePathFromClass(Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      String name = containedClass.getName();
-      StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
   }
 
   /**
@@ -381,13 +374,6 @@ public class HadoopPigJob extends JavaProcessJob {
 
     info("Cancel called.  Killing the Pig launched MR jobs on the cluster");
 
-    String azExecId = jobProps.getString(CommonJobProperties.EXEC_ID);
-    final String logFilePath =
-        String.format("%s/_job.%s.%s.log", getWorkingDirectory(), azExecId,
-            getId());
-    info("log file path is: " + logFilePath);
-
-    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, jobProps,
-        tokenFile, getLog());
+    getHadoopProxy().killAllSpawnedHadoopJobs(getJobProps(), getLog());
   }
 }

@@ -15,84 +15,154 @@
  */
 package azkaban.flowtrigger;
 
-import static java.lang.Thread.sleep;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.MockExecutorLoader;
 import azkaban.flow.Flow;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.CronSchedule;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
+import azkaban.utils.EmailMessage;
+import azkaban.utils.EmailMessageCreator;
 import azkaban.utils.Emailer;
+import azkaban.utils.EmailerTest;
+import azkaban.utils.TestUtils;
+import com.codahale.metrics.MetricRegistry;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Maps;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 
 public class TriggerInstanceProcessorTest {
 
   private static final String EMAIL = "test@email.com";
-  private static FlowTriggerInstanceLoader triggerInstLoader;
-  private static ExecutorManager executorManager;
-  private static Emailer emailer;
-  private static TriggerInstanceProcessor processor;
+  private FlowTriggerInstanceLoader triggerInstLoader;
+  private ExecutorManagerAdapter executorManager;
+  private Emailer emailer;
+  private EmailMessage message;
+  private EmailMessageCreator messageCreator;
+  private TriggerInstanceProcessor processor;
+  private CountDownLatch sendEmailLatch;
+  private CountDownLatch submitFlowLatch;
+  private CountDownLatch updateExecIDLatch;
+  private ExecutorLoader executorLoader;
 
-  @BeforeClass
-  public static void setup() throws Exception {
-    triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
-    executorManager = mock(ExecutorManager.class);
-    when(executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
-    emailer = mock(Emailer.class);
-    doNothing().when(emailer).sendEmail(any(), any(), any());
-    processor = new TriggerInstanceProcessor(executorManager, triggerInstLoader, emailer);
-  }
-
-  private static TriggerInstance createTriggerInstance() {
+  private static TriggerInstance createTriggerInstance() throws ParseException {
     final FlowTrigger flowTrigger = new FlowTrigger(
         new CronSchedule("* * * * ? *"),
         new ArrayList<>(),
         Duration.ofMinutes(1)
     );
     final Project proj = new Project(1, "proj");
-    final Flow flow = new Flow("flowId");
+    final Flow flow = new Flow("123");
     flow.addFailureEmails(Lists.newArrayList(EMAIL));
     proj.setFlows(Maps.newHashMap("flowId", flow));
-    final List<DependencyInstance> depInstList = new ArrayList<>();
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    sdf.setTimeZone(TimeZone.getDefault());
+    final Date startDate = sdf.parse("2000-01-11 16:00:00");
+    final Date endDate = sdf.parse("2000-01-11 16:00:00");
+
+    final List<DependencyInstance> depInstList = Arrays.asList(
+        new DependencyInstance("dep1", startDate.getTime(), endDate.getTime(), null,
+            Status.CANCELLED, CancellationCause.MANUAL),
+        new DependencyInstance("dep2", startDate.getTime(), endDate.getTime(), null,
+            Status.SUCCEEDED, CancellationCause.NONE),
+        new DependencyInstance("dep3", startDate.getTime(), endDate.getTime(), null,
+            Status.CANCELLED, CancellationCause.TIMEOUT),
+        new DependencyInstance("dep4", startDate.getTime(), endDate.getTime(), null,
+            Status.CANCELLED, CancellationCause.CASCADING)
+    );
+
     return new TriggerInstance("instanceId", flowTrigger, "flowId", 1,
         "test", depInstList, -1, proj);
   }
 
-  @Test
-  public void testProcessSucceed() throws ExecutorManagerException {
-    final TriggerInstance triggerInstance = createTriggerInstance();
-    processor.processSucceed(triggerInstance);
-    verify(executorManager).submitExecutableFlow(any(), anyString());
-    verify(triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
+  @Before
+  public void setUp() throws Exception {
+    this.message = EmailerTest.mockEmailMessage();
+    this.messageCreator = EmailerTest.mockMessageCreator(this.message);
+    this.triggerInstLoader = mock(FlowTriggerInstanceLoader.class);
+    this.executorManager = mock(ExecutorManagerAdapter.class);
+    this.executorLoader = new MockExecutorLoader();
+    when(this.executorManager.submitExecutableFlow(any(), anyString())).thenReturn("return");
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    this.emailer = Mockito.spy(new Emailer(EmailerTest.createMailProperties(), commonMetrics,
+        this.messageCreator, this.executorLoader));
+
+    this.sendEmailLatch = new CountDownLatch(1);
+    doAnswer(invocation -> {
+      this.sendEmailLatch.countDown();
+      return null;
+    }).when(this.emailer).sendEmail(any(EmailMessage.class), anyBoolean(), anyString());
+
+    this.submitFlowLatch = new CountDownLatch(1);
+    doAnswer(invocation -> {
+      this.submitFlowLatch.countDown();
+      return null;
+    }).when(this.executorManager).submitExecutableFlow(any(), anyString());
+
+    this.updateExecIDLatch = new CountDownLatch(1);
+    doAnswer(invocation -> {
+      this.updateExecIDLatch.countDown();
+      return null;
+    }).when(this.triggerInstLoader).updateAssociatedFlowExecId(any());
+
+    this.processor = new TriggerInstanceProcessor(this.executorManager, this.triggerInstLoader,
+        this.emailer);
   }
 
   @Test
-  public void testProcessTermination() throws ExecutorManagerException, InterruptedException {
+  public void testProcessSucceed() throws Exception {
     final TriggerInstance triggerInstance = createTriggerInstance();
-    processor.processTermination(triggerInstance);
-    sleep(1000);
-    verify(emailer).sendEmail(any(), any(), any());
+    this.processor.processSucceed(triggerInstance);
+    this.submitFlowLatch.await(10L, TimeUnit.SECONDS);
+    verify(this.executorManager).submitExecutableFlow(any(), anyString());
+    this.updateExecIDLatch.await(10L, TimeUnit.SECONDS);
+    verify(this.triggerInstLoader).updateAssociatedFlowExecId(triggerInstance);
   }
 
   @Test
-  public void testNewInstance() throws ExecutorManagerException {
+  public void testProcessTermination() throws Exception {
     final TriggerInstance triggerInstance = createTriggerInstance();
-    processor.processNewInstance(triggerInstance);
-    verify(triggerInstLoader).uploadTriggerInstance(triggerInstance);
+    this.processor.processTermination(triggerInstance);
+    this.sendEmailLatch.await(10L, TimeUnit.SECONDS);
+    assertEquals(0, this.sendEmailLatch.getCount());
+    verify(this.message).setSubject(
+        "flow trigger for flow 'flowId', project 'proj' has been cancelled on azkaban");
+    assertThat(TestUtils.readResource("/emailTemplate/flowtriggerfailureemail.html", this))
+        .isEqualToIgnoringWhitespace(this.message.getBody());
+  }
+
+  @Test
+  public void testNewInstance() throws ParseException {
+    final TriggerInstance triggerInstance = createTriggerInstance();
+    this.processor.processNewInstance(triggerInstance);
+    verify(this.triggerInstLoader).uploadTriggerInstance(triggerInstance);
   }
 }
+

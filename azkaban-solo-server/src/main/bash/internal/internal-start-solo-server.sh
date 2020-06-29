@@ -29,7 +29,7 @@ HADOOP_HOME=${HADOOP_HOME:-""}  # needed for set -o nounset aove
 
 if [ "$HADOOP_HOME" != "" ]; then
   echo "Using Hadoop from $HADOOP_HOME"
-  CLASSPATH="${CLASSPATH}:${HADOOP_HOME}/conf:${HADOOP_HOME}/*"
+  CLASSPATH="${CLASSPATH}:${HADOOP_HOME}/conf:${HADOOP_HOME}/*:${HADOOP_HOME}/share/hadoop/common/*:${HADOOP_HOME}/share/hadoop/yarn/*"
   JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native/Linux-amd64-64"
 else
   echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
@@ -39,6 +39,12 @@ HIVE_HOME=${HIVE_HOME:-""}  # Needed for set -o nounset above
 if [ "$HIVE_HOME" != "" ]; then
   echo "Using Hive from $HIVE_HOME"
   CLASSPATH="${CLASSPATH}:${HIVE_HOME}/conf:${HIVE_HOME}/lib/*"
+fi
+
+PIG_HOME=${PIG_HOME:-""}  # Needed for set -o nounset above
+if [ "$PIG_HOME" != "" ]; then
+  echo "Using Pig from $PIG_HOME"
+  CLASSPATH="${CLASSPATH}:${PIG_HOME}/conf:${PIG_HOME}/lib/*"
 fi
 
 CLASSPATH=${CLASSPATH:-""}  # Needed for set -o nounset above

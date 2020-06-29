@@ -290,7 +290,7 @@ public class Reportal {
           flow.getId(), "ready", firstSchedTime.getMillis(), endScheduleTime,
           firstSchedTime.getZone(), period, DateTime.now().getMillis(),
           firstSchedTime.getMillis(), firstSchedTime.getMillis(),
-          user.getUserId(), options, null);
+          user.getUserId(), options);
     }
   }
 
@@ -402,7 +402,8 @@ public class Reportal {
     Utils.zipFolderContent(dataDir, archiveFile);
 
     // Upload zip
-    projectManager.uploadProject(this.project, archiveFile, "zip", user, null);
+    projectManager.uploadProject(this.project, archiveFile, "zip", user, null,
+        null);
 
     // Empty temp
     if (tempDir.exists()) {

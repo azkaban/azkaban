@@ -16,7 +16,10 @@
 
 package azkaban.project;
 
+import azkaban.spi.Dependency;
 import java.io.File;
+import java.util.Set;
+
 
 public class ProjectFileHandler {
 
@@ -26,9 +29,11 @@ public class ProjectFileHandler {
   private final String fileType;
   private final String fileName;
   private final String uploader;
-  private final byte[] md5Hash;
+  private final byte[] MD5Hash;
   private final int numChunks;
+  private final Set<Dependency> startupDependencies;
   private final String resourceId;
+  private final String uploaderIpAddr;
 
   private File localFile = null;
 
@@ -40,17 +45,21 @@ public class ProjectFileHandler {
       final String fileType,
       final String fileName,
       final int numChunks,
-      final byte[] md5Hash,
-      final String resourceId) {
+      final byte[] MD5Hash,
+      final Set<Dependency> startupDependencies,
+      final String resourceId,
+      final String uploaderIpAddr) {
     this.projectId = projectId;
     this.version = version;
     this.uploadTime = uploadTime;
     this.uploader = uploader;
     this.fileType = fileType;
     this.fileName = fileName;
-    this.md5Hash = md5Hash;
+    this.MD5Hash = MD5Hash;
     this.numChunks = numChunks;
+    this.startupDependencies = startupDependencies;
     this.resourceId = resourceId;
+    this.uploaderIpAddr = uploaderIpAddr;
   }
 
   public int getProjectId() {
@@ -73,8 +82,8 @@ public class ProjectFileHandler {
     return this.fileName;
   }
 
-  public byte[] getMd5Hash() {
-    return this.md5Hash;
+  public byte[] getMD5Hash() {
+    return this.MD5Hash;
   }
 
   public File getLocalFile() {
@@ -100,7 +109,13 @@ public class ProjectFileHandler {
     return this.numChunks;
   }
 
+  public Set<Dependency> getStartupDependencies() { return this.startupDependencies; }
+
   public String getResourceId() {
     return this.resourceId;
+  }
+
+  public String getUploaderIpAddr() {
+    return this.uploaderIpAddr;
   }
 }

@@ -26,6 +26,7 @@ azkaban.JobListView = Backbone.View.extend({
     "click #autoPanZoomBtn": "handleAutoPanZoom",
     "contextmenu li.listElement": "handleContextMenuClick",
     "click .expandarrow": "handleToggleMenuExpand",
+    "click .expandallarrow": "handleToggleMenuExpandAll",
     "click #close-btn": "handleClose"
   },
 
@@ -197,6 +198,12 @@ azkaban.JobListView = Backbone.View.extend({
         $(expandDiv).addClass("expandarrow glyphicon glyphicon-chevron-down");
         $(a).append(expandDiv);
 
+        if (atLeastOneChildHasChildren(nodeArray[i])) {
+          // Add the double down expand all
+          var expandAllDiv = createExpandAllButton();
+          $(a).append(expandAllDiv);
+        }
+
         // Create subtree
         var subul = this.renderTree(li, nodeArray[i], listNodeName + ":");
         $(subul).hide();
@@ -236,6 +243,15 @@ azkaban.JobListView = Backbone.View.extend({
     else {
       this.handleMenuExpand(li);
     }
+
+    evt.stopImmediatePropagation();
+  },
+
+  handleToggleMenuExpandAll: function (evt) {
+    var expandarrow = evt.currentTarget;
+    var li = $(evt.currentTarget).closest("li.listElement");
+
+    this.propagateExpansionDown(li);
 
     evt.stopImmediatePropagation();
   },
@@ -305,15 +321,23 @@ azkaban.JobListView = Backbone.View.extend({
 
     if (current) {
       $(current.listElement).addClass("active");
-      this.propagateExpansion(current.listElement);
+      this.propagateExpansionUp(current.listElement);
     }
   },
 
-  propagateExpansion: function (li) {
+  propagateExpansionUp: function (li) {
     var li = $(li).parent().closest("li.listElement")[0];
     if (li) {
-      this.propagateExpansion(li);
+      this.propagateExpansionUp(li);
       this.handleMenuExpand(li);
+    }
+  },
+
+  propagateExpansionDown: function (li) {
+    this.handleMenuExpand(li);
+    var children = $(li).find("> ul > li.listElement");
+    for (var i = 0; i < children.length; i++) {
+      this.propagateExpansionDown(children[i]);
     }
   },
 

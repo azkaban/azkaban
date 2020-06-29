@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2018 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -12,7 +12,6 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
- *
  */
 
 package azkaban;
@@ -31,6 +30,9 @@ import java.time.Duration;
  * <p>Flow level properties keys to be put in the {@link FlowProperties} class
  *
  * <p>Job level Properties keys to be put in the {@link JobProperties} class
+ *
+ * <p>Use '.' to separate name spaces and '_" to separate words in the same namespace. e.g.
+ * azkaban.job.some_key</p>
  */
 public class Constants {
 
@@ -56,8 +58,7 @@ public class Constants {
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
   public static final String DEFAULT_CONF_PATH = "conf";
-  public static final String AZKABAN_EXECUTOR_PORT_FILENAME = "executor.port";
-  public static final String AZKABAN_EXECUTOR_PORT_FILE = "executor.portfile";
+  public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
 
@@ -73,6 +74,7 @@ public class Constants {
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
+
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
 
@@ -81,14 +83,64 @@ public class Constants {
 
   public static final Duration MIN_FLOW_TRIGGER_WAIT_TIME = Duration.ofMinutes(1);
 
+  public static final int DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = 20;
+
   // The flow exec id for a flow trigger instance which hasn't started a flow yet
   public static final int UNASSIGNED_EXEC_ID = -1;
 
   // The flow exec id for a flow trigger instance unable to trigger a flow yet
   public static final int FAILED_EXEC_ID = -2;
 
+  // Default locked flow error message
+  public static final String DEFAULT_LOCKED_FLOW_ERROR_MESSAGE =
+      "Flow %s in project %s is locked. This is either a repeatedly failing flow, or an ineffcient"
+          + " flow. Please refer to the Dr. Elephant report for this flow for more information.";
+
+  // Default maximum number of concurrent runs for a single flow
+  public static final int DEFAULT_MAX_ONCURRENT_RUNS_ONEFLOW = 30;
+
+  // How often executors will poll new executions in Poll Dispatch model
+  public static final int DEFAULT_AZKABAN_POLLING_INTERVAL_MS = 1000;
+
+  // Executors can use cpu load calculated from this period to take/skip polling turns
+  public static final int DEFAULT_AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC = 60;
+
+  // Default value to feature enable setting. To be backward compatible, this value === FALSE
+  public static final boolean DEFAULT_AZKABAN_RAMP_ENABLED = false;
+  // Due to multiple AzkabanExec Server instance scenario, it will be required to persistent the ramp result into the DB.
+  // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+  // This setting value controls to push result into DB every N finished ramped workflows
+  public static final int DEFAULT_AZKABAN_RAMP_STATUS_PUSH_INTERVAL_MAX = 20;
+  // Due to multiple AzkabanExec Server instance, it will be required to persistent the ramp result into the DB.
+  // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+  // This setting value controls to pull result from DB every N new ramped workflows
+  public static final int DEFAULT_AZKABAN_RAMP_STATUS_PULL_INTERVAL_MAX = 50;
+  // Use Polling Service to sync the ramp status cross EXEC Server.
+  public static final boolean DEFAULT_AZKABAN_RAMP_STATUS_POOLING_ENABLED = false;
+  // How often executors will poll ramp status in Poll Dispatch model
+  public static final int DEFAULT_AZKABAN_RAMP_STATUS_POLLING_INTERVAL = 10;
 
   public static class ConfigurationKeys {
+
+    public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
+
+    // Configures Azkaban to use new polling model for dispatching
+    public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
+    public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
+    public static final String AZKABAN_POLLING_LOCK_ENABLED = "azkaban.polling.lock.enabled";
+    public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =
+        "azkaban.polling_criteria.flow_threads_available";
+    public static final String AZKABAN_POLLING_CRITERIA_MIN_FREE_MEMORY_GB =
+        "azkaban.polling_criteria.min_free_memory_gb";
+    public static final String AZKABAN_POLLING_CRITERIA_MAX_CPU_UTILIZATION_PCT =
+        "azkaban.polling_criteria.max_cpu_utilization_pct";
+    public static final String AZKABAN_POLLING_CRITERIA_CPU_LOAD_PERIOD_SEC =
+        "azkaban.polling_criteria.cpu_load_period_sec";
+
+    // Configures properties for Azkaban executor health check
+    public static final String AZKABAN_EXECUTOR_HEALTHCHECK_INTERVAL_MIN = "azkaban.executor.healthcheck.interval.min";
+    public static final String AZKABAN_EXECUTOR_MAX_FAILURE_COUNT = "azkaban.executor.max.failurecount";
+    public static final String AZKABAN_ADMIN_ALERT_EMAIL = "azkaban.admin.alert.email";
 
     // Configures Azkaban Flow Version in project YAML file
     public static final String AZKABAN_FLOW_VERSION = "azkaban-flow-version";
@@ -132,6 +184,8 @@ public class Constants {
     public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
+    public static final String MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = "azkaban.metrics"
+        + ".min_age_for_classifying_a_flow_aged_minutes";
 
     // User facing web server configurations used to construct the user facing server URLs. They are useful when there is a reverse proxy between Azkaban web servers and users.
     // enduser -> myazkabanhost:443 -> proxy -> localhost:8081
@@ -155,17 +209,25 @@ public class Constants {
 
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
-    // The property is used for the web server to get the host name of the executor when running in SOLO mode.
-    public static final String EXECUTOR_HOST = "executor.host";
+    public static final String EXECUTOR_PORT_FILE = "executor.portfile";
+    // To set a fixed port for executor-server. Otherwise some available port is used.
+    public static final String EXECUTOR_PORT = "executor.port";
 
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
 
+    // Maximum number of tries to download a dependency (no more retry attempts will be made after this many download failures)
+    public static final String AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES = "azkaban.dependency.max.download.tries";
+
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
     public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
     public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";
-    public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
+    // This really should be azkaban.storage.hdfs.project_root.uri
+    public static final String AZKABAN_STORAGE_HDFS_PROJECT_ROOT_URI = "azkaban.storage.hdfs.root.uri";
+    public static final String AZKABAN_STORAGE_CACHE_DEPENDENCY_ENABLED = "azkaban.storage.cache.dependency.enabled";
+    public static final String AZKABAN_STORAGE_CACHE_DEPENDENCY_ROOT_URI = "azkaban.storage.cache.dependency_root.uri";
+    public static final String AZKABAN_STORAGE_ORIGIN_DEPENDENCY_ROOT_URI = "azkaban.storage.origin.dependency_root.uri";
     public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
     public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
     public static final String PROJECT_TEMP_DIR = "project.temp.dir";
@@ -174,12 +236,15 @@ public class Constants {
     public static final String AZKABAN_EVENT_REPORTING_CLASS_PARAM =
         "azkaban.event.reporting.class";
     public static final String AZKABAN_EVENT_REPORTING_ENABLED = "azkaban.event.reporting.enabled";
+    // Comma separated list of properties to propagate from flow to Event reporter metadata
+    public static final String AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE = "azkaban.event.reporting.propagateProperties";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_BROKERS =
         "azkaban.event.reporting.kafka.brokers";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_TOPIC =
         "azkaban.event.reporting.kafka.topic";
     public static final String AZKABAN_EVENT_REPORTING_KAFKA_SCHEMA_REGISTRY_URL =
         "azkaban.event.reporting.kafka.schema.registry.url";
+
 
     /*
      * The max number of artifacts retained per project.
@@ -203,11 +268,21 @@ public class Constants {
 
     public static final String CUSTOM_CREDENTIAL_NAME = "azkaban.security.credential";
 
+    public static final String OAUTH_CREDENTIAL_NAME = "azkaban.oauth.credential";
+
+    public static final String SECURITY_USER_GROUP = "azkaban.security.user.group";
+
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
 
     public static final String USE_MULTIPLE_EXECUTORS = "azkaban.use.multiple.executors";
     public static final String MAX_CONCURRENT_RUNS_ONEFLOW = "azkaban.max.concurrent.runs.oneflow";
+
+    // list of whitelisted flows, with specific max number of concurrent runs. Format:
+    // <project 1>,<flow 1>,<number>;<project 2>,<flow 2>,<number>
+    public static final String CONCURRENT_RUNS_ONEFLOW_WHITELIST =
+        "azkaban.concurrent.runs.oneflow.whitelist";
+
     public static final String WEBSERVER_QUEUE_SIZE = "azkaban.webserver.queue.size";
     public static final String ACTIVE_EXECUTOR_REFRESH_IN_MS =
         "azkaban.activeexecutor.refresh.milisecinterval";
@@ -222,6 +297,50 @@ public class Constants {
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
+
+    // allowed max number of sessions per user per IP
+    public static final String MAX_SESSION_NUMBER_PER_IP_PER_USER = "azkaban.session"
+        + ".max_number_per_ip_per_user";
+
+    // allowed max size of shared project dir (percentage of partition size), e.g 0.8
+    public static final String PROJECT_CACHE_SIZE_PERCENTAGE =
+        "azkaban.project_cache_size_percentage_of_disk";
+
+    public static final String PROJECT_CACHE_THROTTLE_PERCENTAGE =
+        "azkaban.project_cache_throttle_percentage";
+
+    // how many older versions of project files are kept in DB before deleting them
+    public static final String PROJECT_VERSION_RETENTION = "project.version.retention";
+
+    // number of rows to be displayed on the executions page.
+    public static final String DISPLAY_EXECUTION_PAGE_SIZE = "azkaban.display.execution_page_size";
+
+    // locked flow error message. Parameters passed in are the flow name and project name.
+    public static final String AZKABAN_LOCKED_FLOW_ERROR_MESSAGE =
+        "azkaban.locked.flow.error.message";
+
+    // flow ramp related setting keys
+    // Default value to feature enable setting. To be backward compatible, this value === FALSE
+    public static final String AZKABAN_RAMP_ENABLED = "azkaban.ramp.enabled";
+    // Due to multiple AzkabanExec Server instance scenario, it will be required to persistent the ramp result into the DB.
+    // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+    // This setting value controls to push result into DB every N finished ramped workflows
+    public static final String AZKABAN_RAMP_STATUS_PUSH_INTERVAL_MAX = "azkaban.ramp.status.push.interval.max";
+    // Due to multiple AzkabanExec Server instance, it will be required to persistent the ramp result into the DB.
+    // However, Frequent data persistence will sacrifice the performance with limited data accuracy.
+    // This setting value controls to pull result from DB every N new ramped workflows
+    public static final String AZKABAN_RAMP_STATUS_PULL_INTERVAL_MAX = "azkaban.ramp.status.pull.interval.max";
+    // A Polling Service can be applied to determine the ramp status synchronization interval.
+    public static final String AZKABAN_RAMP_STATUS_POLLING_ENABLED = "azkaban.ramp.status.polling.enabled";
+    public static final String AZKABAN_RAMP_STATUS_POLLING_INTERVAL = "azkaban.ramp.status.polling.interval";
+    public static final String AZKABAN_RAMP_STATUS_POLLING_CPU_MAX = "azkaban.ramp.status.polling.cpu.max";
+    public static final String AZKABAN_RAMP_STATUS_POLLING_MEMORY_MIN = "azkaban.ramp.status.polling.memory.min";
+
+    public static final String EXECUTION_LOGS_RETENTION_MS = "execution.logs.retention.ms";
+    public static final String EXECUTION_LOGS_CLEANUP_INTERVAL_SECONDS =
+        "execution.logs.cleanup.interval.seconds";
+    public static final String EXECUTION_LOGS_CLEANUP_RECORD_LIMIT =
+        "execution.logs.cleanup.record.limit";
   }
 
   public static class FlowProperties {
@@ -260,6 +379,9 @@ public class Constants {
     // If true, AZ will fetches the jobs' certificate from remote Certificate Authority.
     public static final String ENABLE_JOB_SSL = "azkaban.job.enable.ssl";
 
+    // If true, AZ will fetch OAuth token from credential provider
+    public static final String ENABLE_OAUTH = "azkaban.enable.oauth";
+
     // Job properties that indicate maximum memory size
     public static final String JOB_MAX_XMS = "job.max.Xms";
     public static final String MAX_XMS_DEFAULT = "1G";
@@ -294,5 +416,20 @@ public class Constants {
     // Flow trigger dependency run time props
     public static final String START_TIME = "startTime";
     public static final String TRIGGER_INSTANCE_ID = "triggerInstanceId";
+  }
+
+  public static class PluginManager {
+
+    public static final String JOBTYPE_DEFAULTDIR = "plugins/jobtypes";
+    public static final String RAMPPOLICY_DEFAULTDIR = "plugins/ramppolicies";
+
+    // need jars.to.include property, will be loaded with user property
+    public static final String CONFFILE = "plugin.properties";
+    // not exposed to users
+    public static final String SYSCONFFILE = "private.properties";
+    // common properties for multiple plugins
+    public static final String COMMONCONFFILE = "common.properties";
+    // common private properties for multiple plugins
+    public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
 }

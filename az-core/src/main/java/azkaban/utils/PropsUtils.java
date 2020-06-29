@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import com.google.common.collect.MapDifference;
@@ -33,13 +32,25 @@ import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+
+/**
+ * Utility Functions related to Prop Operations
+ */
 public class PropsUtils {
 
-  private static final Logger logger = Logger.getLogger(PropsUtils.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PropsUtils.class);
   private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+
+  /**
+   * Private constructor.
+   */
+  private PropsUtils() {
+  }
+
 
   /**
    * Load job schedules from the given directories
@@ -78,6 +89,13 @@ public class PropsUtils {
     }
   }
 
+  /**
+   * Load Props
+   *
+   * @param parent parent prop
+   * @param propFiles prop files
+   * @return constructed new Prop
+   */
   public static Props loadProps(final Props parent, final File... propFiles) {
     try {
       Props props = new Props(parent);
@@ -90,6 +108,45 @@ public class PropsUtils {
       return props;
     } catch (final IOException e) {
       throw new RuntimeException("Error loading properties.", e);
+    }
+  }
+
+  /**
+   * Load plugin properties
+   *
+   * @param pluginDir plugin's Base Directory
+   * @return The properties
+   */
+  public static Props loadPluginProps(final File pluginDir) {
+    if (!pluginDir.exists()) {
+      LOGGER.error("Error! Plugin path " + pluginDir.getPath() + " doesn't exist.");
+      return null;
+    }
+
+    if (!pluginDir.isDirectory()) {
+      LOGGER.error("The plugin path " + pluginDir + " is not a directory.");
+      return null;
+    }
+
+    final File propertiesDir = new File(pluginDir, "conf");
+    if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+      final File propertiesFile = new File(propertiesDir, "plugin.properties");
+      final File propertiesOverrideFile =
+          new File(propertiesDir, "override.properties");
+
+      if (propertiesFile.exists()) {
+        if (propertiesOverrideFile.exists()) {
+          return loadProps(null, propertiesFile, propertiesOverrideFile);
+        } else {
+          return loadProps(null, propertiesFile);
+        }
+      } else {
+        LOGGER.error("Plugin conf file " + propertiesFile + " not found.");
+        return null;
+      }
+    } else {
+      LOGGER.error("Plugin conf path " + propertiesDir + " not found.");
+      return null;
     }
   }
 
@@ -133,7 +190,7 @@ public class PropsUtils {
     }
   }
 
-  public static boolean endsWith(final File file, final String... suffixes) {
+  private static boolean endsWith(final File file, final String... suffixes) {
     for (final String suffix : suffixes) {
       if (file.getName().endsWith(suffix)) {
         return true;
@@ -142,11 +199,20 @@ public class PropsUtils {
     return false;
   }
 
-  public static boolean isVariableReplacementPattern(final String str) {
-    final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(str);
+  /**
+   * Check if the prop value is a variable replacement pattern
+   */
+  public static boolean isVariableReplacementPattern(final String value) {
+    final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
     return matcher.matches();
   }
 
+  /**
+   * Resolve Props
+   *
+   * @param props props
+   * @return resolved props
+   */
   public static Props resolveProps(final Props props) {
     if (props == null) {
       return null;
@@ -158,7 +224,7 @@ public class PropsUtils {
     for (final String key : props.getKeySet()) {
       String value = props.get(key);
       if (value == null) {
-        logger.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
+        LOGGER.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
         value = "";
       }
 
@@ -177,6 +243,38 @@ public class PropsUtils {
     }
 
     return resolvedProps;
+  }
+
+  /**
+   * new Props based on default Props and expand it from external prop file
+   *
+   * @param parentProps parent Props
+   * @param filePath filePath
+   * @return combined props
+   * @throws IOException
+   */
+  public static Props newProps(final Props parentProps, final String filePath) throws IOException {
+    return (filePath == null)
+        ? (parentProps == null ? null : new Props(parentProps))
+        : newProps(parentProps, new File(filePath));
+  }
+
+  /**
+   * new Props based on default Props and expand it from external prop file
+   *
+   * @param parentProps parent Props
+   * @param file prop file
+   * @return combined props
+   * @throws IOException
+   */
+  public static Props newProps(final Props parentProps, final File file) throws IOException {
+    if (file.exists()) {
+      LOGGER.info("Prop file " + file + "found. Attempted to load.");
+     return new Props(parentProps, file);
+    } else {
+      LOGGER.info("Prop file " + file + "not found. Using the default props only.");
+      return (parentProps == null ? null : new Props(parentProps));
+    }
   }
 
   private static String resolveVariableReplacement(final String value, final Props props,
@@ -280,11 +378,25 @@ public class PropsUtils {
     return resolveVariableExpression(newValue, lastIndex, jexl);
   }
 
+  /**
+   * Convert props to json string
+   *
+   * @param props props
+   * @param localOnly include local prop sets only or not
+   * @return json string format of props
+   */
   public static String toJSONString(final Props props, final boolean localOnly) {
     final Map<String, String> map = toStringMap(props, localOnly);
     return JSONUtils.toJSON(map);
   }
 
+  /**
+   * Convert props to Map
+   *
+   * @param props props
+   * @param localOnly include local prop sets only or not
+   * @return String Map of props
+   */
   public static Map<String, String> toStringMap(final Props props, final boolean localOnly) {
     final HashMap<String, String> map = new HashMap<>();
     final Set<String> keyset = localOnly ? props.localKeySet() : props.getKeySet();
@@ -297,12 +409,25 @@ public class PropsUtils {
     return map;
   }
 
+  /**
+   * Convert json String to Prop Object
+   *
+   * @param json json formatted string
+   * @return a new constructed Prop Object
+   * @throws IOException exception on parsing json string to prop object
+   */
   public static Props fromJSONString(final String json) throws IOException {
     final Map<String, String> obj = (Map<String, String>) JSONUtils.parseJSONFromString(json);
     final Props props = new Props(null, obj);
     return props;
   }
 
+  /**
+   * Convert a hierarchical Map to Prop Object
+   *
+   * @param propsMap a hierarchical Map
+   * @return a new constructed Props Object
+   */
   public static Props fromHierarchicalMap(final Map<String, Object> propsMap) {
     if (propsMap == null) {
       return null;
@@ -320,6 +445,12 @@ public class PropsUtils {
     return props;
   }
 
+  /**
+   * Convert a Props object to a hierarchical Map
+   *
+   * @param props props object
+   * @return a hierarchical Map presented Props object
+   */
   public static Map<String, Object> toHierarchicalMap(final Props props) {
     final Map<String, Object> propsMap = new HashMap<>();
     propsMap.put("source", props.getSource());
@@ -333,7 +464,11 @@ public class PropsUtils {
   }
 
   /**
-   * @return the difference between oldProps and newProps.
+   * The difference between old and new Props
+   *
+   * @param oldProps old Props
+   * @param newProps new Props
+   * @return string formatted difference
    */
   public static String getPropertyDiff(Props oldProps, Props newProps) {
 

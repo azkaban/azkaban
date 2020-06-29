@@ -35,14 +35,14 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
   private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
-  private ExecutorManagerAdapter executorManager;
+  private ExecutorManagerAdapter executorManagerAdapter;
   private ProjectManager projectManager;
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.executorManager = server.getExecutorManager();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
   }
 
@@ -87,7 +87,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/historypage.vm");
     int pageNum = getIntParam(req, "page", 1);
-    final int pageSize = getIntParam(req, "size", 16);
+    final int pageSize = getIntParam(req, "size", getDisplayExecutionPageSize());
     page.add("vmutils", new VelocityUtil(this.projectManager));
 
     if (pageNum < 0) {
@@ -111,7 +111,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
               .parseDateTime(end).getMillis();
       try {
         history =
-            this.executorManager.getExecutableFlows(projContain, flowContain,
+            this.executorManagerAdapter.getExecutableFlows(projContain, flowContain,
                 userContain, status, beginTime, endTime, (pageNum - 1)
                     * pageSize, pageSize);
       } catch (final ExecutorManagerException e) {
@@ -121,7 +121,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       final String searchTerm = getParam(req, "searchterm");
       try {
         history =
-            this.executorManager.getExecutableFlows(searchTerm, (pageNum - 1)
+            this.executorManagerAdapter.getExecutableFlows(searchTerm, (pageNum - 1)
                 * pageSize, pageSize);
       } catch (final ExecutorManagerException e) {
         page.add("error", e.getMessage());
@@ -129,7 +129,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     } else {
       try {
         history =
-            this.executorManager.getExecutableFlows((pageNum - 1) * pageSize,
+            this.executorManagerAdapter.getExecutableFlows((pageNum - 1) * pageSize,
                 pageSize);
       } catch (final ExecutorManagerException e) {
         e.printStackTrace();

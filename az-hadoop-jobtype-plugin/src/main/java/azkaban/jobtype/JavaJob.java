@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2019 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,41 +13,40 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
-
-import java.io.File;
-import java.util.List;
-import java.util.StringTokenizer;
-
-import org.apache.log4j.Logger;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.security.commons.SecurityUtils;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
+import java.io.File;
+import java.util.List;
+import org.apache.log4j.Logger;
 
+
+/**
+ * Java Job Plugin
+ */
 public class JavaJob extends JavaProcessJob {
 
-  public static final String RUN_METHOD_PARAM = "method.run";
-  public static final String CANCEL_METHOD_PARAM = "method.cancel";
-  public static final String PROGRESS_METHOD_PARAM = "method.progress";
+  private static final String RUN_METHOD_PARAM = "method.run";
+  private static final String CANCEL_METHOD_PARAM = "method.cancel";
+  private static final String PROGRESS_METHOD_PARAM = "method.progress";
 
-  public static final String JOB_CLASS = "job.class";
-  public static final String DEFAULT_CANCEL_METHOD = "cancel";
-  public static final String DEFAULT_RUN_METHOD = "run";
-  public static final String DEFAULT_PROGRESS_METHOD = "getProgress";
+  private static final String JOB_CLASS = "job.class";
+  private static final String DEFAULT_CANCEL_METHOD = "cancel";
+  private static final String DEFAULT_RUN_METHOD = "run";
+  private static final String DEFAULT_PROGRESS_METHOD = "getProgress";
 
   private String _runMethod;
   private String _cancelMethod;
   private String _progressMethod;
 
   private Object _javaObject = null;
-  private String props;
 
   public JavaJob(String jobid, Props sysProps, Props jobProps, Logger log) {
     super(jobid, sysProps, new Props(sysProps, jobProps), log);
-
     getJobProps().put(CommonJobProperties.JOB_ID, jobid);
   }
 
@@ -68,18 +67,18 @@ public class JavaJob extends JavaProcessJob {
   protected List<String> getClassPaths() {
     List<String> classPath = super.getClassPaths();
 
-    classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(JavaJobRunnerMain.class));
     // To add az-core jar classpath
-    classPath.add(getSourcePathFromClass(Props.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(Props.class));
 
     // To add az-common jar classpath
-    classPath.add(getSourcePathFromClass(JavaProcessJob.class));
-    classPath.add(getSourcePathFromClass(SecurityUtils.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(JavaProcessJob.class));
+    classPath.add(FileIOUtils.getSourcePathFromClass(SecurityUtils.class));
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
 
-    String loggerPath = getSourcePathFromClass(Logger.class);
+    String loggerPath = FileIOUtils.getSourcePathFromClass(Logger.class);
     if (!classPath.contains(loggerPath)) {
       classPath.add(loggerPath);
     }
@@ -93,53 +92,7 @@ public class JavaJob extends JavaProcessJob {
       classPath.add(new File(hadoopHome, "conf").getPath());
     }
 
-    List<String> typeClassPath =
-        getSysProps().getStringList("jobtype.classpath", null, ",");
-    if (typeClassPath != null) {
-      // fill in this when load this jobtype
-      String pluginDir = getSysProps().get("plugin.dir");
-      for (String jar : typeClassPath) {
-        File jarFile = new File(jar);
-        if (!jarFile.isAbsolute()) {
-          jarFile = new File(pluginDir + File.separatorChar + jar);
-        }
-
-        if (!classPath.contains(jarFile.getAbsoluteFile())) {
-          classPath.add(jarFile.getAbsolutePath());
-        }
-      }
-    }
-
-    List<String> typeGlobalClassPath =
-        getSysProps().getStringList("jobtype.global.classpath", null, ",");
-    if (typeGlobalClassPath != null) {
-      for (String jar : typeGlobalClassPath) {
-        if (!classPath.contains(jar)) {
-          classPath.add(jar);
-        }
-      }
-    }
-
-    return classPath;
-  }
-
-  private static String getSourcePathFromClass(Class<?> containedClass) {
-    File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
-
-    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-      String name = containedClass.getName();
-      StringTokenizer tokenizer = new StringTokenizer(name, ".");
-      while (tokenizer.hasMoreTokens()) {
-        tokenizer.nextElement();
-        file = file.getParentFile();
-      }
-      return file.getPath();
-    } else {
-      return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
-    }
+    return mergeSysTypeClassPaths(classPath);
   }
 
   @Override
@@ -152,14 +105,15 @@ public class JavaJob extends JavaProcessJob {
     return "JavaJob{" + "_runMethod='" + _runMethod + '\''
         + ", _cancelMethod='" + _cancelMethod + '\'' + ", _progressMethod='"
         + _progressMethod + '\'' + ", _javaObject=" + _javaObject + ", props="
-        + props + '}';
+        + getAllProps().toString() + '}';
   }
 
 
   @Override
   public void run() throws Exception {
-    HadoopConfigurationInjector.prepareResourcesToInject(getJobProps(),
-        getWorkingDirectory());
+    HadoopConfigurationInjector.prepareResourcesToInject(
+        getJobProps(), getWorkingDirectory()
+    );
     super.run();
   }
 }

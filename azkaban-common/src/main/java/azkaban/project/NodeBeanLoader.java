@@ -77,6 +77,7 @@ public class NodeBeanLoader {
       return new AzkabanFlow.AzkabanFlowBuilder()
           .name(nodeBean.getName())
           .props(nodeBean.getProps())
+          .condition(nodeBean.getCondition())
           .dependsOn(nodeBean.getDependsOn())
           .nodes(nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
           .flowTrigger(toFlowTrigger(nodeBean.getTrigger()))
@@ -85,6 +86,7 @@ public class NodeBeanLoader {
       return new AzkabanJob.AzkabanJobBuilder()
           .name(nodeBean.getName())
           .props(nodeBean.getProps())
+          .condition(nodeBean.getCondition())
           .type(nodeBean.getType())
           .dependsOn(nodeBean.getDependsOn())
           .build();
@@ -107,18 +109,33 @@ public class NodeBeanLoader {
                 .isValidExpression(scheduleMap.get(FlowTriggerProps.SCHEDULE_VALUE)),
             "flow trigger schedule value must be a valid cron expression");
 
+    final String cronExpression = scheduleMap.get(FlowTriggerProps.SCHEDULE_VALUE).trim();
+    final String[] cronParts = cronExpression.split("\\s+");
+
+    Preconditions
+        .checkArgument(cronParts[0].equals("0"), "interval of flow trigger schedule has to"
+            + " be larger than 1 min");
+
     Preconditions.checkArgument(scheduleMap.size() == 2, "flow trigger schedule must "
         + "contain type and value only");
   }
 
   private void validateFlowTriggerBean(final FlowTriggerBean flowTriggerBean) {
-    // validate max wait mins
-    Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
-        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be at least " + Constants
-        .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes() + " min(s)");
-
     validateSchedule(flowTriggerBean);
     validateTriggerDependencies(flowTriggerBean.getTriggerDependencies());
+    validateMaxWaitMins(flowTriggerBean);
+  }
+
+  private void validateMaxWaitMins(final FlowTriggerBean flowTriggerBean) {
+    Preconditions.checkArgument(flowTriggerBean.getTriggerDependencies().isEmpty() ||
+            flowTriggerBean.getMaxWaitMins() != null,
+        "max wait min cannot be null unless no dependency is defined");
+
+    if (flowTriggerBean.getMaxWaitMins() != null) {
+      Preconditions.checkArgument(flowTriggerBean.getMaxWaitMins() >= Constants
+          .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes(), "max wait min must be at least " + Constants
+          .MIN_FLOW_TRIGGER_WAIT_TIME.toMinutes() + " min(s)");
+    }
   }
 
   /**
@@ -176,16 +193,20 @@ public class NodeBeanLoader {
       return null;
     } else {
       validateFlowTriggerBean(flowTriggerBean);
-      if (flowTriggerBean.getMaxWaitMins() > Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME
+      if (flowTriggerBean.getMaxWaitMins() != null
+          && flowTriggerBean.getMaxWaitMins() > Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME
           .toMinutes()) {
         flowTriggerBean.setMaxWaitMins(Constants.DEFAULT_FLOW_TRIGGER_MAX_WAIT_TIME.toMinutes());
       }
+
+      final Duration duration = flowTriggerBean.getMaxWaitMins() == null ? null : Duration
+          .ofMinutes(flowTriggerBean.getMaxWaitMins());
+
       return new FlowTrigger(
           new CronSchedule(flowTriggerBean.getSchedule().get(FlowTriggerProps.SCHEDULE_VALUE)),
           flowTriggerBean.getTriggerDependencies().stream()
               .map(d -> new FlowTriggerDependency(d.getName(), d.getType(), d.getParams()))
-              .collect(Collectors.toList()),
-          Duration.ofMinutes(flowTriggerBean.getMaxWaitMins()));
+              .collect(Collectors.toList()), duration);
     }
   }
 

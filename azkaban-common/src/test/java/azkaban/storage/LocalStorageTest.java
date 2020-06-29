@@ -17,55 +17,71 @@
 
 package azkaban.storage;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 import azkaban.AzkabanCommonModuleConfig;
-import azkaban.spi.StorageMetadata;
-import azkaban.utils.Md5Hasher;
+import azkaban.spi.ProjectStorageMetadata;
+import azkaban.test.executions.ThinArchiveTestUtils;
+import azkaban.utils.HashUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 
 public class LocalStorageTest {
+  @Rule
+  public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
 
-  static final String SAMPLE_FILE = "sample_flow_01.zip";
-  static final String LOCAL_STORAGE = "LOCAL_STORAGE";
-  static final File BASE_DIRECTORY = new File(LOCAL_STORAGE);
+  private static final String SAMPLE_FILE = "sample_flow_01.zip";
+  private static final String IPv4 = "111.111.111.111";
+  private File BASE_DIRECTORY;
+
   private static final Logger log = Logger.getLogger(LocalStorageTest.class);
+
   private LocalStorage localStorage;
+  private AzkabanCommonModuleConfig config;
 
   @Before
   public void setUp() throws Exception {
-    tearDown();
-    BASE_DIRECTORY.mkdir();
-    final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
-    when(config.getLocalStorageBaseDirPath()).thenReturn(LOCAL_STORAGE);
+    BASE_DIRECTORY = TEMP_DIR.newFolder("TEST_LOCAL_STORAGE");
+
+    this.config = mock(AzkabanCommonModuleConfig.class);
+    when(this.config.getLocalStorageBaseDirPath()).thenReturn(BASE_DIRECTORY.getCanonicalPath());
+
     this.localStorage = new LocalStorage(config);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    FileUtils.deleteDirectory(BASE_DIRECTORY);
+  @Test
+  public void testDependencySupportDisabled() throws Exception {
+    // Ensure that LocalStorage reports that dependency support is disabled
+    assertFalse(this.localStorage.dependencyFetchingEnabled());
+
+    boolean hitException = false;
+    try {
+      this.localStorage.getDependency(ThinArchiveTestUtils.getDepA());
+    } catch (UnsupportedOperationException e) {
+      hitException = true;
+    }
+    if (!hitException) fail("Expected UnsupportedOperationException when fetching dependency.");
   }
 
   @Test
-  public void testPutGetDelete() throws Exception {
+  public void testPutGetDeleteProject() throws Exception {
     final ClassLoader classLoader = getClass().getClassLoader();
     final File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
-    final StorageMetadata metadata = new StorageMetadata(
-        1, 1, "testuser", Md5Hasher.md5Hash(testFile));
-    final String key = this.localStorage.put(metadata, testFile);
+    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(
+        1, 1, "testuser", HashUtils.MD5.getHashBytes(testFile),
+        IPv4);
+    final String key = this.localStorage.putProject(metadata, testFile);
     assertNotNull(key);
     log.info("Key URI: " + key);
 
@@ -82,7 +98,7 @@ public class LocalStorageTest {
     assertTrue(FileUtils.contentEquals(testFile, expectedTargetFile));
 
     // test get
-    final InputStream getIs = this.localStorage.get(key);
+    final InputStream getIs = this.localStorage.getProject(key);
     assertNotNull(getIs);
     final File getFile = new File("tmp.get");
     FileUtils.copyInputStreamToFile(getIs, getFile);
@@ -91,10 +107,10 @@ public class LocalStorageTest {
     // Cleanup temp file
     getFile.delete();
 
-    assertTrue(this.localStorage.delete(key));
+    assertTrue(this.localStorage.deleteProject(key));
     boolean exceptionThrown = false;
     try {
-      this.localStorage.get(key);
+      this.localStorage.getProject(key);
     } catch (final FileNotFoundException e) {
       exceptionThrown = true;
     }

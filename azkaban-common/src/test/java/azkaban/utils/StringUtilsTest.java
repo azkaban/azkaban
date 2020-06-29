@@ -77,4 +77,12 @@ public class StringUtilsTest {
       Assert.assertTrue(StringUtils.isFromBrowser("awesome " + name + " is"));
     }
   }
+
+  @Test
+  public void testIsEmpty() {
+    Assert.assertTrue(StringUtils.isEmpty(null));
+    Assert.assertTrue(StringUtils.isEmpty(""));
+    Assert.assertTrue(StringUtils.isEmpty("   "));
+    Assert.assertFalse(StringUtils.isEmpty("spark,hive,pigLi"));
+  }
 }

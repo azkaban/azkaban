@@ -1,0 +1,148 @@
+#*
+ * Copyright 2014 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ *#
+
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
+    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var homeDir = "${homedir}";
+    </script>
+#if ($allowproxy)
+  #parse ("azkaban/viewer/hdfs/velocity/hdfs-proxy-js.vm")
+#end
+#parse ("azkaban/viewer/hdfs/velocity/hdfs-viewer-css.vm")
+  </head>
+  <body>
+
+#set ($current_page="$viewerName")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+#if ($errorMsg)
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+#else
+
+    <div class="az-page-header">
+      <div class="container-full">
+        <div class="row">
+          <div class="header-title">
+            <h1><a href="${context}/hdfs">HDFS Browser</a></h1>
+          </div>
+          <div class="header-control">
+            <div class="pull-right header-form">
+  #if ($allowproxy)
+              <strong>Proxy user</strong> ${user}
+              <button type="button" id="changeUserBtn" class="btn btn-sm btn-primary">Change User</button>
+  #end
+              <a id="goHomeLink" class="btn btn-sm btn-default" href="${context}/hdfs${homedir}">Home Directory</a>
+            </div>
+            <div class="clearfix"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+  #if (!$no_fs)
+
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="panel panel-default" id="all-hdfsbrowser-content">
+            <div class="panel-heading">
+    #set ($size = $paths.size() - 1)
+              <a class="firstCrumb" href="${context}/hdfs/"> / </a>#if($size >= 0)#foreach($i in [0 ..$size])<a href="$context/hdfs${paths.get($i)}">${segments.get($i)}</a><span> / </span>#end #end
+              <div class="pull-right">
+                <strong>$subdirs.size()</strong> items <strong>$WebUtils.displayBytes($dirsize)
+              </strong> total
+              </div>
+            </div>
+            <table id="hdfs-dir" class="table table-condensed table-striped table-hover table-bordered">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Permission</th>
+                  <th>Owner/Group</th>
+                  <th>Size</th>
+                  <th>Block Size</th>
+                  <th>Reps</th>
+                  <th>Modified Date</th>
+                </tr>
+              </thead>
+              <tbody>
+    #if ($subdirs)
+      #foreach ($status in $subdirs)
+                <tr>
+                  <td>
+                    <a href="${context}/hdfs${status.getPath().toUri().getPath()}">
+        #if ($status.isDir())
+                      <span class="glyphicon glyphicon-folder-close icon-directory"></span>
+        #else
+                      <span class="glyphicon glyphicon-file icon-file"></span>
+        #end
+                      ${status.path.name}#if($status.isDir())/#end</a>
+                    </a>
+                  </td>
+                  <td>${status.permission}</td>
+                  <td>${status.owner}/${status.group}</td>
+                  <td>
+        #if ($status.isDir())
+                    &ndash;
+        #else
+                    $WebUtils.displayBytes(${status.len})
+        #end
+                  </td>
+                  <td>
+        #if ($status.isDir())
+                    &ndash;
+        #else
+                    $WebUtils.displayBytes(${status.getBlockSize()})
+        #end
+                  </td>
+                  <td>
+        #if ($status.isDir())
+                    &ndash;
+        #else
+                    ${status.getReplication()}
+        #end
+                  </td>
+                  <td>$TimeUtils.formatDateTime(${status.modificationTime})</td>
+                </tr>
+      #end
+    #else
+                <tr><td>No Files In This Directory</td></tr>
+    #end
+              </tbody>
+            </table>
+  #end
+
+          </div><!-- /.panel -->
+        </div><!-- /.col-xs-12 -->
+      </div><!-- /.row -->
+
+#parse ("azkaban/viewer/hdfs/velocity/change-proxy-modal.vm")
+#end
+    </div><!-- /.container-full -->
+  </body>
+</html>

@@ -38,8 +38,9 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorDao;
 import azkaban.executor.ExecutorEventsDao;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.FetchActiveFlowDao;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.QuartzScheduler;
@@ -111,7 +112,7 @@ public class AzkabanWebServerTest {
 
     deleteQuietly(new File("h2.mv.db"));
     deleteQuietly(new File("h2.trace.db"));
-    deleteQuietly(new File("executor.port"));
+    deleteQuietly(new File(Constants.DEFAULT_EXECUTOR_PORT_FILE));
     deleteQuietly(new File("executions"));
     deleteQuietly(new File("projects"));
   }
@@ -120,7 +121,7 @@ public class AzkabanWebServerTest {
   public void testInjection() throws Exception {
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule()
+        new AzkabanWebServerModule(props)
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
@@ -137,7 +138,7 @@ public class AzkabanWebServerTest {
 
     //Test if triggermanager is singletonly guiced. If not, the below test will fail.
     assertSingleton(ExecutorLoader.class, injector);
-    assertSingleton(ExecutorManager.class, injector);
+    assertSingleton(ExecutorManagerAdapter.class, injector);
     assertSingleton(ProjectLoader.class, injector);
     assertSingleton(ProjectManager.class, injector);
     assertSingleton(Storage.class, injector);
@@ -151,6 +152,7 @@ public class AzkabanWebServerTest {
     assertSingleton(ExecutionLogsDao.class, injector);
     assertSingleton(ExecutorEventsDao.class, injector);
     assertSingleton(ActiveExecutingFlowsDao.class, injector);
+    assertSingleton(FlowTriggerScheduler.class, injector);
     assertSingleton(FetchActiveFlowDao.class, injector);
     assertSingleton(AzkabanWebServer.class, injector);
     assertSingleton(H2FileDataSource.class, injector);

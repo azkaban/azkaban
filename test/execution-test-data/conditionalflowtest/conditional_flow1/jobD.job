@@ -1,0 +1,5 @@
+type=test
+fail=false
+seconds=0
+condition=${jobA:azkaban.server.name} == 'foo'
+dependencies=jobB,jobC

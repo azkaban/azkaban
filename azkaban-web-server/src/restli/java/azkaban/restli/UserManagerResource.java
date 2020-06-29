@@ -25,6 +25,7 @@ import com.linkedin.restli.server.annotations.Action;
 import com.linkedin.restli.server.annotations.ActionParam;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
+import java.util.Set;
 import java.util.UUID;
 import javax.servlet.ServletException;
 import org.apache.log4j.Logger;
@@ -49,7 +50,13 @@ public class UserManagerResource extends ResourceContextHolder {
 
     final Session session = createSession(username, password, ip);
 
-    logger.info("Session id created for user '" + username + "' and ip " + ip);
+    final Set<Session> sessionsOfSameIP = getAzkaban().getSessionCache()
+        .findSessionsByIP(session.getIp());
+    // Check potential DDoS attack by bad hosts.
+    logger.info(
+        "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
+            .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
+
     return session.getSessionId();
   }
 
@@ -66,15 +73,21 @@ public class UserManagerResource extends ResourceContextHolder {
   }
 
   private Session createSession(final String username, final String password, final String ip)
-      throws UserManagerException, ServletException {
+      throws UserManagerException {
     final UserManager manager = getAzkaban().getUserManager();
     final azkaban.user.User user = manager.getUser(username, password);
 
     final String randomUID = UUID.randomUUID().toString();
     final Session session = new Session(randomUID, user, ip);
-    getAzkaban().getSessionCache().addSession(session);
-
-    return session;
+    final boolean sessionAdded = getAzkaban().getSessionCache().addSession(session);
+    if (sessionAdded) {
+      return session;
+    } else {
+      throw new UserManagerException(
+          "Potential DDoS found, the number of sessions for this user and IP "
+              + "reached allowed limit (" + getAzkaban().getSessionCache()
+              .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
+    }
   }
 
   private Session getSessionFromSessionId(final String sessionId) {

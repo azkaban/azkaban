@@ -21,18 +21,44 @@ var jobHistoryView;
 var dataModel;
 azkaban.DataModel = Backbone.Model.extend({});
 
-$(function () {
-  var selected;
-  var series = dataSeries;
-  dataModel = new azkaban.DataModel();
-  dataModel.set({
-    "data": series
+var initJobHistoryPage = function (settings) {
+  dataModel = new azkaban.DataModel({
+    page: settings.page,
+    pageSize: settings.pageSize,
+    visiblePages: settings.visiblePages,
+    recordCount: settings.recordCount,
+    dataSeries: settings.dataSeries,
+    projectName: settings.projectName,
+    jobId: settings.jobId,
+    fetchJobHistoryUrl: settings.fetchJobHistoryUrl
   });
+
   dataModel.trigger('render');
 
   jobHistoryView = new azkaban.TimeGraphView({
     el: $('#timeGraph'),
     model: dataModel,
-    modelField: "data"
+    modelField: "dataSeries"
   });
-});
+
+  if (settings.recordCount) {
+    $('#jobHistoryPagination').twbsPagination({
+      totalPages: Math.ceil(
+          dataModel.get("recordCount") / dataModel.get("pageSize")),
+      startPage: dataModel.get("page"),
+      initiateStartPageClick: false,
+      visiblePages: dataModel.get("visiblePages"),
+      onPageClick: function (event, page) {
+        var qparams = {
+          "project": dataModel.get("projectName"),
+          "job": dataModel.get("jobId"),
+          "page": page,
+          "size": dataModel.get("pageSize")
+        };
+        window.location.href = dataModel.get("fetchJobHistoryUrl") + "?history&"
+            + $.param(qparams);
+      }
+    });
+  }
+
+};

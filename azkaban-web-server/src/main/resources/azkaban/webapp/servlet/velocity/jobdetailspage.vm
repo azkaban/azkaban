@@ -21,8 +21,10 @@
   #parse("azkaban/webapp/servlet/velocity/style.vm")
   #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/model/job-log.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery.twbsPagination.min.js"></script>
+
+  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/model/job-log.js?v=1568515440"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/job-details.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
@@ -36,12 +38,16 @@
     var execId = "${execid}";
     var jobId = "${jobid}";
     var attempt = ${attempt};
-  </script>
-  <script type="text/javascript">
-    $(document).ready(function () {
-      #if ($jobFailed == "true")
-        $("#jobLinkUrl").removeClass("btn-primary").addClass("btn-danger");
-      #end
+
+    var attemptPageSettings = {
+      projectName: "${projectName}",
+      flowId: "${flowid}",
+      attempt: ${attempt},
+      pastAttempts: ${pastAttempts},
+    };
+
+    $(function () {
+      initAttemptPage(attemptPageSettings);
     });
   </script>
 </head>
@@ -58,25 +64,24 @@
 
   ## Log content.
 
-  <div class="container-full container-fill" id="jobLogView">
-    <div class="row">
-      <div class="col-xs-12 col-content">
-        <div class="log-viewer">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <div class="pull-right">
-                <button type="button" id="updateLogBtn" class="btn btn-xs btn-default">Refresh
-                </button>
-              </div>
-              Job Logs
-            </div>
-            <div class="panel-body">
-              <pre id="logSection"></pre>
-            </div>
+  <div class="container-full" id="jobLogView">
+    <div class="log-viewer">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="pull-right">
+            <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh
+            </button>
           </div>
+          Job Logs
+        </div>
+        <div class="panel-body">
+          <pre id="logSection"></pre>
         </div>
       </div>
     </div>
+  </div>
+  <div class="container-full">
+    <ul id="attemptsPagination" class="pagination"></ul>
   </div>
 
   ## Error message message dialog.

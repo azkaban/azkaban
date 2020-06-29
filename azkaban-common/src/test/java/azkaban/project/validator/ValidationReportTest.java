@@ -2,6 +2,7 @@ package azkaban.project.validator;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.Test;
@@ -55,4 +56,36 @@ public class ValidationReportTest {
         report.getStatus(), ValidationStatus.ERROR);
   }
 
+  @Test
+  public void testAddModifiedRemovedFiles() {
+    final ValidationReport report = new ValidationReport();
+    File a = new File("/a.txt");
+    File b = new File("/b.txt");
+    File c = new File("/c.txt");
+    File d = new File("/d.txt");
+    File e = new File("/e.txt");
+
+    final Set<File> removedFiles = new HashSet<>();
+    removedFiles.add(a);
+    removedFiles.add(b);
+    final Set<File> modifiedFiles = new HashSet<>();
+    removedFiles.add(c);
+
+    // Exercise both the methods to add individual files, and methods to add collections of files.
+    report.addRemovedFile(d);
+    report.addModifiedFile(e);
+    report.addRemovedFiles(removedFiles);
+    report.addModifiedFiles(modifiedFiles);
+
+    final Set<File> expectedRemovedFiles = new HashSet<>();
+    expectedRemovedFiles.addAll(removedFiles);
+    expectedRemovedFiles.add(d);
+
+    final Set<File> expectedModifiedFiles = new HashSet<>();
+    expectedModifiedFiles.addAll(modifiedFiles);
+    expectedModifiedFiles.add(e);
+
+    assertEquals(expectedRemovedFiles, report.getRemovedFiles());
+    assertEquals(expectedModifiedFiles, report.getModifiedFiles());
+  }
 }

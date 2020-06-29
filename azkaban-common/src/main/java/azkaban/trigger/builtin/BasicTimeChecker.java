@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.trigger.builtin;
 
 import azkaban.trigger.ConditionChecker;
+import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,6 +26,7 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.quartz.CronExpression;
+
 
 public class BasicTimeChecker implements ConditionChecker {
 
@@ -88,7 +89,7 @@ public class BasicTimeChecker implements ConditionChecker {
     final boolean skipPastChecks =
         Boolean.valueOf((String) jsonObj.get("skipPastChecks"));
     final ReadablePeriod period =
-        Utils.parsePeriodString((String) jsonObj.get("period"));
+        TimeUtils.parsePeriodString((String) jsonObj.get("period"));
     final String id = (String) jsonObj.get("id");
     final String cronExpression = (String) jsonObj.get("cronExpression");
 
@@ -171,14 +172,16 @@ public class BasicTimeChecker implements ConditionChecker {
         break;
       } else if (this.cronExecutionTime != null) {
         final Date nextDate = this.cronExecutionTime.getNextValidTimeAfter(date.toDate());
-        date = new DateTime(nextDate);
+        // Some Cron Expressions possibly do not have follow-up occurrences
+        if (nextDate != null) {
+          date = new DateTime(nextDate);
+        } else {
+          break;
+        }
       } else {
         date = date.plus(this.period);
       }
       count += 1;
-      if (!this.skipPastChecks) {
-        continue;
-      }
     }
     return date.getMillis();
   }
@@ -197,7 +200,7 @@ public class BasicTimeChecker implements ConditionChecker {
     jsonObj.put("nextCheckTime", String.valueOf(this.nextCheckTime));
     jsonObj.put("isRecurring", String.valueOf(this.isRecurring));
     jsonObj.put("skipPastChecks", String.valueOf(this.skipPastChecks));
-    jsonObj.put("period", Utils.createPeriodString(this.period));
+    jsonObj.put("period", TimeUtils.createPeriodString(this.period));
     jsonObj.put("id", this.id);
     jsonObj.put("cronExpression", this.cronExpression);
 
@@ -212,5 +215,4 @@ public class BasicTimeChecker implements ConditionChecker {
   @Override
   public void setContext(final Map<String, Object> context) {
   }
-
 }

@@ -19,13 +19,10 @@ package azkaban.flowtrigger;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 public class DependencyInstanceProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(DependencyInstanceProcessor.class);
   private final FlowTriggerInstanceLoader flowTriggerInstanceLoader;
 
   @Inject
@@ -37,7 +34,6 @@ public class DependencyInstanceProcessor {
    * Process status update of dependency instance
    */
   public void processStatusUpdate(final DependencyInstance depInst) {
-    logger.debug("process status update for " + depInst);
     //this is blocking call, might offload it to another thread if necessary.
     this.flowTriggerInstanceLoader.updateDependencyExecutionStatus(depInst);
   }

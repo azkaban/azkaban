@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
@@ -26,8 +25,6 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
-
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
@@ -35,9 +32,8 @@ import org.apache.pig.PigRunner;
 import org.apache.pig.tools.pigstats.JobStats;
 import org.apache.pig.tools.pigstats.PigStats;
 import org.apache.pig.tools.pigstats.PigStats.JobGraph;
-
-import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.Props;
+
 
 public class HadoopSecurePigWrapper {
 
@@ -81,11 +77,13 @@ public class HadoopSecurePigWrapper {
   @SuppressWarnings("deprecation")
   public static void runPigJob(String[] args) throws Exception {
     PigStats stats = null;
+    System.out.println("Beginning execution of pig script.");
     if (props.getBoolean("pig.listener.visualizer", false) == true) {
       stats = PigRunner.run(args, new AzkabanPigListener(props));
     } else {
       stats = PigRunner.run(args, null);
     }
+    System.out.println("Completed execution of pig script.");
 
     dumpHadoopCounters(stats);
 
@@ -116,8 +114,6 @@ public class HadoopSecurePigWrapper {
 
   /**
    * Dump Hadoop counters for each of the M/R jobs in the given PigStats.
-   *
-   * @param pigStats
    */
   private static void dumpHadoopCounters(PigStats pigStats) {
     try {

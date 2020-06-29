@@ -90,9 +90,9 @@ public class AzkabanProcess {
     try {
       this.processId = processId(this.process);
       if (this.processId == 0) {
-        this.logger.debug("Spawned thread with unknown process id");
+        this.logger.info("Spawned process with unknown process id");
       } else {
-        this.logger.debug("Spawned thread with process id " + this.processId);
+        this.logger.info("Spawned process with id " + this.processId);
       }
 
       this.startupLatch.countDown();
@@ -122,12 +122,7 @@ public class AzkabanProcess {
       errorGobbler.awaitCompletion(5000);
 
       if (exitCode != 0) {
-        final String output =
-            new StringBuilder().append("Stdout:\n")
-                .append(outputGobbler.getRecentLog()).append("\n\n")
-                .append("Stderr:\n").append(errorGobbler.getRecentLog())
-                .append("\n").toString();
-        throw new ProcessFailureException(exitCode, output);
+        throw new ProcessFailureException(exitCode);
       }
 
     } finally {

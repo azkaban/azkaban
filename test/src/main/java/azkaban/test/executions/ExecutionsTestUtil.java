@@ -30,10 +30,10 @@ public class ExecutionsTestUtil {
 
 
   public static File getFlowDir(final String flowName) {
-    return new File(DATA_ROOT_PATH + "/" + flowName);
+    return new File(DATA_ROOT_PATH + File.separator + flowName);
   }
 
   public static File getFlowFile(final String flowName, final String fileName) {
-    return new File(DATA_ROOT_PATH + "/" + flowName + "/" + fileName);
+    return new File(DATA_ROOT_PATH + File.separator + flowName + File.separator + fileName);
   }
 }

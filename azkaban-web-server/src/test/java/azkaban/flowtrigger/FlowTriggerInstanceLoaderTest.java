@@ -303,7 +303,7 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithCancelling(all.get(i));
       }
       //sleep for a while to ensure endtime is different for each trigger instance
-      Thread.sleep(1000);
+      Thread.sleep(100);
     }
 
     this.shuffleAndUpload(all);
@@ -368,6 +368,72 @@ public class FlowTriggerInstanceLoaderTest {
   }
 
   @Test
+  public void testGetTriggerInstancesStartTimeDesc() {
+    final List<TriggerInstance> expected = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+      expected.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 1000));
+    }
+
+    this.shuffleAndUpload(expected);
+    final Collection<TriggerInstance> actual = this.triggerInstLoader.getTriggerInstances
+        (this.project_id, this.flow_id, 0, 10);
+    expected.sort((o1, o2) -> ((Long) o2.getStartTime()).compareTo(o1.getStartTime()));
+
+    assertTwoTriggerInstanceListsEqual(new ArrayList<>(actual), new ArrayList<>(expected), true,
+        true);
+  }
+
+  @Test
+  public void testGetEmptyTriggerInstancesStartTimeDesc() {
+    final Collection<TriggerInstance> actual = this.triggerInstLoader.getTriggerInstances
+        (this.project_id, this.flow_id, 0, 10);
+    assertThat(actual).isEmpty();
+  }
+
+  @Test
+  public void testDeleteOldTriggerInstances() throws InterruptedException {
+    final List<TriggerInstance> all = new ArrayList<>();
+    final long ts1 = System.currentTimeMillis();
+    long ts2 = -1;
+    long ts3 = -1;
+    for (int i = 0; i < 30; i++) {
+      all.add(this.createTriggerInstance(this.flowTrigger, this
+          .flow_id, this.flow_version, this.submitUser, this.project, System.currentTimeMillis()
+          + i * 10000));
+
+      if (i < 5) {
+        finalizeTriggerInstanceWithSuccess(all.get(i), -1);
+      } else if (i <= 15) {
+        finalizeTriggerInstanceWithCancelled(all.get(i));
+      } else if (i <= 25) {
+        finalizeTriggerInstanceWithCancelling(all.get(i));
+      } else if (i <= 27) {
+        finalizeTriggerInstanceWithSuccess(all.get(i), 1000);
+      }
+      //sleep for a while to ensure end time is different for each trigger instance
+      if (i == 3) {
+        ts2 = System.currentTimeMillis();
+      } else if (i == 12) {
+        ts3 = System.currentTimeMillis();
+      }
+      Thread.sleep(100);
+    }
+    this.shuffleAndUpload(all);
+
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts1))
+        .isEqualTo(0);
+
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts2))
+        .isEqualTo(0);
+
+    assertThat(this.triggerInstLoader.deleteTriggerExecutionsFinishingOlderThan(ts3))
+        .isEqualTo(16);
+
+  }
+
+  @Test
   public void testGetRecentlyFinished() throws InterruptedException {
 
     final List<TriggerInstance> all = new ArrayList<>();
@@ -383,7 +449,7 @@ public class FlowTriggerInstanceLoaderTest {
         finalizeTriggerInstanceWithCancelling(all.get(i));
       }
       //sleep for a while to ensure endtime is different for each trigger instance
-      Thread.sleep(1000);
+      Thread.sleep(100);
     }
 
     this.shuffleAndUpload(all);

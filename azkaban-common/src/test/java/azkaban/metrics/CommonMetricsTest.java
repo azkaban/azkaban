@@ -16,7 +16,7 @@
 
 package azkaban.metrics;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
@@ -37,10 +37,28 @@ public class CommonMetricsTest {
 
   @Test
   public void testOOMWaitingJobMetrics() {
-    final String metricName = "OOM-waiting-job-count";
+    final String metricName = CommonMetrics.OOM_WAITING_JOB_COUNT_NAME;
 
-    assertEquals(0, this.testUtil.getGaugeValue(metricName));
+    assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(0);
     this.metrics.incrementOOMJobWaitCount();
-    assertEquals(1, this.testUtil.getGaugeValue(metricName));
+    assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(1);
+
+    this.metrics.decrementOOMJobWaitCount();
+    assertThat(this.testUtil.getCounterValue(metricName)).isEqualTo(0);
+  }
+
+  @Test
+  public void testSubmitMetrics() {
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME)).isEqualTo(0);
+    this.metrics.markSubmitFlowFail();
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_FAIL_METER_NAME)).isEqualTo(1);
+
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME)).isEqualTo(0);
+    this.metrics.markSubmitFlowSkip();
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SKIP_METER_NAME)).isEqualTo(1);
+
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME)).isEqualTo(0);
+    this.metrics.markSubmitFlowSuccess();
+    assertThat(this.testUtil.getMeterValue(CommonMetrics.SUBMIT_FLOW_SUCCESS_METER_NAME)).isEqualTo(1);
   }
 }

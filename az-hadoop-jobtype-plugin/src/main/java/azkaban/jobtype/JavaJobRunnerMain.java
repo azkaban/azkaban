@@ -13,22 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobtype;
 
 import azkaban.jobExecutor.ProcessJob;
+import azkaban.security.commons.SecurityUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
-import azkaban.security.commons.SecurityUtils;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -38,11 +28,19 @@ import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Layout;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+
 
 public class JavaJobRunnerMain {
 
@@ -57,9 +55,9 @@ public class JavaJobRunnerMain {
 
   public static final String CANCEL_METHOD_PARAM = "method.cancel";
   public static final String RUN_METHOD_PARAM = "method.run";
-  public static final String[] PROPS_CLASSES = new String[] {
-    "azkaban.utils.Props",
-    "azkaban.common.utils.Props"
+  public static final String[] PROPS_CLASSES = new String[]{
+      "azkaban.utils.Props",
+      "azkaban.common.utils.Props"
   };
 
   private static final Layout DEFAULT_LAYOUT = new PatternLayout("%p %m\n");
@@ -123,7 +121,6 @@ public class JavaJobRunnerMain {
 
       final String runMethod =
           props.getProperty(RUN_METHOD_PARAM, DEFAULT_RUN_METHOD);
-      _logger.info("Invoking method " + runMethod);
 
       if (SecurityUtils.shouldProxy(props)) {
         _logger.info("Proxying enabled.");
@@ -139,16 +136,16 @@ public class JavaJobRunnerMain {
       try {
         final Method generatedPropertiesMethod =
             _javaObject.getClass().getMethod(GET_GENERATED_PROPERTIES_METHOD,
-                new Class<?>[] {});
+                new Class<?>[]{});
         Object outputGendProps =
-            generatedPropertiesMethod.invoke(_javaObject, new Object[] {});
+            generatedPropertiesMethod.invoke(_javaObject, new Object[]{});
         if (outputGendProps != null) {
           final Method toPropertiesMethod =
               outputGendProps.getClass().getMethod("toProperties",
-                  new Class<?>[] {});
+                  new Class<?>[]{});
           Properties properties =
               (Properties) toPropertiesMethod.invoke(outputGendProps,
-                  new Object[] {});
+                  new Object[]{});
 
           Props outputProps = new Props(null, properties);
           outputGeneratedProperties(outputProps);
@@ -170,7 +167,7 @@ public class JavaJobRunnerMain {
   }
 
   private void runMethodAsProxyUser(Properties props, final Object obj,
-      final String runMethod) throws IOException, InterruptedException {
+      final String runMethod) throws IOException, InterruptedException, UndeclaredThrowableException {
     UserGroupInformation ugi =
         SecurityUtils.getProxiedUser(props, _logger, new Configuration());
     _logger.info("user " + ugi + " authenticationMethod "
@@ -190,7 +187,10 @@ public class JavaJobRunnerMain {
   private void runMethod(Object obj, String runMethod)
       throws IllegalAccessException, InvocationTargetException,
       NoSuchMethodException {
-    obj.getClass().getMethod(runMethod, new Class<?>[] {}).invoke(obj);
+    final Method method = obj.getClass().getMethod(runMethod, new Class<?>[]{});
+    _logger.info("Beginning execution of external code: " + runMethod);
+    method.invoke(obj);
+    _logger.info("Completed execution of external code: " + runMethod);
   }
 
   @SuppressWarnings("DefaultCharset")
@@ -311,7 +311,7 @@ public class JavaJobRunnerMain {
       Constructor<?> propsCon =
           getConstructor(propsClass, propsClass, Properties[].class);
       Object props =
-          propsCon.newInstance(null, new Properties[] { properties });
+          propsCon.newInstance(null, new Properties[]{properties});
 
       Constructor<?> con =
           getConstructor(runningClass, String.class, propsClass);

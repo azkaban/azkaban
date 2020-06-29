@@ -20,15 +20,20 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
+import azkaban.sla.SlaOption;
+import azkaban.sla.SlaOption.SlaOptionBuilder;
+import azkaban.sla.SlaType;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
+import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -115,25 +120,7 @@ public class ExecutableFlowTest {
     testEquals(optionsA.getSuccessEmails(), optionsB.getSuccessEmails());
     testEquals(optionsA.getFailureEmails(), optionsB.getFailureEmails());
     testEquals(optionsA.getFlowParameters(), optionsB.getFlowParameters());
-  }
-
-  private static void testEquals(final Set<String> a, final Set<String> b) {
-    if (a == b) {
-      return;
-    }
-
-    if (a == null || b == null) {
-      Assert.fail();
-    }
-
-    Assert.assertEquals(a.size(), b.size());
-
-    final Iterator<String> iterA = a.iterator();
-
-    while (iterA.hasNext()) {
-      final String aStr = iterA.next();
-      Assert.assertTrue(b.contains(aStr));
-    }
+    testSlaEquals(optionsA.getSlaOptions(), optionsB.getSlaOptions());
   }
 
   private static void testEquals(final List<String> a, final List<String> b) {
@@ -157,7 +144,7 @@ public class ExecutableFlowTest {
     }
   }
 
-  private static void testDisabledEquals(final List<Object> a, final List<Object> b) {
+  private static void testDisabledEquals(final List<DisabledJob> a, final List<DisabledJob> b) {
     if (a == b) {
       return;
     }
@@ -168,23 +155,47 @@ public class ExecutableFlowTest {
 
     Assert.assertEquals(a.size(), b.size());
 
-    final Iterator<Object> iterA = a.iterator();
-    final Iterator<Object> iterB = b.iterator();
+    final Iterator<DisabledJob> iterA = a.iterator();
+    final Iterator<DisabledJob> iterB = b.iterator();
 
     while (iterA.hasNext()) {
-      final Object aStr = iterA.next();
-      final Object bStr = iterB.next();
+      final DisabledJob aElem = iterA.next();
+      final DisabledJob bElem = iterB.next();
 
-      if (aStr instanceof Map && bStr instanceof Map) {
-        final Map<String, Object> aMap = (Map<String, Object>) aStr;
-        final Map<String, Object> bMap = (Map<String, Object>) bStr;
-
-        Assert.assertEquals((String) aMap.get("id"), (String) bMap.get("id"));
-        testDisabledEquals((List<Object>) aMap.get("children"),
-            (List<Object>) bMap.get("children"));
-      } else {
-        Assert.assertEquals(aStr, bStr);
+      if (aElem == null) {
+        Assert.assertNull(bElem);
+        continue;
       }
+      Assert.assertEquals(aElem.getName(), bElem.getName());
+      testDisabledEquals(aElem.getChildren(), bElem.getChildren());
+    }
+  }
+
+  private static void testSlaEquals(List<SlaOption> a, List<SlaOption> b) {
+    if (a == b) {
+      return;
+    }
+
+    if (a == null || b == null) {
+      Assert.fail();
+    }
+
+    Assert.assertEquals(a.size(), b.size());
+
+    final Iterator<SlaOption> iterA = a.iterator();
+    final Iterator<SlaOption> iterB = b.iterator();
+
+    while (iterA.hasNext()) {
+      final SlaOption aElem = iterA.next();
+      final SlaOption bElem = iterB.next();
+
+      Assert.assertEquals(aElem.getFlowName(), bElem.getFlowName());
+      Assert.assertEquals(aElem.getJobName(), bElem.getJobName());
+      Assert.assertEquals(aElem.getDuration(), bElem.getDuration());
+      Assert.assertEquals(aElem.hasAlert(), bElem.hasAlert());
+      Assert.assertEquals(aElem.hasKill(), bElem.hasKill());
+      Assert.assertEquals(aElem.getType(), bElem.getType());
+      Assert.assertEquals(aElem.getEmails(), bElem.getEmails());
     }
   }
 
@@ -256,6 +267,12 @@ public class ExecutableFlowTest {
     Assert.assertEquals("innerFlow", jobdFlow.getFlowId());
     Assert.assertEquals("jobd", jobdFlow.getId());
     Assert.assertEquals(4, jobdFlow.getExecutableNodes().size());
+
+    Assert.assertEquals(false, exFlow.isLocked());
+    exFlow.setLocked(true);
+    Assert.assertEquals(true, exFlow.isLocked());
+    exFlow.setLocked(false);
+    Assert.assertEquals(false, exFlow.isLocked());
   }
 
   @Test
@@ -271,7 +288,7 @@ public class ExecutableFlowTest {
         (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
 
     final ExecutableFlow parsedExFlow =
-        ExecutableFlow.createExecutableFlowFromObject(flowObjMap);
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
     testEquals(exFlow, parsedExFlow);
   }
 
@@ -286,10 +303,14 @@ public class ExecutableFlowTest {
     exFlow.resetForRetry();
     exFlow.resetForRetry();
     exFlow.setDelayedExecution(1000);
+    exFlow.setLocked(true);
 
     final ExecutionOptions options = new ExecutionOptions();
     options.setConcurrentOption("blah");
-    options.setDisabledJobs(Arrays.asList(new Object[]{"bee", null, "boo"}));
+    options.setDisabledJobs(Arrays.asList(new DisabledJob[]{new DisabledJob("bee"), null,
+        new DisabledJob("boo"), new DisabledJob("ce",
+        Arrays.asList(new DisabledJob[]{new DisabledJob("ca"),
+            new DisabledJob("cu")}))}));
     options.setFailureAction(FailureAction.CANCEL_ALL);
     options
         .setFailureEmails(Arrays.asList(new String[]{"doo", null, "daa"}));
@@ -299,6 +320,12 @@ public class ExecutableFlowTest {
     options.setPipelineExecutionId(3);
     options.setNotifyOnFirstFailure(true);
     options.setNotifyOnLastFailure(true);
+    options.setSlaOptions(Arrays.asList(new SlaOptionBuilder(SlaType.FLOW_FINISH, "flowTest",
+            Duration.ofMinutes(1130)).setAlert()
+            .setEmails(Arrays.asList("fe@company.com", "fi@company.com")).createSlaOption(),
+        new SlaOptionBuilder(SlaType.JOB_SUCCEED, "flowTest", Duration.ofMinutes(130))
+            .setJobName("fo").setKill()
+            .setEmails( Arrays.asList("fe@company.com", "fi@company.com")).createSlaOption()));
 
     final HashMap<String, String> flowProps = new HashMap<>();
     flowProps.put("la", "fa");
@@ -309,10 +336,19 @@ public class ExecutableFlowTest {
     final String exFlowJSON = JSONUtils.toJSON(obj);
     final Map<String, Object> flowObjMap =
         (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
-
     final ExecutableFlow parsedExFlow =
-        ExecutableFlow.createExecutableFlowFromObject(flowObjMap);
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
     testEquals(exFlow, parsedExFlow);
+
+    // test backward compatibility: reading in the original JSON format should
+    // generate the same object
+    Map<String, Object>origObjMap =
+        (Map<String, Object>) JSONUtils.parseJSONFromFile(new File
+        ("src/test/resources/json/embedded_flow.json"));
+    final ExecutableFlow origExFlow =
+        ExecutableFlow.createExecutableFlow(origObjMap, exFlow.getStatus());
+    origExFlow.setUpdateTime(exFlow.getUpdateTime()); // update time changes
+    testEquals(exFlow, origExFlow);
   }
 
   @Test
@@ -327,7 +363,7 @@ public class ExecutableFlowTest {
     final Map<String, Object> flowObjMap =
         (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
     final ExecutableFlow copyFlow =
-        ExecutableFlow.createExecutableFlowFromObject(flowObjMap);
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
 
     testEquals(exFlow, copyFlow);
 
@@ -408,5 +444,39 @@ public class ExecutableFlowTest {
     for (final ExecutableNode node : nodes) {
       Assert.assertNotNull(node);
     }
+  }
+
+  @Test
+  public void testGetDirectory() {
+    final Flow flow = this.project.getFlow("jobe");
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    Assert.assertEquals(exFlow.getDirectory(), "11.123");
+  }
+
+  @Test
+  public void testGetRampPropsForJob() {
+    final Flow flow = this.project.getFlow("jobe");
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    Assert.assertNull(exFlow.getExecutableFlowRampMetadata());
+
+    Assert.assertNull(exFlow.getRampPropsForJob("test", "pigLi"));
+
+    Props props = new Props();
+    props.put("dali-pig", "/export/dali-pig-9.2.jar");
+    props.put("dali-spark", "/export/dali-spark-9.2.jar");
+    props.put("common", "/export/common-1.1.jar");
+
+    ExecutableFlowRampMetadata metadata = ExecutableFlowRampMetadata.createInstance(
+        ExecutableRampDependencyMap.createInstance()
+            .add("dali-pig", "/export/dali-pig-9.1.jar", "pigLi,hive")
+            .add("dali-spark", "/export/dali-spark-9.1.jar", "spark")
+            .add("common", "/export/common", null),
+        ImmutableMap.<String, ExecutableRampExceptionalItems>builder()
+            .build()
+    ).setRampProps("dali", props);
+
+    exFlow.setExecutableFlowRampMetadata(metadata);
+
+    Assert.assertEquals(2, exFlow.getRampPropsForJob("test", "pigLi").size());
   }
 }

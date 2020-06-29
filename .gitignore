@@ -1,4 +1,4 @@
-
+*.db
 *.swp
 .classpath
 .gradle/
@@ -12,10 +12,16 @@ build/
 Gemfile.lock
 vendor/
 **/velocity.log
+docs/_build/
+
+executor.port
 
 # local & temp directories are ignored so that they can be used to store temporary files such as local testing configurations.
 local/
 temp/
+conf/
+projects/
+LOCAL_STORAGE/
 
 # Intellij files
 .idea
@@ -26,3 +32,17 @@ temp/
 .shelf
 # Intellij default build output directory
 out/
+currentpid
+
+# direnv files see https://github.com/direnv/direnv
+.envrc
+.direnv/
+
+# pytest
+.pytest_cache/
+
+#python
+__pycache__/
+
+#test artifacts
+LOCAL_STORAGE/

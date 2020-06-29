@@ -34,7 +34,7 @@ public class OsMemoryUtilTest {
             "SwapFree:    4 kB",
             "Foo: 10 kB");
 
-    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines);
+    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines, OsMemoryUtil.MEM_KEYS);
     assertEquals(10, size);
   }
 
@@ -42,7 +42,7 @@ public class OsMemoryUtilTest {
   public void getOsTotalFreeMemorySizeMissingEntry() {
     final List<String> lines = Arrays.asList("MemFree:        1 kB", "Foo: 10 kB");
 
-    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines);
+    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines, OsMemoryUtil.MEM_KEYS);
     assertEquals(0, size);
   }
 
@@ -50,7 +50,7 @@ public class OsMemoryUtilTest {
   public void getOsTotalFreeMemorySizeWrongEntry() {
     final List<String> lines = Collections.singletonList("MemFree:        foo kB");
 
-    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines);
+    final long size = this.util.getOsTotalFreeMemorySizeFromStrings(lines, OsMemoryUtil.MEM_KEYS);
     assertEquals(0, size);
   }
 

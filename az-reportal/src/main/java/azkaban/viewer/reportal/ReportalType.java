@@ -57,10 +57,13 @@ public enum ReportalType {
       propertiesFile.put("reportal.pig.script", "res/" + jobName + ".pig");
     }
   },
+
+
   HiveJob("ReportalHive", "reportalhive", "hadoop"), TeraDataJob(
-      "ReportalTeraData", "reportalteradata", "teradata"), DataCollectorJob(
-      ReportalTypeManager.DATA_COLLECTOR_JOB,
-      ReportalTypeManager.DATA_COLLECTOR_JOB_TYPE, "") {
+      "ReportalTeraData", "reportalteradata", "teradata"),
+  TableauJob("ReportalTableau", "reportaltableau", "hadoop"),
+  PrestoJob("ReportalPresto", "reportalpresto", "hadoop"), DataCollectorJob(
+      ReportalTypeManager.DATA_COLLECTOR_JOB, ReportalTypeManager.DATA_COLLECTOR_JOB_TYPE, "") {
     @Override
     public void buildJobFiles(final Reportal reportal, final Props propertiesFile,
         final File jobFile, final String jobName, final String queryScript,
@@ -95,7 +98,6 @@ public enum ReportalType {
 
   public void buildJobFiles(final Reportal reportal, final Props propertiesFile,
       final File jobFile, final String jobName, final String queryScript, final String proxyUser) {
-
   }
 
   public String getJobTypeName() {

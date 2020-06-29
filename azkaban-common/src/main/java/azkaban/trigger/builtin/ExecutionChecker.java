@@ -28,7 +28,7 @@ import java.util.Map;
 public class ExecutionChecker implements ConditionChecker {
 
   public static final String type = "ExecutionChecker";
-  public static ExecutorManagerAdapter executorManager;
+  public static ExecutorManagerAdapter executorManagerAdapter;
 
   private final String checkerId;
   private final int execId;
@@ -44,7 +44,7 @@ public class ExecutionChecker implements ConditionChecker {
   }
 
   public static void setExecutorManager(final ExecutorManagerAdapter em) {
-    executorManager = em;
+    executorManagerAdapter = em;
   }
 
   public static ExecutionChecker createFromJson(final HashMap<String, Object> jsonObj)
@@ -68,7 +68,7 @@ public class ExecutionChecker implements ConditionChecker {
   public Object eval() {
     final ExecutableFlow exflow;
     try {
-      exflow = executorManager.getExecutableFlow(this.execId);
+      exflow = executorManagerAdapter.getExecutableFlow(this.execId);
     } catch (final ExecutorManagerException e) {
       e.printStackTrace();
       return Boolean.FALSE;

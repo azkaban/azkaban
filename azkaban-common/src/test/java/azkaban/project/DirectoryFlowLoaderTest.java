@@ -16,6 +16,9 @@
 
 package azkaban.project;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import azkaban.flow.Flow;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
 import com.google.common.io.Files;
@@ -37,6 +40,32 @@ import org.junit.Test;
 public class DirectoryFlowLoaderTest {
 
   private Project project;
+
+  private static File decompressTarBZ2(InputStream is) throws IOException {
+    File outputDir = Files.createTempDir();
+
+    try (TarArchiveInputStream tais = new TarArchiveInputStream(
+        new BZip2CompressorInputStream(is))) {
+      TarArchiveEntry entry;
+      while ((entry = tais.getNextTarEntry()) != null) {
+        if (entry.isDirectory()) {
+          continue;
+        }
+
+        File outputFile = new File(outputDir, entry.getName());
+        File parent = outputFile.getParentFile();
+        if (!parent.exists()) {
+          parent.mkdirs();
+        }
+
+        try (FileOutputStream os = new FileOutputStream(outputFile)) {
+          IOUtils.copy(tais, os);
+        }
+      }
+
+      return outputDir;
+    }
+  }
 
   @Before
   public void setUp() {
@@ -76,30 +105,6 @@ public class DirectoryFlowLoaderTest {
 
     // Should be 3 errors: jobe->innerFlow, innerFlow->jobe, innerFlow
     Assert.assertEquals(3, loader.getErrors().size());
-  }
-
-  private static File decompressTarBZ2(InputStream is) throws IOException {
-    File outputDir = Files.createTempDir();
-
-    try (TarArchiveInputStream tais = new TarArchiveInputStream(
-        new BZip2CompressorInputStream(is))) {
-      TarArchiveEntry entry;
-      while ((entry = tais.getNextTarEntry()) != null) {
-        if (entry.isDirectory()) {
-          continue;
-        }
-
-        File outputFile = new File(outputDir, entry.getName());
-        File parent = outputFile.getParentFile();
-        if (!parent.exists()) {
-          parent.mkdirs();
-        }
-
-        IOUtils.copy(tais, new FileOutputStream(outputFile));
-      }
-
-      return outputDir;
-    }
   }
 
   @Test

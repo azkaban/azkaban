@@ -4,7 +4,7 @@ trigger:
   maxWaitMins: 1
   schedule:
     type: cron
-    value: 0/5 * * * * ?
+    value: 0 0 0 ? * * *
 
   triggerDependencies:
     - name: search-impression # an unique name to identify the dependency

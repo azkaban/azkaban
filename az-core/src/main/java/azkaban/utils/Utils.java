@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.BufferedInputStream;
@@ -23,14 +22,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.zip.ZipEntry;
@@ -38,33 +41,24 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
-import org.joda.time.DurationFieldType;
-import org.joda.time.Hours;
-import org.joda.time.Minutes;
-import org.joda.time.Months;
-import org.joda.time.ReadablePeriod;
-import org.joda.time.Seconds;
-import org.joda.time.Weeks;
-import org.joda.time.Years;
 import org.quartz.CronExpression;
+
 
 /**
  * A util helper class full of static methods that are commonly used.
  */
 public class Utils {
 
-  public static final Random RANDOM = new Random();
-  private static final Logger logger = Logger
-      .getLogger(Utils.class);
+  private static final Random RANDOM = new Random();
+  private static final Logger logger = Logger.getLogger(Utils.class);
 
   /**
    * Private constructor.
    */
   private Utils() {
   }
+
 
   /**
    * Equivalent to Object.equals except that it handles nulls. If a and b are both null, true is
@@ -103,6 +97,18 @@ public class Utils {
       }
     }
     return null;
+  }
+
+  /**
+   * Return the value itself if it is non-null, otherwise return the default value
+   *
+   * @param value The object
+   * @param defaultValue default value if object == null
+   * @param <T> The type of the object
+   * @return The object itself or default value when it is null
+   */
+  public static <T> T ifNull(final T value, final T defaultValue) {
+    return (value == null) ? defaultValue : value;
   }
 
   /**
@@ -175,7 +181,7 @@ public class Utils {
       if (files != null) {
         for (final File f : files) {
           final String childPath =
-              path + input.getName() + (f.isDirectory() ? "/" : "");
+              path + input.getName() + (f.isDirectory() ? File.separator : "");
           zipFile(childPath, f, zOut);
         }
       }
@@ -199,6 +205,12 @@ public class Utils {
     while (entries.hasMoreElements()) {
       final ZipEntry entry = (ZipEntry) entries.nextElement();
       final File newFile = new File(dest, entry.getName());
+      if (!newFile.getCanonicalPath().startsWith(dest.getCanonicalPath())) {
+        throw new IOException(
+            "Extracting zip entry would have resulted in a file outside the specified destination"
+                + " directory.");
+      }
+
       if (entry.isDirectory()) {
         newFile.mkdirs();
       } else {
@@ -237,7 +249,6 @@ public class Utils {
     if (obj instanceof String) {
       return Double.parseDouble((String) obj);
     }
-
     return (Double) obj;
   }
 
@@ -257,12 +268,23 @@ public class Utils {
   }
 
   /**
+   * Construct a class object with the given arguments
+   *
+   * @param cls The class
+   * @param args The arguments
+   * @return Constructed Object
+   */
+  public static Object callConstructor(final Class<?> cls, final Object... args) {
+    return callConstructor(cls, getTypes(args), args);
+  }
+
+  /**
    * Get the Class of all the objects
    *
    * @param args The objects to get the Classes from
    * @return The classes as an array
    */
-  public static Class<?>[] getTypes(final Object... args) {
+  private static Class<?>[] getTypes(final Object... args) {
     final Class<?>[] argTypes = new Class<?>[args.length];
     for (int i = 0; i < argTypes.length; i++) {
       argTypes[i] = args[i].getClass();
@@ -270,65 +292,23 @@ public class Utils {
     return argTypes;
   }
 
-  public static Object callConstructor(final Class<?> c, final Object... args) {
-    return callConstructor(c, getTypes(args), args);
-  }
-
   /**
    * Call the class constructor with the given arguments
    *
-   * @param c The class
+   * @param cls The class
    * @param args The arguments
    * @return The constructed object
    */
-  public static Object callConstructor(final Class<?> c, final Class<?>[] argTypes,
+  private static Object callConstructor(final Class<?> cls, final Class<?>[] argTypes,
       final Object[] args) {
     try {
-      final Constructor<?> cons = c.getConstructor(argTypes);
+      final Constructor<?> cons = cls.getConstructor(argTypes);
       return cons.newInstance(args);
     } catch (final InvocationTargetException e) {
       throw getCause(e);
-    } catch (final IllegalAccessException e) {
-      throw new IllegalStateException(e);
-    } catch (final NoSuchMethodException e) {
-      throw new IllegalStateException(e);
-    } catch (final InstantiationException e) {
+    } catch (final IllegalAccessException | NoSuchMethodException | InstantiationException e) {
       throw new IllegalStateException(e);
     }
-  }
-
-  public static String formatDuration(final long startTime, final long endTime) {
-    if (startTime == -1) {
-      return "-";
-    }
-
-    final long durationMS;
-    if (endTime == -1) {
-      durationMS = DateTime.now().getMillis() - startTime;
-    } else {
-      durationMS = endTime - startTime;
-    }
-
-    long seconds = durationMS / 1000;
-    if (seconds < 60) {
-      return seconds + " sec";
-    }
-
-    long minutes = seconds / 60;
-    seconds %= 60;
-    if (minutes < 60) {
-      return minutes + "m " + seconds + "s";
-    }
-
-    long hours = minutes / 60;
-    minutes %= 60;
-    if (hours < 24) {
-      return hours + "h " + minutes + "m " + seconds + "s";
-    }
-
-    final long days = hours / 24;
-    hours %= 24;
-    return days + "d " + hours + "h " + minutes + "m";
   }
 
   public static Object invokeStaticMethod(final ClassLoader loader, final String className,
@@ -356,78 +336,6 @@ public class Utils {
     }
   }
 
-  public static ReadablePeriod parsePeriodString(final String periodStr) {
-    final ReadablePeriod period;
-    final char periodUnit = periodStr.charAt(periodStr.length() - 1);
-    if (periodStr.equals("null") || periodUnit == 'n') {
-      return null;
-    }
-
-    final int periodInt =
-        Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
-    switch (periodUnit) {
-      case 'y':
-        period = Years.years(periodInt);
-        break;
-      case 'M':
-        period = Months.months(periodInt);
-        break;
-      case 'w':
-        period = Weeks.weeks(periodInt);
-        break;
-      case 'd':
-        period = Days.days(periodInt);
-        break;
-      case 'h':
-        period = Hours.hours(periodInt);
-        break;
-      case 'm':
-        period = Minutes.minutes(periodInt);
-        break;
-      case 's':
-        period = Seconds.seconds(periodInt);
-        break;
-      default:
-        throw new IllegalArgumentException("Invalid schedule period unit '"
-            + periodUnit);
-    }
-
-    return period;
-  }
-
-  public static String createPeriodString(final ReadablePeriod period) {
-    String periodStr = "null";
-
-    if (period == null) {
-      return "null";
-    }
-
-    if (period.get(DurationFieldType.years()) > 0) {
-      final int years = period.get(DurationFieldType.years());
-      periodStr = years + "y";
-    } else if (period.get(DurationFieldType.months()) > 0) {
-      final int months = period.get(DurationFieldType.months());
-      periodStr = months + "M";
-    } else if (period.get(DurationFieldType.weeks()) > 0) {
-      final int weeks = period.get(DurationFieldType.weeks());
-      periodStr = weeks + "w";
-    } else if (period.get(DurationFieldType.days()) > 0) {
-      final int days = period.get(DurationFieldType.days());
-      periodStr = days + "d";
-    } else if (period.get(DurationFieldType.hours()) > 0) {
-      final int hours = period.get(DurationFieldType.hours());
-      periodStr = hours + "h";
-    } else if (period.get(DurationFieldType.minutes()) > 0) {
-      final int minutes = period.get(DurationFieldType.minutes());
-      periodStr = minutes + "m";
-    } else if (period.get(DurationFieldType.seconds()) > 0) {
-      final int seconds = period.get(DurationFieldType.seconds());
-      periodStr = seconds + "s";
-    }
-
-    return periodStr;
-  }
-
   /**
    * @param strMemSize : memory string in the format such as 1G, 500M, 3000K, 5000
    * @return : long value of memory amount in kb
@@ -437,7 +345,7 @@ public class Utils {
       return 0L;
     }
 
-    long size = 0L;
+    final long size;
     if (strMemSize.endsWith("g") || strMemSize.endsWith("G")
         || strMemSize.endsWith("m") || strMemSize.endsWith("M")
         || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
@@ -447,7 +355,7 @@ public class Utils {
       size = Long.parseLong(strMemSize);
     }
 
-    long sizeInKb = 0L;
+    final long sizeInKb;
     if (strMemSize.endsWith("g") || strMemSize.endsWith("G")) {
       sizeInKb = size * 1024L * 1024L;
     } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
@@ -501,10 +409,74 @@ public class Utils {
      * e.g. <0 0 3 ? * * 22> OR <0 0 3 ? * 8>. Under these cases, the below code is able to tell.
      */
     final CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
-    if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
-      return false;
-    }
-    return true;
+    return (!(cronExecutionTime == null
+        || cronExecutionTime.getNextValidTimeAfter(new Date()) == null));
   }
 
+  /**
+   * Run a sequence of commands
+   *
+   * @param commands sequence of commands
+   * @return list of output result
+   */
+  public static ArrayList<String> runProcess(String... commands)
+      throws InterruptedException, IOException {
+    final java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder(commands);
+    final ArrayList<String> output = new ArrayList<>();
+    final Process process = processBuilder.start();
+    process.waitFor();
+    final InputStream inputStream = process.getInputStream();
+    try {
+      final java.io.BufferedReader reader = new java.io.BufferedReader(
+          new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+      String line;
+      while ((line = reader.readLine()) != null) {
+        output.add(line);
+      }
+    } finally {
+      inputStream.close();
+    }
+    return output;
+  }
+
+  /**
+   * Merge the absolute paths of source paths into the list of destination paths
+   *
+   * @param destinationPaths the path list which the source paths will be merged into
+   * @param sourcePaths source paths
+   * @param rootPath defined root path for source paths when they are not absolute path
+   */
+  public static void mergeTypeClassPaths(
+      List<String> destinationPaths, final List<String> sourcePaths, final String rootPath) {
+    if (sourcePaths != null) {
+      for (String jar : sourcePaths) {
+        File file = new File(jar);
+        if (!file.isAbsolute()) {
+          file = new File(rootPath + File.separatorChar + jar);
+        }
+
+        String path = file.getAbsolutePath();
+        if (!destinationPaths.contains(path)) {
+          destinationPaths.add(path);
+        }
+      }
+    }
+  }
+
+  /**
+   * Merge elements in Source List into the Destination List
+   *
+   * @param destinationList the list which the source elements will be merged into
+   * @param sourceList source List
+   */
+  public static void mergeStringList(
+      final List<String> destinationList, final List<String> sourceList) {
+    if (sourceList != null) {
+      for (String item : sourceList) {
+        if (!destinationList.contains(item)) {
+          destinationList.add(item);
+        }
+      }
+    }
+  }
 }

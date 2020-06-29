@@ -13,9 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.server;
 
+import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
@@ -26,6 +26,8 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -107,8 +109,10 @@ public class HttpRequestUtils {
     if (hasParam(req, "disabled")) {
       final String disabled = getParam(req, "disabled");
       if (!disabled.isEmpty()) {
-        final List<Object> disabledList =
-            (List<Object>) JSONUtils.parseJSONFromStringQuiet(disabled);
+        // TODO edlu: see if it's possible to pass in the new format
+        final List<DisabledJob> disabledList =
+            DisabledJob.fromDeprecatedObjectList((List < Object >) JSONUtils
+                .parseJSONFromStringQuiet(disabled));
         execOptions.setDisabledJobs(disabledList);
       }
     }
@@ -281,4 +285,24 @@ public class HttpRequestUtils {
     return groupParam;
   }
 
+  public static Object getJsonBody(final HttpServletRequest request) throws ServletException {
+    try {
+      return JSONUtils.parseJSONFromString(getBody(request));
+    } catch (IOException e) {
+      throw new ServletException("HTTP Request JSON Body cannot be parsed.", e);
+    }
+  }
+
+  public static String getBody(final HttpServletRequest request) throws ServletException {
+    try {
+      StringBuffer stringBuffer = new StringBuffer();
+      String line = null;
+      BufferedReader reader = request.getReader();
+      while ((line = reader.readLine()) != null)
+        stringBuffer.append(line);
+      return stringBuffer.toString();
+    } catch (Exception e) {
+      throw new ServletException("HTTP Request Body cannot be parsed.", e);
+    }
+  }
 }

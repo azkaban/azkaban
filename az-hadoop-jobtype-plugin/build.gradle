@@ -42,6 +42,9 @@ dependencies {
     }
     compile deps.sparkCore
     compile deps.commonsCli
+
+    testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
+    testCompile(project(':azkaban-common').sourceSets.test.output)
 }
 
 /**

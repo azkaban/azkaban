@@ -13,17 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.jobExecutor;
 
-import azkaban.Constants;
 import azkaban.server.AzkabanServer;
+import azkaban.utils.MemConfValue;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 
 public class JavaProcessJob extends ProcessJob {
@@ -36,6 +37,9 @@ public class JavaProcessJob extends ProcessJob {
   public static final String MAIN_ARGS = "main.args";
   public static final String JVM_PARAMS = "jvm.args";
   public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
+  public static final String DEPENDENCY_CLS_RAMP_PROP_PREFIX = "azkaban.ramp.jar:";
+  public static final String DEPENDENCY_REG_RAMP_PROP_PREFIX = "azkaban.ramp.reg:";
+  public static final String DEPENDENCY_CFG_RAMP_PROP_PREFIX = "azkaban.ramp.cfg:";
 
   public static final String DEFAULT_INITIAL_MEMORY_SIZE = "64M";
   public static final String DEFAULT_MAX_MEMORY_SIZE = "256M";
@@ -45,6 +49,11 @@ public class JavaProcessJob extends ProcessJob {
   public JavaProcessJob(final String jobid, final Props sysProps, final Props jobProps,
       final Logger logger) {
     super(jobid, sysProps, jobProps, logger);
+  }
+
+  public JavaProcessJob(final String jobid, final Props sysProps, final Props jobProps,
+      final Props privateProps, final Logger logger) {
+    super(jobid, sysProps, jobProps, privateProps, logger);
   }
 
   @Override
@@ -59,7 +68,7 @@ public class JavaProcessJob extends ProcessJob {
     command += getJVMArguments() + " ";
     command += "-Xms" + getInitialMemorySize() + " ";
     command += "-Xmx" + getMaxMemorySize() + " ";
-    command += "-cp " + createArguments(getClassPaths(), ":") + " ";
+    command += getClassPathParam();
     command += getJavaClass() + " ";
     command += getMainArguments();
 
@@ -73,7 +82,8 @@ public class JavaProcessJob extends ProcessJob {
   protected String getClassPathParam() {
     final List<String> classPath = getClassPaths();
     if (classPath == null || classPath.size() == 0) {
-      return "";
+      throw new IllegalArgumentException(
+          "No classpath defined and no .jar files found in job directory. Can't run java command.");
     }
 
     return "-cp " + createArguments(classPath, ":") + " ";
@@ -94,16 +104,14 @@ public class JavaProcessJob extends ProcessJob {
       }
     }
 
-    if (classPaths == null) {
+    if (classPaths == null || classPaths.isEmpty()) {
       final File path = new File(getPath());
-      // File parent = path.getParentFile();
       getLog().info(
           "No classpath specified. Trying to load classes from " + path);
 
       if (path != null) {
         for (final File file : path.listFiles()) {
           if (file.getName().endsWith(".jar")) {
-            // log.info("Adding to classpath:" + file.getName());
             classpathList.add(file.getName());
           }
         }
@@ -113,6 +121,32 @@ public class JavaProcessJob extends ProcessJob {
     }
 
     return classpathList;
+  }
+
+  protected Map<String, String> getRampItems(String prefix) {
+    Map<String, String> rampItems = getJobProps()
+        .getKeySet()
+        .stream()
+        .filter(propKey -> propKey.startsWith(prefix))
+        .collect(Collectors.toMap(
+            key -> key,
+            key -> getJobProps().get(key)
+        ));
+    if (!rampItems.isEmpty()) {
+      getLog().info(String.format("[Ramp Items] : %s", rampItems.toString()));
+    }
+    return rampItems;
+  }
+
+  protected List<String> mergeSysTypeClassPaths(List<String> classPath) {
+    Utils.mergeTypeClassPaths(classPath,
+        getSysProps().getStringList("jobtype.classpath", null, ","),
+        getSysProps().get("plugin.dir"));
+
+    Utils.mergeStringList(classPath,
+        getSysProps().getStringList("jobtype.global.classpath", null, ","));
+
+    return classPath;
   }
 
   protected String getInitialMemorySize() {
@@ -160,23 +194,19 @@ public class JavaProcessJob extends ProcessJob {
 
     final Props azkabanProperties = AzkabanServer.getAzkabanProperties();
     if (azkabanProperties != null) {
-      final String maxXms = azkabanProperties
-          .getString(Constants.JobProperties.JOB_MAX_XMS, Constants.JobProperties.MAX_XMS_DEFAULT);
-      final String maxXmx = azkabanProperties
-          .getString(Constants.JobProperties.JOB_MAX_XMX, Constants.JobProperties.MAX_XMX_DEFAULT);
-      final long sizeMaxXms = Utils.parseMemString(maxXms);
-      final long sizeMaxXmx = Utils.parseMemString(maxXmx);
+      final MemConfValue maxXms = MemConfValue.parseMaxXms(azkabanProperties);
+      final MemConfValue maxXmx = MemConfValue.parseMaxXmx(azkabanProperties);
 
-      if (xms > sizeMaxXms) {
+      if (xms > maxXms.getSize()) {
         throw new Exception(
             String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
-                getId(), maxXms));
+                getId(), maxXms.getString()));
       }
 
-      if (xmx > sizeMaxXmx) {
+      if (xmx > maxXmx.getSize()) {
         throw new Exception(
             String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-                getId(), maxXmx));
+                getId(), maxXmx.getString()));
       }
     }
 

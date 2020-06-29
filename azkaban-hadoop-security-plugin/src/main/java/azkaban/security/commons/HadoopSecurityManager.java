@@ -40,6 +40,9 @@ public abstract class HadoopSecurityManager {
   public static final String OBTAIN_NAMENODE_TOKEN = "obtain.namenode.token";
   public static final String OBTAIN_HCAT_TOKEN = "obtain.hcat.token";
 
+  // Add domain name
+  public static final String DOMAIN_NAME = "domain.name";
+
   public static boolean shouldProxy(final Properties prop) {
     final String shouldProxy = prop.getProperty(ENABLE_PROXYING);
 
@@ -71,9 +74,6 @@ public abstract class HadoopSecurityManager {
 
   public abstract FileSystem getFSAsUser(String user)
       throws HadoopSecurityManagerException;
-
-  public abstract void prefetchToken(File tokenFile, String userToProxy,
-      Logger logger) throws HadoopSecurityManagerException;
 
   public abstract void cancelTokens(File tokenFile, String userToProxy,
       Logger logger) throws HadoopSecurityManagerException;

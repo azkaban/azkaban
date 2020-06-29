@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
@@ -24,6 +23,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+
 
 public interface ExecutorLoader {
 
@@ -37,6 +37,12 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
+      throws ExecutorManagerException;
+
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
+      throws ExecutorManagerException;
+
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException;
 
   Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)
@@ -54,6 +60,9 @@ public interface ExecutorLoader {
   List<ExecutableFlow> fetchFlowHistory(String projContain,
       String flowContains, String userNameContains, int status, long startData,
       long endData, int skip, int num) throws ExecutorManagerException;
+
+  List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
+      final long startTime) throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -219,6 +228,9 @@ public interface ExecutorLoader {
   List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException;
 
+  public List<ExecutableFlow> fetchAgedQueuedFlows(
+      final Duration minAge) throws ExecutorManagerException;
+
   boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 
@@ -269,6 +281,37 @@ public interface ExecutorLoader {
   Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
       throws ExecutorManagerException;
 
-  int removeExecutionLogsByTime(long millis)
+  int removeExecutionLogsByTime(long millis, int recordCleanupLimit)
       throws ExecutorManagerException;
+
+  void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
+
+  int selectAndUpdateExecution(final int executorId, boolean isActive)
+      throws ExecutorManagerException;
+
+  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
+      throws ExecutorManagerException;
+
+  ExecutableRampMap fetchExecutableRampMap()
+      throws ExecutorManagerException;
+
+  ExecutableRampItemsMap fetchExecutableRampItemsMap()
+      throws ExecutorManagerException;
+
+  ExecutableRampDependencyMap fetchExecutableRampDependencyMap()
+      throws ExecutorManagerException;
+
+  ExecutableRampExceptionalFlowItemsMap fetchExecutableRampExceptionalFlowItemsMap()
+    throws ExecutorManagerException;
+
+  void updateExecutedRampFlows(final String ramp, ExecutableRampExceptionalItems executableRampExceptionalItems)
+      throws ExecutorManagerException;
+
+  ExecutableRampExceptionalJobItemsMap fetchExecutableRampExceptionalJobItemsMap()
+      throws ExecutorManagerException;
+
+  Map<String, String> doRampActions(List<Map<String, Object>> rampActionsMap)
+      throws ExecutorManagerException;
+
+  void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException;
 }

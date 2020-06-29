@@ -30,12 +30,10 @@ import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
-import java.sql.SQLException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.quartz.SchedulerException;
 
@@ -60,7 +58,7 @@ public class QuartzSchedulerTest {
     props.put("h2.path", "./h2");
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule()
+        new AzkabanWebServerModule(props)
     );
 
     SERVICE_PROVIDER.unsetInjector();
@@ -76,7 +74,7 @@ public class QuartzSchedulerTest {
       scheduler.shutdown();
       dbOperator.update("DROP ALL OBJECTS");
       dbOperator.update("SHUTDOWN");
-    } catch (final SQLException e) {
+    } catch (final Exception e) {
       e.printStackTrace();
     }
   }
@@ -87,57 +85,61 @@ public class QuartzSchedulerTest {
   }
 
   @After
-  public void cleanup() {
+  public void cleanup() throws SchedulerException {
     scheduler.cleanup();
   }
 
   @Test
   public void testCreateScheduleAndRun() throws Exception {
-    scheduler.registerJob("* * * * * ?", createJobDescription());
-    assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(true);
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
     TestUtils.await().untilAsserted(() -> assertThat(SampleQuartzJob.COUNT_EXECUTION)
         .isNotNull().isGreaterThan(1));
   }
 
   @Test
-  public void testNotAllowDuplicateJobRegister() throws Exception {
-    scheduler.registerJob("* * * * * ?", createJobDescription());
-    assertThatThrownBy(
-        () -> scheduler.registerJob("0 5 * * * ?", createJobDescription()))
-        .isInstanceOf(SchedulerException.class)
-        .hasMessageContaining("can not register existing job");
+  public void testSchedulingDuplicateJob() throws Exception {
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    assertThat(scheduler.scheduleJobIfAbsent("0 5 * * * ?", createJobDescription())).isFalse();
   }
 
   @Test
-  public void testInvalidCron() throws Exception {
+  public void testInvalidCron() {
     assertThatThrownBy(
-        () -> scheduler.registerJob("0 5 * * * *", createJobDescription()))
+        () -> scheduler.scheduleJobIfAbsent("0 5 * * * *", createJobDescription()))
         .isInstanceOf(SchedulerException.class)
         .hasMessageContaining("The cron expression string");
   }
 
   @Test
-  public void testUnregisterSchedule() throws Exception {
-    scheduler.registerJob("* * * * * ?", createJobDescription());
-    assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(true);
-    scheduler.unregisterJob("SampleService");
-    assertThat(scheduler.ifJobExist("SampleService")).isEqualTo(false);
+  public void testUnschedule() throws Exception {
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(true);
+    assertThat(scheduler.unscheduleJob("SampleJob", "SampleService")).isTrue();
+    assertThat(scheduler.ifJobExist("SampleJob", "SampleService")).isEqualTo(false);
+    assertThat(scheduler.unscheduleJob("SampleJob", "SampleService")).isFalse();
   }
 
-  @Ignore("Flaky test, slow too. Don't use Thread.sleep in unit tests.")
   @Test
-  public void testPauseAndResume() throws Exception {
-    scheduler.registerJob("* * * * * ?", createJobDescription());
-    scheduler.pause();
-    final int count = SampleQuartzJob.COUNT_EXECUTION;
-    Thread.sleep(1500);
-    assertThat(SampleQuartzJob.COUNT_EXECUTION).isEqualTo(count);
-    scheduler.resume();
-    Thread.sleep(1200);
-    assertThat(SampleQuartzJob.COUNT_EXECUTION).isGreaterThan(count);
+  public void testPauseSchedule() throws Exception {
+    assertThat(scheduler.pauseJobIfPresent("SampleJob", "SampleService")).isFalse();
+    scheduler.scheduleJobIfAbsent("* * * * * ?", createJobDescription());
+    assertThat(scheduler.pauseJobIfPresent("SampleJob", "SampleService")).isTrue();
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(true);
+    assertThat(scheduler.resumeJobIfPresent("SampleJob", "SampleService")).isTrue();
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(false);
+
+    // test pausing a paused job
+    scheduler.pauseJobIfPresent("SampleJob", "SampleService");
+    scheduler.pauseJobIfPresent("SampleJob", "SampleService");
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(true);
+    // test resuming a non-paused job
+    scheduler.resumeJobIfPresent("SampleJob", "SampleService");
+    scheduler.resumeJobIfPresent("SampleJob", "SampleService");
+    assertThat(scheduler.isJobPaused("SampleJob", "SampleService")).isEqualTo(false);
   }
 
   private QuartzJobDescription createJobDescription() {
-    return new QuartzJobDescription<>(SampleQuartzJob.class, "SampleService");
+    return new QuartzJobDescription<>(SampleQuartzJob.class, "SampleJob", "SampleService");
   }
 }

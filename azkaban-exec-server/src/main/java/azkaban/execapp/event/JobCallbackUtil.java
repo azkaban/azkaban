@@ -38,11 +38,12 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JobCallbackUtil {
 
-  private static final Logger logger = Logger.getLogger(JobCallbackUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(JobCallbackUtil.class);
 
   private static final Map<JobCallbackStatusEnum, String> firstJobcallbackPropertyMap =
       new HashMap<>(
@@ -213,7 +214,7 @@ public class JobCallbackUtil {
 
   private static String replaceStatusToken(final String template,
       final JobCallbackStatusEnum status) {
-    return template.replaceFirst(STATUS_TOKEN, status.name().toLowerCase());
+    return template.replaceAll(STATUS_TOKEN, status.name().toLowerCase());
   }
 
   private static StringEntity createStringEntity(final String str) {
@@ -277,25 +278,25 @@ public class JobCallbackUtil {
     String result = value;
     String tokenValue =
         encodeQueryParam(contextInfo.get(CONTEXT_SERVER_TOKEN), withEncoding);
-    result = result.replaceFirst(Pattern.quote(CONTEXT_SERVER_TOKEN), tokenValue);
+    result = result.replaceAll(Pattern.quote(CONTEXT_SERVER_TOKEN), tokenValue);
 
     tokenValue = encodeQueryParam(contextInfo.get(CONTEXT_PROJECT_TOKEN), withEncoding);
-    result = result.replaceFirst(Pattern.quote(CONTEXT_PROJECT_TOKEN), tokenValue);
+    result = result.replaceAll(Pattern.quote(CONTEXT_PROJECT_TOKEN), tokenValue);
 
     tokenValue = encodeQueryParam(contextInfo.get(CONTEXT_FLOW_TOKEN), withEncoding);
-    result = result.replaceFirst(Pattern.quote(CONTEXT_FLOW_TOKEN), tokenValue);
+    result = result.replaceAll(Pattern.quote(CONTEXT_FLOW_TOKEN), tokenValue);
 
     tokenValue = encodeQueryParam(contextInfo.get(CONTEXT_JOB_TOKEN), withEncoding);
-    result = result.replaceFirst(Pattern.quote(CONTEXT_JOB_TOKEN), tokenValue);
+    result = result.replaceAll(Pattern.quote(CONTEXT_JOB_TOKEN), tokenValue);
 
     tokenValue =
         encodeQueryParam(contextInfo.get(CONTEXT_EXECUTION_ID_TOKEN), withEncoding);
-    result = result.replaceFirst(Pattern.quote(CONTEXT_EXECUTION_ID_TOKEN), tokenValue);
+    result = result.replaceAll(Pattern.quote(CONTEXT_EXECUTION_ID_TOKEN), tokenValue);
 
     tokenValue =
         encodeQueryParam(contextInfo.get(CONTEXT_JOB_STATUS_TOKEN), withEncoding);
 
-    result = result.replaceFirst(Pattern.quote(CONTEXT_JOB_STATUS_TOKEN), tokenValue);
+    result = result.replaceAll(Pattern.quote(CONTEXT_JOB_STATUS_TOKEN), tokenValue);
 
     return result;
   }

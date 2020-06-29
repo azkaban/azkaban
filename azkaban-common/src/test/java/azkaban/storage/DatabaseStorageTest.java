@@ -20,9 +20,12 @@ package azkaban.storage;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import azkaban.db.DatabaseOperator;
 import azkaban.project.ProjectLoader;
-import azkaban.spi.StorageMetadata;
+import azkaban.spi.ProjectStorageMetadata;
+import azkaban.utils.Props;
 import java.io.File;
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -30,15 +33,18 @@ public class DatabaseStorageTest {
 
   private final ProjectLoader projectLoader = mock(ProjectLoader.class);
   private final DatabaseStorage databaseStorage = new DatabaseStorage(this.projectLoader);
+  private static final String IPv4 = "111.111.111.111";
 
   @Test
-  public void testPut() throws Exception {
+  public void testPutProject() throws Exception {
     final File file = mock(File.class);
     final int projectId = 1234;
     final int version = 1;
     final String uploader = "testuser";
-    final StorageMetadata metadata = new StorageMetadata(projectId, version, uploader, null);
-    this.databaseStorage.put(metadata, file);
-    verify(this.projectLoader).uploadProjectFile(projectId, version, file, uploader);
+    final ProjectStorageMetadata metadata = new ProjectStorageMetadata(projectId, version,
+        uploader, null, IPv4);
+    this.databaseStorage.putProject(metadata, file);
+    verify(this.projectLoader).uploadProjectFile(projectId, version, file,
+        uploader, IPv4);
   }
 }

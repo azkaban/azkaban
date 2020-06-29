@@ -17,20 +17,28 @@ package azkaban.project;
 
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
+import azkaban.spi.Dependency;
 import azkaban.user.Permission;
 import azkaban.utils.GZIPUtils;
+import azkaban.utils.InvalidHashException;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
-import azkaban.utils.Triple;
+import azkaban.utils.ThinArchiveUtils;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.io.IOUtils;
 
 
 /**
@@ -40,17 +48,20 @@ class JdbcProjectHandlerSet {
 
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 
-    public static String SELECT_PROJECT_BY_NAME =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=?";
+    private static final String BASE_QUERY = "SELECT "
+      + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+      + "prm.name, prm.permissions, prm.isGroup "
+      + "FROM projects prj ";
 
-    public static String SELECT_PROJECT_BY_ID =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE id=?";
+    // Still return the project if it has no associated permissions
+    public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
 
-    public static String SELECT_ALL_ACTIVE_PROJECTS =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE active=true";
+    // Still return the project if it has no associated permissions
+    public static final String SELECT_ACTIVE_PROJECT_BY_NAME = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.name=? AND prj.active=true";
 
-    public static String SELECT_ACTIVE_PROJECT_BY_NAME =
-        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=? AND active=true";
+    // ONLY return projects that have at least one associated permission, this is for performance reasons.
+    // (JOIN is way faster than LEFT JOIN)
+    public static final String SELECT_ALL_ACTIVE_PROJECTS = BASE_QUERY + "JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.active=true";
 
     @Override
     public List<Project> handle(final ResultSet rs) throws SQLException {
@@ -58,82 +69,79 @@ class JdbcProjectHandlerSet {
         return Collections.emptyList();
       }
 
-      final ArrayList<Project> projects = new ArrayList<>();
+      // Project ID -> Project
+      final Map<Integer, Project> projects = new HashMap<>();
       do {
         final int id = rs.getInt(1);
-        final String name = rs.getString(2);
-        final boolean active = rs.getBoolean(3);
-        final long modifiedTime = rs.getLong(4);
-        final long createTime = rs.getLong(5);
-        final int version = rs.getInt(6);
-        final String lastModifiedBy = rs.getString(7);
-        final String description = rs.getString(8);
-        final int encodingType = rs.getInt(9);
-        final byte[] data = rs.getBytes(10);
 
-        final Project project;
-        if (data != null) {
-          final EncodingType encType = EncodingType.fromInteger(encodingType);
-          final Object blobObj;
-          try {
-            // Convoluted way to inflate strings. Should find common package or
-            // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              blobObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              final String jsonString = new String(data, "UTF-8");
-              blobObj = JSONUtils.parseJSONFromString(jsonString);
+        // If a project has multiple permissions - the project will be returned multiple times,
+        // one for each permission and we don't need to go through the work of reconstructing the
+        // project object if we've already seen it.
+        if (!projects.containsKey(id)) {
+          // This project is new!
+
+          final String name = rs.getString(2);
+          final boolean active = rs.getBoolean(3);
+          final long modifiedTime = rs.getLong(4);
+          final long createTime = rs.getLong(5);
+          final int version = rs.getInt(6);
+          final String lastModifiedBy = rs.getString(7);
+          final String description = rs.getString(8);
+          final int encodingType = rs.getInt(9);
+          final byte[] data = rs.getBytes(10);
+          final Project project;
+          if (data != null) {
+            final EncodingType encType = EncodingType.fromInteger(encodingType);
+            final Object blobObj;
+            try {
+              // Convoluted way to inflate strings. Should find common package or
+              // helper function.
+              if (encType == EncodingType.GZIP) {
+                // Decompress the sucker.
+                final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+                blobObj = JSONUtils.parseJSONFromString(jsonString);
+              } else {
+                final String jsonString = new String(data, "UTF-8");
+                blobObj = JSONUtils.parseJSONFromString(jsonString);
+              }
+              project = Project.projectFromObject(blobObj);
+            } catch (final IOException e) {
+              throw new SQLException(String.format("Failed to get project with id: %d", id), e);
             }
-            project = Project.projectFromObject(blobObj);
-          } catch (final IOException e) {
-            throw new SQLException("Failed to get project.", e);
+          } else {
+            project = new Project(id, name);
           }
-        } else {
-          project = new Project(id, name);
+
+          // update the fields as they may have changed
+
+          project.setActive(active);
+          project.setLastModifiedTimestamp(modifiedTime);
+          project.setCreateTimestamp(createTime);
+          project.setVersion(version);
+          project.setLastModifiedUser(lastModifiedBy);
+          project.setDescription(description);
+
+          projects.put(id, project);
         }
 
-        // update the fields as they may have changed
-
-        project.setActive(active);
-        project.setLastModifiedTimestamp(modifiedTime);
-        project.setCreateTimestamp(createTime);
-        project.setVersion(version);
-        project.setLastModifiedUser(lastModifiedBy);
-        project.setDescription(description);
-
-        projects.add(project);
+        // Add the permission to the project
+        final String username = rs.getString(11);
+        final int permissionFlag = rs.getInt(12);
+        final boolean isGroup = rs.getBoolean(13);
+        // If username is not null, add the permission to the project
+        // If username is null, we can assume that this row was returned without any associated permission
+        // i.e. this project had no associated permissions.
+        if (username != null) {
+          Permission perm = new Permission(permissionFlag);
+          if (isGroup) {
+            projects.get(id).setGroupPermission(username, perm);
+          } else {
+            projects.get(id).setUserPermission(username, perm);
+          }
+        }
       } while (rs.next());
 
-      return projects;
-    }
-  }
-
-  public static class ProjectPermissionsResultHandler implements
-      ResultSetHandler<List<Triple<String, Boolean, Permission>>> {
-
-    public static String SELECT_PROJECT_PERMISSION =
-        "SELECT project_id, modified_time, name, permissions, isGroup FROM project_permissions WHERE project_id=?";
-
-    @Override
-    public List<Triple<String, Boolean, Permission>> handle(final ResultSet rs)
-        throws SQLException {
-      if (!rs.next()) {
-        return Collections.emptyList();
-      }
-
-      final List<Triple<String, Boolean, Permission>> permissions = new ArrayList<>();
-      do {
-        final String username = rs.getString(3);
-        final int permissionFlag = rs.getInt(4);
-        final boolean val = rs.getBoolean(5);
-
-        final Permission perm = new Permission(permissionFlag);
-        permissions.add(new Triple<>(username, val, perm));
-      } while (rs.next());
-
-      return permissions;
+      return new ArrayList<>(projects.values());
     }
   }
 
@@ -287,8 +295,9 @@ class JdbcProjectHandlerSet {
       ResultSetHandler<List<ProjectFileHandler>> {
 
     public static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id "
-            + "FROM project_versions WHERE project_id=? AND version=?";
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks," +
+                " resource_id, startup_dependencies, uploader_ip_addr " +
+                " FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
     public List<ProjectFileHandler> handle(final ResultSet rs) throws SQLException {
@@ -307,11 +316,24 @@ class JdbcProjectHandlerSet {
         final byte[] md5 = rs.getBytes(7);
         final int numChunks = rs.getInt(8);
         final String resourceId = rs.getString(9);
+        final Blob startupDependenciesBlob = rs.getBlob(10);
+        final String uploaderIpAddr = rs.getString(11);
+
+        Set<Dependency> startupDependencies = Collections.emptySet();
+        if (startupDependenciesBlob != null) {
+          try {
+            startupDependencies = ThinArchiveUtils.parseStartupDependencies(
+                IOUtils.toString(startupDependenciesBlob.getBinaryStream(), StandardCharsets.UTF_8));
+          } catch (IOException | InvalidHashException e) {
+            // This should never happen unless the file is malformed in the database.
+            // The file was already validated when the project was uploaded.
+            throw new SQLException(e);
+          }
+        }
 
         final ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName,
-                numChunks, md5,
-                resourceId);
+            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5,
+                startupDependencies, resourceId, uploaderIpAddr);
 
         handlers.add(handler);
       } while (rs.next());

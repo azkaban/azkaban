@@ -16,6 +16,55 @@
 
 $.namespace('azkaban');
 
+var initPagination = function (elem, model) {
+  var totalPages = model.get("totalPages");
+  if (!totalPages) {
+    return;
+  }
+
+  // intercept TwbsPagination, because it only supports page >= 1
+  // while azkaban job attempts start at 0
+  var twbsPaginationPrototype =
+      $.prototype.twbsPagination.prototype.constructor.Constructor.prototype;
+  var originalBuildItem = twbsPaginationPrototype.buildItem;
+  twbsPaginationPrototype.buildItem = function (type, page) {
+    var $itemContainer = originalBuildItem.call(this, type, page);
+    if (type == "page") {
+      // apply page offset -1 as "attempt 0" == "page 1"
+      $itemContainer.find('a').text(page - 1);
+    }
+    return $itemContainer;
+  };
+
+  $(elem).twbsPagination({
+    totalPages: model.get("totalPages"),
+    startPage: model.get("page"),
+    initiateStartPageClick: false,
+    visiblePages: model.get("visiblePages"),
+    onPageClick: function (event, page) {
+      model.set({"page": page});
+    }
+  });
+
+};
+
+var initAttemptPage = function (settings) {
+
+  var jobLogModel = new azkaban.JobLogModel({
+    page: settings.attempt + 1,
+    totalPages: settings.pastAttempts + 1,
+    visiblePages: 10,
+    projectName: settings.projectName,
+    flowId: settings.flowId
+  });
+  jobLogView = new azkaban.JobLogView({
+    el: $('#jobLogView'),
+    model: jobLogModel
+  });
+  jobLogModel.refresh();
+
+}
+
 var jobLogView;
 azkaban.JobLogView = Backbone.View.extend({
   events: {
@@ -23,7 +72,9 @@ azkaban.JobLogView = Backbone.View.extend({
   },
 
   initialize: function () {
+    this.handleInitView();
     this.listenTo(this.model, "change:logData", this.render);
+    this.model.bind('change:page', this.handlePageChange, this);
   },
 
   refresh: function () {
@@ -31,11 +82,23 @@ azkaban.JobLogView = Backbone.View.extend({
   },
 
   render: function () {
-    var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
+    var re = /(https?:\/\/\S+)/g;
     var log = this.model.get("logData");
     log = log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
     $("#logSection").html(log);
-  }
+  },
+
+  handleInitView: function () {
+    initPagination('#attemptsPagination', this.model);
+  },
+
+  handlePageChange: function () {
+    var requestURL = contextURL + "/executor?project=" + projectName
+        + "&execid=" + execId + "&job=" + jobId
+        + "&attempt=" + (this.model.get("page") - 1);
+    window.location.href = requestURL;
+  },
+
 });
 
 var showDialog = function (title, message) {
@@ -53,12 +116,3 @@ var showDialog = function (title, message) {
     }
   });
 }
-
-$(function () {
-  var jobLogModel = new azkaban.JobLogModel();
-  jobLogView = new azkaban.JobLogView({
-    el: $('#jobLogView'),
-    model: jobLogModel
-  });
-  jobLogModel.refresh();
-});

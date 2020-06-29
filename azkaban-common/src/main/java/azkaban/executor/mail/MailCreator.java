@@ -17,19 +17,35 @@
 package azkaban.executor.mail;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.EmailMessage;
+import java.util.List;
 
 public interface MailCreator {
 
-  public boolean createFirstErrorMessage(ExecutableFlow flow,
+  boolean createFirstErrorMessage(ExecutableFlow flow,
       EmailMessage message, String azkabanName, String scheme,
-      String clientHostname, String clientPortNumber, String... vars);
+      String clientHostname, String clientPortNumber);
 
-  public boolean createErrorEmail(ExecutableFlow flow, EmailMessage message,
-      String azkabanName, String scheme, String clientHostname,
-      String clientPortNumber, String... vars);
+  boolean createErrorEmail(ExecutableFlow flow, List<ExecutableFlow> pastExecutions,
+      EmailMessage message, String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, String... reasons);
 
-  public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
+  boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
-      String clientPortNumber, String... vars);
+      String clientPortNumber);
+
+  boolean createFailedUpdateMessage(List<ExecutableFlow> flows, Executor executor,
+      ExecutorManagerException updateException, EmailMessage message,
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber);
+
+  default boolean createFailedExecutorHealthCheckMessage(List<ExecutableFlow> flows,
+      Executor executor,
+      ExecutorManagerException failureException, EmailMessage message,
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, List<String> emailList) {
+    return false;
+  }
 }

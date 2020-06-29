@@ -74,6 +74,28 @@ public enum Status {
     }
   }
 
+  public static boolean isStatusFailed(final Status status) {
+    switch (status) {
+      case FAILED:
+      case KILLED:
+      case CANCELLED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static boolean isStatusSucceeded(final Status status) {
+    switch (status) {
+      case SUCCEEDED:
+      case FAILED_SUCCEEDED:
+      case SKIPPED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public int getNumVal() {
     return this.numVal;
   }

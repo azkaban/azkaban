@@ -25,7 +25,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -35,21 +37,24 @@ import org.apache.commons.lang.StringUtils;
  */
 public class FlowTrigger implements Serializable {
 
+  private static final long serialVersionUID = 5613379236523054097L;
   private final Map<String, FlowTriggerDependency> dependencies;
   private final CronSchedule schedule;
   private final Duration maxWaitDuration;
 
   /**
-   * @throws IllegalArgumentException if any of the argument is null or there is duplicate
+   * @throws IllegalArgumentException if illegal argument is found or there is duplicate
    * dependency name or duplicate dependency type and params
    */
   public FlowTrigger(final CronSchedule schedule, final List<FlowTriggerDependency> dependencies,
-      final Duration maxWaitDuration) {
-    // will perform some basic validation here, and futher validation will be performed on
+      @Nullable final Duration maxWaitDuration) {
+    // will perform some basic validation here, and further validation will be performed on
     // parsing time when NodeBeanLoader parses the XML to flow trigger.
     Preconditions.checkNotNull(schedule, "schedule cannot be null");
     Preconditions.checkNotNull(dependencies, "dependency cannot be null");
-    Preconditions.checkNotNull(maxWaitDuration, "max wait time cannot be null");
+    Preconditions.checkArgument(dependencies.isEmpty() || maxWaitDuration != null, "max wait "
+        + "time cannot be null unless no dependency is defined");
+
     validateDependencies(dependencies);
     this.schedule = schedule;
     final ImmutableMap.Builder builder = new Builder();
@@ -74,7 +79,7 @@ public class FlowTrigger implements Serializable {
   public String toString() {
     return "FlowTrigger{" +
         "schedule=" + this.schedule +
-        ", maxWaitDurationInMins=" + this.maxWaitDuration.toMinutes() +
+        ", maxWaitDurationInMins=" + this.maxWaitDuration +
         "\n " + StringUtils.join(this.dependencies.values(), "\n") + '}';
   }
 
@@ -105,8 +110,8 @@ public class FlowTrigger implements Serializable {
     return this.dependencies.values();
   }
 
-  public Duration getMaxWaitDuration() {
-    return this.maxWaitDuration;
+  public Optional<Duration> getMaxWaitDuration() {
+    return Optional.ofNullable(this.maxWaitDuration);
   }
 
   public CronSchedule getSchedule() {

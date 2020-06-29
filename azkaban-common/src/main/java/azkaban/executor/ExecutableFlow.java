@@ -18,13 +18,16 @@ package azkaban.executor;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
+import com.sun.istack.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,6 +48,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
+  public static final String IS_LOCKED_PARAM = "isLocked";
+  public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
+
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
@@ -57,8 +63,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String submitUser;
   private String executionPath;
   private ExecutionOptions executionOptions;
-  private List<SlaOption> slaOptions = new ArrayList<>();
   private double azkabanFlowVersion;
+  private boolean isLocked;
+  private ExecutableFlowRampMetadata executableFlowRampMetadata;
+  private String flowLockErrorMessage;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -68,17 +76,20 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.lastModifiedTimestamp = project.getLastModifiedTimestamp();
     this.lastModifiedUser = project.getLastModifiedUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
+    setLocked(flow.isLocked());
+    setFlowLockErrorMessage(flow.getFlowLockErrorMessage());
     this.setFlow(project, flow);
   }
 
   public ExecutableFlow() {
   }
 
-  public static ExecutableFlow createExecutableFlowFromObject(final Object obj) {
+  public static ExecutableFlow createExecutableFlow(final Object obj, final Status status) {
     final ExecutableFlow exFlow = new ExecutableFlow();
     final HashMap<String, Object> flowObj = (HashMap<String, Object>) obj;
     exFlow.fillExecutableFromMapObject(flowObj);
-
+    // overwrite status from the flow data blob as that one should NOT be used
+    exFlow.setStatus(status);
     return exFlow;
   }
 
@@ -106,14 +117,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setExecutionOptions(final ExecutionOptions options) {
     this.executionOptions = options;
-  }
-
-  public List<SlaOption> getSlaOptions() {
-    return this.slaOptions;
-  }
-
-  public void setSlaOptions(final List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
   }
 
   @Override
@@ -220,6 +223,18 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.azkabanFlowVersion = azkabanFlowVersion;
   }
 
+  public boolean isLocked() { return this.isLocked; }
+
+  public void setLocked(boolean locked) { this.isLocked = locked; }
+
+  public String getFlowLockErrorMessage() {
+    return this.flowLockErrorMessage;
+  }
+
+  public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
+    this.flowLockErrorMessage = flowLockErrorMessage;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -248,9 +263,17 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SUBMITTIME_PARAM, this.submitTime);
 
     final List<Map<String, Object>> slaOptions = new ArrayList<>();
-    this.getSlaOptions().stream().forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
+    List<SlaOption> slaOptionList = this.executionOptions.getSlaOptions();
+    if (slaOptionList != null) {
+      for (SlaOption slaOption : slaOptionList) {
+        slaOptions.add(slaOption.toObject());
+      }
+    }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
+
+    flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+    flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
 
     return flowObj;
   }
@@ -291,8 +314,11 @@ public class ExecutableFlow extends ExecutableFlowBase {
       final List<SlaOption> slaOptions =
           flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
               .collect(Collectors.toList());
-      this.setSlaOptions(slaOptions);
+      this.executionOptions.setSlaOptions(slaOptions);
     }
+
+    this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
+    this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
   }
 
   @Override
@@ -308,4 +334,30 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.setStatus(Status.RUNNING);
   }
 
+  public ExecutableFlowRampMetadata getExecutableFlowRampMetadata() {
+    return executableFlowRampMetadata;
+  }
+
+  public void setExecutableFlowRampMetadata(ExecutableFlowRampMetadata executableFlowRampMetadata) {
+    this.executableFlowRampMetadata = executableFlowRampMetadata;
+  }
+
+  /**
+   * Get the Relative Flow Directory against project directory
+   */
+  public String getDirectory() {
+    return String.valueOf(getProjectId()) + "." + String.valueOf(getVersion());
+  }
+
+  /**
+   * Get Ramp Props For Job
+   * @param jobId job Id
+   * @param jobType jobType aka job plugin type
+   * @return ramp Props
+   */
+  synchronized public Props getRampPropsForJob(@NotNull final String jobId, @NotNull final String jobType) {
+    return Optional.ofNullable(executableFlowRampMetadata)
+        .map(metadata -> metadata.selectRampPropsForJob(jobId, jobType))
+        .orElse(null);
+  }
 }

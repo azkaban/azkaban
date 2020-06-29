@@ -1,0 +1,30 @@
+nodes:
+  - name: jobD
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    dependsOn:
+      - jobB
+      - jobC
+
+  - name: jobC
+    type: test
+    config:
+      fail: false
+      seconds: 0
+
+  - name: jobB
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    dependsOn:
+      - jobA
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ${jobD:param} == 'foo'

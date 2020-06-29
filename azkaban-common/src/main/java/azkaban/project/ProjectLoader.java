@@ -96,15 +96,16 @@ public interface ProjectLoader {
   /**
    * Will upload the files and return the version number of the file uploaded.
    */
-  void uploadProjectFile(int projectId, int version, File localFile, String user)
+  void uploadProjectFile(int projectId, int version, File localFile, String user,
+      String uploader_ip_addr)
       throws ProjectManagerException;
 
   /**
    * Add project and version info to the project_versions table. This current maintains the metadata
    * for each uploaded version of the project
    */
-  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5,
-      String resourceId)
+  void addProjectVersion(int projectId, int version, File localFile, File startupDependencies,
+      String uploader, byte[] md5, String resourceId, String uploaderIPAddr)
       throws ProjectManagerException;
 
   /**
@@ -150,9 +151,15 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Fetches all flows.
+   * Fetches all flows for a given project
    */
-  List<Flow> fetchAllProjectFlows(Project project)
+  List<Flow> fetchAllProjectFlows(final Project project)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches all flows for all projects.
+   */
+  Map<Project, List<Flow>> fetchAllFlowsForProjects(List<Project> projects)
       throws ProjectManagerException;
 
   /**
@@ -186,18 +193,16 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Cleans all project versions less tha
+   * Cleans all project versions less than the provided version, except the versions to exclude
+   * given as argument
    */
-  void cleanOlderProjectVersion(int projectId, int version)
+  void cleanOlderProjectVersion(int projectId, int version, final List<Integer> excludedVersions)
       throws ProjectManagerException;
 
   void updateProjectProperty(Project project, Props props)
       throws ProjectManagerException;
 
   Props fetchProjectProperty(int projectId, int projectVer, String propsName)
-      throws ProjectManagerException;
-
-  List<Triple<String, Boolean, Permission>> getProjectPermissions(Project project)
       throws ProjectManagerException;
 
   void updateProjectSettings(Project project) throws ProjectManagerException;

@@ -19,11 +19,11 @@ import static azkaban.project.JdbcProjectHandlerSet.IntHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFileChunkResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFlowsResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectLogsResultHandler;
-import static azkaban.project.JdbcProjectHandlerSet.ProjectPermissionsResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectPropertiesResultsHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectVersionResultHandler;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
 import azkaban.db.EncodingType;
@@ -34,27 +34,31 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.GZIPUtils;
+import azkaban.utils.HashUtils;
 import azkaban.utils.JSONUtils;
-import azkaban.utils.Md5Hasher;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
-import com.google.common.io.Files;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -98,25 +102,11 @@ public class JdbcProjectImpl implements ProjectLoader {
 
     try {
       projects = this.dbOperator.query(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS, handler);
-      projects.forEach(project -> {
-        for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
-          setProjectPermission(project, perm);
-        }
-      });
     } catch (final SQLException ex) {
-      logger.error(ProjectResultHandler.SELECT_PROJECT_BY_ID + " failed.", ex);
-      throw new ProjectManagerException("Error retrieving all projects", ex);
+      logger.error(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS + " failed.", ex);
+      throw new ProjectManagerException("Error retrieving all active projects", ex);
     }
     return projects;
-  }
-
-  private void setProjectPermission(final Project project,
-      final Triple<String, Boolean, Permission> perm) {
-    if (perm.getSecond()) {
-      project.setGroupPermission(perm.getFirst(), perm.getThird());
-    } else {
-      project.setUserPermission(perm.getFirst(), perm.getThird());
-    }
   }
 
   @Override
@@ -132,14 +122,6 @@ public class JdbcProjectImpl implements ProjectLoader {
         throw new ProjectManagerException("No project with id " + id + " exists in db.");
       }
       project = projects.get(0);
-
-      // Fetch the user permissions
-      for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
-        // TODO kunkun-tang: understand why we need to check permission not equal to 0 here.
-        if (perm.getThird().toFlags() != 0) {
-          setProjectPermission(project, perm);
-        }
-      }
     } catch (final SQLException ex) {
       logger.error(ProjectResultHandler.SELECT_PROJECT_BY_ID + " failed.", ex);
       throw new ProjectManagerException("Query for existing project failed. Project " + id, ex);
@@ -153,49 +135,20 @@ public class JdbcProjectImpl implements ProjectLoader {
     Project project = null;
     final ProjectResultHandler handler = new ProjectResultHandler();
 
-    // select active project from db first, if not exist, select inactive one.
     // At most one active project with the same name exists in db.
     try {
-      List<Project> projects = this.dbOperator
+      final List<Project> projects = this.dbOperator
           .query(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
       if (projects.isEmpty()) {
-        projects = this.dbOperator
-            .query(ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
-        if (projects.isEmpty()) {
-          throw new ProjectManagerException("No project with name " + name + " exists in db.");
-        }
+        return null;
       }
       project = projects.get(0);
-      for (final Triple<String, Boolean, Permission> perm : fetchPermissionsForProject(project)) {
-        if (perm.getThird().toFlags() != 0) {
-          setProjectPermission(project, perm);
-        }
-      }
     } catch (final SQLException ex) {
       logger.error(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME + " failed.", ex);
       throw new ProjectManagerException(
           ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME + " failed.", ex);
     }
     return project;
-  }
-
-  private List<Triple<String, Boolean, Permission>> fetchPermissionsForProject(
-      final Project project)
-      throws ProjectManagerException {
-    final ProjectPermissionsResultHandler permHander = new ProjectPermissionsResultHandler();
-
-    List<Triple<String, Boolean, Permission>> permissions = null;
-    try {
-      permissions =
-          this.dbOperator
-              .query(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander,
-                  project.getId());
-    } catch (final SQLException ex) {
-      logger.error(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION + " failed.", ex);
-      throw new ProjectManagerException(
-          "Query for permissions for " + project.getName() + " failed.", ex);
-    }
-    return permissions;
   }
 
   /**
@@ -247,7 +200,7 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public void uploadProjectFile(final int projectId, final int version, final File localFile,
-      final String uploader)
+      final String uploader, final String uploaderIPAddr)
       throws ProjectManagerException {
     final long startMs = System.currentTimeMillis();
     logger.info(String
@@ -264,8 +217,9 @@ public class JdbcProjectImpl implements ProjectLoader {
     final SQLTransaction<Integer> uploadProjectFileTransaction = transOperator -> {
 
       /* Step 1: Update DB with new project info */
-      addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader,
-          computeHash(localFile), null);
+      // Database storage does not support thin archives, so we just set the startupDependencies file to null.
+      addProjectToProjectVersions(transOperator, projectId, version, localFile, null, uploader,
+          computeHash(localFile), null, uploaderIPAddr);
       transOperator.getConnection().commit();
 
       /* Step 2: Upload File in chunks to DB */
@@ -291,31 +245,27 @@ public class JdbcProjectImpl implements ProjectLoader {
 
 
   private byte[] computeHash(final File localFile) {
-    logger.info("Creating message digest for upload " + localFile.getName());
+    logger.info("Creating MD5 hash for upload " + localFile.getName());
     final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(localFile);
+      md5 = HashUtils.MD5.getHashBytes(localFile);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
 
-    logger.info("Md5 hash created");
+    logger.info("MD5 hash created");
     return md5;
   }
 
   @Override
-  public void addProjectVersion(
-      final int projectId,
-      final int version,
-      final File localFile,
-      final String uploader,
-      final byte[] md5,
-      final String resourceId) throws ProjectManagerException {
+  public void addProjectVersion(final int projectId, final int version, final File localFile,
+      final File startupDependencies, final String uploader, final byte[] md5,
+      final String resourceId, final String uploaderIPAddr) throws ProjectManagerException {
 
     // when one transaction completes, it automatically commits.
     final SQLTransaction<Integer> transaction = transOperator -> {
-      addProjectToProjectVersions(transOperator, projectId, version, localFile, uploader, md5,
-          resourceId);
+      addProjectToProjectVersions(transOperator, projectId, version, localFile,
+          startupDependencies, uploader, md5, resourceId, uploaderIPAddr);
       return 1;
     };
     try {
@@ -349,26 +299,47 @@ public class JdbcProjectImpl implements ProjectLoader {
       final int projectId,
       final int version,
       final File localFile,
+      final File startupDependencies,
       final String uploader,
       final byte[] md5,
-      final String resourceId) throws ProjectManagerException {
+      final String resourceId,
+      final String uploaderIPAddr) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
-        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id) values "
-        + "(?,?,?,?,?,?,?,?,?)";
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id, "
+        + "startup_dependencies, uploader_ip_addr) values (?,?,?,?,?,?,?,?,?,?,?)";
 
     try {
       /*
        * As we don't know the num_chunks before uploading the file, we initialize it to 0,
        * and will update it after uploading completes.
        */
-      transOperator.update(INSERT_PROJECT_VERSION, projectId, version, updateTime, uploader,
-          Files.getFileExtension(localFile.getName()), localFile.getName(), md5, 0, resourceId);
+      String lowercaseFileExtension = FilenameUtils.getExtension(localFile.getName()).toLowerCase();
+
+      // Get the startup dependencies input stream (or null if the file does not exist - indicating this is
+      // a fat archive).
+      InputStream startupDependenciesStream = getStartupDependenciesInputStream(startupDependencies);
+
+      // Perform the DB update
+      transOperator.update(INSERT_PROJECT_VERSION, projectId, version, updateTime,
+          uploader, lowercaseFileExtension, localFile.getName(), md5, 0, resourceId,
+          startupDependenciesStream, uploaderIPAddr);
     } catch (final SQLException e) {
       final String msg = String
           .format("Error initializing project id: %d version: %d ", projectId, version);
       logger.error(msg, e);
       throw new ProjectManagerException(msg, e);
+    }
+  }
+
+  private InputStream getStartupDependenciesInputStream(File startupDependencies) {
+    try {
+      // If startupDependencies is null, we assume this is a fat archive and return null. If it is not null,
+      // we assume the file exists and return an input stream for the file.
+      return startupDependencies != null ? new FileInputStream(startupDependencies) : null;
+    } catch (FileNotFoundException e) {
+      // This shouldn't happen, the file should always exist if it is non-null.
+      throw new RuntimeException(e);
     }
   }
 
@@ -469,6 +440,13 @@ public class JdbcProjectImpl implements ProjectLoader {
       return null;
     }
     final int numChunks = projHandler.getNumChunks();
+    if (numChunks <= 0) {
+      throw new ProjectManagerException(String.format("Got numChunks=%s for version %s of project "
+              + "%s - seems like this version has been cleaned up already, because enough newer "
+              + "versions have been uploaded. To increase the retention of project versions, set "
+              + "%s", numChunks, version, projectId,
+          ConfigurationKeys.PROJECT_VERSION_RETENTION));
+    }
     BufferedOutputStream bStream = null;
     File file;
     try {
@@ -514,17 +492,21 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
 
     // Check md5.
-    byte[] md5 = null;
+    final byte[] md5;
     try {
-      md5 = Md5Hasher.md5Hash(file);
+      md5 = HashUtils.MD5.getHashBytes(file);
     } catch (final IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
+      throw new ProjectManagerException("Error getting MD5 hash.", e);
     }
 
-    if (Arrays.equals(projHandler.getMd5Hash(), md5)) {
+    if (Arrays.equals(projHandler.getMD5Hash(), md5)) {
       logger.info("Md5 Hash is valid");
     } else {
-      throw new ProjectManagerException("Md5 Hash failed on retrieval of file");
+      throw new ProjectManagerException(
+          String.format("Md5 Hash failed on project %s version %s retrieval of file %s. "
+                  + "Expected hash: %s , got hash: %s",
+              projHandler.getProjectId(), projHandler.getVersion(), file.getAbsolutePath(),
+              Arrays.toString(projHandler.getMD5Hash()), Arrays.toString(md5)));
     }
 
     projHandler.setLocalFile(file);
@@ -637,12 +619,6 @@ public class JdbcProjectImpl implements ProjectLoader {
     } else {
       project.removeUserPermission(name);
     }
-  }
-
-  @Override
-  public List<Triple<String, Boolean, Permission>> getProjectPermissions(final Project project)
-      throws ProjectManagerException {
-    return fetchPermissionsForProject(project);
   }
 
   /**
@@ -805,18 +781,27 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   @Override
   public List<Flow> fetchAllProjectFlows(final Project project) throws ProjectManagerException {
-    final ProjectFlowsResultHandler handler = new ProjectFlowsResultHandler();
-    List<Flow> flows = null;
+    return fetchAllFlowsForProjects(Arrays.asList(project)).get(project);
+  }
+
+  @Override
+  public Map<Project, List<Flow>> fetchAllFlowsForProjects(final List<Project> projects) throws ProjectManagerException {
+    final SQLTransaction<Map<Project, List<Flow>>> transaction = transOperator -> {
+      Map<Project, List<Flow>> projectToFlows = new HashMap();
+      for (Project p : projects) {
+        projectToFlows.put(p, transOperator
+            .query(ProjectFlowsResultHandler.SELECT_ALL_PROJECT_FLOWS, new ProjectFlowsResultHandler(), p.getId(),
+                p.getVersion()));
+      }
+      return projectToFlows;
+    };
+
     try {
-      flows = this.dbOperator
-          .query(ProjectFlowsResultHandler.SELECT_ALL_PROJECT_FLOWS, handler, project.getId(),
-              project.getVersion());
+      return this.dbOperator.transaction(transaction);
     } catch (final SQLException e) {
       throw new ProjectManagerException(
-          "Error fetching flows from project " + project.getName() + " version " + project
-              .getVersion(), e);
+          "Error fetching flows for " + projects.size() + " project(s).", e);
     }
-    return flows;
   }
 
   @Override
@@ -905,7 +890,7 @@ public class JdbcProjectImpl implements ProjectLoader {
                   propsName);
 
       if (properties == null || properties.isEmpty()) {
-        logger.warn("Project " + projectId + " version " + projectVer + " property " + propsName
+        logger.debug("Project " + projectId + " version " + projectVer + " property " + propsName
             + " is empty.");
         return null;
       }
@@ -947,12 +932,22 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   @Override
-  public void cleanOlderProjectVersion(final int projectId, final int version)
-      throws ProjectManagerException {
-    final String DELETE_FLOW = "DELETE FROM project_flows WHERE project_id=? AND version<?";
-    final String DELETE_PROPERTIES = "DELETE FROM project_properties WHERE project_id=? AND version<?";
-    final String DELETE_PROJECT_FILES = "DELETE FROM project_files WHERE project_id=? AND version<?";
-    final String UPDATE_PROJECT_VERSIONS = "UPDATE project_versions SET num_chunks=0 WHERE project_id=? AND version<?";
+  public void cleanOlderProjectVersion(final int projectId, final int version,
+      final List<Integer> excludedVersions) throws ProjectManagerException {
+
+    // Would use param of type Array from transOperator.getConnection().createArrayOf() but
+    // h2 doesn't support the Array type, so format the filter manually.
+    final String EXCLUDED_VERSIONS_FILTER = excludedVersions.stream()
+        .map(excluded -> " AND version != " + excluded).collect(Collectors.joining());
+    final String VERSION_FILTER = " AND version < ?" + EXCLUDED_VERSIONS_FILTER;
+
+    final String DELETE_FLOW = "DELETE FROM project_flows WHERE project_id=?" + VERSION_FILTER;
+    final String DELETE_PROPERTIES =
+        "DELETE FROM project_properties WHERE project_id=?" + VERSION_FILTER;
+    final String DELETE_PROJECT_FILES =
+        "DELETE FROM project_files WHERE project_id=?" + VERSION_FILTER;
+    final String UPDATE_PROJECT_VERSIONS =
+        "UPDATE project_versions SET num_chunks=0 WHERE project_id=?" + VERSION_FILTER;
     // Todo jamiesjc: delete flow files
 
     final SQLTransaction<Integer> cleanOlderProjectTransaction = transOperator -> {

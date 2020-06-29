@@ -1,0 +1,16 @@
+nodes:
+  - name: jobB
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ($<jobA:param> == 'foo' || ${jobA:param.{param2}}) && !one_success && print("hello!")
+
+    dependsOn:
+      - jobA
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0
