@@ -1,6 +1,5 @@
 package azkaban.server;
 
-import azkaban.scheduler.ScheduleManagerException;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaOption.SlaOptionBuilder;
@@ -43,7 +42,7 @@ public class SlaRequestUtils {
   }
 
   private static SlaOption parseSlaSetting(final String set, final String flowName,
-      final List<String> emails) throws ScheduleManagerException {
+      final List<String> emails) throws ServletException {
     logger.info("Trying to parse sla with the following set: " + set);
 
     final String[] parts = set.split(",", -1);
@@ -79,12 +78,12 @@ public class SlaRequestUtils {
     try {
       dur = parseDuration(duration);
     } catch (final Exception e) {
-      throw new ScheduleManagerException(
+      throw new ServletException(
           "Unable to parse duration for a SLA that needs to take actions!", e);
     }
 
     if (actions.isEmpty()) {
-      throw new ScheduleManagerException("Unable to create SLA as there is no action set");
+      throw new ServletException("Unable to create SLA as there is no action set");
     }
     logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
         + rule + " Duration:" + duration + " actions:" + actions);
