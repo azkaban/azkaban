@@ -29,6 +29,7 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
+import azkaban.jobExecutor.JobClassLoader;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
@@ -75,7 +76,7 @@ public class JobRunnerTest {
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
-    pluginSet.addPluginClass("test", InteractiveTestJob.class);
+    pluginSet.addPluginClassName("test", InteractiveTestJob.class.getName());
   }
 
   @After
@@ -112,6 +113,9 @@ public class JobRunnerTest {
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps != null);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
 
     checkRequiredJobProperties(runner, logFile);
 
@@ -184,6 +188,9 @@ public class JobRunnerTest {
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   @Test
@@ -215,6 +222,9 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 
     eventCollector.assertEvents(EventType.JOB_STARTED, EventType.JOB_FINISHED);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   @Test
@@ -246,6 +256,9 @@ public class JobRunnerTest {
     Assert.assertTrue(runner.getLogFilePath() == null);
     Assert.assertTrue(!runner.isKilled());
     eventCollector.assertEvents(EventType.JOB_STARTED, EventType.JOB_FINISHED);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   @Test
@@ -265,6 +278,9 @@ public class JobRunnerTest {
     runner.getNode().setModifiedBy("dementor1");
     runner.kill();
     assertThreadIsNotAlive(thread);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        thread.getContextClassLoader() instanceof JobClassLoader);
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Status is " + node.getStatus(),
@@ -318,6 +334,9 @@ public class JobRunnerTest {
     Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
     Assert.assertTrue(node.getStartTime() - startTime >= 0);
 
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        thread.getContextClassLoader() instanceof JobClassLoader);
+
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps != null);
@@ -362,6 +381,9 @@ public class JobRunnerTest {
     Assert.assertTrue(node.getStartTime() - startTime <= 5000);
     Assert.assertTrue(runner.isKilled());
 
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        thread.getContextClassLoader() instanceof JobClassLoader);
+
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps == null);
@@ -387,6 +409,8 @@ public class JobRunnerTest {
       Assert.assertTrue("Unexpected default layout",
           firstLine.startsWith("TEST"));
     }
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   private Props createProps(final int sleepSec, final boolean fail, Props props) {
