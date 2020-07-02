@@ -622,7 +622,7 @@ This API executes a flow via an ajax call, supporting a rich selection
 of different options. Running an individual job can also be achieved via
 this API by disabling all other jobs in the same flow.
 
--  **Method:** GET
+-  **Method:** POST
 -  **Request URL:** /executor?ajax=executeFlow
 -  **Parameter Location:** Request Query String
 
