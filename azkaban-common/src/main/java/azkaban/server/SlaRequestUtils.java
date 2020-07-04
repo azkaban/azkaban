@@ -49,7 +49,8 @@ public class SlaRequestUtils {
       try {
         slaOption = parseSlaSetting(settings.get(set), flowName, slaEmails);
       } catch (final Exception e) {
-        throw new ServletException(e);
+        throw new ServletException(
+            "Error parsing SLA setting '" + settings.get(set) + "': " + e.toString(), e);
       }
       slaOptions.add(slaOption);
     }
