@@ -19,7 +19,6 @@ import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.Role;
@@ -86,7 +85,7 @@ public class HttpRequestUtils {
           "notifyFailureLast")));
     }
 
-    String concurrentOption = getParam(req, "concurrentOption", "skip");
+    final String concurrentOption = getParam(req, "concurrentOption", "skip");
     execOptions.setConcurrentOption(concurrentOption);
     if (concurrentOption.equals("pipeline")) {
       final int pipelineLevel = getIntParam(req, "pipelineLevel");
@@ -97,9 +96,8 @@ public class HttpRequestUtils {
       execOptions.setPipelineLevel(queueLevel);
     }
 
-    String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
     if (hasParam(req, "mailCreator")) {
-      mailCreator = getParam(req, "mailCreator");
+      final String mailCreator = getParam(req, "mailCreator");
       execOptions.setMailCreator(mailCreator);
     }
 
@@ -111,7 +109,7 @@ public class HttpRequestUtils {
       if (!disabled.isEmpty()) {
         // TODO edlu: see if it's possible to pass in the new format
         final List<DisabledJob> disabledList =
-            DisabledJob.fromDeprecatedObjectList((List < Object >) JSONUtils
+            DisabledJob.fromDeprecatedObjectList((List<Object>) JSONUtils
                 .parseJSONFromStringQuiet(disabled));
         execOptions.setDisabledJobs(disabledList);
       }
@@ -288,20 +286,21 @@ public class HttpRequestUtils {
   public static Object getJsonBody(final HttpServletRequest request) throws ServletException {
     try {
       return JSONUtils.parseJSONFromString(getBody(request));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new ServletException("HTTP Request JSON Body cannot be parsed.", e);
     }
   }
 
   public static String getBody(final HttpServletRequest request) throws ServletException {
     try {
-      StringBuffer stringBuffer = new StringBuffer();
+      final StringBuffer stringBuffer = new StringBuffer();
       String line = null;
-      BufferedReader reader = request.getReader();
-      while ((line = reader.readLine()) != null)
+      final BufferedReader reader = request.getReader();
+      while ((line = reader.readLine()) != null) {
         stringBuffer.append(line);
+      }
       return stringBuffer.toString();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServletException("HTTP Request Body cannot be parsed.", e);
     }
   }

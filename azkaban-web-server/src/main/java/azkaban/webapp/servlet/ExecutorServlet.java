@@ -975,14 +975,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
 
     try {
-      Object body = HttpRequestUtils.getJsonBody(req);
+      final Object body = HttpRequestUtils.getJsonBody(req);
       if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
         Map<String, String> result = new HashMap<>();
         if (body instanceof List) { // A list of actions
-          List<Map<String, Object>> rampActions = (List<Map<String, Object>>)body;
+          final List<Map<String, Object>> rampActions = (List<Map<String, Object>>) body;
           result = this.executorManagerAdapter.doRampActions(rampActions);
         } else if (body instanceof Map) {
-          List<Map<String, Object>> rampActions = new ArrayList<>();
+          final List<Map<String, Object>> rampActions = new ArrayList<>();
           rampActions.add((Map<String, Object>) body);
           result = this.executorManagerAdapter.doRampActions(rampActions);
         } else {
