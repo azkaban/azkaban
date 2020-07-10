@@ -15,6 +15,8 @@
  */
 package azkaban.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
@@ -36,8 +38,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import static java.nio.charset.StandardCharsets.*;
 
 
 /**
@@ -125,42 +125,52 @@ public final class HttpRequestUtilsTest {
 
   @Test
   public void testGetJsonBodyForListOfMapObject() throws IOException, ServletException {
-    HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-    String originalString = "[\n" + "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
-        + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n" + "    \"values\": {\n"
-        + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n" + "  }\n" + "]";
-    InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
-    InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
-    BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+    final HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
+    final String originalString =
+        "[\n" + "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
+            + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n"
+            + "    \"values\": {\n"
+            + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n"
+            + "  }\n" + "]";
+    final InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
+    final InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
+    final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
     Mockito.when(httpRequest.getReader()).thenReturn(bufferedReader);
-    Object object = HttpRequestUtils.getJsonBody(httpRequest);
+    final Object object = HttpRequestUtils.getJsonBody(httpRequest);
     Assert.assertTrue(object instanceof List);
-    List<Map<String, Object>> list = (List<Map<String, Object>>) object;
+    final List<Map<String, Object>> list = (List<Map<String, Object>>) object;
     Assert.assertEquals(list.size(), 1);
     Assert.assertEquals(list.get(0).get("action").toString(), "update");
     Assert.assertEquals(list.get(0).get("table").toString(), "ramp");
-    Assert.assertEquals(((Map<String,Object>)list.get(0).get("conditions")).get("rampId").toString(), "dali");
-    Assert.assertEquals(((Map<String,Object>)list.get(0).get("values")).get("rampStage"), 2);
-    Assert.assertEquals(((Map<String,Object>)list.get(0).get("values")).get("lastUpdatedTime"), 1566259437000L);
+    Assert.assertEquals(
+        ((Map<String, Object>) list.get(0).get("conditions")).get("rampId").toString(), "dali");
+    Assert.assertEquals(((Map<String, Object>) list.get(0).get("values")).get("rampStage"), 2);
+    Assert.assertEquals(((Map<String, Object>) list.get(0).get("values")).get("lastUpdatedTime"),
+        1566259437000L);
   }
 
   @Test
   public void testGetJsonBodyForSingleMapObject() throws IOException, ServletException {
-    HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-    String originalString = "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
-        + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n" + "    \"values\": {\n"
-        + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n" + "  }\n";
-    InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
-    InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
-    BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+    final HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
+    final String originalString = "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
+        + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n"
+        + "    \"values\": {\n"
+        + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n"
+        + "  }\n";
+    final InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
+    final InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
+    final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
     Mockito.when(httpRequest.getReader()).thenReturn(bufferedReader);
-    Object object = HttpRequestUtils.getJsonBody(httpRequest);
+    final Object object = HttpRequestUtils.getJsonBody(httpRequest);
     Assert.assertTrue(object instanceof Map);
-    Map<String, Object> singleObj = (Map<String, Object>) object;
+    final Map<String, Object> singleObj = (Map<String, Object>) object;
     Assert.assertEquals(singleObj.get("action").toString(), "update");
     Assert.assertEquals(singleObj.get("table").toString(), "ramp");
-    Assert.assertEquals(((Map<String,Object>)singleObj.get("conditions")).get("rampId").toString(), "dali");
-    Assert.assertEquals(((Map<String,Object>)singleObj.get("values")).get("rampStage"), 2);
-    Assert.assertEquals(((Map<String,Object>)singleObj.get("values")).get("lastUpdatedTime"), 1566259437000L);
+    Assert
+        .assertEquals(((Map<String, Object>) singleObj.get("conditions")).get("rampId").toString(),
+            "dali");
+    Assert.assertEquals(((Map<String, Object>) singleObj.get("values")).get("rampStage"), 2);
+    Assert.assertEquals(((Map<String, Object>) singleObj.get("values")).get("lastUpdatedTime"),
+        1566259437000L);
   }
 }
