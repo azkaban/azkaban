@@ -178,7 +178,7 @@ public class JobRunnerTest {
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
     // Check failureMessage and modifiedBy
-    Assert.assertEquals(runner.getNode().getModifiedBy(), "unknown");
+    Assert.assertEquals("unknown", runner.getNode().getModifiedBy());
     Assert.assertEquals(runner.getNode().getFailureMessage(), "java.lang.RuntimeException: Forced"
         + " failure of testJob");
 
@@ -274,9 +274,8 @@ public class JobRunnerTest {
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
     // Check job kill time, user killed the job, and failure message
-    Assert.assertEquals(runner.getNode().getModifiedBy(), "dementor1");
+    Assert.assertEquals("dementor1", runner.getNode().getModifiedBy());
     Assert.assertTrue(runner.getJobKillTime() >= 0);
-    Assert.assertEquals(node.getFailureMessage(), "java.lang.RuntimeException: Forced failure of testJob");
 
     // Log file and output files should not exist.
     final File logFile = new File(runner.getLogFilePath());

@@ -124,7 +124,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertTrue(!this.runner.isKilled());
     waitForAndAssertFlowStatus(Status.FAILED);
     // Check failed job that leads to the failure of flow
-    Assert.assertEquals(this.runner.getExecutableFlow().getFailedJobId(), "job2d");
+    Assert.assertEquals("job2d", this.runner.getExecutableFlow().getFailedJobId());
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2d", Status.FAILED);
@@ -227,7 +227,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertTrue(this.runner.isKilled());
     // Check flow kill duration and uerId killed the flow
     Assert.assertFalse(this.runner.getFlowKillTime() == -1);
-    Assert.assertEquals(this.runner.getExecutableFlow().getModifiedBy(), "me");
+    Assert.assertEquals("me", this.runner.getExecutableFlow().getModifiedBy());
 
     assertStatus("job5", Status.CANCELLED);
     assertStatus("job7", Status.CANCELLED);
@@ -299,7 +299,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
 
-    Assert.assertEquals("Metadata not propagated correctly.", metadataMap.size(), 2);
+    Assert.assertEquals("Metadata not propagated correctly.", 2, metadataMap.size());
     Assert.assertEquals("Metadata not propagated correctly.", "value1", metadataMap.get("my.prop1"));
     Assert.assertEquals("Metadata not propagated correctly.", "value2", metadataMap.get("my.prop2"));
 
@@ -308,7 +308,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     metadataMap = new HashMap<>();
     FlowRunner.propagateMetadataFromProps(metadataMap, new Props(), "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
-    Assert.assertEquals("Metadata propagation backward compatibility has issues.", metadataMap.size(), 0);
+    Assert.assertEquals("Metadata propagation backward compatibility has issues.", 0, metadataMap.size());
 
     // Test negative path
     try {
@@ -364,7 +364,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     // Check flow pause duration and uerId killed the flow
     Assert.assertFalse(this.runner.getFlowPauseTime() == -1);
-    Assert.assertEquals(this.runner.getExecutableFlow().getModifiedBy(), "dementor");
+    Assert.assertEquals("dementor", this.runner.getExecutableFlow().getModifiedBy());
   }
 
   private void assertAttempts(final String name, final int attempt) {
