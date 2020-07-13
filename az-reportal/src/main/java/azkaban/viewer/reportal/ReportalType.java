@@ -58,9 +58,9 @@ public enum ReportalType {
     }
   },
 
-
-  HiveJob("ReportalHive", "reportalhive", "hadoop"), TeraDataJob(
-      "ReportalTeraData", "reportalteradata", "teradata"),
+  // Removed Teradata Jobtype
+  // Add this line to re-enable Teradata: TeraDataJob("ReportalTeraData", "reportalteradata", "teradata")
+  HiveJob("ReportalHive", "reportalhive", "hadoop"),
   TableauJob("ReportalTableau", "reportaltableau", "hadoop"),
   PrestoJob("ReportalPresto", "reportalpresto", "hadoop"), DataCollectorJob(
       ReportalTypeManager.DATA_COLLECTOR_JOB, ReportalTypeManager.DATA_COLLECTOR_JOB_TYPE, "") {
