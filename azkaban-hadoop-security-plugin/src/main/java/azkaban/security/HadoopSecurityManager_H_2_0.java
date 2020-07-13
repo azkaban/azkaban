@@ -128,7 +128,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       "obtain.jobhistoryserver.token";
   private final static Logger logger = Logger
       .getLogger(HadoopSecurityManager_H_2_0.class);
-  private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
 
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
@@ -141,7 +140,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private boolean shouldProxy = false;
   private boolean securityEnabled = false;
 
-  private HadoopSecurityManager_H_2_0(final Props props)
+  public HadoopSecurityManager_H_2_0(final Props props)
       throws HadoopSecurityManagerException, IOException {
     this.executeAsUser = new ExecuteAsUser(props.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
 
@@ -246,23 +245,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.conf.setBoolean(FS_DEFAULT_IMPL_DISABLE_CACHE, true);
     logger.info("Disable cache for scheme " + FS_DEFAULT_IMPL_DISABLE_CACHE);
 
-  }
-
-  public static HadoopSecurityManager getInstance(final Props props)
-      throws HadoopSecurityManagerException, IOException {
-    if (hsmInstance == null) {
-      synchronized (HadoopSecurityManager_H_2_0.class) {
-        if (hsmInstance == null) {
-          logger.info("getting new instance of HadoopSecurityManager");
-          hsmInstance = new HadoopSecurityManager_H_2_0(props);
-        }
-      }
-    }
-
-    logger.debug("Relogging in from keytab if necessary.");
-    hsmInstance.reloginFromKeytab();
-
-    return hsmInstance;
   }
 
   /**

@@ -17,8 +17,6 @@ package azkaban.viewer.hdfs;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -30,6 +28,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import azkaban.utils.Utils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -124,18 +123,12 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     HadoopSecurityManager hadoopSecurityManager = null;
 
     try {
-      Method getInstanceMethod =
-          hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
-      hadoopSecurityManager =
-          (HadoopSecurityManager) getInstanceMethod.invoke(
-              hadoopSecurityManagerClass, props);
-    } catch (InvocationTargetException e) {
+      hadoopSecurityManager = (HadoopSecurityManager) Utils.callConstructor(
+          hadoopSecurityManagerClass, props);
+    } catch (final Exception e) {
       logger.error("Could not instantiate Hadoop Security Manager "
           + hadoopSecurityManagerClass.getName() + e.getCause());
-      throw new RuntimeException(e.getCause());
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException(e.getCause());
+      throw new RuntimeException(e);
     }
 
     return hadoopSecurityManager;

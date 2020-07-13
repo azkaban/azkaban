@@ -18,6 +18,7 @@ package azkaban.jobtype;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,8 +27,6 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
@@ -129,17 +128,13 @@ public class HadoopJobUtils {
     HadoopSecurityManager hadoopSecurityManager = null;
 
     try {
-      final Method getInstanceMethod = hadoopSecurityManagerClass
-          .getMethod("getInstance", Props.class);
-      hadoopSecurityManager = (HadoopSecurityManager) getInstanceMethod.invoke(
+      hadoopSecurityManager = (HadoopSecurityManager) Utils.callConstructor(
           hadoopSecurityManagerClass, props);
-    } catch (final InvocationTargetException e) {
+    } catch (final Exception e) {
       final String errMsg = "Could not instantiate Hadoop Security Manager "
           + hadoopSecurityManagerClass.getName() + e.getCause();
       log.error(errMsg);
       throw new RuntimeException(errMsg, e);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
     }
 
     return hadoopSecurityManager;

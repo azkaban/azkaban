@@ -43,6 +43,7 @@ import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
@@ -171,18 +172,12 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     HadoopSecurityManager hadoopSecurityManager = null;
 
     try {
-      final Method getInstanceMethod =
-          hadoopSecurityManagerClass.getMethod("getInstance", Props.class);
-      hadoopSecurityManager =
-          (HadoopSecurityManager) getInstanceMethod.invoke(
-              hadoopSecurityManagerClass, props);
-    } catch (final InvocationTargetException e) {
+      hadoopSecurityManager = (HadoopSecurityManager) Utils.callConstructor(
+          hadoopSecurityManagerClass, props);
+    } catch (final Exception e) {
       logger.error("Could not instantiate Hadoop Security Manager "
           + hadoopSecurityManagerClass.getName() + e.getCause());
-      throw new RuntimeException(e.getCause());
-    } catch (final Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException(e.getCause());
+      throw new RuntimeException(e);
     }
 
     return hadoopSecurityManager;
