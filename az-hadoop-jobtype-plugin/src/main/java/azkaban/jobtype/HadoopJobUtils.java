@@ -18,7 +18,6 @@ package azkaban.jobtype;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
-import azkaban.utils.Utils;
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.File;
@@ -108,36 +107,6 @@ public class HadoopJobUtils {
     if (tokenFile.exists()) {
       tokenFile.delete();
     }
-  }
-
-  /**
-   * Based on the HADOOP_SECURITY_MANAGER_CLASS_PARAM setting in the incoming props, finds the
-   * correct HadoopSecurityManager Java class
-   *
-   * @return a HadoopSecurityManager object. Will throw exception if any errors occur (including not
-   * finding a class)
-   * @throws RuntimeException : If any errors happen along the way.
-   */
-  public static HadoopSecurityManager loadHadoopSecurityManager(final Props props, final Logger log)
-      throws RuntimeException {
-
-    final Class<?> hadoopSecurityManagerClass = props
-        .getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
-            HadoopJobUtils.class.getClassLoader());
-    log.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
-    HadoopSecurityManager hadoopSecurityManager = null;
-
-    try {
-      hadoopSecurityManager = (HadoopSecurityManager) Utils.callConstructor(
-          hadoopSecurityManagerClass, props);
-    } catch (final Exception e) {
-      final String errMsg = "Could not instantiate Hadoop Security Manager "
-          + hadoopSecurityManagerClass.getName() + e.getCause();
-      log.error(errMsg);
-      throw new RuntimeException(errMsg, e);
-    }
-
-    return hadoopSecurityManager;
   }
 
   /**

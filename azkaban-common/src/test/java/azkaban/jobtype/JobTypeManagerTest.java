@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.Job;
 import azkaban.utils.Props;
 import com.google.common.io.Resources;
@@ -176,6 +177,9 @@ public class JobTypeManagerTest {
     assertEquals("commonprop2", props.get("commonprop2"));
     assertEquals("commonprop3", props.get("commonprop3"));
     assertNull(props.get("commonprivate1"));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
   }
 
   /**
@@ -201,6 +205,9 @@ public class JobTypeManagerTest {
     assertEquals("commonprop2", props.get("commonprop2"));
     assertEquals("pluginprops", props.get("commonprop3"));
     assertNull(props.get("commonprivate1"));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
   }
 
   /**
