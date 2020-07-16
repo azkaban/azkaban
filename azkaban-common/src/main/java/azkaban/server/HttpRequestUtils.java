@@ -19,6 +19,7 @@ import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.Role;
@@ -38,7 +39,11 @@ import org.apache.commons.lang.StringUtils;
 
 public class HttpRequestUtils {
 
-  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req)
+  public static final String PARAM_SLA_EMAILS = "slaEmails";
+  public static final String PARAM_SLA_SETTINGS = "slaSettings";
+
+  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req,
+      final String flowName)
       throws ServletException {
     final ExecutionOptions execOptions = new ExecutionOptions();
 
@@ -99,6 +104,15 @@ public class HttpRequestUtils {
     if (hasParam(req, "mailCreator")) {
       final String mailCreator = getParam(req, "mailCreator");
       execOptions.setMailCreator(mailCreator);
+    }
+
+    final Map<String, String> slaSettings = getParamGroup(req, PARAM_SLA_SETTINGS);
+    // emails param is optional
+    final String emailStr = getParam(req, PARAM_SLA_EMAILS, null);
+    final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(flowName, emailStr,
+        slaSettings);
+    if (!slaOptions.isEmpty()) {
+      execOptions.setSlaOptions(slaOptions);
     }
 
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");

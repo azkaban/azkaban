@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.joda.time.DateTime;
@@ -348,6 +349,40 @@ public class SlaOption {
         .collect(Collectors.toList());
   }
 
+  @Override
+  public String toString() {
+    return "SlaOption{" +
+        "type=" + type +
+        ", flowName='" + flowName + '\'' +
+        ", jobName='" + jobName + '\'' +
+        ", duration=" + duration +
+        ", actions=" + actions +
+        ", emails=" + emails +
+        '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SlaOption slaOption = (SlaOption) o;
+    return type == slaOption.type &&
+        Objects.equals(flowName, slaOption.flowName) &&
+        Objects.equals(jobName, slaOption.jobName) &&
+        Objects.equals(duration, slaOption.duration) &&
+        Objects.equals(actions, slaOption.actions) &&
+        Objects.equals(emails, slaOption.emails);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, flowName, jobName, duration, actions, emails);
+  }
+
   /**
    * Builder for {@link SlaOption}.
    */
@@ -395,17 +430,5 @@ public class SlaOption {
     public SlaOption createSlaOption() {
       return new SlaOption(type, flowName, jobName, duration, actions, emails);
     }
-  }
-
-  @Override
-  public String toString() {
-    return "SlaOption{" +
-            "type=" + type +
-            ", flowName='" + flowName + '\'' +
-            ", jobName='" + jobName + '\'' +
-            ", duration=" + duration +
-            ", actions=" + actions +
-            ", emails=" + emails +
-            '}';
   }
 }

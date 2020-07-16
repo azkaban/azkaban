@@ -973,7 +973,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
 
-    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req);
+    final ExecutionOptions options;
+    try {
+      options = HttpRequestUtils.parseFlowOptions(req, flowId);
+    } catch (final ServletException e) {
+      logger.info("parseFlowOptions failed", e);
+      ret.put("error", "Error parsing flow options: " + e.getMessage());
+      return;
+    }
     exflow.setExecutionOptions(options);
     if (!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());

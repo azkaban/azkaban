@@ -20,16 +20,25 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.sla.SlaAction;
+import azkaban.sla.SlaOption;
+import azkaban.sla.SlaType;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.utils.TestUtils;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,4 +182,46 @@ public final class HttpRequestUtilsTest {
     Assert.assertEquals(((Map<String, Object>) singleObj.get("values")).get("lastUpdatedTime"),
         1566259437000L);
   }
+
+  @Test
+  public void testParseFlowOptionsSla() throws Exception {
+    HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
+        // job_name, status, duration, is_email, is_kill
+        "slaSettings[1]", ",FINISH,2:30,true,false",
+        "slaSettings[2]", "test_job,SUCCESS,12:00,false,true",
+        "slaSettings[3]", ",SUCCESS,12:00,true,true"));
+    ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
+    List<SlaOption> slaOptions = options.getSlaOptions();
+    final List<SlaOption> expected = Arrays.asList(
+        new SlaOption(SlaType.FLOW_FINISH, "test-flow", "", Duration.ofMinutes(150),
+            ImmutableSet.of(SlaAction.ALERT), ImmutableList.of()),
+        new SlaOption(SlaType.JOB_SUCCEED, "test-flow", "test_job", Duration.ofMinutes(720),
+            ImmutableSet.of(SlaAction.KILL), ImmutableList.of()),
+        new SlaOption(SlaType.FLOW_SUCCEED, "test-flow", "", Duration.ofMinutes(720),
+            ImmutableSet.of(SlaAction.ALERT, SlaAction.KILL), ImmutableList.of())
+    );
+    Assert.assertEquals(expected, slaOptions);
+  }
+
+  @Test
+  public void testParseFlowOptionsSlaWithEmail() throws Exception {
+    HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
+        "slaSettings[1]", ",FINISH,2:30,true,false",
+        "slaEmails", "sla1@example.com,sla2@example.com"));
+    ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
+    List<SlaOption> slaOptions = options.getSlaOptions();
+    final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "test-flow",
+        "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
+        ImmutableList.of("sla1@example.com", "sla2@example.com")));
+    Assert.assertEquals(expected, slaOptions);
+  }
+
+  private static HttpServletRequest mockRequestWithSla(Map<String, String> params) {
+    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getParameterNames()).thenReturn(Collections.enumeration(params.keySet()));
+    Mockito.when(req.getParameter(Mockito.anyString()))
+        .thenAnswer(i -> params.get(i.getArgument(0, String.class)));
+    return req;
+  }
+
 }
