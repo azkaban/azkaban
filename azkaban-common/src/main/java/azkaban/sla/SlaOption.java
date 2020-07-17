@@ -396,4 +396,16 @@ public class SlaOption {
       return new SlaOption(type, flowName, jobName, duration, actions, emails);
     }
   }
+
+  @Override
+  public String toString() {
+    return "SlaOption{" +
+            "type=" + type +
+            ", flowName='" + flowName + '\'' +
+            ", jobName='" + jobName + '\'' +
+            ", duration=" + duration +
+            ", actions=" + actions +
+            ", emails=" + emails +
+            '}';
+  }
 }

@@ -39,47 +39,10 @@ import org.apache.log4j.Logger;
  */
 public class AzkabanExecServerModule extends AbstractModule {
 
-  private static final Logger logger = Logger.getLogger(AzkabanExecServerModule.class);
-
   @Override
   protected void configure() {
     install(new ExecJettyServerModule());
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
-  }
-
-  @Inject
-  @Provides
-  @Singleton
-  public AzkabanEventReporter createAzkabanEventReporter(final Props props) {
-    final boolean eventReporterEnabled =
-        props.getBoolean(AZKABAN_EVENT_REPORTING_ENABLED, false);
-
-    if (!eventReporterEnabled) {
-      logger.info("Event reporter is not enabled");
-      return null;
-    }
-
-    final Class<?> eventReporterClass =
-        props.getClass(AZKABAN_EVENT_REPORTING_CLASS_PARAM, null);
-    if (eventReporterClass != null && eventReporterClass.getConstructors().length > 0) {
-      this.logger.info("Loading event reporter class " + eventReporterClass.getName());
-      try {
-        final Constructor<?> eventReporterClassConstructor =
-            eventReporterClass.getConstructor(Props.class);
-        return (AzkabanEventReporter) eventReporterClassConstructor.newInstance(props);
-      } catch (final InvocationTargetException e) {
-        this.logger.error(e.getTargetException().getMessage());
-        if (e.getTargetException() instanceof IllegalArgumentException) {
-          throw new IllegalArgumentException(e);
-        } else {
-          throw new RuntimeException(e);
-        }
-      } catch (final Exception e) {
-        this.logger.error("Could not instantiate EventReporter " + eventReporterClass.getName());
-        throw new RuntimeException(e);
-      }
-    }
-    return null;
   }
 
 }

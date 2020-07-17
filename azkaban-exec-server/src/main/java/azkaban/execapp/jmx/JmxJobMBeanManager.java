@@ -19,7 +19,7 @@ import org.apache.log4j.Logger;
  *
  * @author hluu
  */
-public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
+public class JmxJobMBeanManager implements JmxJobMXBean, EventListener<Event> {
 
   private static final Logger logger = Logger
       .getLogger(JmxJobMBeanManager.class);

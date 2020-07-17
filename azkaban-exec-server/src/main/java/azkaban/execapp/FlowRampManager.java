@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * Flow Ramp Manager
  */
 @Singleton
-public class FlowRampManager implements EventListener, ThreadPoolExecutingListener {
+public class FlowRampManager implements EventListener<Event>, ThreadPoolExecutingListener {
 
   private static final String JAR_DEPENDENCY_PREFIX = "jar:";
   private static String LIB_JAR_REG_EXP_FORMATTER = "^(%s)-\\d.*(.jar)$";

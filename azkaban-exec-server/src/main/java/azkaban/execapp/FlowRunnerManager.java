@@ -108,7 +108,7 @@ import org.slf4j.LoggerFactory;
  * execution is completed.
  */
 @Singleton
-public class FlowRunnerManager implements EventListener,
+public class FlowRunnerManager implements EventListener<Event>,
     ThreadPoolExecutingListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowRunnerManager.class);

@@ -16,12 +16,18 @@
 
 package azkaban.project;
 
+import azkaban.ServiceProvider;
+import azkaban.event.EventHandler;
 import azkaban.flow.Flow;
+import azkaban.spi.AzkabanEventReporter;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import com.google.common.collect.ImmutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Project {
+public class Project extends EventHandler {
 
   private final int id;
   private final String name;
@@ -49,10 +55,24 @@ public class Project {
   private String source;
   private Map<String, Flow> flows = new HashMap<>();
   private Map<String, Object> metadata = new HashMap<>();
+  private static final Logger logger = LoggerFactory.getLogger(Project.class);
+  // Added event listener for sending project events
+  private final ProjectEventListener projectEventListener= new ProjectEventListener();
+  private AzkabanEventReporter azkabanEventReporter;
 
   public Project(final int id, final String name) {
     this.id = id;
     this.name = name;
+    try {
+      this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
+    } catch (final Exception e) {
+      logger.info("AzkabanEventReporter is not configured");
+    } finally {
+      // Add the project event listener only if a non-null event reporter is available
+      if (this.azkabanEventReporter != null) {
+        this.addListener(this.projectEventListener);
+      }
+    }
   }
 
   public static Project projectFromObject(final Object object) {
@@ -450,5 +470,9 @@ public class Project {
 
   public void setVersion(final int version) {
     this.version = version;
+  }
+
+  public AzkabanEventReporter getAzkabanEventReporter(){
+    return this.azkabanEventReporter;
   }
 }

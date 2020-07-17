@@ -183,8 +183,8 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
     // Check failureMessage and modifiedBy
     Assert.assertEquals("unknown", runner.getNode().getModifiedBy());
-    Assert.assertEquals(runner.getNode().getFailureMessage(), "java.lang.RuntimeException: Forced"
-        + " failure of testJob");
+    Assert.assertEquals("java.lang.RuntimeException: Forced"
+            + " failure of testJob", runner.getNode().getFailureMessage());
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);

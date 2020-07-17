@@ -4,6 +4,7 @@ package azkaban.spi;
  * Enum class defining the list of supported event types.
  */
 public enum EventType {
+  // Executor event type
   FLOW_STARTED,
   FLOW_FINISHED,
   JOB_STARTED,
@@ -11,6 +12,11 @@ public enum EventType {
   JOB_STATUS_CHANGED,
   EXTERNAL_FLOW_UPDATED,
   EXTERNAL_JOB_UPDATED,
-  // For Kafka event schema enrichment
-  FLOW_STATUS_CHANGED
+  FLOW_STATUS_CHANGED,
+  //Project event type
+  USER_PERMISSION_CHANGED,
+  GROUP_PERMISSION_CHANGED,
+  PROJECT_UPLOADED,
+  SCHEDULE_CREATED,
+  JOB_PROPERTY_OVERRIDDEN
 }
