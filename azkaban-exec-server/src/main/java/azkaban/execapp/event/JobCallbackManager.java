@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author hluu
  */
-public class JobCallbackManager implements EventListener {
+public class JobCallbackManager implements EventListener<Event> {
 
   private static final Logger logger = LoggerFactory.getLogger(JobCallbackManager.class);
   private static final JobCallbackStatusEnum[] ON_COMPLETION_JOB_CALLBACK_STATUS =

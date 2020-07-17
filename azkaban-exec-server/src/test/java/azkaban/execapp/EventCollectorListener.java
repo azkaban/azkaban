@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class EventCollectorListener implements EventListener {
+public class EventCollectorListener implements EventListener<Event> {
 
   public static final Object handleEvent = new Object();
   // CopyOnWriteArrayList allows concurrent iteration and modification

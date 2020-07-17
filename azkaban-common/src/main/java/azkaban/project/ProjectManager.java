@@ -23,6 +23,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
+import azkaban.scheduler.Schedule;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
@@ -324,6 +326,11 @@ public class ProjectManager {
       throws ProjectManagerException {
     File tempDir = null;
     Props oldProps = null;
+    // For Azkaban event reporter
+    String errorMessage = null;
+    final Map<String, Object> eventData = new HashMap<>();
+    addEventDataFromProject(project, eventData);
+
     if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
       try {
         tempDir = Files.createTempDir();
@@ -339,6 +346,7 @@ public class ProjectManager {
             .uploadFlowFile(flow.getProjectId(), flow.getVersion(), flowFile, flowVersion + 1);
       } catch (final Exception e) {
         this.logger.error("Failed to set job override property. " + e);
+        errorMessage = e.toString();
       } finally {
         FlowLoaderUtils.cleanUpDir(tempDir);
       }
@@ -353,7 +361,15 @@ public class ProjectManager {
       }
     }
 
+    // Fill eventData with job property overridden event data
+    eventData.put("modifiedBy", modifier.getUserId());
+    eventData.put("flowName", flow.getId());
+    eventData.put("jobOverridden", jobName);
     final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
+    eventData.put("diffMessage", diffMessage);
+    setProjectEventStatus(errorMessage, eventData);
+    // Fire project event listener
+    project.fireEventListeners(ProjectEvent.create(project, azkaban.spi.EventType.JOB_PROPERTY_OVERRIDDEN, eventData));
 
     this.projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
         modifier.getUserId(), diffMessage);
@@ -393,15 +409,40 @@ public class ProjectManager {
       throws ProjectManagerException {
     logger.info("User {} updating permissions for project {} for {} {}", modifier.getUserId(),
         project.getName(), name, perm.toString());
-    this.projectLoader.updatePermission(project, name, perm, group);
+
+    final Map<String, Object> eventData = new HashMap<>();
+    addEventDataFromProject(project, eventData);
+    eventData.put("modifiedBy", modifier.getUserId());
+    eventData.put("permission", perm.toString());
+    azkaban.spi.EventType eventType = azkaban.spi.EventType.USER_PERMISSION_CHANGED;
     if (group) {
-      this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
-          modifier.getUserId(), "Permission for group " + name + " set to "
-              + perm.toString());
+      eventData.put("updatedUser", "null");
+      eventData.put("updatedGroup", name);
+      eventType = azkaban.spi.EventType.GROUP_PERMISSION_CHANGED;
     } else {
-      this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
-          modifier.getUserId(), "Permission for user " + name + " set to "
-              + perm.toString());
+      eventData.put("updatedUser", name);
+      eventData.put("updatedGroup", "null");
+    }
+
+    String errorMessage = null;
+    try {
+      this.projectLoader.updatePermission(project, name, perm, group);
+      if (group) {
+        this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
+                modifier.getUserId(), "Permission for group " + name + " set to "
+                        + perm.toString());
+      } else {
+        this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
+                modifier.getUserId(), "Permission for user " + name + " set to "
+                        + perm.toString());
+      }
+    } catch (Exception e){
+      errorMessage = e.toString();
+      throw e;
+    } finally {
+      setProjectEventStatus(errorMessage, eventData);
+      // Fire Azkaban event listener
+      project.fireEventListeners(ProjectEvent.create(project, eventType, eventData));
     }
   }
 
@@ -409,13 +450,38 @@ public class ProjectManager {
       final boolean group, final User modifier) throws ProjectManagerException {
     logger.info("User {} removing permissions for project {} for {}", modifier.getUserId(),
         project.getName(), name);
-    this.projectLoader.removePermission(project, name, group);
+
+    final Map<String, Object> eventData = new HashMap<>();
+    addEventDataFromProject(project, eventData);
+    eventData.put("modifiedBy", modifier.getUserId());
+    eventData.put("permission", "remove");
+    azkaban.spi.EventType eventType = azkaban.spi.EventType.USER_PERMISSION_CHANGED;
     if (group) {
-      this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
-          modifier.getUserId(), "Permission for group " + name + " removed.");
+      eventData.put("updatedUser", "null");
+      eventData.put("updatedGroup", name);
+      eventType = azkaban.spi.EventType.GROUP_PERMISSION_CHANGED;
     } else {
-      this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
-          modifier.getUserId(), "Permission for user " + name + " removed.");
+      eventData.put("updatedUser", name);
+      eventData.put("updatedGroup", "null");
+    }
+
+    String errorMessage = null;
+    try {
+      this.projectLoader.removePermission(project, name, group);
+      if (group) {
+        this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
+                modifier.getUserId(), "Permission for group " + name + " removed.");
+      } else {
+        this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
+                modifier.getUserId(), "Permission for user " + name + " removed.");
+      }
+    } catch (Exception e) {
+      errorMessage = e.toString();
+      throw e;
+    } finally {
+      setProjectEventStatus(errorMessage, eventData);
+      // Fire Azkaban event listener
+      project.fireEventListeners(ProjectEvent.create(project, eventType, eventData));
     }
   }
 
@@ -459,5 +525,37 @@ public class ProjectManager {
       return true;
     }
     return false;
+  }
+
+  public void setProjectEventStatus (final String errorMessage, final Map<String, Object> eventData) {
+    if (errorMessage == null){
+      eventData.put("projectEventStatus", "SUCCESS");
+      eventData.put("errorMessage", "null");
+    } else {
+      eventData.put("projectEventStatus", "ERROR");
+      eventData.put("errorMessage", errorMessage);
+    }
+  }
+
+  public void postScheduleEvent(final Project project, final azkaban.spi.EventType type, final User user, final Schedule schedule, final String errorMessage) {
+    Map<String, Object> eventData = new HashMap<>();
+    addEventDataFromProject(project, eventData);
+    // Fill eventData with schedule event data
+    eventData.put("modifiedBy", user.getUserId());
+    eventData.put("flowName", schedule.getFlowName());
+    eventData.put("firstScheduledExecutionTime", schedule.getFirstSchedTime());
+    eventData.put("lastScheduledExecutionTime", schedule.getEndSchedTime());
+    eventData.put("timezone", schedule.getTimezone().toString());
+    eventData.put("cronExpression", schedule.getCronExpression());
+
+    setProjectEventStatus(errorMessage, eventData);
+    // Fire project schedule SLA event Listener
+    project.fireEventListeners(ProjectEvent.create(project, type, eventData));
+  }
+
+  private void addEventDataFromProject(final Project project, final Map<String, Object> eventData){
+    eventData.put("projectId", project.getId());
+    eventData.put("projectName", project.getName());
+    eventData.put("projectVersion", project.getVersion());
   }
 }

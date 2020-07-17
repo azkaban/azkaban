@@ -671,6 +671,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
         user.getUserId(), "Schedule " + schedule.toString()
             + " has been added.");
+    this.projectManager.postScheduleEvent(project, azkaban.spi.EventType.SCHEDULE_CREATED, user,
+            schedule, null);
 
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
     ret.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());

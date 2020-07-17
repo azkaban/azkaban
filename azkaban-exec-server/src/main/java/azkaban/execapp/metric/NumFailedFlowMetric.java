@@ -29,7 +29,7 @@ import azkaban.spi.EventType;
  * Metric to keep track of number of failed flows in between the tracking events
  */
 public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> implements
-    EventListener {
+    EventListener<Event> {
 
   public static final String NUM_FAILED_FLOW_METRIC_NAME = "NumFailedFlowMetric";
   private static final String NUM_FAILED_FLOW_METRIC_TYPE = "uint16";

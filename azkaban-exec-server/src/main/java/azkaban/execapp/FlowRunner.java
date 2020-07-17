@@ -103,7 +103,7 @@ import org.apache.log4j.PatternLayout;
 /**
  * Class that handles the running of a ExecutableFlow DAG
  */
-public class FlowRunner extends EventHandler implements Runnable {
+public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private static final Splitter SPLIT_ON_COMMA = Splitter.on(",").omitEmptyStrings().trimResults();
 
@@ -1466,7 +1466,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   // Class helps report the flow start and stop events.
   @VisibleForTesting
-  class FlowRunnerEventListener implements EventListener {
+  class FlowRunnerEventListener implements EventListener<Event> {
 
     public FlowRunnerEventListener() {
     }
@@ -1559,7 +1559,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   @VisibleForTesting
-  class JobRunnerEventListener implements EventListener {
+  class JobRunnerEventListener implements EventListener<Event> {
 
     public JobRunnerEventListener() {
     }
