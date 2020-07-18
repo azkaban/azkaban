@@ -113,15 +113,16 @@ class AzkabanProjectLoader {
       final String uploaderIPAddr)
       throws ProjectManagerException, ExecutorManagerException {
     // Set up project upload start time
-    long startUploadTimeStamp = System.currentTimeMillis();
+    final long startUploadTimeStamp = System.currentTimeMillis();
     String errorMessage = null;
-    Map<String, Object> eventData = new HashMap<>();
+    final Map<String, Object> eventData = new HashMap<>();
     // Fetch project properties
     eventData.put("projectId", project.getId());
     eventData.put("projectName", project.getName());
     eventData.put("projectVersion", project.getVersion());
     // Get zip size, modifiedBy and uploader IP address
-    eventData.put("projectZipSize", archive.getTotalSpace());
+    final long fileSize = FileUtils.sizeOf(archive);
+    eventData.put("projectZipSize", fileSize);
     eventData.put("modifiedBy", uploader.getUserId());
     eventData.put("uploaderIPAddress", uploaderIPAddr);
 

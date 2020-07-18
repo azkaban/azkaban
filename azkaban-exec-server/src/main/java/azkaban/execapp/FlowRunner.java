@@ -1591,7 +1591,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put("modifiedBy", node.getModifiedBy());
       metaData.put("jobKillDuration", String.valueOf(jobRunner.getJobKillTime()));
       metaData.put("queueDuration", String.valueOf(jobRunner.getTimeInQueue()));
-      metaData.put("FailureMessage", node.getFailureMessage());
+      metaData.put("failureMessage", node.getFailureMessage());
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),

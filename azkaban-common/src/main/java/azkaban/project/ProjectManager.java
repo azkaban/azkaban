@@ -538,7 +538,7 @@ public class ProjectManager {
   }
 
   public void postScheduleEvent(final Project project, final azkaban.spi.EventType type, final User user, final Schedule schedule, final String errorMessage) {
-    Map<String, Object> eventData = new HashMap<>();
+    final Map<String, Object> eventData = new HashMap<>();
     addEventDataFromProject(project, eventData);
     // Fill eventData with schedule event data
     eventData.put("modifiedBy", user.getUserId());
