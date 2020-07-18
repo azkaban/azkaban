@@ -329,7 +329,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
       StringBuilder slaBuilder = new StringBuilder();
       for (SlaOption slaOption: slaOptions){
         slaBuilder.append(slaOption.toString());
-        slaBuilder.append(',');
+        slaBuilder.append(';');
       }
       this.slaOptionStr = slaBuilder.toString();
     }
