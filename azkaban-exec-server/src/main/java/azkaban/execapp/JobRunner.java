@@ -603,11 +603,11 @@ public class JobRunner extends EventHandler implements Runnable {
     Status finalStatus = this.node.getStatus();
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
-      fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
       // End of job in queue and start of execution
       if (this.getTimeInQueue() != -1) {
         this.setTimeInQueue(System.currentTimeMillis() - this.getTimeInQueue());
       }
+      fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
       final Status prepareStatus = prepareJob();
       if (prepareStatus != null) {
