@@ -39,6 +39,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -49,6 +50,7 @@ import com.linkedin.tony.TonyClient;
 import com.linkedin.tony.cli.ClusterSubmitter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -1330,8 +1332,30 @@ public class ExecutorManager extends EventHandler implements
         // Launch a container for flow execution
         //TODO: Add flow in a queue in case of failure
         exflow.setUpdateTime(currentTime);
-        dispatchFlowInContainer(reference, exflow);
+        dispatchAsProxyUser(reference, exflow);
         ExecutorManager.this.runningCandidate = null;
+      }
+    }
+
+    private void dispatchAsProxyUser(final ExecutionReference reference, final ExecutableFlow exflow) {
+      try {
+        Map<String, String> flowParameters = exflow.getExecutionOptions().getFlowParameters();
+        String keyTabLocation = flowParameters.get("proxy.keytab.location");
+        String principle = flowParameters.get("proxy.azkaban.principle");
+        logger.info("KeyTab Location: " + keyTabLocation);
+        logger.info("Principle: " + principle);
+        UserGroupInformation.loginUserFromKeytab(principle, keyTabLocation);
+        logger.info("LoginUser: " + UserGroupInformation.getLoginUser().getUserName());
+        String proxyUser = flowParameters.getOrDefault("proxyUser", "azktest");
+        logger.info("ProxyUser: " + proxyUser);
+        UserGroupInformation proxiedUser = UserGroupInformation.createProxyUser(proxyUser, UserGroupInformation.getLoginUser());
+        logger.info("ProxiedUser: " + proxiedUser);
+        proxiedUser.doAs((PrivilegedExceptionAction<Void>) () -> {
+          dispatchFlowInContainer(reference, exflow);
+          return null;
+        });
+      } catch (Exception e) {
+        logger.error(e);
       }
     }
 
