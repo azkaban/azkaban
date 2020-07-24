@@ -311,6 +311,7 @@ public class JobTypeManager {
     final JobTypePluginSet pluginSet = getJobTypePluginSet();
 
     try {
+      logger.info("Deepak : job Props = " + jobProps);
       final String jobType = jobProps.getString("type");
       if (jobType == null || jobType.length() == 0) {
         /* throw an exception when job name is null or empty */

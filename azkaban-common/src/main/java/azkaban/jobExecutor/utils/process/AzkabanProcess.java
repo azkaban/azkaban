@@ -57,6 +57,9 @@ public class AzkabanProcess {
   public AzkabanProcess(final List<String> cmd, final Map<String, String> env,
       final String workingDir, final Logger logger) {
     this.cmd = cmd;
+    //List<String> cmds = new ArrayList<>();
+    //cmds.add("ls");
+    //this.cmd = cmds;
     this.env = env;
     this.workingDir = workingDir;
     this.processId = -1;
@@ -78,15 +81,22 @@ public class AzkabanProcess {
    * Execute this process, blocking until it has completed.
    */
   public void run() throws IOException {
+    this.logger.info("Deepak : AzkabanProcess run");
     if (this.isStarted() || this.isComplete()) {
       throw new IllegalStateException("The process can only be used once.");
     }
 
+    this.logger.info("Deepak : cmd = " + cmd);
     final ProcessBuilder builder = new ProcessBuilder(this.cmd);
     builder.directory(new File(this.workingDir));
     builder.environment().putAll(this.env);
     builder.redirectErrorStream(true);
+    //builder.redirectError(Redirect.INHERIT);
+    //builder.redirectOutput(Redirect.INHERIT);
+
+    this.logger.info("Deepak : AzkabanProcess : starting process");
     this.process = builder.start();
+    this.logger.info("Deepak : AzkabanProcess : process started");
     try {
       this.processId = processId(this.process);
       if (this.processId == 0) {

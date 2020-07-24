@@ -54,8 +54,8 @@ public class HadoopShell extends ProcessJob implements IHadoopJob {
       e.printStackTrace();
       getLog().error("caught error running the job");
       throw e;
-    } finally {
-      hadoopProxy.cancelHadoopTokens(getLog());
+    //} finally {
+      //hadoopProxy.cancelHadoopTokens(getLog());
     }
   }
 
