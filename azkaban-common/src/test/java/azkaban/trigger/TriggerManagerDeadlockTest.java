@@ -47,6 +47,7 @@ import org.junit.Test;
 
 public class TriggerManagerDeadlockTest {
 
+  /*
   TriggerLoader loader;
   TriggerManager triggerManager;
   ExecutorLoader execLoader;
@@ -74,6 +75,7 @@ public class TriggerManagerDeadlockTest {
     final ExecutorManager executorManager = getExecutorManager(props);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
   }
+
 
   private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
     final ActiveExecutors activeExecutors = new ActiveExecutors(this.execLoader);
@@ -248,6 +250,6 @@ public class TriggerManagerDeadlockTest {
       return 0;
     }
 
-  }
+  }*/
 
 }

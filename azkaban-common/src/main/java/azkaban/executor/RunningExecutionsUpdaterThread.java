@@ -42,6 +42,14 @@ public class RunningExecutionsUpdaterThread extends Thread {
     this.setName("ExecutorManagerUpdaterThread");
   }
 
+  public void setWaitTimeIdleMs(final int waitTimeIdleMs) {
+    this.waitTimeIdleMs = waitTimeIdleMs;
+  }
+
+  public void setWaitTimeMs(final int waitTimeMs) {
+    this.waitTimeMs = waitTimeMs;
+  }
+
   /**
    * Start the thread: updates running executions periodically.
    */
@@ -75,7 +83,7 @@ public class RunningExecutionsUpdaterThread extends Thread {
     }
   }
 
-  void shutdown() {
+  public void shutdown() {
     this.shutdown = true;
   }
 

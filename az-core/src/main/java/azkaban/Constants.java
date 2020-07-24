@@ -457,6 +457,7 @@ public class Constants {
     public static final String TONY_CONF = "--conf";
     public static final String TONY_SHELL_ENV = "--shell_env";
     public static final String TONY_EXECUTES = "--executes";
-
+    public static final String TONY_AM_RESOURCES  = "tony.am.resources";
+    public static final String TONY_OTHER_NAMENODES = "tony.other.namenodes";
   }
 }
