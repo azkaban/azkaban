@@ -40,6 +40,7 @@ dependencies {
     compile deps.mysqlConnector
     compile deps.snakeyaml
     compile deps.velocity
+    compile deps.tonyCli
 
     testRuntime deps.h2
 

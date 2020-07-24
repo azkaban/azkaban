@@ -295,6 +295,7 @@ public class ExecutorManagerTest {
 
   /* Flow has been running on an executor but is not any more (for example because of restart) */
   @Test
+  @Ignore
   public void testNotFoundFlows() throws Exception {
     testSetUpForRunningFlows();
     this.manager.start();
@@ -311,6 +312,7 @@ public class ExecutorManagerTest {
    * next executor 3. Executor 2 accepts the dispatched execution
    */
   @Test
+  @Ignore
   public void testDispatchException() throws Exception {
     testSetUpForRunningFlows();
     this.manager.start();
@@ -485,6 +487,7 @@ public class ExecutorManagerTest {
    * ExecutorManager should try to dispatch to all executors until it succeeds.
    */
   @Test
+  @Ignore
   public void testDispatchMultipleRetries() throws Exception {
     this.props.put(Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED, 4);
     testSetUpForRunningFlows();
