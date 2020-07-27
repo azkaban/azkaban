@@ -493,7 +493,8 @@ public class JobTypeManager {
       // This job is local with no dependency on a remote cluster, skip routing
       return Collections.emptyList();
     }
-    final Cluster targetCluster = this.clusterRouter.getCluster(jobId, jobProps, components);
+    final Cluster targetCluster = this.clusterRouter.getCluster(jobId, jobProps, logger,
+        components);
 
     if (targetCluster == null || Cluster.UNKNOWN.equals(targetCluster)) {
       return Collections.emptyList();

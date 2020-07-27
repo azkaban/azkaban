@@ -4,6 +4,7 @@ import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Collection;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Logger;
 
 /**
  * An implementation of {@link ClusterRouter} that routes jobs to the UNKNOWN cluster
@@ -20,7 +21,8 @@ public class DisabledClusterRouter extends ClusterRouter {
   }
 
   @Override
-  public Cluster getCluster(final String jobId, final Props jobProps, final Collection<String> componentDependency) {
+  public Cluster getCluster(final String jobId, final Props jobProps,
+      final Logger jobLogger, final Collection<String> componentDependency) {
     return Cluster.UNKNOWN;
   }
 
