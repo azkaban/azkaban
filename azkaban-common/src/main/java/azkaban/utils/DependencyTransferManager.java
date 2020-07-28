@@ -22,6 +22,7 @@ import azkaban.spi.Storage;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -116,12 +117,15 @@ public class DependencyTransferManager {
 
   private void downloadDependency(final DependencyFile f, final int retries)
       throws HashNotMatchException, IOException {
+    FileOutputStream outputStream = null;
+    InputStream inputStream = null;
     try {
       // Make any necessary directories
       f.getFile().getParentFile().mkdirs();
 
-      FileOutputStream fos = new FileOutputStream(f.getFile());
-      IOUtils.copy(this.storage.getDependency(f), fos);
+      outputStream = new FileOutputStream(f.getFile());
+      inputStream = this.storage.getDependency(f);
+      IOUtils.copy(inputStream, outputStream);
     } catch (IOException e) {
       if (retries + 1 < dependencyMaxDownloadTries) {
         // downloadDependency will overwrite our destination file if attempted again
@@ -130,6 +134,9 @@ public class DependencyTransferManager {
         return;
       }
       throw e;
+    } finally {
+      IOUtils.closeQuietly(inputStream);
+      IOUtils.closeQuietly(outputStream);
     }
 
     try {
