@@ -132,23 +132,25 @@ Multiple Executor Mode Parameters
 Jetty Parameters
 ########
 
-+---------------------+---------------------+---------+
-| Parameter           | Description         | Default |
-+=====================+=====================+=========+
-| jetty.maxThreads    | Max request threads | 25      |
-+---------------------+---------------------+---------+
-| jetty.ssl.port      | The ssl port        | 8443    |
-+---------------------+---------------------+---------+
-| jetty.keystore      | The keystore file   |         |
-+---------------------+---------------------+---------+
-| jetty.password      | The jetty password  |         |
-+---------------------+---------------------+---------+
-| jetty.keypassword   | The keypassword     |         |
-+---------------------+---------------------+---------+
-| jetty.truststore    | The trust store     |         |
-+---------------------+---------------------+---------+
-| jetty.trustpassword | The trust password  |         |
-+---------------------+---------------------+---------+
++----------------------------+------------------------+---------+
+| Parameter                  | Description            | Default |
++============================+========================+=========+
+| jetty.maxThreads           | Max request threads    | 25      |
++----------------------------+------------------------+---------+
+| jetty.ssl.port             | The ssl port           | 8443    |
++----------------------------+------------------------+---------+
+| jetty.keystore             | The keystore file      |         |
++----------------------------+------------------------+---------+
+| jetty.password             | The jetty password     |         |
++----------------------------+------------------------+---------+
+| jetty.keypassword          | The keypassword        |         |
++----------------------------+------------------------+---------+
+| jetty.truststore           | The trust store        |         |
++----------------------------+------------------------+---------+
+| jetty.trustpassword        | The trust password     |         |
++----------------------------+------------------------+---------+
+| jetty.disable.http-methods | Block HTTP methods     |         |
++----------------------------+------------------------+---------+
 
 Project Manager Settings
 ########
