@@ -37,6 +37,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -339,14 +340,47 @@ public class JobTypeManager {
       jobProps = getJobProps(jobProps, pluginSet, jobType);
       final Props pluginLoadProps = getPluginLoadProps(pluginSet, jobType);
 
-      final Class<?> executorClass = getJobExecutorClass(jobId, jobType, jobProps, pluginSet, logger);
+
+      final List<URL> jobClassLoaderUrls = new ArrayList<>();
+      // collect jobtype declared dependencies for the job's classloader
+      final URL[] jobTypeURLs = pluginSet.getPluginClassLoaderURLs(jobType);
+      jobClassLoaderUrls.addAll(Arrays.asList(jobTypeURLs));
+
+      // collect cluster-specific dependencies for the job's classloader
+      Cluster targetCluster = null;
+      final Collection<String> components = getClusterComponents(jobProps,
+          pluginSet.getPluginLoaderProps(jobType), false);
+      if (!components.isEmpty()) {
+        targetCluster = this.clusterRouter.getCluster(jobId, jobProps, logger,
+            components);
+        if (targetCluster != null && !Cluster.UNKNOWN.equals(targetCluster)) {
+          List<URL> clusterUrls = targetCluster.getClusterComponentURLs(components);
+          jobClassLoaderUrls.addAll(clusterUrls);
+        }
+      }
+      // construct a classloader with both jobtype and cluster libraries
+      logger.info(String.format("JobClassLoader URLs: %s", jobClassLoaderUrls.stream()
+          .map(URL::toString).collect(Collectors.joining(", "))));
+      final ClassLoader jobClassLoader = new JobClassLoader(
+          jobClassLoaderUrls.toArray(new URL[jobClassLoaderUrls.size()]),
+          JobTypeManager.class.getClassLoader(), jobId);
+
+
+      // load the jobtype from JobClassLoader
+      final String jobTypeClassName = pluginSet.getPluginClassName(jobType);
+      final Class<? extends Object> jobTypeClass = jobClassLoader.loadClass(jobTypeClassName);
+      if (jobTypeClass == null) {
+        throw new JobExecutionException(String.format("Job type [%s] "
+                + "is unrecognized. Could not construct job [%s] of type [%s].",
+            jobType, jobId, jobType));
+      }
 
       // inject cluster jars and native libraries into jobs through properties
       jobProps.putAll(
-          getClusterSpecificJobProps(jobProps, pluginLoadProps));
+          getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps));
       jobProps = PropsUtils.resolveProps(jobProps);
 
-      return new JobParams(executorClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
+      return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
           pluginLoadProps);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
@@ -359,42 +393,6 @@ public class JobTypeManager {
       throw new JobTypeManagerException("Failed to build job executor for job "
           + jobId, t);
     }
-  }
-
-  private Class<?> getJobExecutorClass(final String jobId, final String jobType, final Props jobProps,
-      final JobTypePluginSet pluginSet, final Logger logger)
-      throws ClassNotFoundException, MalformedURLException {
-    final ClassLoader jobClassLoader = createJobClassLoader(jobId, jobType, jobProps, pluginSet,
-        logger);
-    final String executorClassName = pluginSet.getPluginClassName(jobType);
-    final Class<? extends Object> executorClass = jobClassLoader.loadClass(executorClassName);
-    if (executorClass == null) {
-      throw new JobExecutionException(String.format("Job type [%s] "
-              + "is unrecognized. Could not construct job [%s] of type [%s].",
-          jobType, jobId, jobType));
-    }
-    return executorClass;
-  }
-
-  private ClassLoader createJobClassLoader(
-      final String jobId, final String jobType, final Props jobProps,
-      final JobTypePluginSet pluginSet, final Logger logger)
-      throws MalformedURLException {
-    final List<URL> urls = new ArrayList<>();
-
-    // add jobtype declared dependencies
-    final URL[] jobTypeURLs = pluginSet.getPluginClassLoaderURLs(jobType);
-    for (URL jobTypeDependency: jobTypeURLs) {
-      urls.add(jobTypeDependency);
-    }
-
-    // add cluster-specific libraries
-    final List<URL> clusterLibraries = getClusterSpecificURLs(jobId, jobType, jobProps, pluginSet, logger);
-    urls.addAll(clusterLibraries);
-
-    logger.info("JobClassLoader URLs: " + urls.stream().map(URL::toString).collect(Collectors.joining(", ")));
-    return new JobClassLoader(
-        urls.toArray(new URL[urls.size()]), JobTypeManager.class.getClassLoader(), jobId);
   }
 
   private static Props getJobProps(Props jobProps, JobTypePluginSet pluginSet, String jobType) {
@@ -480,46 +478,19 @@ public class JobTypeManager {
   }
 
   /**
-   * Add cluster-specific libraries/jars. if no such cluster is configured, we assume
-   * cluster-specific URLs will be available through the parent classloader from AZ.
-   */
-  private List<URL> getClusterSpecificURLs(final String jobId, final String jobType,
-      final Props jobProps, final JobTypePluginSet pluginSet, final Logger logger)
-      throws MalformedURLException {
-    final Collection<String> components =
-        getClusterComponents(jobProps, pluginSet.getPluginLoaderProps(jobType), false);
-
-    if (components.isEmpty()) {
-      // This job is local with no dependency on a remote cluster, skip routing
-      return Collections.emptyList();
-    }
-    final Cluster targetCluster = this.clusterRouter.getCluster(jobId, jobProps, logger,
-        components);
-
-    if (targetCluster == null || Cluster.UNKNOWN.equals(targetCluster)) {
-      return Collections.emptyList();
-    }
-
-    logger.info("Routing " + jobId + " to cluster: " + targetCluster.clusterId);
-    // inject the cluster id to as a job property
-    jobProps.put(CommonJobProperties.TARGET_CLUSTER, targetCluster.clusterId);
-    return targetCluster.getClusterComponentURLs(components);
-  }
-
-  /**
    * Expose cluster-specific libraries and native libraries through job properties.
    * if a router is configured, construct the properties based on cluster.properties
    * otherwise, the cluster is implicitly configured, the properties will be based
    * on plugins' private properties.
    */
-  private Props getClusterSpecificJobProps(final Props jobProps, final Props pluginProps) {
+  private Props getClusterSpecificJobProps(final Cluster cluster, final Props jobProps,
+      final Props pluginProps) {
     final Props clusterProps = new Props();
 
     Props sourceProps;
 
-    final String clusterId = jobProps.get(CommonJobProperties.TARGET_CLUSTER);
-    if (clusterId != null && !Cluster.UNKNOWN.equals(clusterRouter.getCluster(clusterId))){
-      sourceProps = clusterRouter.getCluster(clusterId).properties;
+    if (cluster != null && !Cluster.UNKNOWN.equals(cluster)){
+      sourceProps = cluster.properties;
       clusterProps.putAll(sourceProps);
     } else {
       // fall back to the existing mechanism if no cluster is found/configured

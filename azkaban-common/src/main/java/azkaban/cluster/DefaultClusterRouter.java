@@ -27,9 +27,4 @@ public class DefaultClusterRouter extends ClusterRouter {
     }
     return cluster;
   }
-
-  @Override
-  public Cluster getCluster(final String clusterId) {
-    return this.clusterRegistry.getCluster(clusterId);
-  }
 }
