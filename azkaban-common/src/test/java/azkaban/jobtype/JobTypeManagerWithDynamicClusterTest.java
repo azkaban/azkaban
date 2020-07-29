@@ -109,8 +109,6 @@ public class JobTypeManagerWithDynamicClusterTest {
     final Job job = manager.buildJobExecutor("anothertestjob", jobProps, LOG);
 
     jobProps = ((FakeJavaJob) job).getJobProps();
-    Assert.assertEquals(
-        this.defaultCluster.clusterId, jobProps.getString(CommonJobProperties.TARGET_CLUSTER));
 
     final String clusterClassPath = jobProps
         .getString(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);
@@ -137,8 +135,6 @@ public class JobTypeManagerWithDynamicClusterTest {
     final Job job = manager.buildJobExecutor("anothertestjob", jobProps, LOG);
 
     jobProps = ((FakeJavaJob) job).getJobProps();
-    Assert.assertEquals(
-        this.defaultCluster.clusterId, jobProps.getString(CommonJobProperties.TARGET_CLUSTER));
 
     final String clusterClassPath = jobProps
         .getString(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);
@@ -166,8 +162,6 @@ public class JobTypeManagerWithDynamicClusterTest {
     final Job job = manager.buildJobExecutor("testjob", jobProps, LOG);
 
     jobProps = ((FakeJavaJob2) job).getJobProps();
-    Assert.assertEquals(
-        this.defaultCluster.clusterId, jobProps.getString(CommonJobProperties.TARGET_CLUSTER));
 
     final String clusterClassPath = jobProps
         .getString(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);

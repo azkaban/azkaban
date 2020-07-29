@@ -25,9 +25,4 @@ public class DisabledClusterRouter extends ClusterRouter {
       final Logger jobLogger, final Collection<String> componentDependency) {
     return Cluster.UNKNOWN;
   }
-
-  @Override
-  public Cluster getCluster(final String clusterId) {
-    return Cluster.UNKNOWN;
-  }
 }

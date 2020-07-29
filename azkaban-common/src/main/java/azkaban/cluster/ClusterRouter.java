@@ -20,9 +20,4 @@ public abstract class ClusterRouter {
   public abstract Cluster getCluster(final String jobId, final Props jobProps,
       final Logger jobLogger,
       final Collection<String> componentDependency);
-
-  /**
-   * Get the information of a cluster given its id.
-   */
-  public abstract Cluster getCluster(final String clusterId);
 }
