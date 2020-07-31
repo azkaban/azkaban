@@ -707,13 +707,7 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public Map<String, String> getExternalJobLogUrls(final ExecutableFlow exFlow, final String jobId,
       final int attempt) {
-
     final Map<String, String> jobLogUrlsByAppId = new LinkedHashMap<>();
-    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) ||
-        !this.azkProps.containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) ||
-        !this.azkProps.containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
-      return jobLogUrlsByAppId;
-    }
     final Set<String> applicationIds = getApplicationIds(exFlow, jobId, attempt);
     for (final String applicationId : applicationIds) {
       final String jobLogUrl = ExecutionControllerUtils

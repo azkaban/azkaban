@@ -50,6 +50,8 @@ public class ExecutableNode {
   public static final String OUTPUT_PROPS_PARAM = "outputProps";
   public static final String ATTEMPT_PARAM = "attempt";
   public static final String PASTATTEMPTS_PARAM = "pastAttempts";
+  public static final String CLUSTER_PARAM = "cluster";
+  private ClusterInfo clusterInfo;
   private final AtomicInteger attempt = new AtomicInteger(0);
   private String id;
   private String type = null;
@@ -151,6 +153,14 @@ public class ExecutableNode {
 
   public void setStartTime(final long startTime) {
     this.startTime = startTime;
+  }
+
+  public void setClusterInfo(ClusterInfo clusterInfo) {
+    this.clusterInfo = clusterInfo;
+  }
+
+  public ClusterInfo getClusterInfo() {
+    return this.clusterInfo;
   }
 
   public long getEndTime() {
@@ -266,6 +276,7 @@ public class ExecutableNode {
     this.setUpdateTime(System.currentTimeMillis());
     this.setStatus(Status.READY);
     this.setKilledBySLA(false);
+    this.setClusterInfo(null);
   }
 
   public List<Object> getAttemptObjects() {
@@ -305,6 +316,9 @@ public class ExecutableNode {
     objMap.put(UPDATETIME_PARAM, this.updateTime);
     objMap.put(TYPE_PARAM, this.type);
     objMap.put(CONDITION_PARAM, this.condition);
+    if (this.clusterInfo != null) {
+      objMap.put(CLUSTER_PARAM, ClusterInfo.toObject(clusterInfo));
+    }
     if (this.conditionOnJobStatus != null) {
       objMap.put(CONDITION_ON_JOB_STATUS_PARAM, this.conditionOnJobStatus.toString());
     }
@@ -361,6 +375,11 @@ public class ExecutableNode {
 
     this.propsSource = wrappedMap.getString(PROPS_SOURCE_PARAM);
     this.jobSource = wrappedMap.getString(JOB_SOURCE_PARAM);
+
+    Object clusterObj = wrappedMap.getObject(CLUSTER_PARAM);
+    if (clusterObj != null) {
+      this.clusterInfo = ClusterInfo.fromObject(clusterObj);
+    }
 
     final Map<String, String> outputProps =
         wrappedMap.<String, String>getMap(OUTPUT_PROPS_PARAM);

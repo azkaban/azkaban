@@ -356,6 +356,7 @@ public class JobTypeManager {
         if (targetCluster != null && !Cluster.UNKNOWN.equals(targetCluster)) {
           List<URL> clusterUrls = targetCluster.getClusterComponentURLs(components);
           jobClassLoaderUrls.addAll(clusterUrls);
+          jobProps.put(CommonJobProperties.TARGET_CLUSTER_ID, targetCluster.clusterId);
         }
       }
       // construct a classloader with both jobtype and cluster libraries

@@ -179,4 +179,5 @@ public class CommonJobProperties {
   public static final String JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES_EXCLUDED = "jobtype.dependency.components.excluded";
   public static final String TARGET_CLUSTER_CLASSPATH = "azkaban.job.cluster.classpaths";
   public static final String TARGET_CLUSTER_NATIVE_LIB = "azkaban.job.cluster.nativelib";
+  public static final String TARGET_CLUSTER_ID = "azkaban.job.cluster.id";
 }
