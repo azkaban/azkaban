@@ -21,15 +21,12 @@ import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
 import azkaban.test.executions.ThinArchiveTestUtils;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,6 +53,7 @@ public class DependencyTransferManagerTest {
 
   private Set<DependencyFile> depSetAB;
   private Set<DependencyFile> depSetA;
+  private static final String WRONG_CONTENT = "WRONG CONTENT!";
 
   @Before
   public void setup() throws Exception {
@@ -113,7 +111,7 @@ public class DependencyTransferManagerTest {
     // When storage.getDependency() is called, return the input stream as if it was downloaded
     // On the first call, return the wrong content to trigger a hash mismatch
     // On the second call, return the correct content
-    doReturn(IOUtils.toInputStream("WRONG CONTENT!!!!!!!"))
+    doReturn(IOUtils.toInputStream(WRONG_CONTENT))
       .doReturn(IOUtils.toInputStream(ThinArchiveTestUtils.getDepAContent())).when(this.storage).getDependency(any());
 
     // Download ONLY depA
@@ -122,54 +120,16 @@ public class DependencyTransferManagerTest {
     verify(this.storage, times(2)).getDependency(depEq(depA));
   }
 
-  @Test
-  // Ensure that if one download fails, we don't wait for the other to complete, but instead we return immediately
-  public void testDownloadDependencyFastFailRetryExceeded() throws Exception {
-    AtomicBoolean stillDownloadingDepB = new AtomicBoolean(false);
-
+  @Test(expected = DependencyTransferException.class)
+  // Ensure that even if one download fails, we get exception
+  public void testDownloadDependencyExceptionForAnyFailure() throws Exception {
     // When getDependency is called, write the content to the file as if it was downloaded
     doAnswer((Answer<InputStream>) invocation -> {
       DependencyFile depFile = (DependencyFile) invocation.getArguments()[0];
-      String content;
-      if (depFile.equals(depA)) {
-        // Write the wrong content for depA, triggering a HashNotMatchException
-        content = "WRONG CONTENT!!!!!";
-      } else {
-        // Take some time
-        stillDownloadingDepB.set(true);
-        try {
-          Thread.sleep(10 * 1000);
-        } catch (InterruptedException e) {
-          stillDownloadingDepB.set(false);
-          throw e;
-        }
-        content = ThinArchiveTestUtils.getDepBContent();
-      }
-
+      String content = depFile.equals(depA) ? WRONG_CONTENT : ThinArchiveTestUtils.getDepBContent();
       return IOUtils.toInputStream(content);
     }).when(this.storage).getDependency(any());
 
-    boolean hitException = false;
-    try {
-      // Download both depA and depB
-      this.dependencyTransferManager.downloadAllDependencies(depSetAB);
-    } catch (DependencyTransferException e) {
-      // Good! We wanted this exception.
-      hitException = true;
-    }
-
-    if (!hitException) {
-      Assert.fail("Expected DependencyTransferException but didn't get any.");
-    }
-
-    // Assert that the other thread was interrupted and not allowed to continue
-    // we wait for a little while to make sure the other thread has time to exit
-    Thread.sleep(500);
-    assertFalse(stillDownloadingDepB.get());
-
-    // depA should be attempted to be downloaded the maximum number of times
-    verify(this.storage, times(DEPENDENCY_DOWNLOAD_MAX_TRIES)).getDependency(depEq(depA));
-    // depB may or may not have been attempted to be downloaded depending on if the thread pool
-    // was shutdown before or after it reached its call to storage.getDependency
+    this.dependencyTransferManager.downloadAllDependencies(depSetAB);
   }
 }
