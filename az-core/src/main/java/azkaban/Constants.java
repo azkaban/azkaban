@@ -233,7 +233,8 @@ public class Constants {
 
     // Maximum number of tries to download a dependency (no more retry attempts will be made after this many download failures)
     public static final String AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES = "azkaban.dependency.max.download.tries";
-
+    public static final String AZKABAN_DEPENDENCY_DOWNLOAD_THREADPOOL_SIZE =
+        "azkaban.dependency.download.threadpool.size";
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
     public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
     public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";

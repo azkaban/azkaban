@@ -31,7 +31,9 @@ import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_DOWNLOAD_THREADPOOL_SIZE;
 import static azkaban.utils.ThinArchiveUtils.*;
 
 /**
@@ -41,16 +43,22 @@ import static azkaban.utils.ThinArchiveUtils.*;
  */
 @Singleton
 public class DependencyTransferManager {
-  private static final int NUM_THREADS = 8;
+  private static final int DEFAULT_NUM_THREADS = 32;
 
   public final int dependencyMaxDownloadTries;
 
   private final Storage storage;
 
+  private final ExecutorService threadPool;
+
+  private static final Logger logger = Logger.getLogger(DependencyTransferManager.class);
+
   @Inject
   public DependencyTransferManager(final Props props, final Storage storage) {
     this.storage = storage;
-
+    this.threadPool = Executors.newFixedThreadPool(
+        props.getInt(AZKABAN_DEPENDENCY_DOWNLOAD_THREADPOOL_SIZE, DEFAULT_NUM_THREADS),
+        new ThreadFactoryBuilder().setNameFormat("azk-dependency-pool-%d").build());
     this.dependencyMaxDownloadTries =
         props.getInt(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, 2);
   }
@@ -82,8 +90,6 @@ public class DependencyTransferManager {
 
     ensureIsEnabled();
 
-    ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS,
-        new ThreadFactoryBuilder().setNameFormat("azk-dependency-pool-%d").build());
     CompletableFuture[] taskFutures = deps
         .stream()
         .map(f -> CompletableFuture.runAsync(() -> downloadDependency(f), threadPool))
@@ -93,11 +99,11 @@ public class DependencyTransferManager {
       waitForAllToSucceedOrOneToFail(taskFutures);
     } catch (InterruptedException e) {
       // No point in continuing, let's stop any future downloads and try to interrupt currently running ones.
-      threadPool.shutdownNow();
+      cancelPendingTasks(taskFutures);
       throw new DependencyTransferException("Download interrupted.", e);
     } catch (ExecutionException e) {
       // ^^^ see above comment ^^^
-      threadPool.shutdownNow();
+      cancelPendingTasks(taskFutures);
       if (e.getCause() instanceof DependencyTransferException) {
         throw (DependencyTransferException) e.getCause();
       }
@@ -112,6 +118,14 @@ public class DependencyTransferManager {
       throw new DependencyTransferException("Error while downloading dependency " + f.getFileName(), e);
     } catch (HashNotMatchException e) {
       throw new DependencyTransferException("Checksum did not match when downloading dependency " + f.getFileName(), e);
+    }
+  }
+
+  /* Cancel all the not-started tasks which are possibly waiting in the queue */
+  private static void cancelPendingTasks(CompletableFuture[] taskFutures) {
+    logger.error("cancelling the pending tasks because one of the downloads failed");
+    for (CompletableFuture future : taskFutures) {
+      future.cancel(false);
     }
   }
 
@@ -168,6 +182,7 @@ public class DependencyTransferManager {
       // f = f is redundant, but bug checker throws error if we don't do it because it doesn't like us ignoring a
       // returned future...but we're still going to ignore it.
       f = f.exceptionally(ex -> {
+        logger.error("Download failed with an exception: " + ex);
         failure.completeExceptionally(ex);
         return null;
       });
