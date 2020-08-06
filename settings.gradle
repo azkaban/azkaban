@@ -36,4 +36,5 @@ include 'az-flow-trigger-dependency-type:kafka-event-trigger'
 include 'tools'
 include 'az-crypto'
 include 'cached-http-filesystem'
+include 'az-alter-sender'
 

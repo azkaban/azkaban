@@ -1,0 +1,37 @@
+apply plugin: 'distribution'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compileOnly project(':az-core')
+    compileOnly project(":azkaban-common")
+    compileOnly project(":azkaban-web-server")
+    compile group: 'redis.clients', name: 'jedis', version: '3.3.0'
+}
+
+repositories {
+    mavenLocal()
+    maven {url 'http://maven.aliyun.com/nexus/content/groups/public/'}
+    maven {url 'http://maven.aliyun.com/nexus/content/repositories/jcenter'}
+    mavenCentral()
+    maven {
+        url 'https://plugins.gradle.org/m2/'
+    }
+}
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+distributions {
+    main {
+        contents {
+            from(jar) {
+                into 'lib'
+            }
+            from(configurations.runtime) {
+                into 'lib'
+            }
+        }
+    }
+}
