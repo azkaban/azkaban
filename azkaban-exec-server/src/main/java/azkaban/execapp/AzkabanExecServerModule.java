@@ -20,7 +20,6 @@ package azkaban.execapp;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
 
-import azkaban.cluster.ClusterModule;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.spi.AzkabanEventReporter;
@@ -43,7 +42,6 @@ public class AzkabanExecServerModule extends AbstractModule {
   @Override
   protected void configure() {
     install(new ExecJettyServerModule());
-    install(new ClusterModule());
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
   }
 

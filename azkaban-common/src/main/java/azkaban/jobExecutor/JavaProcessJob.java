@@ -15,7 +15,6 @@
  */
 package azkaban.jobExecutor;
 
-import azkaban.flow.CommonJobProperties;
 import azkaban.server.AzkabanServer;
 import azkaban.utils.MemConfValue;
 import azkaban.utils.Pair;
@@ -44,8 +43,6 @@ public class JavaProcessJob extends ProcessJob {
 
   public static final String DEFAULT_INITIAL_MEMORY_SIZE = "64M";
   public static final String DEFAULT_MAX_MEMORY_SIZE = "256M";
-  public static final String LIBRARY_PATH_PREFIX = "library.path.";
-  public static final String NATIVE_LIBRARY_PATH_PREFIX = "native.library.path.";
 
   public static String JAVA_COMMAND = "java";
 
@@ -84,21 +81,12 @@ public class JavaProcessJob extends ProcessJob {
 
   protected String getClassPathParam() {
     final List<String> classPath = getClassPaths();
-
-    final List<String> clusterComponentClassPaths = getClusterComponentClassPath();
-    getLog().info("Adding classpath of cluster components: " +
-        String.join(":", clusterComponentClassPaths));
-    classPath.addAll(clusterComponentClassPaths);
     if (classPath == null || classPath.size() == 0) {
       throw new IllegalArgumentException(
           "No classpath defined and no .jar files found in job directory. Can't run java command.");
     }
 
     return "-cp " + createArguments(classPath, ":") + " ";
-  }
-
-  private List<String> getClusterComponentClassPath() {
-    return this.jobProps.getStringList(CommonJobProperties.TARGET_CLUSTER_CLASSPATH, ":");
   }
 
   protected List<String> getClassPaths() {
@@ -177,18 +165,11 @@ public class JavaProcessJob extends ProcessJob {
   protected String getJVMArguments() {
     final String globalJVMArgs = getJobProps().getString(GLOBAL_JVM_PARAMS, null);
 
-    final String nativeLibPath = getNativeLibraryAsJVMArguments();
-
     if (globalJVMArgs == null) {
-      return String.format("%s %s", nativeLibPath, getJobProps().getString(JVM_PARAMS, ""));
+      return getJobProps().getString(JVM_PARAMS, "");
     }
 
-    return String.format("%s %s %s", globalJVMArgs, nativeLibPath, getJobProps().getString(JVM_PARAMS, ""));
-  }
-
-  private String getNativeLibraryAsJVMArguments() {
-    return String.format("-Djava.library.path=%s",
-        this.jobProps.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
+    return globalJVMArgs + " " + getJobProps().getString(JVM_PARAMS, "");
   }
 
   protected String createArguments(final List<String> arguments, final String separator) {

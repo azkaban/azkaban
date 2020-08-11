@@ -20,8 +20,6 @@ import static java.util.Objects.requireNonNull;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.ServiceProvider;
-import azkaban.cluster.ClusterRegistry;
-import azkaban.cluster.ClusterRouter;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
@@ -160,7 +158,6 @@ public class FlowRunnerManager implements EventListener<Event>,
   private final int jobLogNumFiles;
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private final boolean validateProxyUser;
-  private final ClusterRouter clusterRouter;
   private PollingService pollingService;
   private int threadPoolQueueSize = -1;
   private Props globalProps;
@@ -182,7 +179,6 @@ public class FlowRunnerManager implements EventListener<Event>,
       final ExecMetrics execMetrics,
       final DependencyTransferManager dependencyTransferManager,
       final Storage storage,
-      final ClusterRouter clusterRouter,
       @Nullable final AzkabanEventReporter azkabanEventReporter) throws IOException {
     this.azkabanProps = props;
 
@@ -211,7 +207,6 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.execMetrics = execMetrics;
     this.dependencyTransferManager = dependencyTransferManager;
     this.storage = storage;
-    this.clusterRouter = clusterRouter;
 
     this.flowRampManager = flowRampManager;
 
@@ -231,7 +226,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.jobtypeManager =
         new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             Constants.PluginManager.JOBTYPE_DEFAULTDIR), this.globalProps,
-            getClass().getClassLoader(), this.clusterRouter);
+            getClass().getClassLoader());
 
     ProjectCacheCleaner cleaner = null;
     this.LOGGER.info("Configuring Project Cache");
