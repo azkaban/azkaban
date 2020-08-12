@@ -21,7 +21,7 @@
   #parse ("azkaban/webapp/servlet/velocity/style.vm")
   #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/job-edit.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/job-edit.js?v=1597214414"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
     var currentTime = ${currentTime};
@@ -106,7 +106,7 @@
               #foreach ($parameter in $parameters)
               <tr>
                 <td class="property-key">$parameter.first</td>
-                <td>$parameter.second</td>
+                <td class="property-value">$parameter.second</td>
               </tr>
               #end
             </tbody>

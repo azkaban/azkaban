@@ -86,7 +86,7 @@ azkaban.JobEditView = Backbone.View.extend({
       mythis.overrideParams = overrideParams;
       mythis.generalParams = generalParams;
 
-      if (overrideParams && $(".editRow").length == 0)  {
+      if (overrideParams && $(".editRow").length == 0) {
         for (var okey in overrideParams) {
           if (okey != 'type' && okey != 'dependencies') {
             var row = handleAddRow();
@@ -142,8 +142,7 @@ azkaban.JobEditView = Backbone.View.extend({
     var jobOverrideSuccessHandler = function (data) {
       if (data.error) {
         alert(data.error);
-      }
-      else {
+      } else {
         window.location = redirectURL;
       }
     };
@@ -260,4 +259,44 @@ $(function () {
   jobEditView = new azkaban.JobEditView({
     el: $('#job-edit-pane')
   });
+
+  formatJobPropertyValues();
+
 });
+
+
+// Improve readability of long job property values
+function formatJobPropertyValues() {
+  var patternsToFormat = new Map();
+
+  // Format values like:
+  // 1) --param1 value1 --param2 --param3 value3
+  // 2) -param1 value -param2 -param3
+  var programArgument = '-[^\\s]+(\\s[^-][^\\s]*)?';
+  var programArgumentRegex =
+      new RegExp('^' + programArgument + '(\\s' + programArgument + ')*$');
+  patternsToFormat.set(programArgumentRegex, function(str) {
+    return str.replace(/\s-/g, "</br>-");
+  });
+
+  // Format values like: something,something,something
+  patternsToFormat.set(/^[^,\s]+(,[^,\s]+)+$/, function(str) {
+    return str.replace(/,/g, ",</br>");
+  });
+
+  // Format values like: something:something:something
+  patternsToFormat.set(/^[^,\s;]+(:[^,\s;]+){5,}$/, function(str) {
+    return str.replace(/:/g, ":</br>");
+  });
+
+  $("table.properties-table td.property-value").each(function() {
+    var propValue = $(this).text().trim();
+
+    for (let [pattern, formatFunction] of patternsToFormat.entries()) {
+      if(pattern.test(propValue)) {
+        $(this).html(formatFunction(propValue));
+        break;
+      }
+    }
+  });
+};
