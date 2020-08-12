@@ -286,7 +286,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     } catch (final Throwable t) {
       if (this.logger != null) {
         this.logger
-            .error("An error has occurred during the running of the flow. Quiting.", t);
+            .error("An error has occurred during the running of the flow. Quitting.", t);
       }
       if (Status.KILLING.equals(this.flow.getStatus())) {
         this.execMetrics.decrementFlowKillingCount();
