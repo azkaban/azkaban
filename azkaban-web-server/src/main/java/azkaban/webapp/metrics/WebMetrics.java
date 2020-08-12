@@ -16,7 +16,6 @@
 
 package azkaban.webapp.metrics;
 
-import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.utils.Props;
 
 /**
@@ -28,11 +27,11 @@ public interface WebMetrics {
 
   void startReporting(final Props props);
 
-  AzkabanAPIMetrics setUpAzkabanAPIMetrics(final String endpointUri);
-
   void markWebGetCall();
 
   void markWebPostCall();
+
+  void setFetchLogLatency(final long milliseconds);
 
 
   /**

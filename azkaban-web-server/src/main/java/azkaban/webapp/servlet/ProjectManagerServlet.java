@@ -40,7 +40,6 @@ import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
-import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -113,21 +112,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String API_CHECK_FOR_WRITE_PERMISSION = "checkForWritePermission";
   private static final String API_SET_FLOW_LOCK = "setFlowLock";
   private static final String API_IS_FLOW_LOCKED = "isFlowLocked";
-  public static final String API_UPLOAD = "upload";
+  private static final String API_UPLOAD = "upload";
 
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
   static final String FLOW_NAME_PARAM = "flowName";
   static final String FLOW_ID_PARAM = "flowId";
   static final String ERROR_PARAM = "error";
   static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
-
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
-  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
-      "project.download.buffer.size";
-
   private static final long serialVersionUID = 1;
   private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
   private static final NodeLevelComparator NODE_LEVEL_COMPARATOR = new NodeLevelComparator();
+
+  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
+      "project.download.buffer.size";
   private static final Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
     @Override
     public int compare(final Flow f1, final Flow f2) {
@@ -143,10 +141,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
-
-  public ProjectManagerServlet() {
-    super(createAPIEndpoints());
-  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -172,44 +166,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.downloadBufferSize =
-        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES, 8192);
+        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
+            8192);
+
     logger.info("downloadBufferSize: " + this.downloadBufferSize);
-  }
-
-  private static List<AzkabanAPI> createAPIEndpoints() {
-    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
-    apiEndpoints.add(new AzkabanAPI("ajax", API_GET_PROJECT_ID));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_PROJECT_LOGS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_FLOW_JOBS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_FLOW_DETAILS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_FLOW_GRAPH));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_FLOW_NODE_DATA));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_PROJECT_FLOWS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_CHANGE_DESCRIPTION));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_GET_PERMISSIONS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_GET_GROUP_PERMISSIONS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_GET_PROXY_USERS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_CHANGE_PERMISSION));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_PERMISSION));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_PROXY_USER));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_REMOVE_PROXY_USER));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_FLOW_EXECUTIONS));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_LAST_SUCCESSFUL_FLOW_EXECUTION));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_JOB_INFO));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_SET_JOB_OVERRIDE_PROPERTY));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_CHECK_FOR_WRITE_PERMISSION));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_SET_FLOW_LOCK));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_IS_FLOW_LOCKED));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_UPLOAD));
-
-    apiEndpoints.add(new AzkabanAPI("action", API_UPLOAD));
-    apiEndpoints.add(new AzkabanAPI("action", "create"));
-
-    apiEndpoints.add(new AzkabanAPI("download", ""));
-    apiEndpoints.add(new AzkabanAPI("delete", ""));
-    apiEndpoints.add(new AzkabanAPI("purge", ""));
-    apiEndpoints.add(new AzkabanAPI("reloadProjectWhitelist", ""));
-    return apiEndpoints;
   }
 
   @Override
@@ -242,7 +202,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     } else if (hasParam(req, "reloadProjectWhitelist")) {
       handleReloadProjectWhitelist(req, resp, session);
-      return;
     }
 
     final Page page =
@@ -1687,8 +1646,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           final Props props = this.projectManager.getProps();
           final String flowLockErrorMessage = flow.getFlowLockErrorMessage();
           final String lockedFlowMsg = flowLockErrorMessage != null ? flowLockErrorMessage :
-              String.format(props.getString(ConfigurationKeys.AZKABAN_LOCKED_FLOW_ERROR_MESSAGE,
-                  Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE), flow.getId(), projectName);
+              String.format(props.getString(ConfigurationKeys
+                      .AZKABAN_LOCKED_FLOW_ERROR_MESSAGE, Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE),
+                  flow.getId(), projectName);
           page.add("error_message", lockedFlowMsg);
         }
       }
@@ -1830,9 +1790,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (project == null) {
       return;
     }
+
     final FileItem item = (FileItem) multipart.get("file");
     final String name = item.getName();
     final String lowercaseExtension = FilenameUtils.getExtension(name).toLowerCase();
+
     final Boolean hasZipExtension = lowercaseExtension.equals("zip");
     final String contentType = item.getContentType();
     if (contentType == null || !hasZipExtension ||
@@ -1858,6 +1820,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } else {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
     }
+
     ret.put("projectId", String.valueOf(project.getId()));
 
     final File tempDir = Utils.createTempDir();
@@ -1868,6 +1831,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       out = new BufferedOutputStream(new FileOutputStream(archiveFile));
       IOUtils.copy(item.getInputStream(), out);
       out.close();
+
       if (this.enableQuartz) {
         //todo chengren311: should maintain atomicity,
         // e.g, if uploadProject fails, associated schedule shouldn't be added.
@@ -1879,6 +1843,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       final Map<String, ValidationReport> reports = this.projectManager
           .uploadProject(project, archiveFile, lowercaseExtension, user, props, uploaderIPAddr);
+
       if (this.enableQuartz) {
         this.scheduler.schedule(project, user.getUserId());
       }
@@ -1912,6 +1877,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         FileUtils.deleteDirectory(tempDir);
       }
     }
+
     logger.info("Upload: project " + projectName + " version is " + project.getVersion()
         + ", reference is " + System.identityHashCode(project));
     ret.put("version", String.valueOf(project.getVersion()));
@@ -2050,6 +2016,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, String> ret = new HashMap<>();
     final String projectName = (String) multipart.get("project");
     ajaxHandleUpload(req, resp, ret, multipart, session);
+
     if (ret.containsKey(ERROR_PARAM)) {
       setErrorMessageInCookie(resp, ret.get(ERROR_PARAM));
     }

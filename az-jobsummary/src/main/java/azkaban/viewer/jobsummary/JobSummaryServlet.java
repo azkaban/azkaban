@@ -31,7 +31,6 @@ import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -54,7 +53,6 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
 
   public JobSummaryServlet(final Props props) {
-    super(new ArrayList<>());
     this.props = props;
     this.viewerName = props.getString("viewer.name");
     this.viewerPath = props.getString("viewer.path");
