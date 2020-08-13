@@ -113,6 +113,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String TOKEN_FILE_PERMISSIONS = "460";
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
+  private static final String FS_LOCAL_IMPL_DISABLE_CACHE =
+      "fs.file.impl.disable.cache";
   // Some hadoop clusters have failover name nodes.
   private static final String FS_FAILOVER_IMPL_DISABLE_CACHE =
           "fs.failover.impl.disable.cache";
@@ -196,6 +198,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private void disableFSCache() {
     this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE, true);
     this.conf.setBoolean(FS_FAILOVER_IMPL_DISABLE_CACHE, true);
+    this.conf.setBoolean(FS_LOCAL_IMPL_DISABLE_CACHE, true);
     // Get the default scheme
     final String defaultFS = conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY);
     if (defaultFS == null) {
@@ -353,7 +356,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     try {
       cred =
           Credentials.readTokenStorageFile(new Path(tokenFile.toURI()),
-              new Configuration());
+              this.conf);
       for (final Token<? extends TokenIdentifier> t : cred.getAllTokens()) {
         logger.info("Got token.");
         logger.info("Token kind: " + t.getKind());
