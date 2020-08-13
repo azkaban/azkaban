@@ -154,15 +154,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   private volatile boolean flowKilled = false;
   private volatile boolean flowIsRamping = false;
 
-  public long getFlowKillTime() { return flowKillTime; }
+  public long getFlowKillTime() { return this.flowKillTime; }
 
   private volatile long flowKillTime = -1;
 
   private volatile long flowKillDuration = 0;
 
-  public long getFlowKillDuration() { return flowKillDuration; }
+  public long getFlowKillDuration() { return this.flowKillDuration; }
 
-  public long getFlowPauseTime() { return flowPauseTime; }
+  public long getFlowPauseTime() { return this.flowPauseTime; }
 
   public void setFlowCreateTime(long flowCreateTime) { this.flowCreateTime = flowCreateTime; }
 
@@ -170,9 +170,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private volatile long flowPauseDuration = 0;
 
-  public long getFlowPauseDuration() { return flowPauseDuration; }
+  public long getFlowPauseDuration() { return this.flowPauseDuration; }
 
-  public long getFlowCreateTime() { return flowCreateTime; }
+  public long getFlowCreateTime() { return this.flowCreateTime; }
 
   private volatile long flowCreateTime = -1;
 

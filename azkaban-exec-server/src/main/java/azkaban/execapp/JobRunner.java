@@ -982,19 +982,19 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.logger;
   }
 
-  public long getTimeInQueue() { return timeInQueue; }
+  public long getTimeInQueue() { return this.timeInQueue; }
 
   public void setTimeInQueue(long timeInQueue) { this.timeInQueue = timeInQueue; }
 
-  public long getJobKillTime() { return jobKillTime; }
+  public long getJobKillTime() { return this.jobKillTime; }
 
   public void setJobKillTime(long jobKillTime) { this.jobKillTime = jobKillTime; }
 
-  public long getQueueDuration() { return queueDuration; }
+  public long getQueueDuration() { return this.queueDuration; }
 
   public void setQueueDuration(long queueDuration) { this.queueDuration = queueDuration; }
 
-  public long getKillDuration() { return killDuration; }
+  public long getKillDuration() { return this.killDuration; }
 
   public void setKillDuration(long killDuration) { this.killDuration = killDuration; }
 }
