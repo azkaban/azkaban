@@ -157,6 +157,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertTrue(this.runner.isKilled());
     // Check flow kill duration
     Assert.assertTrue(this.runner.getFlowKillDuration() > 0);
+    Assert.assertTrue(this.runner.getFlowKillTime() != -1);
 
     waitForAndAssertFlowStatus(Status.KILLED);
 
@@ -366,6 +367,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     // Check flow pause duration and uerId killed the flow
     Assert.assertTrue(this.runner.getFlowPauseDuration() >= 0);
+    Assert.assertTrue(this.runner.getFlowPauseTime() != -1);
     Assert.assertEquals("dementor", this.runner.getExecutableFlow().getModifiedBy());
   }
 
