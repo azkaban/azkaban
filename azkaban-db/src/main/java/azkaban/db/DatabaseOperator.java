@@ -120,21 +120,20 @@ public class DatabaseOperator {
   public int update(final String updateClause, final Object... params) throws SQLException {
     int retryCount = 0;
     SQLException exception;
-    String errorMsg =
-        "Update failed: Reached maximum number of retries: " + AzDBUtil.MAX_RETRIES_ON_DEADLOCK;
+    String errorMsg = "Update failed: Reached maximum number of retries: " + AzDBUtil.MAX_RETRIES_ON_DEADLOCK;
     do {
       try {
         return this.queryRunner.update(updateClause, params);
       } catch (final SQLException ex) {
         exception = ex;
-        if (this.queryRunner.getDataSource() instanceof MySQLDataSource &&
+        if (queryRunner.getDataSource() instanceof MySQLDataSource &&
             ex.getErrorCode() == MySQLDataSource.MYSQL_ER_LOCK_DEADLOCK) {
           retryCount++;
           logger.warn("Deadlock detected when trying to execute: " + updateClause + " with values: "
               + Arrays.toString(params));
           try {
             Thread.sleep(AzDBUtil.RETRY_WAIT_TIME);
-          } catch (final InterruptedException e) {
+          } catch (InterruptedException e) {
             logger.info("Sleep during DB operation retry interrupted.");
           }
         } else {
@@ -153,10 +152,10 @@ public class DatabaseOperator {
 
   /**
    * Execute a batch operation
-   *
    * @param sqlCommand sqlCommand template
    * @param params parameters
    * @return result
+   * @throws SQLException
    */
   public int[] batch(final String sqlCommand, final Object[]... params) throws SQLException {
     try {

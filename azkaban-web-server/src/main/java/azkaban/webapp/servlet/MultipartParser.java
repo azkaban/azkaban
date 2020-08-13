@@ -54,7 +54,6 @@ public class MultipartParser {
         params.put(item.getFieldName(), item);
       }
     }
-
     return params;
   }
 
