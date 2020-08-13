@@ -25,7 +25,6 @@ import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
-import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.SlaRequestUtils;
 import azkaban.server.session.Session;
@@ -81,9 +80,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private ScheduleManager scheduleManager;
   private UserManager userManager;
 
-  public ScheduleServlet() {
-    super(createAPIEndpoints());
-  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -92,22 +88,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.scheduleManager = server.getScheduleManager();
-  }
-
-  private static List<AzkabanAPI> createAPIEndpoints() {
-    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
-    apiEndpoints.add(new AzkabanAPI("ajax", API_SLA_INFO));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_SET_SLA));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_SCHEDULES));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_SCHEDULE));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_LOAD_FLOW));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_SCHEDULE_FLOW));
-    apiEndpoints.add(new AzkabanAPI("ajax", API_SCHEDULE_CRON_FLOW));
-
-    apiEndpoints.add(new AzkabanAPI("action", API_SCHEDULE_FLOW));
-    apiEndpoints.add(new AzkabanAPI("action", API_SCHEDULE_CRON_FLOW));
-    apiEndpoints.add(new AzkabanAPI("action", API_REMOVE_SCHED));
-    return apiEndpoints;
   }
 
   @Override
@@ -121,7 +101,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException,
+      IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
@@ -337,7 +318,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleGetAllSchedules(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException,
+      IOException {
 
     final Page page =
         newPage(req, resp, session,

@@ -102,7 +102,6 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
   private HadoopSecurityManager hadoopSecurityManager;
 
   public ReportalServlet(final Props props) {
-    super(new ArrayList<>());
     this.props = props;
 
     this.viewerName = props.getString("viewer.name");
