@@ -361,10 +361,11 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     FlowRunnerTestUtil.startThread(this.runner);
     this.runner.pause("dementor");
+    waitForAndAssertFlowStatus(Status.PAUSED);
     this.runner.resume("dementor");
 
     // Check flow pause duration and uerId killed the flow
-    Assert.assertTrue(this.runner.getFlowPauseDuration() > 0);
+    Assert.assertTrue(this.runner.getFlowPauseDuration() >= 0);
     Assert.assertEquals("dementor", this.runner.getExecutableFlow().getModifiedBy());
   }
 

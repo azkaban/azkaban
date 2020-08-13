@@ -293,7 +293,7 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
     // Check job kill time, user killed the job, and failure message
     Assert.assertEquals("dementor1", runner.getNode().getModifiedBy());
-    Assert.assertTrue(runner.getKillDuration() > 0);
+    Assert.assertTrue(runner.getKillDuration() >= 0);
 
     // Log file and output files should not exist.
     final File logFile = new File(runner.getLogFilePath());
