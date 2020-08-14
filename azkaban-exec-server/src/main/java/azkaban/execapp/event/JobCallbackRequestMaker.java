@@ -130,12 +130,12 @@ public class JobCallbackRequestMaker {
   public void makeHttpRequest(final String jobId, final Logger logger,
       final List<HttpRequestBase> httpRequestList) {
     if (httpRequestList == null || httpRequestList.isEmpty()) {
-      logger.info("No HTTP requests to make");
+      logger.info("No HTTP requests to make for: " + jobId);
       return;
     }
 
     for (final HttpRequestBase httpRequest : httpRequestList) {
-      logger.debug("Job callback http request: " + httpRequest.toString());
+      logger.debug("Job callback http request for " + jobId + ": " + httpRequest.toString());
       logger.debug("headers [");
       for (final Header header : httpRequest.getAllHeaders()) {
         logger.debug(String.format("  %s : %s", header.getName(),
@@ -152,11 +152,11 @@ public class JobCallbackRequestMaker {
         final Integer statusCode =
             task.get(this.responseWaitTimeoutMS, TimeUnit.MILLISECONDS);
 
-        logger.info("http callback status code: " + statusCode);
+        logger.info("http callback status code for " + jobId + ": " + statusCode);
       } catch (final TimeoutException timeOutEx) {
         logger
             .warn("Job callback target took longer "
-                    + (this.responseWaitTimeoutMS / 1000) + " seconds to respond",
+                    + (this.responseWaitTimeoutMS / 1000) + " seconds to respond for: " + jobId,
                 timeOutEx);
       } catch (final ExecutionException ee) {
         if (ee.getCause() instanceof SocketTimeoutException) {
@@ -164,13 +164,13 @@ public class JobCallbackRequestMaker {
               + (this.responseWaitTimeoutMS / 1000) + " seconds to respond", ee);
         } else {
           logger.warn(
-              "Encountered error while waiting for job callback to complete",
+              "Failed to execute job callback for: " + jobId,
               ee);
         }
       } catch (final Throwable e) {
         logger.warn(
-            "Encountered error while waiting for job callback to complete for: " + jobId,
-            e.getMessage());
+            "Failed to execute job callback for: " + jobId,
+            e);
       }
     }
   }

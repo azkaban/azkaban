@@ -158,6 +158,7 @@ public class JobCallbackUtil {
                 + contextInfo.get(CONTEXT_JOB_TOKEN));
           } else {
             // put together an URL
+            privateLogger.info("callbackUrlWithTokenReplaced: " + callbackUrlWithTokenReplaced);
             final HttpPost httpPost = new HttpPost(callbackUrlWithTokenReplaced);
             final String postActualBody =
                 replaceTokens(httpBodyValue, contextInfo, false);
