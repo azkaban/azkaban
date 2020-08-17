@@ -15,8 +15,9 @@
  */
 package azkaban.jobtype;
 
-import azkaban.jobExecutor.Job;
 import azkaban.utils.Props;
+
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,11 +31,13 @@ import java.util.Map;
  * the JobTypeManager
  */
 public class JobTypePluginSet {
-
-  private final Map<String, Class<? extends Job>> jobToClass;
+  private static final URL[] EMPTY_URLS = new URL[0];
   private final Map<String, Props> pluginJobPropsMap;
   private final Map<String, Props> pluginLoadPropsMap;
   private final Map<String, Props> pluginPrivatePropsMap;
+  private final Map<String, JobPropsProcessor> pluginJobPropsProcessor;
+  private final Map<String, String> jobToClassName;
+  private final Map<String, URL[]> jobToClassLoaderURLs;
 
   private Props commonJobProps;
   private Props commonLoadProps;
@@ -43,22 +46,26 @@ public class JobTypePluginSet {
    * Base constructor
    */
   public JobTypePluginSet() {
-    this.jobToClass = new HashMap<>();
     this.pluginJobPropsMap = new HashMap<>();
     this.pluginLoadPropsMap = new HashMap<>();
     this.pluginPrivatePropsMap = new HashMap<>();
+    this.pluginJobPropsProcessor = new HashMap<>();
+    this.jobToClassName = new HashMap<>();
+    this.jobToClassLoaderURLs = new HashMap<>();
   }
 
   /**
    * Copy constructor
    */
   public JobTypePluginSet(final JobTypePluginSet clone) {
-    this.jobToClass = new HashMap<>(clone.jobToClass);
     this.pluginJobPropsMap = new HashMap<>(clone.pluginJobPropsMap);
     this.pluginLoadPropsMap = new HashMap<>(clone.pluginLoadPropsMap);
     this.pluginPrivatePropsMap = new HashMap<>(clone.pluginPrivatePropsMap);
     this.commonJobProps = clone.commonJobProps;
     this.commonLoadProps = clone.commonLoadProps;
+    this.pluginJobPropsProcessor = clone.pluginJobPropsProcessor;
+    this.jobToClassName = clone.jobToClassName;
+    this.jobToClassLoaderURLs = clone.jobToClassLoaderURLs;
   }
 
   /**
@@ -109,19 +116,22 @@ public class JobTypePluginSet {
     return this.pluginJobPropsMap.get(jobTypeName);
   }
 
-  /**
-   * Gets the plugin job runner class
-   */
-  public Class<? extends Job> getPluginClass(final String jobTypeName) {
-    return this.jobToClass.get(jobTypeName);
+  public void addPluginClassName(final String jobTypeName, final String jobTypeClassName) {
+    this.jobToClassName.put(jobTypeName, jobTypeClassName);
   }
 
   /**
-   * Adds plugin jobtype class
+   * Gets the plugin job class name
    */
-  public void addPluginClass(final String jobTypeName,
-      final Class<? extends Job> jobTypeClass) {
-    this.jobToClass.put(jobTypeName, jobTypeClass);
+  public String getPluginClassName(final String jobTypeName) {
+    return this.jobToClassName.get(jobTypeName);
+  }
+
+  /**
+   * Get the resource URLs that should be added to its associated job ClassLoader.
+   */
+  public URL[] getPluginClassLoaderURLs(final String jobTypeName) {
+    return this.jobToClassLoaderURLs.getOrDefault(jobTypeName, EMPTY_URLS);
   }
 
   /**
@@ -129,6 +139,13 @@ public class JobTypePluginSet {
    */
   public void addPluginJobProps(final String jobTypeName, final Props props) {
     this.pluginJobPropsMap.put(jobTypeName, props);
+  }
+
+  /**
+   * Add resource URLs that should be made available to ClassLoader of all jobs of the given jobtype.
+   */
+  public void addPluginClassLoaderURLs(final String jobTypeName, final URL[] urls) {
+    this.jobToClassLoaderURLs.put(jobTypeName, urls);
   }
 
   /**
@@ -143,5 +160,15 @@ public class JobTypePluginSet {
    */
   public void addPluginPrivateProps(final String jobTypeName, final Props props) {
     this.pluginPrivatePropsMap.put(jobTypeName, props);
+  }
+
+  public JobPropsProcessor getPluginJobPropsProcessor(
+      final String jobTypeName) {
+    return this.pluginJobPropsProcessor.get(jobTypeName);
+  }
+
+  public void addPluginJobPropsProcessor(final String jobTypeName,
+      JobPropsProcessor jobPropsProcessor) {
+    this.pluginJobPropsProcessor.put(jobTypeName, jobPropsProcessor);
   }
 }
