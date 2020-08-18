@@ -20,6 +20,7 @@ dependencies {
     compile(project(':az-core'))
     compile(project(':azkaban-common'))
 
+    compile deps.hadoopCommon
     compile deps.guava
     compile deps.jsr305
     compile deps.kafkaLog4jAppender
@@ -34,7 +35,6 @@ dependencies {
     testCompile deps.h2
     testCompile deps.hadoopAnnotations
     testCompile deps.hadoopAuth
-    testCompile deps.hadoopCommon
     testCompile deps.hadoopHdfs
 }
 
