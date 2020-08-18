@@ -13,7 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package azkaban.webapp.servlet;
+
+import static azkaban.Constants.ConfigurationKeys.OAUTH_PROVIDER_URI_KEY;
+import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
+import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
+import static azkaban.Constants.UTF_8;
 
 import azkaban.project.Project;
 import azkaban.server.session.Session;
@@ -22,6 +28,7 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -56,6 +63,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 
   private static final HashMap<String, String> contextType = new HashMap<>();
+  private static final String[] ERROR_FIELDS = {"error", "error_description", "error_uri"};
 
   static {
     contextType.put(".js", "application/javascript");
@@ -226,12 +234,15 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp)
-      throws ServletException, IOException {
+      throws IOException {
     handleLogin(req, resp, null);
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp,
-      final String errorMsg) {
+      final String errorMsg) throws IOException {
+    if (handleOauth(req, resp)) {
+      return;
+    }
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
     page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
@@ -239,6 +250,81 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
 
     page.render();
+  }
+
+  /**
+   * Return true if login can, should and is being handled via OAuth provider, as configured.
+   */
+  private boolean handleOauth(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    if (hasParam(req, "nooauth")) {  // cheat code to allow XML-based authN while OAuth is in use
+      return false;  // Let the old login happen
+    }
+    final Props props = getApplication().getServerProps();
+    final String oauthProviderUrlPattern = props.getString(OAUTH_PROVIDER_URI_KEY, "");
+    final String oauthRedirectUrl = props.getString(OAUTH_REDIRECT_URI_KEY, "");
+    if (oauthProviderUrlPattern.isEmpty() || oauthRedirectUrl.isEmpty()) {  // no OAuth provider?
+      return false;  // Let the old login happen
+    }
+    // add state & redirect URL params
+    final StringBuffer requestUrl = req.getRequestURL();
+    final String queryString = req.getQueryString();
+    if (queryString != null) {
+      requestUrl.append('?').append(queryString);
+    }
+    final String stateEncoded = java.net.URLEncoder.encode(requestUrl.toString(), UTF_8);
+    final String redirectUriEncoded = java.net.URLEncoder.encode(oauthRedirectUrl, UTF_8);
+    final String oauthProviderUrl = oauthProviderUrlPattern
+        .replace("{state}", stateEncoded)  // OAuth gives it back to us and we redirect there
+        .replace("{redirect_uri}", redirectUriEncoded);  // OAuth calls us back there
+    logger.debug("Redirecting to OAuth provider: " + oauthProviderUrl);
+    resp.sendRedirect(oauthProviderUrl);
+    return true;
+  }
+
+  /**
+   * Handle OAuth callback to .../?action=oauth_callback.
+   * If OAuth flow was successful, request parameters are expected to include authorization code in
+   * <CODE>code</CODE> and, optionally, app-specific info in <CODE>state</CODE>. (That info is
+   * interpreted today as the final navigation target URL where the user intended to arrive. In
+   * the future it may include nonce to protect from XSRF attack.) Authorization code will be
+   * passed to UserManager instance for validation, and, if valid, a session will be created for
+   * the user and session id returned in a cookie. User then will be redirected to their intended
+   * destination URL.
+   * If OAuth flow was unsuccessful, parameters may include fields listed in
+   * <CODE>ERROR_FIELDS</CODE>, and in any case will not include <CODE>code</CODE>. 401
+   * UNAUTHORIZED error will be returned with as much descriptive info as we can gather.
+   */
+  private void handleOauthCallback(HttpServletRequest req, HttpServletResponse resp)
+      throws IOException {
+    // did we get back code, or error & error_description?
+    final StringBuilder errmsg = new StringBuilder();
+    for (final String p : ERROR_FIELDS) {
+      final String v = req.getParameter(p);
+      if (v != null && !v.isEmpty()) {
+        errmsg.append(p).append(": ").append(v).append('\n');
+      }
+    }
+    // no error in callback... but does it have code?
+    if (errmsg.length() == 0 && !hasParam(req, "code")) {
+      errmsg.append("No code returned\n");
+    }
+    if (errmsg.length() != 0) {
+      resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, errmsg.toString());
+      return;
+    }
+    final HashMap<String, Object> retval = new HashMap<>();
+    final String ip = WebUtils.getRealClientIpAddr(req);
+    // rest of the magic: this calls UserManager to validate authZ code and sets session cookie:
+    handleAjaxLoginAction(OAUTH_USERNAME_PLACEHOLDER, req.getParameter("code"), ip, resp, retval);
+    if ("success".equals(retval.get("status"))) {
+      // extract return URL from state param (if any, or use req context) and send real redirect:
+      final String requestUrl = getParam(req, "state", req.getContextPath());
+      logger.debug("Redirecting back to Azkaban: " + requestUrl);
+      resp.sendRedirect(requestUrl);
+    } else {
+      resp.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+          retval.getOrDefault("error", "").toString());  // UM exception or session error
+    }
   }
 
   @Override
@@ -286,11 +372,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
 
       handleMultiformPost(req, resp, params, session);
-    } else if (hasParam(req, "action")
-        && getParam(req, "action").equals("login")) {
+    } else if ("login".equals(req.getParameter("action"))) {
       final HashMap<String, Object> obj = new HashMap<>();
       handleAjaxLoginAction(req, resp, obj);
       this.writeJSON(resp, obj);
+    } else if ("oauth_callback".equals(req.getParameter("action"))) {
+      handleOauthCallback(req, resp);
     } else if (session == null) {
       if (hasParam(req, "username") && hasParam(req, "password")) {
         // If it's a post command with curl, we create a temporary session
@@ -420,36 +507,44 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final HttpServletResponse resp, final Map<String, Object> ret)
       throws ServletException {
     if (hasParam(req, "username") && hasParam(req, "password")) {
-      Session session = null;
-      try {
-        session = createSession(req);
-      } catch (final UserManagerException e) {
-        ret.put("error", "Incorrect Login. " + e.getMessage());
-        return;
-      }
-
-      final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
-      cookie.setPath("/");
-      resp.addCookie(cookie);
-
-      final Set<Session> sessionsOfSameIP =
-          getApplication().getSessionCache().findSessionsByIP(session.getIp());
-      // Check potential DDoS attack by bad hosts.
-      logger.info(
-          "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
-              .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
-
-      final boolean sessionAdded = getApplication().getSessionCache().addSession(session);
-      if (sessionAdded) {
-        ret.put("status", "success");
-        ret.put("session.id", session.getSessionId());
-      } else {
-        ret.put("error", "Potential DDoS found, the number of sessions for this user and IP "
-            + "reached allowed limit (" + getApplication().getSessionCache()
-            .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
-      }
+      final String username = getParam(req, "username");
+      final String password = getParam(req, "password");
+      final String ip = WebUtils.getRealClientIpAddr(req);
+      handleAjaxLoginAction(username, password, ip, resp, ret);
     } else {
       ret.put("error", "Incorrect Login.");
+    }
+  }
+
+  private void handleAjaxLoginAction(final String username, final String password,
+      final String ip, final HttpServletResponse resp, final Map<String, Object> ret) {
+    Session session = null;
+    try {
+      session = createSession(username, password, ip);
+    } catch (final UserManagerException e) {
+      ret.put("error", "Incorrect Login. " + e.getMessage());
+      return;
+    }
+
+    final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
+    cookie.setPath("/");
+    resp.addCookie(cookie);
+
+    final Set<Session> sessionsOfSameIP =
+        getApplication().getSessionCache().findSessionsByIP(session.getIp());
+    // Check potential DDoS attack by bad hosts.
+    logger.info(
+        "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
+            .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
+
+    final boolean sessionAdded = getApplication().getSessionCache().addSession(session);
+    if (sessionAdded) {
+      ret.put("status", "success");
+      ret.put("session.id", session.getSessionId());
+    } else {
+      ret.put("error", "Potential DDoS found, the number of sessions for this user and IP "
+          + "reached allowed limit (" + getApplication().getSessionCache()
+          .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
     }
   }
 
