@@ -443,7 +443,7 @@ public class JobTypeManager {
           (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
               jobParams.jobProps, jobParams.pluginPrivateProps, logger);
     } catch (final Exception e) {
-      logger.info("Failed with 5 inputs with exception e = "
+      logger.info("Failed with 6 inputs with exception e = "
           + e.getMessage());
       job =
           (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
@@ -507,11 +507,11 @@ public class JobTypeManager {
     if (nativeLibPath != null && !nativeLibPath.isEmpty()) {
       clusterProps.put(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB, nativeLibPath);
     }
-    final String hadoopSecurityManagerClazz =
+    final String hadoopSecurityManagerClass =
         sourceProps.get(Cluster.HADOOP_SECURITY_MANAGER_CLASS_PROP);
-    if (hadoopSecurityManagerClazz != null) {
+    if (hadoopSecurityManagerClass != null) {
       clusterProps.put(
-          Cluster.HADOOP_SECURITY_MANAGER_CLASS_PROP, hadoopSecurityManagerClazz);
+          Cluster.HADOOP_SECURITY_MANAGER_CLASS_PROP, hadoopSecurityManagerClass);
     }
 
     return clusterProps;

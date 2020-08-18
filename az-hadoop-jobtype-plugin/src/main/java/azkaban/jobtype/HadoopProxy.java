@@ -61,14 +61,14 @@ public class HadoopProxy {
     if (shouldProxy) {
       logger.info("Initiating hadoop security manager.");
       try {
-        String hadoopSecurityClassName = jobProps.get(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
-        if (hadoopSecurityClassName == null) {
-          // hadoop.security.manager.class can be configured for each Hadoop cluster and it is exposed to
-          // Hadoop jobs as a job property (See JobTypeManager.getClusterSpecificJobProps()).If no cluster
-          // is configured, we can not find it from job properties. Instead, try to load it from sysProps.
-          // This preserves the existing behavior when no clusters (& routing) are configured.
-          hadoopSecurityClassName = sysProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
-        }
+        // hadoop.security.manager.class can be configured for each Hadoop cluster and it is exposed to
+        // Hadoop jobs as a job property (See JobTypeManager.getClusterSpecificJobProps()).If no cluster
+        // is configured, we can not find it from job properties. Instead, try to load it from sysProps.
+        // This preserves the existing behavior when no clusters (& routing) are configured.
+        final String hadoopSecurityClassName =
+            jobProps.get(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM) != null ?
+                jobProps.get(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM) :
+                sysProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
         final Class<?> hadoopSecurityManagerClass =
             HadoopProxy.class.getClassLoader().loadClass(hadoopSecurityClassName);
 
