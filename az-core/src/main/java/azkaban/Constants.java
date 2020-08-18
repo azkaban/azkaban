@@ -121,6 +121,13 @@ public class Constants {
   public static final boolean DEFAULT_AZKABAN_RAMP_STATUS_POOLING_ENABLED = false;
   // How often executors will poll ramp status in Poll Dispatch model
   public static final int DEFAULT_AZKABAN_RAMP_STATUS_POLLING_INTERVAL = 10;
+  // Username to be sent to UserManager when OAuth is in use, and real username is not available:
+  public static final String OAUTH_USERNAME_PLACEHOLDER = "<OAuth>";
+  // Used by UserManager for password validation (to tell apart real passwords from auth codes).
+  // Empirically, passwords are shorter than this, and ACs are longer:
+  public static final int OAUTH_MIN_AUTHCODE_LENGTH = 80;
+  // Used (or should be used) wherever a string representation of UTF_8 charset is needed:
+  public static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.toString();
 
   public static class ConfigurationKeys {
 
@@ -360,6 +367,23 @@ public class Constants {
         "execution.logs.cleanup.interval.seconds";
     public static final String EXECUTION_LOGS_CLEANUP_RECORD_LIMIT =
         "execution.logs.cleanup.record.limit";
+
+    // Oauth2.0 configuration keys. If missing, no OAuth will be attempted, and the old
+    // username/password{+2FA} prompt will be given for interactive login:
+    public static final String OAUTH_PROVIDER_URI_KEY = "oauth.provider_uri";  // where to send user for OAuth flow, e.g.:
+    //    oauth.provider_uri=https://login.microsoftonline.com/tenant-id/oauth2/v2.0/authorize\
+    //        ?client_id=client_id\
+    //        &response_type=code\
+    //        &scope=openid\
+    //        &response_mode=form_post\
+    //        &state={state}\
+    //        &redirect_uri={redirect_uri}
+    // Strings {state} and {redirect_uri}, if present verbatim in the property value, will be
+    // substituted at runtime with (URL-encoded) navigation target and OAuth responce handler URIs,
+    // respectively. See handleOauth() in LoginAbstractServlet.java for details.
+    public static final String OAUTH_REDIRECT_URI_KEY = "oauth.redirect_uri";  // how OAuth calls us back, e.g.:
+    //    oauth.redirect_uri=http://localhost:8081/?action=oauth_callback
+
   }
 
   public static class FlowProperties {
