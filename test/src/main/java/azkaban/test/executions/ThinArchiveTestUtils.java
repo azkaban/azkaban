@@ -77,6 +77,16 @@ public class ThinArchiveTestUtils {
   public static Set getDepSetAB() { return new HashSet(Arrays.asList(getDepA(), getDepB())); }
   public static Set getDepSetABC() { return new HashSet(Arrays.asList(getDepA(), getDepB(), getDepC())); }
 
+  /**
+   * Create and return a Set<Dependency> that contains valid objects and a null.
+   *
+   * @return Set<Dependency> containing valid objects and null
+   */
+  public static Set getDepSetABCAndNull() {
+    return new HashSet(
+        Arrays.asList(getDepA(), getDepB(), getDepC(), null));
+  }
+
   public static String getRawJSONDepA() {
     return "{" +
         "    \"dependencies\": [" +
@@ -116,6 +126,22 @@ public class ThinArchiveTestUtils {
                 depAJSONBlock() + "," +
                 depBJSONBlock() + "," +
                 depCJSONBlock() +
+        "    ]" +
+        "}";
+  }
+
+  /**
+   * Create a string of valid raw json that adds a null to the list of valid dependencies.
+   *
+   * @return raw json string containing valid dependencies and a null.
+   */
+  public static String getRawJSONDepsNullAndABC() {
+    return "{" +
+        "    \"dependencies\": [" +
+        "null," +
+        depAJSONBlock() + "," +
+        depBJSONBlock() + "," +
+        depCJSONBlock() +
         "    ]" +
         "}";
   }
