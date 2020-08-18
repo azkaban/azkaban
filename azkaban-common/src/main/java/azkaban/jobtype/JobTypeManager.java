@@ -439,15 +439,23 @@ public class JobTypeManager {
   public static Job createJob(final String jobId, final JobParams jobParams, final Logger logger) {
     Job job;
     try {
-      job =
-          (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
-              jobParams.jobProps, jobParams.pluginPrivateProps, logger);
+      try {
+        job =
+            (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
+                jobParams.jobProps, jobParams.pluginPrivateProps, logger);
+      } catch (final Exception e) {
+        logger.info("Failed with 6 inputs with exception e = "
+            + e.getMessage());
+        job =
+            (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
+                jobParams.jobProps, logger);
+      }
     } catch (final Exception e) {
-      logger.info("Failed with 6 inputs with exception e = "
-          + e.getMessage());
-      job =
-          (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
-              jobParams.jobProps, logger);
+      logger.error(String.format("Failed to build job: %s", jobId), e);
+      throw new JobTypeManagerException(String.format("Failed to build job %s", jobId), e);
+    } catch (final Throwable t) {
+      logger.error(String.format("Failed to build job: %s", jobId), t);
+      throw new JobTypeManagerException(String.format("Failed to build job %s", jobId), t);
     }
     return job;
   }
