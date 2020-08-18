@@ -78,7 +78,7 @@ Multiple Executor Mode Parameters
 |                                                      | list of hard filters  |                       |
 |                                                      | to be used while      |                       |
 |                                                      | dispatching. To be    |                       |
-|                                                      | choosen from          |                       |
+|                                                      | chosen from          |                       |
 |                                                      | StaticRemaining,      |                       |
 |                                                      | FlowSize,             |                       |
 |                                                      | MinimumFreeMemory and |                       |
@@ -300,7 +300,7 @@ Executor Server Properties
 |                                           | executions            |                       |
 +-------------------------------------------+-----------------------+-----------------------+
 | executor.flow.threads                     | The number of         | 30                    |
-|                                           | simulateous flows     |                       |
+|                                           | simultaneous flows     |                       |
 |                                           | that can be run.      |                       |
 |                                           | These threads are     |                       |
 |                                           | mostly idle.          |                       |

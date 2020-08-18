@@ -82,7 +82,7 @@ Event Trigger Instance Configuration
 *****
 Event trigger is part of flow definition and each flow can only have one event trigger at most. 
 Defining an event trigger is supported via Hadoop DSL.
-The trigger needs to be configurated within the flow file along with the project zip that users upload.
+The trigger needs to be configured within the flow file along with the project zip that users upload.
 Event trigger is composed of a list of event dependencies, max wait time and schedule.
 Take the following figure as example:
 
@@ -95,7 +95,7 @@ Take the following figure as example:
 - **triggerDependencies**: The params here is to clarify what regex pattern happening in the event coming from specific topic channel. The trigger kick-starts the flow if all of predefined dependency conditions are met. 
 
 
-Therefore, this trigger example will launch the flow once detecting Kafka event with anything in ``AzEvent_Topic4``, ``.*Partition[A-Z]....Event`` string in event comming from ``AzEvent_Topic4`` and ``hadoop?.*`` in ``AzEvent_Topic1``.
+Therefore, this trigger example will launch the flow once detecting Kafka event with anything in ``AzEvent_Topic4``, ``.*Partition[A-Z]....Event`` string in event coming from ``AzEvent_Topic4`` and ``hadoop?.*`` in ``AzEvent_Topic1``.
 
 The matching mechanism can be extended other than regex since now it is implemented as a generic interface.
 
