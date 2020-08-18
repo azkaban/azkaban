@@ -12,7 +12,7 @@ Flow 2.0 Basics
 *****
 
 ########
-Using Azkaban Flow 2.0 can be simple and straightforward. Just start with below severals steps:
+Using Azkaban Flow 2.0 can be simple and straightforward. Just start with below several steps:
 
 Step 1:
 ######## 
