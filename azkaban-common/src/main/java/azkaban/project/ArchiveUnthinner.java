@@ -170,7 +170,11 @@ public class ArchiveUnthinner {
       // startup-dependencies.json file to include only them. Any dependencies originally listed in the
       // startup-dependencies.json file that will be removed during the update must have either been removed
       // by the validator - or will be included in the zip itself.
-      Set<Dependency> finalDeps = Sets.union(validCachedDeps, untouchedDownloadedDeps);
+      //
+      // Filter out null from the Set if present since the Set should only contain
+      // dependency objects.
+      Set<Dependency> finalDeps = filterNullFromDeps(Sets.union(validCachedDeps,
+          untouchedDownloadedDeps));
       rewriteStartupDependencies(startupDependenciesFile, finalDeps);
     }
 
@@ -271,6 +275,8 @@ public class ArchiveUnthinner {
     return validationStatuses
         .keySet()
         .stream()
+        .filter(Objects::nonNull) // Filter out null since the Set should contain Dependency
+        // objects only.
         .filter(d -> validationStatuses.get(d) == status)
         .collect(Collectors.toSet());
   }
