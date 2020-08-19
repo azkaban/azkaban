@@ -16,7 +16,6 @@
 
 package azkaban.webapp.metrics;
 
-import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.utils.Props;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,27 +45,6 @@ public class DummyWebMetricsImpl implements WebMetrics {
   }
 
   @Override
-  public AzkabanAPIMetrics setUpAzkabanAPIMetrics(final String endpointUri) {
-    return new AzkabanAPIMetrics(null, null, null, null, null) {
-      @Override
-      public void incrementAppGetRequests() {
-      }
-
-      @Override
-      public void incrementAppPostRequests() {
-      }
-
-      @Override
-      public void incrementNonAppGetRequests() {
-      }
-
-      @Override
-      public void incrementNonAppPostRequests() {
-      }
-
-      @Override
-      public void addResponseTime(final long time) {
-      }
-    };
+  public void setFetchLogLatency(final long milliseconds) {
   }
 }

@@ -154,17 +154,25 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   private volatile boolean flowKilled = false;
   private volatile boolean flowIsRamping = false;
 
-  public long getFlowKillTime() { return flowKillTime; }
+  public long getFlowKillTime() { return this.flowKillTime; }
 
   private volatile long flowKillTime = -1;
 
-  public long getFlowPauseTime() { return flowPauseTime; }
+  private volatile long flowKillDuration = 0;
+
+  public long getFlowKillDuration() { return this.flowKillDuration; }
+
+  public long getFlowPauseTime() { return this.flowPauseTime; }
 
   public void setFlowCreateTime(long flowCreateTime) { this.flowCreateTime = flowCreateTime; }
 
   private volatile long flowPauseTime = -1;
 
-  public long getFlowCreateTime() { return flowCreateTime; }
+  private volatile long flowPauseDuration = 0;
+
+  public long getFlowPauseDuration() { return this.flowPauseDuration; }
+
+  public long getFlowCreateTime() { return this.flowCreateTime; }
 
   private volatile long flowCreateTime = -1;
 
@@ -336,8 +344,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       case KILLED:
         this.execMetrics.markFlowKilled();
         // Compute the duration to kill a flow
-        this.flowKillTime = flowKillTime== -1 ? -1 : System.currentTimeMillis() - this.flowKillTime;
-        this.execMetrics.addFlowTimeToKill( this.flowKillTime );
+        if (this.flowKillDuration == 0 && flowKillTime != -1) {
+          this.flowKillDuration = System.currentTimeMillis() - this.flowKillTime;
+        }
+        this.execMetrics.addFlowTimeToKill( this.flowKillDuration );
         break;
       default:
         break;
@@ -983,6 +993,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     final JobRunner runner = createJobRunner(node);
     this.logger.info("Submitting job '" + node.getNestedId() + "' to run.");
     try {
+      // Job starts to queue
+      runner.setTimeInQueue(System.currentTimeMillis());
       this.executorService.submit(runner);
       this.activeJobRunners.add(runner);
     } catch (final RejectedExecutionException e) {
@@ -1144,8 +1156,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     final JobRunner jobRunner =
         new JobRunner(node, path.getParentFile(), this.executorLoader,
             this.jobtypeManager, this.azkabanProps);
-    // Job starts to queue
-    jobRunner.setTimeInQueue(System.currentTimeMillis());
+
     if (this.watcher != null) {
       jobRunner.setPipeline(this.watcher, this.pipelineLevel);
     }
@@ -1224,7 +1235,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         } else {
           this.flow.setStatus(Status.RUNNING);
         }
-        this.flowPauseTime = flowPauseTime == -1 ? -1 : System.currentTimeMillis() - flowPauseTime;
+        if (this.flowPauseTime != -1 && this.flowPauseDuration == 0) {
+          this.flowPauseDuration = System.currentTimeMillis() - this.flowPauseTime;
+        }
         this.getExecutableFlow().setModifiedBy(user);
         updateFlow();
       }
@@ -1493,8 +1506,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put("failedJobId", flow.getFailedJobId());
       metaData.put("modifiedBy", flow.getModifiedBy());
       // Flow_Status_Changed event elapsed time
-      metaData.put("flowKillDuration", String.valueOf(flowRunner.flowKillTime));
-      metaData.put("flowPauseDuration", String.valueOf(flowRunner.flowPauseTime));
+      metaData.put("flowKillDuration", String.valueOf(flowRunner.getFlowKillDuration()));
+      metaData.put("flowPauseDuration", String.valueOf(flowRunner.getFlowPauseDuration()));
       metaData.put("flowPreparationDuration", String.valueOf(flowRunner.flowCreateTime));
       // FLow SLA option string
       metaData.put("slaOptions", flow.getSlaOptionStr());
@@ -1589,8 +1602,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put("attemptID", String.valueOf(node.getAttempt()));
       // Job time in queue, kill time, killed by, and failure Message
       metaData.put("modifiedBy", node.getModifiedBy());
-      metaData.put("jobKillDuration", String.valueOf(jobRunner.getJobKillTime()));
-      metaData.put("queueDuration", String.valueOf(jobRunner.getTimeInQueue()));
+      metaData.put("jobKillDuration", String.valueOf(jobRunner.getKillDuration()));
+      metaData.put("queueDuration", String.valueOf(jobRunner.getQueueDuration()));
       metaData.put("failureMessage", node.getFailureMessage());
 
       // Propagate job properties to Event Reporter

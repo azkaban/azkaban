@@ -81,6 +81,10 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String RAMPPOLICY_PLUGIN_DIR = "azkaban.ramppolicy.plugin.dir";
+  public static final String CLUSTER_CONFIG_DIR = "azkaban.cluster.dir";
+  public static final String CLUSTER_ROUTER_CLASS = "azkaban.cluster.router";
+  public static final String CLUSTER_ROUTER_CONF = "azkaban.cluster.router.conf";
+
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
   private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);

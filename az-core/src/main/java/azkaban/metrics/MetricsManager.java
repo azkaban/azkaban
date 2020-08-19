@@ -78,14 +78,6 @@ public class MetricsManager {
     this.registry.register(name, (Gauge<T>) gaugeFunc::get);
   }
 
-  /*
-   * A {@link azkaban.metrics.CounterGauge} is a custom gauge which reports the number of events
-   * in the last reporting interval.
-   */
-  public CounterGauge addCounterGauge(final String name) {
-    return this.registry.register(name, new CounterGauge());
-  }
-
   /**
    * A {@link Counter} is just a gauge for an AtomicLong instance.
    */
@@ -98,17 +90,13 @@ public class MetricsManager {
    * addition to minimum, maximum, mean, etc., it also measures median, 75th,
    * 90th, 95th, 98th, 99th, and 99.9th percentiles.
    */
-  public Histogram addHistogram(final String name) {
-    return this.registry.histogram(name);
-  }
+  public Histogram addHistogram(final String name) { return this.registry.histogram(name); }
 
   /**
    * A {@link Timer} measures both the rate that a particular piece of code is called and the
    * distribution of its duration.
    */
-  public Timer addTimer(final String name) {
-    return this.registry.timer(name);
-  }
+  public Timer addTimer(final String name) { return this.registry.timer(name); }
 
   /**
    * reporting metrics to remote metrics collector. Note: this method must be synchronized, since
