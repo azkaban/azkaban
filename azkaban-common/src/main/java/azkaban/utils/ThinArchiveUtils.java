@@ -77,8 +77,7 @@ public class ThinArchiveUtils {
   public static void writeStartupDependencies(final File f,
       final Set<Dependency> dependencies) throws IOException {
     Map<String, Set<Dependency>> outputFormat = new HashMap<>();
-    Set<Dependency> nonNullDependencies = filterNullFromDeps(dependencies);
-    outputFormat.put("dependencies", nonNullDependencies);
+    outputFormat.put("dependencies", filterNullFromDeps(dependencies));
     FileUtils.writeStringToFile(f, JSONUtils.toJSON(outputFormat));
   }
 
@@ -186,7 +185,7 @@ public class ThinArchiveUtils {
    * @param dependencies Set of Dependency objects from which null has to be filtered out.
    * @return Set of Dependency without any null in it.
    */
-  public static Set<Dependency> filterNullFromDeps(Set<azkaban.spi.Dependency> dependencies) {
+  public static Set<Dependency> filterNullFromDeps(Set<Dependency> dependencies) {
     return dependencies.
         stream().
         filter(Objects::nonNull).

@@ -275,9 +275,9 @@ public class ArchiveUnthinner {
     return validationStatuses
         .keySet()
         .stream()
-        .filter(d -> validationStatuses.get(d) == status)
         .filter(Objects::nonNull) // Filter out null since the Set should contain Dependency
         // objects only.
+        .filter(d -> validationStatuses.get(d) == status)
         .collect(Collectors.toSet());
   }
 
@@ -287,5 +287,4 @@ public class ArchiveUnthinner {
         .map(d -> String.format("Removed blacklisted file %s", d.getFileName()))
         .collect(Collectors.toSet());
   }
-
 }
