@@ -91,8 +91,13 @@ public class JdbcDependencyManager {
       while (rs.next()) {
         // Columns are (starting at index 1): file_name, file_sha1, validation_status
         Dependency d = hashAndFileNameToDep.remove(rs.getString(1) + rs.getString(2));
-        FileValidationStatus v = FileValidationStatus.valueOf(rs.getInt(3));
-        depValidationStatuses.put(d, v);
+
+        // HashMap.remove will return null if the key is not found, hence check for it before
+        // adding to depValidationStatuses.
+        if (d != null) {
+          FileValidationStatus v = FileValidationStatus.valueOf(rs.getInt(3));
+          depValidationStatuses.put(d, v);
+        }
       }
 
       // All remaining dependencies in the hashToDep map should be marked as being NEW (because they weren't

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.DecoderException;
@@ -60,7 +61,10 @@ public class ThinArchiveUtils {
 
     Set<Dependency> finalDependencies = new HashSet<>();
     for (Map<String, String> rawDependency : rawParseResult) {
-      finalDependencies.add(new Dependency(rawDependency));
+      // Do not add null entries to dependency set that will be returned.
+      if (rawDependency != null) {
+        finalDependencies.add(new Dependency(rawDependency));
+      }
     }
 
     return finalDependencies;
@@ -73,7 +77,7 @@ public class ThinArchiveUtils {
   public static void writeStartupDependencies(final File f,
       final Set<Dependency> dependencies) throws IOException {
     Map<String, Set<Dependency>> outputFormat = new HashMap<>();
-    outputFormat.put("dependencies", dependencies);
+    outputFormat.put("dependencies", filterNullFromDeps(dependencies));
     FileUtils.writeStringToFile(f, JSONUtils.toJSON(outputFormat));
   }
 
@@ -172,5 +176,19 @@ public class ThinArchiveUtils {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Helper method to filer out null from the set containing Dependency objects.
+   * Eg: If input set: {null, obj1, obj2 }, then output set: {obj1, obj2}
+   *
+   * @param dependencies Set of Dependency objects from which null has to be filtered out.
+   * @return Set of Dependency without any null in it.
+   */
+  public static Set<Dependency> filterNullFromDeps(Set<Dependency> dependencies) {
+    return dependencies.
+        stream().
+        filter(Objects::nonNull).
+        collect(Collectors.toSet());
   }
 }
