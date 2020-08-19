@@ -490,7 +490,7 @@ pagination.
 | Parameter                         | Description                       |
 +===================================+===================================+
 | executions                        | A list of execution objects, with |
-|                                   | the resquested start index and    |
+|                                   | the requested start index and    |
 |                                   | length.                           |
 +-----------------------------------+-----------------------------------+
 | total                             | The total number of all relevant  |
@@ -664,7 +664,7 @@ this API by disabling all other jobs in the same flow.
 +-----------------------------------+-----------------------------------+
 | successEmails (optional)          | A list of emails to be notified   |
 |                                   | if the execution succeeds. All    |
-|                                   | emails are delimitted with        |
+|                                   | emails are delimited with        |
 |                                   | [,|;|\\s+].                       |
 |                                   |                                   |
 |                                   | **Example Values:**               |
@@ -710,7 +710,7 @@ this API by disabling all other jobs in the same flow.
 |                                   | finishPossible                    |
 +-----------------------------------+-----------------------------------+
 | concurrentOption (Optional)       | Concurrent choices. Use ignore if |
-|                                   | nothing specifical is required.   |
+|                                   | nothing specific is required.   |
 |                                   |                                   |
 |                                   | **Possible Values:** ignore,      |
 |                                   | pipeline, skip                    |
@@ -1144,7 +1144,7 @@ This API call sets a SLA.
 | ajax=setSla                       | The fixed parameter indicating    |
 |                                   | the action is to set a SLA.       |
 +-----------------------------------+-----------------------------------+
-| scheduleId                        | The id of the shchedule. You can  |
+| scheduleId                        | The id of the schedule. You can  |
 |                                   | find this with `Fetch a           |
 |                                   | Schedule <#api-fetch-schedule>`__ |
 |                                   | .                                 |
@@ -1206,7 +1206,7 @@ Given a schedule id, this API call fetches the SLA.
 | ajax=slaInfo                      | The fixed parameter indicating    |
 |                                   | the SLA.                          |
 +-----------------------------------+-----------------------------------+
-| scheduleId                        | The id of the shchedule. You can  |
+| scheduleId                        | The id of the schedule. You can  |
 |                                   | find this with `Fetch a           |
 |                                   | Schedule <#api-fetch-schedule>`__ |
 |                                   | .                                 |
@@ -1296,7 +1296,7 @@ Resume a Flow Execution
 
 Given an execution id, this API resumes a paused running flow. If an
 execution has already been resumed, it will not return any errors; if an
-execution is not runnning, it will return an error message.
+execution is not running, it will return an error message.
 
 -  **Method:** GET
 -  **Request URL:** /executor?ajax=resumeFlow
@@ -1452,7 +1452,7 @@ Fetch Execution Job Logs
 ------------------------
 
 Given an execution id and a job id, this API call fetches the
-correponding job logs. The log text can be quite large sometimes, so
+corresponding job logs. The log text can be quite large sometimes, so
 this API call also expects the parameters ``offset`` and ``length`` to
 be specified.
 
