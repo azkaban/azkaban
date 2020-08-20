@@ -480,7 +480,7 @@ public class JobRunner extends EventHandler implements Runnable {
           this.currentBlockStatus = bStatus;
           bStatus.blockOnFinishedStatus();
           if (this.isKilled()) {
-            this.logger.info("Job was killed while waiting on pipeline. Quiting.");
+            this.logger.info("Job was killed while waiting on pipeline. Quitting.");
             return true;
           } else {
             this.logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
@@ -514,7 +514,7 @@ public class JobRunner extends EventHandler implements Runnable {
         }
 
         if (this.isKilled()) {
-          this.logger.info("Job was killed while in delay. Quiting.");
+          this.logger.info("Job was killed while in delay. Quitting.");
           return true;
         }
       }
