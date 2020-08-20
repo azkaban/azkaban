@@ -17,12 +17,15 @@ package azkaban.webapp.servlet;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.trigger.TriggerManager;
 import azkaban.user.UserManager;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.management.MBeanInfo;
@@ -37,17 +40,19 @@ import org.apache.log4j.Logger;
 /**
  * Limited set of jmx calls for when you cannot attach to the jvm
  */
-public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
-    ConnectorParams {
+public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements ConnectorParams {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(JMXHttpServlet.class
-      .getName());
+  private static final Logger logger = Logger.getLogger(JMXHttpServlet.class.getName());
 
   private UserManager userManager;
   private AzkabanWebServer server;
   private ExecutorManagerAdapter executorManagerAdapter;
   private TriggerManager triggerManager;
+
+  public JMXHttpServlet() {
+    super(createAPIEndpoints());
+  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
@@ -60,6 +65,16 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     this.triggerManager = this.server.getTriggerManager();
   }
 
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", ConnectorParams.JMX_GET_ALL_EXECUTOR_ATTRIBUTES));
+    apiEndpoints.add(new AzkabanAPI("ajax", ConnectorParams.JMX_GET_MBEANS));
+    apiEndpoints.add(new AzkabanAPI("ajax", ConnectorParams.JMX_GET_MBEAN_INFO));
+    apiEndpoints.add(new AzkabanAPI("ajax", ConnectorParams.JMX_GET_MBEAN_ATTRIBUTE));
+    apiEndpoints.add(new AzkabanAPI("ajax", ConnectorParams.JMX_GET_ALL_MBEAN_ATTRIBUTES));
+    return apiEndpoints;
+  }
+
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
@@ -68,8 +83,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
       final String ajax = getParam(req, "ajax");
       if (ConnectorParams.JMX_GET_ALL_EXECUTOR_ATTRIBUTES.equals(ajax)) {
-        if (!hasParam(req, ConnectorParams.JMX_MBEAN) || !hasParam(req,
-            ConnectorParams.JMX_HOSTPORT)) {
+        if (!hasParam(req, ConnectorParams.JMX_MBEAN) ||
+            !hasParam(req, ConnectorParams.JMX_HOSTPORT)) {
           ret.put("error", "Parameters '" + ConnectorParams.JMX_MBEAN + "' and '"
               + ConnectorParams.JMX_HOSTPORT + "' must be set");
           this.writeJSON(resp, ret, true);
@@ -107,8 +122,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
           ret.put("error", "No 'mbean' name parameter specified");
         }
       } else if (ConnectorParams.JMX_GET_MBEAN_ATTRIBUTE.equals(ajax)) {
-        if (!hasParam(req, ConnectorParams.JMX_MBEAN) || !hasParam(req,
-            ConnectorParams.JMX_ATTRIBUTE)) {
+        if (!hasParam(req, ConnectorParams.JMX_MBEAN) ||
+            !hasParam(req, ConnectorParams.JMX_ATTRIBUTE)) {
           ret.put("error", "Parameters 'mbean' and 'attribute' must be set");
         } else {
           final String mbeanName = getParam(req, ConnectorParams.JMX_MBEAN);
@@ -148,17 +163,15 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
   private void handleJMXPage(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws IOException {
     final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/jmxpage.vm");
+        newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jmxpage.vm");
 
     page.add("mbeans", this.server.getMBeanRegistrationManager().getMBeanNames());
 
     final Map<String, Object> executorMBeans = new HashMap<>();
     for (final String hostPort : this.executorManagerAdapter.getAllActiveExecutorServerHosts()) {
       try {
-        final Map<String, Object> mbeans =
-            this.executorManagerAdapter
-                .callExecutorJMX(hostPort, ConnectorParams.JMX_GET_MBEANS, null);
+        final Map<String, Object> mbeans = this.executorManagerAdapter
+            .callExecutorJMX(hostPort, ConnectorParams.JMX_GET_MBEANS, null);
 
         executorMBeans.put(hostPort, mbeans.get("mbeans"));
       } catch (final IOException e) {

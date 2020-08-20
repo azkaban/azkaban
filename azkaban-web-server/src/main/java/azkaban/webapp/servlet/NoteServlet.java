@@ -16,12 +16,15 @@
  */
 package azkaban.webapp.servlet;
 
+import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -41,9 +44,20 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   public static String message = null;
   public static String url = null;
 
+  public NoteServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_NOTE));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_REMOVE_NOTE));
+    return apiEndpoints;
   }
 
   @Override
@@ -88,8 +102,7 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
     try {
