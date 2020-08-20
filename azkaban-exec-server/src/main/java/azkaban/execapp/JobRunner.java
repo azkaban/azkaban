@@ -96,9 +96,13 @@ public class JobRunner extends EventHandler implements Runnable {
   private long delayStartMs = 0;
   private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
+  private final ClassLoader threadClassLoader;
 
   private volatile long timeInQueue = -1;
   private volatile long jobKillTime = -1;
+
+  private volatile long queueDuration = 0;
+  private volatile long killDuration = 0;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
       final JobTypeManager jobtypeManager, final Props azkabanProps) {
@@ -116,6 +120,7 @@ public class JobRunner extends EventHandler implements Runnable {
         JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
+    this.threadClassLoader = Thread.currentThread().getContextClassLoader();
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {
@@ -572,6 +577,8 @@ public class JobRunner extends EventHandler implements Runnable {
     } catch (final Exception e) {
       serverLogger.error("Unexpected exception", e);
       throw e;
+    } finally {
+      Thread.currentThread().setContextClassLoader(this.threadClassLoader);
     }
   }
 
@@ -600,8 +607,8 @@ public class JobRunner extends EventHandler implements Runnable {
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
       // End of job in queue and start of execution
-      if (this.getTimeInQueue() != -1) {
-        this.setTimeInQueue(System.currentTimeMillis() - this.getTimeInQueue());
+      if (this.getTimeInQueue() != -1 && this.getQueueDuration() == 0) {
+        this.setQueueDuration(System.currentTimeMillis() - this.getTimeInQueue());
       }
       fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
@@ -626,8 +633,8 @@ public class JobRunner extends EventHandler implements Runnable {
       // rather than
       // it being a legitimate failure.
       finalStatus = changeStatus(Status.KILLED);
-      if (this.getJobKillTime() != -1) {
-        this.setJobKillTime(System.currentTimeMillis() - this.getJobKillTime());
+      if (this.getJobKillTime() != -1 && this.getKillDuration() == 0) {
+        this.setKillDuration(System.currentTimeMillis() - this.getJobKillTime());
       }
     }
 
@@ -736,7 +743,10 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       try {
-        this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
+        final JobTypeManager.JobParams jobParams = this.jobtypeManager
+            .createJobParams(this.jobId, this.props, this.logger);
+        Thread.currentThread().setContextClassLoader(jobParams.jobClassLoader);
+        this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
         return null;
@@ -972,11 +982,19 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.logger;
   }
 
-  public long getTimeInQueue() { return timeInQueue; }
+  public long getTimeInQueue() { return this.timeInQueue; }
 
   public void setTimeInQueue(long timeInQueue) { this.timeInQueue = timeInQueue; }
 
-  public long getJobKillTime() { return jobKillTime; }
+  public long getJobKillTime() { return this.jobKillTime; }
 
   public void setJobKillTime(long jobKillTime) { this.jobKillTime = jobKillTime; }
+
+  public long getQueueDuration() { return this.queueDuration; }
+
+  public void setQueueDuration(long queueDuration) { this.queueDuration = queueDuration; }
+
+  public long getKillDuration() { return this.killDuration; }
+
+  public void setKillDuration(long killDuration) { this.killDuration = killDuration; }
 }

@@ -22,6 +22,7 @@ import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
 import static azkaban.Constants.UTF_8;
 
 import azkaban.project.Project;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Role;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -55,13 +57,15 @@ import org.apache.log4j.Logger;
  */
 public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet {
 
+  private static final String API_LOGIN = "login";
+  private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
+
   private static final long serialVersionUID = 1L;
 
   private static final Logger logger =
       Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
-  private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
-  private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 
+  private static final AzkabanAPI loginAPI = new AzkabanAPI("action", API_LOGIN);
   private static final HashMap<String, String> contextType = new HashMap<>();
   private static final String[] ERROR_FIELDS = {"error", "error_description", "error_uri"};
 
@@ -82,14 +86,23 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private MultipartParser multipartParser;
   private boolean shouldLogRawUserAgent = false;
 
+  public LoginAbstractAzkabanServlet(final List<AzkabanAPI> apiEndpoints) {
+    super(apiEndpoints);
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
 
-    this.multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
+    this.multipartParser = new MultipartParser(
+        AbstractAzkabanServlet.DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
 
     this.shouldLogRawUserAgent =
         getApplication().getServerProps().getBoolean("accesslog.raw.useragent", false);
+  }
+
+  public static AzkabanAPI getLoginAPI() {
+    return loginAPI;
   }
 
   public void setResourceDirectory(final File file) {
@@ -107,8 +120,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     if (hasParam(req, "logout")) {
       resp.sendRedirect(req.getContextPath());
       if (session != null) {
-        getApplication().getSessionCache()
-            .removeSession(session.getSessionId());
+        getApplication().getSessionCache().removeSession(session.getSessionId());
       }
       return;
     }
@@ -210,8 +222,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return false;
   }
 
-  private Session getSessionFromRequest(final HttpServletRequest req)
-      throws ServletException {
+  private Session getSessionFromRequest(final HttpServletRequest req) throws ServletException {
     final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
     String sessionId = null;
 
@@ -231,6 +242,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
 
     return getApplication().getSessionCache().getSession(sessionId);
+  }
+
+  public boolean isUserAuthenticated(final HttpServletRequest req) throws ServletException {
+    return getSessionFromRequest(req) != null;
   }
 
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp)
@@ -372,7 +387,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
 
       handleMultiformPost(req, resp, params, session);
-    } else if ("login".equals(req.getParameter("action"))) {
+    } else if (API_LOGIN.equals(req.getParameter("action"))) {
       final HashMap<String, Object> obj = new HashMap<>();
       handleAjaxLoginAction(req, resp, obj);
       this.writeJSON(resp, obj);
@@ -395,7 +410,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
           final String response =
               AbstractAzkabanServlet
                   .createJsonResponse("error", "Invalid Session. Need to re-login",
-                      "login", null);
+                      API_LOGIN, null);
           writeResponse(resp, response);
         } else {
           handleLogin(req, resp, "Enter username and password");
@@ -409,16 +424,16 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   /**
    * Disallows users from logging in by passing their username and password via the request header
    * where it'd be logged.
-   *
+   * <p>
    * Example of illegal post request: curl -X POST http://localhost:8081/?action=login\&username=azkaban\&password=azkaban
-   *
+   * <p>
    * req.getParameterMap() or req.getParameterNames() cannot be used because they draw no
    * distinction between the illegal request above and the following valid request: curl -X POST -d
    * "action=login&username=azkaban&password=azkaban" http://localhost:8081/
-   *
-   * "password=" is searched for because it leverages the query syntax to determine that the user
-   * is passing the password as a parameter name. There is no other ajax call that has a parameter
-   * that includes the string "password" at the end which could throw false positives.
+   * <p>
+   * "password=" is searched for because it leverages the query syntax to determine that the user is
+   * passing the password as a parameter name. There is no other ajax call that has a parameter that
+   * includes the string "password" at the end which could throw false positives.
    */
   private boolean isIllegalPostRequest(final HttpServletRequest req) {
     return (req.getQueryString() != null && req.getQueryString().contains("password="));
@@ -466,8 +481,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
    * Filter Project based on user authorization
    *
    * @param project project
-   * @param user user
-   * @param type permission allowance
+   * @param user    user
+   * @param type    permission allowance
    * @return authorized project itself or null if the project is not authorized
    */
   protected Project filterProjectByPermission(final Project project, final User user,
@@ -479,9 +494,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
    * Filter Project based on user authorization
    *
    * @param project project
-   * @param user user
-   * @param type permission allowance
-   * @param ret return map for holding messages
+   * @param user    user
+   * @param type    permission allowance
+   * @param ret     return map for holding messages
    * @return authorized project itself or null if the project is not authorized
    */
   protected Project filterProjectByPermission(final Project project, final User user,
