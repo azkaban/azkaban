@@ -19,6 +19,7 @@ package azkaban.webapp.servlet;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -52,6 +53,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
   private boolean lockdownCreateProjects = false;
 
+  public ProjectServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
@@ -63,6 +68,13 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     if (this.lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_ALL_PROJECTS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_USER_PROJECTS));
+    return apiEndpoints;
   }
 
   @Override

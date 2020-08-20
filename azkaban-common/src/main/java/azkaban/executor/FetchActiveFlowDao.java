@@ -71,8 +71,8 @@ public class FetchActiveFlowDao {
     return null;
   }
 
-  private static Pair<ExecutionReference, ExecutableFlow> getPairWithExecutorInfo(final ResultSet rs,
-      final ExecutableFlow exFlow) throws SQLException {
+  private static Pair<ExecutionReference, ExecutableFlow> getPairWithExecutorInfo(
+      final ResultSet rs, final ExecutableFlow exFlow) throws SQLException {
     final int executorId = rs.getInt("executorId");
     final String host = rs.getString("host");
     final int port = rs.getInt("port");
@@ -214,7 +214,8 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow =
+            FetchActiveFlowDao.getExecutableFlowHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
@@ -252,7 +253,8 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowMetadataHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow =
+            FetchActiveFlowDao.getExecutableFlowMetadataHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
@@ -289,7 +291,7 @@ public class FetchActiveFlowDao {
       if (!rs.next()) {
         return null;
       }
-      return getExecutableFlowHelper(rs);
+      return FetchActiveFlowDao.getExecutableFlowHelper(rs);
     }
   }
 
