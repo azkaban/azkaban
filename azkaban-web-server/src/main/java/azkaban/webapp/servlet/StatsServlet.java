@@ -20,12 +20,14 @@ import azkaban.executor.ConnectorParams;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,6 +51,10 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
   private UserManager userManager;
   private ExecutorManagerAdapter execManagerAdapter;
 
+  public StatsServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
@@ -57,11 +63,28 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     this.execManagerAdapter = server.getExecutorManager();
   }
 
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_GET_METRICHISTORY));
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_GET_ALLMETRICSNAME));
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_SET_REPORTINGINTERVAL));
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_SET_CLEANINGINTERVAL));
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_SET_MAXREPORTERPOINTS));
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_SET_ENABLEMETRICS));
+    apiEndpoints.add(
+        new AzkabanAPI(ConnectorParams.ACTION_PARAM, ConnectorParams.STATS_SET_DISABLEMETRICS));
+    return apiEndpoints;
+  }
+
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session)
-      throws ServletException,
-      IOException {
+      final Session session) throws ServletException, IOException {
     if (hasParam(req, ConnectorParams.ACTION_PARAM)) {
       handleAJAXAction(req, resp, session);
     } else {
@@ -70,8 +93,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session)
-      throws ServletException, IOException {
+      final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final int executorId = getIntParam(req, ConnectorParams.EXECUTOR_ID_PARAM);
     final String actionName = getParam(req, ConnectorParams.ACTION_PARAM);
@@ -134,8 +156,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       final Map<String, Object> result =
-          this.execManagerAdapter
-              .callExecutorStats(executorId, actionName, getAllParams(req));
+          this.execManagerAdapter.callExecutorStats(executorId, actionName, getAllParams(req));
       if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
         ret.put(ConnectorParams.RESPONSE_ERROR,
             result.get(ConnectorParams.RESPONSE_ERROR).toString());
@@ -153,8 +174,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
    * Get metric snapshots for a metric and date specification
    */
   private void handleGetMetricHistory(final int executorId, final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws IOException,
-      ServletException {
+      final HashMap<String, Object> ret, final User user) throws IOException, ServletException {
     try {
       final Map<String, Object> result =
           this.execManagerAdapter.callExecutorStats(executorId,
@@ -171,12 +191,9 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  /**
-   *
-   */
+
   private void handleStatePageLoad(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session)
-      throws ServletException {
+      final Session session) throws ServletException {
     final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/statsPage.vm");
 
     try {
@@ -207,9 +224,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
 
   @Override
   protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session)
-      throws ServletException,
-      IOException {
+      final Session session) throws ServletException, IOException {
   }
 
   /**
