@@ -18,6 +18,7 @@ package azkaban.webapp.servlet;
 
 import azkaban.server.session.Session;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +32,7 @@ public class IndexRedirectServlet extends LoginAbstractAzkabanServlet {
   private String defaultServletPath;
 
   public IndexRedirectServlet(final String defaultServletPath) {
+    super(new ArrayList<>());
     this.defaultServletPath = defaultServletPath;
     if (this.defaultServletPath.isEmpty()
         || this.defaultServletPath.equals("/")) {

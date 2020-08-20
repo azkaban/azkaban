@@ -22,12 +22,15 @@ import azkaban.project.CronSchedule;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -48,12 +51,24 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerServlet.class);
 
+  public FlowTriggerServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = getApplication();
     this.scheduler = server.getFlowTriggerScheduler();
     this.projectManager = server.getProjectManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_TRIGGER));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_PAUSE_TRIGGER));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RESUME_TRIGGER));
+    return apiEndpoints;
   }
 
   @Override
@@ -104,8 +119,7 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
     if (API_FETCH_TRIGGER.equals(ajaxName)) {
