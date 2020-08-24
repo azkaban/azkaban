@@ -16,6 +16,7 @@
 package azkaban.executor;
 
 import azkaban.flow.Flow;
+import azkaban.flow.FlowExecutionType;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,11 +52,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
+  public static final String EXECUTION_TYPE = "execution_type";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
   private int projectId;
+  private FlowExecutionType executionType;
   private String projectName;
   private String lastModifiedUser;
   private int version;
@@ -176,6 +180,15 @@ public class ExecutableFlow extends ExecutableFlowBase {
   }
 
   @Override
+  public FlowExecutionType getExecutionType() {
+    return this.executionType;
+  }
+
+  public void setExecutionType(FlowExecutionType executionType) {
+    this.executionType = executionType;
+  }
+
+  @Override
   public String getProjectName() {
     return this.projectName;
   }
@@ -258,6 +271,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
     if (this.scheduleId >= 0) {
       flowObj.put(SCHEDULEID_PARAM, this.scheduleId);
     }
+    if(Objects.nonNull(this.executionType)) {
+      flowObj.put(EXECUTION_TYPE, this.executionType.toString());
+    }
 
     flowObj.put(SUBMITUSER_PARAM, this.submitUser);
     flowObj.put(VERSION_PARAM, this.version);
@@ -298,6 +314,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     this.projectId = flowObj.getInt(PROJECTID_PARAM);
     this.projectName = flowObj.getString(PROJECTNAME_PARAM);
+    this.executionType = FlowExecutionType.fromString(flowObj.getString(EXECUTION_TYPE));
     this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
     this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
     this.version = flowObj.getInt(VERSION_PARAM);

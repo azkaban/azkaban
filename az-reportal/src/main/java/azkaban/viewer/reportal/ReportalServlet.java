@@ -22,6 +22,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowExecutionType;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
@@ -1181,6 +1182,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
     exflow.addAllProxyUsers(project.getProxyUsers());
+    exflow.setExecutionType(FlowExecutionType.ADHOC);
 
     final ExecutionOptions options = exflow.getExecutionOptions();
 

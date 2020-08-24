@@ -1,0 +1,3 @@
+-- DB Migration from release 3.85.0 to 3.86.0
+-- Adding ExecutionType column in execution_flows
+alter table execution_flows add column execution_type varchar(32) default null;
