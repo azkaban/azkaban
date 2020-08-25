@@ -18,9 +18,6 @@ package azkaban.jobtype;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.File;
-
-import azkaban.utils.Utils;
-import joptsimple.internal.Strings;
 import org.apache.log4j.Logger;
 import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
@@ -61,24 +58,11 @@ public class HadoopProxy {
     if (shouldProxy) {
       logger.info("Initiating hadoop security manager.");
       try {
-        // hadoop.security.manager.class can be configured for each Hadoop cluster and it is exposed to
-        // Hadoop jobs as a job property (See JobTypeManager.getClusterSpecificJobProps()).If no cluster
-        // is configured, we can not find it from job properties. Instead, try to load it from sysProps.
-        // This preserves the existing behavior when no clusters (& routing) are configured.
-        final String hadoopSecurityClassName =
-            jobProps.get(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM) != null ?
-                jobProps.get(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM) :
-                sysProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
-        final Class<?> hadoopSecurityManagerClass =
-            HadoopProxy.class.getClassLoader().loadClass(hadoopSecurityClassName);
-
-        logger.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
-        hadoopSecurityManager = (HadoopSecurityManager)
-            Utils.callConstructor(hadoopSecurityManagerClass, sysProps);
-      } catch (Exception e) {
-        logger.error("Could not instantiate Hadoop Security Manager ", e);
+        hadoopSecurityManager = HadoopJobUtils.loadHadoopSecurityManager(sysProps, logger);
+      } catch (RuntimeException e) {
+        e.printStackTrace();
         throw new RuntimeException("Failed to get hadoop security manager!"
-            + e.getCause(), e);
+            + e.getCause());
       }
     }
   }
