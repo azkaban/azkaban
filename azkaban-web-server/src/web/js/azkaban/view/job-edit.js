@@ -265,12 +265,16 @@ $(function () {
 });
 
 
-// Improve readability of long job property values
+// Format job property values (which are presented as a single string) by adding
+// a new line where appropriate to improve readability of long values.
 function formatJobPropertyValues() {
   var patternsToFormat = new Map();
 
   // Format values like:
   // 1) --param1 value1 --param2 --param3 value3
+  // result: --param1 value1
+  //         --param2
+  //         --param3 value3
   // 2) -param1 value -param2 -param3
   var programArgument = '-[^\\s]+(\\s[^-][^\\s]*)?';
   var programArgumentRegex =
@@ -280,11 +284,17 @@ function formatJobPropertyValues() {
   });
 
   // Format values like: something,something,something
+  // result: something,
+  //         something,
+  //         something
   patternsToFormat.set(/^[^,\s]+(,[^,\s]+)+$/, function(str) {
     return str.replace(/,/g, ",</br>");
   });
 
   // Format values like: something:something:something
+  // result: something:
+  //         something:
+  //         something
   patternsToFormat.set(/^[^,\s;]+(:[^,\s;]+){5,}$/, function(str) {
     return str.replace(/:/g, ":</br>");
   });
