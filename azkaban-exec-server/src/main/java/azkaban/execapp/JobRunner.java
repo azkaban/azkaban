@@ -43,6 +43,8 @@ import azkaban.utils.UndefinedPropertyException;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -814,10 +816,18 @@ public class JobRunner extends EventHandler implements Runnable {
   private void insertJobMetadata() {
     final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
     if (baseURL != null) {
+      URL webserverURL = null;
+      try {
+        webserverURL = new URL(baseURL);
+      } catch (MalformedURLException e) {
+        logger.error(String.format("Exception in parsing url: %s", baseURL), e);
+      }
+      String azkabanWebserverHost = webserverURL.getHost();
       final String flowName = this.node.getParentFlow().getFlowId();
       final String projectName = this.node.getParentFlow().getProjectName();
 
       this.props.put(CommonJobProperties.AZKABAN_URL, baseURL);
+      this.props.put(CommonJobProperties.AZKABAN_WEBSERVERHOST, azkabanWebserverHost);
       this.props.put(CommonJobProperties.EXECUTION_LINK,
           String.format("%s/executor?execid=%d", baseURL, this.executionId));
       this.props.put(CommonJobProperties.JOBEXEC_LINK, String.format(

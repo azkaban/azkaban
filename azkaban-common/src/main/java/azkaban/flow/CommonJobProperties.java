@@ -70,6 +70,11 @@ public class CommonJobProperties {
   public static final String AZKABAN_URL = "azkaban.url";
 
   /**
+   * Azkaban host name
+   */
+  public static final String AZKABAN_WEBSERVERHOST = "azkaban.webserverhost";
+
+  /**
    * The attempt number of the executing job.
    */
   public static final String JOB_ATTEMPT = "azkaban.job.attempt";
