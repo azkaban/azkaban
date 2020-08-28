@@ -63,7 +63,7 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
         CommonJobProperties.EXEC_ID,
         CommonJobProperties.FLOW_ID,
         CommonJobProperties.PROJECT_NAME,
-        CommonJobProperties.AZKABAN_HOST,
+        CommonJobProperties.AZKABAN_WEBSERVERHOST,
         CommonJobProperties.JOB_ID,
         CommonJobProperties.JOB_ATTEMPT
     };
