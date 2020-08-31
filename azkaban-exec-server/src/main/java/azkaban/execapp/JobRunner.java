@@ -822,7 +822,7 @@ public class JobRunner extends EventHandler implements Runnable {
       } catch (MalformedURLException e) {
         logger.error(String.format("Exception in parsing url: %s", baseURL), e);
       }
-      String azkabanWebserverHost = webserverURL.getHost();
+      final String azkabanWebserverHost = (webserverURL != null) ? webserverURL.getHost() : null;
       final String flowName = this.node.getParentFlow().getFlowId();
       final String projectName = this.node.getParentFlow().getProjectName();
 
