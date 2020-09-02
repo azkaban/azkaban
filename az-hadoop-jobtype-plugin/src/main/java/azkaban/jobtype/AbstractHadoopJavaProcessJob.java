@@ -62,7 +62,10 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
     String[] tagKeys = new String[]{
         CommonJobProperties.EXEC_ID,
         CommonJobProperties.FLOW_ID,
-        CommonJobProperties.PROJECT_NAME
+        CommonJobProperties.PROJECT_NAME,
+        CommonJobProperties.AZKABAN_WEBSERVERHOST,
+        CommonJobProperties.JOB_ID,
+        CommonJobProperties.JOB_ATTEMPT
     };
     Props jobProps = getJobProps();
     String tagList = HadoopJobUtils.constructHadoopTags(jobProps, tagKeys);
